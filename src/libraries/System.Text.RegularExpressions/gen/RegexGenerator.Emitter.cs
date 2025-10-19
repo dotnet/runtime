@@ -792,11 +792,32 @@ namespace System.Text.RegularExpressions.Generator
             {
                 // If the expression is anchored in such a way that there's one and only one possible position that can match,
                 // we don't need a scan loop, just a single check and match.
-                needsTryFind = needsTryMatch = true;
-                writer.WriteLine("// The pattern is anchored.  Validate the current position and try to match at it only.");
-                using (EmitBlock(writer, "if (TryFindNextPossibleStartingPosition(inputSpan) && !TryMatchAtCurrentPosition(inputSpan))"))
+
+                // If we also have a fixed-length trailing anchor, we can skip TryFindNextPossibleStartingPosition entirely
+                // and just validate the exact length in TryMatchAtCurrentPosition.
+                bool hasFixedLengthTrailingAnchor =
+                    rm.Tree.FindOptimizations.TrailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ &&
+                    rm.Tree.FindOptimizations.MinRequiredLength == rm.Tree.FindOptimizations.MaxPossibleLength;
+
+                if (hasFixedLengthTrailingAnchor)
                 {
-                    writer.WriteLine($"base.runtextpos = {(!rtl ? "inputSpan.Length" : "0")};");
+                    needsTryFind = false;
+                    needsTryMatch = true;
+                    writer.WriteLine("// The pattern is anchored at both the beginning and the end, and is of fixed length.");
+                    writer.WriteLine("// Just validate the match at the current position.");
+                    using (EmitBlock(writer, "if (!TryMatchAtCurrentPosition(inputSpan))"))
+                    {
+                        writer.WriteLine($"base.runtextpos = {(!rtl ? "inputSpan.Length" : "0")};");
+                    }
+                }
+                else
+                {
+                    needsTryFind = needsTryMatch = true;
+                    writer.WriteLine("// The pattern is anchored.  Validate the current position and try to match at it only.");
+                    using (EmitBlock(writer, "if (TryFindNextPossibleStartingPosition(inputSpan) && !TryMatchAtCurrentPosition(inputSpan))"))
+                    {
+                        writer.WriteLine($"base.runtextpos = {(!rtl ? "inputSpan.Length" : "0")};");
+                    }
                 }
             }
             else

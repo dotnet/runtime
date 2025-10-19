@@ -5397,30 +5397,60 @@ namespace System.Text.RegularExpressions
                 // If the expression is anchored in such a way that there's one and only one possible position that can match,
                 // we don't need a scan loop, just a single check and match.
 
-                // if (!TryFindNextPossibleStartingPosition(inputSpan)) return;
-                Ldthis();
-                Ldarg_1();
-                Call(tryFindNextStartingPositionMethod);
-                Brfalse(returnLabel);
+                // If we also have a fixed-length trailing anchor, we can skip TryFindNextPossibleStartingPosition entirely
+                // and just validate the exact length in TryMatchAtCurrentPosition.
+                bool hasFixedLengthTrailingAnchor =
+                    _regexTree.FindOptimizations.TrailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ &&
+                    _regexTree.FindOptimizations.MinRequiredLength == _regexTree.FindOptimizations.MaxPossibleLength;
 
-                // if (TryMatchAtCurrentPosition(inputSpan)) return;
-                Ldthis();
-                Ldarg_1();
-                Call(tryMatchAtCurrentPositionMethod);
-                Brtrue(returnLabel);
-
-                // base.runtextpos = inputSpan.Length; // or 0 for rtl
-                Ldthis();
-                if (!rtl)
+                if (hasFixedLengthTrailingAnchor)
                 {
-                    Ldarga_s(1);
-                    Call(SpanGetLengthMethod);
+                    // if (TryMatchAtCurrentPosition(inputSpan)) return;
+                    Ldthis();
+                    Ldarg_1();
+                    Call(tryMatchAtCurrentPositionMethod);
+                    Brtrue(returnLabel);
+
+                    // base.runtextpos = inputSpan.Length; // or 0 for rtl
+                    Ldthis();
+                    if (!rtl)
+                    {
+                        Ldarga_s(1);
+                        Call(SpanGetLengthMethod);
+                    }
+                    else
+                    {
+                        Ldc(0);
+                    }
+                    Stfld(RuntextposField);
                 }
                 else
                 {
-                    Ldc(0);
+                    // if (!TryFindNextPossibleStartingPosition(inputSpan)) return;
+                    Ldthis();
+                    Ldarg_1();
+                    Call(tryFindNextStartingPositionMethod);
+                    Brfalse(returnLabel);
+
+                    // if (TryMatchAtCurrentPosition(inputSpan)) return;
+                    Ldthis();
+                    Ldarg_1();
+                    Call(tryMatchAtCurrentPositionMethod);
+                    Brtrue(returnLabel);
+
+                    // base.runtextpos = inputSpan.Length; // or 0 for rtl
+                    Ldthis();
+                    if (!rtl)
+                    {
+                        Ldarga_s(1);
+                        Call(SpanGetLengthMethod);
+                    }
+                    else
+                    {
+                        Ldc(0);
+                    }
+                    Stfld(RuntextposField);
                 }
-                Stfld(RuntextposField);
             }
             else
             {
