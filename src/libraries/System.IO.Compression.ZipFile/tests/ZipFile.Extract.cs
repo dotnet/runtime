@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -209,5 +210,48 @@ namespace System.IO.Compression.Tests
             await DisposeZipArchive(async, archive);
             await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, archivePath, GetTestFilePath()));
         }
+
+
+        [Fact]
+        public void OpenEncryptedTxtFile_ShouldReturnPlaintext()
+        {
+            string zipPath = @"C:\Users\spahontu\Downloads\test.zip";
+            using var archive = ZipFile.OpenRead(zipPath);
+
+            var entry = archive.Entries.First(e => e.FullName.EndsWith("hello.txt"));
+            using var stream = entry.Open();
+            using var reader = new StreamReader(stream);
+            string content = reader.ReadToEnd();
+
+            Assert.Equal("Hello ZipCrypto!", content);
+        }
+
+        [Fact]
+        public void OpenEncryptedJpeg_ShouldDecryptAndMatchOriginal()
+        {
+            // Arrange
+            string zipPath = @"C:\Users\spahontu\Downloads\jpg.zip";
+            string originalPath = @"C:\Users\spahontu\Downloads\test.jpg"; // original JPEG for comparison
+            Assert.True(File.Exists(zipPath), $"Encrypted ZIP not found at {zipPath}");
+            Assert.True(File.Exists(originalPath), $"Original JPEG not found at {originalPath}");
+
+            using var archive = ZipFile.OpenRead(zipPath);
+            var entry = archive.Entries.First(e => e.FullName.EndsWith("test.jpg", StringComparison.OrdinalIgnoreCase));
+
+            // Act: open decrypted + decompressed stream
+            using var stream = entry.Open();
+
+            // Read all bytes
+            using var ms = new MemoryStream();
+            stream.CopyTo(ms);
+            byte[] actualBytes = ms.ToArray();
+
+            // Optional: compare with original file
+            byte[] expectedBytes = File.ReadAllBytes(originalPath);
+            Assert.Equal(expectedBytes.Length, actualBytes.Length);
+            Assert.Equal(expectedBytes, actualBytes);
+        }
+
+
     }
 }

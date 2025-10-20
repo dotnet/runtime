@@ -741,16 +741,54 @@ namespace System.IO.Compression
             return checkSumStream;
         }
 
+        private byte CalculateZipCryptoCheckByte()
+        {
+            const ushort DataDescriptorFlag = 0x0008; // GPBF bit 3
+
+            // If data descriptor NOT used, the check byte is the MSB of CRC32
+            if (((ushort)_generalPurposeBitFlag & DataDescriptorFlag) == 0)
+                return (byte)((_crc32 >> 24) & 0xFF);
+
+            // If data descriptor IS used, the check byte is the MSB of the DOS time from the *local* header
+            return (byte)((ZipHelper.DateTimeToDosTime(_lastModified.DateTime) >> 8) & 0xFF);
+        }
+
+        private bool IsZipCryptoEncrypted()
+        {
+            const ushort EncryptionFlag = 0x0001;
+            return ((ushort)_generalPurposeBitFlag & EncryptionFlag) != 0; //  && !UsesAes();
+        }
+
+        // TODO: Change based on specs
+        // private static bool UsesAes() => false;
+
         private Stream GetDataDecompressor(Stream compressedStreamToRead)
         {
+
+            Stream toDecompress = compressedStreamToRead;
+            if (IsZipCryptoEncrypted())
+            {
+                // if (UsesAes()) for future
+                //   throw new NotSupportedException("AES-encrypted ZIP entries are not supported yet.");
+
+                ReadOnlySpan<char> password = "123456789";
+                if (password.IsEmpty)
+                    throw new InvalidDataException("Password required for encrypted ZIP entry.");
+
+                byte expectedCheckByte = CalculateZipCryptoCheckByte();
+
+                // This stream will read & validate the 12-byte header and then yield plaintext compressed bytes.
+                toDecompress = new ZipCryptoDecryptionStream(toDecompress, password, expectedCheckByte);
+            }
+
             Stream? uncompressedStream;
             switch (CompressionMethod)
             {
                 case CompressionMethodValues.Deflate:
-                    uncompressedStream = new DeflateStream(compressedStreamToRead, CompressionMode.Decompress, _uncompressedSize);
+                    uncompressedStream = new DeflateStream(toDecompress, CompressionMode.Decompress, _uncompressedSize);
                     break;
                 case CompressionMethodValues.Deflate64:
-                    uncompressedStream = new DeflateManagedStream(compressedStreamToRead, CompressionMethodValues.Deflate64, _uncompressedSize);
+                    uncompressedStream = new DeflateManagedStream(toDecompress, CompressionMethodValues.Deflate64, _uncompressedSize);
                     break;
                 case CompressionMethodValues.Stored:
                 default:
@@ -758,7 +796,7 @@ namespace System.IO.Compression
                     // IsOpenable is checked before this function is called
                     Debug.Assert(CompressionMethod == CompressionMethodValues.Stored);
 
-                    uncompressedStream = compressedStreamToRead;
+                    uncompressedStream = toDecompress;
                     break;
             }
 
