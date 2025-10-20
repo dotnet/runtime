@@ -1119,6 +1119,14 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"a?(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
             yield return (@"(a|())*(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
             yield return (@"(\b|a)*", "a", RegexOptions.None, 0, 1, true, "");
+
+            // Tests for patterns with both beginning and end anchors with fixed length (optimization for early fail-fast)
+            yield return (@"^1234\z", "1234", RegexOptions.None, 0, 4, true, "1234");
+            yield return (@"^1234\z", "12345", RegexOptions.None, 0, 5, false, "");
+            yield return (@"^1234\z", "123", RegexOptions.None, 0, 3, false, "");
+            yield return (@"^1234\z", "x1234", RegexOptions.None, 0, 5, false, "");
+            yield return (@"\Aabc\z", "abc", RegexOptions.None, 0, 3, true, "abc");
+            yield return (@"\Aabc\z", "abcd", RegexOptions.None, 0, 4, false, "");
         }
 
         [OuterLoop("Takes several seconds to run")]
