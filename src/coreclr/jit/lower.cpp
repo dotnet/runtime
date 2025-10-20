@@ -4439,9 +4439,12 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         }
     }
 
-    // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
+    // Optimize EQ/NE/GT/GE/LT/LE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
+    // For GT/GE/LT/LE don't allow ADD/SUB, runtime has to check for overflow.
     LIR::Use use;
-    if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag() &&
+    if (((cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag()) ||
+         (cmp->OperIs(GT_GT, GT_GE, GT_LT, GT_LE) && op2->IsIntegralConst(0) && !op1->OperIs(GT_ADD, GT_SUB) &&
+          op1->SupportsSettingResultFlags())) &&
         BlockRange().TryGetUse(cmp, &use) && IsProfitableToSetZeroFlag(op1))
     {
         op1->gtFlags |= GTF_SET_FLAGS;
@@ -4507,7 +4510,18 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             cmp->gtFlags |= GTF_UNSIGNED;
         }
     }
-#endif // TARGET_XARCH
+#elif defined(TARGET_RISCV64)
+    if (varTypeUsesIntReg(cmp->gtGetOp1()))
+    {
+        if (GenTree* next = LowerSavedIntegerCompare(cmp); next != cmp)
+            return next;
+
+        // Integer comparisons are full-register only.
+        SignExtendIfNecessary(&cmp->AsOp()->gtOp1);
+        SignExtendIfNecessary(&cmp->AsOp()->gtOp2);
+    }
+#endif // TARGET_RISCV64
+
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
 }
@@ -7785,7 +7799,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         {
             divMod->ChangeOper(GT_GE);
             divMod->gtFlags |= GTF_UNSIGNED;
-            ContainCheckNode(divMod);
+            LowerNode(divMod);
             return true;
         }
     }
