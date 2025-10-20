@@ -597,6 +597,11 @@ namespace System.Text.RegularExpressions.Tests
 
                 // Actual - "abc(?(1)111|222)"
                 yield return ("(abbc)(?(1)111|222)", "abbc222", RegexOptions.None, 0, 7, false, string.Empty);
+
+                // Regression test for https://github.com/dotnet/runtime/issues/120882
+                // Conditional expressions with lazy loops in condition should generate valid code
+                yield return (@"(?(?=(a)+?b)ab|no)", "ab", RegexOptions.None, 0, 2, true, "ab");
+                yield return (@"(?(?=(a)+?b)ab|no)", "c", RegexOptions.None, 0, 1, false, "");
             }
 
             // "x" option. Removes unescaped whitespace from the pattern: Actual - " ([^/]+) ","x"
