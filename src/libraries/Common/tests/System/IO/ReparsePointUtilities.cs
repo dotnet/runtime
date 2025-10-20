@@ -121,7 +121,7 @@ public static partial class MountHelper
 
         hardLinkProcess.WaitForExit();
 
-        return (hardLinkProcess.ExitCode == 0);
+        return hardLinkProcess.ExitCode == 0;
     }
 
     /// <summary>Creates a symbolic link using command line tools.</summary>
