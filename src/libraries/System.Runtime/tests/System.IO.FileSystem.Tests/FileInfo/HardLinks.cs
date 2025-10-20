@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
     public class FileInfo_HardLinks : BaseHardLinks_FileSystem
     {
         protected override void CreateFile(string path) =>
