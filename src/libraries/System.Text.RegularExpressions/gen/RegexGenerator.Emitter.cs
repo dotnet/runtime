@@ -796,12 +796,12 @@ namespace System.Text.RegularExpressions.Generator
                 // If we also have a fixed-length trailing anchor, we can skip TryFindNextPossibleStartingPosition entirely
                 // and just validate the exact length in TryMatchAtCurrentPosition.
                 // Note: TrailingAnchor is only set in RegexFindOptimizations when there's no leading anchor, so we need to check for it ourselves.
+                // We only apply this optimization for End (\z), not EndZ ($), since EndZ allows an optional \n at the end.
                 RegexNodeKind trailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(root);
-                int? maxLength = root.ComputeMaxLength();
                 bool hasFixedLengthTrailingAnchor =
                     !rtl &&
-                    trailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ &&
-                    maxLength == rm.Tree.FindOptimizations.MinRequiredLength;
+                    trailingAnchor == RegexNodeKind.End &&
+                    root.ComputeMaxLength() == rm.Tree.FindOptimizations.MinRequiredLength;
 
                 if (hasFixedLengthTrailingAnchor)
                 {

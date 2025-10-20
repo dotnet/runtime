@@ -46,6 +46,12 @@ namespace System.Text.RegularExpressions.Tests
             // Testing control character escapes???: "2", "(\u0032)"
             yield return ("(\u0034)", "4", RegexOptions.None, 0, 1, true, "4");
 
+            // Patterns with both leading and trailing anchors and fixed length (exercises optimization for skipping TryFindNextPossibleStartingPosition)
+            yield return (@"^1234\z", "1234", RegexOptions.None, 0, 4, true, "1234");
+            yield return (@"^1234\z", "12345", RegexOptions.None, 0, 5, false, string.Empty);
+            yield return (@"^1234\z", "123", RegexOptions.None, 0, 3, false, string.Empty);
+            yield return (@"^abc\z", "abc", RegexOptions.None, 0, 3, true, "abc");
+
             // Using long loop prefix
             yield return (@"a{10}", new string('a', 10), RegexOptions.None, 0, 10, true, new string('a', 10));
             yield return (@"a{100}", new string('a', 100), RegexOptions.None, 0, 100, true, new string('a', 100));
