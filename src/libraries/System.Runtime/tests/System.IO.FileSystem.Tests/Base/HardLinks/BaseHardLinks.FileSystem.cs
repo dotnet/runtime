@@ -38,8 +38,9 @@ namespace System.IO.Tests
         {
             string linkPath = GetRandomFilePath();
             string nonExistentTarget = GetRandomFilePath();
-            Assert.Throws<FileNotFoundException>(() => {
-                CreateHardLink(linkPath, nonExistentTarget);                
+            Assert.Throws<FileNotFoundException>(() =>
+            {
+                CreateHardLink(linkPath, nonExistentTarget);
                 try { File.Delete(linkPath); } catch { }
             });
         }
@@ -53,7 +54,8 @@ namespace System.IO.Tests
             CreateFile(targetPath);
             CreateFile(linkPath);
 
-            Assert.Throws<IOException>(() => {
+            Assert.Throws<IOException>(() =>
+            {
                 CreateHardLink(linkPath, targetPath);
                 try { File.Delete(linkPath); } catch { }
             });
