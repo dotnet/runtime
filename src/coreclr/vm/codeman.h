@@ -2675,7 +2675,7 @@ public:
 
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
 
-    static ReadyToRunInfo * JitTokenToReadyToRunInfo(const METHODTOKEN& MethodToken);
+    static PTR_ReadyToRunInfo JitTokenToReadyToRunInfo(const METHODTOKEN& MethodToken);
     static UINT32 JitTokenToGCInfoVersion(const METHODTOKEN& MethodToken);
 
     static PTR_RUNTIME_FUNCTION JitTokenToRuntimeFunction(const METHODTOKEN& MethodToken);

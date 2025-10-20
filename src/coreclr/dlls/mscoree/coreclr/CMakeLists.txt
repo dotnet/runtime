@@ -72,10 +72,11 @@ if (NOT CLR_CMAKE_HOST_ARCH_WASM)
     set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
     set(LIB_CORDBEE cordbee_wks)
     set(LIB_INTEROP interop)
-    set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
-    set(LIB_CDAC_GC_WKS_DESCRIPTOR gc_wks_descriptor)
-    set(LIB_CDAC_GC_SVR_DESCRIPTOR gc_svr_descriptor)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
+
+set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
+set(LIB_CDAC_GC_WKS_DESCRIPTOR gc_wks_descriptor)
+set(LIB_CDAC_GC_SVR_DESCRIPTOR gc_svr_descriptor)
 
 if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(LIB_UNWINDER unwinder_wks)
@@ -174,14 +175,6 @@ if(FEATURE_EVENT_TRACE)
     endif(CLR_CMAKE_HOST_UNIX)
 endif(FEATURE_EVENT_TRACE)
 
-if(FEATURE_PERFTRACING)
-    if(CLR_CMAKE_TARGET_LINUX)
-        list(APPEND CORECLR_LIBRARIES
-            usereventsprovider
-        )
-    endif(CLR_CMAKE_TARGET_LINUX)
-endif(FEATURE_PERFTRACING)
-
 if (FEATURE_STATICALLY_LINKED)
     if (FEATURE_JIT)
         set(CLRJIT_STATIC clrjit_static gcinfo)
@@ -264,6 +257,8 @@ endif(CLR_CMAKE_TARGET_WIN32)
 # add the install targets
 if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
+else()
+    install_clr(TARGETS coreclr_static DESTINATIONS . sharedFramework COMPONENT runtime)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_ARCH_WASM)

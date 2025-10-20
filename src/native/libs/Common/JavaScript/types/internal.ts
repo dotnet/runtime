@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DotnetModuleConfig, RuntimeAPI, AssetEntry, LoaderConfig, LoadingResource } from "./public-api";
-import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
-import { InteropJavaScriptNativeExportsTable, LoaderExportsTable, HostNativeExportsTable, RuntimeExportsTable, NativeBrowserExportsTable } from "./exchange";
+import type { EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./emscripten";
+import { InteropJavaScriptExportsTable as InteropJavaScriptExportsTable, LoaderExportsTable, BrowserHostExportsTable, RuntimeExportsTable, NativeBrowserExportsTable, BrowserUtilsExportsTable } from "./exchange";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -17,10 +17,6 @@ export type JSFnHandle = {
 
 export type MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 export type NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
-
-export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
-export const CharPtrNull: CharPtr = <CharPtr><any>0;
-export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
@@ -105,19 +101,32 @@ export interface PromiseController<T> {
     propagateFrom: (other: Promise<T>) => void;
 }
 
+export type InternalExchangeSubscriber = (internals: InternalExchange) => void;
 
-export type InternalApis = {
-    runtimeApi: RuntimeAPI,
-    runtimeExportsTable: RuntimeExportsTable,
-    loaderExportsTable: LoaderExportsTable,
-    hostNativeExportsTable: HostNativeExportsTable,
-    interopJavaScriptNativeExportsTable: InteropJavaScriptNativeExportsTable,
-    nativeBrowserExportsTable: NativeBrowserExportsTable,
-    config: LoaderConfigInternal,
-    updates: (() => void)[],
+export type InternalExchange = [
+    RuntimeAPI, //0
+    InternalExchangeSubscriber[], //1
+    LoaderConfigInternal, //2
+    LoaderExportsTable, //3
+    RuntimeExportsTable, //4
+    BrowserHostExportsTable, //5
+    InteropJavaScriptExportsTable, //6
+    NativeBrowserExportsTable, //7
+    BrowserUtilsExportsTable, //8
+]
+export const enum InternalExchangeIndex {
+    RuntimeAPI = 0,
+    InternalUpdatesCallbacks = 1,
+    LoaderConfig = 2,
+    LoaderExportsTable = 3,
+    RuntimeExportsTable = 4,
+    BrowserHostExportsTable = 5,
+    InteropJavaScriptExportsTable = 6,
+    NativeBrowserExportsTable = 7,
+    BrowserUtilsExportsTable = 8,
 }
 
 export type JsModuleExports = {
-    initialize<T>(internals: InternalApis): Promise<T>;
+    dotnetInitializeModule<T>(internals: InternalExchange): Promise<T>;
 };
 

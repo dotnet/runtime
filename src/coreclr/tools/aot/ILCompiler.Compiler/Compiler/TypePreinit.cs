@@ -427,7 +427,7 @@ namespace ILCompiler
                             && field.OwningType.HasStaticConstructor
                             && _policy.CanPreinitialize(field.OwningType))
                         {
-                            if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)field.OwningType, recursionProtect, ref instructionCounter, out NestedPreinitResult nestedPreinitResult))
+                            if (!TryGetNestedPreinitResult(methodIL.OwningMethod, field.OwningType, recursionProtect, ref instructionCounter, out NestedPreinitResult nestedPreinitResult))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Nested cctor failed to preinit");
                             }
@@ -2476,7 +2476,7 @@ namespace ILCompiler
                     else
                     {
                         Debug.Assert(targetField.IsStatic && !targetField.HasGCStaticBase && !targetField.IsThreadStatic && !targetField.HasRva);
-                        ISymbolNode nonGcStaticBase = factory.TypeNonGCStaticsSymbol((MetadataType)targetField.OwningType);
+                        ISymbolNode nonGcStaticBase = factory.TypeNonGCStaticsSymbol(targetField.OwningType);
                         builder.EmitPointerReloc(nonGcStaticBase, targetField.Offset.AsInt);
                     }
                 }

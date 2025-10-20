@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_RecordAction = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "x" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_Record___System__Action___ = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "x" });
         private readonly static Lazy<HashSet<string>> s_configKeys_Options = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Name", "Age", "List", "Array", "Record" });
 
         public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref global::Record<global::System.Action> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
-            ValidateConfigurationKeys(typeof(global::Record<global::System.Action>), s_configKeys_RecordAction, configuration, binderOptions);
+            ValidateConfigurationKeys(typeof(global::Record<global::System.Action>), s_configKeys_Record___System__Action___, configuration, binderOptions);
         }
 
         public static void BindCore(IConfiguration configuration, ref global::Options instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
@@ -183,7 +183,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (AsConfigWithChildren(value13) is IConfigurationSection section14)
             {
                 global::Record<global::System.Action>? temp16 = instance.Record;
-                temp16 ??= InitializeRecordAction(section14, binderOptions);
+                temp16 ??= InitializeRecord___System__Action___(section14, binderOptions);
                 BindCore(section14, ref temp16, defaultValueIfNotFound: false, binderOptions);
                 instance.Record = temp16;
             }
@@ -193,7 +193,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::Record<global::System.Action> InitializeRecordAction(IConfiguration configuration, BinderOptions? binderOptions)
+        public static global::Record<global::System.Action> InitializeRecord___System__Action___(IConfiguration configuration, BinderOptions? binderOptions)
         {
             int x = (int)(10);
             if (TryGetConfigurationValue(configuration, key: "x", out string? value17))

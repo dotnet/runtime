@@ -507,5 +507,42 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(SimpleTestClassWithImmutableSetWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper(obj5));
             Assert.Equal(SimpleTestClassWithImmutableSetWrapper.s_json.StripWhitespace(), await Serializer.SerializeWrapper<object>(obj5));
         }
+
+        [Fact]
+        public async Task WriteImmutableStack()
+        {
+            ImmutableStack<int> input = ImmutableStack.Create<int>(1, 2, 3);
+            string json = await Serializer.SerializeWrapper(input);
+            Assert.Equal("[3,2,1]", json);
+        }
+
+        [Fact]
+        public async Task WriteImmutableQueue()
+        {
+            ImmutableQueue<int> input = ImmutableQueue.Create<int>(1, 2, 3);
+            string json = await Serializer.SerializeWrapper(input);
+            Assert.Equal("[1,2,3]", json);
+        }
+
+        [Fact]
+        public async Task WriteImmutableHashSet()
+        {
+            ImmutableHashSet<int> input = ImmutableHashSet.Create<int>(1, 2, 3);
+            string json = await Serializer.SerializeWrapper(input);
+            Assert.Contains("1", json);
+            Assert.Contains("2", json);
+            Assert.Contains("3", json);
+        }
+
+        [Fact]
+        public async Task WriteImmutableDictionaryStringKey()
+        {
+            ImmutableDictionary<string, int> input = ImmutableDictionary.Create<string, int>()
+                .Add("a", 1)
+                .Add("b", 2);
+            string json = await Serializer.SerializeWrapper(input);
+            Assert.Contains("\"a\":1", json);
+            Assert.Contains("\"b\":2", json);
+        }
     }
 }

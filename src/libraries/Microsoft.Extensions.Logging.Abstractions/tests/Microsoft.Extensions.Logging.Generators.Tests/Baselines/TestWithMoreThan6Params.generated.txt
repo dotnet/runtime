@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
                     6 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p7", this._p7),
                     7 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}"),
 
-                    _ => throw new global::System.IndexOutOfRangeException(nameof(index)),  // return the same exception LoggerMessage.Define returns in this case
+                    _ => throw new global::System.IndexOutOfRangeException(),  // return the same exception LoggerMessage.Define returns in this case
                 };
             }
 

@@ -1504,8 +1504,6 @@ internal sealed unsafe partial class SOSDacImpl
         {
             hr = HResults.E_INVALIDARG;
         }
-        else if (rva == 0)
-            *il = 0;
         else
         {
             try
@@ -3821,10 +3819,134 @@ internal sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface7.GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData)
-        => _legacyImpl7 is not null ? _legacyImpl7.GetProfilerModifiedILInformation(methodDesc, pILData) : HResults.E_NOTIMPL;
+    int ISOSDacInterface7.GetProfilerModifiedILInformation(ClrDataAddress methodDesc, DacpProfilerILData* pILData)
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (methodDesc == 0 || pILData == null)
+                throw new ArgumentException();
+            pILData->type = DacpProfilerILData.ModificationType.Unmodified;
+            pILData->rejitID = 0;
+            pILData->il = 0;
+
+            Contracts.IReJIT rejit = _target.Contracts.ReJIT;
+            Contracts.ICodeVersions cv = _target.Contracts.CodeVersions;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            TargetPointer methodDescPtr = methodDesc.ToTargetPointer(_target);
+            // getting the module handle and the token from the method desc
+            MethodDescHandle mdh = rts.GetMethodDescHandle(methodDescPtr);
+            TargetPointer mt = rts.GetMethodTable(mdh);
+            TypeHandle typeHandle = rts.GetTypeHandle(mt);
+            TargetPointer modulePtr = rts.GetModule(typeHandle);
+            uint token = rts.GetMethodToken(mdh);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+
+            Contracts.ILCodeVersionHandle activeILCodeVersion = cv.GetActiveILCodeVersion(methodDescPtr);
+
+            // rejit in progress or rejit applied?
+            if (rejit.GetRejitState(activeILCodeVersion) != RejitState.Active || !cv.HasDefaultIL(activeILCodeVersion))
+            {
+                pILData->type = DacpProfilerILData.ModificationType.ReJITModified;
+                pILData->rejitID = (uint)rejit.GetRejitId(activeILCodeVersion).Value;
+            }
+
+            TargetPointer il = loader.GetDynamicIL(moduleHandle, token);
+            if (il != 0)
+            {
+                pILData->type = DacpProfilerILData.ModificationType.ILModified;
+                pILData->il = il.ToClrDataAddress(_target);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl7 is not null)
+        {
+            DacpProfilerILData ilDataLocal;
+            int hrLocal = _legacyImpl7.GetProfilerModifiedILInformation(methodDesc, &ilDataLocal);
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(pILData->type == ilDataLocal.type, $"cDAC: {pILData->type}, DAC: {ilDataLocal.type}");
+                Debug.Assert(pILData->rejitID == ilDataLocal.rejitID, $"cDAC: {pILData->rejitID}, DAC: {ilDataLocal.rejitID}");
+                Debug.Assert(pILData->il == ilDataLocal.il, $"cDAC: {pILData->il:x}, DAC: {ilDataLocal.il:x}");
+            }
+        }
+#endif
+        return hr;
+    }
     int ISOSDacInterface7.GetMethodsWithProfilerModifiedIL(ClrDataAddress mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs)
-        => _legacyImpl7 is not null ? _legacyImpl7.GetMethodsWithProfilerModifiedIL(mod, methodDescs, cMethodDescs, pcMethodDescs) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            if (mod == 0 || methodDescs == null || cMethodDescs == 0 || pcMethodDescs == null)
+                throw new ArgumentException();
+            *pcMethodDescs = 0;
+            Contracts.ILoader loader = _target.Contracts.Loader;
+            Contracts.IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            Contracts.IReJIT rejit = _target.Contracts.ReJIT;
+            Contracts.ICodeVersions cv = _target.Contracts.CodeVersions;
+
+            TargetPointer modulePtr = mod.ToTargetPointer(_target);
+            Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
+            // iterate through typedef to method table map
+            foreach ((TargetPointer ptr, _) in loader.EnumerateModuleLookupMap(loader.GetLookupTables(moduleHandle).TypeDefToMethodTable))
+            {
+                if (*pcMethodDescs >= cMethodDescs)
+                    break;
+                TypeHandle typeHandle = rts.GetTypeHandle(ptr);
+                foreach (TargetPointer md in rts.GetIntroducedMethodDescs(typeHandle))
+                {
+                    MethodDescHandle mdh = rts.GetMethodDescHandle(md);
+                    uint token = rts.GetMethodToken(mdh);
+                    Contracts.ILCodeVersionHandle activeILCodeVersion = cv.GetActiveILCodeVersion(md);
+                    // first condition: is method in process of being rejitted?
+                    // second condition: has rejit been applied or null default IL been otherwise used for profiler modification (see src/coreclr/vm/codeversion.cpp comment)?
+                    // third condition: has profiler modified IL through ICorProfilerInfo::SetILFunctionBody?
+                    if (rejit.GetRejitState(activeILCodeVersion) != RejitState.Active ||
+                        !cv.HasDefaultIL(activeILCodeVersion) ||
+                        loader.GetDynamicIL(moduleHandle, token) != 0)
+                    {
+                        methodDescs[*pcMethodDescs] = md.ToClrDataAddress(_target);
+                        (*pcMethodDescs)++;
+                    }
+                    if (*pcMethodDescs >= cMethodDescs)
+                        break;
+                }
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+#if DEBUG
+        if (_legacyImpl7 is not null)
+        {
+            ClrDataAddress[] methodDescsLocal = new ClrDataAddress[cMethodDescs];
+            int pcMethodDescsLocal;
+            int hrLocal;
+            fixed (ClrDataAddress* ptr = methodDescsLocal)
+            {
+                hrLocal = _legacyImpl7.GetMethodsWithProfilerModifiedIL(mod, ptr, cMethodDescs, &pcMethodDescsLocal);
+            }
+            Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*pcMethodDescs == pcMethodDescsLocal, $"cDAC: {*pcMethodDescs}, DAC: {pcMethodDescsLocal}");
+                for (int i = 0; i < *pcMethodDescs; i++)
+                {
+                    Debug.Assert(methodDescs[i] == methodDescsLocal[i], $"cDAC: {methodDescs[i]:x}, DAC: {methodDescsLocal[i]:x}");
+                }
+            }
+        }
+#endif
+        return hr;
+    }
     #endregion ISOSDacInterface7
 
     #region ISOSDacInterface8

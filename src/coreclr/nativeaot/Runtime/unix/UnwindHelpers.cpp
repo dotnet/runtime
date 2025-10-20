@@ -4,6 +4,7 @@
 #include "common.h"
 #include "daccess.h"
 #include "rhassert.h"
+#include <minipal/utils.h>
 
 #define UNW_STEP_SUCCESS 1
 #define UNW_STEP_END     0
