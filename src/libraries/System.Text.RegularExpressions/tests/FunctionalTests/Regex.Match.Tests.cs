@@ -329,6 +329,26 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(b|a|aa)((?:aa)+?)+?$", "aaaaaaaa", RegexOptions.None, 0, 8, true, "aaaaaaaa");
             yield return (@"(|a|aa)(((?:aa)+?)+?|aaaaab)\w$", "aaaaaabc", RegexOptions.None, 0, 8, true, "aaaaaabc");
 
+            // Lazy loops with empty matches
+            if (!PlatformDetection.IsNetFramework)
+            {
+                // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/111051
+                yield return (@"(.)+()+?b", "xyzb", RegexOptions.None, 0, 4, true, "xyzb");
+                yield return (@"^(.)+()+?b", "xyzb", RegexOptions.None, 0, 4, true, "xyzb");
+
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/58786
+                    yield return (@"(?<!a*(?:a?)+?)", @"x", RegexOptions.None, 0, 1, false, "");
+
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/114626
+                    yield return (@"(?>(-*)+?-*)$", "abc", RegexOptions.None, 0, 3, true, "");
+
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/63385
+                    yield return (@"(^+?)?()", "1", RegexOptions.None, 0, 1, true, "");
+                }
+            }
+
             // Nested loops
             yield return (@"(abcd*)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
             yield return (@"(abcd*?)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
