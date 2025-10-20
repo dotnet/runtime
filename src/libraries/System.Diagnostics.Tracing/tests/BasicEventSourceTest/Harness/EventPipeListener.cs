@@ -39,7 +39,9 @@ namespace BasicEventSourceTests
         public override void EventSourceCommand(string eventSourceName, EventCommand command, FilteringOptions options = null)
         {
             if (eventSourceName is null)
+            {
                 throw new ArgumentNullException(nameof(eventSourceName));
+            }
 
             if (_session != null)
             {
@@ -51,7 +53,9 @@ namespace BasicEventSourceTests
         public override void Start()
         {
             if (_session != null)
+            {
                 return; // already started
+            }
 
             // Build provider enable list from pending commands
             foreach (var (eventSourceName, command, options) in _pendingCommands)
@@ -91,7 +95,9 @@ namespace BasicEventSourceTests
             {
                 // EventPipe adds extra events we didn't ask for, ignore them.
                 if (traceEvent.ProviderName == "Microsoft-DotNETCore-EventPipe")
+                {
                     return;
+                }
 
                 OnEvent?.Invoke(new EventPipeEvent(traceEvent));
             };
@@ -101,7 +107,9 @@ namespace BasicEventSourceTests
         public override void Dispose()
         {
             if (_disposed)
+            {
                 return;
+            }
             _disposed = true;
             _session?.Stop();
             _session?.Dispose();
@@ -152,7 +160,9 @@ namespace BasicEventSourceTests
             public override object PayloadValue(int propertyIndex, string propertyName)
             {
                 if (propertyName != null)
+                {
                     Assert.Equal(propertyName, _payloadNames[propertyIndex]);
+                }
                 return _payloadValues[propertyIndex];
             }
         }
