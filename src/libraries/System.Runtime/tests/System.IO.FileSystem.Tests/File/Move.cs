@@ -431,8 +431,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData("-", "destination")]
         [InlineData("source", "--")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixMoveWithDashPrefixedNames(string sourceFileName, string destFileName)
+        public void MoveWithDashPrefixedNames(string sourceFileName, string destFileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string srcPath = Path.Combine(testDir.FullName, sourceFileName);

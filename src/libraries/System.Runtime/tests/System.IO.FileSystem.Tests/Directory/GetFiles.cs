@@ -209,18 +209,27 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixEnumerateFilesWithDashesAndTabs()
+        public void EnumerateFilesWithDashes()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             File.Create(Path.Combine(testDir.FullName, "-")).Dispose();
             File.Create(Path.Combine(testDir.FullName, "--")).Dispose();
+
+            string[] files = GetEntries(testDir.FullName);
+            Assert.Equal(2, files.Length);
+            Assert.Contains(files, f => Path.GetFileName(f) == "-");
+            Assert.Contains(files, f => Path.GetFileName(f) == "--");
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void UnixEnumerateFilesWithTabs()
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             File.Create(Path.Combine(testDir.FullName, "file\tname")).Dispose();
 
             string[] files = GetEntries(testDir.FullName);
-            Assert.Equal(3, files.Length);
-            Assert.Contains(files, f => Path.GetFileName(f) == "-");
-            Assert.Contains(files, f => Path.GetFileName(f) == "--");
+            Assert.Single(files);
             Assert.Contains(files, f => Path.GetFileName(f) == "file\tname");
         }
     }

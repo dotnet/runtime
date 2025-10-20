@@ -220,8 +220,7 @@ namespace System.IO.Tests
         [InlineData("-")]
         [InlineData("--")]
         [InlineData("-filename")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixDeleteDashPrefixedNames(string fileName)
+        public void DeleteDashPrefixedNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);

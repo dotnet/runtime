@@ -460,8 +460,7 @@ namespace System.IO.Tests
         [InlineData("-", "destination")]
         [InlineData("source", "-")]
         [InlineData("--", "destination")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixCopyWithDashPrefixedNames(string sourceFileName, string destFileName)
+        public void CopyWithDashPrefixedNames(string sourceFileName, string destFileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
@@ -499,7 +498,10 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsCopyWithTrailingSpacePeriod_ViaExtendedSyntax(string sourceFileName, string destFileName)
         {
-            // Files with trailing spaces/periods require \\?\ syntax on Windows
+            // Files with trailing spaces/periods require \\?\ syntax on Windows for creation.
+            // However, enumeration APIs like Directory.GetFiles can find them and return their names,
+            // but regular APIs like File.OpenRead will fail without \\?\ prefix.
+            // See: https://learn.microsoft.com/windows/win32/fileio/naming-a-file#naming-conventions
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
             string destPath = Path.Combine(testDir.FullName, destFileName);

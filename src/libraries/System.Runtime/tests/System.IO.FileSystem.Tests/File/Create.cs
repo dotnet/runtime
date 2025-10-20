@@ -374,8 +374,7 @@ namespace System.IO.Tests
         [InlineData("--")]
         [InlineData("-filename")]
         [InlineData("--filename")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixDashPrefixedNames(string fileName)
+        public void DashPrefixedNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
