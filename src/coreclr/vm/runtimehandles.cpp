@@ -90,7 +90,6 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
         pCAMT->GetAssembly(),
         dwAttr,
         pCACtor,
-        NULL,
         *AccessCheckOptions::s_pNormalAccessChecks);
 }
 
@@ -612,7 +611,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTy
         TypeVarTypeDesc* pGenericVariable = typeHandle.AsGenericVariable();
 
     DWORD dwCount;
-    constraints = pGenericVariable->GetConstraints(&dwCount);
+    constraints = pGenericVariable->GetConstraints(&dwCount, CLASS_LOADED, WhichConstraintsToLoad::All);
 
     GCX_COOP();
     retTypeArray.Set(CopyRuntimeTypeHandles(constraints, dwCount, CLASS__TYPE));

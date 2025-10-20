@@ -7779,14 +7779,6 @@ PTR_GCFrame Thread::GetGCFrame()
 #ifdef DACCESS_COMPILE
 
 void
-STATIC_DATA::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    WRAPPER_NO_CONTRACT;
-
-    DAC_ENUM_STHIS(STATIC_DATA);
-}
-
-void
 Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     WRAPPER_NO_CONTRACT;
