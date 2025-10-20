@@ -854,7 +854,7 @@ public:
           m_pPatchpointInfoFromRuntime(NULL),
           m_ilOffset(0)
 #endif
-        , m_resumptionStubResolver(NULL)
+        , m_finalCodeAddressSlot(NULL)
     {
         CONTRACTL
         {
@@ -951,7 +951,7 @@ protected :
     PatchpointInfo        * m_pPatchpointInfoFromRuntime;
     unsigned                m_ilOffset;
 #endif
-    class AsyncResumeILStubResolver* m_resumptionStubResolver;
+    PCODE* m_finalCodeAddressSlot;
 
 };
 
