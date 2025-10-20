@@ -35,6 +35,7 @@ namespace System.IO.Strategies
                         {
                             throw Interop.GetExceptionForIoErrno(errorInfo, _fileHandle.Path);
                         }
+                        _fileHandle.SupportsRandomAccess = false;
                     }
                 }
 
