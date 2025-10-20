@@ -815,7 +815,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
         TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
-        foreach (ModuleHandle mdhandle in _target.Contracts.Loader.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeLoaded))
+        foreach (ModuleHandle mdhandle in _target.Contracts.Loader.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
         {
             MetadataReader? md2 = _target.Contracts.EcmaMetadata.GetMetadata(mdhandle);
             if (md2 == null)
