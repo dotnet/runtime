@@ -7,6 +7,8 @@
     <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'windows'">true</CLRTestTargetUnsupported>
     <!-- Testing a backwards compatibility quirk we don't officially support -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- SetJmp/LongJmp across interpreted frames is not supported -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

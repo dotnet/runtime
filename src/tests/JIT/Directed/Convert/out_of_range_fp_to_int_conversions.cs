@@ -319,6 +319,7 @@ namespace FPBehaviorApp
         }
 
         [Fact]
+        [SkipOnCoreClr("This test runs forever with the interpreter, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
         public static int TestEntryPoint()
         {
             Program.ManagedConversionRule = FPtoIntegerConversionType.CONVERT_SATURATING;

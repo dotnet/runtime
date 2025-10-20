@@ -24,6 +24,7 @@ public unsafe static class ExceptionInterop
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Exception interop not supported on Mono.")]
+    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
     public static void ThrowNativeExceptionAndCatchInFrame()
     {
         bool caughtException = false;
@@ -44,6 +45,7 @@ public unsafe static class ExceptionInterop
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Exception interop not supported on Mono.")]
+    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
     public static void ThrowManagedExceptionThroughNativeAndCatchInFrame()
     {
         bool caughtException = false;
@@ -70,6 +72,7 @@ public unsafe static class ExceptionInterop
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Exception interop not supported on Mono.")]
+    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
     public static void ThrowNativeExceptionAndCatchInFrameWithFilter()
     {
         bool caughtException = false;
@@ -98,6 +101,7 @@ public unsafe static class ExceptionInterop
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Exception interop not supported on Mono.")]
+    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
     public static void ThrowNativeExceptionAndCatchInFrameWithFinally()
     {
         bool caughtException = false;
@@ -126,6 +130,7 @@ public unsafe static class ExceptionInterop
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Exception interop not supported on Mono.")]
+    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
     public static void ThrowNativeExceptionInFrameWithFinallyCatchInOuterFrame()
     {
         bool caughtException = false;
@@ -182,6 +187,7 @@ public unsafe static class ExceptionInterop
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Exception interop not supported on Mono.")]
+    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
     public static void PropagateAndRethrowCppException()
     {
         try
@@ -200,6 +206,7 @@ public unsafe static class ExceptionInterop
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     [SkipOnMono("Exception interop not supported on Mono.")]
+    [SkipOnCoreClr("Exception interop not supported with the interpreter", RuntimeTestModes.InterpreterActive)]
     public static void PropagateAndCatchCppException()
     {
         bool reportedUnhandledException = false;
