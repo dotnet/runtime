@@ -2543,16 +2543,9 @@ namespace System.Text.RegularExpressions.Generator
                 // Emit the condition. The condition expression is a zero-width assertion, which is atomic,
                 // so prevent backtracking into it.
                 writer.WriteLine("// Condition:");
-                if (rm.Analysis.MayBacktrack(condition))
-                {
-                    // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
-                    // so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(condition);
-                }
+                // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
+                // so we always emit them via EmitAtomic to ensure proper isolation of backtracking state (e.g., doneLabel).
+                EmitAtomic(node, null);
                 writer.WriteLine();
                 doneLabel = originalDoneLabel;
 
@@ -3071,8 +3064,8 @@ namespace System.Text.RegularExpressions.Generator
             {
                 Debug.Assert(node.Kind is RegexNodeKind.Atomic or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or RegexNodeKind.ExpressionConditional, $"Unexpected type: {node.Kind}");
                 Debug.Assert(node.Kind is RegexNodeKind.ExpressionConditional ? node.ChildCount() >= 1 : node.ChildCount() == 1, $"Unexpected number of children: {node.ChildCount()}");
-                // Note: Lookarounds always use EmitAtomic for isolation even if their child doesn't backtrack
-                Debug.Assert(node.Kind is RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround || rm.Analysis.MayBacktrack(node.Child(0)), "Expected lookaround or a child that may backtrack");
+                // Note: Lookarounds and conditional expressions always use EmitAtomic for isolation even if their child doesn't backtrack
+                Debug.Assert(node.Kind is RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround or RegexNodeKind.ExpressionConditional || rm.Analysis.MayBacktrack(node.Child(0)), "Expected lookaround/conditional or a child that may backtrack");
 
                 // Grab the current done label and the current backtracking position.  The purpose of the atomic node
                 // is to ensure that nodes after it that might backtrack skip over the atomic, which means after
