@@ -149,12 +149,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public virtual void RoundTripValueTuple()
         {
-            bool isIncludeFieldsEnabled = DefaultContext.IsIncludeFieldsEnabled;
-
             var tuple = (Label1: "string", Label2: 42, true);
-            string expectedJson = isIncludeFieldsEnabled
-                ? "{\"Item1\":\"string\",\"Item2\":42,\"Item3\":true}"
-                : "{}";
+            // Tuples now always serialize as objects with Item1, Item2, Item3 regardless of IncludeFields
+            string expectedJson = "{\"Item1\":\"string\",\"Item2\":42,\"Item3\":true}";
 
             string json = JsonSerializer.Serialize(tuple, DefaultContext.ValueTupleStringInt32Boolean);
             Assert.Equal(expectedJson, json);
@@ -162,22 +159,25 @@ namespace System.Text.Json.SourceGeneration.Tests
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
                 // Deserialization not supported in fast path serialization only mode
-                // but if there are no fields we won't throw because we throw on the property lookup
-                if (isIncludeFieldsEnabled)
-                {
-                    Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean));
-                }
-                else
-                {
-                    (string, int, bool) obj = JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean);
-                    Assert.Equal(default((string, int, bool)), obj);
-                }
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean));
             }
             else
             {
                 var deserializedTuple = JsonSerializer.Deserialize(json, DefaultContext.ValueTupleStringInt32Boolean);
-                Assert.Equal(isIncludeFieldsEnabled ? tuple : default, deserializedTuple);
+                Assert.Equal(tuple, deserializedTuple);
             }
+        }
+
+        [Fact]
+        public virtual void LongValueTupleSerializes()
+        {
+            // Test that long tuples (> 7 elements) flatten the Rest field properly
+            var longTuple = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+            string json = JsonSerializer.Serialize(longTuple);
+            // Should serialize as Item1 through Item10, not nested Rest objects
+            Assert.Contains("\"Item1\":1", json);
+            Assert.Contains("\"Item10\":10", json);
+            Assert.DoesNotContain("\"Rest\"", json);
         }
 
         [Fact]
