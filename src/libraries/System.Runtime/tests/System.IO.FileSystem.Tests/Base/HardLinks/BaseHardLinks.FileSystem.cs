@@ -50,7 +50,12 @@ namespace System.IO.Tests
             CreateFile(targetPath);
             CreateFile(linkPath);
 
-            Assert.Throws<IOException>(() => CreateHardLink(linkPath, targetPath));
+            Assert.Throws<IOException>(() => {
+                CreateHardLink(linkPath, targetPath);
+                try { File.Delete(linkPath); } catch { }
+            });
+
+            try { File.Delete(targetPath); } catch { }
         }
 
         [Fact]
@@ -66,6 +71,9 @@ namespace System.IO.Tests
 
             // Both files should have the same content
             Assert.Equal(File.ReadAllText(targetPath), File.ReadAllText(linkPath));
+
+            try { File.Delete(linkPath); } catch { }
+            try { File.Delete(targetPath); } catch { }
         }
 
         [Fact]
@@ -82,6 +90,9 @@ namespace System.IO.Tests
 
             // Read via target
             Assert.Equal("changed", File.ReadAllText(targetPath));
+
+            try { File.Delete(linkPath); } catch { }
+            try { File.Delete(targetPath); } catch { }
         }
 
         [Fact]
@@ -98,6 +109,8 @@ namespace System.IO.Tests
 
             // The link should still exist and have the data
             Assert.Equal("data", File.ReadAllText(linkPath));
+
+            try { File.Delete(linkPath); } catch { }
         }
     }
 }
