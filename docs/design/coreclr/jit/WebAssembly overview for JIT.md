@@ -134,7 +134,7 @@ In no particular order (sorry!)
 
   Exception handling in Wasm is relatively bare-bones. You define a try block with one or more catch clauses, where a given clause either catches a specific 'exception tag' or catches all exceptions (referred to as `catch_all`). Exception tags can be thought of conceptually like `Exception` or `ArgumentException` but in practice they are typically not used this way, and instead an entire language or compiler may use a single tag for its purposes - i.e. a `c++exception` tag which has an attached pointer into the linear memory where the real exception data lives. A given catch clause might then contain a series of type checks based on the data in linear memory.
 
-  Emscripten currently mostly aligns with the the libc++ ABI (functions like `__cxa_begin_catch`) for exception handling. The best documentation I've found is at https://github.com/WebAssembly/tool-conventions/blob/main/EHScheme.md, and it appears to be derived from the Itanium C++ ABI.
+  Emscripten currently mostly aligns with the libc++ ABI (functions like `__cxa_begin_catch`) for exception handling. The best documentation I've found is at https://github.com/WebAssembly/tool-conventions/blob/main/EHScheme.md, and it appears to be derived from the Itanium C++ ABI.
 
 ### Stack walking
 
