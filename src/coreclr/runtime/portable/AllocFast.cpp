@@ -189,7 +189,7 @@ EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
     }
 
     _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
-    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
+    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= paddedSize)
     {
         cxt->setAllocPtr(alloc_ptr + paddedSize);
         if (requiresAlignObject)
@@ -224,12 +224,14 @@ EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
     {
         // We are assuming that allocation of minimal object flips the alignment
         paddedSize += MIN_OBJECT_SIZE;
-    } else {
+    }
+    else
+    {
         _ASSERTE((((uint32_t)alloc_ptr) & (sizeof(int64_t) - 1)) == sizeof(int32_t));
     }
 
     _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
-    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
+    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= paddedSize)
     {
         cxt->setAllocPtr(alloc_ptr + paddedSize);
         if (requiresAlignObject)
