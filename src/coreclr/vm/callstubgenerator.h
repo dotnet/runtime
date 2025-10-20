@@ -42,14 +42,14 @@ struct CallStubHeader
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(target != 0);
-        Routines[NumRoutines - 1] = target;
+        VolatileStore(&Routines[NumRoutines - 1], target);
     }
 
     PCODE GetTarget()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return Routines[NumRoutines - 1];
+        return VolatileLoadWithoutBarrier(&Routines[NumRoutines - 1]);
     }
 
     size_t GetSize()
@@ -145,10 +145,20 @@ private:
         int numArgs = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0);
 
         // The size of the temporary storage is the size of the CallStubHeader plus the size of the routines array.
-        // The size of the routines array is twice the number of arguments plus one slot for the target method pointer.
-        return sizeof(CallStubHeader) + ((numArgs + 1) * 2 + 1) * sizeof(PCODE);
+        // The size of the routines array is three times the number of arguments plus one slot for the target method pointer.
+        return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
     }
     void ComputeCallStub(MetaSig &sig, PCODE *pRoutines);
+
+    enum class RoutineType
+    {
+        None,
+        GPReg,
+        FPReg,
+        Stack
+    };
+
+    void TerminateCurrentRoutineIfNotOfNewType(RoutineType type, PCODE *pRoutines);
 };
 
 void InitCallStubGenerator();

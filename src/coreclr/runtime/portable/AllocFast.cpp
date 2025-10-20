@@ -3,13 +3,16 @@
 //
 
 #include <fcall.h>
+#include <gcinterface.h>
+#include <vars.hpp>
 
 extern void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow);
 EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
-EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR numElements)
+static Object* AllocateObject(MethodTable* pMT, uint32_t uFlags, INT_PTR numElements)
 {
-    Object* obj = RhpGcAlloc(pMT, 0, numElements, nullptr);
+    FCALL_CONTRACT;
+    Object* obj = RhpGcAlloc(pMT, uFlags, numElements, nullptr);
     if (obj == NULL)
     {
         RhExceptionHandling_FailedAllocation(pMT, false /* isOverflow */);
@@ -18,11 +21,21 @@ EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR nu
     return obj;
 }
 
-static Object* _RhpNewArrayFastCore(MethodTable* pMT, INT_PTR size)
+EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR numElements)
+{
+    WRAPPER_NO_CONTRACT;
+    return AllocateObject(pMT, 0, numElements);
+}
+
+static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
-    _ASSERTE(size < INT32_MAX);
+    if (size < 0 || size > INT32_MAX)
+    {
+        RhExceptionHandling_FailedAllocation(pMT, true /* isOverflow */);
+        return nullptr;
+    }
 
     Thread* thread = GetThread();
     ee_alloc_context* cxt = thread->GetEEAllocContext();
@@ -31,7 +44,7 @@ static Object* _RhpNewArrayFastCore(MethodTable* pMT, INT_PTR size)
     sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
-    ASSERT(alloc_ptr <= cxt->getAllocLimit());
+    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
     if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
     {
         cxt->setAllocPtr(alloc_ptr + sizeInBytes);
@@ -41,8 +54,71 @@ static Object* _RhpNewArrayFastCore(MethodTable* pMT, INT_PTR size)
         return pObject;
     }
 
-    return RhpNewVariableSizeObject(pMT, size);
+    return AllocateObject(pMT, 0, size);
 }
+
+#if defined(FEATURE_64BIT_ALIGNMENT)
+static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
+
+    if (size < 0 || size > INT32_MAX)
+    {
+        RhExceptionHandling_FailedAllocation(pMT, true /* isOverflow */);
+        return nullptr;
+    }
+
+    Thread* thread = GetThread();
+    ee_alloc_context* cxt = thread->GetEEAllocContext();
+
+    size_t sizeInBytes = (size_t)pMT->GetBaseSize() + ((size_t)size * (size_t)pMT->RawGetComponentSize());
+    sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
+
+    uint8_t* alloc_ptr = cxt->getAllocPtr();
+    bool requiresAlignObject = !IS_ALIGNED(alloc_ptr, sizeof(int64_t));
+    size_t paddedSize = sizeInBytes;
+    if (requiresAlignObject)
+    {
+        // We are assuming that allocation of minimal object flips the alignment
+        paddedSize += MIN_OBJECT_SIZE;
+    }
+
+    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
+    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= paddedSize)
+    {
+        cxt->setAllocPtr(alloc_ptr + paddedSize);
+        if (requiresAlignObject)
+        {
+            Object* dummy = (Object*)alloc_ptr;
+            dummy->SetMethodTable(g_pFreeObjectMethodTable);
+            alloc_ptr += MIN_OBJECT_SIZE;
+        }
+        PtrArray* pObject = (PtrArray *)alloc_ptr;
+        pObject->SetMethodTable(pMT);
+        pObject->SetNumComponents((INT32)size);
+        return pObject;
+    }
+
+    return AllocateObject(pMT, GC_ALLOC_ALIGN8, size);
+}
+
+EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
+
+    // if the element count is <= 0x10000, no overflow is possible because the component size is
+    // <= 0xffff, and thus the product is <= 0xffff0000, and the base size is only ~12 bytes
+    if (size > 0x10000)
+    {
+        // Overflow here should result in an OOM. Let the slow path take care of it.
+        return AllocateObject(pMT, GC_ALLOC_ALIGN8, size);
+    }
+
+    return NewArrayFastAlign8Core(pMT, size);
+}
+#endif // FEATURE_64BIT_ALIGNMENT
 
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size)
 {
@@ -55,11 +131,11 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size)
     if (size > 0x10000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return RhpNewVariableSizeObject(pMT, size);
+        return AllocateObject(pMT, 0, size);
     }
 #endif // !HOST_64BIT
 
-    return _RhpNewArrayFastCore(pMT, size);
+    return NewArrayFastCore(pMT, size);
 }
 
 EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size)
@@ -71,12 +147,6 @@ EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size)
 EXTERN_C FCDECL1(Object*, RhpNewFast, MethodTable* pMT)
 {
     PORTABILITY_ASSERT("RhpNewFast is not yet implemented");
-    return nullptr;
-}
-
-EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
-{
-    PORTABILITY_ASSERT("RhpNewArrayFastAlign8 is not yet implemented");
     return nullptr;
 }
 
@@ -104,5 +174,5 @@ EXTERN_C FCDECL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength)
         RhExceptionHandling_FailedAllocation(pMT, false);
     }
 
-    return _RhpNewArrayFastCore(pMT, stringLength);
+    return NewArrayFastCore(pMT, stringLength);
 }

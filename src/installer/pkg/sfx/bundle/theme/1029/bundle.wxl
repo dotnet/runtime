@@ -66,7 +66,7 @@ Jste připraveni? Připraveni? Jdeme na to!"/>
   <String Id="WelcomeHeaderMessage" Value="Modul runtime platformy .NET"/>
   <String Id="WelcomeDescription" Value="Modul .NET Runtime se používá ke spouštění aplikací .NET na počítači s Windows. .NET je open source, k dispozici pro více platforem a podporovaný Microsoftem. Doufáme, že se vám bude líbit!"/>
   <String Id="LearnMoreTitle" Value="Další informace o .NET"/>
-  <String Id="SuccessInstallLocation" Value="Do [DOTNETHOME] se nainstalovaly následující položky."/>
+  <String Id="SuccessInstallLocation" Value="Bylo nainstalováno následující:"/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
   <String Id="ResourcesHeader" Value="Prostředky"/>
   <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Dokumentace&lt;/A&gt;"/>
