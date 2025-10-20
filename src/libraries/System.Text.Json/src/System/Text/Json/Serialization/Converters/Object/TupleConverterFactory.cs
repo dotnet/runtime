@@ -22,10 +22,12 @@ namespace System.Text.Json.Serialization.Converters
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2071:UnrecognizedReflectionPattern",
+            Justification = "Tuple types have well-known public fields and properties.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Type converterType = typeof(TupleConverter<>).MakeGenericType(typeToConvert);
-            
+
             return (JsonConverter)Activator.CreateInstance(
                 converterType,
                 BindingFlags.Instance | BindingFlags.Public,

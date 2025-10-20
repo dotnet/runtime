@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Reflection;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -13,7 +14,9 @@ namespace System.Text.Json.Serialization.Converters
     /// Converter for System.Tuple and System.ValueTuple types that serializes them as objects with Item1, Item2, etc. properties.
     /// Handles long tuples (&gt; 7 elements) by flattening the Rest field.
     /// </summary>
-    internal sealed class TupleConverter<T> : JsonObjectConverter<T>
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+    internal sealed class TupleConverter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties)] T> : JsonObjectConverter<T>
     {
         private readonly List<(string Name, Type Type, Func<T, object?> Getter)> _elements;
 
@@ -26,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
             PopulateTupleElements(typeof(T), _elements, 0);
         }
 
-        private static void PopulateTupleElements(Type tupleType, List<(string, Type, Func<T, object?>)> elements, int offset)
+        private static void PopulateTupleElements([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicProperties)] Type tupleType, List<(string, Type, Func<T, object?>)> elements, int offset)
         {
             if (tupleType.IsValueTuple())
             {
@@ -38,17 +41,23 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        private static void PopulateValueTupleElements(Type tupleType, List<(string, Type, Func<T, object?>)> elements, int offset)
+        private static void PopulateValueTupleElements([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type tupleType, List<(string, Type, Func<T, object?>)> elements, int offset)
         {
             FieldInfo[] fields = tupleType.GetFields(BindingFlags.Public | BindingFlags.Instance);
-            
+
             foreach (FieldInfo field in fields)
             {
                 if (field.Name == "Rest")
                 {
                     // Handle long tuple (> 7 elements) - recursively flatten the Rest field
-                    Type restType = field.FieldType;
-                    PopulateTupleElements(restType, elements, offset);
+                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                        Justification = "Tuple Rest field types are well-known tuple types.")]
+                    static void ProcessRest(FieldInfo field, List<(string, Type, Func<T, object?>)> elements, int offset)
+                    {
+                        Type restType = field.FieldType;
+                        PopulateTupleElements(restType, elements, offset);
+                    }
+                    ProcessRest(field, elements, offset);
                 }
                 else if (field.Name.StartsWith("Item", StringComparison.Ordinal))
                 {
@@ -60,24 +69,30 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        private static void PopulateReferenceTupleElements(Type tupleType, List<(string, Type, Func<T, object?>)> elements, int offset)
+        private static void PopulateReferenceTupleElements([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type tupleType, List<(string, Type, Func<T, object?>)> elements, int offset)
         {
             PropertyInfo[] properties = tupleType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            
+
             foreach (PropertyInfo property in properties)
             {
                 if (property.Name == "Rest")
                 {
                     // Handle long tuple (> 7 elements) - recursively flatten the Rest property
-                    Type restType = property.PropertyType;
-                    PropertyInfo restProp = property;
-                    
-                    // For System.Tuple, we need to handle Rest differently since it's accessed through properties
-                    if (restType.IsValueTuple() || restType.IsTuple())
+                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                        Justification = "Tuple Rest property types are well-known tuple types.")]
+                    static void ProcessRest(PropertyInfo property, List<(string, Type, Func<T, object?>)> elements, int offset)
                     {
-                        // Create nested getters for Rest elements
-                        PopulateNestedReferenceTupleElements(restType, elements, offset, restProp);
+                        Type restType = property.PropertyType;
+                        PropertyInfo restProp = property;
+
+                        // For System.Tuple, we need to handle Rest differently since it's accessed through properties
+                        if (restType.IsValueTuple() || restType.IsTuple())
+                        {
+                            // Create nested getters for Rest elements
+                            PopulateNestedReferenceTupleElements(restType, elements, offset, restProp);
+                        }
                     }
+                    ProcessRest(property, elements, offset);
                 }
                 else if (property.Name.StartsWith("Item", StringComparison.Ordinal))
                 {
@@ -89,23 +104,29 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        private static void PopulateNestedReferenceTupleElements(Type tupleType, List<(string, Type, Func<T, object?>)> elements, int offset, PropertyInfo restProperty)
+        private static void PopulateNestedReferenceTupleElements([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type tupleType, List<(string, Type, Func<T, object?>)> elements, int offset, PropertyInfo restProperty)
         {
             PropertyInfo[] properties = tupleType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            
+
             foreach (PropertyInfo property in properties)
             {
                 if (property.Name == "Rest")
                 {
                     // Further nesting
-                    Type nestedRestType = property.PropertyType;
-                    if (nestedRestType.IsValueTuple() || nestedRestType.IsTuple())
+                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                        Justification = "Tuple Rest property types are well-known tuple types.")]
+                    static void ProcessNestedRest(PropertyInfo property, PropertyInfo restProperty, List<(string, Type, Func<T, object?>)> elements, int offset)
                     {
-                        // Chain the getters
-                        PropertyInfo innerRestProp = property;
-                        Func<T, object?> baseGetter = (T tuple) => restProperty.GetValue(tuple);
-                        PopulateNestedReferenceTupleElementsChained(nestedRestType, elements, offset, baseGetter, innerRestProp);
+                        Type nestedRestType = property.PropertyType;
+                        if (nestedRestType.IsValueTuple() || nestedRestType.IsTuple())
+                        {
+                            // Chain the getters
+                            PropertyInfo innerRestProp = property;
+                            Func<T, object?> baseGetter = (T tuple) => restProperty.GetValue(tuple);
+                            PopulateNestedReferenceTupleElementsChained(nestedRestType, elements, offset, baseGetter, innerRestProp);
+                        }
                     }
+                    ProcessNestedRest(property, restProperty, elements, offset);
                 }
                 else if (property.Name.StartsWith("Item", StringComparison.Ordinal))
                 {
@@ -122,26 +143,32 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        private static void PopulateNestedReferenceTupleElementsChained(Type tupleType, List<(string, Type, Func<T, object?>)> elements, int offset, Func<T, object?> baseGetter, PropertyInfo currentRestProp)
+        private static void PopulateNestedReferenceTupleElementsChained([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type tupleType, List<(string, Type, Func<T, object?>)> elements, int offset, Func<T, object?> baseGetter, PropertyInfo currentRestProp)
         {
             PropertyInfo[] properties = tupleType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            
+
             foreach (PropertyInfo property in properties)
             {
                 if (property.Name == "Rest")
                 {
                     // Further nesting - would be very rare
-                    Type nestedRestType = property.PropertyType;
-                    if (nestedRestType.IsValueTuple() || nestedRestType.IsTuple())
+                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
+                        Justification = "Tuple Rest property types are well-known tuple types.")]
+                    static void ProcessChainedRest(PropertyInfo property, PropertyInfo currentRestProp, Func<T, object?> baseGetter, List<(string, Type, Func<T, object?>)> elements, int offset)
                     {
-                        PropertyInfo innerRestProp = property;
-                        Func<T, object?> chainedGetter = (T tuple) =>
+                        Type nestedRestType = property.PropertyType;
+                        if (nestedRestType.IsValueTuple() || nestedRestType.IsTuple())
                         {
-                            object? restValue = baseGetter(tuple);
-                            return restValue is not null ? currentRestProp.GetValue(restValue) : null;
-                        };
-                        PopulateNestedReferenceTupleElementsChained(nestedRestType, elements, offset, chainedGetter, innerRestProp);
+                            PropertyInfo innerRestProp = property;
+                            Func<T, object?> chainedGetter = (T tuple) =>
+                            {
+                                object? restValue = baseGetter(tuple);
+                                return restValue is not null ? currentRestProp.GetValue(restValue) : null;
+                            };
+                            PopulateNestedReferenceTupleElementsChained(nestedRestType, elements, offset, chainedGetter, innerRestProp);
+                        }
                     }
+                    ProcessChainedRest(property, currentRestProp, baseGetter, elements, offset);
                 }
                 else if (property.Name.StartsWith("Item", StringComparison.Ordinal))
                 {
@@ -178,47 +205,24 @@ namespace System.Text.Json.Serialization.Converters
             foreach (var (name, elementType, getter) in _elements)
             {
                 object? elementValue = getter(value);
-                
+
                 writer.WritePropertyName(name);
-                
+
                 JsonConverter elementConverter = options.GetConverterInternal(elementType);
                 if (elementConverter is null)
                 {
                     throw new JsonException($"No converter found for type {elementType}");
                 }
 
-                elementConverter.WriteAsObject(writer, elementValue, options, ref state);
+                bool success = elementConverter.TryWriteAsObject(writer, elementValue, options, ref state);
+                if (!success)
+                {
+                    return false;
+                }
             }
 
             writer.WriteEndObject();
             return true;
-        }
-
-        public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            throw new NotSupportedException("Deserialization of tuples is not supported.");
-        }
-
-        public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
-        {
-            writer.WriteStartObject();
-
-            foreach (var (name, elementType, getter) in _elements)
-            {
-                object? elementValue = getter(value);
-                
-                writer.WritePropertyName(name);
-                
-                JsonConverter elementConverter = options.GetConverterInternal(elementType);
-                if (elementConverter is null)
-                {
-                    throw new JsonException($"No converter found for type {elementType}");
-                }
-
-                elementConverter.WriteAsObject(writer, elementValue, options);
-            }
-
-            writer.WriteEndObject();
         }
     }
 }
