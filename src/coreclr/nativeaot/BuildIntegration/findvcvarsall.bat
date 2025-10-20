@@ -15,7 +15,6 @@ IF /I "%~1"=="arm64" SET toolsSuffix=ARM64
 FOR /F "tokens=*" %%i IN (
     '"%vswherePath%" -latest -prerelease -products * ^
     -requires Microsoft.VisualStudio.Component.VC.Tools.%toolsSuffix% ^
-    -version [16^,18^) ^
     -property installationPath'
 ) DO SET vsBase=%%i
 
