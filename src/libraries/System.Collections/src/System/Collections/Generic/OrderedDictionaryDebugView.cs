@@ -16,42 +16,18 @@ namespace System.Collections.Generic
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public DebugViewOrderedDictionaryItem<TKey, TValue>[] Items
+        public KeyValuePair<TKey, TValue>[] Items
         {
             get
             {
-                var items = new DebugViewOrderedDictionaryItem<TKey, TValue>[_dictionary.Count];
+                var items = new KeyValuePair<TKey, TValue>[_dictionary.Count];
                 int index = 0;
                 foreach (KeyValuePair<TKey, TValue> kvp in _dictionary)
                 {
-                    items[index] = new DebugViewOrderedDictionaryItem<TKey, TValue>(index, kvp.Key, kvp.Value);
-                    index++;
+                    items[index++] = kvp;
                 }
                 return items;
             }
         }
-    }
-
-    /// <summary>
-    /// Defines an index/key/value triple for displaying an item of an ordered dictionary by a debugger.
-    /// </summary>
-    [DebuggerDisplay("{Value}", Name = "[{Index}/{Key}]")]
-    internal readonly struct DebugViewOrderedDictionaryItem<TKey, TValue>
-    {
-        public DebugViewOrderedDictionaryItem(int index, TKey key, TValue value)
-        {
-            Index = index;
-            Key = key;
-            Value = value;
-        }
-
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public int Index { get; }
-
-        [DebuggerBrowsable(DebuggerBrowsableState.Collapsed)]
-        public TKey Key { get; }
-
-        [DebuggerBrowsable(DebuggerBrowsableState.Collapsed)]
-        public TValue Value { get; }
     }
 }
