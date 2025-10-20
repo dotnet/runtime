@@ -8,12 +8,9 @@ using Xunit;
 namespace System.IO.Tests
 {
     // Contains test methods that can be used for FileInfo or File.
+    [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
     public abstract class BaseHardLinks_FileSystem : FileSystemTest
     {
-        public BaseHardLinks_FileSystem()
-        {
-            Assert.True(MountHelper.CanCreateHardLinks);
-        }
 
         /// <summary>Creates a new file depending on the implementing class.</summary>
         protected abstract void CreateFile(string path);
