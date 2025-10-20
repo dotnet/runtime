@@ -918,7 +918,7 @@ namespace System.Reflection.Emit.Tests
             il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field1"));
             il.Emit(OpCodes.Pop);
             // References to fields with unmanaged calling convention are broken
-            // [ActiveIssue("https://github.com/dotnet/runtime/issues/111003")]
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/120909")]
             // il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field2"));
             // il.Emit(OpCodes.Pop);
             // il.Emit(OpCodes.Ldsfld, typeof(ClassWithFunctionPointerFields).GetField("field3"));
