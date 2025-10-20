@@ -16,6 +16,10 @@
   <Import Sdk="Microsoft.NET.Sdk.WebAssembly" Project="Sdk.props" Condition="'$(UsingNativeAOT)' != 'true' and '$(UsingMicrosoftNETSdkWebAssembly)' == 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)BrowserWasmApp.props" Condition="'$(UsingNativeAOT)' != 'true'" />
 
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <OutputType>library</OutputType>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(_WasmInTreeDefaults)' != 'false'">
     <SelfContained>true</SelfContained>
     <Platform>AnyCPU</Platform>
