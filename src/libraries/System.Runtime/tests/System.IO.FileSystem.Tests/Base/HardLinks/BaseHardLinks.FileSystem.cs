@@ -11,7 +11,6 @@ namespace System.IO.Tests
     [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateHardLinks))]
     public abstract class BaseHardLinks_FileSystem : FileSystemTest
     {
-
         /// <summary>Creates a new file depending on the implementing class.</summary>
         protected abstract void CreateFile(string path);
 
