@@ -4820,7 +4820,10 @@ static OpcodePeepElement peepStLdLoc1[] = {
 };
 
 static OpcodePeepElement peepStLdLoc2[] = {
+    { 0, CEE_STLOC_2 },
+    { 1, CEE_LDLOC_2 },
     { 2, CEE_ILLEGAL } // End marker
+};
 
 static OpcodePeepElement peepStLdLoc3[] = {
     { 0, CEE_STLOC_3 },
