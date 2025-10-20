@@ -11,6 +11,11 @@ namespace System.IO.Tests
     [ConditionalClass(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
     public abstract partial class BaseSymbolicLinks : FileSystemTest
     {
+        public BaseSymbolicLinks()
+        {
+            Assert.True(MountHelper.CanCreateSymbolicLinks);
+        }
+
         protected DirectoryInfo CreateDirectoryContainingSelfReferencingSymbolicLink()
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetRandomDirPath());
