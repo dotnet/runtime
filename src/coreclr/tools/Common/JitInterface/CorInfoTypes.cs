@@ -234,10 +234,10 @@ namespace Internal.JitInterface
         public bool testForNull { get { return _testForNull != 0; } set { _testForNull = value ? (byte)1 : (byte)0; } }
 
         public ushort sizeOffset;
-        public IntPtr offset0;
-        public IntPtr offset1;
-        public IntPtr offset2;
-        public IntPtr offset3;
+        public nint offset0;
+        public nint offset1;
+        public nint offset2;
+        public nint offset3;
 
         public byte _indirectFirstOffset;
         public bool indirectFirstOffset { get { return _indirectFirstOffset != 0; } set { _indirectFirstOffset = value ? (byte)1 : (byte)0; } }
@@ -860,10 +860,10 @@ namespace Internal.JitInterface
         public uint sizeOfReversePInvokeFrame;
 
         // OS Page size
-        public UIntPtr osPageSize;
+        public nuint osPageSize;
 
         // Null object offset
-        public UIntPtr maxUncheckedOffsetForNullObject;
+        public nuint maxUncheckedOffsetForNullObject;
 
         // Target ABI. Combined with target architecture and OS to determine
         // GC, EH, and unwind styles.
@@ -878,10 +878,26 @@ namespace Internal.JitInterface
         public CORINFO_CLASS_STRUCT_* continuationClsHnd;
         // 'Next' field
         public CORINFO_FIELD_STRUCT_* continuationNextFldHnd;
+        // 'Resume' field
+        public CORINFO_FIELD_STRUCT_* continuationResumeFldHnd;
+        // 'State' field
+        public CORINFO_FIELD_STRUCT_* continuationStateFldHnd;
+        // 'Flags' field
+        public CORINFO_FIELD_STRUCT_* continuationFlagsFldHnd;
         // 'Data' field
         public CORINFO_FIELD_STRUCT_* continuationDataFldHnd;
         // 'GCData' field
         public CORINFO_FIELD_STRUCT_* continuationGCDataFldHnd;
+        // Whether or not the continuation needs to be allocated through the
+        // helper that also takes a method handle
+        public bool continuationsNeedMethodHandle; // byte?
+        // Method handle for AsyncHelpers.CaptureExecutionContext
+        public CORINFO_METHOD_STRUCT_* captureExecutionContextMethHnd;
+        // Method handle for AsyncHelpers.RestoreExecutionContext
+        public CORINFO_METHOD_STRUCT_* restoreExecutionContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
     }
 
     // Flags passed from JIT to runtime.
@@ -1414,6 +1430,7 @@ namespace Internal.JitInterface
         // ARM only
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
+        CORJIT_FLAG_ASYNC                   = 31,  // Generate code for use as an async function
     }
 
     public struct CORJIT_FLAGS

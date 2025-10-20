@@ -7685,6 +7685,7 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
     RtlRestoreContext(ContextRecord, NULL);
 #endif
+    UNREACHABLE();
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -7758,15 +7759,24 @@ BOOL Thread::IsAddressInStack (PTR_VOID addr) const
     return m_CacheStackLimit < addr && addr <= m_CacheStackBase;
 }
 
-#ifdef DACCESS_COMPILE
-
-void
-STATIC_DATA::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+PTR_GCFrame Thread::GetGCFrame()
 {
-    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
 
-    DAC_ENUM_STHIS(STATIC_DATA);
+#ifdef _DEBUG_IMPL
+    WRAPPER_NO_CONTRACT;
+    if (this == GetThreadNULLOk())
+    {
+        void* curSP;
+        curSP = (void *)GetCurrentSP();
+        _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
+    }
+#endif
+
+    return m_pGCFrame;
 }
+
+#ifdef DACCESS_COMPILE
 
 void
 Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)

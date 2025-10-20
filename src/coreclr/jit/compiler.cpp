@@ -5084,6 +5084,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s%s]\n", methodsCompiled, fullName,
                compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
                info.compILCodeSize, *methodCodeSize, debugPart, metricPart);
+        fflush(jitstdout());
     }
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);

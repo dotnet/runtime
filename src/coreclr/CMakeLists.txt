@@ -41,7 +41,6 @@ if (CLR_CMAKE_TARGET_ARCH_WASM)
       -msimd128)
     add_link_options(
       -fwasm-exceptions 
-      -msimd128
       )
 endif()
 
@@ -79,7 +78,8 @@ else()
       set(GEN_PINVOKE 0)
       # WASM-TODO should we start using System.Native.Browser and System.Runtime.InteropServices.JavaScript.Native also for Mono ?
       set(BUILD_LIBS_NATIVE_BROWSER 1)
-      add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost browserhost)
+      set(STATIC_LIB_DESTINATION ${CMAKE_BINARY_DIR}/libs-native)
+      add_subdirectory(${CLR_SRC_NATIVE_DIR}/corehost corehost)
       add_dependencies(runtime browserhost)
     endif()
 endif()

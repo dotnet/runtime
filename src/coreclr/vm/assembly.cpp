@@ -996,25 +996,11 @@ ReleaseHolder<FriendAssemblyDescriptor> Assembly::GetFriendAssemblyInfo()
 
 //*****************************************************************************
 // Is the given assembly a friend of this assembly?
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, FieldDesc *pFD)
+bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly)
 {
     WRAPPER_NO_CONTRACT;
 
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pFD);
-}
-
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodDesc *pMD)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMD);
-}
-
-bool Assembly::GrantsFriendAccessTo(Assembly *pAccessingAssembly, MethodTable *pMT)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly, pMT);
+    return GetFriendAssemblyInfo()->GrantsFriendAccessTo(pAccessingAssembly);
 }
 
 bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
@@ -2127,9 +2113,11 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         DeliverSyncEvents();
         break;
 
+#ifdef FEATURE_IJW
     case FILE_LOAD_VTABLE_FIXUPS:
         VtableFixups();
         break;
+#endif // FEATURE_IJW
 
     case FILE_LOADED:
         FinishLoad();
@@ -2206,12 +2194,14 @@ void Assembly::EagerFixups()
 #endif // FEATURE_READYTORUN
 }
 
+#ifdef FEATURE_IJW
 void Assembly::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
     GetModule()->FixupVTables();
 }
+#endif // FEATURE_IJW
 
 void Assembly::FinishLoad()
 {
