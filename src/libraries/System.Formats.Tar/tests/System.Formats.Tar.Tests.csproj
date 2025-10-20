@@ -77,7 +77,6 @@
     <Compile Include="TarFile\TarFile.ExtractToDirectory.File.Tests.Windows.cs" />
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.Windows.cs" />
     <Compile Include="TarWriter\TarWriter.File.Base.Windows.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs" Link="Common\System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
