@@ -498,10 +498,12 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsCopyWithTrailingSpacePeriod_ViaExtendedSyntax(string sourceFileName, string destFileName)
         {
-            // Files with trailing spaces/periods require \\?\ syntax on Windows for creation.
-            // However, enumeration APIs like Directory.GetFiles can find them and return their names,
-            // but regular APIs like File.OpenRead will fail without \\?\ prefix.
-            // See: https://learn.microsoft.com/windows/win32/fileio/naming-a-file#naming-conventions
+            // On Windows, files with trailing spaces/periods must use \\?\ prefix for creation
+            // because path normalization strips these characters. While enumeration APIs like
+            // Directory.GetFiles can discover these files, direct string-based APIs (File.OpenRead,
+            // File.Exists) will fail because the trailing characters get stripped during normalization.
+            // Only FileInfo/DirectoryInfo objects from enumeration use EnsureExtendedPrefixIfNeeded
+            // internally and can access these files. See TrimmedPaths.cs for comprehensive tests.
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
             string destPath = Path.Combine(testDir.FullName, destFileName);

@@ -341,11 +341,8 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
-        [InlineData(" leading")]
-        [InlineData("  leading")]
-        [InlineData("   leading")]
-        public void LeadingSpace(string fileName)
+        [Theory, MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void CreateWithProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
@@ -355,42 +352,9 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
-        [InlineData(".leading")]
-        [InlineData("..leading")]
-        [InlineData("...leading")]
-        public void LeadingDot(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            using (Create(filePath))
-            {
-                Assert.True(File.Exists(filePath));
-            }
-        }
-
-        [Theory]
-        [InlineData("-")]
-        [InlineData("--")]
-        [InlineData("-filename")]
-        [InlineData("--filename")]
-        public void DashPrefixedNames(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            using (Create(filePath))
-            {
-                Assert.True(File.Exists(filePath));
-            }
-        }
-
-        [Theory]
-        [InlineData("file\tname")]
-        [InlineData("file\rname")]
-        [InlineData("file\vname")]
-        [InlineData("file\fname")]
+        [Theory, MemberData(nameof(TestData.UnixOnlyFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixEmbeddedControlCharacters(string fileName)
+        public void UnixCreateWithControlCharacters(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
@@ -401,16 +365,13 @@ namespace System.IO.Tests
         }
 
         [ConditionalTheory(nameof(UsingNewNormalization))]
-        [InlineData("trailing ")]
-        [InlineData("trailing  ")]
-        [InlineData("trailing.")]
-        [InlineData("trailing..")]
-        [InlineData("trailing .")]
-        [InlineData("trailing. ")]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsTrailingSpacePeriod_CreateViaExtendedSyntax(string fileName)
+        public void WindowsCreateWithTrailingSpacePeriod(string fileName)
         {
-            // Files with trailing spaces/periods require \\?\ syntax on Windows
+            // On Windows, files with trailing spaces/periods must be created using \\?\ prefix.
+            // This is by design - Windows path normalization strips these characters unless
+            // the extended path syntax is used. See TrimmedPaths.cs for more detailed tests.
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
             string extendedPath = @"\\?\" + filePath;
@@ -420,38 +381,9 @@ namespace System.IO.Tests
                 Assert.True(File.Exists(extendedPath));
             }
             
-            // Verify we can find it via enumeration
+            // Verify the file can be found via enumeration
             string[] files = Directory.GetFiles(testDir.FullName);
             Assert.Contains(files, f => Path.GetFileName(f) == fileName);
-        }
-
-        [Theory]
-        [InlineData("name with spaces")]
-        [InlineData("name  with  multiple  spaces")]
-        [InlineData("name.with.periods")]
-        [InlineData("name with spaces.txt")]
-        public void EmbeddedSpacesPeriods(string fileName)
-        {
-            // Embedded spaces and periods should work fine on all platforms
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            using (Create(filePath))
-            {
-                Assert.True(File.Exists(filePath));
-            }
-        }
-
-        [Theory]
-        [InlineData("name\twith\ttabs")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixEmbeddedTabs(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            using (Create(filePath))
-            {
-                Assert.True(File.Exists(filePath));
-            }
         }
 
         #endregion

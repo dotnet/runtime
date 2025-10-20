@@ -91,4 +91,76 @@ internal static class TestData
             return data;
         }
     }
+
+    /// <summary>
+    /// Filenames with problematic but valid characters that work on all platforms.
+    /// These test scenarios from: https://www.dwheeler.com/essays/fixing-unix-linux-filenames.html
+    /// </summary>
+    public static TheoryData<string> ValidFileNames
+    {
+        get
+        {
+            TheoryData<string> data = new TheoryData<string>
+            {
+                // Leading spaces
+                " leading",
+                "  leading",
+                "   leading",
+                // Leading dots
+                ".leading",
+                "..leading",
+                "...leading",
+                // Dash-prefixed names
+                "-",
+                "--",
+                "-filename",
+                "--filename",
+                // Embedded spaces and periods
+                "name with spaces",
+                "name  with  multiple  spaces",
+                "name.with.periods",
+                "name with spaces.txt"
+            };
+
+            return data;
+        }
+    }
+
+    /// <summary>
+    /// Filenames with control characters that are only valid on Unix.
+    /// Windows reserves control characters 0-31 as invalid.
+    /// </summary>
+    public static TheoryData<string> UnixOnlyFileNames
+    {
+        get
+        {
+            return new TheoryData<string>
+            {
+                "file\tname",      // tab
+                "file\rname",      // carriage return
+                "file\vname",      // vertical tab
+                "file\fname"       // form feed
+            };
+        }
+    }
+
+    /// <summary>
+    /// Filenames with trailing spaces or periods. On Windows, these require \\?\ prefix for creation
+    /// but can be enumerated. Direct string-based APIs will have the trailing characters stripped.
+    /// </summary>
+    public static TheoryData<string> WindowsTrailingProblematicFileNames
+    {
+        get
+        {
+            return new TheoryData<string>
+            {
+                "trailing ",
+                "trailing  ",
+                "trailing.",
+                "trailing..",
+                "trailing .",
+                "trailing. "
+            };
+        }
+    }
 }
