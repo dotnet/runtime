@@ -171,13 +171,20 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public virtual void LongValueTupleSerializes()
         {
-            // Test that long tuples (> 7 elements) flatten the Rest field properly
-            var longTuple = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-            string json = JsonSerializer.Serialize(longTuple);
-            // Should serialize as Item1 through Item10, not nested Rest objects
-            Assert.Contains("\"Item1\":1", json);
-            Assert.Contains("\"Item10\":10", json);
-            Assert.DoesNotContain("\"Rest\"", json);
+            // Test 8-element tuple (boundary case)
+            var tuple8 = (1, 2, 3, 4, 5, 6, 7, 8);
+            string json8 = JsonSerializer.Serialize(tuple8);
+            Assert.Equal("{\"Item1\":1,\"Item2\":2,\"Item3\":3,\"Item4\":4,\"Item5\":5,\"Item6\":6,\"Item7\":7,\"Item8\":8}", json8);
+
+            // Test 10-element tuple
+            var tuple10 = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+            string json10 = JsonSerializer.Serialize(tuple10);
+            Assert.Equal("{\"Item1\":1,\"Item2\":2,\"Item3\":3,\"Item4\":4,\"Item5\":5,\"Item6\":6,\"Item7\":7,\"Item8\":8,\"Item9\":9,\"Item10\":10}", json10);
+
+            // Test 16-element tuple (nested Rest)
+            var tuple16 = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            string json16 = JsonSerializer.Serialize(tuple16);
+            Assert.Equal("{\"Item1\":1,\"Item2\":2,\"Item3\":3,\"Item4\":4,\"Item5\":5,\"Item6\":6,\"Item7\":7,\"Item8\":8,\"Item9\":9,\"Item10\":10,\"Item11\":11,\"Item12\":12,\"Item13\":13,\"Item14\":14,\"Item15\":15,\"Item16\":16}", json16);
         }
 
         [Fact]
