@@ -166,7 +166,7 @@ namespace System.Collections.Tests
             yield return new object[] { new SortedList<int, string>() };
             yield return new object[] { new SortedSet<int>() };
             yield return new object[] { new Stack<object>() };
-            yield return new object[] { new OrderedDictionary<int, string>() };
+            yield return new object[] { new OrderedDictionary<string, string>() };
 
             yield return new object[] { new Dictionary<double, float>().Keys };
             yield return new object[] { new Dictionary<float, double>().Values };
@@ -194,7 +194,7 @@ namespace System.Collections.Tests
             stack.Push(2);
             yield return new object[] { stack };
 
-            yield return new object[] { new OrderedDictionary<int, string> { { 1, "One" }, { 2, "Two" } } };
+            yield return new object[] { new OrderedDictionary<string, string> { { "One", "1" }, { "Two", "2" } } };
 
             yield return new object[] { new SortedList<string, int> { { "One", 1 }, { "Two", 2 } }.Keys };
             yield return new object[] { new SortedList<float, long> { { 1f, 1L }, { 2f, 2L } }.Values };
