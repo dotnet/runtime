@@ -51,7 +51,7 @@ namespace BasicEventSourceTests
 
         public void EventSourceSynchronousEnable(EventSource eventSource, FilteringOptions options = null)
         {
-            if(!IsDynamicConfigChangeSupported)
+            if (!IsDynamicConfigChangeSupported)
             {
                 throw new InvalidOperationException("This listener does not support dynamic config changes");
             }
