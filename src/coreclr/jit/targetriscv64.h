@@ -56,7 +56,7 @@
 
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 
-  #define CODE_ALIGN               4       // code alignment requirement
+  #define CODE_ALIGN               2       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement
 
   #define FIRST_INT_CALLEE_SAVED  REG_S1
@@ -111,8 +111,7 @@
   #define REG_TMP_0                REG_T0
 
   // Temporary registers used for the GS cookie check.
-  #define REG_GSCOOKIE_TMP_0       REG_T0
-  #define REG_GSCOOKIE_TMP_1       REG_T1
+  #define RBM_GSCOOKIE_TMP         (RBM_T0 | RBM_T1)
 
   // register to hold shift amount; no special register is required on ARM64.
   #define REG_SHIFT                REG_NA

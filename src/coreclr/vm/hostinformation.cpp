@@ -45,7 +45,8 @@ bool HostInformation::GetProperty(_In_z_ const char* name, SString& value)
 
 bool HostInformation::HasExternalProbe()
 {
-    return s_hostContract.external_assembly_probe != nullptr;
+    size_t requiredSize = offsetof(host_runtime_contract, external_assembly_probe) + sizeof(s_hostContract.external_assembly_probe);
+    return s_hostContract.size >= requiredSize && s_hostContract.external_assembly_probe != nullptr;
 }
 
 bool HostInformation::ExternalAssemblyProbe(_In_ const SString& path, _Out_ void** data, _Out_ int64_t* size)

@@ -11,16 +11,10 @@ namespace System.Text.Json
 {
     internal static partial class JsonReaderHelper
     {
-        private const string SpecialCharacters = ". '/\"[]()\t\n\r\f\b\\\u0085\u2028\u2029";
-#if NET8_0_OR_GREATER
-        private static readonly SearchValues<char> s_specialCharacters = SearchValues.Create(SpecialCharacters);
+        private static readonly SearchValues<char> s_specialCharacters = SearchValues.Create(". '/\"[]()\t\n\r\f\b\\\u0085\u2028\u2029");
 
         public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text) =>
             text.ContainsAny(s_specialCharacters);
-#else
-        public static bool ContainsSpecialCharacters(this ReadOnlySpan<char> text) =>
-            text.IndexOfAny(SpecialCharacters.AsSpan()) >= 0;
-#endif
 
         public static (int, int) CountNewLines(ReadOnlySpan<byte> data)
         {
@@ -31,7 +25,7 @@ namespace System.Text.Json
             {
                 newLines = 1;
                 data = data.Slice(0, lastLineFeedIndex);
-#if NET8_0_OR_GREATER
+#if NET
                 newLines += data.Count(JsonConstants.LineFeed);
 #else
                 int pos;
@@ -166,6 +160,33 @@ namespace System.Text.Json
 
             if (JsonHelpers.IsValidUnescapedDateTimeOffsetParseLength(sourceUnescaped.Length)
                 && JsonHelpers.TryParseAsISO(sourceUnescaped, out DateTimeOffset tmp))
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        public static bool TryGetValue(ReadOnlySpan<byte> segment, bool isEscaped, out Guid value)
+        {
+            if (segment.Length > JsonConstants.MaximumEscapedGuidLength)
+            {
+                value = default;
+                return false;
+            }
+
+            // Segment needs to be unescaped
+            if (isEscaped)
+            {
+                return TryGetEscapedGuid(segment, out value);
+            }
+
+            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+
+            if (segment.Length == JsonConstants.MaximumFormatGuidLength
+                && Utf8Parser.TryParse(segment, out Guid tmp, out _, 'D'))
             {
                 value = tmp;
                 return true;

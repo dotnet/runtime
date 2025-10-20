@@ -4,6 +4,8 @@ include(configure.cmake)
 
 set(SOURCES
     cpufeatures.c
+    descriptorlimit.c
+    memorybarrierprocesswide.c
     mutex.c
     guid.c
     random.c
@@ -57,3 +59,7 @@ endif()
 # Exclude this target from the default build as we may not have sanitzer headers available
 # in a non-sanitized build.
 set_target_properties(minipal_sanitizer_support PROPERTIES EXCLUDE_FROM_ALL ON)
+
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    install(TARGETS minipal DESTINATION sharedFramework COMPONENT runtime)
+endif(CLR_CMAKE_TARGET_ARCH_WASM)

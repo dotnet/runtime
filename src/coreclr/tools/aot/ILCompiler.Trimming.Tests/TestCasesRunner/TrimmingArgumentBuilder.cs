@@ -199,6 +199,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 Options.SuppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
             }
+            else if (flag == "--disable-generated-code-heuristics")
+            {
+                Options.DisableGeneratedCodeHeuristics = true;
+            }
         }
 
         public virtual void ProcessTestInputAssembly(NPath inputAssemblyPath)
@@ -266,6 +270,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
             // we keep the information in flag + values format for as long as we can so that this information doesn't have to be parsed out of a single string
             foreach (var additionalArgument in options.AdditionalArguments)
                 AddAdditionalArgument(additionalArgument.Key, additionalArgument.Value);
+
+            if (options.RootEntireAssemblies?.Count > 0)
+            {
+                foreach (var asm in options.RootEntireAssemblies)
+                    Options.RootEntireAssemblies.Add(asm);
+            }
 
             if (options.IlcFrameworkCompilation)
                 Options.FrameworkCompilation = true;

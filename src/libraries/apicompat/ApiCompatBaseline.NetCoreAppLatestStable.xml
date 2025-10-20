@@ -230,6 +230,24 @@
     <Right>net10.0/System.Runtime.Intrinsics.dll</Right>
   </Suppression>
   <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.ComponentModel.DefaultValueAttribute.#ctor(System.Type,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/netstandard.dll</Left>
+    <Right>net10.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.ComponentModel.DefaultValueAttribute.#ctor(System.Type,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.dll</Left>
+    <Right>net10.0/System.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0014</DiagnosticId>
+    <Target>M:System.ComponentModel.DefaultValueAttribute.#ctor(System.Type,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Runtime.dll</Left>
+    <Right>net10.0/System.Runtime.dll</Right>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Delegate.#ctor(System.Type,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net9.0/mscorlib.dll</Left>

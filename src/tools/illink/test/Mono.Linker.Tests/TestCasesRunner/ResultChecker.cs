@@ -135,17 +135,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 _originalsResolver.Dispose();
                 _linkedResolver.Dispose();
             }
+        }
 
-            bool HasActiveSkipKeptItemsValidationAttribute(ICustomAttributeProvider provider)
+        internal static bool HasActiveSkipKeptItemsValidationAttribute(IMemberDefinition provider)
+        {
+            if (TryGetCustomAttribute(provider, nameof(SkipKeptItemsValidationAttribute), out var attribute))
             {
-                if (TryGetCustomAttribute(provider, nameof(SkipKeptItemsValidationAttribute), out var attribute))
-                {
-                    object by = attribute.GetPropertyValue(nameof(SkipKeptItemsValidationAttribute.By));
-                    return by is null ? true : ((Tool)by).HasFlag(Tool.Trimmer);
-                }
-
-                return false;
+                object by = attribute.GetPropertyValue(nameof(SkipKeptItemsValidationAttribute.By));
+                return by is null ? true : ((Tool)by).HasFlag(Tool.Trimmer);
             }
+
+            return false;
         }
 
         protected virtual void VerifyILOfOtherAssemblies(TrimmedTestCaseResult linkResult)
@@ -909,6 +909,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
             List<string> unexpectedMessageWarnings = [];
             foreach (var attrProvider in GetAttributeProviders(original))
             {
+                if (attrProvider is MethodDefinition attrMethod &&
+                    attrMethod.DeclaringType is TypeDefinition declaringType &&
+                    declaringType.Name.StartsWith("<G>"))
+                {
+                    // Workaround: C# 14 extension methods result in a compiler-generated type
+                    // that has a method for each extension method (this is in addition to the type
+                    // which contains the actual extension method implementation).
+                    // The generated methods inherit attributes from the extension methods, but
+                    // have empty implementations. We don't want to check inherited ExpectedWarningAttributes
+                    // for these methods.
+
+                    // ExpectedWarnings for extension properties are still included, because those
+                    // are only included once in the generated output (and the user type doesn't have any properties).
+                    continue;
+                }
+
                 foreach (var attr in attrProvider.CustomAttributes)
                 {
                     if (!IsProducedByLinker(attr))
@@ -984,7 +1000,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                             string expectedOrigin = null;
                             bool expectedWarningFound = false;
 
-                            foreach (var loggedMessage in unmatchedMessages)
+                            foreach (var loggedMessage in unmatchedMessages.ToList())
                             {
 
                                 if (loggedMessage.Category != MessageCategory.Warning || loggedMessage.Code != expectedWarningCodeNumber)
@@ -1059,7 +1075,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                             unmatchedMessages.Remove(loggedMessage);
                                             break;
                                         }
-                                        if (memberDefinition is not MethodDefinition)
+                                        if (memberDefinition is not (MethodDefinition or PropertyDefinition))
                                             continue;
                                         if (actualName.StartsWith(expectedMember.DeclaringType.FullName))
                                         {
@@ -1072,6 +1088,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                             }
                                             if (memberDefinition.Name == ".ctor" &&
                                                 (expectedMember is FieldDefinition || expectedMember is PropertyDefinition || memberDefinition.DeclaringType.FullName == expectedMember.FullName))
+                                            {
+                                                expectedWarningFound = true;
+                                                unmatchedMessages.Remove(loggedMessage);
+                                                break;
+                                            }
+                                            if (memberDefinition.DeclaringType.Name.StartsWith("<G>") && memberDefinition.Name == expectedMember.Name)
                                             {
                                                 expectedWarningFound = true;
                                                 unmatchedMessages.Remove(loggedMessage);
@@ -1148,7 +1170,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
                 int? unexpectedWarningCodeNumber = unexpectedWarningCode == null ? null : int.Parse(unexpectedWarningCode.Substring(2));
 
-                MessageContainer? unexpectedWarningMessage = null;
                 foreach (var mc in unmatchedMessages)
                 {
                     if (mc.Category != MessageCategory.Warning)
@@ -1161,13 +1182,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     if (attrProvider is IMemberDefinition attrMember && (mc.Origin?.Provider is IMemberDefinition member) && member.FullName.Contains(attrMember.FullName) != true)
                         continue;
 
-                    unexpectedWarningMessage = mc;
-                    break;
-                }
-
-                if (unexpectedWarningMessage is not null)
-                {
-                    unexpectedMessageWarnings.Add($"Unexpected warning found: {unexpectedWarningMessage}");
+                    unexpectedMessageWarnings.Add($"Unexpected warning found: {mc}");
                 }
             }
 
@@ -1175,8 +1190,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 missingMessageWarnings.Add("Unmatched Messages:" + Environment.NewLine);
                 missingMessageWarnings.AddRange(unmatchedMessages.Select(m => m.ToString()));
-                missingMessageWarnings.Add(Environment.NewLine + "All Messages:" + Environment.NewLine);
-                missingMessageWarnings.AddRange(allMessages.Select(m => m.ToString()));
+                // Uncomment to show all messages when diagnosing test infrastructure issues
+                // missingMessageWarnings.Add(Environment.NewLine + "All Messages:" + Environment.NewLine);
+                // missingMessageWarnings.AddRange(allMessages.Select(m => m.ToString()));
                 Assert.Fail(string.Join(Environment.NewLine, missingMessageWarnings));
             }
 
@@ -1415,7 +1431,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         }
 
 #nullable enable
-        static bool TryGetCustomAttribute(ICustomAttributeProvider caProvider, string attributeName, [NotNullWhen(true)] out CustomAttribute? customAttribute)
+        internal static bool TryGetCustomAttribute(ICustomAttributeProvider caProvider, string attributeName, [NotNullWhen(true)] out CustomAttribute? customAttribute)
         {
             if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null)
             {

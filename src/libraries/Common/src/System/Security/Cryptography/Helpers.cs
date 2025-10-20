@@ -30,7 +30,12 @@ namespace Internal.Cryptography
 #if NET
         [UnsupportedOSPlatformGuard("ios")]
         [UnsupportedOSPlatformGuard("tvos")]
-        public static bool IsDSASupported => !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS();
+        public static bool IsDSASupported =>
+            !OperatingSystem.IsIOS() &&
+            !OperatingSystem.IsTvOS() &&
+            !OperatingSystem.IsMacOS() &&
+            !OperatingSystem.IsMacCatalyst() &&
+            !OperatingSystem.IsBrowser();
 #else
         public static bool IsDSASupported => true;
 #endif
@@ -51,6 +56,14 @@ namespace Internal.Cryptography
             !OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi();
 #else
             true;
+#endif
+
+        [SupportedOSPlatformGuard("windows")]
+        internal static bool IsOSPlatformWindows =>
+#if NETFRAMEWORK
+                true;
+#else
+                RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 #endif
 
         [return: NotNullIfNotNull(nameof(src))]
@@ -256,5 +269,18 @@ namespace Internal.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
         }
+
+#if !BUILDING_PKCS
+        internal static void ThrowIfDestinationWrongLength(
+            Span<byte> destination,
+            int expectedLength,
+            [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(destination))] string? paramName = null)
+        {
+            if (destination.Length != expectedLength)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_DestinationImprecise, expectedLength), paramName);
+            }
+        }
+#endif
     }
 }

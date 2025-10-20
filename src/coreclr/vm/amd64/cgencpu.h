@@ -43,7 +43,7 @@ class ComCallMethodDesc;
 #define SIZEOF_LOAD_AND_JUMP_THUNK              22   // # bytes to mov r10, X; jmp Z
 #define SIZEOF_LOAD2_AND_JUMP_THUNK             32   // # bytes to mov r10, X; mov r11, Y; jmp Z
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 #define HAS_FIXUP_PRECODE                       1
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer

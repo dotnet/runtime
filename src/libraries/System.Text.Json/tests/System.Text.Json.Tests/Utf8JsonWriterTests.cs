@@ -8067,6 +8067,209 @@ namespace System.Text.Json.Tests
             from anotherValue in anothers
             select new object[] { options, inputValue, anotherValue };
 
+        [Fact]
+        public static void WritePropertyWithExtremelyLongName_ThrowsArgumentException()
+        {
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output);
+            
+            writer.WriteStartObject();
+            
+            string longName = new string('a', 170_000_000);
+            
+            Assert.Throws<ArgumentException>(() => writer.WritePropertyName(longName.AsSpan()));
+        }
+
+        [Fact]
+        public static void WriteValueWithExtremelyLongValue_ThrowsArgumentException()
+        {
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output);
+            
+            writer.WriteStartArray();
+            
+            string longValue = new string('a', 170_000_000);
+            
+            Assert.Throws<ArgumentException>(() => writer.WriteStringValue(longValue.AsSpan()));
+        }
+
+        [Fact]
+        public static void WriteRawValueWithInvalidJson_ValidationDisabled()
+        {
+            var options = new JsonWriterOptions { SkipValidation = true };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartArray();
+            writer.WriteRawValue("invalid json content"u8, skipInputValidation: true);
+            writer.WriteEndArray();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("invalid json content", json);
+        }
+
+        [Fact]
+        public static void JsonElement_ToString_EdgeCase()
+        {
+            using JsonDocument doc = JsonDocument.Parse("null");
+            JsonElement element = doc.RootElement;
+            string result = element.ToString();
+            Assert.Equal("", result);
+        }
+
+        [Fact]
+        public static void WriteWithMinimizedFormatting()
+        {
+            var options = new JsonWriterOptions { Indented = false };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartObject();
+            writer.WritePropertyName("name");
+            writer.WriteStringValue("test");
+            writer.WriteEndObject();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Equal("""{"name":"test"}""", json);
+        }
+
+        [Fact]
+        public static void WriteRawValue_WithValidation()
+        {
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output);
+            
+            writer.WriteStartArray();
+            writer.WriteRawValue("42"u8, skipInputValidation: false);
+            writer.WriteEndArray();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Equal("[42]", json);
+        }
+
+        [Fact]
+        public static void WriteDateTime_MinimizedFormat()
+        {
+            var options = new JsonWriterOptions { Indented = false };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            DateTime dt = new DateTime(2024, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+            writer.WriteStartObject();
+            writer.WriteString("date", dt);
+            writer.WriteEndObject();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("2024-01-01", json);
+        }
+
+        [Fact]
+        public static void WriteGuid_MinimizedFormat()
+        {
+            var options = new JsonWriterOptions { Indented = false };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            Guid guid = Guid.Parse("12345678-1234-1234-1234-123456789012");
+            writer.WriteStartObject();
+            writer.WriteString("id", guid);
+            writer.WriteEndObject();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("12345678-1234-1234-1234-123456789012", json);
+        }
+
+        [Fact]
+        public static void WriteDecimal_MinimizedFormat()
+        {
+            var options = new JsonWriterOptions { Indented = false };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartObject();
+            writer.WriteNumber("value", 123.456m);
+            writer.WriteEndObject();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("123.456", json);
+        }
+
+        [Fact]
+        public static void WriteLargeInteger_MinimizedFormat()
+        {
+            var options = new JsonWriterOptions { Indented = false };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartObject();
+            writer.WriteNumber("value", long.MaxValue);
+            writer.WriteEndObject();
+            writer.Flush();
+            
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("9223372036854775807", json);
+        }
+
+        [Fact]
+        public static void WriteBase64String_IndentedFormat()
+        {
+            var options = new JsonWriterOptions { Indented = true };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            byte[] bytes = new byte[] { 1, 2, 3, 4, 5 };
+            writer.WriteStartObject();
+            writer.WriteBase64String("data", bytes);
+            writer.WriteEndObject();
+            writer.Flush();
+
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("\"data\": \"AQIDBAU=\"", json);
+        }
+
+        [Fact]
+        public static void WriteStartArray_WithPropertyName_Indented()
+        {
+            var options = new JsonWriterOptions { Indented = true };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartObject();
+            writer.WriteStartArray("items");
+            writer.WriteNumberValue(1);
+            writer.WriteNumberValue(2);
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+            writer.Flush();
+
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("\"items\":", json);
+        }
+
+        [Fact]
+        public static void WriteStartObject_WithPropertyName_Indented()
+        {
+            var options = new JsonWriterOptions { Indented = true };
+            var output = new ArrayBufferWriter<byte>();
+            using var writer = new Utf8JsonWriter(output, options);
+            
+            writer.WriteStartObject();
+            writer.WriteStartObject("nested");
+            writer.WriteString("key", "value");
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+            writer.Flush();
+
+            string json = Encoding.UTF8.GetString(output.WrittenSpan.ToArray());
+            Assert.Contains("\"nested\":", json);
+            Assert.Contains("\"key\": \"value\"", json);
+        }
     }
 
     public static class WriterHelpers

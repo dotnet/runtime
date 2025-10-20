@@ -542,7 +542,7 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
                     break;
-#if NET8_0_OR_GREATER
+#if NET
                 case HashAlgorithmNames.SHA3_256:
                     if (!HMACSHA3_256.IsSupported)
                     {

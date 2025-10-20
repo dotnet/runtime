@@ -238,15 +238,15 @@ namespace System.Numerics.Tensors
             _reference = ref Unsafe.AsRef<T>(data);
         }
 
-        internal ReadOnlyTensorSpan(ref T data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
+        internal ReadOnlyTensorSpan(ref readonly T data, nint dataLength, scoped ReadOnlySpan<nint> lengths, scoped ReadOnlySpan<nint> strides, bool pinned)
         {
-            _shape = TensorShape.Create(ref data, dataLength, lengths, strides, pinned);
-            _reference = ref data;
+            _shape = TensorShape.Create(in data, dataLength, lengths, strides, pinned);
+            _reference = ref Unsafe.AsRef(in data);
         }
 
-        internal ReadOnlyTensorSpan(ref T reference, scoped in TensorShape shape)
+        internal ReadOnlyTensorSpan(ref readonly T reference, scoped in TensorShape shape)
         {
-            _reference = ref reference;
+            _reference = ref Unsafe.AsRef(in reference);
             _shape = shape;
         }
 
@@ -382,6 +382,26 @@ namespace System.Numerics.Tensors
             return ref ret;
         }
 
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetSpan(ReadOnlySpan{nint}, int)" />
+        public ReadOnlySpan<T> GetSpan(scoped ReadOnlySpan<nint> startIndexes, int length)
+        {
+            if (!TryGetSpan(startIndexes, length, out ReadOnlySpan<T> span))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+            return span;
+        }
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.GetSpan(ReadOnlySpan{NIndex}, int)" />
+        public ReadOnlySpan<T> GetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length)
+        {
+            if (!TryGetSpan(startIndexes, length, out ReadOnlySpan<T> span))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+            return span;
+        }
+
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.Slice(ReadOnlySpan{nint})" />
         public ReadOnlyTensorSpan<T> Slice(params scoped ReadOnlySpan<nint> startIndexes)
         {
@@ -412,9 +432,20 @@ namespace System.Numerics.Tensors
             );
         }
 
-        /// <summary>Returns the string representation of the tensor span.</summary>
-        /// <returns>The string representation of the tensor span.</returns>
-        public override string ToString() => $"System.Numerics.Tensors.ReadOnlyTensorSpan<{typeof(T).Name}>[{_shape}]";
+        /// <summary>Returns the string representation of the tensor.</summary>
+        /// <returns>The string representation of the tensor.</returns>
+        /// <remarks>This API only lists the shape of the tensor, it does not include the contents.</remarks>
+        public override string ToString() => ToString([]);
+
+        /// <summary>Creates a <see cref="string"/> representation of the tensor.</summary>
+        /// <param name="maximumLengths">The maximum number of elements to print for each dimension of the tensor.</param>
+        /// <returns>A <see cref="string"/> representation of the tensor.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maximumLengths" /> is not empty and does not contain <see cref="Rank" /> elements.</exception>
+        /// <remarks>
+        ///   <para>No contents will be printed if <paramref name="maximumLengths" /> is empty.</para>
+        ///   <para>If a given dimension contains more elements then the corresponding limit specified by <paramref name="maximumLengths" />, remaining elements will be represented by <c>..</c>.</para>
+        /// </remarks>
+        public string ToString(params scoped ReadOnlySpan<nint> maximumLengths) => Tensor.ToString(this, maximumLengths, "System.Numerics.Tensors.ReadOnlyTensorSpan");
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryCopyTo(in TensorSpan{T})" />
         public bool TryCopyTo(scoped in TensorSpan<T> destination)
@@ -436,6 +467,38 @@ namespace System.Numerics.Tensors
                 return true;
             }
             return false;
+        }
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{nint}, int, out ReadOnlySpan{T})" />
+        public bool TryGetSpan(scoped ReadOnlySpan<nint> startIndexes, int length, out ReadOnlySpan<T> span)
+        {
+            // This validates that startIndexes is valid and will throw ArgumentOutOfRangeException or IndexOutOfRangeException if it is not.
+            nint longestContiguousLength = _shape.GetLongestContiguousLength<TensorShape.GetOffsetAndLengthForNInt, nint>(startIndexes, out nint linearOffset);
+
+            if ((length < 0) || (length > longestContiguousLength))
+            {
+                span = default;
+                return false;
+            }
+
+            span = MemoryMarshal.CreateReadOnlySpan(in Unsafe.Add(ref _reference, linearOffset), length);
+            return true;
+        }
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryGetSpan(ReadOnlySpan{NIndex}, int, out ReadOnlySpan{T})" />
+        public bool TryGetSpan(scoped ReadOnlySpan<NIndex> startIndexes, int length, out ReadOnlySpan<T> span)
+        {
+            // This validates that startIndexes is valid and will throw ArgumentOutOfRangeException or IndexOutOfRangeException if it is not.
+            nint longestContiguousLength = _shape.GetLongestContiguousLength<TensorShape.GetOffsetAndLengthForNIndex, NIndex>(startIndexes, out nint linearOffset);
+
+            if ((length < 0) || (length > longestContiguousLength))
+            {
+                span = default;
+                return false;
+            }
+
+            span = MemoryMarshal.CreateReadOnlySpan(in Unsafe.Add(ref _reference, linearOffset), length);
+            return true;
         }
 
 #if NET9_0_OR_GREATER
@@ -465,7 +528,7 @@ namespace System.Numerics.Tensors
 
             if (!IsDense)
             {
-                Tensor<T> tmp = Tensor.Create<T>(Lengths, IsPinned);
+                Tensor<T> tmp = Tensor.CreateFromShape<T>(Lengths, IsPinned);
                 CopyTo(tmp);
                 result = tmp;
             }

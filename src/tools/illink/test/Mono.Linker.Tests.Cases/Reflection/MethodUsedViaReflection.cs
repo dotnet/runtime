@@ -30,6 +30,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
             GetMethod_Name_BindingAttr_Types.TestNameBindingFlagsAndTypes();
             GetMethod_Name_GenericParameterCount_Types.TestNameWithIntAndType();
             GetMethod_Name_GenericParameterCount_Types_Modifiers.TestNameWithIntAndTypeAndModifiers();
+            GetMethod_Name_GenericParameterCount_BindingAttr_Types.TestNameWithIntAndBindingFlagsAndTypes();
             GetMethod_Name_GenericParameterCount_BindingAttr_Binder_Types_Modifiers.TestNameWithIntAndBindingFlags();
             GetMethod_Name_GenericParameterCount_BindingAttr_Binder_Types_Modifiers_PrivateBinding.TestNameWithIntAndPrivateBindingFlags();
             GetMethod_Name_GenericParameterCount_BindingAttr_Binder_CallConvention_Types_Modifiers.TestNameWithIntBindingFlagsCallingConventionParameter();
@@ -482,6 +483,42 @@ namespace Mono.Linker.Tests.Cases.Reflection
             public static void TestNameWithIntAndTypeAndModifiers()
             {
                 var method = typeof(GetMethod_Name_GenericParameterCount_Types_Modifiers).GetMethod("OnlyCalledViaReflection", 1, new Type[] { typeof(int) }, null);
+                method.Invoke(null, new object[] { });
+            }
+        }
+
+        // GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Type[] types)
+        [Kept]
+        class GetMethod_Name_GenericParameterCount_BindingAttr_Types
+        {
+            private static int OnlyCalledViaReflection()
+            {
+                return 42;
+            }
+            private int OnlyCalledViaReflection(int foo)
+            {
+                return 43;
+            }
+            [Kept]
+            public int OnlyCalledViaReflection(int foo, int bar)
+            {
+                return 44;
+            }
+            [Kept]
+            public static int OnlyCalledViaReflection(int foo, int bar, int baz)
+            {
+                return 45;
+            }
+            [Kept]
+            public static int OnlyCalledViaReflection(string foo, string bar)
+            {
+                return 46;
+            }
+
+            [Kept]
+            public static void TestNameWithIntAndBindingFlagsAndTypes()
+            {
+                var method = typeof(GetMethod_Name_GenericParameterCount_BindingAttr_Types).GetMethod("OnlyCalledViaReflection", 1, BindingFlags.Public, new Type[] { typeof(int) });
                 method.Invoke(null, new object[] { });
             }
         }

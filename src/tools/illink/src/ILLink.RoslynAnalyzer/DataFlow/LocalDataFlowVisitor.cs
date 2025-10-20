@@ -171,7 +171,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public override TValue VisitLocalReference(ILocalReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
-            return GetLocal(operation, state);
+            return GetLocal(operation.Local, state);
         }
 
         private TValue ProcessBinderCall(IOperation operation, string methodName, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
@@ -199,21 +199,19 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         public override TValue VisitDynamicIndexerAccess(IDynamicIndexerAccessOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
             => ProcessBinderCall(operation, operation.GetValueUsageInfo(OwningSymbol).HasFlag(ValueUsageInfo.Write) ? "SetIndex" : "GetIndex", state);
 
-        private bool IsReferenceToCapturedVariable(ILocalReferenceOperation localReference)
+        private bool IsCapturedVariable(ILocalSymbol local)
         {
-            var local = localReference.Local;
-
             if (local.IsConst)
                 return false;
             Debug.Assert(local.ContainingSymbol is IMethodSymbol or IFieldSymbol, // backing field for property initializers
-                $"{local.ContainingSymbol.GetType()}: {localReference.Syntax.GetLocation().GetLineSpan()}");
+                $"{local.ContainingSymbol.GetType()}: {local.Locations[0].GetLineSpan()}");
             return !ReferenceEquals(local.ContainingSymbol, OwningSymbol);
         }
 
-        private TValue GetLocal(ILocalReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        private TValue GetLocal(ILocalSymbol symbol, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
-            var local = new LocalKey(operation.Local);
-            if (IsReferenceToCapturedVariable(operation))
+            var local = new LocalKey(symbol);
+            if (IsCapturedVariable(symbol))
                 InterproceduralState.TrackHoistedLocal(local);
 
             // Get the value from the hoisted locals, if it's tracked there.
@@ -223,10 +221,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return state.Get(local);
         }
 
-        private void SetLocal(ILocalReferenceOperation operation, TValue value, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state, bool merge = false)
+        private void SetLocal(ILocalSymbol localSymbol, TValue value, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state, bool merge = false)
         {
-            var local = new LocalKey(operation.Local);
-            if (IsReferenceToCapturedVariable(operation))
+            var local = new LocalKey(localSymbol);
+            if (IsCapturedVariable(localSymbol))
                 InterproceduralState.TrackHoistedLocal(local);
 
             // Update the value stored in the hoisted locals, if it's tracked there.
@@ -239,7 +237,23 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             state.Set(local, newValue);
         }
 
-        private TValue ProcessSingleTargetAssignment(IOperation targetOperation, IAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state, bool merge)
+        private TValue ProcessSingleTargetAssignment(
+            IOperation targetOperation,
+            IAssignmentOperation operation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            bool merge
+        )
+        {
+            return ProcessSingleTargetAssignment(targetOperation, operation.Value, operation, state, merge);
+        }
+
+        private TValue ProcessSingleTargetAssignment(
+            IOperation targetOperation,
+            IOperation valueOperation,
+            IOperation assignmentOperation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            bool merge
+        )
         {
             switch (targetOperation)
             {
@@ -253,8 +267,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         IParameterReferenceOperation parameterRef => GetParameterTargetValue(parameterRef.Parameter),
                         _ => throw new InvalidOperationException()
                     };
-                    TValue value = Visit(operation.Value, state);
-                    HandleAssignment(value, targetValue, operation, in current.Context);
+                    TValue value = Visit(valueOperation, state);
+                    HandleAssignment(value, targetValue, assignmentOperation, in current.Context);
                     return value;
                 }
 
@@ -266,7 +280,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     // correctly detect whether it is used for reading or writing inside of VisitPropertyReference.
                     // https://github.com/dotnet/roslyn/issues/25057
                     TValue instanceValue = Visit(propertyRef.Instance, state);
-                    TValue value = Visit(operation.Value, state);
+                    TValue value = Visit(valueOperation, state);
                     IMethodSymbol? setMethod = propertyRef.Property.GetSetMethod();
 
                     if (setMethod == null ||
@@ -287,17 +301,25 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
                         var current = state.Current;
                         TValue targetValue = GetBackingFieldTargetValue(propertyRef, in current.Context);
-                        HandleAssignment(value, targetValue, operation, in current.Context);
+                        HandleAssignment(value, targetValue, assignmentOperation, in current.Context);
                         return value;
                     }
 
-                    // Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
                     ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
+
+                    // Handle C# 14 extension property access (see comment in ProcessMethodCall)
+                    if (setMethod.HasExtensionParameterOnType())
+                    {
+                        arguments.Add(instanceValue);
+                        instanceValue = TopValue;
+                    }
+
+                    // Property may be an indexer, in which case there will be one or more index arguments followed by a value argument
                     foreach (var val in propertyRef.Arguments)
                         arguments.Add(Visit(val, state));
                     arguments.Add(value);
 
-                    HandleMethodCallHelper(setMethod, instanceValue, arguments.ToImmutableArray(), operation, state);
+                    HandleMethodCallHelper(setMethod, instanceValue, arguments.ToImmutableArray(), assignmentOperation, state);
                     // The return value of a property set expression is the value,
                     // even though a property setter has no return value.
                     return value;
@@ -308,14 +330,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     // not a call to an event accessor method. There is no Roslyn API to access the field,
                     // so just visit the instance and the value. https://github.com/dotnet/roslyn/issues/40103
                     Visit(eventRef.Instance, state);
-                    return Visit(operation.Value, state);
+                    return Visit(valueOperation, state);
                 }
                 case IImplicitIndexerReferenceOperation indexerRef:
                 {
                     // An implicit reference to an indexer where the argument is a System.Index
                     TValue instanceValue = Visit(indexerRef.Instance, state);
                     TValue indexArgumentValue = Visit(indexerRef.Argument, state);
-                    TValue value = Visit(operation.Value, state);
+                    TValue value = Visit(valueOperation, state);
 
                     var property = (IPropertySymbol)indexerRef.IndexerSymbol;
 
@@ -331,15 +353,23 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         break;
                     }
 
-                    HandleMethodCallHelper(setMethod, instanceValue, argumentsBuilder.ToImmutableArray(), operation, state);
+                    HandleMethodCallHelper(setMethod, instanceValue, argumentsBuilder.ToImmutableArray(), assignmentOperation, state);
                     return value;
                 }
 
                 // TODO: when setting a property in an attribute, target is an IPropertyReference.
                 case ILocalReferenceOperation localRef:
                 {
-                    TValue value = Visit(operation.Value, state);
-                    SetLocal(localRef, value, state, merge);
+                    TValue value = Visit(valueOperation, state);
+                    SetLocal(localRef.Local, value, state, merge);
+                    return value;
+                }
+                case IDeclarationPatternOperation declPattern:
+                {
+                    if (declPattern.DeclaredSymbol is not ILocalSymbol declaredSymbol)
+                        break;
+                    var value = Visit(valueOperation, state);
+                    SetLocal(declaredSymbol, value, state, merge);
                     return value;
                 }
                 case IArrayElementReferenceOperation arrayElementRef:
@@ -349,22 +379,22 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
                     TValue arrayRef = Visit(arrayElementRef.ArrayReference, state);
                     TValue index = Visit(arrayElementRef.Indices[0], state);
-                    TValue value = Visit(operation.Value, state);
-                    HandleArrayElementWrite(arrayRef, index, value, operation, merge: merge);
+                    TValue value = Visit(valueOperation, state);
+                    HandleArrayElementWrite(arrayRef, index, value, assignmentOperation, merge: merge);
                     return value;
                 }
                 case IInlineArrayAccessOperation inlineArrayAccess:
                 {
                     TValue arrayRef = Visit(inlineArrayAccess.Instance, state);
                     TValue index = Visit(inlineArrayAccess.Argument, state);
-                    TValue value = Visit(operation.Value, state);
-                    HandleArrayElementWrite(arrayRef, index, value, operation, merge: merge);
+                    TValue value = Visit(valueOperation, state);
+                    HandleArrayElementWrite(arrayRef, index, value, assignmentOperation, merge: merge);
                     return value;
                 }
                 case IDiscardOperation:
                     // Assignments like "_ = SomeMethod();" don't need dataflow tracking.
                     // Seems like this can't happen with a flow capture operation.
-                    Debug.Assert(operation.Target is not IFlowCaptureReferenceOperation);
+                    Debug.Assert(targetOperation is not IFlowCaptureReferenceOperation);
                     break;
                 case IInstanceReferenceOperation:
                 // Assignment to 'this' is not tracked currently.
@@ -389,12 +419,43 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     UnexpectedOperationHandler.Handle(targetOperation);
                     break;
             }
-            return Visit(operation.Value, state);
+            return Visit(valueOperation, state);
         }
 
         public override TValue VisitSimpleAssignment(ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
             return ProcessAssignment(operation, state);
+        }
+
+        public override TValue VisitIsPattern(IIsPatternOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            if (operation.Pattern is IDeclarationPatternOperation declarationPattern)
+            {
+                // A declaration pattern is like an assignment to a local
+                return ProcessSingleTargetAssignment(
+                    declarationPattern,
+                    operation.Value,
+                    operation,
+                    state,
+                    merge: false
+                );
+            }
+            return base.VisitIsPattern(operation, state);
+        }
+
+        public override TValue VisitPropertySubpattern(IPropertySubpatternOperation propPattern, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            if (propPattern.Pattern is IDeclarationPatternOperation declPattern)
+            {
+                return ProcessSingleTargetAssignment(
+                    declPattern,
+                    propPattern.Member,
+                    propPattern,
+                    state,
+                    merge: false
+                );
+            }
+            return base.VisitPropertySubpattern(propPattern, state);
         }
 
         public override TValue VisitCompoundAssignment(ICompoundAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
@@ -652,14 +713,20 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             // Accessing property for reading is really a call to the getter
             // The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
             TValue instanceValue = Visit(operation.Instance, state);
-            IMethodSymbol? getMethod = operation.Property.GetGetMethod();
+            IMethodSymbol getMethod = operation.Property.GetGetMethod()!;
+            ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
+            // Handle C# 14 extension property access (see comment in ProcessMethodCall)
+            if (getMethod.HasExtensionParameterOnType())
+            {
+                arguments.Add(instanceValue);
+                instanceValue = TopValue;
+            }
 
             // Property may be an indexer, in which case there will be one or more index arguments
-            ImmutableArray<TValue>.Builder arguments = ImmutableArray.CreateBuilder<TValue>();
             foreach (var val in operation.Arguments)
                 arguments.Add(Visit(val, state));
 
-            return HandleMethodCallHelper(getMethod!, instanceValue, arguments.ToImmutableArray(), operation, state);
+            return HandleMethodCallHelper(getMethod, instanceValue, arguments.ToImmutableArray(), operation, state);
         }
 
         public override TValue VisitEventReference(IEventReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
@@ -837,7 +904,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 TConditionValue conditionValue = GetConditionValue(argumentOperation, state);
                 var current = state.Current;
                 ApplyCondition(
-                    doesNotReturnIfConditionValue == false
+                    !doesNotReturnIfConditionValue
                         ? conditionValue
                         : conditionValue.Negate(),
                     ref current);
@@ -857,6 +924,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             TValue instanceValue = Visit(instance, state);
 
             var argumentsBuilder = ImmutableArray.CreateBuilder<TValue>();
+
+            // For calls to C# 14 extensions, treat the instance argument as a regular argument.
+            // The extension method doesn't have an implicit this, yet (unlike for existing extension methods)
+            // the IOperation represents it as having an Instance.
+            if (method.HasExtensionParameterOnType())
+            {
+                argumentsBuilder.Add(instanceValue);
+                instanceValue = TopValue;
+            }
+
             foreach (var argument in arguments)
             {
                 // For __arglist argument there might not be any parameter

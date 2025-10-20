@@ -10,13 +10,13 @@ using System;
 using Xunit;
 
 public class Runtime_39403
-{ 
+{
     [Fact]
     public static void TestEntryPoint()
     {
         if (Sse41.IsSupported)
         {
-            Vector128<int> left = Vector128.Create(1);
+            Vector128<int> left = Vector128<int>.One;
             Vector128<int> right = Vector128.Create(2);
             ref var rightRef = ref right;
             Vector128<int> mask = Vector128.Create(3);

@@ -356,10 +356,6 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
     }
 };
 
-inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
-{
-}
-
 // This function tells us if the given stack pointer is in one of the frames of the functions called by the given frame
 inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
     _ASSERTE("IsInCalleesFrames is not implemented on wasm");
@@ -370,7 +366,7 @@ inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
 #error "RegDisplay functions are not implemented on this platform."
 #endif
 
-#if defined(TARGET_64BIT) || defined(TARGET_ARM) || (defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS))
+#ifdef FEATURE_EH_FUNCLETS
 // This needs to be implemented for platforms that have funclets.
 inline LPVOID GetRegdisplayReturnValue(REGDISPLAY *display)
 {
@@ -398,24 +394,14 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_64BIT)
-    pRD->SP         = (INT_PTR)GetSP(pRD->pCurrentContext);
-    pRD->ControlPC  = (INT_PTR)GetIP(pRD->pCurrentContext);
-#elif defined(TARGET_ARM)
-    pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
-    pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
-#elif defined(TARGET_X86)
-    pRD->SP         = (DWORD)GetSP(pRD->pCurrentContext);
-    pRD->ControlPC  = (DWORD)GetIP(pRD->pCurrentContext);
-#else // TARGET_X86
-    PORTABILITY_ASSERT("SyncRegDisplayToCurrentContext");
-#endif
+    pRD->SP         = GetSP(pRD->pCurrentContext);
+    pRD->ControlPC  = GetIP(pRD->pCurrentContext);
 
 #ifdef DEBUG_REGDISPLAY
     CheckRegDisplaySP(pRD);
 #endif // DEBUG_REGDISPLAY
 }
-#endif // TARGET_64BIT || TARGET_ARM || (TARGET_X86 && FEATURE_EH_FUNCLETS)
+#endif // FEATURE_EH_FUNCLETS
 
 typedef REGDISPLAY *PREGDISPLAY;
 
@@ -471,7 +457,9 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     *(&pCtxPtrs->Tp) = &pCtx->Tp;
     *(&pCtxPtrs->Fp) = &pCtx->Fp;
     *(&pCtxPtrs->Ra) = &pCtx->Ra;
-#else // TARGET_RISCV64
+#elif defined(TARGET_WASM)
+    // Wasm doesn't have registers
+#else // TARGET_WASM
     PORTABILITY_ASSERT("FillContextPointers");
 #endif // _TARGET_???_ (ELSE)
 }

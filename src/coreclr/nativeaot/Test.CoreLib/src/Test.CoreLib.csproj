@@ -212,6 +212,7 @@
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Runtime\InteropServices\IDynamicInterfaceCastable.cs">
       <Link>Common\System\Runtime\InteropServices\IDynamicInterfaceCastable.cs</Link>
     </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Runtime\CompilerServices\AnalysisCharacteristicAttribute.cs" />
     <Compile Include="Internal\Runtime\MethodTable.Runtime.cs" />
     <Compile Include="System\Runtime\CompilerServices\CastCache.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />

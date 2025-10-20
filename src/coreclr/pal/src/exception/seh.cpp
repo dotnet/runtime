@@ -248,7 +248,7 @@ Return value:
 BOOL
 SEHProcessException(PAL_SEHException* exception)
 {
-    g_SEHProcessExceptionReturnAddress = __builtin_return_address(0);
+    g_SEHProcessExceptionReturnAddress = _ReturnAddress();
 
     CONTEXT* contextRecord = exception->GetContextRecord();
     EXCEPTION_RECORD* exceptionRecord = exception->GetExceptionRecord();

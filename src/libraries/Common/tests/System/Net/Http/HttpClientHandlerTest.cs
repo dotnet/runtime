@@ -76,9 +76,9 @@ namespace System.Net.Http.Functional.Tests
                 Assert.False(handler.PreAuthenticate);
                 Assert.True(handler.SupportsProxy);
                 Assert.True(handler.SupportsRedirectConfiguration);
+                Assert.False(handler.CheckCertificateRevocationList);
 
                 // Changes from .NET Framework.
-                Assert.True(handler.CheckCertificateRevocationList);
                 Assert.Equal(0, handler.MaxRequestContentBufferSize);
                 Assert.Equal(SslProtocols.None, handler.SslProtocols);
             }
@@ -2173,6 +2173,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task SendAsync_RequestWithDangerousControlHeaderValue_ThrowsHttpRequestException(char dangerousChar, HeaderType headerType)
         {
             TaskCompletionSource<bool> acceptConnection = new TaskCompletionSource<bool>();
+            SemaphoreSlim clientFinished = new SemaphoreSlim(0);
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
@@ -2216,14 +2217,14 @@ namespace System.Net.Http.Functional.Tests
                     // WinHTTP validates the input before opening connection whereas SocketsHttpHandler opens connection first and validates only when writing to the wire.
                     acceptConnection.SetResult(!IsWinHttpHandler);
                     var ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                    clientFinished.Release();
+                    var hrex = Assert.IsType<HttpRequestException>(ex);
                     if (IsWinHttpHandler)
                     {
-                        var fex = Assert.IsType<FormatException>(ex);
-                        Assert.Contains("Latin-1", fex.Message);
+                        Assert.Contains("Error 87", hrex.InnerException.Message);
                     }
                     else
                     {
-                        var hrex = Assert.IsType<HttpRequestException>(ex);
                         var message = UseVersion == HttpVersion30 ? hrex.InnerException.Message : hrex.Message;
                         Assert.Contains("ASCII", message);
                     }
@@ -2232,7 +2233,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 if (await acceptConnection.Task)
                 {
-                    await IgnoreExceptions(server.AcceptConnectionAsync(c => Task.CompletedTask));
+                    await IgnoreExceptions(() => server.AcceptConnectionAsync(_ => clientFinished.WaitAsync(TestHelper.PassingTestTimeout)));
                 }
             });
         }
@@ -2342,6 +2343,34 @@ namespace System.Net.Http.Functional.Tests
             Request,
             Content,
             Cookie
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task LargeUriAndHeaders_Works()
+        {
+            int length = IsWinHttpHandler ? 65_000 : 10_000_000;
+
+            string longPath = "/" + new string('X', length);
+            string longHeaderName = new string('Y', length);
+            string longHeaderValue = new string('Z', length);
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient client = CreateHttpClient();
+
+                    HttpRequestMessage request = CreateRequest(HttpMethod.Get, new UriBuilder(uri) { Path = longPath }.Uri, UseVersion);
+                    request.Headers.Add(longHeaderName, longHeaderValue);
+
+                    await client.SendAsync(request);
+                },
+                async server =>
+                {
+                    HttpRequestData requestData = await server.HandleRequestAsync();
+
+                    Assert.Equal(longPath, requestData.Path);
+                    Assert.Equal(longHeaderValue, requestData.GetSingleHeaderValue(longHeaderName));
+                });
         }
     }
 }

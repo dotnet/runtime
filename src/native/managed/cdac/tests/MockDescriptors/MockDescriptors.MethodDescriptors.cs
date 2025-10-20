@@ -100,9 +100,15 @@ internal partial class MockDescriptors
             LoaderBuilder = loaderBuilder;
             _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
             Types = GetTypes();
+
+            // Add dummy MethodDescSizeTable. Sizes will be incorrect, but we don't use it in tests.
+            MockMemorySpace.HeapFragment methodDescSizeTable = _allocator.Allocate(0x100, "MethodDescSizeTable");
+            Builder.AddHeapFragment(methodDescSizeTable);
+
             Globals = rtsBuilder.Globals.Concat(
             [
                 new(nameof(Constants.Globals.MethodDescTokenRemainderBitCount), TokenRemainderBitCount),
+                new(nameof(Constants.Globals.MethodDescSizeTable), methodDescSizeTable.Address),
             ]).ToArray();
         }
 

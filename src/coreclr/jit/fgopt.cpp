@@ -353,7 +353,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 // When we alter flow in the importer branch opts, we should be able to make
                 // suitable updates there for blocks that we plan to keep.
                 //
-                for (BasicBlock* succ : cur->Succs(this))
+                for (BasicBlock* succ : cur->Succs())
                 {
                     fgRemoveAllRefPreds(succ, cur);
                 }
@@ -491,9 +491,6 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                         // this would be problematic as we don't have enough context to redirect
                         // all the incoming edges, but we know oldTryEntry is unreachable.
                         // So there are no incoming edges to worry about.
-                        //
-                        assert(!tryEntryPrev->bbFallsThrough());
-
                         // What follows is similar to fgNewBBInRegion, but we can't call that
                         // here as the oldTryEntry is no longer in the main bb list.
                         newTryEntry = BasicBlock::New(this);
@@ -1251,7 +1248,7 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
 
     // Update bbRefs and bbPreds for this block's successors
     bool profileInconsistent = false;
-    for (BasicBlock* const succBlock : block->Succs(this))
+    for (BasicBlock* const succBlock : block->Succs())
     {
         FlowEdge* const succEdge = fgRemoveAllRefPreds(succBlock, block);
 
@@ -2541,11 +2538,11 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     if (fgIsUsingProfileWeights())
     {
         // Only rely upon the profile weight when all three of these blocks
-        // have either good profile weights or are rarelyRun
+        // have either good profile weights or are rarely run
         //
-        if (bJump->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
-            bDest->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY) &&
-            trueTarget->HasAnyFlag(BBF_PROF_WEIGHT | BBF_RUN_RARELY))
+        if ((bJump->hasProfileWeight() || bJump->isRunRarely()) &&
+            (bDest->hasProfileWeight() || bDest->isRunRarely()) &&
+            (trueTarget->hasProfileWeight() || trueTarget->isRunRarely()))
         {
             haveProfileWeights = true;
 
@@ -3135,7 +3132,6 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 // Set the BBJ_CALLFINALLY block to the same weight as the BBJ_CALLFINALLYRET block and
                 // mark it rarely run.
                 bPrev->bbWeight = block->bbWeight;
-                bPrev->SetFlags(BBF_RUN_RARELY);
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -3150,7 +3146,6 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 // Set the BBJ_CALLFINALLYRET block to the same weight as the BBJ_CALLFINALLY block and
                 // mark it rarely run.
                 block->bbWeight = bPrev->bbWeight;
-                block->SetFlags(BBF_RUN_RARELY);
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -3502,7 +3497,7 @@ void Compiler::ThreeOptLayout<hasEH>::AddNonFallthroughSuccs(unsigned blockPos)
     BasicBlock* const block = blockOrder[blockPos];
     BasicBlock* const next  = ((blockPos + 1) >= numCandidateBlocks) ? nullptr : blockOrder[blockPos + 1];
 
-    for (FlowEdge* const succEdge : block->SuccEdges(compiler))
+    for (FlowEdge* const succEdge : block->SuccEdges())
     {
         if (succEdge->getDestinationBlock() != next)
         {

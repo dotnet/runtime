@@ -41,7 +41,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             RequirePublicMethods(typeof(ImplementationClass));
             RequirePublicMethods(typeof(IBaseImplementedInterface));
             RequirePublicMethods(typeof(BaseImplementsInterfaceViaDerived));
-            RequirePublicMethods(typeof(DerivedWithInterfaceImplementedByBase));
+            RequirePublicMethodsAndConstructor(typeof(DerivedWithInterfaceImplementedByBase));
             RequirePublicMethods(typeof(VirtualMethodHierarchyDataflowAnnotationValidationTypeTestBase));
             RequirePublicMethods(typeof(VirtualMethodHierarchyDataflowAnnotationValidationTypeTestDerived));
             RequirePublicMethods(typeof(ITwoInterfacesImplementedByOneMethod_One));
@@ -56,6 +56,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         static void RequirePublicMethods([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+        {
+        }
+
+        static void RequirePublicMethodsAndConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
         }
 

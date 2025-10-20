@@ -28,6 +28,10 @@ namespace ILLink.Shared.TrimAnalysis
         {
             if (_reflectionMarker.TryResolveTypeNameAndMark(typeName, _diagnosticContext, needsAssemblyName, out TypeReference? foundType))
             {
+                if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(_reflectionMarker.Context.Annotations.FlowAnnotations, foundType))
+                {
+                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(_diagnosticContext, _reflectionMarker, _reflectionMarker.Context, foundType);
+                }
                 type = new(foundType, _resolver);
                 return true;
             }

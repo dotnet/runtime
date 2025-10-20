@@ -43,6 +43,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         private FeatureChecksVisitor _featureChecksVisitor;
 
+        readonly TypeNameResolver _typeNameResolver;
+        readonly DataFlowAnalyzerContext _dataFlowAnalyzerContext;
+
         public TrimAnalysisVisitor(
             Compilation compilation,
             LocalStateAndContextLattice<MultiValue, FeatureContext, ValueSetLattice<SingleValue>, FeatureContextLattice> lattice,
@@ -57,6 +60,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             _multiValueLattice = lattice.LocalStateLattice.Lattice.ValueLattice;
             TrimAnalysisPatterns = trimAnalysisPatterns;
             _featureChecksVisitor = new FeatureChecksVisitor(dataFlowAnalyzerContext);
+            _typeNameResolver = new TypeNameResolver(compilation);
+            _dataFlowAnalyzerContext = dataFlowAnalyzerContext;
         }
 
         public override FeatureChecksValue GetConditionValue(IOperation branchValueOperation, StateValue state)
@@ -149,7 +154,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             // It can also happen that we see this for a static method - for example a delegate creation
             // over a local function does this, even thought the "this" makes no sense inside a static scope.
             if (OwningSymbol is IMethodSymbol method && !method.IsStatic)
-                return new MethodParameterValue(method, (ParameterIndex)0, FlowAnnotations.GetMethodParameterAnnotation(new ParameterProxy(new(method), (ParameterIndex)0)));
+                return new MethodParameterValue(new ParameterProxy(new(method), (ParameterIndex)0));
 
             return TopValue;
         }
@@ -252,7 +257,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
-            => new MethodParameterValue(parameter);
+        {
+            return new MethodParameterValue(new ParameterProxy(parameter, parameter.ContainingSymbol as IMethodSymbol ?? (IMethodSymbol)OwningSymbol));
+        }
 
         public override void HandleAssignment(MultiValue source, MultiValue target, IOperation operation, in FeatureContext featureContext)
         {
@@ -331,7 +338,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             //   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
             //   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
-            HandleCall(operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, out MultiValue methodReturnValue);
+            HandleCall(_dataFlowAnalyzerContext, FeatureContext.None, _typeNameResolver, operation, OwningSymbol, calledMethod, instance, arguments, Location.None, null, _multiValueLattice, out MultiValue methodReturnValue);
 
             // This will copy the values if necessary
             TrimAnalysisPatterns.Add(new TrimAnalysisMethodCallPattern(
@@ -359,6 +366,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
         }
 
         internal static void HandleCall(
+            DataFlowAnalyzerContext dataFlowAnalyzerContext,
+            FeatureContext featureContext,
+            TypeNameResolver typeNameResolver,
             IOperation operation,
             ISymbol owningSymbol,
             IMethodSymbol calledMethod,
@@ -369,7 +379,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             ValueSetLattice<SingleValue> multiValueLattice,
             out MultiValue methodReturnValue)
         {
-            var handleCallAction = new HandleCallAction(location, owningSymbol, operation, multiValueLattice, reportDiagnostic);
+            var handleCallAction = new HandleCallAction(dataFlowAnalyzerContext, featureContext, typeNameResolver, location, owningSymbol, operation, multiValueLattice, reportDiagnostic);
             MethodProxy method = new(calledMethod);
             var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(method);
             if (!handleCallAction.Invoke(method, instance, arguments, intrinsicId, out methodReturnValue))

@@ -636,6 +636,25 @@ regMaskTP CodeGenInterface::genGetRegMask(GenTree* tree)
     return regMask;
 }
 
+//------------------------------------------------------------------------
+// genIsSameLocalVar:
+//   Check if two trees represent the same scalar local value.
+//
+// Arguments:
+//   op1 - first tree
+//   op2 - second tree
+//
+// Returns:
+//   True if so.
+//
+bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
+{
+    GenTree* op1Skip = op1->gtSkipReloadOrCopy();
+    GenTree* op2Skip = op2->gtSkipReloadOrCopy();
+    return op1Skip->OperIs(GT_LCL_VAR) && op2Skip->OperIs(GT_LCL_VAR) &&
+           (op1Skip->AsLclVar()->GetLclNum() == op2Skip->AsLclVar()->GetLclNum());
+}
+
 // The given lclVar is either going live (being born) or dying.
 // It might be both going live and dying (that is, it is a dead store) under MinOpts.
 // Update regSet.GetMaskVars() accordingly.
@@ -1464,7 +1483,7 @@ FOUND_AM:
                 mul = 0;
                 rv2 = nullptr;
             }
-            else if (index->IsIntCnsFitsInI32())
+            else if (index->IsIntCnsFitsInI32() && !index->AsIntConCommon()->ImmedValNeedsReloc(compiler))
             {
                 ssize_t constantIndex = index->AsIntConCommon()->IconValue() * indexScale;
                 if (constantIndex == 0)
@@ -1533,14 +1552,11 @@ void CodeGen::genExitCode(BasicBlock* block)
        Note that this may result in a duplicate IPmapping entry, and
        that this is ok  */
 
-    // For non-optimized debuggable code, there is only one epilog.
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
-
-    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
 #ifdef DEBUG
     // For returnining epilogs do some validation that the GC info looks right.
-    if (!jmpEpilog)
+    if (!block->HasFlag(BBF_HAS_JMP))
     {
         if (compiler->compMethodReturnsRetBufAddr())
         {
@@ -1564,7 +1580,7 @@ void CodeGen::genExitCode(BasicBlock* block)
 
     if (compiler->getNeedsGSSecurityCookie())
     {
-        genEmitGSCookieCheck(jmpEpilog);
+        genEmitGSCookieCheck(block->HasFlag(BBF_HAS_JMP));
     }
 
     genReserveEpilog(block);
@@ -2487,6 +2503,47 @@ CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInf
         default:
             unreached();
     }
+}
+
+// -----------------------------------------------------------------------------
+// genGetGSCookieTempRegs:
+//   Get a mask of registers to use for the GS cookie check generated in a
+//   block.
+//
+// Parameters:
+//   tailCall - Whether the block is a tailcall
+//
+// Returns:
+//   Mask of all the registers that can be used. Some targets may need more
+//   than one register.
+//
+regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
+{
+#ifdef TARGET_XARCH
+    if (tailCall)
+    {
+        // If we are tailcalling then return registers are available for use
+        return RBM_RAX;
+    }
+
+#ifdef TARGET_AMD64
+    // Otherwise on x64 (win-x64 and SysV) r8 is never used for return values
+    return RBM_R8;
+#else
+    // On x86 it's more difficult: we have only eax, ecx and edx available as volatile
+    // registers, and all of them may be used for return values (longs + async continuation).
+    if (compiler->compIsAsync())
+    {
+        // Just use a callee save for this rare async + gs cookie check case.
+        return RBM_ESI;
+    }
+
+    // Outside async ecx is not used for returns.
+    return RBM_ECX;
+#endif
+#else
+    return RBM_GSCOOKIE_TMP;
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -5016,7 +5073,7 @@ void CodeGen::genFnProlog()
     const bool isOSRx64Root = false;
 #endif // TARGET_AMD64
 
-    regMaskTP tempMask = initRegs & ~excludeMask & ~regSet.rsMaskResvd;
+    regMaskTP tempMask = initRegs & RBM_ALLINT & ~excludeMask & ~regSet.rsMaskResvd;
 
     if (tempMask != RBM_NONE)
     {

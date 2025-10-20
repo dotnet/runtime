@@ -22,8 +22,14 @@ namespace ILLink.RoslynAnalyzer
                 return true;
 
             // Also check the containing type
-            if (member.IsStatic || member.IsConstructor())
-                return member.ContainingType.TryGetAttribute(requiresAttribute, out requiresAttributeData);
+            if ((member.IsStatic || member.IsConstructor()) && member.ContainingType.TryGetAttribute(requiresAttribute, out requiresAttributeData))
+            {
+                if (!ExcludeStatics(requiresAttributeData))
+                    return true;
+
+                if (member.IsConstructor())
+                    return true;
+            }
 
             return false;
         }
@@ -31,6 +37,18 @@ namespace ILLink.RoslynAnalyzer
         public static bool IsInRequiresScope(this ISymbol member, string attributeName)
         {
             return member.IsInRequiresScope(attributeName, out _);
+        }
+
+        private static bool ExcludeStatics(AttributeData attributeData)
+        {
+            foreach (var namedArg in attributeData.NamedArguments)
+            {
+                if (namedArg.Key == "ExcludeStatics" && namedArg.Value.Value is bool b)
+                {
+                    return b;
+                }
+            }
+            return false;
         }
 
         // TODO: Consider sharing with ILLink IsInRequiresScope method
@@ -58,7 +76,13 @@ namespace ILLink.RoslynAnalyzer
             }
 
             if (member.ContainingType is ITypeSymbol containingType && containingType.TryGetAttribute(attributeName, out requiresAttribute))
-                return true;
+            {
+                if (!ExcludeStatics(requiresAttribute))
+                        return true;
+
+                if (!member.IsStatic)
+                    return true;
+            }
 
             if (member is IMethodSymbol { AssociatedSymbol: { } associated } && associated.TryGetAttribute(attributeName, out requiresAttribute))
                 return true;

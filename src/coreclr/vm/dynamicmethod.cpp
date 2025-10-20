@@ -322,7 +322,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
         GC_NOTRIGGER;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION((RETVAL != NULL) || !pInfo->getThrowOnOutOfMemoryWithinRange());
+        POSTCONDITION((RETVAL != NULL) || !pInfo->GetThrowOnOutOfMemoryWithinRange());
     }
     CONTRACT_END;
 
@@ -331,7 +331,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EECodeGenMana
     HeapList *pHp = pCodeHeap->InitializeHeapList(pInfo);
     if (pHp == NULL)
     {
-        _ASSERTE(!pInfo->getThrowOnOutOfMemoryWithinRange());
+        _ASSERTE(!pInfo->GetThrowOnOutOfMemoryWithinRange());
         RETURN NULL;
     }
 
@@ -390,7 +390,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     }
     CONTRACTL_END;
 
-    size_t ReserveBlockSize = pInfo->getRequestSize();
+    size_t ReserveBlockSize = pInfo->GetRequestSize();
 
     // Add TrackAllocation, HeapList and very conservative padding to make sure we have enough for the allocation
     ReserveBlockSize += sizeof(TrackAllocation) + HOST_CODEHEAP_SIZE_ALIGN + 0x100;
@@ -402,12 +402,12 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     // reserve ReserveBlockSize rounded-up to VIRTUAL_ALLOC_RESERVE_GRANULARITY of memory
     ReserveBlockSize = ALIGN_UP(ReserveBlockSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
-    if (pInfo->m_loAddr != NULL || pInfo->m_hiAddr != NULL)
+    if (pInfo->GetLoAddr() != NULL || pInfo->GetHiAddr() != NULL)
     {
-        m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(ReserveBlockSize, pInfo->m_loAddr, pInfo->m_hiAddr);
+        m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(ReserveBlockSize, pInfo->GetLoAddr(), pInfo->GetHiAddr());
         if (!m_pBaseAddr)
         {
-            if (pInfo->getThrowOnOutOfMemoryWithinRange())
+            if (pInfo->GetThrowOnOutOfMemoryWithinRange())
                 ThrowOutOfMemoryWithinRange();
             return NULL;
         }
@@ -415,7 +415,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     else
     {
         // top up the ReserveBlockSize to suggested minimum
-        ReserveBlockSize = max(ReserveBlockSize, pInfo->getReserveSize());
+        ReserveBlockSize = max(ReserveBlockSize, pInfo->GetReserveSize());
 
         m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->Reserve(ReserveBlockSize);
         if (!m_pBaseAddr)
@@ -425,7 +425,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     m_pLastAvailableCommittedAddr = m_pBaseAddr;
     m_TotalBytesAvailable = ReserveBlockSize;
     m_ApproximateLargestBlock = ReserveBlockSize;
-    m_pAllocator = pInfo->m_pAllocator;
+    m_pAllocator = pInfo->GetAllocator();
 
     HeapList* pHp = new HeapList;
 

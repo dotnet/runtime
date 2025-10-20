@@ -15,56 +15,73 @@ internal sealed class ZipArchiveFuzzer : IFuzzer
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
-
         if (bytes.IsEmpty)
         {
             return;
         }
 
-        try
-        {
-            using var stream = new MemoryStream(bytes.ToArray());
-
-            Task sync_test = TestArchive(stream, async: false);
-            Task async_test = TestArchive(stream, async: true);
-
-            Task.WaitAll(sync_test, async_test);
-        }
-        catch (Exception) { }
+        TestArchive(CopyToRentedArray(bytes), bytes.Length, async: false).GetAwaiter().GetResult();
+        TestArchive(CopyToRentedArray(bytes), bytes.Length, async: true).GetAwaiter().GetResult();
     }
 
-    private async Task TestArchive(Stream stream, bool async)
+    private byte[] CopyToRentedArray(ReadOnlySpan<byte> bytes)
     {
-        stream.Position = 0;
-
-        ZipArchive archive;
-
-        if (async)
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(bytes.Length);
+        try
         {
-            archive = await ZipArchive.CreateAsync(stream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
+            bytes.CopyTo(buffer);
+            return buffer;
         }
-        else
+        catch
         {
-            archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
+            ArrayPool<byte>.Shared.Return(buffer);
+            throw;
         }
+    }
 
-        foreach (var entry in archive.Entries)
+    private async Task TestArchive(byte[] buffer, int length, bool async)
+    {
+        try
         {
-            // Access entry properties to simulate usage
-            _ = entry.FullName;
-            _ = entry.Length;
-            _ = entry.Comment;
-            _ = entry.LastWriteTime;
-            _ = entry.Crc32;
-        }
+            using var stream = new MemoryStream(buffer, 0, length);
 
-        if (async)
-        {
-            await archive.DisposeAsync();
+            ZipArchive archive;
+
+            if (async)
+            {
+                archive = await ZipArchive.CreateAsync(stream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
+            }
+            else
+            {
+                archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
+            }
+
+            foreach (var entry in archive.Entries)
+            {
+                // Access entry properties to simulate usage
+                _ = entry.FullName;
+                _ = entry.Length;
+                _ = entry.Comment;
+                _ = entry.LastWriteTime;
+                _ = entry.Crc32;
+            }
+
+            if (async)
+            {
+                await archive.DisposeAsync();
+            }
+            else
+            {
+                archive.Dispose();
+            }
         }
-        else
+        catch (InvalidDataException)
         {
-            archive.Dispose();
+            // ignore, this exception is expected to be thrown for invalid/corrupted archives.
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 }

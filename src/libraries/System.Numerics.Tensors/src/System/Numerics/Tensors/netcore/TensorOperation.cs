@@ -363,11 +363,11 @@ namespace System.Numerics.Tensors
             {
                 if (x.Rank > y.Rank)
                 {
-                    destination = Tensor.CreateUninitialized<TResult>(x._shape.Lengths);
+                    destination = Tensor.CreateFromShapeUninitialized<TResult>(x._shape.Lengths);
                 }
                 else
                 {
-                    destination = Tensor.CreateUninitialized<TResult>(y._shape.Lengths);
+                    destination = Tensor.CreateFromShapeUninitialized<TResult>(y._shape.Lengths);
                 }
                 return;
             }
@@ -949,6 +949,22 @@ namespace System.Numerics.Tensors
             }
         }
 
+        public readonly struct Decrement<T>
+            : IUnaryOperation_Tensor<T, T>
+            where T : IDecrementOperators<T>
+        {
+            public static void Invoke(ref readonly T x, ref T destination)
+            {
+                T tmp = x;
+                destination = --tmp;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> x, Span<T> destination)
+            {
+                TensorPrimitives.Decrement(x, destination);
+            }
+        }
+
         public readonly struct DegreesToRadians<T>
         : IUnaryOperation_Tensor<T, T>
         where T : ITrigonometricFunctions<T>
@@ -1183,6 +1199,22 @@ namespace System.Numerics.Tensors
             public static void Invoke(ReadOnlySpan<T> x, Span<int> destination)
             {
                 TensorPrimitives.ILogB(x, destination);
+            }
+        }
+
+        public readonly struct Increment<T>
+            : IUnaryOperation_Tensor<T, T>
+            where T : IIncrementOperators<T>
+        {
+            public static void Invoke(ref readonly T x, ref T destination)
+            {
+                T tmp = x;
+                destination = ++tmp;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> x, Span<T> destination)
+            {
+                TensorPrimitives.Increment(x, destination);
             }
         }
 
@@ -1831,6 +1863,51 @@ namespace System.Numerics.Tensors
             }
         }
 
+        public readonly struct ShiftLeft<T>
+            : IBinaryOperation_Tensor_Scalar<T, int, T>
+            where T : IShiftOperators<T, int, T>
+        {
+            public static void Invoke(ref readonly T x, int shiftAmount, ref T destination)
+            {
+                destination = x << shiftAmount;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
+            {
+                TensorPrimitives.ShiftLeft(x, shiftAmount, destination);
+            }
+        }
+
+        public readonly struct ShiftRightArithmetic<T>
+            : IBinaryOperation_Tensor_Scalar<T, int, T>
+            where T : IShiftOperators<T, int, T>
+        {
+            public static void Invoke(ref readonly T x, int shiftAmount, ref T destination)
+            {
+                destination = x >> shiftAmount;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
+            {
+                TensorPrimitives.ShiftRightArithmetic(x, shiftAmount, destination);
+            }
+        }
+
+        public readonly struct ShiftRightLogical<T>
+            : IBinaryOperation_Tensor_Scalar<T, int, T>
+            where T : IShiftOperators<T, int, T>
+        {
+            public static void Invoke(ref readonly T x, int shiftAmount, ref T destination)
+            {
+                destination = x >>> shiftAmount;
+            }
+
+            public static void Invoke(ReadOnlySpan<T> x, int shiftAmount, Span<T> destination)
+            {
+                TensorPrimitives.ShiftRightLogical(x, shiftAmount, destination);
+            }
+        }
+
         public readonly struct Sigmoid<T>
         : IUnaryOperation_Tensor<T, T>
         where T : IExponentialFunctions<T>
@@ -2022,6 +2099,27 @@ namespace System.Numerics.Tensors
                 for (int i = 0; i < x.Length; i++)
                 {
                     destination[i] = (x[i] - y[i]) * (x[i] - y[i]);
+                }
+            }
+        }
+
+        public readonly struct SumOfSquaredAbsoluteDifferences<T>
+            : IBinaryOperation_Tensor_Scalar<T, T>
+            where T : IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>, IMultiplyOperators<T, T, T>, ISubtractionOperators<T, T, T>, INumberBase<T>
+        {
+            public static void Invoke(ref readonly T x, T y, ref T destination)
+            {
+                // Absolute value is needed before squaring to support complex numbers
+                T diff = T.Abs(x - y);
+                destination += diff * diff;
+            }
+            public static void Invoke(ReadOnlySpan<T> x, T y, Span<T> destination)
+            {
+                for (int i = 0; i < x.Length; i++)
+                {
+                    // Absolute value is needed before squaring to support complex numbers
+                    T diff = T.Abs(x[i] - y);
+                    destination[i] = diff * diff;
                 }
             }
         }

@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
 
 #include "callstubgenerator.h"
 #include "ecall.h"
 
+extern "C" void InjectInterpStackAlign();
 extern "C" void Load_Stack();
 extern "C" void Store_Stack();
 
@@ -1350,10 +1351,10 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
 {
     STANDARD_VM_CONTRACT;
 
-    // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
+    // Allocate space for the routines. The size of the array is conservatively set to three times the number of arguments
     // plus one slot for the target pointer and reallocated to the real size at the end.
     size_t tempStorageSize = ComputeTempStorageSize(sig);
-    PCODE *pRoutines = (PCODE*)alloca(ComputeTempStorageSize(sig));
+    PCODE *pRoutines = (PCODE*)alloca(tempStorageSize);
     memset(pRoutines, 0, tempStorageSize);
 
     m_interpreterToNative = true; // We always generate the interpreter to native call stub here
@@ -1404,10 +1405,32 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     }
 };
 
+void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, PCODE *pRoutines)
+{
+    if ((m_r1 != NoRange) && (type != RoutineType::GPReg))
+    {
+        pRoutines[m_routineIndex++] = GetGPRegRangeRoutine(m_r1, m_r2);
+        m_r1 = NoRange;
+    }
+    else if (m_x1 != NoRange && type != RoutineType::FPReg)
+    {
+        pRoutines[m_routineIndex++] = GetFPRegRangeRoutine(m_x1, m_x2);
+        m_x1 = NoRange;
+    }
+    else if (m_s1 != NoRange && type != RoutineType::Stack)
+    {
+        pRoutines[m_routineIndex++] = GetStackRoutine();
+        pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+        m_s1 = NoRange;
+    }
+
+    return;
+}
+
 void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
 {
-
     ArgIterator argIt(&sig);
+    int32_t interpreterStackOffset = 0;
 
     m_r1 = NoRange; // indicates that there is no active range of general purpose registers
     m_r2 = 0;
@@ -1416,7 +1439,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     m_s1 = NoRange; // indicates that there is no active range of stack arguments
     m_s2 = 0;
     m_routineIndex = 0;
-    m_totalStackSize = 0;
+    m_totalStackSize = argIt.SizeOfArgStack();
 #if LOG_COMPUTE_CALL_STUB
     printf("ComputeCallStub\n");
 #endif
@@ -1431,6 +1454,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
         // we need to "inject" it here.
         // CLR ABI specifies that unlike the native Windows x64 calling convention, it is passed in the first argument register.
         m_r1 = 0;
+        interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
     if (argIt.HasParamType())
@@ -1442,6 +1466,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
         ArgLocDesc paramArgLocDesc;
         argIt.GetParamTypeLoc(&paramArgLocDesc);
         ProcessArgument(NULL, paramArgLocDesc, pRoutines);
+        interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
     int ofs;
@@ -1452,6 +1477,40 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
 #endif
         ArgLocDesc argLocDesc;
         argIt.GetArgLoc(ofs, &argLocDesc);
+
+        // Each argument takes at least one slot on the interpreter stack
+        int interpStackSlotSize = INTERP_STACK_SLOT_SIZE;
+
+        // Each entry on the interpreter stack is always aligned to at least 8 bytes, but some arguments are 16 byte aligned
+        TypeHandle thArgTypeHandle;
+        if ((argIt.GetArgType(&thArgTypeHandle) == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > 8)
+        {
+            unsigned align = CEEInfo::getClassAlignmentRequirementStatic(thArgTypeHandle);
+            if (align < INTERP_STACK_SLOT_SIZE)
+            {
+                align = INTERP_STACK_SLOT_SIZE;
+            }
+            else if (align > INTERP_STACK_ALIGNMENT)
+            {
+                align = INTERP_STACK_ALIGNMENT;
+            }
+            assert(align == 8 || align == 16); // At the moment, we can only have an 8 or 16 byte alignment requirement here
+            if (interpreterStackOffset != ALIGN_UP(interpreterStackOffset, align))
+            {
+                TerminateCurrentRoutineIfNotOfNewType(RoutineType::None, pRoutines);
+
+                interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
+                pRoutines[m_routineIndex++] = (PCODE)InjectInterpStackAlign;
+#if LOG_COMPUTE_CALL_STUB
+                printf("Inject stack align argument\n");
+#endif
+            }
+
+            assert(interpreterStackOffset == ALIGN_UP(interpreterStackOffset, align));
+
+            interpStackSlotSize = ALIGN_UP(thArgTypeHandle.GetSize(), align);
+        }
+        interpreterStackOffset += interpStackSlotSize;
 
 #ifdef UNIX_AMD64_ABI
         if (argIt.GetArgLocDescForStructInRegs() != NULL)
@@ -1517,20 +1576,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
 
     // All arguments were processed, but there is likely a pending ranges to store.
     // Process such a range if any.
-    if (m_r1 != NoRange)
-    {
-        pRoutines[m_routineIndex++] = GetGPRegRangeRoutine(m_r1, m_r2);
-    }
-    else if (m_x1 != NoRange)
-    {
-        pRoutines[m_routineIndex++] = GetFPRegRangeRoutine(m_x1, m_x2);
-    }
-    else if (m_s1 != NoRange)
-    {
-        m_totalStackSize += m_s2 - m_s1 + 1;
-        pRoutines[m_routineIndex++] = GetStackRoutine();
-        pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
-    }
+    TerminateCurrentRoutineIfNotOfNewType(RoutineType::None, pRoutines);
 
     ReturnType returnType = GetReturnType(&argIt);
 
@@ -1551,31 +1597,15 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
 {
     LIMITED_METHOD_CONTRACT;
 
-    // Check if we have a range of registers or stack arguments that we need to store because the current argument
-    // terminates it.
-    if ((argLocDesc.m_cGenReg == 0) && (m_r1 != NoRange))
-    {
-        // No GP register is used to pass the current argument, but we already have a range of GP registers,
-        // store the routine for the range
-        pRoutines[m_routineIndex++] = GetGPRegRangeRoutine(m_r1, m_r2);
-        m_r1 = NoRange;
-    }
-    else if (((argLocDesc.m_cFloatReg == 0)) && (m_x1 != NoRange))
-    {
-        // No floating point register is used to pass the current argument, but we already have a range of FP registers,
-        // store the routine for the range
-        pRoutines[m_routineIndex++] = GetFPRegRangeRoutine(m_x1, m_x2);
-        m_x1 = NoRange;
-    }
-    else if ((argLocDesc.m_byteStackSize == 0) && (m_s1 != NoRange))
-    {
-        // No stack argument is used to pass the current argument, but we already have a range of stack arguments,
-        // store the routine for the range
-        m_totalStackSize += m_s2 - m_s1 + 1;
-        pRoutines[m_routineIndex++] = GetStackRoutine();
-        pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
-        m_s1 = NoRange;
-    }
+    RoutineType argType = RoutineType::None;
+    if (argLocDesc.m_cGenReg != 0)
+        argType = RoutineType::GPReg;
+    else if (argLocDesc.m_cFloatReg != 0)
+        argType = RoutineType::FPReg;
+    else if (argLocDesc.m_byteStackSize != 0)
+        argType = RoutineType::Stack;
+    
+    TerminateCurrentRoutineIfNotOfNewType(argType, pRoutines);
 
     if (argLocDesc.m_cGenReg != 0)
     {
@@ -1650,7 +1680,6 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         else
         {
             // Discontinuous range - store a routine for the current and start a new one
-            m_totalStackSize += m_s2 - m_s1 + 1;
             pRoutines[m_routineIndex++] = GetStackRoutine();
             pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
             m_s1 = argLocDesc.m_byteStackIndex;
@@ -1688,18 +1717,28 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     // we always process single argument passed by reference using single routine.
     if (pArgIt != NULL && pArgIt->IsArgPassedByRef())
     {
+        int unalignedArgSize = pArgIt->GetArgSize();
+        // For the interpreter-to-native transition we need to make sure that we properly align the offsets
+        //  to interpreter stack slots. Otherwise a VT of i.e. size 12 will misalign the stack offset during
+        //  loads and we will start loading garbage into registers.
+        // We don't need to do this for native-to-interpreter transitions because the Store_Ref_xxx helpers
+        //  automatically do alignment of the stack offset themselves when updating the stack offset,
+        //  and if we were to pass them aligned sizes they would potentially read bytes past the end of the VT.
+        int alignedArgSize = m_interpreterToNative
+            ? ALIGN_UP(unalignedArgSize, 8)
+            : unalignedArgSize;
+
         if (argLocDesc.m_cGenReg == 1)
         {
             pRoutines[m_routineIndex++] = GetGPRegRefRoutine(argLocDesc.m_idxGenReg);
-            pRoutines[m_routineIndex++] = pArgIt->GetArgSize();
+            pRoutines[m_routineIndex++] = alignedArgSize;
             m_r1 = NoRange;
         }
         else
         {
             _ASSERTE(argLocDesc.m_byteStackIndex != -1);
             pRoutines[m_routineIndex++] = GetStackRefRoutine();
-            pRoutines[m_routineIndex++] = ((int64_t)pArgIt->GetArgSize() << 32) | argLocDesc.m_byteStackIndex;
-            m_totalStackSize += argLocDesc.m_byteStackSize;
+            pRoutines[m_routineIndex++] = ((int64_t)alignedArgSize << 32) | argLocDesc.m_byteStackIndex;
             m_s1 = NoRange;
         }
     }
@@ -1839,7 +1878,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                                     break;
                             }
                                 break;
-#ifdef FEATURE_SIMD
                             case CORINFO_HFA_ELEM_VECTOR64:
                                 switch (thReturnValueType.GetSize())
                                 {
@@ -1860,7 +1898,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                                         break;
                                 }
                                 break;
-#endif
                         default:
                             _ASSERTE(!"HFA type is not supported");
                             break;
@@ -1897,4 +1934,4 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
     return ReturnTypeVoid;
 }
 
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && !TARGET_WASM

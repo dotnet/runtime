@@ -59,8 +59,8 @@ struct JitInterfaceCallbacks
     void* (* LongLifetimeMalloc)(void * thisHandle, CorInfoExceptionClass** ppException, size_t sz);
     void (* LongLifetimeFree)(void * thisHandle, CorInfoExceptionClass** ppException, void* obj);
     bool (* getIsClassInitedFlagAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
-    size_t (* getClassThreadStaticDynamicInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clr);
-    size_t (* getClassStaticDynamicInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clr);
+    void* (* getClassThreadStaticDynamicInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clr);
+    void* (* getClassStaticDynamicInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clr);
     bool (* getStaticBaseAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
     unsigned (* getClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getHeapClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -153,21 +153,20 @@ struct JitInterfaceCallbacks
     void (* getAddressOfPInvokeTarget)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
     void* (* GetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* szMetaSig, void** ppIndirection);
     void* (* GetCookieForInterpreterCalliSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* szMetaSig);
-    bool (* canGetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* szMetaSig);
     CORINFO_JUST_MY_CODE_HANDLE (* getJustMyCodeHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE** ppIndirection);
     void (* GetProfilingHandle)(void * thisHandle, CorInfoExceptionClass** ppException, bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles);
     void (* getCallInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult);
     bool (* getStaticFieldContent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
     bool (* getObjectContent)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
-    CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, void** ppIndirection);
-    bool (* canGetVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig);
+    CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection);
     InfoAccessType (* constructStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned int metaTok, void** ppValue);
     InfoAccessType (* emptyStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppValue);
     uint32_t (* getFieldThreadLocalStoreID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, void** ppIndirection);
     CORINFO_METHOD_HANDLE (* GetDelegateCtor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE methHnd, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE targetMethodHnd, DelegateCtorArgs* pCtorData);
     void (* MethodCompileComplete)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE methHnd);
     bool (* getTailCallHelpers)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
+    CORINFO_CLASS_HANDLE (* getContinuationType)(void * thisHandle, CorInfoExceptionClass** ppException, size_t dataSize, bool* objRefs, size_t objRefsSize);
     CORINFO_METHOD_HANDLE (* getAsyncResumptionStub)(void * thisHandle, CorInfoExceptionClass** ppException);
     bool (* convertPInvokeCalliToCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool mustConvert);
     bool (* notifyInstructionSetUsage)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_InstructionSet instructionSet, bool supportEnabled);
@@ -675,20 +674,20 @@ public:
     return temp;
 }
 
-    virtual size_t getClassThreadStaticDynamicInfo(
+    virtual void* getClassThreadStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr)
 {
     CorInfoExceptionClass* pException = nullptr;
-    size_t temp = _callbacks->getClassThreadStaticDynamicInfo(_thisHandle, &pException, clr);
+    void* temp = _callbacks->getClassThreadStaticDynamicInfo(_thisHandle, &pException, clr);
     if (pException != nullptr) throw pException;
     return temp;
 }
 
-    virtual size_t getClassStaticDynamicInfo(
+    virtual void* getClassStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr)
 {
     CorInfoExceptionClass* pException = nullptr;
-    size_t temp = _callbacks->getClassStaticDynamicInfo(_thisHandle, &pException, clr);
+    void* temp = _callbacks->getClassStaticDynamicInfo(_thisHandle, &pException, clr);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1576,15 +1575,6 @@ public:
     return temp;
 }
 
-    virtual bool canGetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->canGetCookieForPInvokeCalliSig(_thisHandle, &pException, szMetaSig);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
     virtual CORINFO_JUST_MY_CODE_HANDLE getJustMyCodeHandle(
           CORINFO_METHOD_HANDLE method,
           CORINFO_JUST_MY_CODE_HANDLE** ppIndirection)
@@ -1654,19 +1644,11 @@ public:
 
     virtual CORINFO_VARARGS_HANDLE getVarArgsHandle(
           CORINFO_SIG_INFO* pSig,
+          CORINFO_METHOD_HANDLE methHnd,
           void** ppIndirection)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CORINFO_VARARGS_HANDLE temp = _callbacks->getVarArgsHandle(_thisHandle, &pException, pSig, ppIndirection);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual bool canGetVarArgsHandle(
-          CORINFO_SIG_INFO* pSig)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->canGetVarArgsHandle(_thisHandle, &pException, pSig);
+    CORINFO_VARARGS_HANDLE temp = _callbacks->getVarArgsHandle(_thisHandle, &pException, pSig, methHnd, ppIndirection);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1729,6 +1711,17 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->getTailCallHelpers(_thisHandle, &pException, callToken, sig, flags, pResult);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CORINFO_CLASS_HANDLE getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_CLASS_HANDLE temp = _callbacks->getContinuationType(_thisHandle, &pException, dataSize, objRefs, objRefsSize);
     if (pException != nullptr) throw pException;
     return temp;
 }

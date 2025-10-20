@@ -189,11 +189,12 @@ internal sealed class Xcode
         bool enableAppSandbox,
         string? diagnosticPorts,
         IEnumerable<string> runtimeComponents,
+        IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
         bool isLibraryMode = false)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, targetRuntime, isLibraryMode);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, environmentVariables, nativeMainSource, targetRuntime, isLibraryMode);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -262,6 +263,7 @@ internal sealed class Xcode
         bool enableAppSandbox,
         string? diagnosticPorts,
         IEnumerable<string> runtimeComponents,
+        IEnumerable<string> environmentVariables,
         string? nativeMainSource = null,
         TargetRuntime targetRuntime = TargetRuntime.MonoVM,
         bool isLibraryMode = false)
@@ -412,16 +414,25 @@ internal sealed class Xcode
                 toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
             }
 
-            string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
             if (targetRuntime == TargetRuntime.CoreCLR)
             {
-                foreach (string lib in dylibs)
+                // Interpreter-FIXME: CoreCLR on iOS currently supports only static linking.
+                // The build system needs to be updated to conditionally initialize the compiler at runtime based on an environment variable.
+                // Tracking issue: https://github.com/dotnet/runtime/issues/119006
+                string[] staticLibPatterns = new string[] {
+                    "libcoreclr_static.a",
+                    "libbrotli*.a",
+                    "libSystem*.a"
+                };
+                string[] staticLibs = staticLibPatterns.SelectMany(pattern => Directory.GetFiles(workspace, pattern)).ToArray();
+                foreach (string lib in staticLibs)
                 {
-                    toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
+                    toLink += $"    -Wl,-force_load,\"{lib}\"{Environment.NewLine}";
                 }
             }
             else
             {
+                string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
                 // Sort the static libraries to link so the brotli libs are added to the list last (after the compression native libs)
                 List<string> staticLibsToLink = Directory.GetFiles(workspace, "*.a").OrderBy(libName => libName.Contains("brotli") ? 1 : 0).ToList();
                 foreach (string lib in staticLibsToLink)
@@ -545,11 +556,23 @@ internal sealed class Xcode
 
         File.WriteAllText(Path.Combine(binDir, "CMakeLists.txt"), cmakeLists);
 
-        if (needEntitlements) {
+        string envVariables = string.Empty;
+        foreach (var item in environmentVariables)
+        {
+            var split = item.Split('=');
+            if (split.Length == 2)
+            {
+                envVariables += $"\t\tsetenv (\"{split[0].Trim()}\", \"{split[1].Trim()}\", true);\n";
+            }
+        }
+
+        if (needEntitlements)
+        {
             var ent = new StringBuilder();
-            foreach ((var key, var value) in entitlements) {
-                ent.AppendLine ($"<key>{key}</key>");
-                ent.AppendLine (value);
+            foreach ((var key, var value) in entitlements)
+            {
+                ent.AppendLine($"<key>{key}</key>");
+                ent.AppendLine(value);
             }
             string entitlementsTemplate = Utils.GetEmbeddedResource("app.entitlements.template");
             File.WriteAllText(Path.Combine(binDir, "app.entitlements"), entitlementsTemplate.Replace("%Entitlements%", ent.ToString()));
@@ -597,7 +620,8 @@ internal sealed class Xcode
                 File.WriteAllText(Path.Combine(binDir, "runtime.m"),
                     Utils.GetEmbeddedResource("runtime-coreclr.m")
                         .Replace("//%APPLE_RUNTIME_IDENTIFIER%", RuntimeIdentifier)
-                        .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib)));
+                        .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib))
+                        .Replace("%EnvVariables%", envVariables));
             }
         }
 

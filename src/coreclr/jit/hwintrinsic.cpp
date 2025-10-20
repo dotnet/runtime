@@ -87,107 +87,146 @@ instruction HWIntrinsicInfo::lookupIns(NamedIntrinsic id, var_types type, Compil
 #endif // TARGET_X86
 
 #if defined(TARGET_XARCH)
-    instruction evexIns = ins;
-
-    switch (ins)
+    if (comp != nullptr)
     {
-        case INS_movdqa32:
+        instruction evexIns = ins;
+
+        switch (ins)
         {
-            if (varTypeIsLong(type))
+            case INS_movdqa32:
             {
-                evexIns = INS_vmovdqa64;
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vmovdqa64;
+                }
+                break;
             }
-            break;
+
+            case INS_movdqu32:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vmovdqu64;
+                }
+                break;
+            }
+
+            case INS_pandd:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vpandq;
+                }
+                break;
+            }
+
+            case INS_pandnd:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vpandnq;
+                }
+                break;
+            }
+
+            case INS_pord:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vporq;
+                }
+                break;
+            }
+
+            case INS_pxord:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vpxorq;
+                }
+                break;
+            }
+
+            case INS_vbroadcastf32x4:
+            {
+                if (type == TYP_DOUBLE)
+                {
+                    evexIns = INS_vbroadcastf64x2;
+                }
+                break;
+            }
+
+            case INS_vbroadcasti32x4:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vbroadcasti64x2;
+                }
+                break;
+            }
+
+            case INS_vextractf32x4:
+            {
+                if (type == TYP_DOUBLE)
+                {
+                    evexIns = INS_vextractf64x2;
+                }
+                else if (varTypeIsInt(type))
+                {
+                    evexIns = INS_vextracti32x4;
+                }
+                else if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vextracti64x2;
+                }
+                break;
+            }
+
+            case INS_vextracti32x4:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vextracti64x2;
+                }
+                break;
+            }
+
+            case INS_vinsertf32x4:
+            {
+                if (type == TYP_DOUBLE)
+                {
+                    evexIns = INS_vinsertf64x2;
+                }
+                else if (varTypeIsInt(type))
+                {
+                    evexIns = INS_vinserti32x4;
+                }
+                else if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vinserti64x2;
+                }
+                break;
+            }
+
+            case INS_vinserti32x4:
+            {
+                if (varTypeIsLong(type))
+                {
+                    evexIns = INS_vinserti64x2;
+                }
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
         }
 
-        case INS_movdqu32:
+        if ((evexIns != ins) && comp->canUseEvexEncoding())
         {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vmovdqu64;
-            }
-            break;
+            ins = evexIns;
         }
-
-        case INS_vbroadcastf32x4:
-        {
-            if (type == TYP_DOUBLE)
-            {
-                evexIns = INS_vbroadcastf64x2;
-            }
-            break;
-        }
-
-        case INS_vbroadcasti32x4:
-        {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vbroadcasti64x2;
-            }
-            break;
-        }
-
-        case INS_vextractf32x4:
-        {
-            if (type == TYP_DOUBLE)
-            {
-                evexIns = INS_vextractf64x2;
-            }
-            else if (varTypeIsInt(type))
-            {
-                evexIns = INS_vextracti32x4;
-            }
-            else if (varTypeIsLong(type))
-            {
-                evexIns = INS_vextracti64x2;
-            }
-            break;
-        }
-
-        case INS_vextracti32x4:
-        {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vextracti64x2;
-            }
-            break;
-        }
-
-        case INS_vinsertf32x4:
-        {
-            if (type == TYP_DOUBLE)
-            {
-                evexIns = INS_vinsertf64x2;
-            }
-            else if (varTypeIsInt(type))
-            {
-                evexIns = INS_vinserti32x4;
-            }
-            else if (varTypeIsLong(type))
-            {
-                evexIns = INS_vinserti64x2;
-            }
-            break;
-        }
-
-        case INS_vinserti32x4:
-        {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vinserti64x2;
-            }
-            break;
-        }
-
-        default:
-        {
-            break;
-        }
-    }
-
-    if ((evexIns != ins) && (comp != nullptr) && comp->canUseEvexEncoding())
-    {
-        ins = evexIns;
     }
 #endif // TARGET_XARCH
 
@@ -903,7 +942,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
     { FIRST_NI_X86Base, LAST_NI_X86Base },                      // X86Base
-    { FIRST_NI_SSE42, LAST_NI_SSE42 },                          // SSE42
     { FIRST_NI_AVX, LAST_NI_AVX },                              // AVX
     { FIRST_NI_AVX2, LAST_NI_AVX2 },                            // AVX2
     { FIRST_NI_AVX512, LAST_NI_AVX512 },                        // AVX512
@@ -934,7 +972,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_AVXVNNIINT_V512, LAST_NI_AVXVNNIINT_V512 },      // AVXVNNIINT_V512
 
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },              // X86Base_X64
-    { FIRST_NI_SSE42_X64, LAST_NI_SSE42_X64 },                  // SSE42_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX_X64
     { FIRST_NI_AVX2_X64, LAST_NI_AVX2_X64 },                    // AVX2_X64
     { FIRST_NI_AVX512_X64, LAST_NI_AVX512_X64 },                // AVX512_X64
@@ -1895,7 +1932,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                                    : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4;
                         break;
                     default:
-                        assert("unsupported");
+                        assert(!"unsupported");
                 }
             }
             else
@@ -2015,9 +2052,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     // If so, skip the lookup.
     simdSize = (simdSize == 0) ? HWIntrinsicInfo::lookupSimdSize(this, intrinsic, sig) : simdSize;
 
-    HWIntrinsicSignatureReader sigReader;
-    sigReader.Read(info.compCompHnd, sig);
-
     GenTree* immOp1          = nullptr;
     GenTree* immOp2          = nullptr;
     int      immLowerBound   = 0;
@@ -2034,8 +2068,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 2, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
-                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 2, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 2, &immLowerBound, &immUpperBound);
 
         if (!CheckHWIntrinsicImmRange(intrinsic, simdBaseJitType, immOp2, mustExpand, immLowerBound, immUpperBound,
@@ -2082,8 +2115,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
         unsigned  immSimdSize     = simdSize;
         var_types immSimdBaseType = simdBaseType;
-        getHWIntrinsicImmTypes(intrinsic, sig, 1, simdBaseType, simdBaseJitType, sigReader.op1ClsHnd,
-                               sigReader.op2ClsHnd, sigReader.op3ClsHnd, &immSimdSize, &immSimdBaseType);
+        getHWIntrinsicImmTypes(intrinsic, sig, 1, &immSimdSize, &immSimdBaseType);
         HWIntrinsicInfo::lookupImmBounds(intrinsic, immSimdSize, immSimdBaseType, 1, &immLowerBound, &immUpperBound);
 #else
         immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsic);
@@ -2167,10 +2199,12 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
         }
 
-        GenTree* op1 = nullptr;
-        GenTree* op2 = nullptr;
-        GenTree* op3 = nullptr;
-        GenTree* op4 = nullptr;
+        GenTree*                   op1 = nullptr;
+        GenTree*                   op2 = nullptr;
+        GenTree*                   op3 = nullptr;
+        GenTree*                   op4 = nullptr;
+        HWIntrinsicSignatureReader sigReader;
+        sigReader.Read(info.compCompHnd, sig);
 
         switch (numArgs)
         {
@@ -2229,9 +2263,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_XARCH)
                 switch (intrinsic)
                 {
-                    case NI_SSE42_ConvertToVector128Int16:
-                    case NI_SSE42_ConvertToVector128Int32:
-                    case NI_SSE42_ConvertToVector128Int64:
+                    case NI_X86Base_ConvertToVector128Int16:
+                    case NI_X86Base_ConvertToVector128Int32:
+                    case NI_X86Base_ConvertToVector128Int64:
                     case NI_AVX2_BroadcastScalarToVector128:
                     case NI_AVX2_BroadcastScalarToVector256:
                     case NI_AVX2_ConvertToVector256Int16:
@@ -2287,7 +2321,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                               : gtNewSimdHWIntrinsicNode(nodeRetType, op1, op2, intrinsic, simdBaseJitType, simdSize);
 
 #ifdef TARGET_XARCH
-                if ((intrinsic == NI_SSE42_Crc32) || (intrinsic == NI_SSE42_X64_Crc32))
+                if ((intrinsic == NI_X86Base_Crc32) || (intrinsic == NI_X86Base_X64_Crc32))
                 {
                     // TODO-XArch-Cleanup: currently we use the simdBaseJitType to bring the type of the second argument
                     // to the code generator. May encode the overload info in other way.

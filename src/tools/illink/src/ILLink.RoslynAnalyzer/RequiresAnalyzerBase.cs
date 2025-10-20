@@ -36,6 +36,7 @@ namespace ILLink.RoslynAnalyzer
 
         private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
         private protected virtual ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions { get; } = ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>.Empty;
+        private protected virtual ImmutableArray<Action<CompilationAnalysisContext>> ExtraCompilationActions { get; } = ImmutableArray<Action<CompilationAnalysisContext>>.Empty;
 
         public override void Initialize(AnalysisContext context)
         {
@@ -73,59 +74,12 @@ namespace ILLink.RoslynAnalyzer
                     CheckMatchingAttributesInInterfaces(symbolAnalysisContext, typeSymbol);
                 }, SymbolKind.NamedType);
 
-                context.RegisterSyntaxNodeAction(syntaxNodeAnalysisContext =>
-                {
-                    var model = syntaxNodeAnalysisContext.SemanticModel;
-                    if (syntaxNodeAnalysisContext.ContainingSymbol is not ISymbol containingSymbol || containingSymbol.IsInRequiresScope(RequiresAttributeName, out _))
-                        return;
-
-                    GenericNameSyntax genericNameSyntaxNode = (GenericNameSyntax)syntaxNodeAnalysisContext.Node;
-                    var typeParams = ImmutableArray<ITypeParameterSymbol>.Empty;
-                    var typeArgs = ImmutableArray<ITypeSymbol>.Empty;
-                    switch (model.GetSymbolInfo(genericNameSyntaxNode).Symbol)
-                    {
-                        case INamedTypeSymbol typeSymbol:
-                            typeParams = typeSymbol.TypeParameters;
-                            typeArgs = typeSymbol.TypeArguments;
-                            break;
-
-                        case IMethodSymbol methodSymbol:
-                            typeParams = methodSymbol.TypeParameters;
-                            typeArgs = methodSymbol.TypeArguments;
-                            break;
-
-                        default:
-                            return;
-                    }
-
-                    for (int i = 0; i < typeParams.Length; i++)
-                    {
-                        var typeParam = typeParams[i];
-                        var typeArg = typeArgs[i];
-                        if (!typeParam.HasConstructorConstraint ||
-                            typeArg is not INamedTypeSymbol { InstanceConstructors: { } typeArgCtors })
-                            continue;
-
-                        foreach (var instanceCtor in typeArgCtors)
-                        {
-                            if (instanceCtor.Arity > 0)
-                                continue;
-
-                            if (instanceCtor.DoesMemberRequire(RequiresAttributeName, out var requiresAttribute) &&
-                                VerifyAttributeArguments(requiresAttribute))
-                            {
-                                syntaxNodeAnalysisContext.ReportDiagnostic(Diagnostic.Create(RequiresDiagnosticRule,
-                                    syntaxNodeAnalysisContext.Node.GetLocation(),
-                                    instanceCtor.GetDisplayName(),
-                                    (string)requiresAttribute.ConstructorArguments[0].Value!,
-                                    GetUrlFromAttribute(requiresAttribute)));
-                            }
-                        }
-                    }
-                }, SyntaxKind.GenericName);
 
                 foreach (var extraSyntaxNodeAction in ExtraSyntaxNodeActions)
                     context.RegisterSyntaxNodeAction(extraSyntaxNodeAction.Action, extraSyntaxNodeAction.SyntaxKind);
+
+                // Register the implicit base constructor analysis for all analyzers
+                context.RegisterSymbolAction(AnalyzeImplicitBaseCtor, SymbolKind.NamedType);
 
                 foreach (var extraSymbolAction in ExtraSymbolActions)
                     context.RegisterSymbolAction(extraSymbolAction.Action, extraSymbolAction.SymbolKind);
@@ -165,6 +119,9 @@ namespace ILLink.RoslynAnalyzer
                     }
                 }
             });
+
+            foreach (var extraCompilationAction in ExtraCompilationActions)
+                context.RegisterCompilationAction(extraCompilationAction);
         }
 
         internal void CheckAndCreateRequiresDiagnostic(
@@ -191,6 +148,33 @@ namespace ILLink.RoslynAnalyzer
                 return;
 
             CreateRequiresDiagnostic(member, requiresAttribute, diagnosticContext);
+        }
+
+        private void AnalyzeImplicitBaseCtor(SymbolAnalysisContext context)
+        {
+            var typeSymbol = (INamedTypeSymbol)context.Symbol;
+
+            if (typeSymbol.TypeKind != TypeKind.Class || typeSymbol.BaseType == null)
+                return;
+
+            if (typeSymbol.InstanceConstructors.Length != 1 || !typeSymbol.InstanceConstructors[0].IsImplicitlyDeclared)
+                return;
+
+            var implicitCtor = typeSymbol.InstanceConstructors[0];
+
+            var baseCtor = typeSymbol.BaseType.InstanceConstructors.FirstOrDefault(ctor => ctor.Parameters.IsEmpty);
+            if (baseCtor == null)
+                return;
+
+            var diagnosticContext = new DiagnosticContext(
+                typeSymbol.Locations[0],
+                context.ReportDiagnostic);
+
+            CheckAndCreateRequiresDiagnostic(
+                baseCtor,
+                implicitCtor,
+                ImmutableArray<ISymbol>.Empty,
+                diagnosticContext);
         }
 
         [Flags]
@@ -385,6 +369,39 @@ namespace ILLink.RoslynAnalyzer
             )
         {
             return false;
+        }
+
+        protected void CheckReferencedAssemblies(
+            CompilationAnalysisContext context,
+            string msbuildPropertyName,
+            string assemblyMetadataName,
+            DiagnosticDescriptor diagnosticDescriptor)
+        {
+            var options = context.Options;
+            if (!IsAnalyzerEnabled(options))
+                return;
+
+            if (!options.IsMSBuildPropertyValueTrue(msbuildPropertyName))
+                return;
+
+            foreach (var reference in context.Compilation.References)
+            {
+                var refAssembly = context.Compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
+                if (refAssembly is null)
+                    continue;
+
+                var assemblyMetadata = refAssembly.GetAttributes().FirstOrDefault(attr =>
+                    attr.AttributeClass?.Name == "AssemblyMetadataAttribute" &&
+                    attr.ConstructorArguments.Length == 2 &&
+                    attr.ConstructorArguments[0].Value?.ToString() == assemblyMetadataName &&
+                    string.Equals(attr.ConstructorArguments[1].Value?.ToString(), "True", StringComparison.OrdinalIgnoreCase));
+
+                if (assemblyMetadata is null)
+                {
+                    var diag = Diagnostic.Create(diagnosticDescriptor, Location.None, refAssembly.Name);
+                    context.ReportDiagnostic(diag);
+                }
+            }
         }
     }
 }

@@ -90,7 +90,7 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 GenTree* Compiler::impExpandHalfConstEquals(
     GenTreeLclVarCommon* data, WCHAR* cns, int charLen, int dataOffset, StringComparison cmpMode)
 {
-    static_assert_no_msg(sizeof(WCHAR) == 2);
+    static_assert(sizeof(WCHAR) == 2);
     assert((charLen > 0) && (charLen <= MaxPossibleUnrollSize));
 
     // A gtNewOperNode which can handle SIMD operands (used for bitwise operations):
@@ -657,8 +657,13 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
             return nullptr;
         }
 
-        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%s\")...\n",
-                convertUtf16ToUtf8ForPrinting((WCHAR*)str));
+#if DEBUG
+        constexpr int maxLiteralLength = 256;
+        char          dst[maxLiteralLength];
+        convertUtf16ToUtf8ForPrinting(str, cnsLength, dst, maxLiteralLength);
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%.50s%s\")...\n", dst,
+                cnsLength > 50 ? "..." : "");
+#endif
     }
 
     unsigned spanLclNum;

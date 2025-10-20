@@ -592,7 +592,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             // ILLink only incidentally matches the analyzer behavior here.
-            [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresAll), Tool.TrimmerAnalyzerAndNativeAot, "https://github.com/dotnet/linker/issues/2737")]
+            [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresAll), Tool.All, "https://github.com/dotnet/linker/issues/2737")]
             [ExpectedWarning("IL2072", nameof(GetUnknownType), nameof(DataFlowTypeExtensions.RequiresAll), Tool.None, "https://github.com/dotnet/linker/issues/2737")]
             [ExpectedWarning("IL2072", nameof(GetTypeWithPublicConstructors), nameof(DataFlowTypeExtensions.RequiresAll), Tool.None, "https://github.com/dotnet/linker/issues/2737")]
             static void TestNullCoalescingAssignmentToEmptyComplex()

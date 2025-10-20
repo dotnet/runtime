@@ -36,7 +36,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
         _target = target;
         _legacyModule = legacyImpl;
         _legacyModule2 = legacyImpl as IXCLRDataModule2;
-        if (legacyImpl is not null && ComWrappers.TryGetComInstance(legacyImpl, out _legacyModulePointer))
+        if (legacyImpl is not null && System.Runtime.InteropServices.ComWrappers.TryGetComInstance(legacyImpl, out _legacyModulePointer))
         {
             // Release the AddRef from TryGetComInstance. We rely on the ref-count from holding on to IXCLRDataModule.
             Marshal.Release(_legacyModulePointer);
@@ -107,8 +107,11 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
 
     int IXCLRDataModule.StartEnumMethodInstancesByName(char* name, uint flags, /*IXCLRDataAppDomain*/ void* appDomain, ulong* handle)
         => _legacyModule is not null ? _legacyModule.StartEnumMethodInstancesByName(name, flags, appDomain, handle) : HResults.E_NOTIMPL;
-    int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, /*IXCLRDataMethodInstance*/ void** method)
-        => _legacyModule is not null ? _legacyModule.EnumMethodInstanceByName(handle, method) : HResults.E_NOTIMPL;
+    int IXCLRDataModule.EnumMethodInstanceByName(ulong* handle, out IXCLRDataMethodInstance? method)
+    {
+        method = default;
+        return _legacyModule is not null ? _legacyModule.EnumMethodInstanceByName(handle, out method) : HResults.E_NOTIMPL;
+    }
     int IXCLRDataModule.EndEnumMethodInstancesByName(ulong handle)
         => _legacyModule is not null ? _legacyModule.EndEnumMethodInstancesByName(handle) : HResults.E_NOTIMPL;
 
@@ -135,10 +138,10 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
             {
                 result = contract.GetPath(handle);
             }
-            catch (InvalidOperationException)
+            catch (VirtualReadException)
             {
                 // The memory for the path may not be enumerated - for example, in triage dumps
-                // In this case, GetPath will throw InvalidOperationException
+                // In this case, GetPath will throw VirtualReadException
             }
 
             if (string.IsNullOrEmpty(result))

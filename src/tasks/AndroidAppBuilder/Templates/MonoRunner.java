@@ -34,8 +34,7 @@ public class MonoRunner extends Instrumentation
 {
     static {
         // loadLibrary triggers JNI_OnLoad in these libs
-        System.loadLibrary("%JNI_LIBRARY_NAME%");
-        System.loadLibrary("monodroid");
+        %LoadLibraryStatements%
     }
 
     static String testResultsDir;
@@ -92,6 +91,7 @@ public class MonoRunner extends Instrumentation
 
         // set environment variables
         setEnv("HOME", filesDir);
+        setEnv("ASSETS_DIR", filesDir);
         setEnv("TMPDIR", cacheDir);
         setEnv("TEST_RESULTS_DIR", testResultsDir);
 

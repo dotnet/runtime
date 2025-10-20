@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
+using SafeNwHandle = Interop.SafeNwHandle;
 
 namespace System.Net
 {
@@ -31,16 +33,16 @@ namespace System.Net
                 return null;
             }
 
-            SafeSslHandle sslContext = ((SafeDeleteSslContext)securityContext).SslContext;
-
-            if (sslContext == null)
-            {
-                return null;
-            }
-
             X509Certificate2? result = null;
 
-            using (SafeX509ChainHandle chainHandle = Interop.AppleCrypto.SslCopyCertChain(sslContext))
+            SafeX509ChainHandle chainHandle = securityContext switch
+            {
+                SafeDeleteNwContext nwContext => nwContext.PeerX509ChainHandle!,
+                SafeDeleteSslContext sslContext => Interop.AppleCrypto.SslCopyCertChain(sslContext.SslContext),
+                _ => throw new ArgumentException("Invalid context type", nameof(securityContext))
+            };
+
+            try
             {
                 long chainSize = Interop.AppleCrypto.X509ChainGetChainSize(chainHandle);
 
@@ -69,6 +71,13 @@ namespace System.Net
                     result = new X509Certificate2(certHandle);
                 }
             }
+            finally
+            {
+                if (securityContext is SafeDeleteSslContext)
+                {
+                    chainHandle.Dispose();
+                }
+            }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.RemoteCertificate(result);
 
@@ -76,15 +85,35 @@ namespace System.Net
         }
 
         // This is only called when we selected local client certificate.
-        // Currently this is only when Apple crypto asked for it.
-        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _1, SafeDeleteContext? _2) => true;
+        // We need to check if the server actually requested it during handshake.
+        internal static bool IsLocalCertificateUsed(SafeFreeCredentials? _, SafeDeleteContext? context)
+        {
+            return context switch
+            {
+                // For Network Framework, we need to check if the server actually requested
+                // a client certificate during the handshake.
+                SafeDeleteNwContext nwContext => nwContext.ClientCertificateRequested,
+                SafeDeleteSslContext => true,
+                _ => true
+            };
+        }
 
         //
         // Used only by client SSL code, never returns null.
         //
         internal static string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
-            SafeSslHandle sslContext = ((SafeDeleteSslContext)securityContext).SslContext;
+            return securityContext switch
+            {
+                SafeDeleteNwContext nwContext => nwContext.AcceptableIssuers,
+                SafeDeleteSslContext sslContext => GetRequestCertificateAuthorities(sslContext),
+                _ => throw new ArgumentException("Invalid context type", nameof(securityContext))
+            };
+        }
+
+        private static string[] GetRequestCertificateAuthorities(SafeDeleteSslContext securityContext)
+        {
+            SafeSslHandle sslContext = securityContext.SslContext;
 
             if (sslContext == null)
             {

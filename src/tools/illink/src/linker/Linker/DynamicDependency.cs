@@ -105,8 +105,7 @@ namespace Mono.Linker
                 _ => null,
             };
 
-            if (result != null)
-                result.OriginalAttribute = ca;
+            result?.OriginalAttribute = ca;
 
             return result;
         }

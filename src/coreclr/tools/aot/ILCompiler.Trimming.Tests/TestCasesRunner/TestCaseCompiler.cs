@@ -36,7 +36,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             _metadataProvider = metadataProvider;
         }
 
-        public NPath CompileTestIn(NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, string[] commonReferences, string[] mainAssemblyReferences, IEnumerable<string>? defines, NPath[] resources, string[] additionalArguments)
+        public NPath CompileTestIn(NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, string[] commonReferences, string[] mainAssemblyReferences, IEnumerable<string>? defines, NPath[] resources, bool generateTargetFrameworkAttribute, string[] additionalArguments)
         {
             var originalCommonReferences = commonReferences.Select(r => r.ToNPath()).ToArray();
             var originalDefines = defines?.ToArray() ?? Array.Empty<string>();
@@ -44,7 +44,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
             Prepare(outputDirectory);
 
             var removeFromLinkerInputAssemblies = new List<NPath>();
-            var compiledReferences = CompileBeforeTestCaseAssemblies(outputDirectory, originalCommonReferences, originalDefines, removeFromLinkerInputAssemblies).ToArray();
+            var compiledReferences = CompileBeforeTestCaseAssemblies(
+                outputDirectory,
+                originalCommonReferences,
+                originalDefines,
+                removeFromLinkerInputAssemblies,
+                generateTargetFrameworkAttribute)
+                .ToArray();
             var allTestCaseReferences = originalCommonReferences
                 .Concat(compiledReferences)
                 .Concat(mainAssemblyReferences.Select(r => r.ToNPath()))
@@ -56,6 +62,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 allTestCaseReferences,
                 originalDefines,
                 resources,
+                generateTargetFrameworkAttribute,
                 additionalArguments);
             var testAssembly = CompileAssembly(options);
 
@@ -65,7 +72,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
             // behavior of skipping the after test compile
             if (outputDirectory != _sandbox.ExpectationsDirectory)
             {
-                CompileAfterTestCaseAssemblies(outputDirectory, originalCommonReferences, originalDefines, removeFromLinkerInputAssemblies);
+                CompileAfterTestCaseAssemblies(
+                    outputDirectory,
+                    originalCommonReferences,
+                    originalDefines,
+                    removeFromLinkerInputAssemblies,
+                    generateTargetFrameworkAttribute);
 
                 foreach (var assemblyToRemove in removeFromLinkerInputAssemblies)
                     assemblyToRemove.DeleteIfExists();
@@ -78,7 +90,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
         }
 
-        protected virtual CompilerOptions CreateOptionsForTestCase(NPath outputPath, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources, string[] additionalArguments)
+        protected virtual CompilerOptions CreateOptionsForTestCase(NPath outputPath, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources, bool generateTargetFrameworkAttribute, string[] additionalArguments)
         {
             return new CompilerOptions
             {
@@ -88,11 +100,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 Defines = defines.Concat(_metadataProvider.GetDefines()).ToArray(),
                 Resources = resources,
                 AdditionalArguments = additionalArguments,
-                CompilerToUse = _metadataProvider.GetCSharpCompilerToUse()
+                CompilerToUse = _metadataProvider.GetCSharpCompilerToUse(),
+                GenerateTargetFrameworkAttribute = generateTargetFrameworkAttribute
             };
         }
 
-        protected virtual CompilerOptions CreateOptionsForSupportingAssembly(SetupCompileInfo setupCompileInfo, NPath outputDirectory, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources)
+        protected virtual CompilerOptions CreateOptionsForSupportingAssembly(SetupCompileInfo setupCompileInfo, NPath outputDirectory, NPath[] sourceFiles, NPath[] references, string[] defines, NPath[] resources, bool generateTargetFrameworkAttribute)
         {
             var allDefines = defines.Concat(setupCompileInfo.Defines ?? Array.Empty<string>()).ToArray();
             var allReferences = references.Concat(setupCompileInfo.References?.Select(p => MakeSupportingAssemblyReferencePathAbsolute(outputDirectory, p)) ?? Array.Empty<NPath>()).ToArray();
@@ -105,11 +118,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 Defines = allDefines,
                 Resources = resources,
                 AdditionalArguments = additionalArguments,
-                CompilerToUse = setupCompileInfo.CompilerToUse?.ToLowerInvariant()
+                CompilerToUse = setupCompileInfo.CompilerToUse?.ToLowerInvariant(),
+                GenerateTargetFrameworkAttribute = generateTargetFrameworkAttribute
             };
         }
 
-        private IEnumerable<NPath> CompileBeforeTestCaseAssemblies(NPath outputDirectory, NPath[] references, string[] defines, IList<NPath> removeFromLinkerInputAssemblies)
+        private IEnumerable<NPath> CompileBeforeTestCaseAssemblies(NPath outputDirectory, NPath[] references, string[] defines, IList<NPath> removeFromLinkerInputAssemblies, bool generateTargetFrameworkAttribute)
         {
             foreach (var setupCompileInfo in _metadataProvider.GetSetupCompileAssembliesBefore())
             {
@@ -130,7 +144,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     CollectSetupBeforeSourcesFiles(setupCompileInfo),
                     references,
                     defines,
-                    CollectSetupBeforeResourcesFiles(setupCompileInfo));
+                    CollectSetupBeforeResourcesFiles(setupCompileInfo),
+                    generateTargetFrameworkAttribute);
                 var output = CompileAssembly(options);
 
                 if (setupCompileInfo.RemoveFromLinkerInput)
@@ -141,7 +156,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             }
         }
 
-        private void CompileAfterTestCaseAssemblies(NPath outputDirectory, NPath[] references, string[] defines, IList<NPath> removeFromLinkerInputAssemblies)
+        private void CompileAfterTestCaseAssemblies(NPath outputDirectory, NPath[] references, string[] defines, IList<NPath> removeFromLinkerInputAssemblies, bool generateTargetFrameworkAttribute)
         {
             foreach (var setupCompileInfo in _metadataProvider.GetSetupCompileAssembliesAfter())
             {
@@ -151,7 +166,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
                     CollectSetupAfterSourcesFiles(setupCompileInfo),
                     references,
                     defines,
-                    CollectSetupAfterResourcesFiles(setupCompileInfo));
+                    CollectSetupAfterResourcesFiles(setupCompileInfo),
+                    generateTargetFrameworkAttribute);
                 var output = CompileAssembly(options);
 
                 if (setupCompileInfo.RemoveFromLinkerInput)
@@ -179,15 +195,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
             return _sandbox.AfterReferenceResourceDirectoryFor(info.OutputName).Files().ToArray();
         }
 
-        private static NPath[] CollectSourceFilesFrom(NPath directory)
+        private NPath[] CollectSourceFilesFrom(NPath directory)
         {
-            var sourceFiles = directory.Files("*.cs").ToArray();
-            if (sourceFiles.Length > 0)
-                return sourceFiles;
+            var sourceFiles = directory.Files("*.cs");
+            if (sourceFiles.Any())
+                return sourceFiles.Concat(_metadataProvider.GetCommonSourceFiles()).ToArray();
 
-            sourceFiles = directory.Files("*.il").ToArray();
-            if (sourceFiles.Length > 0)
-                return sourceFiles;
+            sourceFiles = directory.Files("*.il");
+            if (sourceFiles.Any())
+                return sourceFiles.ToArray();
 
             throw new FileNotFoundException($"Didn't find any sources files in {directory}");
         }
@@ -301,9 +317,21 @@ namespace Mono.Linker.Tests.TestCasesRunner
             var syntaxTrees = options.SourceFiles.Select(p =>
                 CSharpSyntaxTree.ParseText(
                     text: p.ReadAllText(),
-                    options: parseOptions
+                    options: parseOptions,
+                    path: p.ToString(),
+                    Encoding.UTF8
                 )
-            );
+            ).ToList();
+
+            if (options.GenerateTargetFrameworkAttribute)
+            {
+                syntaxTrees.Add(CSharpSyntaxTree.ParseText(
+                    text: GenerateTargetFrameworkAttributeSource(),
+                    options: parseOptions,
+                    path: "AssemblyInfo.g.cs",
+                    Encoding.UTF8
+                ));
+            }
 
             var compilation = CSharpCompilation.Create(
                 assemblyName: options.OutputPath.FileNameWithoutExtension,
@@ -431,6 +459,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
         protected NPath CompileIlAssembly(CompilerOptions options)
         {
             return _ilCompiler.Compile(options);
+        }
+
+        private string GenerateTargetFrameworkAttributeSource()
+        {
+            var tfm = PathUtilities.TargetFrameworkMoniker;
+            var tfmDisplayName = PathUtilities.TargetFrameworkMonikerDisplayName;
+            return $"""
+                [assembly: System.Runtime.Versioning.TargetFramework("{tfm}", FrameworkDisplayName = "{tfmDisplayName}")]
+                """;
         }
     }
 }

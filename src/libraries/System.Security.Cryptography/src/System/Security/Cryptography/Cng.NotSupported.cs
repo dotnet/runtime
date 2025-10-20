@@ -396,32 +396,32 @@ namespace System.Security.Cryptography
         private static partial MLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey) =>
             throw new PlatformNotSupportedException();
 
-        public partial CngKey Key =>
-            throw new PlatformNotSupportedException();
+        public partial CngKey GetKey() =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
         protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination) =>
-            throw new PlatformNotSupportedException();
+        protected override void ExportMLDsaPrivateKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
         protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
         protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 
         protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
     }
 
     public sealed partial class MLKemCng : MLKem
@@ -465,5 +465,26 @@ namespace System.Security.Cryptography
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
         }
+    }
+
+    public sealed partial class CompositeMLDsaCng : CompositeMLDsa
+    {
+        public partial CngKey GetKey() =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override int SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override int ExportCompositeMLDsaPrivateKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override int ExportCompositeMLDsaPublicKeyCore(Span<byte> destination) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
+
+        protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
     }
 }

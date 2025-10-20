@@ -10,10 +10,11 @@ namespace System.Security.Cryptography
     internal sealed partial class MLDsaImplementation : MLDsa
     {
         internal static partial bool SupportsAny();
+        internal static partial bool IsAlgorithmSupported(MLDsaAlgorithm algorithm);
 
         internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm);
         internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
-        internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
+        internal static partial MLDsaImplementation ImportPrivateKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         internal static partial MLDsaImplementation ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
 
         /// <summary>
@@ -28,8 +29,8 @@ namespace System.Security.Cryptography
             Debug.Assert(key is not MLDsaImplementation);
 
             MLDsaAlgorithm alg = key.Algorithm;
-            Debug.Assert(alg.SecretKeySizeInBytes > alg.PrivateSeedSizeInBytes);
-            byte[] rented = CryptoPool.Rent(alg.SecretKeySizeInBytes);
+            Debug.Assert(alg.PrivateKeySizeInBytes > alg.PrivateSeedSizeInBytes);
+            byte[] rented = CryptoPool.Rent(alg.PrivateKeySizeInBytes);
 
             try
             {
@@ -40,9 +41,9 @@ namespace System.Security.Cryptography
             catch (CryptographicException)
             {
                 // Rented array may still be larger but we expect exact length
-                Span<byte> skSpan = rented.AsSpan(0, alg.SecretKeySizeInBytes);
-                key.ExportMLDsaSecretKey(skSpan);
-                return ImportSecretKey(alg, skSpan);
+                Span<byte> skSpan = rented.AsSpan(0, alg.PrivateKeySizeInBytes);
+                key.ExportMLDsaPrivateKey(skSpan);
+                return ImportPrivateKey(alg, skSpan);
             }
             finally
             {

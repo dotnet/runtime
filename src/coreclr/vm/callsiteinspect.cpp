@@ -200,7 +200,7 @@ namespace
 
                 // return the object so it can be stored in the frame and
                 // propagated to the root set
-                *(OBJECTREF*)&ret  = (*src);
+                *(Object**)&ret  = OBJECTREFToObject(*src);
             }
         }
         else if (CorTypeInfo::IsObjRef(typ))
@@ -211,7 +211,7 @@ namespace
             if (pvDest)
                 SetObjectReference((OBJECTREF *)pvDest, *src);
 
-            *(OBJECTREF*)&ret = (*src);
+            *(Object**)&ret = OBJECTREFToObject(*src);
         }
         else
         {

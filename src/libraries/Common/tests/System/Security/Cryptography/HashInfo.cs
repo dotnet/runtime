@@ -32,16 +32,16 @@ namespace Test.Cryptography
         public static readonly HashInfo Sha384 = new HashInfo(Sha384Oid, 384 / 8, HashAlgorithmName.SHA384);
         public static readonly HashInfo Sha512 = new HashInfo(Sha512Oid, 512 / 8, HashAlgorithmName.SHA512);
 
-        private static readonly HashAlgorithmName HashAlgSHAKE128 = new HashAlgorithmName("BOGUS-SHAKE128");
-        private static readonly HashAlgorithmName HashAlgSHAKE256 = new HashAlgorithmName("BOGUS-SHAKE256");
+        private static readonly HashAlgorithmName HashAlgSHAKE128 = new HashAlgorithmName("SHAKE128");
+        private static readonly HashAlgorithmName HashAlgSHAKE256 = new HashAlgorithmName("SHAKE256");
 #if NET
         private static readonly HashAlgorithmName HashAlgSHA3_256 = HashAlgorithmName.SHA3_256;
         private static readonly HashAlgorithmName HashAlgSHA3_384 = HashAlgorithmName.SHA3_384;
         private static readonly HashAlgorithmName HashAlgSHA3_512 = HashAlgorithmName.SHA3_512;
 #else
-        private static readonly HashAlgorithmName HashAlgSHA3_256 = new HashAlgorithmName("BOGUS-SHA3_256");
-        private static readonly HashAlgorithmName HashAlgSHA3_384 = new HashAlgorithmName("BOGUS-SHA3_384");
-        private static readonly HashAlgorithmName HashAlgSHA3_512 = new HashAlgorithmName("BOGUS-SHA3_512");
+        private static readonly HashAlgorithmName HashAlgSHA3_256 = new HashAlgorithmName("SHA3-256");
+        private static readonly HashAlgorithmName HashAlgSHA3_384 = new HashAlgorithmName("SHA3-384");
+        private static readonly HashAlgorithmName HashAlgSHA3_512 = new HashAlgorithmName("SHA3-512");
 #endif
 
         public static readonly HashInfo Sha3_256 = new HashInfo(Sha3_256Oid, 256 / 8, HashAlgSHA3_256);
@@ -59,19 +59,11 @@ namespace Test.Cryptography
 #if NET
             if (Oid == Shake128Oid)
             {
-                using (Shake128 hasher = new Shake128())
-                {
-                    hasher.AppendData(data);
-                    return hasher.GetHashAndReset(OutputSize);
-                }
+                return System.Security.Cryptography.Shake128.HashData(data, OutputSize);
             }
             else if (Oid == Shake256Oid)
             {
-                using (Shake256 hasher = new Shake256())
-                {
-                    hasher.AppendData(data);
-                    return hasher.GetHashAndReset(OutputSize);
-                }
+                return System.Security.Cryptography.Shake256.HashData(data, OutputSize);
             }
             else
 #endif
@@ -97,8 +89,6 @@ namespace Test.Cryptography
 
         public static IEnumerable<HashInfo> AllHashInfos()
         {
-            yield return Md5;
-            yield return Sha1;
             yield return Sha256;
             yield return Sha384;
             yield return Sha512;
@@ -110,6 +100,8 @@ namespace Test.Cryptography
             yield return Shake256;
 #endif
         }
+
+        internal static HashSet<string> KnownHashAlgorithmOids => field ??= AllHashInfos().Select(h => h.Oid).ToHashSet();
 
         private HashInfo(string oid, int outputSize, HashAlgorithmName name)
         {

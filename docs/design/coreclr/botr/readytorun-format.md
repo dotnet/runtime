@@ -712,22 +712,82 @@ the first byte of the encoding specify the number of following bytes as follows:
 
 ## Sparse Array
 
-**TODO**: Document native format sparse array
+The NativeArray provides O(1) indexed access while maintaining compact storage through null element compression (empty blocks share storage) and variable-sized offset encoding (adapts to data size).
+
+The array is made up of three parts, the header, block index, and the blocks.
+
+The header is a variable encoded value where:
+- Bits 0-1: Entry index size
+  - 0 = uint8 offsets
+  - 1 = uint16 offsets
+  - 2 = uint32 offsets
+- Bits 2-31: Number of elements in the array
+
+The block index immediately follows the header in memory and consists of one offset entry per block (dynamic size encoded in the header), where each entry points to the location of a data block relative to the start of the block index section. The array uses a maximum block size of 16 elements, the block index effectively maps every group of 16 consecutive array indices to their corresponding data blocks.
+
+The following the block index are the actual data blocks. These are made up of two types of nodes. Tree nodes and Data nodes.
+
+Tree nodes are made up of a variable length encoded uint where:
+- Bit 0: If set, the node has a lower index child
+- Bit 1: If set, the node has a higher index child
+- Bits 2-31: Shifted relative offset of higher index child
+
+Data nodes contain the user defined data.
+
+Since each block has at most 16 elements, they have a depth of `4`.
+
+### Lookup Algorithm Steps
+
+**Step 1: Read the Header**
+- Decode the variable-length encoded header value from the array
+- Extract the entry index size from bits 0-1 (0=uint8, 1=uint16, 2=uint32 offsets)
+- Extract the total number of elements from bits 2-31 by right-shifting the header value by 2 bits
+- Use this information to determine how to interpret the block index entries and validate array bounds
+
+**Step 2: Calculate Block Offset**
+- Determine the block index `blockIndex` containing the target element by dividing the index by the block size (16).
+- Calculate the memory location containing the block offset `pBlockOffset = baseOffset + entrySize * blockIndex` where `baseOffset` is the address immediately following the header and `entrySize` is determined by the low bits of the header.
+- Read the block offset `blockOffset` from the block index table using the calculated `pBlockOffset` and entry size determined by the header.
+- Add the `baseOffset` to convert the relative `blockOffset` to an absolute position.
+
+**Step 3: Initialize Tree Navigation**
+- Using the `blockOffset` calculated above, begin traversal at the root of the block's binary tree structure
+
+**Step 4: Navigate Binary Tree**
+For each level of the tree (iterating through bit positions 8, 4, 2, 1):
+
+**Step 4a: Read Node Descriptor**
+- Decode the current node's control value, which contains navigation flags and child offset information
+- Extract flags indicating the presence of left and right child nodes
+- Extract the relative offset to the right child node (if present)
+
+**Step 4b: Determine Navigation Direction**
+- Test the current bit position against the target index
+- If the bit is set in the target index, attempt to navigate to the right child
+- If the bit is clear in the target index, attempt to navigate to the left child
+
+**Step 4c: Follow Navigation Path**
+- If the desired child exists (indicated by the appropriate flag), update the current position
+- For right child navigation, add the encoded offset to the current position
+- For left child navigation, move to the position immediately following the current node
+- Continue to the next bit level if navigation was successful
+
+**Step 5: Return Element Location**
+- Upon successful traversal, return the final offset position which points to the stored data.
+- If traversal is not successful (child node does not exist), the element can not be found in the array and return a failure status.
 
 ## Hashtable
 
 Conceptually, a native hash table is a header that describe the dimensions of the table, a table that maps hash values of the keys to buckets followed with a list of buckets that store the values. These three things are stored consecutively in the format.
 
-To make look up fast, the number of buckets is always a power of 2. The table is simply a sequence of `(1 + number of buckets)` cells, for the first `(number of buckets)` cells, its stores the offset of the bucket list from the beginning of the whole native hash table. The last cell stores the offset to the end of the buckets.
-
-Each bucket is a sequence of entries. An entry has a hash code and an offset to the object stored. The entries are sorted by hash code.
+To make look up fast, the number of buckets is always a power of 2. The table is simply a sequence of `(1 + number of buckets)` cells, for the first `(number of buckets)` cells, its stores the offset of the bucket list from the beginning of the whole native hash table. The last cell stores the offset to the end of the buckets. Entries are mapped to buckets using `x` lowest bits of the hash not in the lowest byte where `2^x = (number of buckets)`. For example, if `x=2` the following bits marked with `X` would be used in a 32-bit hash `b00000000_00000000_000000XX_00000000`.
 
 Physically, the header is a single byte. The most significant six bits is used to store the number of buckets in its base-2 logarithm. The remaining two bits are used for storing the entry size, as explained below:
 
 Because the offsets to the bucket lists are often small numbers, the table cells are variable sized.
 It could be either 1 byte, 2 bytes or 4 bytes. The three cases are described with two bits. `00` means it is one byte, `01` means it is two bytes and `10` means it is four bytes.
 
-The remaining data are the entries. The entries has only the least significant byte of the hash code, followed by the offset to the actual object stored in the hash table.
+The remaining data are the entries. The entries has only the least significant byte of the hash code, followed by the offset to the actual object stored in the hash table. The entries are sorted by hash code.
 
 To perform a lookup, one starts with reading the header, computing the hash code, using the number of buckets to determine the number of bits to mask away from the hash code, look it up in the table using the right pointer size, find the bucket list, find the next bucket list (or the end of the table) so that we know where to stop, search the entries in that list and then we will find the object if we have a hit, or we have a miss.
 
@@ -740,23 +800,23 @@ To see this in action, we can take a look at the following example, with these o
 | P      | 0x1231   |
 | Q      | 0x1232   |
 | R      | 0x1234   |
-| S      | 0x1238   |
+| S      | 0x1338   |
 
-Suppose we decided to have only two buckets, then only the least significant digit will be used to index the table, the whole hash table will look like this:
+Suppose we decided to have only two buckets, then only the 9th bit will be used to index the table, the whole hash table will look like this:
 
 | Part    | Offset | Content  | Meaning                                                                                                                                                                                   |
 |:--------|:-------|:--------:|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Header  | 0      | 0x04     | This is the header, the least significant bit is `00`, therefore the table cell is just one byte. The most significant six bit represents 1, which means the number of buckets is 2^1 = 2. |
-| Table   | 1      | 0x08     | This is the representation of the unsigned integer 4, which correspond to the offset of the bucket correspond to hash code `0`.                                                           |
-| Table   | 2      | 0x14     | This is the representation of the unsigned integer 10, which correspond to the offset of the bucket correspond to hash code `1`.                                                          |
-| Table   | 3      | 0x18     | This is the representation of the unsigned integer 12, which correspond to the offset of the end of the whole hash table.                                                                 |
-| Bucket1 | 4      | 0x32     | This is the least significant byte of the hash code of P                                                                                                                                  |
+| Table   | 1      | 0x04     | This is the representation of the unsigned integer 4, which correspond to the offset of the bucket correspond to hash code `0`.                                                           |
+| Table   | 2      | 0x0A     | This is the representation of the unsigned integer 10, which correspond to the offset of the bucket correspond to hash code `1`.                                                          |
+| Table   | 3      | 0x0C     | This is the representation of the unsigned integer 12, which correspond to the offset of the end of the whole hash table.                                                                 |
+| Bucket1 | 4      | 0x31     | This is the least significant byte of the hash code of P                                                                                                                                  |
 | Bucket1 | 5      | P        | This should be the offset to the object P                                                                                                                                                 |
-| Bucket1 | 6      | 0x34     | This is the least significant byte of the hash code of Q                                                                                                                                  |
+| Bucket1 | 6      | 0x32     | This is the least significant byte of the hash code of Q                                                                                                                                  |
 | Bucket1 | 7      | Q        | This should be the offset to the object Q                                                                                                                                                 |
-| Bucket1 | 8      | 0x38     | This is the least significant byte of the hash code of R                                                                                                                                  |
+| Bucket1 | 8      | 0x34     | This is the least significant byte of the hash code of R                                                                                                                                  |
 | Bucket1 | 9      | R        | This should be the offset to the object R                                                                                                                                                 |
-| Bucket2 | 10     | 0x31     | This is the least significant byte of the hash code of S                                                                                                                                  |
+| Bucket2 | 10     | 0x38     | This is the least significant byte of the hash code of S                                                                                                                                  |
 | Bucket2 | 11     | S        | This should be the offset to the object S                                                                                                                                                 |
 
 

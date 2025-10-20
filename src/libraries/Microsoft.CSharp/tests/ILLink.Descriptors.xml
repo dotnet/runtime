@@ -1,7 +1,0 @@
-<linker>
-  <assembly fullname="xunit.assert">
-    <type fullname="Xunit.Assert">
-      <method name="IsType" />
-    </type>
-  </assembly>
-</linker>

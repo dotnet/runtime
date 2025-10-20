@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
             if (includePrivateKey)
             {
-                return MLDsa.ImportMLDsaSecretKey(algorithm, nistKey.SecretKey);
+                return MLDsa.ImportMLDsaPrivateKey(algorithm, nistKey.PrivateKey);
             }
             else
             {

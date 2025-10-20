@@ -12,8 +12,6 @@
     <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
 
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
-    <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
-    <WasmNativeStrip>false</WasmNativeStrip>
     <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
 
     <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>

@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         public delegate void ExportSlhDsaPublicKeyCoreAction(Span<byte> s);
-        public delegate void ExportSlhDsaSecretKeyCoreAction(Span<byte> s);
+        public delegate void ExportSlhDsaPrivateKeyCoreAction(Span<byte> s);
         public delegate bool TryExportPkcs8PrivateKeyCoreFunc(Span<byte> destination, out int bytesWritten);
         public delegate void SignDataCoreAction(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> s);
         public delegate bool VerifyDataCoreFunc(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature);
@@ -41,12 +41,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public int VerifyPreHashCoreCallCount = 0;
         public int SignPreHashCoreCallCount = 0;
         public int ExportSlhDsaPublicKeyCoreCallCount = 0;
-        public int ExportSlhDsaSecretKeyCoreCallCount = 0;
+        public int ExportSlhDsaPrivateKeyCoreCallCount = 0;
         public int TryExportPkcs8PrivateKeyCoreCallCount = 0;
         public int DisposeCallCount = 0;
 
         public ExportSlhDsaPublicKeyCoreAction ExportSlhDsaPublicKeyCoreHook { get; set; } = _ => Assert.Fail();
-        public ExportSlhDsaSecretKeyCoreAction ExportSlhDsaSecretKeyCoreHook { get; set; } = _ => Assert.Fail();
+        public ExportSlhDsaPrivateKeyCoreAction ExportSlhDsaPrivateKeyCoreHook { get; set; } = _ => Assert.Fail();
         public TryExportPkcs8PrivateKeyCoreFunc TryExportPkcs8PrivateKeyCoreHook { get; set; } =
             (_, out bytesWritten) => { Assert.Fail(); bytesWritten = 0; return false; };
         public SignDataCoreAction SignDataCoreHook { get; set; } = (_, _, _) => Assert.Fail();
@@ -61,10 +61,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             ExportSlhDsaPublicKeyCoreHook(destination);
         }
 
-        protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination)
+        protected override void ExportSlhDsaPrivateKeyCore(Span<byte> destination)
         {
-            ExportSlhDsaSecretKeyCoreCallCount++;
-            ExportSlhDsaSecretKeyCoreHook(destination);
+            ExportSlhDsaPrivateKeyCoreCallCount++;
+            ExportSlhDsaPrivateKeyCoreHook(destination);
         }
 
         protected override void Dispose(bool disposing)
@@ -112,11 +112,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 Assert.Equal(Algorithm.PublicKeySizeInBytes, destination.Length);
             };
 
-            ExportSlhDsaSecretKeyCoreAction oldExportSlhDsaSecretKeyCoreHook = ExportSlhDsaSecretKeyCoreHook;
-            ExportSlhDsaSecretKeyCoreHook = (Span<byte> destination) =>
+            ExportSlhDsaPrivateKeyCoreAction oldExportSlhDsaPrivateKeyCoreHook = ExportSlhDsaPrivateKeyCoreHook;
+            ExportSlhDsaPrivateKeyCoreHook = (Span<byte> destination) =>
             {
-                oldExportSlhDsaSecretKeyCoreHook(destination);
-                Assert.Equal(Algorithm.SecretKeySizeInBytes, destination.Length);
+                oldExportSlhDsaPrivateKeyCoreHook(destination);
+                Assert.Equal(Algorithm.PrivateKeySizeInBytes, destination.Length);
             };
 
             SignDataCoreAction oldSignDataCoreHook = SignDataCoreHook;
@@ -159,10 +159,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 AssertExtensions.Same(buffer.Span, destination);
             };
 
-            ExportSlhDsaSecretKeyCoreAction oldExportSlhDsaSecretKeyCoreHook = ExportSlhDsaSecretKeyCoreHook;
-            ExportSlhDsaSecretKeyCoreHook = (Span<byte> destination) =>
+            ExportSlhDsaPrivateKeyCoreAction oldExportSlhDsaPrivateKeyCoreHook = ExportSlhDsaPrivateKeyCoreHook;
+            ExportSlhDsaPrivateKeyCoreHook = (Span<byte> destination) =>
             {
-                oldExportSlhDsaSecretKeyCoreHook(destination);
+                oldExportSlhDsaPrivateKeyCoreHook(destination);
                 AssertExtensions.Same(buffer.Span, destination);
             };
 
@@ -301,10 +301,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 destination.Fill(b);
             };
 
-            ExportSlhDsaSecretKeyCoreAction oldExportSlhDsaSecretKeyCoreHook = ExportSlhDsaSecretKeyCoreHook;
-            ExportSlhDsaSecretKeyCoreHook = (Span<byte> destination) =>
+            ExportSlhDsaPrivateKeyCoreAction oldExportSlhDsaPrivateKeyCoreHook = ExportSlhDsaPrivateKeyCoreHook;
+            ExportSlhDsaPrivateKeyCoreHook = (Span<byte> destination) =>
             {
-                oldExportSlhDsaSecretKeyCoreHook(destination);
+                oldExportSlhDsaPrivateKeyCoreHook(destination);
                 destination.Fill(b);
             };
 

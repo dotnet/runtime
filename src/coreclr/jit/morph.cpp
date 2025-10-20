@@ -678,6 +678,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "StackArrayLocal";
         case WellKnownArg::RuntimeMethodHandle:
             return "RuntimeMethodHandle";
+        case WellKnownArg::AsyncSuspendedIndicator:
+            return "AsyncSuspendedIndicator";
     }
 
     return "N/A";
@@ -1842,8 +1844,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
         ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
 
-        ABIPassingInformation abiInfo;
-
         // Some well known args have custom register assignment.
         // These should not affect the placement of any other args or stack space required.
         // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
@@ -1852,20 +1852,26 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         if (nonStdRegNum == REG_NA)
         {
-            abiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
+            if (arg.GetWellKnownArg() == WellKnownArg::AsyncSuspendedIndicator)
+            {
+                // Represents definition of a local. Expanded out by async transformation.
+                arg.AbiInfo = ABIPassingInformation(comp, 0);
+            }
+            else
+            {
+                arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
+            }
         }
         else
         {
             ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-            abiInfo                   = ABIPassingInformation::FromSegmentByValue(comp, segment);
+            arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
         }
 
         JITDUMP("Argument %u ABI info: ", GetIndex(&arg));
-        DBEXEC(VERBOSE, abiInfo.Dump());
+        DBEXEC(VERBOSE, arg.AbiInfo.Dump());
 
-        arg.AbiInfo = abiInfo;
-
-        for (const ABIPassingSegment& segment : abiInfo.Segments())
+        for (const ABIPassingSegment& segment : arg.AbiInfo.Segments())
         {
             if (segment.IsPassedOnStack())
             {
@@ -1919,6 +1925,13 @@ void CallArgs::DetermineABIInfo(Compiler* comp, GenTreeCall* call)
 
     for (CallArg& arg : Args())
     {
+        if (arg.GetWellKnownArg() == WellKnownArg::AsyncSuspendedIndicator)
+        {
+            // Represents definition of a local. Expanded out by async transformation.
+            arg.AbiInfo = ABIPassingInformation(comp, 0);
+            continue;
+        }
+
         const var_types            argSigType  = arg.GetSignatureType();
         const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
         ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
@@ -2974,8 +2987,11 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     // If we're doing range checking, introduce a GT_BOUNDS_CHECK node for the address.
     if (indexAddr->IsBoundsChecked())
     {
-        GenTree* arrRef2 = nullptr; // The second copy will be used in array address expression
-        GenTree* index2  = nullptr;
+        GenTree* arrRef2   = nullptr; // The second copy will be used in array address expression
+        GenTree* index2    = nullptr;
+        auto     countNode = [](GenTree* node) -> unsigned {
+            return 1;
+        };
 
         // If the arrRef or index expressions involves a store, a call, or reads from global memory,
         // then we *must* allocate a temporary in which to "localize" those values, to ensure that the
@@ -2987,7 +3003,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // TODO-Bug: GLOB_REF is not yet set for all trees in pre-order morph.
         //
         if (((arrRef->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
-            gtComplexityExceeds(arrRef, MAX_ARR_COMPLEXITY) || arrRef->OperIs(GT_LCL_FLD) ||
+            gtComplexityExceeds(arrRef, MAX_ARR_COMPLEXITY, countNode) || arrRef->OperIs(GT_LCL_FLD) ||
             (arrRef->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(arrRef->AsLclVar()->GetLclNum())))
         {
             unsigned arrRefTmpNum = lvaGrabTemp(true DEBUGARG("arr expr"));
@@ -3002,7 +3018,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         }
 
         if (((index->gtFlags & (GTF_ASG | GTF_CALL | GTF_GLOB_REF)) != 0) ||
-            gtComplexityExceeds(index, MAX_INDEX_COMPLEXITY) || index->OperIs(GT_LCL_FLD) ||
+            gtComplexityExceeds(index, MAX_INDEX_COMPLEXITY, countNode) || index->OperIs(GT_LCL_FLD) ||
             (index->OperIs(GT_LCL_VAR) && lvaIsLocalImplicitlyAccessedByRef(index->AsLclVar()->GetLclNum())))
         {
             unsigned indexTmpNum = lvaGrabTemp(true DEBUGARG("index expr"));
@@ -3771,7 +3787,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         if (tree->AsFieldAddr()->gtFieldLookup.accessType == IAT_PVALUE)
         {
             offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsFieldAddr()->gtFieldLookup.addr,
-                                                  GTF_ICON_CONST_PTR, true);
+                                                  GTF_ICON_CONST_PTR);
 #ifdef DEBUG
             offsetNode->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)fieldHandle;
 #endif
@@ -3893,7 +3909,7 @@ GenTree* Compiler::fgMorphExpandTlsFieldAddr(GenTree* tree)
     }
     else
     {
-        dllRef = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pIdAddr, GTF_ICON_CONST_PTR, true);
+        dllRef = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pIdAddr, GTF_ICON_CONST_PTR);
 
         // Next we multiply by 4
         dllRef = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(4, TYP_I_IMPL));
@@ -4193,18 +4209,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         reportFastTailCallDecision("Localloc used");
         return false;
     }
-
-#ifdef TARGET_AMD64
-    // Needed for Jit64 compat.
-    // In future, enabling fast tail calls from methods that need GS cookie
-    // check would require codegen side work to emit GS cookie check before a
-    // tail call.
-    if (getNeedsGSSecurityCookie())
-    {
-        reportFastTailCallDecision("GS Security cookie check required");
-        return false;
-    }
-#endif
 
     // If the NextCallReturnAddress intrinsic is used we should do normal calls.
     if (info.compHasNextCallRetAddr)
@@ -6592,8 +6596,7 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
                                             &isRelative);
 
     // Dereference the this pointer to obtain the method table, it is called vtab below
-    assert(VPTR_OFFS == 0); // We have to add this value to the thisPtr to get the methodTable
-    GenTree* vtab = gtNewIndir(TYP_I_IMPL, thisPtr, GTF_IND_INVARIANT);
+    GenTree* vtab = gtNewMethodTableLookup(thisPtr);
 
     if (fgGlobalMorph)
     {
@@ -6788,14 +6791,14 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
         switch (addrInfo.accessType)
         {
             case IAT_PPVALUE:
-                indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_CONST_PTR, true);
+                indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_CONST_PTR);
 
                 // Add the second indirection
                 indNode = gtNewIndir(TYP_I_IMPL, indNode, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
                 break;
 
             case IAT_PVALUE:
-                indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_FTN_ADDR, true);
+                indNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)addrInfo.handle, GTF_ICON_FTN_ADDR);
                 INDEBUG(indNode->gtGetOp1()->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(funcHandle));
                 break;
 
@@ -6824,22 +6827,22 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
 
 void Compiler::fgAssignSetVarDef(GenTree* tree)
 {
-    GenTreeLclVarCommon* lclVarCmnTree;
-    bool                 isEntire = false;
-    if (tree->DefinesLocal(this, &lclVarCmnTree, &isEntire))
-    {
-        if (isEntire)
+    auto visitDef = [=](const LocalDef& def) {
+        if (def.IsEntire)
         {
-            lclVarCmnTree->gtFlags |= GTF_VAR_DEF;
+            def.Def->gtFlags |= GTF_VAR_DEF;
         }
         else
         {
             // We consider partial definitions to be modeled as uses followed by definitions.
             // This captures the idea that precedings defs are not necessarily made redundant
             // by this definition.
-            lclVarCmnTree->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
+            def.Def->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
         }
-    }
+        return GenTree::VisitResult::Continue;
+    };
+
+    tree->VisitLocalDefs(this, visitDef);
 }
 
 #ifdef FEATURE_SIMD
@@ -8404,12 +8407,14 @@ DONE_MORPHING_CHILDREN:
                     // We're lucky to catch a constant here while importer was not
                     JITDUMP("true\n");
                     DEBUG_DESTROY_NODE(tree, op1);
-                    tree = gtNewIconNode(1);
+                    tree = gtNewTrue();
                 }
                 else
                 {
                     JITDUMP("false\n");
-                    tree = gtWrapWithSideEffects(gtNewIconNode(0), op1, GTF_ALL_EFFECT);
+                    tree = gtNewFalse();
+                    tree->SetMorphed(this);
+                    tree = gtWrapWithSideEffects(tree, op1, GTF_ALL_EFFECT);
                 }
                 tree->SetMorphed(this);
                 return tree;
@@ -11279,6 +11284,43 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
         // Perform the required oper-specific postorder morphing
         //
 
+        // If the folded tree is a vector to mask conversion, or vice versa,
+        // then we want to morph the inner operand as we may have folded something
+        // like xor(masktovector(op1), AllBitsSet) into masktovector(not(op1)), which
+        // can unlock further optimizations over op1, like the ability to invert
+        // not(cmple(op1, op2)) into cmpgt(op1, op2)
+
+        int opIndex = 0;
+
+        if (tree->OperIsConvertVectorToMask() || tree->OperIsConvertMaskToVector())
+        {
+            opIndex = 1;
+        }
+
+#if defined(TARGET_ARM64)
+        if (tree->OperIsConvertVectorToMask())
+        {
+            opIndex = 2;
+        }
+#endif // TARGET_ARM64
+
+        if (opIndex != 0)
+        {
+            GenTree* innerOp = tree->Op(opIndex);
+
+            if (innerOp->OperIsHWIntrinsic())
+            {
+                innerOp = fgMorphHWIntrinsicRequired(innerOp->AsHWIntrinsic());
+
+                if (innerOp->OperIsHWIntrinsic())
+                {
+                    innerOp = fgMorphHWIntrinsicOptional(innerOp->AsHWIntrinsic());
+                }
+
+                tree->Op(opIndex) = innerOp;
+            }
+        }
+
         morphedTree = fgMorphHWIntrinsicRequired(tree);
 
         if (morphedTree->OperIsHWIntrinsic())
@@ -12723,10 +12765,14 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG
 
     // Kill active assertions
     //
-    GenTreeLclVarCommon* lclVarTree = nullptr;
-    if ((optAssertionCount > 0) && tree->DefinesLocal(this, &lclVarTree))
+    if (optAssertionCount > 0)
     {
-        fgKillDependentAssertions(lclVarTree->GetLclNum() DEBUGARG(tree));
+        auto visitDef = [=](GenTreeLclVarCommon* lcl) {
+            fgKillDependentAssertions(lcl->GetLclNum() DEBUGARG(tree));
+            return GenTree::VisitResult::Continue;
+        };
+
+        tree->VisitLocalDefNodes(this, visitDef);
     }
 
     // Generate assertions
@@ -14248,10 +14294,7 @@ GenTree* Compiler::fgInitThisClass()
 
 //------------------------------------------------------------------------
 // fgPreExpandQmarkChecks: Verify that the importer has created GT_QMARK nodes
-// in a way we can process them. The following
-//
-// Returns:
-//    Suitable phase status.
+// in a way we can process them.
 //
 // Remarks:
 //   The following is allowed:
@@ -14472,6 +14515,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     elseBlock->SetFlags(propagateFlagsToAll);
 
     BasicBlock* thenBlock = nullptr;
+
     if (hasTrueExpr && hasFalseExpr)
     {
         //                       bbj_always
@@ -14483,7 +14527,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         // TODO: Remove unnecessary condition reversal
-        gtReverseCond(condExpr);
+        qmark->gtOp1 = condExpr = gtReverseCond(condExpr);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
         thenBlock->SetFlags(propagateFlagsToAll);
@@ -14516,7 +14560,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         // TODO: Remove unnecessary condition reversal
-        gtReverseCond(condExpr);
+        qmark->gtOp1 = condExpr = gtReverseCond(condExpr);
 
         const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
         const unsigned elseLikelihood = qmark->ElseNodeLikelihood();

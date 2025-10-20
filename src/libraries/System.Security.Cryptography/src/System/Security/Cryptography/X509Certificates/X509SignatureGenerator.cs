@@ -74,5 +74,25 @@ namespace System.Security.Cryptography.X509Certificates
 
             return new SlhDsaX509SignatureGenerator(key);
         }
+
+        /// <summary>
+        ///   Creates a signature generator for Composite ML-DSA signatures using the specified key.
+        /// </summary>
+        /// <param name="key">
+        ///   The private key.
+        /// </param>
+        /// <returns>
+        ///   An <see cref="X509SignatureGenerator" /> object for Composite ML-DSA signatures.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="key" /> is <see langword="null" />.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public static X509SignatureGenerator CreateForCompositeMLDsa(CompositeMLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            throw new PlatformNotSupportedException();
+        }
     }
 }

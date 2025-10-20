@@ -4,6 +4,7 @@
 #include "common.h"
 #include "daccess.h"
 #include "rhassert.h"
+#include <minipal/utils.h>
 
 #define UNW_STEP_SUCCESS 1
 #define UNW_STEP_END     0
@@ -354,8 +355,8 @@ struct Registers_REGDISPLAY : REGDISPLAY
     uint32_t    getRegister(int num) const;
     void        setRegister(int num, uint32_t value, uint32_t location);
 
-    double      getFloatRegister(int num) const;
-    void        setFloatRegister(int num, double value);
+    unw_fpreg_t getFloatRegister(int num) const;
+    void        setFloatRegister(int num, unw_fpreg_t value);
 
     libunwind::v128    getVectorRegister(int num) const { abort(); }
     void        setVectorRegister(int num, libunwind::v128 value) { abort(); }
@@ -516,13 +517,13 @@ void Registers_REGDISPLAY::setRegister(int num, uint32_t value, uint32_t locatio
     }
 }
 
-double Registers_REGDISPLAY::getFloatRegister(int num) const
+unw_fpreg_t Registers_REGDISPLAY::getFloatRegister(int num) const
 {
     assert(validFloatRegister(num));
-    return unwindhelpers_bitcast<double>(D[num - UNW_ARM_D8]);
+    return unwindhelpers_bitcast<unw_fpreg_t>(D[num - UNW_ARM_D8]);
 }
 
-void Registers_REGDISPLAY::setFloatRegister(int num, double value)
+void Registers_REGDISPLAY::setFloatRegister(int num, unw_fpreg_t value)
 {
     assert(validFloatRegister(num));
     D[num - UNW_ARM_D8] = unwindhelpers_bitcast<uint64_t>(value);

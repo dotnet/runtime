@@ -274,13 +274,18 @@ namespace System.Net.Security.Tests
             Assert.Equal(rawHostname, client.TargetHostName);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData("www-.volal.cz")]
         [InlineData("www-.colorhexa.com")]
         [InlineData("xn--www-7m0a.thegratuit.com")]
         [SkipOnPlatform(TestPlatforms.Android, "Safe invalid IDN hostnames are not supported on Android")]
         public async Task SslStream_SafeInvalidIdn_Success(string name)
         {
+            if (PlatformDetection.IsNetworkFrameworkEnabled())
+            {
+                throw new SkipTestException("Safe invalid IDN hostnames are not supported on Network.framework");
+            }
+
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
             using (client)
             using (server)

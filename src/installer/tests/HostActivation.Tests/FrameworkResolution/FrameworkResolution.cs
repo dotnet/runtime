@@ -103,6 +103,64 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
         }
 
+        [Theory]
+        [InlineData("6.1.0", "", "6.1.3")]      // Roll forward to 6.1.3 - empty value has no effect on resolution
+        [InlineData("6.1.0", "   ", "6.1.3")]   // Roll forward to 6.1.3 - whitespace value has no effect on resolution
+        [InlineData("6.1.0", "6.1.2", "6.1.3")] // Roll forward to 6.1.3 when 6.1.2 is disabled
+        [InlineData("6.1.0", "6.1.3", "6.1.2")] // Roll forward to 6.1.2 when 6.1.3 is disabled
+        [InlineData("6.1.3", "6.1.3", ResolvedFramework.NotFound)] // Fail when the only matching version is disabled
+        [InlineData("7.2.0", "7.2.3", ResolvedFramework.NotFound)] // Fail when the only matching version is disabled
+        [InlineData("6.1.0", "6.1.2;6.1.3", ResolvedFramework.NotFound)] // Fail when all matching versions are disabled
+        [InlineData("6.1.0", "invalid;6.1.3", "6.1.2")]  // Roll forward to 6.1.2 - invalid value ignored, 6.1.3 disabled
+        [InlineData("6.1.0", "v6.1.3;;6.1.0", "6.1.3")]  // Roll forward to 6.1.3 - invalid or non-existent versions have no effect on resolution
+        public void DisabledVersions(string requestedVersion, string disabledVersions, string expectedResolution)
+        {
+            CommandResult result = RunTest(
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(rc => rc.WithFramework(MicrosoftNETCoreApp, requestedVersion))
+                    .WithEnvironment(Constants.DisableRuntimeVersions.EnvironmentVariable, disabledVersions));
+
+            result.ShouldHaveResolvedFrameworkOrFailToFind(MicrosoftNETCoreApp, expectedResolution);
+            if (string.IsNullOrWhiteSpace(disabledVersions))
+            {
+                result.Should().NotHaveStdErrContaining($"Ignoring disabled version");
+            }
+            else
+            {
+                foreach (string value in disabledVersions.Split(';'))
+                {
+                    if (SharedState.InstalledVersions.Contains(value))
+                    {
+                        result.Should().HaveStdErrContaining($"Ignoring disabled version [{value}]");
+                        if (expectedResolution == ResolvedFramework.NotFound)
+                        {
+                            result.Should().HaveStdErrContaining(
+                                $"""
+                                  {value} at [{SharedState.InstalledDotNet.SharedFxPath}]
+                                    Disabled via {Constants.DisableRuntimeVersions.EnvironmentVariable} environment variable
+                                """);
+                                
+                        }
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public void DisabledVersions_NoRollForward()
+        {
+            string disabledVersion = "6.1.2";
+            CommandResult result = RunTest(
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(rc => rc
+                        .WithFramework(MicrosoftNETCoreApp, disabledVersion)
+                        .WithRollForward(Constants.RollForwardSetting.Disable))
+                    .WithEnvironment(Constants.DisableRuntimeVersions.EnvironmentVariable, disabledVersion));
+
+            result.ShouldFailToFindCompatibleFrameworkVersion(MicrosoftNETCoreApp, disabledVersion)
+                .And.HaveStdErrContaining($"Ignoring disabled version [{disabledVersion}]");
+        }
+
         private CommandResult RunTest(TestSettings testSettings, [CallerMemberName] string caller = "")
         {
             return RunTest(

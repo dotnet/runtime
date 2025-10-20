@@ -34,7 +34,7 @@
 
     <PropertyGroup>
       <AndroidBuildDir Condition="'$(AndroidBuildDir)' == ''">$([MSBuild]::NormalizeDirectory($(PublishDir)))</AndroidBuildDir>
-      <AndroidBundleDir Condition="'$(AndroidBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AndroidBundleDir>
+      <AndroidBundleDir Condition="'$(AndroidBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'AppBundle'))</AndroidBundleDir>
 
       <BundleDir>$(AndroidBundleDir)</BundleDir>
     </PropertyGroup>
@@ -80,6 +80,11 @@
 
     <RemoveDir Directories="$(AndroidBundleDir)" />
     <MakeDir Directories="$(AndroidBundleDir)" />
+
+    <!-- Copy static CoreCLR library for static linking scenarios. Tracking issue: https://github.com/dotnet/runtime/issues/116531 -->
+    <Copy SourceFiles="$(CoreCLRArtifactsPath)libcoreclr_static.a"
+          DestinationFiles="$(AndroidBuildDir)libcoreclr_static.a"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(StaticLinkedRuntime)' == 'true' and Exists('$(CoreCLRArtifactsPath)libcoreclr_static.a')" />
   </Target>
 
   <Target Name="_AndroidResolveReferences">
@@ -184,10 +189,10 @@
       a list of direct pinvokes otherwise the runtime will crash
     -->
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
-      <DirectPInvokes Include="libSystem.Native" />
-      <DirectPInvokes Include="libSystem.IO.Compression.Native" />
-      <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Android" />
-      <DirectPInvokes Include="libbrotlienc;libbrotlidec" />
+      <DirectPInvoke Include="libSystem.Native" />
+      <DirectPInvoke Include="libSystem.IO.Compression.Native" />
+      <DirectPInvoke Include="libSystem.Security.Cryptography.Native.Android" />
+      <DirectPInvoke Include="libbrotlienc;libbrotlidec" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -202,8 +207,8 @@
         AsOptions="$(_AsOptions)"
         Assemblies="@(_AotInputAssemblies)"
         CompilerBinaryPath="$(_CompilerBinaryPath)"
-        DirectPInvokes="@(DirectPInvokes)"
-        DirectPInvokeLists="@(DirectPInvokeLists)"
+        DirectPInvokes="@(DirectPInvoke)"
+        DirectPInvokeLists="@(DirectPInvokeList)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
         LdName="$(_LdName)"
@@ -239,6 +244,7 @@
         We are using a private property to determine the target runtime, we should instead unify the resolution with Apple targets instead, (see: https://github.com/dotnet/runtime/issues/111923) -->
       <_RuntimeFlavor>Mono</_RuntimeFlavor>
       <_RuntimeFlavor Condition="'$(UseMonoRuntime)' == 'false' and '$(UseNativeAOTRuntime)' != 'true'">CoreCLR</_RuntimeFlavor>
+      <_RuntimeFlavor Condition="'$(UseNativeAOTRuntime)' == 'true'">nativeaot</_RuntimeFlavor>
     </PropertyGroup>
 
     <AndroidAppBuilderTask
@@ -251,7 +257,6 @@
         ForceAOT="$(RunAOTCompilation)"
         ForceFullAOT="$(ForceFullAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"
-        InvariantGlobalization="$(InvariantGlobalization)"
         IsLibraryMode="$(_IsLibraryMode)"
         MainLibraryFileName="$(MainLibraryFileName)"
         RuntimeHeaders="@(RuntimeHeaders)"
@@ -291,4 +296,5 @@
         RuntimeConfigReservedProperties="@(_RuntimeConfigReservedProperties)">
     </RuntimeConfigParserTask>
   </Target>
+
 </Project>

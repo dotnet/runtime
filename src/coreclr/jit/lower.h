@@ -84,6 +84,7 @@ private:
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+    bool      CanConvertOpToCCMP(GenTree* operand, GenTree* tree);
     bool      TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next);
     insCflags TruthifyingFlags(GenCondition cond);
     void      ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
@@ -120,7 +121,7 @@ private:
     void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr, unsigned size);
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
-    void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode);
+    void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* cnsVec);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
@@ -155,9 +156,13 @@ private:
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif
-    GenTree*   OptimizeConstCompare(GenTree* cmp);
-    GenTree*   LowerCompare(GenTree* cmp);
-    GenTree*   LowerJTrue(GenTreeOp* jtrue);
+    GenTree* OptimizeConstCompare(GenTree* cmp);
+    GenTree* LowerCompare(GenTree* cmp);
+    GenTree* LowerJTrue(GenTreeOp* jtrue);
+#ifdef TARGET_RISCV64
+    GenTree* LowerSavedIntegerCompare(GenTree* cmp);
+    void     SignExtendIfNecessary(GenTree** arg);
+#endif
     GenTree*   LowerSelect(GenTreeConditional* cond);
     bool       TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenTree*      condition,
@@ -462,6 +467,7 @@ private:
                                                  GenTree*    op1,
                                                  CorInfoType simdBaseJitType,
                                                  unsigned    simdSize);
+    GenTree* NormalizeIndexToNativeSized(GenTree* index);
 #endif // FEATURE_HW_INTRINSICS
 
     // Utility functions

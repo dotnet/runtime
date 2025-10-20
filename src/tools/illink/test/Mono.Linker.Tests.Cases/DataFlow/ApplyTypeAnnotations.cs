@@ -142,7 +142,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         [Kept]
         class FromStringConstantWithGenericInnerInner
         {
-            [Kept(By = Tool.Trimmer)]
+            [Kept]
             public void Method()
             {
             }

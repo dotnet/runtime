@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -23,15 +22,15 @@ namespace System.IO.Tests
         public static TheoryData<string> PathsWithInvalidColons = TestData.PathsWithInvalidColons;
         public static TheoryData<string> PathsWithInvalidCharacters = TestData.PathsWithInvalidCharacters;
         public static TheoryData<char> TrailingCharacters = TestData.TrailingCharacters;
-        public static TheoryData ValidPathComponentNames = IOInputs.GetValidPathComponentNames().ToTheoryData();
-        public static TheoryData SimpleWhiteSpace = IOInputs.GetSimpleWhiteSpace().ToTheoryData();
-        public static TheoryData WhiteSpace = IOInputs.GetWhiteSpace().ToTheoryData();
-        public static TheoryData UncPathsWithoutShareName = IOInputs.GetUncPathsWithoutShareName().ToTheoryData();
-        public static TheoryData PathsWithReservedDeviceNames = IOInputs.GetPathsWithReservedDeviceNames().ToTheoryData();
-        public static TheoryData PathsWithColons = IOInputs.GetPathsWithColons().ToTheoryData();
-        public static TheoryData PathsWithComponentLongerThanMaxComponent = IOInputs.GetPathsWithComponentLongerThanMaxComponent().ToTheoryData();
-        public static TheoryData ControlWhiteSpace = IOInputs.GetControlWhiteSpace().ToTheoryData();
-        public static TheoryData NonControlWhiteSpace = IOInputs.GetNonControlWhiteSpace().ToTheoryData();
+        public static TheoryData<string> ValidPathComponentNames = IOInputs.GetValidPathComponentNames().ToTheoryData();
+        public static TheoryData<string> SimpleWhiteSpace = IOInputs.GetSimpleWhiteSpace().ToTheoryData();
+        public static TheoryData<string> WhiteSpace = IOInputs.GetWhiteSpace().ToTheoryData();
+        public static TheoryData<string> UncPathsWithoutShareName = IOInputs.GetUncPathsWithoutShareName().ToTheoryData();
+        public static TheoryData<string> PathsWithReservedDeviceNames = IOInputs.GetPathsWithReservedDeviceNames().ToTheoryData();
+        public static TheoryData<string> PathsWithColons = IOInputs.GetPathsWithColons().ToTheoryData();
+        public static TheoryData<string> PathsWithComponentLongerThanMaxComponent = IOInputs.GetPathsWithComponentLongerThanMaxComponent().ToTheoryData();
+        public static TheoryData<string> ControlWhiteSpace = IOInputs.GetControlWhiteSpace().ToTheoryData();
+        public static TheoryData<string> NonControlWhiteSpace = IOInputs.GetNonControlWhiteSpace().ToTheoryData();
 
         public static TheoryData<string> TrailingSeparators
         {

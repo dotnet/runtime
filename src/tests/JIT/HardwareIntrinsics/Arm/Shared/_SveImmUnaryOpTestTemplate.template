@@ -126,7 +126,6 @@ namespace JIT.HardwareIntrinsics.Arm
         private struct TestStruct
         {
             public {Op1VectorType}<{Op1BaseType}> _fld;
-            public byte _imm;
 
             public static TestStruct Create()
             {
@@ -134,17 +133,16 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-                testStruct._imm = (byte)({Imm});
 
                 return testStruct;
             }
 
             public void RunStructFldScenario({TemplateName}UnaryOpTest__{TestName} testClass)
             {
-                var result = {Isa}.{Method}(_fld, _imm);
+                var result = {Isa}.{Method}(_fld, {Imm});
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                testClass.ValidateResult(_fld, _imm, testClass._dataTable.outArrayPtr);
+                testClass.ValidateResult(_fld, testClass._dataTable.outArrayPtr);
             }
         }
 
@@ -152,7 +150,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>() / sizeof({Op1BaseType});
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
-        private static readonly byte Imm = (byte)({Imm});
+        private static readonly byte Imm = {Imm};
 
         private static {RetBaseType}[] _maskData = new {RetBaseType}[RetElementCount];
         private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
@@ -189,11 +187,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var result = {Isa}.{Method}(
                 Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr),
-                Imm
+                {Imm}
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, Imm, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
         public void RunBasicScenario_UnsafeRead_InvalidImm()
@@ -227,11 +225,11 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var result = {Isa}.{Method}(
                 {LoadIsa}.Load{Op1VectorType}(loadMask, ({Op1BaseType}*)(_dataTable.inArrayPtr)),
-                Imm
+                {Imm}
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, Imm, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_UnsafeRead()
@@ -241,11 +239,11 @@ namespace JIT.HardwareIntrinsics.Arm
             var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1VectorType}<{Op1BaseType}>), typeof(byte) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr),
-                                        Imm
+                                        (byte){Imm}
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
-            ValidateResult(_dataTable.inArrayPtr, Imm, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_UnsafeRead()
@@ -253,20 +251,20 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
             var op = Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArrayPtr);
-            var result = {Isa}.{Method}(op, Imm);
+            var result = {Isa}.{Method}(op, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(op, Imm, _dataTable.outArrayPtr);
+            ValidateResult(op, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = {Isa}.{Method}(_fld, Imm);
+            var result = {Isa}.{Method}(_fld, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_fld, Imm, _dataTable.outArrayPtr);
+            ValidateResult(_fld, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario()
@@ -274,10 +272,10 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = {Isa}.{Method}(test._fld, test._imm);
+            var result = {Isa}.{Method}(test._fld, {Imm});
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, test._imm, _dataTable.outArrayPtr);
+            ValidateResult(test._fld, _dataTable.outArrayPtr);
         }
 
         public void RunStructFldScenario()
@@ -354,7 +352,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ConditionalSelectScenario_TrueValue({RetVectorType}<{RetBaseType}> mask, {Op1VectorType}<{Op1BaseType}> op, {RetVectorType}<{RetBaseType}> falseOp)
         {
-            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op, Imm), falseOp);
+            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op, {Imm}), falseOp);
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateConditionalSelectResult_TrueValue(mask, op, falseOp, Imm, _dataTable.outArrayPtr);
         }
@@ -362,7 +360,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ConditionalSelectScenario_FalseValue({RetVectorType}<{RetBaseType}> mask, {Op1VectorType}<{Op1BaseType}> op, {RetVectorType}<{RetBaseType}> trueOp)
         {
-            var result = Sve.ConditionalSelect(mask, trueOp, {Isa}.{Method}(op, Imm));
+            var result = Sve.ConditionalSelect(mask, trueOp, {Isa}.{Method}(op, {Imm}));
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateConditionalSelectResult_FalseValue(mask, op, trueOp, Imm, _dataTable.outArrayPtr);
         }
@@ -440,7 +438,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateResult({Op1VectorType}<{Op1BaseType}> op, byte imm, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1VectorType}<{Op1BaseType}> op, void* result, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray  = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -448,10 +446,10 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), op);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray, imm, outArray, method);
+            ValidateResult(inArray, outArray, method);
         }
 
-        private void ValidateResult(void* op, byte imm, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* op, void* result, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray  = new {Op1BaseType}[Op1ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -459,10 +457,10 @@ namespace JIT.HardwareIntrinsics.Arm
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(op), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            ValidateResult(inArray, imm, outArray, method);
+            ValidateResult(inArray, outArray, method);
         }
 
-        private void ValidateResult({Op1BaseType}[] firstOp, byte imm, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
 
@@ -472,7 +470,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>, byte): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($" firstOp: ({string.Join(", ", firstOp)})");
-                TestLibrary.TestFramework.LogInformation($"     imm: ({string.Join(", ", imm)})");
+                TestLibrary.TestFramework.LogInformation($"     imm: ({string.Join(", ", Imm)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 

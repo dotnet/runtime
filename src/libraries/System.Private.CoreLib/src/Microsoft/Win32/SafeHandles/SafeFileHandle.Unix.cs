@@ -71,7 +71,7 @@ namespace Microsoft.Win32.SafeHandles
             }
             set
             {
-                Debug.Assert(value == false); // We should only use the setter to disable random access.
+                Debug.Assert(!value); // We should only use the setter to disable random access.
                 _supportsRandomAccess = value ? NullableBool.True : NullableBool.False;
             }
         }
@@ -333,7 +333,10 @@ namespace Microsoft.Win32.SafeHandles
                     // and for regular files (most common case)
                     // avoid one extra sys call for determining whether file can be seeked
                     _canSeek = NullableBool.True;
-                    Debug.Assert(Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
+
+                    // we exclude 0-length files from the assert because those may may be pseudofiles
+                    // (e.g. /proc/net/route) and these are not seekable on all systems
+                    Debug.Assert(status.Size == 0 || Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0);
                 }
 
                 fileLength = status.Size;
@@ -439,7 +442,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     // Delete the file we've created.
                     Debug.Assert(mode == FileMode.Create || mode == FileMode.CreateNew);
-                    Interop.Sys.Unlink(path!);
+                    Interop.Sys.Unlink(path);
 
                     throw new IOException(SR.Format(errorInfo.Error == Interop.Error.EFBIG
                                                         ? SR.IO_FileTooLarge_Path_AllocationSize

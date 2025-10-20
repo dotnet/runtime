@@ -55,8 +55,11 @@ extends:
           platforms:
           - osx_arm64
           - windows_x86
+          # Not needed for subsequent steps, but this ensures we get some build
+          # coverage of community JITs in CI on JIT PRs.
+          - windows_x64
           jobParameters:
-            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            buildArgs: -s clr.alljitscommunity+clr.spmi -c $(_BuildConfig)
             postBuildSteps:
               # Build CLR assets for x64 as well as the target as we need an x64 mcs
               - template: /eng/pipelines/common/templates/global-build-step.yml

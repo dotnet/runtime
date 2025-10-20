@@ -3,7 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
+using Internal.Cryptography;
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
 
@@ -16,29 +16,32 @@ namespace System.Security.Cryptography
         private static readonly SafeBCryptAlgorithmHandle? s_algHandle = OpenAlgorithmHandle();
 
         private readonly bool _hasSeed;
-        private readonly bool _hasSecretKey;
+        private readonly bool _hasPrivateKey;
         private SafeBCryptKeyHandle _key;
 
         private MLDsaImplementation(
             MLDsaAlgorithm algorithm,
             SafeBCryptKeyHandle key,
             bool hasSeed,
-            bool hasSecretKey)
+            bool hasPrivateKey)
             : base(algorithm)
         {
             _key = key;
             _hasSeed = hasSeed;
-            _hasSecretKey = hasSecretKey;
+            _hasPrivateKey = hasPrivateKey;
         }
 
         [MemberNotNullWhen(true, nameof(s_algHandle))]
         internal static partial bool SupportsAny() => s_algHandle is not null;
 
+        [MemberNotNullWhen(true, nameof(s_algHandle))]
+        internal static partial bool IsAlgorithmSupported(MLDsaAlgorithm algorithm) => SupportsAny();
+
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination)
         {
-            if (!_hasSecretKey)
+            if (!_hasPrivateKey)
             {
-                throw new CryptographicException(SR.Cryptography_MLDsaNoSecretKey);
+                throw new CryptographicException(SR.Cryptography_NoPrivateKeyAvailable);
             }
 
             Interop.BCrypt.BCryptSignHashPqcPure(_key, data, context, destination);
@@ -47,10 +50,51 @@ namespace System.Security.Cryptography
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             Interop.BCrypt.BCryptVerifySignaturePqcPure(_key, data, context, signature);
 
-        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, Span<byte> destination) =>
+        protected override void SignPreHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            string hashAlgorithmOid,
+            Span<byte> destination)
+        {
+            if (!_hasPrivateKey)
+            {
+                throw new CryptographicException(SR.Cryptography_NoPrivateKeyAvailable);
+            }
+
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
+
+            Interop.BCrypt.BCryptSignHashPqcPreHash(_key, hash, hashAlgorithmIdentifier, context, destination);
+        }
+
+        protected override bool VerifyPreHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            string hashAlgorithmOid,
+            ReadOnlySpan<byte> signature)
+        {
+            string? hashAlgorithmIdentifier = MapHashOidToAlgorithm(
+                hashAlgorithmOid,
+                out int hashLengthInBytes,
+                out bool insufficientCollisionResistance);
+
+            Debug.Assert(hashAlgorithmIdentifier is not null);
+            Debug.Assert(!insufficientCollisionResistance);
+            Debug.Assert(hashLengthInBytes == hash.Length);
+
+            return Interop.BCrypt.BCryptVerifySignaturePqcPreHash(_key, hash, hashAlgorithmIdentifier, context, signature);
+        }
+
+        protected override void SignMuCore(ReadOnlySpan<byte> externalMu, Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
-        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, string hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+        protected override bool VerifyMuCore(ReadOnlySpan<byte> externalMu, ReadOnlySpan<byte> signature) =>
             throw new PlatformNotSupportedException();
 
         internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm)
@@ -71,7 +115,7 @@ namespace System.Security.Cryptography
                 throw;
             }
 
-            return new MLDsaImplementation(algorithm, keyHandle, hasSeed: true, hasSecretKey: true);
+            return new MLDsaImplementation(algorithm, keyHandle, hasSeed: true, hasPrivateKey: true);
         }
 
         internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
@@ -87,10 +131,10 @@ namespace System.Security.Cryptography
                     PublicBlobType,
                     static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, PublicBlobType, blob));
 
-            return new MLDsaImplementation(algorithm, key, hasSeed: false, hasSecretKey: false);
+            return new MLDsaImplementation(algorithm, key, hasSeed: false, hasPrivateKey: false);
         }
 
-        internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static partial MLDsaImplementation ImportPrivateKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(SupportsAny());
 
@@ -103,7 +147,7 @@ namespace System.Security.Cryptography
                     PrivateBlobType,
                     static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, PrivateBlobType, blob));
 
-            return new MLDsaImplementation(algorithm, key, hasSeed: false, hasSecretKey: true);
+            return new MLDsaImplementation(algorithm, key, hasSeed: false, hasPrivateKey: true);
         }
 
         internal static partial MLDsaImplementation ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
@@ -119,7 +163,7 @@ namespace System.Security.Cryptography
                     PrivateSeedBlobType,
                     static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, PrivateSeedBlobType, blob));
 
-            return new MLDsaImplementation(algorithm, key, hasSeed: true, hasSecretKey: true);
+            return new MLDsaImplementation(algorithm, key, hasSeed: true, hasPrivateKey: true);
         }
 
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination) =>
@@ -128,16 +172,16 @@ namespace System.Security.Cryptography
                 Algorithm.PublicKeySizeInBytes,
                 destination);
 
-        protected override void ExportMLDsaSecretKeyCore(Span<byte> destination)
+        protected override void ExportMLDsaPrivateKeyCore(Span<byte> destination)
         {
-            if (!_hasSecretKey)
+            if (!_hasPrivateKey)
             {
-                throw new CryptographicException(SR.Cryptography_MLDsaNoSecretKey);
+                throw new CryptographicException(SR.Cryptography_NoPrivateKeyAvailable);
             }
 
             ExportKey(
                 Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB,
-                Algorithm.SecretKeySizeInBytes,
+                Algorithm.PrivateKeySizeInBytes,
                 destination);
         }
 
@@ -159,7 +203,7 @@ namespace System.Security.Cryptography
             return MLDsaPkcs8.TryExportPkcs8PrivateKey(
                 this,
                 _hasSeed,
-                _hasSecretKey,
+                _hasPrivateKey,
                 destination,
                 out bytesWritten);
         }
@@ -210,12 +254,10 @@ namespace System.Security.Cryptography
 
         private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()
         {
-#if !NETFRAMEWORK
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (!Helpers.IsOSPlatformWindows)
             {
                 return null;
             }
-#endif
 
             NTSTATUS status = Interop.BCrypt.BCryptOpenAlgorithmProvider(
                 out SafeBCryptAlgorithmHandle hAlgorithm,

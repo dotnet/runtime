@@ -50,25 +50,28 @@ namespace System.Linq.Tests
             {
                 ValidateUnsigned<T>();
 
-                for (int i = 1; i < 3; i++)
-                {
-                    Assert.NotNull(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(122), T.CreateTruncating(-i)));
-                }
+                // Test negative steps from 123 to 122
+                // step=-1: should give [123, 122] (2 elements)
+                // step=-2: should give [123] (1 element, step too large)
+                Assert.Equal(2, Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(122), T.CreateTruncating(-1)).Count());
+                Assert.Single(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(122), T.CreateTruncating(-2)));
 
                 ValidateThrows(T.CreateTruncating(123), T.CreateTruncating(124), T.CreateTruncating(-2));
             }
 
             static void ValidateUnsigned<T>() where T : INumber<T>
             {
+                // When start == end, all steps should return single element [123]
                 for (int i = 0; i < 3; i++)
                 {
-                    Assert.NotNull(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(123), T.CreateTruncating(i)));
+                    Assert.Single(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(123), T.CreateTruncating(i)));
                 }
 
-                for (int i = 1; i < 3; i++)
-                {
-                    Assert.NotNull(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(124), T.CreateTruncating(i)));
-                }
+                // Test positive steps from 123 to 124
+                // step=1: should give [123, 124] (2 elements)
+                // step=2: should give [123] (1 element, step too large)
+                Assert.Equal(2, Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(124), T.CreateTruncating(1)).Count());
+                Assert.Single(Enumerable.Sequence(T.CreateTruncating(123), T.CreateTruncating(124), T.CreateTruncating(2)));
 
                 ValidateThrows(T.CreateTruncating(123), T.CreateTruncating(122), T.CreateTruncating(2));
             }

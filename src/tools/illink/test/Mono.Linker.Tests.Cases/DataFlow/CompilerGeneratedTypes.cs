@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
@@ -14,6 +16,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
     [ExpectedNoWarnings]
     [SkipKeptItemsValidation]
+    [Define("DEBUG")]
+    [SetupLinkerArgument("--disable-generated-code-heuristics")]
     public class CompilerGeneratedTypes
     {
         public static void Main()
@@ -43,6 +47,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             CapturingLocalFunctionInsideIterator<int>();
             LambdaInsideAsync<int>();
             LocalFunctionInsideAsync<int>();
+            NestedAsyncLambda.Test<int>();
+            NestedAsyncLocalFunction.Test<int>();
             NestedStaticLambda.Test<int>();
         }
 
@@ -104,6 +110,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             void Local1<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
             {
                 _ = Local2<string>();
+
                 IEnumerable<object> Local2<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
                 {
                     foreach (var m in typeof(T1).GetMethods())
@@ -121,9 +128,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         private static void NestedIterators()
         {
             Local1<string>();
+
             IEnumerable<object> Local1<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
             {
                 foreach (var o in Local2<string>()) { yield return o; }
+
                 IEnumerable<object> Local2<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
                 {
                     foreach (var m in typeof(T1).GetMethods())
@@ -141,10 +150,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         private static void IteratorInsideClosure()
         {
             Outer<string>();
+
             IEnumerable<object> Outer<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
             {
                 int x = 0;
                 foreach (var o in Inner<string>()) yield return o;
+
                 IEnumerable<object> Inner<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
                 {
                     x++;
@@ -191,6 +202,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             void Local1<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T1>()
             {
                 Local2<string>().Wait();
+
                 async Task Local2<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
                 {
                     await Task.Delay(0);
@@ -201,11 +213,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
         }
 
-        [ExpectedWarning("IL2090", nameof(DynamicallyAccessedMemberTypes.PublicProperties), CompilerGeneratedCode = true)]
         private static void AsyncTypeMismatch()
         {
             _ = Local<string>();
 
+            [ExpectedWarning("IL2090", "T", nameof(DynamicallyAccessedMemberTypes.PublicProperties), CompilerGeneratedCode = true)]
             static async Task Local<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
             {
                 await Task.Delay(0);
@@ -222,6 +234,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 int x = 0;
                 Inner<string>().Wait();
+
                 async Task Inner<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2>()
                 {
                     await Task.Delay(0);
@@ -363,6 +376,47 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             void LocalFunction() => typeof(T).GetMethods();
             await Task.Delay(0);
             LocalFunction();
+        }
+
+        class NestedAsyncLambda
+        {
+            public static async void Test<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+            {
+                var outer = async () =>
+                {
+                    var inner =
+                    [ExpectedWarning("IL2090", "T", nameof(DynamicallyAccessedMemberTypes.PublicProperties))]
+                    () =>
+                    {
+                        _ = typeof(T).GetMethods();
+                        _ = typeof(T).GetProperties();
+                    };
+
+                    inner();
+                };
+
+                outer().Wait();
+            }
+        }
+
+        class NestedAsyncLocalFunction
+        {
+            public static void Test<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
+            {
+                Local1();
+
+                static async Task Local1()
+                {
+                    Local2();
+
+                    [ExpectedWarning("IL2090", "T", nameof(DynamicallyAccessedMemberTypes.PublicProperties))]
+                    static void Local2()
+                    {
+                        _ = typeof(T).GetMethods();
+                        _ = typeof(T).GetProperties();
+                    };
+                };
+            }
         }
 
         class NestedStaticLambda

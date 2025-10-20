@@ -1878,7 +1878,7 @@ namespace System.Diagnostics.Tests
         [InlineData("key2", null, false, 0)]
         [InlineData("key3", "v1", true, 1)]
         [InlineData("key4", "v2", false, 1)]
-        public void TestInsertingFirstTag(string key, object value, bool add, int resultCount)
+        public void TestInsertingFirstTag(string key, object? value, bool add, int resultCount)
         {
             Activity a = new Activity("SetFirstTag");
             if (add)
