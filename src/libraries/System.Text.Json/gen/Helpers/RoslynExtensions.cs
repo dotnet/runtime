@@ -374,6 +374,24 @@ namespace System.Text.Json.SourceGeneration
             return inputType.NullableAnnotation is NullableAnnotation.NotAnnotated;
         }
 
+        public static bool IsTuple(this INamedTypeSymbol type)
+        {
+            if (!type.IsGenericType)
+            {
+                return false;
+            }
+
+            string typeFullName = type.ConstructedFrom.ToDisplayString();
+            return typeFullName == "System.Tuple<T1>" ||
+                   typeFullName == "System.Tuple<T1, T2>" ||
+                   typeFullName == "System.Tuple<T1, T2, T3>" ||
+                   typeFullName == "System.Tuple<T1, T2, T3, T4>" ||
+                   typeFullName == "System.Tuple<T1, T2, T3, T4, T5>" ||
+                   typeFullName == "System.Tuple<T1, T2, T3, T4, T5, T6>" ||
+                   typeFullName == "System.Tuple<T1, T2, T3, T4, T5, T6, T7>" ||
+                   typeFullName == "System.Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>";
+        }
+
         private static bool HasCodeAnalysisAttribute(this ISymbol symbol, string attributeName)
         {
             return symbol.GetAttributes().Any(attr =>

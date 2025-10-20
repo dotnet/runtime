@@ -943,6 +943,13 @@ namespace System.Text.Json.SourceGeneration
                             continue;
                         }
 
+                        // For reference tuple types (System.Tuple), handle the Rest property specially for long tuples
+                        if (typeToGenerate.Type.IsTuple() && propertyInfo.Name == "Rest")
+                        {
+                            // Skip Rest property - it will be handled specially during serialization
+                            continue;
+                        }
+
                         AddMember(
                             declaringTypeRef,
                             memberType: propertyInfo.Type,
@@ -959,10 +966,22 @@ namespace System.Text.Json.SourceGeneration
                             // it is a static field, constant
                             fieldInfo.IsStatic || fieldInfo.IsConst ||
                             // it is a compiler-generated backing field
-                            fieldInfo.AssociatedSymbol != null ||
-                            // symbol represents an explicitly named tuple element
-                            fieldInfo.IsExplicitlyNamedTupleElement)
+                            fieldInfo.AssociatedSymbol != null)
                         {
+                            continue;
+                        }
+
+                        // For tuple types, include fields (Item1, Item2, etc.) even if they are explicitly named
+                        // but skip them for non-tuple types
+                        if (fieldInfo.IsExplicitlyNamedTupleElement && !typeToGenerate.Type.IsTupleType)
+                        {
+                            continue;
+                        }
+
+                        // For tuple types, handle the Rest field specially for long tuples
+                        if (typeToGenerate.Type.IsTupleType && fieldInfo.Name == "Rest")
+                        {
+                            // Skip Rest field - it will be handled specially during serialization
                             continue;
                         }
 
