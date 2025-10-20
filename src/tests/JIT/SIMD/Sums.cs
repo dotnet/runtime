@@ -40,6 +40,7 @@ namespace VectorMathTests
         }
 
         [Fact]
+        [SkipOnCoreClrAttribute("Test runs forever when interpreted, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
         public static void TestEntryPoint()
         {
             System.Diagnostics.Stopwatch clock = new System.Diagnostics.Stopwatch();

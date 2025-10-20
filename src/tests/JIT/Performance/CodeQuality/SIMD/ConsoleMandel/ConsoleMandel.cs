@@ -65,6 +65,7 @@ namespace SIMD
         }
 
         [Fact]
+        [SkipOnCoreClrAttribute("The test runs forever when interpreted, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
         public static int TestEntryPoint()
         {
             Bench(0, -1);

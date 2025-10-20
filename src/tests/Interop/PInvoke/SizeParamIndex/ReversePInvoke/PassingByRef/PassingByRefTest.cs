@@ -212,6 +212,7 @@ public class PassingByRefTest
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34196", TestRuntimes.Mono)]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/167", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [SkipOnCoreClrAttribute("Exception propagation through reverse pinvoke is not supported with interpreter, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
     public static int TestEntryPoint()
     {
         try{

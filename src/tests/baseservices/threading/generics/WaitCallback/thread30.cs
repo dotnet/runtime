@@ -55,6 +55,7 @@ public class Test_thread30
 	}
 	
 	[Fact]
+    [SkipOnCoreClrAttribute("Fails intermittently with AV when running with the interpreter", RuntimeTestModes.InterpreterActive)]
 	public static int TestEntryPoint()
 	{
 		Gen.ThreadPoolTest<object>();
