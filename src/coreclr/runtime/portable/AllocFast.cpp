@@ -146,20 +146,104 @@ EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size)
 
 EXTERN_C FCDECL1(Object*, RhpNewFast, MethodTable* pMT)
 {
-    PORTABILITY_ASSERT("RhpNewFast is not yet implemented");
-    return nullptr;
+    FCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
+
+    Thread* thread = GetThread();
+    ee_alloc_context* cxt = thread->GetEEAllocContext();
+
+    size_t sizeInBytes = (size_t)pMT->GetBaseSize();
+    sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
+
+    uint8_t* alloc_ptr = cxt->getAllocPtr();
+    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
+    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
+    {
+        cxt->setAllocPtr(alloc_ptr + sizeInBytes);
+        PtrArray* pObject = (PtrArray *)alloc_ptr;
+        pObject->SetMethodTable(pMT);
+        return pObject;
+    }
+
+    return AllocateObject(pMT, 0, 0);
 }
 
 EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
 {
-    PORTABILITY_ASSERT("RhpNewFastAlign8 is not yet implemented");
-    return nullptr;
+    FCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
+
+    Thread* thread = GetThread();
+    ee_alloc_context* cxt = thread->GetEEAllocContext();
+
+    size_t sizeInBytes = (size_t)pMT->GetBaseSize();
+    sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
+
+    uint8_t* alloc_ptr = cxt->getAllocPtr();
+    bool requiresAlignObject = !IS_ALIGNED(alloc_ptr, sizeof(int64_t));
+    size_t paddedSize = sizeInBytes;
+    if (requiresAlignObject)
+    {
+        // We are assuming that allocation of minimal object flips the alignment
+        paddedSize += MIN_OBJECT_SIZE;
+    }
+
+    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
+    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
+    {
+        cxt->setAllocPtr(alloc_ptr + paddedSize);
+        if (requiresAlignObject)
+        {
+            Object* dummy = (Object*)alloc_ptr;
+            dummy->SetMethodTable(g_pFreeObjectMethodTable);
+            alloc_ptr += MIN_OBJECT_SIZE;
+        }
+        PtrArray* pObject = (PtrArray *)alloc_ptr;
+        pObject->SetMethodTable(pMT);
+        return pObject;
+    }
+
+    return AllocateObject(pMT, GC_ALLOC_ALIGN8, 0);
 }
 
 EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
 {
-    PORTABILITY_ASSERT("RhpNewFastMisalign is not yet implemented");
-    return nullptr;
+    FCALL_CONTRACT;
+    _ASSERTE(pMT != NULL);
+
+    Thread* thread = GetThread();
+    ee_alloc_context* cxt = thread->GetEEAllocContext();
+
+    size_t sizeInBytes = (size_t)pMT->GetBaseSize();
+    sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
+
+    uint8_t* alloc_ptr = cxt->getAllocPtr();
+    bool requiresAlignObject = IS_ALIGNED(alloc_ptr, sizeof(int64_t));
+    size_t paddedSize = sizeInBytes;
+    if (requiresAlignObject)
+    {
+        // We are assuming that allocation of minimal object flips the alignment
+        paddedSize += MIN_OBJECT_SIZE;
+    } else {
+        _ASSERTE((((uint32_t)alloc_ptr) & (sizeof(int64_t) - 1)) == sizeof(int32_t));
+    }
+
+    _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
+    if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
+    {
+        cxt->setAllocPtr(alloc_ptr + paddedSize);
+        if (requiresAlignObject)
+        {
+            Object* dummy = (Object*)alloc_ptr;
+            dummy->SetMethodTable(g_pFreeObjectMethodTable);
+            alloc_ptr += MIN_OBJECT_SIZE;
+        }
+        PtrArray* pObject = (PtrArray *)alloc_ptr;
+        pObject->SetMethodTable(pMT);
+        return pObject;
+    }
+
+    return AllocateObject(pMT, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0);
 }
 
 #define MAX_STRING_LENGTH 0x3FFFFFDF
