@@ -28,6 +28,8 @@ namespace System.Text.Json.Serialization.Metadata
                 new EnumConverterFactory(),
                 new JsonNodeConverterFactory(),
                 new FSharpTypeConverterFactory(),
+                // Tuple converter handles System.Tuple and System.ValueTuple types.
+                new TupleConverterFactory(),
                 new MemoryConverterFactory(),
                 // IAsyncEnumerable takes precedence over IEnumerable.
                 new IAsyncEnumerableConverterFactory(),

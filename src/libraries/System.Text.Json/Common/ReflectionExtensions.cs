@@ -224,6 +224,42 @@ namespace System.Text.Json.Reflection
         public static bool IsKeyValuePair(this Type type)
             => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>);
 
+        public static bool IsTuple(this Type type)
+        {
+            if (!type.IsGenericType)
+            {
+                return false;
+            }
+
+            Type genericTypeDef = type.GetGenericTypeDefinition();
+            return genericTypeDef == typeof(Tuple<>) ||
+                   genericTypeDef == typeof(Tuple<,>) ||
+                   genericTypeDef == typeof(Tuple<,,>) ||
+                   genericTypeDef == typeof(Tuple<,,,>) ||
+                   genericTypeDef == typeof(Tuple<,,,,>) ||
+                   genericTypeDef == typeof(Tuple<,,,,,>) ||
+                   genericTypeDef == typeof(Tuple<,,,,,,>) ||
+                   genericTypeDef == typeof(Tuple<,,,,,,,>);
+        }
+
+        public static bool IsValueTuple(this Type type)
+        {
+            if (!type.IsGenericType)
+            {
+                return false;
+            }
+
+            Type genericTypeDef = type.GetGenericTypeDefinition();
+            return genericTypeDef == typeof(ValueTuple<>) ||
+                   genericTypeDef == typeof(ValueTuple<,>) ||
+                   genericTypeDef == typeof(ValueTuple<,,>) ||
+                   genericTypeDef == typeof(ValueTuple<,,,>) ||
+                   genericTypeDef == typeof(ValueTuple<,,,,>) ||
+                   genericTypeDef == typeof(ValueTuple<,,,,,>) ||
+                   genericTypeDef == typeof(ValueTuple<,,,,,,>) ||
+                   genericTypeDef == typeof(ValueTuple<,,,,,,,>);
+        }
+
         public static bool TryGetDeserializationConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             this Type type,
