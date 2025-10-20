@@ -507,6 +507,33 @@ namespace System.Text.RegularExpressions
                 switch (_regexTree.FindOptimizations.FindMode)
                 {
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                        // If we also have a trailing End anchor with fixed length, we can check for exact length match.
+                        // Compute this lazily to avoid overhead in the interpreter.
+                        {
+                            RegexNodeKind trailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(_regexTree.Root);
+                            int minRequiredLength = _regexTree.FindOptimizations.MinRequiredLength;
+                            if (trailingAnchor == RegexNodeKind.End &&
+                                _regexTree.Root.ComputeMaxLength() is int maxLength &&
+                                minRequiredLength == maxLength)
+                            {
+                                // if (pos != 0 || inputSpan.Length != exactLength) goto returnFalse;
+                                // return true;
+                                Label success = DefineLabel();
+                                Ldloc(pos);
+                                Ldc(0);
+                                Bne(returnFalse);
+                                Ldloca(inputSpan);
+                                Call(SpanGetLengthMethod);
+                                Ldc(minRequiredLength);
+                                Beq(success);
+                                Br(returnFalse);
+                                MarkLabel(success);
+                                Ldc(1);
+                                Ret();
+                                return true;
+                            }
+                        }
+
                         // if (pos != 0) goto returnFalse;
                         // return true;
                         Ldloc(pos);

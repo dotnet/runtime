@@ -71,20 +71,6 @@ namespace System.Text.RegularExpressions
                     (_, false) => FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ,
                     (_, true) => FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ,
                 };
-
-                // Even when we have a leading anchor, compute the trailing anchor for potential additional optimizations.
-                // For example, if we have both a leading Beginning anchor and a trailing End anchor with fixed length,
-                // we can fail fast if the input isn't exactly the right length.
-                if (!rightToLeft && !isLeadingPartial && LeadingAnchor == RegexNodeKind.Beginning)
-                {
-                    TrailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(root);
-                    if (TrailingAnchor == RegexNodeKind.End && root.ComputeMaxLength() is int maxLength)
-                    {
-                        Debug.Assert(maxLength >= MinRequiredLength, $"{maxLength} should have been greater than {MinRequiredLength} minimum");
-                        MaxPossibleLength = maxLength;
-                    }
-                }
-
                 return;
             }
 

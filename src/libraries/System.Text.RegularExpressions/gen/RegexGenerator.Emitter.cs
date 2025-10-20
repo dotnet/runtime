@@ -955,15 +955,21 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
                         // If we also have a trailing End anchor with fixed length, we can check for exact length match.
-                        if (regexTree.FindOptimizations.TrailingAnchor == RegexNodeKind.End &&
-                            regexTree.FindOptimizations.MinRequiredLength == regexTree.FindOptimizations.MaxPossibleLength)
+                        // Compute this lazily to avoid overhead in the interpreter.
                         {
-                            writer.WriteLine($"// The pattern has both a leading beginning (\\A) and a trailing end (\\z) anchor, and any possible match is exactly {regexTree.FindOptimizations.MinRequiredLength} characters.");
-                            using (EmitBlock(writer, $"if (pos == 0 && inputSpan.Length == {regexTree.FindOptimizations.MinRequiredLength})"))
+                            RegexNodeKind trailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(regexTree.Root);
+                            int minRequiredLength = regexTree.FindOptimizations.MinRequiredLength;
+                            if (trailingAnchor == RegexNodeKind.End &&
+                                regexTree.Root.ComputeMaxLength() is int maxLength &&
+                                minRequiredLength == maxLength)
                             {
-                                writer.WriteLine("return true;");
+                                writer.WriteLine($"// The pattern has both a leading beginning (\\A) and a trailing end (\\z) anchor, and any possible match is exactly {minRequiredLength} characters.");
+                                using (EmitBlock(writer, $"if (pos == 0 && inputSpan.Length == {minRequiredLength})"))
+                                {
+                                    writer.WriteLine("return true;");
+                                }
+                                return true;
                             }
-                            return true;
                         }
 
                         writer.WriteLine("// The pattern leads with a beginning (\\A) anchor.");
