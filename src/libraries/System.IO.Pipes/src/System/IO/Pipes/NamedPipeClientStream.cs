@@ -88,7 +88,6 @@ namespace System.IO.Pipes
             _pipeOptions = options;
             _accessRights = AccessRightsFromDirection(direction);
         }
-
         [Obsolete(Obsoletions.NamedPipeClientStreamIsConnectedMessage, DiagnosticId = Obsoletions.NamedPipeClientStreamIsConnectedDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
