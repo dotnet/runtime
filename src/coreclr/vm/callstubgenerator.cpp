@@ -1602,7 +1602,29 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
 
         // Each entry on the interpreter stack is always aligned to at least 8 bytes, but some arguments are 16 byte aligned
         TypeHandle thArgTypeHandle;
-        if ((argIt.GetArgType(&thArgTypeHandle) == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > 8)
+        CorElementType corType = argIt.GetArgType(&thArgTypeHandle);
+#ifdef TARGET_ARM
+        if (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8 || corType == ELEMENT_TYPE_R8)
+        {
+            unsigned align = INTERP_STACK_SLOT_SIZE * 2;
+            if (interpreterStackOffset != ALIGN_UP(interpreterStackOffset, align))
+            {
+                TerminateCurrentRoutineIfNotOfNewType(RoutineType::None, pRoutines);
+
+                interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
+                pRoutines[m_routineIndex++] = (PCODE)InjectInterpStackAlign;
+#if LOG_COMPUTE_CALL_STUB
+                printf("Inject stack align argument\n");
+#endif
+            }
+
+            assert(interpreterStackOffset == ALIGN_UP(interpreterStackOffset, align));
+
+            interpStackSlotSize = INTERP_STACK_SLOT_SIZE * 2;
+        }
+        else
+#endif
+        if ((corType == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > INTERP_STACK_SLOT_SIZE)
         {
             unsigned align = CEEInfo::getClassAlignmentRequirementStatic(thArgTypeHandle);
             if (align < INTERP_STACK_SLOT_SIZE)

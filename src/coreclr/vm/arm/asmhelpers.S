@@ -971,6 +971,12 @@ ALTERNATE_ENTRY Store_R3
     EPILOG_BRANCH_REG r5
 LEAF_END Store_R0_R1_R2_R3
 
+LEAF_ENTRY InjectInterpStackAlign
+    add r7, r7, #4
+    ldr r5, [r6], #4
+    EPILOG_BRANCH_REG r5
+LEAF_END InjectInterpStackAlign
+
 LEAF_ENTRY Load_Stack
     ldr r8, [r6], #4 // SP offset
     ldr r9, [r6], #4 // number of stack slots
