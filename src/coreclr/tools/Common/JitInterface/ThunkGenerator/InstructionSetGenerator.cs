@@ -808,7 +808,7 @@ namespace Internal.JitInterface
             string nestedTypeName = null;
             while (metadataType.ContainingType != null)
             {
-                var enclosingType = (MetadataType)metadataType.ContainingType;
+                var enclosingType = metadataType.ContainingType;
                 namespaceName = enclosingType.GetNamespace();
                 nestedTypeName = nestedTypeName is null ? metadataType.GetName() : $""{metadataType.GetName()}_{nestedTypeName}"";
                 typeName = enclosingType.GetName();

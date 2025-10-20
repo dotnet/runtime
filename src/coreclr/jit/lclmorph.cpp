@@ -2020,7 +2020,7 @@ private:
                 }
 
                 if ((genTypeSize(indir) == genTypeSize(varDsc)) && (genTypeSize(indir) <= TARGET_POINTER_SIZE) &&
-                    (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
+                    (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)) && !varDsc->lvPromoted)
                 {
                     return IndirTransform::BitCast;
                 }

@@ -105,8 +105,7 @@
   #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT*sizeof(float))
 
   // Temporary registers used for the GS cookie check.
-  #define REG_GSCOOKIE_TMP_0       REG_R12
-  #define REG_GSCOOKIE_TMP_1       REG_LR
+  #define RBM_GSCOOKIE_TMP         (RBM_R12 | RBM_LR)
 
   // register to hold shift amount; no special register is required on the ARM
   #define REG_SHIFT                REG_NA

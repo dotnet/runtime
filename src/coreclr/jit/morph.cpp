@@ -4210,18 +4210,6 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         return false;
     }
 
-#ifdef TARGET_AMD64
-    // Needed for Jit64 compat.
-    // In future, enabling fast tail calls from methods that need GS cookie
-    // check would require codegen side work to emit GS cookie check before a
-    // tail call.
-    if (getNeedsGSSecurityCookie())
-    {
-        reportFastTailCallDecision("GS Security cookie check required");
-        return false;
-    }
-#endif
-
     // If the NextCallReturnAddress intrinsic is used we should do normal calls.
     if (info.compHasNextCallRetAddr)
     {
@@ -14306,10 +14294,7 @@ GenTree* Compiler::fgInitThisClass()
 
 //------------------------------------------------------------------------
 // fgPreExpandQmarkChecks: Verify that the importer has created GT_QMARK nodes
-// in a way we can process them. The following
-//
-// Returns:
-//    Suitable phase status.
+// in a way we can process them.
 //
 // Remarks:
 //   The following is allowed:
@@ -14530,6 +14515,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     elseBlock->SetFlags(propagateFlagsToAll);
 
     BasicBlock* thenBlock = nullptr;
+
     if (hasTrueExpr && hasFalseExpr)
     {
         //                       bbj_always
@@ -14541,7 +14527,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         // TODO: Remove unnecessary condition reversal
-        gtReverseCond(condExpr);
+        qmark->gtOp1 = condExpr = gtReverseCond(condExpr);
 
         thenBlock = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
         thenBlock->SetFlags(propagateFlagsToAll);
@@ -14574,7 +14560,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         //              bbj_cond(true)
         //
         // TODO: Remove unnecessary condition reversal
-        gtReverseCond(condExpr);
+        qmark->gtOp1 = condExpr = gtReverseCond(condExpr);
 
         const unsigned thenLikelihood = qmark->ThenNodeLikelihood();
         const unsigned elseLikelihood = qmark->ElseNodeLikelihood();

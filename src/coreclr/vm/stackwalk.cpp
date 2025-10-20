@@ -45,6 +45,44 @@ Assembly* CrawlFrame::GetAssembly()
     return pAssembly;
 }
 
+PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMark)
+{
+#ifdef FEATURE_INTERPRETER
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (stackMark == NULL)
+        return NULL;
+
+    if ((stackMark < pThread->GetCachedStackLimit()) || stackMark > pThread->GetCachedStackBase())
+    {
+        PTR_Frame pFrame = pThread->GetFrame();
+        while (pFrame != FRAME_TOP)
+        {
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                PTR_InterpreterFrame pInterpFrame = dac_cast<PTR_InterpreterFrame>(pFrame);
+                PTR_InterpMethodContextFrame pTopInterpMethodContextFrame = pInterpFrame->GetTopInterpMethodContextFrame();
+                PTR_InterpMethodContextFrame pCurrent = pTopInterpMethodContextFrame;
+                do
+                {
+                    if (dac_cast<PTR_VOID>(pCurrent->pStack) <= stackMark)
+                    {
+                        return dac_cast<PTR_VOID>(dac_cast<TADDR>(pCurrent) + 1);
+                    }
+                    pCurrent = pCurrent->pParent;
+                } while (pCurrent != NULL);
+                
+            }
+
+            pFrame = pFrame->PtrNextFrame();
+        }
+
+        _ASSERTE(!"Unable to find InterpMethodContextFrame for stackMark that appears to be on the interpreter stack");
+    }
+#endif
+    return stackMark;
+}
+
 BOOL CrawlFrame::IsInCalleesFrames(LPVOID stackPointer)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2774,7 +2812,9 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
                     m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
                     m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
-
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+                    m_interpExecMethodSSP = pRD->SSP;
+#endif
                     ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
                     if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
                     {
@@ -2795,6 +2835,9 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
                     SetFP(pRD->pCurrentContext, m_interpExecMethodFP);
                     SetFirstArgReg(pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+                    pRD->SSP = m_interpExecMethodSSP;
+#endif
                     SyncRegDisplayToCurrentContext(pRD);
                 }
             }
@@ -2806,6 +2849,9 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
                 m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
                 m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+                m_interpExecMethodSSP = pRD->SSP;
+#endif
             }
         }
 #endif // FEATURE_INTERPRETER

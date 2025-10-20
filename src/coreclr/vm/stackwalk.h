@@ -744,6 +744,9 @@ private:
     TADDR         m_interpExecMethodSP;
     TADDR         m_interpExecMethodFP;
     TADDR         m_interpExecMethodFirstArgReg;
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+    TADDR         m_interpExecMethodSSP;
+#endif // TARGET_AMD64 && TARGET_WINDOWS
 #endif // FEATURE_INTERPRETER
 
 #if defined(RECORD_RESUMABLE_FRAME_SP)
@@ -756,5 +759,6 @@ private:
 };
 
 void SetUpRegdisplayForStackWalk(Thread * pThread, T_CONTEXT * pContext, REGDISPLAY * pRegdisplay);
+PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMark);
 
 #endif

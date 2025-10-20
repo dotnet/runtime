@@ -402,14 +402,14 @@ bool interceptor_ICJI::getIsClassInitedFlagAddress(
     return original_ICorJitInfo->getIsClassInitedFlagAddress(cls, addr, offset);
 }
 
-size_t interceptor_ICJI::getClassThreadStaticDynamicInfo(
+void* interceptor_ICJI::getClassThreadStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr)
 {
     mcs->AddCall("getClassThreadStaticDynamicInfo");
     return original_ICorJitInfo->getClassThreadStaticDynamicInfo(clr);
 }
 
-size_t interceptor_ICJI::getClassStaticDynamicInfo(
+void* interceptor_ICJI::getClassStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr)
 {
     mcs->AddCall("getClassStaticDynamicInfo");
@@ -1264,6 +1264,15 @@ bool interceptor_ICJI::getTailCallHelpers(
 {
     mcs->AddCall("getTailCallHelpers");
     return original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize)
+{
+    mcs->AddCall("getContinuationType");
+    return original_ICorJitInfo->getContinuationType(dataSize, objRefs, objRefsSize);
 }
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()

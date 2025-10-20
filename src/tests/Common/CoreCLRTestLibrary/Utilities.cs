@@ -99,6 +99,18 @@ namespace TestLibrary
         public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
         public static bool IsNotNativeAot => !IsNativeAot;
 
+        public static bool IsCoreClrInterpreter
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DOTNET_Interpreter")))
+                    return true;
+                if (int.TryParse(Environment.GetEnvironmentVariable("DOTNET_InterpMode") ?? "", out int mode) && (mode > 0))
+                    return true;
+                return false;
+            }
+        }
+
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(Utilities).Assembly.Location);
         public static bool IsSingleFile => !HasAssemblyFiles;
 

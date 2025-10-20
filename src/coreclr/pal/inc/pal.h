@@ -549,38 +549,6 @@ PALAPI GetFileSizeEx(
         OUT  PLARGE_INTEGER lpFileSize);
 
 PALIMPORT
-VOID
-PALAPI
-GetSystemTimeAsFileTime(
-            OUT LPFILETIME lpSystemTimeAsFileTime);
-
-typedef struct _SYSTEMTIME {
-    WORD wYear;
-    WORD wMonth;
-    WORD wDayOfWeek;
-    WORD wDay;
-    WORD wHour;
-    WORD wMinute;
-    WORD wSecond;
-    WORD wMilliseconds;
-} SYSTEMTIME, *PSYSTEMTIME, *LPSYSTEMTIME;
-
-PALIMPORT
-VOID
-PALAPI
-GetSystemTime(
-          OUT LPSYSTEMTIME lpSystemTime);
-
-PALIMPORT
-BOOL
-PALAPI
-FileTimeToSystemTime(
-            IN CONST FILETIME *lpFileTime,
-            OUT LPSYSTEMTIME lpSystemTime);
-
-
-
-PALIMPORT
 BOOL
 PALAPI
 FlushFileBuffers(

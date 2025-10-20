@@ -132,15 +132,6 @@ const BYTE genActualTypes[] = {
 };
 
 #endif // FEATURE_JIT_METHOD_PERF
-/*****************************************************************************/
-inline unsigned getCurTime()
-{
-    SYSTEMTIME tim;
-
-    GetSystemTime(&tim);
-
-    return (((tim.wHour * 60) + tim.wMinute) * 60 + tim.wSecond) * 1000 + tim.wMilliseconds;
-}
 
 /*****************************************************************************/
 #ifdef DEBUG
@@ -5093,6 +5084,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s%s]\n", methodsCompiled, fullName,
                compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
                info.compILCodeSize, *methodCodeSize, debugPart, metricPart);
+        fflush(jitstdout());
     }
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
