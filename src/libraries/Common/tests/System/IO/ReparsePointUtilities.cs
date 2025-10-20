@@ -161,7 +161,7 @@ public static partial class MountHelper
 
         symLinkProcess.WaitForExit();
 
-        return (symLinkProcess.ExitCode == 0);
+        return symLinkProcess.ExitCode == 0;
     }
 
     private static bool IsProcessStartSupported()
