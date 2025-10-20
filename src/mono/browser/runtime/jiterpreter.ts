@@ -299,7 +299,7 @@ function getTraceImports () {
     if (nullCheckValidation)
         traceImports.push(importDef("notnull", assert_not_null));
 
-    if (runtimeHelpers.emscriptenBuildOptions.enablePerfTracing || runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
+    if (runtimeHelpers.emscriptenBuildOptions.enableEventPipe || runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
         traceImports.push(importDef("prof_enter", getRawCwrap("mono_jiterp_prof_enter")));
         traceImports.push(importDef("prof_samplepoint", getRawCwrap("mono_jiterp_prof_samplepoint")));
         traceImports.push(importDef("prof_leave", getRawCwrap("mono_jiterp_prof_leave")));
@@ -875,7 +875,7 @@ function generate_wasm (
             return 0;
         }
 
-        const traceModule = new WebAssembly.Module(buffer);
+        const traceModule = new WebAssembly.Module(buffer as BufferSource);
         const wasmImports = builder.getWasmImports();
         const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
 
@@ -945,7 +945,7 @@ function generate_wasm (
                     builder.endSection();
             } catch {
                 // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                ;
+
             }
 
             const buf = builder.getArrayView(false, true);

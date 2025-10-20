@@ -115,7 +115,7 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
         // For ILOnly it depends on TieredPGO_InstrumentOnlyHotCode:
         // 1 - OptimizationTier0 as we don't want to instrument the initial version (will only instrument hot Tier0)
         // 2 - OptimizationTier0Instrumented - instrument all ILOnly code
-        if (g_pConfig->TieredPGO_InstrumentOnlyHotCode() || 
+        if (g_pConfig->TieredPGO_InstrumentOnlyHotCode() ||
             ExecutionManager::IsReadyToRunCode(pMethodDesc->GetNativeCode()))
         {
             return NativeCodeVersion::OptimizationTier0;
@@ -128,6 +128,16 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
 #else
     return NativeCodeVersion::OptimizationTierOptimized;
 #endif
+}
+
+bool TieredCompilationManager::IsTieringDelayActive()
+{
+    LIMITED_METHOD_CONTRACT;
+#if defined(FEATURE_TIERED_COMPILATION)
+    return m_methodsPendingCountingForTier1 != nullptr;
+#else
+    return false;
+#endif // FEATURE_TIERED_COMPILATION
 }
 
 #if defined(FEATURE_TIERED_COMPILATION) && !defined(DACCESS_COMPILE)
@@ -212,7 +222,7 @@ void TieredCompilationManager::HandleCallCountingForFirstCall(MethodDesc* pMetho
 
             EX_RETHROW;
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
     }
 
     if (ETW::CompilationLog::TieredCompilation::Runtime::IsEnabled())
@@ -433,7 +443,7 @@ void TieredCompilationManager::CreateBackgroundWorker()
 
         EX_RETHROW;
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 }
 
 DWORD WINAPI TieredCompilationManager::BackgroundWorkerBootstrapper0(LPVOID args)
@@ -574,12 +584,6 @@ void TieredCompilationManager::BackgroundWorkerStart()
     }
 }
 
-bool TieredCompilationManager::IsTieringDelayActive()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_methodsPendingCountingForTier1 != nullptr;
-}
-
 bool TieredCompilationManager::TryDeactivateTieringDelay()
 {
     CONTRACTL
@@ -661,8 +665,9 @@ bool TieredCompilationManager::TryDeactivateTieringDelay()
                 STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::DeactivateTieringDelay: "
                     "Exception in CallCountingManager::SetCodeEntryPoint, hr=0x%x\n",
                     GET_EXCEPTION()->GetHR());
+                RethrowTerminalExceptions();
             }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_END_CATCH
         }
     }
 
@@ -808,8 +813,9 @@ bool TieredCompilationManager::DoBackgroundWork(
                 STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::DoBackgroundWork: "
                     "Exception in CallCountingManager::CompleteCallCounting, hr=0x%x\n",
                     GET_EXCEPTION()->GetHR());
+                RethrowTerminalExceptions();
             }
-            EX_END_CATCH(RethrowTerminalExceptions);
+            EX_END_CATCH
 
             continue;
         }
@@ -912,8 +918,9 @@ bool TieredCompilationManager::DoBackgroundWork(
             STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::DoBackgroundWork: "
                 "Exception in CallCountingManager::StopAndDeleteAllCallCountingStubs, hr=0x%x\n",
                 GET_EXCEPTION()->GetHR());
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        EX_END_CATCH
     }
 
     *workDurationTicksRef = workDurationTicks;
@@ -971,8 +978,9 @@ BOOL TieredCompilationManager::CompileCodeVersion(NativeCodeVersion nativeCodeVe
         // Failing to jit should be rare but acceptable. We will leave whatever code already exists in place.
         STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "TieredCompilationManager::CompileCodeVersion: Method %pM failed to jit, hr=0x%x\n",
             pMethod, GET_EXCEPTION()->GetHR());
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
     return pCode != (PCODE)NULL;
 }
@@ -995,7 +1003,7 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
         bool mayHaveEntryPointSlotsToBackpatch = pMethod->MayHaveEntryPointSlotsToBackpatch();
         MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(mayHaveEntryPointSlotsToBackpatch);
         CodeVersionManager::LockHolder codeVersioningLockHolder;
-        
+
         // As long as we are exclusively using any non-JumpStamp publishing for tiered compilation
         // methods this first attempt should succeed
         ilParent = nativeCodeVersion.GetILCodeVersion();

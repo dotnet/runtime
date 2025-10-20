@@ -22,17 +22,21 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override bool EmitVirtualSlots => true;
 
+        protected override bool IsReflectionVisible => true;
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
 
-            // Ensure that we track the necessary type symbol if we are working with a constructed type symbol.
+            if (_type.IsIDynamicInterfaceCastable)
+            {
+                dependencyList.Add(factory.AnalysisCharacteristic("DynamicInterfaceCastablePresent"), "Implements IDynamicInterfaceCastable");
+            }
+
+            // Ensure that we track the metadata type symbol if we are working with a constructed type symbol.
             // The emitter will ensure we don't emit both, but this allows us assert that we only generate
             // relocs to nodes we emit.
-            dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for constructed type");
-
-            if (_type is MetadataType mdType)
-                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, mdType.Module);
+            dependencyList.Add(factory.MetadataTypeSymbol(_type), "MetadataType for constructed type");
 
             DefType closestDefType = _type.GetClosestDefType();
 
@@ -53,22 +57,23 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
-            // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
-
-            factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
+            if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
+            {
+                factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
+            }
 
             return dependencyList;
         }
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)
         {
-            return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType) : null;
+            return _type.BaseType != null ? factory.ConstructedTypeSymbol(_type.BaseType.NormalizeInstantiation()) : null;
         }
 
         protected override FrozenRuntimeTypeNode GetFrozenRuntimeTypeNode(NodeFactory factory)
         {
-            return factory.SerializedConstructedRuntimeTypeObject(_type);
+            Debug.Assert(!_type.IsCanonicalSubtype(CanonicalFormKind.Any));
+            return factory.SerializedMetadataRuntimeTypeObject(_type);
         }
 
         protected override ISymbolNode GetNonNullableValueTypeArrayElementTypeNode(NodeFactory factory)
@@ -79,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override IEETypeNode GetInterfaceTypeNode(NodeFactory factory, TypeDesc interfaceType)
         {
             // The interface type will be visible to reflection and should be considered constructed.
-            return factory.ConstructedTypeSymbol(interfaceType);
+            return factory.ConstructedTypeSymbol(interfaceType.NormalizeInstantiation());
         }
 
         protected override int GCDescSize => GCDescEncoder.GetGCDescSize(_type);

@@ -14,12 +14,12 @@ namespace System.IO.Compression
         /// Those methods will wrap this structure into a <see cref="ZLibStreamHandle" /> and thus make sure that it is always disposed correctly.
         /// </summary>
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        internal struct ZStream
+        internal unsafe struct ZStream
         {
             internal IntPtr nextIn;  //Bytef    *next_in;  /* next input byte */
             internal IntPtr nextOut; //Bytef    *next_out; /* next output byte should be put there */
 
-            internal IntPtr msg;     //char     *msg;      /* last error message, NULL if no error */
+            internal byte* msg;      //char     *msg;      /* last error message, NULL if no error */
 
             private readonly IntPtr internalState;    //internal state that is not visible to managed code
 

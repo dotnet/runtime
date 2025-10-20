@@ -3,8 +3,8 @@
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 
 #include <minipal/debugger.h>

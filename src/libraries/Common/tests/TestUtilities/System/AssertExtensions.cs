@@ -426,7 +426,17 @@ namespace System
                 throw new XunitException($"Expected length: {expected.Length}{Environment.NewLine}Actual length: {actual.Length}");
             }
 
-            AssertExtensions.TrueExpression(expected.Overlaps(actual, out int offset) && offset == 0);
+            if (expected.Length == 0 && actual.Length == 0)
+            {
+                nint byteOffset = Unsafe.ByteOffset(
+                    ref MemoryMarshal.GetReference(expected),
+                    ref MemoryMarshal.GetReference(actual));
+                AssertExtensions.TrueExpression(byteOffset == 0);
+            }
+            else
+            {
+                AssertExtensions.TrueExpression(expected.Overlaps(actual, out int offset) && offset == 0);
+            }
         }
 
         // NOTE: Consider using SequenceEqual below instead, as it will give more useful information about what

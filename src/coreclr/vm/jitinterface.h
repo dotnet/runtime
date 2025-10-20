@@ -65,11 +65,14 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 }
 
 
-void InitJITHelpers1();
+void InitJITAllocationHelpers();
+
+void InitJITWriteBarrierHelpers();
 
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
                         _Out_ bool* isTier0,
+                        _Out_ bool* isInterpreterCode,
                         _Out_ ULONG* pSizeOfCode);
 
 void getMethodInfoILMethodHeaderHelper(
@@ -81,7 +84,7 @@ void getMethodInfoILMethodHeaderHelper(
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
                           SIZE_T *entry,
-                          BOOL mayUsePrecompiledNDirectMethods = TRUE);
+                          BOOL mayUsePrecompiledPInvokeMethods = TRUE);
 
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
 EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
@@ -143,15 +146,28 @@ EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStatic
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor, DynamicStaticsInfo* pStaticsInfo);
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pStaticsInfo);
 
-extern FCDECL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_);
-extern FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL1(Object*, RhpNewFast, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, MethodTable* pMT, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhNewString, MethodTable* pMT, INT_PTR stringLength);
 
-extern FCDECL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength);
-extern FCDECL1(StringObject*, FramedAllocateString, DWORD stringLength);
+#if defined(FEATURE_64BIT_ALIGNMENT)
+EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT);
+EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size);
+#endif
 
-extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
+EXTERN_C FCDECL1(Object*, RhpNewFast_UP, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, MethodTable* pMT, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast_UP, MethodTable* pMT, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhNewString_UP, MethodTable* pMT, INT_PTR stringLength);
+#endif
+
+EXTERN_C FCDECL1(Object*, RhpNew, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR size);
+EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, MethodTable* pMT);
+EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, MethodTable* pMT, INT_PTR size);
 
 EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
 EXTERN_C FCDECL3(void, JITutil_MonTryEnter, Object* obj, INT32 timeOut, BYTE* pbLockTaken);
@@ -160,10 +176,12 @@ EXTERN_C FCDECL2(void, JITutil_MonReliableContention, AwareLock* awarelock, BYTE
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase_Helper, MethodTable *pMT);
 EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Helper, MethodTable *pMT);
 
-EXTERN_C void DoJITFailFast ();
+EXTERN_C void DoJITFailFast();
 EXTERN_C FCDECL0(void, JIT_FailFast);
 
 FCDECL0(int, JIT_GetCurrentManagedThreadId);
+
+EXTERN_C void ReversePInvokeBadTransition();
 
 #if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 // Extra argument for the classification of the checked barriers.
@@ -522,14 +540,12 @@ public:
         m_numRichOffsetMappings = 0;
     }
 
-    virtual void BackoutJitData(EECodeGenManager * jitMgr) = 0;
-
     // ICorDebugInfo stuff.
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars) override final;
-    void CompressDebugInfo(PCODE nativeEntry);
+    void CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nativeCodeVersion);
     virtual void SetDebugInfo(PTR_BYTE pDebugInfo) = 0;
 
     virtual PatchpointInfo* GetPatchpointInfo()
@@ -552,14 +568,14 @@ public:
 
     virtual void WriteCode(EECodeGenManager * jitMgr) = 0;
 
-    void* getHelperFtn(CorInfoHelpFunc    ftnNum,                         /* IN  */
-                       void **            ppIndirection) override;  /* OUT */
+    void getHelperFtn(CorInfoHelpFunc         tnNum,                     /* IN  */
+                      CORINFO_CONST_LOOKUP *  pNativeEntrypoint,         /* OUT */
+                      CORINFO_METHOD_HANDLE * pMethodHandle) override;   /* OUT */
     static PCODE getHelperFtnStatic(CorInfoHelpFunc ftnNum);
 
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override;
     InfoAccessType emptyStringLiteral(void ** ppValue) override;
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
-    void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
 
     CORINFO_METHOD_INFO* getMethodInfoInternal();
     CORJIT_FLAGS* getJitFlagsInternal();
@@ -599,9 +615,6 @@ protected:
 #if defined(_DEBUG)
     ULONG                   m_codeSize;     // Code size requested via allocMem
 #endif
-
-    size_t                  m_GCinfo_len;   // Cached copy of GCinfo_len so we can backout in BackoutJitData()
-    size_t                  m_EHinfo_len;   // Cached copy of EHinfo_len so we can backout in BackoutJitData()
 
     ULONG32                 m_iOffsetMapping;
     ICorDebugInfo::OffsetMapping * m_pOffsetMapping;
@@ -697,7 +710,6 @@ public:
 
     uint32_t getExpectedTargetArchitecture() override;
 
-    void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     void ResetForJitRetry() override
@@ -954,20 +966,37 @@ public:
     void WriteCodeBytes();
     void WriteCode(EECodeGenManager * jitMgr) override;
 
-    void BackoutJitData(EECodeGenManager * jitMgr) override;
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
+
+    LPVOID GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig) override;
 };
 #endif // FEATURE_INTERPRETER
 
 /*********************************************************************/
 /*********************************************************************/
 
-typedef struct {
-    void * pfnHelper;
+// enum for dynamically assigned helper calls
+enum DynamicCorInfoHelpFunc {
+#define JITHELPER(code, pfnHelper, binderId)
+#define DYNAMICJITHELPER(code, pfnHelper, binderId) DYNAMIC_##code,
+#include "jithelpers.h"
+    DYNAMIC_CORINFO_HELP_COUNT
+};
+
+struct VMHELPDEF
+{
+    PCODE pfnHelper;
+
 #ifdef _DEBUG
     const char* name;
-#endif
-} VMHELPDEF;
+#endif // _DEBUG
+
+#if defined(_DEBUG) || defined(TARGET_WASM)
+    bool _isDynamicHelper;
+#endif // _DEBUG || TARGET_WASM
+
+    bool IsDynamicHelper(DynamicCorInfoHelpFunc* dynamicFtnNum) const;
+};
 
 #if defined(DACCESS_COMPILE)
 
@@ -977,15 +1006,11 @@ GARY_DECL(VMHELPDEF, hlpFuncTable, CORINFO_HELP_COUNT);
 
 extern "C" const VMHELPDEF hlpFuncTable[CORINFO_HELP_COUNT];
 
-#endif
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+extern "C" PCODE hlpFuncEntryPoints[CORINFO_HELP_COUNT];
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-// enum for dynamically assigned helper calls
-enum DynamicCorInfoHelpFunc {
-#define JITHELPER(code, pfnHelper, binderId)
-#define DYNAMICJITHELPER(code, pfnHelper, binderId) DYNAMIC_##code,
-#include "jithelpers.h"
-    DYNAMIC_CORINFO_HELP_COUNT
-};
+#endif
 
 #ifdef _MSC_VER
 // GCC complains about duplicate "extern". And it is not needed for the GCC build
@@ -996,8 +1021,9 @@ GARY_DECL(VMHELPDEF, hlpDynamicFuncTable, DYNAMIC_CORINFO_HELP_COUNT);
 #define SetJitHelperFunction(ftnNum, pFunc) _SetJitHelperFunction(DYNAMIC_##ftnNum, (void*)(pFunc))
 void    _SetJitHelperFunction(DynamicCorInfoHelpFunc ftnNum, void * pFunc);
 
-VMHELPDEF LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum, MethodDesc** methodDesc = NULL);
+PCODE LoadDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
 bool HasILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
+MethodDesc* GetMethodDescForILBasedDynamicJitHelper(DynamicCorInfoHelpFunc ftnNum);
 bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum);
 
 void *GenFastGetSharedStaticBase(bool bCheckCCtor);
@@ -1008,11 +1034,6 @@ void SetupGcCoverageForNativeImage(Module* module);
 BOOL OnGcCoverageInterrupt(PT_CONTEXT regs);
 void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);
 #endif //HAVE_GCCOVER
-
-// ppPinnedString: If the string is pinned (e.g. allocated in frozen heap),
-// the pointer to the pinned string is returned in *ppPinnedPointer. ppPinnedPointer == nullptr
-// means that the caller does not care whether the string is pinned or not.
-STRINGREF* ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString = nullptr);
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 
@@ -1029,17 +1050,12 @@ struct VirtualFunctionPointerArgs
     CORINFO_METHOD_HANDLE methodHnd;
 };
 
-typedef HCCALL1_PTR(TADDR, FnStaticBaseHelper, TADDR arg0);
-
 struct StaticFieldAddressArgs
 {
-    FnStaticBaseHelper staticBaseHelper;
+    PCODE staticBaseHelper;
     TADDR arg0;
     SIZE_T offset;
 };
-
-FCDECL1(TADDR, JIT_StaticFieldAddress_Dynamic, StaticFieldAddressArgs * pArgs);
-FCDECL1(TADDR, JIT_StaticFieldAddressUnbox_Dynamic, StaticFieldAddressArgs * pArgs);
 
 struct GenericHandleArgs
 {

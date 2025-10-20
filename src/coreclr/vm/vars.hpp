@@ -345,6 +345,12 @@ GPTR_DECL(MethodTable,      g_TypedReferenceMT);
 GPTR_DECL(MethodTable,      g_pWeakReferenceClass);
 GPTR_DECL(MethodTable,      g_pWeakReferenceOfTClass);
 
+#ifdef DACCESS_COMPILE
+GPTR_DECL(MethodTable,      g_pContinuationClassIfSubTypeCreated);
+#else
+GVAL_DECL(Volatile<MethodTable*>, g_pContinuationClassIfSubTypeCreated);
+#endif
+
 #ifdef FEATURE_COMINTEROP
 GPTR_DECL(MethodTable,      g_pBaseCOMObject);
 #endif
@@ -356,6 +362,8 @@ GPTR_DECL(MethodDesc,       g_pObjectFinalizerMD);
 GVAL_DECL(DWORD,            g_debuggerWordTLSIndex);
 #endif
 GVAL_DECL(DWORD,            g_TlsIndex);
+GVAL_DECL(DWORD,            g_offsetOfCurrentThreadInfo);
+GVAL_DECL(DWORD,            g_gcNotificationFlags);
 
 #ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);
@@ -418,10 +426,6 @@ GVAL_DECL(DWORD, g_externalMethodFixupTraceActiveCount);
 
 #endif // DEBUGGING_SUPPORTED
 
-#ifdef PROFILING_SUPPORTED
-EXTERN HINSTANCE            g_pDebuggerDll;
-#endif
-
 // Global default for Concurrent GC. The default is on (value 1)
 EXTERN int g_IGCconcurrent;
 extern int g_IGCHoardVM;
@@ -450,7 +454,11 @@ EXTERN BOOL g_fComStarted;
 //
 // Global state variables indicating which stage of shutdown we are in
 //
+#ifdef DACCESS_COMPILE
 GVAL_DECL(DWORD, g_fEEShutDown);
+#else
+GVAL_DECL(Volatile<DWORD>, g_fEEShutDown);
+#endif
 EXTERN DWORD g_fFastExitProcess;
 EXTERN BOOL g_fFatalErrorOccurredOnGCThread;
 GVAL_DECL(bool, g_fProcessDetach);
@@ -501,7 +509,7 @@ EXTERN const char g_psBaseLibrarySatelliteAssemblyName[];
 EXTERN bool g_fWeControlLifetime;
 
 // There is a global table of prime numbers that's available for e.g. hashing
-extern const DWORD g_rgPrimes[71];
+extern const DWORD g_rgPrimes[102];
 
 //
 // Macros to check debugger and profiler settings.
@@ -552,7 +560,7 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #endif
 
 #ifndef MAXULONGLONG
-#define MAXULONGLONG                     UI64(0xffffffffffffffff)
+#define MAXULONGLONG                     0xffffffffffffffffULL
 #endif
 
 //-----------------------------------------------------------------------------

@@ -271,6 +271,29 @@ C_FUNC(\Name):
         vpop_nonvol_reg "\RegList"
 .endm
 
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
+        bl      C_FUNC(GetThreadEEAllocContext)
+.endm
+
+.macro PUSH_COOP_PINVOKE_FRAME target
+        // Reserve space for argument registers
+        alloc_stack 16
+        PUSH_CALLEE_SAVED_REGISTERS
+        PROLOG_STACK_SAVE_OFFSET r7, #12
+        // let r7 point the saved r7 in the stack (clang FP style)
+        // align the stack
+        alloc_stack 4
+        CHECK_STACK_ALIGNMENT
+        END_PROLOGUE
+        add     \target, sp, 4
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+        free_stack 4
+        POP_CALLEE_SAVED_REGISTERS
+        free_stack 16
+.endm
+
 //-----------------------------------------------------------------------------
 // Macro used to check (in debug builds only) whether the stack is 64-bit aligned (a requirement before calling
 // out into C++/OS code). Invoke this directly after your prolog (if the stack frame size is fixed) or directly
@@ -288,4 +311,10 @@ C_FUNC(\Name):
         EMIT_BREAKPOINT
 0:
 #endif
+.endm
+
+// Loads a 32bit constant into destination register
+.macro MOV32 DestReg, Constant
+        movw \DestReg, #((\Constant) & 0xFFFF)
+        movt \DestReg, #((\Constant) >> 16)
 .endm

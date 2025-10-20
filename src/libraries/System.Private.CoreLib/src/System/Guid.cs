@@ -276,8 +276,8 @@ namespace System
 
         /// <summary>Gets the value of the variant field for the <see cref="Guid" />.</summary>
         /// <remarks>
-        ///     <para>This corresponds to the most significant 4 bits of the 8th byte: 00000000-0000-0000-F000-000000000000. The "don't-care" bits are not masked out.</para>
-        ///     <para>See RFC 9562 for more information on how to interpret this value.</para>
+        ///     <para>This returns all 4 bits as is, some users may only care about fewer bits of the variant field and should refer to RFC 9562 for how to interpret the result.</para>
+        ///     <para>For example, UUIDv7 may only want to consider the 2 most significant bits of the field as the least 2 significant bits are documented as "don't-care".</para>
         /// </remarks>
         public int Variant => _d >> 4;
 
@@ -345,6 +345,11 @@ namespace System
             return result.ToGuid();
         }
 
+        /// <summary>
+        /// Parses the specified sequence of UTF-8 encoded bytes and returns a new <see cref="Guid"/>.
+        /// </summary>
+        /// <param name="utf8Text">A span containing the UTF-8 encoded representation of the GUID to parse.</param>
+        /// <returns>The parsed <see cref="Guid"/>.</returns>
         public static Guid Parse(ReadOnlySpan<byte> utf8Text)
         {
             var result = new GuidResult(GuidParseThrowStyle.AllButOverflow);
@@ -380,6 +385,12 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Tries to parse the specified sequence of UTF-8 encoded bytes as a GUID.
+        /// </summary>
+        /// <param name="utf8Text">A span containing the UTF-8 encoded representation of the GUID to parse.</param>
+        /// <param name="result">When this method returns, contains the parsed <see cref="Guid"/>, if the parse succeeded; otherwise, the default value.</param>
+        /// <returns><see langword="true"/> if the parse operation succeeded; otherwise, <see langword="false"/>.</returns>
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Guid result)
         {
             var parseResult = new GuidResult(GuidParseThrowStyle.None);
@@ -562,6 +573,8 @@ namespace System
 
             static bool TryCompatParsing(ReadOnlySpan<TChar> guidString, ref GuidResult result)
             {
+                guidString = guidString.Slice(0, 36);
+
                 if (TryParseHex(guidString.Slice(0, 8), out result._a) && // _a
                     TryParseHex(guidString.Slice(9, 4), out uint uintTmp)) // _b
                 {
@@ -1078,7 +1091,7 @@ namespace System
         {
             if (Vector128.IsHardwareAccelerated)
             {
-                return Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in left))) == Vector128.LoadUnsafe(ref Unsafe.As<Guid, byte>(ref Unsafe.AsRef(in right)));
+                return Unsafe.BitCast<Guid, Vector128<byte>>(left) == Unsafe.BitCast<Guid, Vector128<byte>>(right);
             }
 
             ref int rA = ref Unsafe.AsRef(in left._a);
@@ -1514,7 +1527,7 @@ namespace System
                 (byte)'8', (byte)'9', (byte)'a', (byte)'b',
                 (byte)'c', (byte)'d', (byte)'e', (byte)'f');
 
-            Vector128<byte> srcVec = Unsafe.As<Guid, Vector128<byte>>(ref value);
+            Vector128<byte> srcVec = Unsafe.BitCast<Guid, Vector128<byte>>(value);
             (Vector128<byte> hexLow, Vector128<byte> hexHigh) =
                 HexConverter.AsciiToHexVector128(srcVec, hexMap);
 

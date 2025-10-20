@@ -30,8 +30,7 @@ HRESULT Assembler::InitMetaData()
 
     if(bClock) bClock->cMDInitBegin = minipal_lowres_ticks();
 
-    hr = MetaDataGetDispenser(CLSID_CorMetaDataDispenser,
-        IID_IMetaDataDispenserEx2, (void **)&m_pDisp);
+    hr = CreateMetaDataDispenser(IID_IMetaDataDispenserEx2, (void **)&m_pDisp);
     if (FAILED(hr))
         goto exit;
 
@@ -1239,7 +1238,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             if(m_dwCeeFileFlags & ICEE_CREATE_FILE_PE64)
             {
                 ULONGLONG *pdw = new ULONGLONG[N];
-                for(i=0; i<N; i++) pdw[i] = UI64(0xdeadbeefdeadbeef);
+                for(i=0; i<N; i++) pdw[i] = 0xdeadbeefdeadbeefULL;
                 EmitData(pdw,sizeof(ULONGLONG)*N);
                 m_VTFList.PUSH(new VTFEntry((USHORT)N,COR_VTABLE_64BIT|COR_VTABLE_FROM_UNMANAGED,sz));
                 delete [] pdw;

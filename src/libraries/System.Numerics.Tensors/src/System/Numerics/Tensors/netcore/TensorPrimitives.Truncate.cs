@@ -21,8 +21,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Truncate<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : IFloatingPoint<T> =>
+            where T : IFloatingPoint<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, TruncateOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, TruncateOperator<T>>(x, destination);
+        }
 
         private readonly struct TruncateOperator<T> : IUnaryOperator<T, T> where T : IFloatingPoint<T>
         {

@@ -56,7 +56,7 @@ struct simd8_t
     {
         simd8_t result;
 
-        result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+        result.u64[0] = UINT64_MAX;
 
         return result;
     }
@@ -76,7 +76,7 @@ struct simd8_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd8_t) == 8);
+static_assert(sizeof(simd8_t) == 8);
 
 #include <pshpack4.h>
 struct simd12_t
@@ -113,9 +113,9 @@ struct simd12_t
     {
         simd12_t result;
 
-        result.u32[0] = 0xFFFFFFFF;
-        result.u32[1] = 0xFFFFFFFF;
-        result.u32[2] = 0xFFFFFFFF;
+        result.u32[0] = UINT32_MAX;
+        result.u32[1] = UINT32_MAX;
+        result.u32[2] = UINT32_MAX;
 
         return result;
     }
@@ -136,7 +136,7 @@ struct simd12_t
     }
 };
 #include <poppack.h>
-static_assert_no_msg(sizeof(simd12_t) == 12);
+static_assert(sizeof(simd12_t) == 12);
 
 struct simd16_t
 {
@@ -190,7 +190,7 @@ struct simd16_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd16_t) == 16);
+static_assert(sizeof(simd16_t) == 16);
 
 #if defined(TARGET_XARCH)
 struct simd32_t
@@ -246,7 +246,7 @@ struct simd32_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd32_t) == 32);
+static_assert(sizeof(simd32_t) == 32);
 
 struct simd64_t
 {
@@ -302,7 +302,7 @@ struct simd64_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd64_t) == 64);
+static_assert(sizeof(simd64_t) == 64);
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -322,7 +322,7 @@ struct simdmask_t
 
     bool operator==(const simdmask_t& other) const
     {
-        return (u64[0] == other.u64[0]);
+        return GetRawBits() == other.GetRawBits();
     }
 
     bool operator!=(const simdmask_t& other) const
@@ -330,19 +330,25 @@ struct simdmask_t
         return !(*this == other);
     }
 
-    static simdmask_t AllBitsSet(unsigned elementCount)
+    static uint64_t GetBitMask(uint32_t elementCount)
     {
         assert((elementCount >= 1) && (elementCount <= 64));
-        simdmask_t result;
 
         if (elementCount == 64)
         {
-            result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+            return UINT64_MAX;
         }
         else
         {
-            result.u64[0] = (1ULL << elementCount) - 1;
+            return (1ULL << elementCount) - 1;
         }
+    }
+
+    static simdmask_t AllBitsSet(uint32_t elementCount)
+    {
+        simdmask_t result;
+
+        result.u64[0] = GetBitMask(elementCount);
 
         return result;
     }
@@ -357,12 +363,19 @@ struct simdmask_t
         return *this == Zero();
     }
 
+    uint64_t GetRawBits() const
+    {
+        uint64_t value;
+        memcpy(&value, &u64[0], sizeof(uint64_t));
+        return value;
+    }
+
     static simdmask_t Zero()
     {
         return {};
     }
 };
-static_assert_no_msg(sizeof(simdmask_t) == 8);
+static_assert(sizeof(simdmask_t) == 8);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
 #if defined(TARGET_XARCH)
@@ -469,7 +482,7 @@ void EvaluateUnaryMask(genTreeOps oper, bool scalar, unsigned simdSize, simdmask
     }
     assert((count == 8) || (count == 16) || (count == 32) || (count == 64));
 
-    uint64_t bitMask = static_cast<uint64_t>((static_cast<int64_t>(1) << count) - 1);
+    uint64_t bitMask = simdmask_t::GetBitMask(count);
 #elif defined(TARGET_ARM64)
     // For Arm64 we have count total bits to write, but they are sizeof(TBase) bits apart
     uint64_t bitMask;
@@ -509,8 +522,7 @@ void EvaluateUnaryMask(genTreeOps oper, bool scalar, unsigned simdSize, simdmask
 #error Unsupported platform
 #endif
 
-    uint64_t arg0Value;
-    memcpy(&arg0Value, &arg0.u64[0], sizeof(simdmask_t));
+    uint64_t arg0Value = arg0.GetRawBits();
 
     // We're only considering these bits
     arg0Value &= bitMask;
@@ -573,6 +585,68 @@ inline void EvaluateUnaryMask(
         case TYP_USHORT:
         {
             EvaluateUnaryMask<uint16_t>(oper, scalar, simdSize, result, arg0);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd, typename TBase>
+inline void EvaluateExtractMSB(simdmask_t* result, const TSimd& arg0)
+{
+    uint64_t resultValue = 0;
+    uint32_t count       = sizeof(TSimd) / sizeof(TBase);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        TBase input0;
+        memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
+
+        if (input0 < 0)
+        {
+            resultValue |= (static_cast<uint64_t>(1) << i);
+        }
+    }
+
+    memcpy(&result->u64[0], &resultValue, sizeof(uint64_t));
+}
+
+template <typename TSimd>
+inline void EvaluateExtractMSB(var_types baseType, simdmask_t* result, const TSimd& arg0)
+{
+    switch (baseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            EvaluateExtractMSB<TSimd, int8_t>(result, arg0);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            EvaluateExtractMSB<TSimd, int16_t>(result, arg0);
+            break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_FLOAT:
+        {
+            EvaluateExtractMSB<TSimd, int32_t>(result, arg0);
+            break;
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+        {
+            EvaluateExtractMSB<TSimd, int64_t>(result, arg0);
             break;
         }
 
@@ -1059,7 +1133,7 @@ void EvaluateBinaryMask(
     }
     assert((count == 8) || (count == 16) || (count == 32) || (count == 64));
 
-    uint64_t bitMask = static_cast<uint64_t>((static_cast<int64_t>(1) << count) - 1);
+    uint64_t bitMask = simdmask_t::GetBitMask(count);
 #elif defined(TARGET_ARM64)
     // For Arm64 we have count total bits to write, but they are sizeof(TBase) bits apart
     uint64_t bitMask;
@@ -1090,6 +1164,12 @@ void EvaluateBinaryMask(
             break;
         }
 
+        case 16:
+        {
+            bitMask = 0x0001000100010001;
+            break;
+        }
+
         default:
         {
             unreached();
@@ -1099,11 +1179,8 @@ void EvaluateBinaryMask(
 #error Unsupported platform
 #endif
 
-    uint64_t arg0Value;
-    memcpy(&arg0Value, &arg0.u64[0], sizeof(simdmask_t));
-
-    uint64_t arg1Value;
-    memcpy(&arg1Value, &arg1.u64[0], sizeof(simdmask_t));
+    uint64_t arg0Value = arg0.GetRawBits();
+    uint64_t arg1Value = arg1.GetRawBits();
 
     // We're only considering these bits
     arg0Value &= bitMask;
@@ -1526,7 +1603,7 @@ void EvaluateSimdCvtMaskToVector(TSimd* result, simdmask_t arg0)
         isSet = ((mask >> i) & 1) != 0;
 #elif defined(TARGET_ARM64)
         // For Arm64 we have count total bits to read, but
-        // they are sizeof(TBase) bits apart. We still set
+        // they are sizeof(TBase) bits apart. We set
         // the result element to AllBitsSet or Zero depending
         // on the corresponding mask bit
 
@@ -1598,32 +1675,32 @@ void EvaluateSimdCvtVectorToMask(simdmask_t* result, TSimd arg0)
     uint32_t count = sizeof(TSimd) / sizeof(TBase);
     uint64_t mask  = 0;
 
-    TBase mostSignificantBit = static_cast<TBase>(1) << ((sizeof(TBase) * 8) - 1);
+#if defined(TARGET_XARCH)
+    TBase MostSignificantBit = static_cast<TBase>(1) << ((sizeof(TBase) * 8) - 1);
+#endif
 
     for (uint32_t i = 0; i < count; i++)
     {
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        if ((input0 & mostSignificantBit) != 0)
-        {
 #if defined(TARGET_XARCH)
-            // For xarch we have count sequential bits to write
-            // depending on if the corresponding the input element
-            // has its most significant bit set
-
+        // For xarch we have count sequential bits to write depending on if the
+        // corresponding the input element has its most significant bit set
+        if ((input0 & MostSignificantBit) != 0)
+        {
             mask |= static_cast<uint64_t>(1) << i;
-#elif defined(TARGET_ARM64)
-            // For Arm64 we have count total bits to write, but
-            // they are sizeof(TBase) bits apart. We still set
-            // depending on if the corresponding input element
-            // has its most significant bit set
-
-            mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
-#else
-            unreached();
-#endif
         }
+#elif defined(TARGET_ARM64)
+        // For Arm64 we have count total bits to write, but they are sizeof(TBase) bits
+        // apart. We set depending on if the corresponding input element is non zero
+        if (input0 != 0)
+        {
+            mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
+        }
+#else
+        unreached();
+#endif
     }
 
     memcpy(&result->u8[0], &mask, sizeof(uint64_t));
@@ -1670,6 +1747,326 @@ void EvaluateSimdCvtVectorToMask(var_types baseType, simdmask_t* result, TSimd a
         }
     }
 }
+
+#if defined(TARGET_ARM64)
+
+enum SveMaskPattern
+{
+    SveMaskPatternLargestPowerOf2    = 0,  // The largest power of 2.
+    SveMaskPatternVectorCount1       = 1,  // Exactly 1 element.
+    SveMaskPatternVectorCount2       = 2,  // Exactly 2 elements.
+    SveMaskPatternVectorCount3       = 3,  // Exactly 3 elements.
+    SveMaskPatternVectorCount4       = 4,  // Exactly 4 elements.
+    SveMaskPatternVectorCount5       = 5,  // Exactly 5 elements.
+    SveMaskPatternVectorCount6       = 6,  // Exactly 6 elements.
+    SveMaskPatternVectorCount7       = 7,  // Exactly 7 elements.
+    SveMaskPatternVectorCount8       = 8,  // Exactly 8 elements.
+    SveMaskPatternVectorCount16      = 9,  // Exactly 16 elements.
+    SveMaskPatternVectorCount32      = 10, // Exactly 32 elements.
+    SveMaskPatternVectorCount64      = 11, // Exactly 64 elements.
+    SveMaskPatternVectorCount128     = 12, // Exactly 128 elements.
+    SveMaskPatternVectorCount256     = 13, // Exactly 256 elements.
+    SveMaskPatternLargestMultipleOf4 = 29, // The largest multiple of 4.
+    SveMaskPatternLargestMultipleOf3 = 30, // The largest multiple of 3.
+    SveMaskPatternAll                = 31, // All available (implicitly a multiple of two).
+    SveMaskPatternNone               = 14  // Invalid
+};
+
+template <typename TSimd, typename TBase>
+bool EvaluateSimdPatternToMask(simdmask_t* result, SveMaskPattern pattern)
+{
+    uint32_t count    = sizeof(TSimd) / sizeof(TBase);
+    uint32_t finalOne = count + 1;
+    uint64_t mask     = 0;
+
+    switch (pattern)
+    {
+        case SveMaskPatternLargestPowerOf2:
+        case SveMaskPatternAll:
+            finalOne = count;
+            break;
+
+        case SveMaskPatternVectorCount1:
+        case SveMaskPatternVectorCount2:
+        case SveMaskPatternVectorCount3:
+        case SveMaskPatternVectorCount4:
+        case SveMaskPatternVectorCount5:
+        case SveMaskPatternVectorCount6:
+        case SveMaskPatternVectorCount7:
+        case SveMaskPatternVectorCount8:
+            finalOne = pattern - SveMaskPatternVectorCount1 + 1;
+            break;
+
+        case SveMaskPatternVectorCount16:
+        case SveMaskPatternVectorCount32:
+        case SveMaskPatternVectorCount64:
+        case SveMaskPatternVectorCount128:
+        case SveMaskPatternVectorCount256:
+            finalOne = std::min(uint32_t(16 << (pattern - SveMaskPatternVectorCount16)), count);
+            break;
+
+        case SveMaskPatternLargestMultipleOf4:
+            finalOne = (count - (count % 4));
+            break;
+
+        case SveMaskPatternLargestMultipleOf3:
+            finalOne = (count - (count % 3));
+            break;
+
+        default:
+            return false;
+    }
+    assert(finalOne <= count);
+
+    // Write finalOne number of bits
+    for (uint32_t i = 0; i < finalOne; i++)
+    {
+        mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
+    }
+
+    memcpy(&result->u8[0], &mask, sizeof(uint64_t));
+    return true;
+}
+
+template <typename TSimd>
+bool EvaluateSimdPatternToMask(var_types baseType, simdmask_t* result, SveMaskPattern pattern)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint32_t>(result, pattern);
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint64_t>(result, pattern);
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint8_t>(result, pattern);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint16_t>(result, pattern);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd, typename TBase>
+bool EvaluateSimdPatternToVector(simd_t* result, SveMaskPattern pattern)
+{
+    uint32_t count    = sizeof(TSimd) / sizeof(TBase);
+    uint32_t finalOne = count + 1;
+
+    switch (pattern)
+    {
+        case SveMaskPatternLargestPowerOf2:
+        case SveMaskPatternAll:
+            finalOne = count;
+            break;
+
+        case SveMaskPatternVectorCount1:
+        case SveMaskPatternVectorCount2:
+        case SveMaskPatternVectorCount3:
+        case SveMaskPatternVectorCount4:
+        case SveMaskPatternVectorCount5:
+        case SveMaskPatternVectorCount6:
+        case SveMaskPatternVectorCount7:
+        case SveMaskPatternVectorCount8:
+            finalOne = std::min(uint32_t(pattern - SveMaskPatternVectorCount1 + 1), count);
+            break;
+
+        case SveMaskPatternVectorCount16:
+        case SveMaskPatternVectorCount32:
+        case SveMaskPatternVectorCount64:
+        case SveMaskPatternVectorCount128:
+        case SveMaskPatternVectorCount256:
+            finalOne = std::min(uint32_t(16 << (pattern - SveMaskPatternVectorCount16)), count);
+            break;
+
+        case SveMaskPatternLargestMultipleOf4:
+            finalOne = (count - (count % 4));
+            break;
+
+        case SveMaskPatternLargestMultipleOf3:
+            finalOne = (count - (count % 3));
+            break;
+
+        default:
+            return false;
+    }
+    assert(finalOne <= count);
+
+    // Write finalOne number of entries
+    for (uint32_t i = 0; i < count; i++)
+    {
+        TBase output;
+
+        if (i < finalOne)
+        {
+            memset(&output, 0xFF, sizeof(TBase));
+        }
+        else
+        {
+            memset(&output, 0x00, sizeof(TBase));
+        }
+
+        memcpy(&result->u8[i * sizeof(TBase)], &output, sizeof(TBase));
+    }
+
+    return true;
+}
+
+template <typename TSimd>
+bool EvaluateSimdPatternToVector(var_types baseType, TSimd* result, SveMaskPattern pattern)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint32_t>(result, pattern);
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint64_t>(result, pattern);
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint8_t>(result, pattern);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint16_t>(result, pattern);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd, typename TBase>
+SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+
+    uint64_t mask;
+    memcpy(&mask, &arg0.u8[0], sizeof(uint64_t));
+    uint32_t finalOne = count;
+
+    // A mask pattern starts with zero of more 1s and then the rest of the mask is filled with 0s.
+
+    // Find an unbroken sequence of 1s.
+    for (uint32_t i = 0; i < count; i++)
+    {
+        // For Arm64 we have count total bits to read, but
+        // they are sizeof(TBase) bits apart. We set
+        // the result element to AllBitsSet or Zero depending
+        // on the corresponding mask bit
+
+        bool isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
+        if (!isSet)
+        {
+            finalOne = i;
+            break;
+        }
+    }
+
+    // Find an unbroken sequence of 0s.
+    for (uint32_t i = finalOne; i < count; i++)
+    {
+        // For Arm64 we have count total bits to read, but
+        // they are sizeof(TBase) bits apart. We set
+        // the result element to AllBitsSet or Zero depending
+        // on the corresponding mask bit
+
+        bool isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
+        if (isSet)
+        {
+            // Invalid sequence
+            return SveMaskPatternNone;
+        }
+    }
+
+    if (finalOne == count)
+    {
+        return SveMaskPatternAll;
+    }
+    else if (finalOne >= SveMaskPatternVectorCount1 && finalOne <= SveMaskPatternVectorCount8)
+    {
+        return (SveMaskPattern)finalOne;
+    }
+    else
+    {
+        // TODO: Add other patterns as required. These probably won't be seen until we get
+        //       to wider vector lengths.
+        return SveMaskPatternNone;
+    }
+}
+
+template <typename TSimd>
+SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            return EvaluateSimdMaskToPattern<TSimd, uint32_t>(arg0);
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            return EvaluateSimdMaskToPattern<TSimd, uint64_t>(arg0);
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return EvaluateSimdMaskToPattern<TSimd, uint8_t>(arg0);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return EvaluateSimdMaskToPattern<TSimd, uint16_t>(arg0);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+#endif // TARGET_ARM64
+
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
 #ifdef FEATURE_SIMD

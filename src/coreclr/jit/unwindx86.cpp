@@ -119,13 +119,8 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 
     if (fgFirstColdBlock != nullptr)
     {
-#ifdef DEBUG
-        if (JitConfig.JitFakeProcedureSplitting())
-        {
-            assert(func->funKind == FUNC_ROOT); // No splitting of funclets.
-        }
-        else
-#endif // DEBUG
+        // If fake-splitting, treat all unwind info as hot.
+        INDEBUG(if (!JitConfig.JitFakeProcedureSplitting()))
         {
             unwindReserveFuncHelper(func, false);
         }
@@ -161,9 +156,9 @@ void Compiler::unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode)
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
     // Verify that the JIT enum is in sync with the JIT-EE interface enum
-    static_assert_no_msg(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
-    static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
-    static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
+    static_assert(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
+    static_assert(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
+    static_assert(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
 
     unwindEmitFuncHelper(func, pHotCode, pColdCode, true);
 

@@ -234,10 +234,10 @@ namespace Internal.JitInterface
         public bool testForNull { get { return _testForNull != 0; } set { _testForNull = value ? (byte)1 : (byte)0; } }
 
         public ushort sizeOffset;
-        public IntPtr offset0;
-        public IntPtr offset1;
-        public IntPtr offset2;
-        public IntPtr offset3;
+        public nint offset0;
+        public nint offset1;
+        public nint offset2;
+        public nint offset3;
 
         public byte _indirectFirstOffset;
         public bool indirectFirstOffset { get { return _indirectFirstOffset != 0; } set { _indirectFirstOffset = value ? (byte)1 : (byte)0; } }
@@ -398,12 +398,12 @@ namespace Internal.JitInterface
     public enum CORINFO_CALLINFO_FLAGS
     {
         CORINFO_CALLINFO_NONE = 0x0000,
-        CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001,   // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
-        CORINFO_CALLINFO_CALLVIRT = 0x0002,   // Is it a virtual call?
+        CORINFO_CALLINFO_ALLOWINSTPARAM = 0x0001, // Can the compiler generate code to pass an instantiation parameters? Simple compilers should not use this flag
+        CORINFO_CALLINFO_CALLVIRT = 0x0002, // Is it a virtual call?
         // UNUSED = 0x0004,
-        // UNUSED = 0x0008,
-        CORINFO_CALLINFO_SECURITYCHECKS = 0x0010,   // Perform security checks.
-        CORINFO_CALLINFO_LDFTN = 0x0020,   // Resolving target of LDFTN
+        CORINFO_CALLINFO_DISALLOW_STUB = 0x0008, // Do not use a stub for this call, even if it is a virtual call.
+        CORINFO_CALLINFO_SECURITYCHECKS = 0x0010, // Perform security checks.
+        CORINFO_CALLINFO_LDFTN = 0x0020, // Resolving target of LDFTN
         // UNUSED = 0x0040,
     }
 
@@ -793,7 +793,8 @@ namespace Internal.JitInterface
         CORINFO_HELPER_ARG_TYPE_Field = 1,
         CORINFO_HELPER_ARG_TYPE_Method = 2,
         CORINFO_HELPER_ARG_TYPE_Class = 3,
-        CORINFO_HELPER_ARG_TYPE_Const = 4,
+        CORINFO_HELPER_ARG_TYPE_Module = 4,
+        CORINFO_HELPER_ARG_TYPE_Const = 5,
     }
 
     public struct CORINFO_HELPER_DESC
@@ -859,10 +860,10 @@ namespace Internal.JitInterface
         public uint sizeOfReversePInvokeFrame;
 
         // OS Page size
-        public UIntPtr osPageSize;
+        public nuint osPageSize;
 
         // Null object offset
-        public UIntPtr maxUncheckedOffsetForNullObject;
+        public nuint maxUncheckedOffsetForNullObject;
 
         // Target ABI. Combined with target architecture and OS to determine
         // GC, EH, and unwind styles.
@@ -1413,6 +1414,7 @@ namespace Internal.JitInterface
         // ARM only
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
+        CORJIT_FLAG_ASYNC                   = 31,  // Generate code for use as an async function
     }
 
     public struct CORJIT_FLAGS

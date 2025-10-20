@@ -32,6 +32,8 @@ ASM_OFFSET(    4,     8, String, m_Length)
 ASM_OFFSET(    8,     C, String, m_FirstChar)
 ASM_CONST(     2,     2, STRING_COMPONENT_SIZE)
 ASM_CONST(     E,    16, STRING_BASE_SIZE)
+ASM_CONST(     C,    18, SZARRAY_BASE_SIZE)
+ASM_CONST(     C,    18, MIN_OBJECT_SIZE)
 ASM_CONST(3FFFFFDF,3FFFFFDF,MAX_STRING_LENGTH)
 
 
@@ -53,9 +55,8 @@ ASM_OFFSET(   34,    50, Thread, m_pDeferredTransitionFrame)
 ASM_OFFSET(   40,    68, Thread, m_ppvHijackedReturnAddressLocation)
 ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
 ASM_OFFSET(   48,    78, Thread, m_pExInfoStackHead)
-ASM_OFFSET(   4c,    80, Thread, m_threadAbortException)
 #ifdef TARGET_X86
-ASM_OFFSET(   50,    FF, Thread, m_uHijackedReturnValueFlags)
+ASM_OFFSET(   4c,    FF, Thread, m_uHijackedReturnValueFlags)
 #endif
 
 ASM_SIZEOF(   14,    20, EHEnum)

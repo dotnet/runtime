@@ -194,6 +194,7 @@ namespace System.Net
         internal static int FormatIPv6Address<TChar>(ushort[] address, uint scopeId, Span<TChar> destination)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(byte) || typeof(TChar) == typeof(char));
             int pos = 0;
 
             if (IPv6AddressHelper.ShouldHaveIpv4Embedded(address))
@@ -220,18 +221,13 @@ namespace System.Net
             {
                 destination[pos++] = TChar.CreateTruncating('%');
 
-                // TODO https://github.com/dotnet/runtime/issues/84527: Use UInt32 TryFormat for both char and byte once IUtf8SpanFormattable implementation exists
-                Span<TChar> chars = stackalloc TChar[10];
-                int bytesPos = 10;
-                do
-                {
-                    (scopeId, uint digit) = Math.DivRem(scopeId, 10);
-                    chars[--bytesPos] = TChar.CreateTruncating('0' + digit);
-                }
-                while (scopeId != 0);
-                Span<TChar> used = chars.Slice(bytesPos);
-                used.CopyTo(destination.Slice(pos));
-                pos += used.Length;
+                int bytesWritten;
+                bool formatted = typeof(TChar) == typeof(byte) ?
+                    scopeId.TryFormat(MemoryMarshal.Cast<TChar, byte>(destination).Slice(pos), out bytesWritten) :
+                    scopeId.TryFormat(MemoryMarshal.Cast<TChar, char>(destination).Slice(pos), out bytesWritten);
+
+                Debug.Assert(formatted);
+                pos += bytesWritten;
             }
 
             return pos;

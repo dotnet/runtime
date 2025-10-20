@@ -11,13 +11,27 @@
 #include "threads.h"
 
 
-FCIMPL2(void*, TailCallHelp::AllocTailCallArgBufferWorker, INT32 size, void* gcDesc)
+FCIMPL0(void*, TailCallHelp::GetTailCallArgBuffer)
 {
     FCALL_CONTRACT;
-    _ASSERTE(size >= 0);
-    return GetThread()->GetTailCallTls()->AllocArgBuffer(size, gcDesc);
+    return GetThread()->GetTailCallTls()->GetArgBuffer();
 }
 FCIMPLEND
+
+extern "C" void* QCALLTYPE TailCallHelp_AllocTailCallArgBufferInternal(int size)
+{
+    QCALL_CONTRACT;
+
+    void* retVal = NULL;
+
+    BEGIN_QCALL;
+
+    retVal = GetThread()->GetTailCallTls()->AllocArgBuffer(size);
+
+    END_QCALL;
+
+    return retVal;
+}
 
 FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr)
 {
@@ -29,7 +43,6 @@ FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr
     return thread->GetTailCallTls();
 }
 FCIMPLEND
-
 
 struct ArgBufferValue
 {
@@ -486,14 +499,17 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
         EmitLoadTyHnd(pCode, arg.TyHnd);
     }
 
-    // All arguments are loaded on the stack, it is safe to disable the GC reporting of ArgBuffer now.
-    // This is optimization to avoid extending argument lifetime unnecessarily.
-    // We still need to report the inst argument of shared generic code to prevent it from being unloaded. The inst
-    // argument is just a regular IntPtr on the stack. It is safe to stop reporting it only after the target method
-    // takes over.
-    pCode->EmitLDARG(ARG_ARG_BUFFER);
-    pCode->EmitLDC(info.ArgBufLayout.HasInstArg ? TAILCALLARGBUFFER_INSTARG_ONLY : TAILCALLARGBUFFER_ABANDONED);
-    pCode->EmitSTIND_I();
+    if (info.HasGCDescriptor)
+    {
+        // All arguments are loaded on the stack, it is safe to disable the GC reporting of ArgBuffer now.
+        // This is optimization to avoid extending argument lifetime unnecessarily.
+        // We still need to report the inst argument of shared generic code to prevent it from being unloaded. The inst
+        // argument is just a regular IntPtr on the stack. It is safe to stop reporting it only after the target method
+        // takes over.
+        pCode->EmitLDARG(ARG_ARG_BUFFER);
+        pCode->EmitLDC(info.ArgBufLayout.HasInstArg ? TAILCALLARGBUFFER_INSTARG_ONLY : TAILCALLARGBUFFER_INACTIVE);
+        pCode->EmitSTIND_I4();
+    }
 
     int numRetVals = info.CallSiteSig->IsReturnTypeVoid() ? 0 : 1;
     // Normally there will not be any target and we just emit a normal

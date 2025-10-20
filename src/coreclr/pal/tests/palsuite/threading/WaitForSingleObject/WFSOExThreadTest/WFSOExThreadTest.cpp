@@ -184,7 +184,7 @@ satisfying any threads that were waiting on the object.
             "Expected return of WAIT_TIMEOUT, got %d.\n", ret);
     }
 
-    ThreadWaitDelta_WFSOExThreadTest = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
+    ThreadWaitDelta_WFSOExThreadTest = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);
 
     ret = CloseHandle(hWaitThread);
     if (!ret)

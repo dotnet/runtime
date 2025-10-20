@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Cose.Tests
             return getProtectedMap ? msg.ProtectedHeaders : msg.UnprotectedHeaders;
         }
 
-        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        internal override bool Verify(CoseMessage msg, IDisposable key, byte[] content, byte[]? associatedData = null)
             => Sign1Verify(msg, key, content, associatedData);
     }
 

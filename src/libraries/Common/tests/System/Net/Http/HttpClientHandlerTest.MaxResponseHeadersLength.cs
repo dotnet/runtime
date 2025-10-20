@@ -73,7 +73,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(15)]
         public async Task LargeSingleHeader_ThrowsException(int maxResponseHeadersLength)
         {
-            var semaphore = new SemaphoreSlim(0);
+            using var ce = new CountdownEvent(2);
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.MaxResponseHeadersLength = maxResponseHeadersLength;
 
@@ -86,22 +86,29 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
                 }
-                await semaphore.WaitAsync();
+                ce.Signal();
+                ce.Wait(TestHelper.PassingTestTimeout);
             },
             async server =>
             {
+                var connection = await server.EstablishGenericConnectionAsync();
                 try
                 {
-                    await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
+                    // Do not use HandleRequestAsync. It sends GO_AWAY before sending the response, making client close the connection right after the stream abort.
+                    // QUIC is based on UDP and packet ordering is not preserved, so the connection close might race with the expected stream error in H/3 case.
+                    await connection.ReadRequestDataAsync();
+                    await connection.SendResponseAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
                 }
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
                 catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
 #if !WINHTTPHANDLER_TEST
-                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) { }
 #endif
                 finally
                 {
-                    semaphore.Release();
+                    ce.Signal();
+                    ce.Wait(TestHelper.PassingTestTimeout);
+                    await connection.DisposeAsync();
                 }
             });
         }
@@ -114,7 +121,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(int.MaxValue / 800, 100 * 1024)] // Capped at int.MaxValue
         public async Task ThresholdExceeded_ThrowsException(int? maxResponseHeadersLength, int headersLengthEstimate)
         {
-            var semaphore = new SemaphoreSlim(0);
+            using var ce = new CountdownEvent(2);
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClientHandler handler = CreateHttpClientHandler();
@@ -138,7 +145,8 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
                     }
                 }
-                await semaphore.WaitAsync();
+                ce.Signal();
+                ce.Wait(TestHelper.PassingTestTimeout);
             },
             async server =>
             {
@@ -148,9 +156,13 @@ namespace System.Net.Http.Functional.Tests
                     headers.Add(new HttpHeaderData($"Custom-{i}", new string('a', 480)));
                 }
 
+                var connection = await server.EstablishGenericConnectionAsync();
                 try
                 {
-                    await server.HandleRequestAsync(headers: headers);
+                    // Do not use HandleRequestAsync. It sends GO_AWAY before sending the response, making client close the connection right after the stream abort.
+                    // QUIC is based on UDP and packet ordering is not preserved, so the connection close might race with the expected stream error in H/3 case.
+                    await connection.ReadRequestDataAsync();
+                    await connection.SendResponseAsync(headers: headers);
                 }
                 // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
                 catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
@@ -159,7 +171,9 @@ namespace System.Net.Http.Functional.Tests
 #endif
                 finally
                 {
-                    semaphore.Release();
+                    ce.Signal();
+                    ce.Wait(TestHelper.PassingTestTimeout);
+                    await connection.DisposeAsync();
                 }
             });
         }

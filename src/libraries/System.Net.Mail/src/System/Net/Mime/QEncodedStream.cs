@@ -39,7 +39,6 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
         ];
 
-        private ReadStateInfo? _readState;
         private readonly WriteStateInfoBase _writeState;
         private readonly QEncoder _encoder;
 
@@ -49,7 +48,7 @@ namespace System.Net.Mime
             _encoder = new QEncoder(_writeState);
         }
 
-        private ReadStateInfo ReadState => _readState ??= new ReadStateInfo();
+        private ReadStateInfo ReadState => field ??= new ReadStateInfo();
 
         internal WriteStateInfoBase WriteState => _writeState;
 

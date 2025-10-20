@@ -84,8 +84,33 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         return hr;
     }
 
-    int IXCLRDataStackWalk.GetFrame(void** frame)
-        => _legacyImpl is not null ? _legacyImpl.GetFrame(frame) : HResults.E_NOTIMPL;
+    int IXCLRDataStackWalk.GetFrame(out IXCLRDataFrame? frame)
+    {
+        int hr = HResults.S_OK;
+        frame = default;
+
+        IXCLRDataFrame? legacyFrame = null;
+        if (_legacyImpl is not null)
+        {
+            int hrLocal = _legacyImpl.GetFrame(out legacyFrame);
+            if (hrLocal < 0)
+                return hrLocal;
+        }
+
+        try
+        {
+            if (!_currentFrameIsValid)
+                throw new ArgumentException();
+
+            frame = new ClrDataFrame(_target, _dataFrames.Current, legacyFrame);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+        return hr;
+    }
     int IXCLRDataStackWalk.GetFrameType(uint* simpleType, uint* detailedType)
         => _legacyImpl is not null ? _legacyImpl.GetFrameType(simpleType, detailedType) : HResults.E_NOTIMPL;
     int IXCLRDataStackWalk.GetStackSizeSkipped(ulong* stackSizeSkipped)
@@ -128,7 +153,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
                 IStackWalk sw = _target.Contracts.StackWalk;
                 IStackDataFrameHandle frameData = _dataFrames.Current;
                 TargetPointer frameAddr = sw.GetFrameAddress(frameData);
-                *(ulong*)outBuffer = frameAddr.Value;
+                *(ulong*)outBuffer = frameAddr.ToClrDataAddress(_target);
                 hr = HResults.S_OK;
                 break;
             default:

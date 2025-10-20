@@ -2002,7 +2002,7 @@ int COMPlusThrowCallbackHelper(IJitManager *pJitManager,
         iFilt = EXCEPTION_CONTINUE_SEARCH;
 
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
     return iFilt;
 }
@@ -2068,7 +2068,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         if (pData->pPrevExceptionRecord) {
             // FCALLS have an extra SEH record in debug because of the desctructor
             // associated with ForbidGC checking.  This is benign, so just ignore it.
-            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame || pFrame->GetFrameIdentifier() == FrameIdentifier::HelperMethodFrame);
+            if (pFrame) _ASSERTE(pData->pPrevExceptionRecord < pFrame);
             if (pCf->IsFrameless()) _ASSERTE((ULONG_PTR)pData->pPrevExceptionRecord <= GetRegdisplaySP(pCf->GetRegisterSet()));
         }
     }

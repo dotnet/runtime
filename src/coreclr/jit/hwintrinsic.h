@@ -525,15 +525,12 @@ struct HWIntrinsicInfo
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic         lookupId(Compiler*         comp,
-                                           CORINFO_SIG_INFO* sig,
-                                           const char*       className,
-                                           const char*       methodName,
-                                           const char*       innerEnclosingClassName,
-                                           const char*       outerEnclosingClassName);
-    static CORINFO_InstructionSet lookupIsa(const char* className,
-                                            const char* innerEnclosingClassName,
-                                            const char* outerEnclosingClassName);
+    static NamedIntrinsic lookupId(Compiler*         comp,
+                                   CORINFO_SIG_INFO* sig,
+                                   const char*       className,
+                                   const char*       methodName,
+                                   const char*       innerEnclosingClassName,
+                                   const char*       outerEnclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
 
@@ -547,16 +544,33 @@ struct HWIntrinsicInfo
 #endif
 
     static bool isImmOp(NamedIntrinsic id, const GenTree* op);
-    static bool isFullyImplementedIsa(CORINFO_InstructionSet isa);
-    static bool isScalarIsa(CORINFO_InstructionSet isa);
 
 #ifdef TARGET_XARCH
-    static bool                isAVX2GatherIntrinsic(NamedIntrinsic id);
-    static FloatComparisonMode lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison);
-    static NamedIntrinsic      lookupIdForFloatComparisonMode(NamedIntrinsic      intrinsic,
-                                                              FloatComparisonMode comparison,
-                                                              var_types           simdBaseType,
-                                                              unsigned            simdSize);
+    static bool           isAVX2GatherIntrinsic(NamedIntrinsic id);
+    static NamedIntrinsic lookupIdForFloatComparisonMode(NamedIntrinsic      intrinsic,
+                                                         FloatComparisonMode comparison,
+                                                         var_types           simdBaseType,
+                                                         unsigned            simdSize);
+
+    //------------------------------------------------------------------------
+    // genIsTableDrivenHWIntrinsic:
+    //
+    // Arguments:
+    //    intrinsicId - The identifier for the hwintrinsic to check
+    //    category  - The category of intrinsicId
+    //
+    // Return Value:
+    //    returns true if this category can be table-driven in CodeGen
+    //
+    static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
+    {
+        // TODO - make more categories to the table-driven framework
+        // HW_Category_Helper and HW_Flag_SpecialCodeGen usually need manual codegen
+        const bool tableDrivenCategory =
+            (category != HW_Category_Special) && (category != HW_Category_Scalar) && (category != HW_Category_Helper);
+        const bool tableDrivenFlag = !HWIntrinsicInfo::HasSpecialCodegen(intrinsicId);
+        return tableDrivenCategory && tableDrivenFlag;
+    }
 #endif
 
     // Member lookup
@@ -1261,6 +1275,9 @@ struct HWIntrinsicInfo
             }
 
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
+            case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
+            case NI_Sve2_DotProductRotateComplexBySelectedIndex:
             {
                 assert(sig->numArgs == 5);
                 *imm1Pos = 0;

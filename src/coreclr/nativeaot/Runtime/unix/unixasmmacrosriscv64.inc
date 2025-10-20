@@ -156,7 +156,7 @@ C_FUNC(\Name):
 
 // Loads the address of a thread-local variable into the target register.
 // The target register cannot be a0.
-.macro INLINE_GET_TLS_VAR target, var
+.macro INLINE_GET_TLS_VAR target, var, ofs = 0
     .ifc \target, a0
         .error "target cannot be a0"
     .endif
@@ -187,7 +187,7 @@ C_FUNC(\Name):
     ld a7,   0(sp)
     addi sp, sp, 72
 
-    mv \target, a0
+    add \target, a0, \ofs
 
     /*
     In the future we should switch to TLS descriptors. Its support was added in 2024 in glibc, musl, llvm, gcc and binutils,
@@ -217,6 +217,9 @@ C_FUNC(\Name):
     addi   a0, a0, %tlsdesc_add_lo(\var)
     jalr   t0, 0(t0), %tlsdesc_call(\var)
     add    \target, tp, a0
+    .ifnc \ofs, 0
+            add     \target, \target, \ofs
+    .endif
 
     */
 .endm
@@ -224,6 +227,13 @@ C_FUNC(\Name):
 // Inlined version of RhpGetThread. Target cannot be x0.
 .macro INLINE_GETTHREAD target
     INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
+.endm
+
+// Caller must have an established frame, trashes volatile registers
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
+    // global dynamic TLS, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#global-dynamic
+    la.tls.gd a0, C_FUNC(tls_CurrentThread)
+    call C_FUNC(__tls_get_addr)
 .endm
 
 .macro InterlockedOperationBarrier
@@ -249,7 +259,7 @@ C_FUNC(\Name):
 #define PTFF_SAVE_A0            0x00004000
 #define PTFF_SAVE_A1            0x00008000
 #define PTFF_SAVE_ALL_PRESERVED 0x000007FF  // NOTE: S1-S11
-#define PTFF_THREAD_HIJACK_HI   0x00000001  // upper 32 bits of the PTFF_THREAD_HIJACK
+#define PTFF_THREAD_HIJACK      0x80000000
 
 #define DEFAULT_FRAME_SAVE_FLAGS PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 
@@ -288,9 +298,6 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR_INDEXED   s0, ra, 128
 .endm
 
-// Bit position for the flags above, to be used with tbz / tbnz instructions
-#define PTFF_THREAD_ABORT_BIT 31
-
 //
 // CONSTANTS -- INTEGER
 //
@@ -300,10 +307,8 @@ C_FUNC(\Name):
 #define TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC 0x18
 
 // Bit position for the flags above, to be used with tbz / tbnz instructions
-#define TrapThreadsFlags_AbortInProgress_Bit 0
-#define TrapThreadsFlags_TrapThreads_Bit     1
+#define TrapThreadsFlags_TrapThreads_Bit     0
 
 // These must match the TrapThreadsFlags enum
 #define TrapThreadsFlags_None            0
-#define TrapThreadsFlags_AbortInProgress 1
-#define TrapThreadsFlags_TrapThreads     2
+#define TrapThreadsFlags_TrapThreads     1

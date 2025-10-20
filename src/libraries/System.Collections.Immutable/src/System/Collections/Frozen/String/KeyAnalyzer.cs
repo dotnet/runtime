@@ -4,9 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-#if !NET8_0_OR_GREATER
-using System.Runtime.CompilerServices;
-#endif
+using System.Text;
 
 namespace System.Collections.Frozen
 {
@@ -145,7 +143,7 @@ namespace System.Collections.Frozen
                     // Get a span representing the slice of the uniqueString which will be hashed.
                     // If the slice isn't ASCII, bail out to return the results.
                     if (!allUniqueStringsAreConfirmedAscii &&
-                        !IsAllAscii(getHashString(uniqueString, index, count)))
+                        !Ascii.IsValid(getHashString(uniqueString, index, count)))
                     {
                         allAsciiIfIgnoreCase = false;
                         canSwitchIgnoreCaseHashToCaseSensitive = false;
@@ -161,7 +159,7 @@ namespace System.Collections.Frozen
                         // and as we have just checked that IsAllAscii(hashString) is true
                         // then we know IsAllAscii(uniqueString) must be true,
                         // so we can skip the check.
-                        if ((count > 0 && !allUniqueStringsAreConfirmedAscii && !IsAllAscii(uniqueString.AsSpan())) ||
+                        if ((count > 0 && !allUniqueStringsAreConfirmedAscii && !Ascii.IsValid(uniqueString)) ||
                             ContainsAnyAsciiLetters(uniqueString.AsSpan()))
                         {
                             canSwitchIgnoreCaseHashToCaseSensitive = false;
@@ -190,7 +188,7 @@ namespace System.Collections.Frozen
         {
             foreach (string s in strings)
             {
-                if (!IsAllAscii(s.AsSpan()))
+                if (!Ascii.IsValid(s))
                 {
                     return false;
                 }
@@ -199,65 +197,13 @@ namespace System.Collections.Frozen
             return true;
         }
 
-        internal static unsafe bool IsAllAscii(ReadOnlySpan<char> s)
-        {
-#if NET8_0_OR_GREATER
-            return System.Text.Ascii.IsValid(s);
-#else
-            fixed (char* src = s)
-            {
-                uint* ptrUInt32 = (uint*)src;
-                int length = s.Length;
-
-                while (length >= 4)
-                {
-                    if (!AllCharsInUInt32AreAscii(ptrUInt32[0] | ptrUInt32[1]))
-                    {
-                        return false;
-                    }
-
-                    ptrUInt32 += 2;
-                    length -= 4;
-                }
-
-                char* ptrChar = (char*)ptrUInt32;
-                while (length-- > 0)
-                {
-                    char ch = *ptrChar++;
-                    if (ch >= 0x80)
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool AllCharsInUInt32AreAscii(uint value) => (value & ~0x007F_007Fu) == 0;
-#endif
-        }
-
-#if NET8_0_OR_GREATER
         private static readonly SearchValues<char> s_asciiLetters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-#endif
+
         internal static bool ContainsAnyAsciiLetters(ReadOnlySpan<char> s)
         {
-            Debug.Assert(IsAllAscii(s));
+            Debug.Assert(Ascii.IsValid(s));
 
-#if NET8_0_OR_GREATER
             return s.ContainsAny(s_asciiLetters);
-#else
-            foreach (char c in s)
-            {
-                Debug.Assert(c <= 0x7f);
-                if ((uint)((c | 0x20) - 'a') <= (uint)('z' - 'a'))
-                {
-                    return true;
-                }
-            }
-            return false;
-#endif
         }
 
         internal static bool HasSufficientUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings, int acceptableNonUniqueCount)

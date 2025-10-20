@@ -98,7 +98,7 @@ static HRESULT StubRareDisableHRWorker(Thread *pThread)
     {
         hr = GET_EXCEPTION()->GetHR();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     // should always be in coop mode here
     _ASSERTE(pThread->PreemptiveGCDisabled());
@@ -174,8 +174,7 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
     ARG_SLOT retVal = 0;
     PCODE pStubEntryPoint = pCMD->GetILStub();
 
-    INT_PTR dangerousThis;
-    *(OBJECTREF *)&dangerousThis = orThis;
+    INT_PTR dangerousThis = (INT_PTR)OBJECTREFToObject(orThis);
 
     DWORD dwStackSlots = pCMD->GetNumStackBytes() / TARGET_POINTER_SIZE;
 
@@ -587,7 +586,7 @@ static UINT64 __stdcall FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame)
         {
             pThrowable = GET_THROWABLE();
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         if (pThrowable != NULL)
         {
@@ -986,7 +985,7 @@ void ComCallMethodDesc::InitNativeInfo()
 
             MethodTable * pMT = pMD->GetMethodTable();
             IMDInternalImport * pInternalImport = pMT->GetMDImport();
-            // TODO: (async) revisit and examine if this needs to be supported somehow            
+            // TODO: (async) revisit and examine if this needs to be supported somehow
             if (pMD->IsAsyncMethod())
                 ThrowHR(COR_E_NOTSUPPORTED);
 
@@ -1176,11 +1175,7 @@ Done:
 
         m_flags |= enum_NativeInfoInitialized;
     }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTransientExceptions)
-
+    EX_SWALLOW_NONTRANSIENT
     RETURN;
 }
 
@@ -1216,7 +1211,7 @@ void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubF
     }
     CONTRACTL_END;
 
-    DWORD dwStubFlags = NDIRECTSTUB_FL_COM | NDIRECTSTUB_FL_REVERSE_INTEROP;
+    DWORD dwStubFlags = PINVOKESTUB_FL_COM | PINVOKESTUB_FL_REVERSE_INTEROP;
 
     BOOL BestFit               = TRUE;
     BOOL ThrowOnUnmappableChar = FALSE;
@@ -1224,9 +1219,9 @@ void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubF
     if (pCMD->IsFieldCall())
     {
         if (pCMD->IsFieldGetter())
-            dwStubFlags |= NDIRECTSTUB_FL_FIELDGETTER;
+            dwStubFlags |= PINVOKESTUB_FL_FIELDGETTER;
         else
-            dwStubFlags |= NDIRECTSTUB_FL_FIELDSETTER;
+            dwStubFlags |= PINVOKESTUB_FL_FIELDSETTER;
 
         FieldDesc *pFD = pCMD->GetFieldDesc();
         _ASSERTE(IsMemberVisibleFromCom(pFD->GetApproxEnclosingMethodTable(), pFD->GetMemberDef(), mdTokenNil) && "Calls are not permitted on this member since it isn't visible from COM. The only way you can have reached this code path is if your native interface doesn't match the managed interface.");
@@ -1245,10 +1240,10 @@ void ComCall::PopulateComCallMethodDesc(ComCallMethodDesc *pCMD, DWORD *pdwStubF
     }
 
     if (BestFit)
-        dwStubFlags |= NDIRECTSTUB_FL_BESTFIT;
+        dwStubFlags |= PINVOKESTUB_FL_BESTFIT;
 
     if (ThrowOnUnmappableChar)
-        dwStubFlags |= NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR;
+        dwStubFlags |= PINVOKESTUB_FL_THROWONUNMAPPABLECHAR;
 
     //
     // fill in out param
@@ -1309,7 +1304,7 @@ MethodDesc* ComCall::GetILStubMethodDesc(MethodDesc *pCallMD, DWORD dwStubFlags)
     // Get the call signature information
     StubSigDesc sigDesc(pCallMD);
 
-    return NDirect::CreateCLRToNativeILStub(&sigDesc,
+    return PInvoke::CreateCLRToNativeILStub(&sigDesc,
                                             (CorNativeLinkType)0,
                                             (CorNativeLinkFlags)0,
                                             CallConv::GetDefaultUnmanagedCallingConvention(),
@@ -1336,7 +1331,7 @@ MethodDesc* ComCall::GetILStubMethodDesc(FieldDesc *pFD, DWORD dwStubFlags)
     // Get the field signature information
     pFD->GetSig(&pSig, &cSig);
 
-    return NDirect::CreateFieldAccessILStub(pSig,
+    return PInvoke::CreateFieldAccessILStub(pSig,
                                             cSig,
                                             pFD->GetModule(),
                                             pFD->GetMemberDef(),

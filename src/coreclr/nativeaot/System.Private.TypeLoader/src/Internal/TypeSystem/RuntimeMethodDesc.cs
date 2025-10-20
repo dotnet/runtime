@@ -10,7 +10,7 @@ using Internal.Runtime.TypeLoader;
 namespace Internal.TypeSystem.NoMetadata
 {
     /// <summary>
-    /// Represents a method within the Redhawk runtime
+    /// Represents a method within the NativeAOT runtime
     /// </summary>
     internal sealed partial class RuntimeMethodDesc : NoMetadataMethodDesc
     {
@@ -89,11 +89,11 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return NameAndSignature.GetName();
+                return NameAndSignature.Name;
             }
         }
 
@@ -163,7 +163,7 @@ namespace Internal.TypeSystem.NoMetadata
 
         public override string ToString()
         {
-            string result = OwningType.ToString() + ".Method(" + Name + ")";
+            string result = OwningType.ToString() + ".Method(" + GetName() + ")";
             return result;
         }
 #endif

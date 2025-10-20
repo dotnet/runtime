@@ -221,6 +221,49 @@ struct Nested9
 	struct InlineArray4 Field2;
 };
 
+struct Issue80393_S_Doubles
+{
+    double f1;
+    double f3;
+};
+
+// We need to apply 1-byte packing to these structs to get the exact alignment we want, but we
+//  don't want to apply packing to the union or 2-doubles struct because it will change the natural
+//  alignment of the union and as a result alter which registers it's assigned to by clang, which
+//  won't match what CoreCLR does.
+#pragma pack(push, 1)
+struct Issue80393_F2
+{
+    double value;
+};
+
+struct Issue80393_F2_Offset {
+    // 3 padding bytes to approximate C# FieldOffset of 3.
+    // This padding prevents the outer union from being treated as an HVA/HFA by clang for either arm32 or arm64.
+    char padding[3];
+    struct Issue80393_F2 F2;
+};
+#pragma pack(pop)
+
+union Issue80393_S {
+    struct Issue80393_S_Doubles f1_f3;
+    struct Issue80393_F2_Offset f2;
+};
+
+// NOTE: If investigating this in isolation, make sure you set -mfloat-abi=hard -mfpu=neon when building for arm32
+DLLEXPORT union Issue80393_S Issue80393_HFA(union Issue80393_S value)
+{
+    // Simply doing 'return value' like most of these other functions isn't enough to exercise everything, because
+    //  depending on the calling convention it can turn the whole function into a no-op, where 'value' flows in
+    //  via the same registers that the result flows out through.
+    union Issue80393_S result;
+    // Use the value argument as part of the result so we can tell whether it was passed in correctly, in addition
+    //  to checking whether the return value was passed correctly back to C#.
+    result.f1_f3.f1 = 1.0 + value.f1_f3.f1;
+    result.f1_f3.f3 = 3.0 + value.f1_f3.f3;
+    return result;
+}
+
 DLLEXPORT struct SingleByte EchoSingleByte(struct SingleByte value)
 {
 	return value;

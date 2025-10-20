@@ -90,12 +90,6 @@
 #include <minipal/mutex.h>
 
 #define ShutDown_Start                          0x00000001
-#define ShutDown_Finalize1                      0x00000002
-#define ShutDown_Finalize2                      0x00000004
-#define ShutDown_Profiler                       0x00000008
-#define ShutDown_COM                            0x00000010
-#define ShutDown_SyncBlock                      0x00000020
-#define ShutDown_IUnknown                       0x00000040
 #define ShutDown_Phase2                         0x00000080
 
 // Total count of Crst lock  of the type (Shutdown) that are currently in use
@@ -174,18 +168,14 @@ private:
     void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK));
     void Leave();
 
-    void SpinEnter();
-
 #ifndef DACCESS_COMPILE
     DEBUG_NOINLINE static void AcquireLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         c->Enter();
     }
 
     DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         c->Leave();
     }
 
@@ -352,18 +342,23 @@ public:
         CrstBase * m_pCrst;
 
     public:
-        inline CrstHolder(CrstBase * pCrst)
-            : m_pCrst(pCrst)
+        CrstHolder(CrstBase* pCrst)
+            : m_pCrst{ pCrst }
         {
             WRAPPER_NO_CONTRACT;
             AcquireLock(pCrst);
         }
 
-        inline ~CrstHolder()
+        ~CrstHolder()
         {
             WRAPPER_NO_CONTRACT;
             ReleaseLock(m_pCrst);
         }
+
+        CrstHolder(CrstHolder const&) = delete;
+        CrstHolder &operator=(CrstHolder const&) = delete;
+        CrstHolder(CrstHolder&& other) = delete;
+        CrstHolder& operator=(CrstHolder&& other) = delete;
     };
 
     // Note that the holders for CRSTs are used in extremely low stack conditions. Because of this, they
@@ -487,7 +482,7 @@ public:
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         return fSuccess;
     }

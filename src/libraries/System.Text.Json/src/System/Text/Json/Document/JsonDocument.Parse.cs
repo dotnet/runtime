@@ -46,7 +46,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument Parse(ReadOnlyMemory<byte> utf8Json, JsonDocumentOptions options = default)
         {
-            return Parse(utf8Json, options.GetReaderOptions());
+            return Parse(utf8Json, options.GetReaderOptions(), allowDuplicateProperties: options.AllowDuplicateProperties);
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace System.Text.Json
 
             if (utf8Json.IsSingleSegment)
             {
-                return Parse(utf8Json.First, readerOptions);
+                return Parse(utf8Json.First, readerOptions, allowDuplicateProperties: options.AllowDuplicateProperties);
             }
 
             int length = checked((int)utf8Json.Length);
@@ -89,7 +89,11 @@ namespace System.Text.Json
             try
             {
                 utf8Json.CopyTo(utf8Bytes.AsSpan());
-                return Parse(utf8Bytes.AsMemory(0, length), readerOptions, utf8Bytes);
+                return Parse(
+                    utf8Bytes.AsMemory(0, length),
+                    readerOptions,
+                    utf8Bytes,
+                    allowDuplicateProperties: options.AllowDuplicateProperties);
             }
             catch
             {
@@ -123,7 +127,11 @@ namespace System.Text.Json
             Debug.Assert(drained.Array != null);
             try
             {
-                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
+                return Parse(
+                    drained.AsMemory(),
+                    options.GetReaderOptions(),
+                    drained.Array,
+                    allowDuplicateProperties: options.AllowDuplicateProperties);
             }
             catch
             {
@@ -140,7 +148,8 @@ namespace System.Text.Json
                 utf8Json.WrittenMemory,
                 options.GetReaderOptions(),
                 extraRentedArrayPoolBytes: null,
-                extraPooledByteBufferWriter: utf8Json);
+                extraPooledByteBufferWriter: utf8Json,
+                allowDuplicateProperties: options.AllowDuplicateProperties);
         }
 
         internal static JsonDocument ParseValue(Stream utf8Json, JsonDocumentOptions options)
@@ -157,7 +166,10 @@ namespace System.Text.Json
             drained.AsSpan().Clear();
             ArrayPool<byte>.Shared.Return(drained.Array);
 
-            return ParseUnrented(owned.AsMemory(), options.GetReaderOptions());
+            return ParseUnrented(
+                owned.AsMemory(),
+                options.GetReaderOptions(),
+                allowDuplicateProperties: options.AllowDuplicateProperties);
         }
 
         internal static JsonDocument ParseValue(ReadOnlySpan<byte> utf8Json, JsonDocumentOptions options)
@@ -165,13 +177,16 @@ namespace System.Text.Json
             byte[] owned = new byte[utf8Json.Length];
             utf8Json.CopyTo(owned);
 
-            return ParseUnrented(owned.AsMemory(), options.GetReaderOptions());
+            return ParseUnrented(
+                owned.AsMemory(),
+                options.GetReaderOptions(),
+                allowDuplicateProperties: options.AllowDuplicateProperties);
         }
 
         internal static JsonDocument ParseValue(string json, JsonDocumentOptions options)
         {
             Debug.Assert(json != null);
-            return ParseValue(json.AsMemory(), options);
+            return ParseValue(json.AsSpan(), options);
         }
 
         /// <summary>
@@ -209,7 +224,11 @@ namespace System.Text.Json
             Debug.Assert(drained.Array != null);
             try
             {
-                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
+                return Parse(
+                    drained.AsMemory(),
+                    options.GetReaderOptions(),
+                    drained.Array,
+                    allowDuplicateProperties: options.AllowDuplicateProperties);
             }
             catch
             {
@@ -235,7 +254,10 @@ namespace System.Text.Json
             drained.AsSpan().Clear();
             ArrayPool<byte>.Shared.Return(drained.Array);
 
-            return ParseUnrented(owned.AsMemory(), options.GetReaderOptions());
+            return ParseUnrented(
+                owned.AsMemory(),
+                options.GetReaderOptions(),
+                allowDuplicateProperties: options.AllowDuplicateProperties);
         }
 
         /// <summary>
@@ -271,7 +293,8 @@ namespace System.Text.Json
                 return Parse(
                     utf8Bytes.AsMemory(0, actualByteCount),
                     options.GetReaderOptions(),
-                    utf8Bytes);
+                    utf8Bytes,
+                    allowDuplicateProperties: options.AllowDuplicateProperties);
             }
             catch
             {
@@ -282,16 +305,15 @@ namespace System.Text.Json
             }
         }
 
-        internal static JsonDocument ParseValue(ReadOnlyMemory<char> json, JsonDocumentOptions options)
+        internal static JsonDocument ParseValue(ReadOnlySpan<char> json, JsonDocumentOptions options)
         {
-            ReadOnlySpan<char> jsonChars = json.Span;
-            int expectedByteCount = JsonReaderHelper.GetUtf8ByteCount(jsonChars);
+            int expectedByteCount = JsonReaderHelper.GetUtf8ByteCount(json);
             byte[] owned;
             byte[] utf8Bytes = ArrayPool<byte>.Shared.Rent(expectedByteCount);
 
             try
             {
-                int actualByteCount = JsonReaderHelper.GetUtf8FromText(jsonChars, utf8Bytes);
+                int actualByteCount = JsonReaderHelper.GetUtf8FromText(json, utf8Bytes);
                 Debug.Assert(expectedByteCount == actualByteCount);
 
                 owned = new byte[actualByteCount];
@@ -304,7 +326,10 @@ namespace System.Text.Json
                 ArrayPool<byte>.Shared.Return(utf8Bytes);
             }
 
-            return ParseUnrented(owned.AsMemory(), options.GetReaderOptions());
+            return ParseUnrented(
+                owned.AsMemory(),
+                options.GetReaderOptions(),
+                allowDuplicateProperties: options.AllowDuplicateProperties);
         }
 
         /// <summary>
@@ -406,9 +431,12 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         ///   A value could not be read from the reader.
         /// </exception>
-        public static JsonDocument ParseValue(ref Utf8JsonReader reader)
+        public static JsonDocument ParseValue(ref Utf8JsonReader reader) =>
+            ParseValue(ref reader, allowDuplicateProperties: true);
+
+        internal static JsonDocument ParseValue(ref Utf8JsonReader reader, bool allowDuplicateProperties)
         {
-            bool ret = TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: true);
+            bool ret = TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: true, allowDuplicateProperties);
 
             Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
             Debug.Assert(document != null, "null document returned with shouldThrow: true.");
@@ -419,7 +447,8 @@ namespace System.Text.Json
             ref Utf8JsonReader reader,
             [NotNullWhen(true)] out JsonDocument? document,
             bool shouldThrow,
-            bool useArrayPools)
+            bool useArrayPools,
+            bool allowDuplicateProperties = true)
         {
             JsonReaderState state = reader.CurrentState;
             CheckSupportedOptions(state.Options, nameof(reader));
@@ -629,7 +658,7 @@ namespace System.Text.Json
                         valueSpan.CopyTo(rentedSpan);
                     }
 
-                    document = Parse(rented.AsMemory(0, length), state.Options, rented);
+                    document = Parse(rented.AsMemory(0, length), state.Options, rented, allowDuplicateProperties: allowDuplicateProperties);
                 }
                 catch
                 {
@@ -654,7 +683,7 @@ namespace System.Text.Json
                     owned = valueSpan.ToArray();
                 }
 
-                document = ParseUnrented(owned, state.Options, reader.TokenType);
+                document = ParseUnrented(owned, state.Options, reader.TokenType, allowDuplicateProperties: allowDuplicateProperties);
             }
 
             return true;
@@ -688,18 +717,28 @@ namespace System.Text.Json
             ReadOnlyMemory<byte> utf8Json,
             JsonReaderOptions readerOptions,
             byte[]? extraRentedArrayPoolBytes = null,
-            PooledByteBufferWriter? extraPooledByteBufferWriter = null)
+            PooledByteBufferWriter? extraPooledByteBufferWriter = null,
+            bool allowDuplicateProperties = true)
         {
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
             var database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: false);
             var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
+            JsonDocument document;
 
             try
             {
                 Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
+                document = new JsonDocument(utf8Json, database, extraRentedArrayPoolBytes, extraPooledByteBufferWriter, isDisposable: true);
+
+                if (!allowDuplicateProperties)
+                {
+                    ValidateNoDuplicateProperties(document);
+                }
             }
             catch
             {
+                // The caller returns any resources they rented, so all we need to do is dispose the database.
+                // Specifically: don't dispose the document as that will result in double return of the rented array.
                 database.Dispose();
                 throw;
             }
@@ -708,13 +747,14 @@ namespace System.Text.Json
                 stack.Dispose();
             }
 
-            return new JsonDocument(utf8Json, database, extraRentedArrayPoolBytes, extraPooledByteBufferWriter);
+            return document;
         }
 
         private static JsonDocument ParseUnrented(
             ReadOnlyMemory<byte> utf8Json,
             JsonReaderOptions readerOptions,
-            JsonTokenType tokenType = JsonTokenType.None)
+            JsonTokenType tokenType = JsonTokenType.None,
+            bool allowDuplicateProperties = true)
         {
             // These tokens should already have been processed.
             Debug.Assert(
@@ -746,7 +786,14 @@ namespace System.Text.Json
                 }
             }
 
-            return new JsonDocument(utf8Json, database, isDisposable: false);
+            JsonDocument document = new JsonDocument(utf8Json, database, isDisposable: false);
+
+            if (!allowDuplicateProperties)
+            {
+                ValidateNoDuplicateProperties(document);
+            }
+
+            return document;
         }
 
         private static ArraySegment<byte> ReadToEnd(Stream stream)

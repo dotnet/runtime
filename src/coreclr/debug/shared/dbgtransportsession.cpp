@@ -67,7 +67,7 @@ DbgTransportSession::~DbgTransportSession()
 #ifdef RIGHT_SIDE_COMPILE
 HRESULT DbgTransportSession::Init(const ProcessDescriptor& pd, HANDLE hProcessExited)
 #else // RIGHT_SIDE_COMPILE
-HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumerationIPCBlock *pADB)
+HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
 #endif // RIGHT_SIDE_COMPILE
 {
     _ASSERTE(m_eState == SS_Closed);
@@ -111,7 +111,6 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     m_fDebuggerAttached = false;
 #else // RIGHT_SIDE_COMPILE
     m_pDCB = pDCB;
-    m_pADB = pADB;
 #endif // RIGHT_SIDE_COMPILE
 
     m_sStateLock.Init();
@@ -526,16 +525,6 @@ HRESULT DbgTransportSession::WriteMemory(PBYTE pbRemoteAddress, PBYTE pbBuffer, 
     return sMessage.m_sHeader.TypeSpecificData.MemoryAccess.m_hrResult;
 }
 
-HRESULT DbgTransportSession::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
-{
-    DbgTransportLog(LC_Requests, "Sending 'VirtualUnwind'");
-    DBG_TRANSPORT_INC_STAT(SentVirtualUnwind);
-
-    Message sMessage;
-    sMessage.Init(MT_VirtualUnwind, context, contextSize, context, contextSize);
-    return SendRequestMessageAndWait(&sMessage);
-}
-
 // Read and write the debugger control block on the LS from the RS.
 HRESULT DbgTransportSession::GetDCB(DebuggerIPCControlBlock *pDCB)
 {
@@ -563,17 +552,6 @@ HRESULT DbgTransportSession::SetDCB(DebuggerIPCControlBlock *pDCB)
     sMessage.Init(MT_SetDCB, (PBYTE)&dcbt, sizeof(DebuggerIPCControlBlockTransport));
     return SendRequestMessageAndWait(&sMessage);
 
-}
-
-// Read the AppDomain control block on the LS from the RS.
-HRESULT DbgTransportSession::GetAppDomainCB(AppDomainEnumerationIPCBlock *pADB)
-{
-    DbgTransportLog(LC_Requests, "Sending 'GetAppDomainCB'");
-    DBG_TRANSPORT_INC_STAT(SentGetAppDomainCB);
-
-    Message sMessage;
-    sMessage.Init(MT_GetAppDomainCB, NULL, 0, (PBYTE)pADB, sizeof(AppDomainEnumerationIPCBlock));
-    return SendRequestMessageAndWait(&sMessage);
 }
 
 #endif // RIGHT_SIDE_COMPILE
@@ -957,10 +935,8 @@ void DbgTransportSession::FlushSendQueue(DWORD dwLastProcessedId)
             MessageType eType = pMsg->m_sHeader.m_eType;
             if (eType != MT_ReadMemory &&
                 eType != MT_WriteMemory &&
-                eType != MT_VirtualUnwind &&
                 eType != MT_GetDCB &&
-                eType != MT_SetDCB &&
-                eType != MT_GetAppDomainCB)
+                eType != MT_SetDCB)
 #endif // RIGHT_SIDE_COMPILE
             {
 #ifdef RIGHT_SIDE_COMPILE
@@ -1669,8 +1645,7 @@ void DbgTransportSession::TransportWorker()
 
             // Since we care about security here, perform some additional validation checks that make it
             // harder for a malicious sender to attack with random message data.
-            if (sReceiveHeader.m_eType > MT_GetAppDomainCB ||
-                (sReceiveHeader.m_dwId <= m_dwLastMessageIdSeen &&
+            if ((sReceiveHeader.m_dwId <= m_dwLastMessageIdSeen &&
                  sReceiveHeader.m_dwId != (DWORD)0) ||
                 (sReceiveHeader.m_dwReplyId >= m_dwNextMessageId &&
                  sReceiveHeader.m_dwReplyId != (DWORD)0) ||
@@ -1953,33 +1928,6 @@ void DbgTransportSession::TransportWorker()
 #endif // RIGHT_SIDE_COMPILE
                 break;
 
-            case MT_VirtualUnwind:
-#ifdef RIGHT_SIDE_COMPILE
-                if (!ProcessReply(&sReceiveHeader))
-                    HANDLE_TRANSIENT_ERROR();
-#else // RIGHT_SIDE_COMPILE
-                if (sReceiveHeader.m_cbDataBlock != (DWORD)sizeof(frameContext))
-                {
-                    _ASSERTE(!"Inconsistent VirtualUnwind request");
-                    HANDLE_CRITICAL_ERROR();
-                }
-
-                if (!ReceiveBlock((PBYTE)&frameContext, sizeof(frameContext)))
-                {
-                    HANDLE_TRANSIENT_ERROR();
-                }
-
-                if (!PAL_VirtualUnwind(&frameContext, NULL))
-                {
-                    HANDLE_TRANSIENT_ERROR();
-                }
-
-                fReplyRequired = true;
-                pbOptReplyData = (PBYTE)&frameContext;
-                cbOptReplyData = sizeof(frameContext);
-#endif // RIGHT_SIDE_COMPILE
-                break;
-
             case MT_GetDCB:
 #ifdef RIGHT_SIDE_COMPILE
                 if (!ProcessReply(&sReceiveHeader))
@@ -2009,17 +1957,6 @@ void DbgTransportSession::TransportWorker()
                     HANDLE_TRANSIENT_ERROR();
 
                 MarshalDCBTransportToDCB(&dcbt, m_pDCB);
-#endif // RIGHT_SIDE_COMPILE
-                break;
-
-            case MT_GetAppDomainCB:
-#ifdef RIGHT_SIDE_COMPILE
-                if (!ProcessReply(&sReceiveHeader))
-                    HANDLE_TRANSIENT_ERROR();
-#else // RIGHT_SIDE_COMPILE
-                fReplyRequired = true;
-                pbOptReplyData = (PBYTE)m_pADB;
-                cbOptReplyData = sizeof(AppDomainEnumerationIPCBlock);
 #endif // RIGHT_SIDE_COMPILE
                 break;
 
@@ -2125,20 +2062,16 @@ void DbgTransportSession::TransportWorker()
 #ifdef RIGHT_SIDE_COMPILE
             case MT_ReadMemory:
             case MT_WriteMemory:
-            case MT_VirtualUnwind:
             case MT_GetDCB:
             case MT_SetDCB:
-            case MT_GetAppDomainCB:
                 // On the RS these are the original requests. Signal the completion event.
                 SignalReplyEvent(pMsg);
                 break;
 #else // RIGHT_SIDE_COMPILE
             case MT_ReadMemory:
             case MT_WriteMemory:
-            case MT_VirtualUnwind:
             case MT_GetDCB:
             case MT_SetDCB:
-            case MT_GetAppDomainCB:
                 // On the LS these are replies to the original request. Nobody's waiting on these.
                 break;
 #endif // RIGHT_SIDE_COMPILE
@@ -2537,14 +2470,10 @@ const char *DbgTransportSession::MessageName(MessageType eType)
         return "ReadMemory";
     case MT_WriteMemory:
         return "WriteMemory";
-    case MT_VirtualUnwind:
-        return "VirtualUnwind";
     case MT_GetDCB:
         return "GetDCB";
     case MT_SetDCB:
         return "SetDCB";
-    case MT_GetAppDomainCB:
-        return "GetAppDomainCB";
     default:
         _ASSERTE(!"Unknown message type");
         return NULL;
@@ -2595,10 +2524,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
                         (DWORD)pHeader->TypeSpecificData.MemoryAccess.m_cbLeftSideBuffer);
         DBG_TRANSPORT_INC_STAT(ReceivedWriteMemory);
         return;
-    case MT_VirtualUnwind:
-        DbgTransportLog(LC_Requests,  "Received 'VirtualUnwind' reply");
-        DBG_TRANSPORT_INC_STAT(ReceivedVirtualUnwind);
-        return;
     case MT_GetDCB:
         DbgTransportLog(LC_Requests,  "Received 'GetDCB' reply");
         DBG_TRANSPORT_INC_STAT(ReceivedGetDCB);
@@ -2606,10 +2531,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
     case MT_SetDCB:
         DbgTransportLog(LC_Requests,  "Received 'SetDCB' reply");
         DBG_TRANSPORT_INC_STAT(ReceivedSetDCB);
-        return;
-    case MT_GetAppDomainCB:
-        DbgTransportLog(LC_Requests,  "Received 'GetAppDomainCB' reply");
-        DBG_TRANSPORT_INC_STAT(ReceivedGetAppDomainCB);
         return;
 #else // RIGHT_SIDE_COMPILE
     case MT_ReadMemory:
@@ -2624,10 +2545,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
                         (DWORD)pHeader->TypeSpecificData.MemoryAccess.m_cbLeftSideBuffer);
         DBG_TRANSPORT_INC_STAT(ReceivedWriteMemory);
         return;
-    case MT_VirtualUnwind:
-        DbgTransportLog(LC_Requests,  "Received 'VirtualUnwind'");
-        DBG_TRANSPORT_INC_STAT(ReceivedVirtualUnwind);
-        return;
     case MT_GetDCB:
         DbgTransportLog(LC_Requests,  "Received 'GetDCB'");
         DBG_TRANSPORT_INC_STAT(ReceivedGetDCB);
@@ -2635,10 +2552,6 @@ void DbgTransportSession::DbgTransportLogMessageReceived(MessageHeader *pHeader)
     case MT_SetDCB:
         DbgTransportLog(LC_Requests,  "Received 'SetDCB'");
         DBG_TRANSPORT_INC_STAT(ReceivedSetDCB);
-        return;
-    case MT_GetAppDomainCB:
-        DbgTransportLog(LC_Requests,  "Received 'GetAppDomainCB'");
-        DBG_TRANSPORT_INC_STAT(ReceivedGetAppDomainCB);
         return;
 #endif // RIGHT_SIDE_COMPILE
     default:

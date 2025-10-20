@@ -305,17 +305,6 @@ DN_SIMDHASH_FIND_VALUE_INTERNAL (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, 
 	return NULL;
 }
 
-typedef enum dn_simdhash_insert_mode {
-	// Ensures that no matching key exists in the hash, then adds the key/value pair
-	DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE,
-	// If a matching key exists in the hash, overwrite its value but leave the key alone
-	DN_SIMDHASH_INSERT_MODE_OVERWRITE_VALUE,
-	// If a matching key exists in the hash, overwrite both the key and the value
-	DN_SIMDHASH_INSERT_MODE_OVERWRITE_KEY_AND_VALUE,
-	// Do not scan for existing matches before adding the new key/value pair.
-	DN_SIMDHASH_INSERT_MODE_REHASHING,
-} dn_simdhash_insert_mode;
-
 static void
 do_overwrite (
 	DN_SIMDHASH_T_PTR hash, uint32_t bucket_index, bucket_t *bucket_address, int index_in_bucket,
@@ -444,7 +433,7 @@ DN_SIMDHASH_NEW (uint32_t capacity, dn_allocator_t *allocator)
 }
 #endif
 
-uint8_t
+dn_simdhash_add_result
 DN_SIMDHASH_TRY_ADD (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_VALUE_T value)
 {
 	check_self(hash);
@@ -453,14 +442,18 @@ DN_SIMDHASH_TRY_ADD (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, DN_SIMDHASH_
 	return DN_SIMDHASH_TRY_ADD_WITH_HASH(hash, key, key_hash, value);
 }
 
-uint8_t
+dn_simdhash_add_result
 DN_SIMDHASH_TRY_ADD_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, uint32_t key_hash, DN_SIMDHASH_VALUE_T value)
 {
 	check_self(hash);
 
 	dn_simdhash_insert_result ok = DN_SIMDHASH_TRY_INSERT_INTERNAL(hash, key, key_hash, value, DN_SIMDHASH_INSERT_MODE_ENSURE_UNIQUE);
 	if (ok == DN_SIMDHASH_INSERT_NEED_TO_GROW) {
-		dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1);
+		uint8_t grow_ok;
+		dn_simdhash_buffers_t old_buffers = dn_simdhash_ensure_capacity_internal(hash, dn_simdhash_capacity(hash) + 1, &grow_ok);
+		if (!grow_ok)
+			return DN_SIMDHASH_OUT_OF_MEMORY;
+
 		if (old_buffers.buckets) {
 			DN_SIMDHASH_REHASH_INTERNAL(hash, old_buffers);
 			dn_simdhash_free_buffers(old_buffers);
@@ -471,18 +464,19 @@ DN_SIMDHASH_TRY_ADD_WITH_HASH (DN_SIMDHASH_T_PTR hash, DN_SIMDHASH_KEY_T key, ui
 	switch (ok) {
 		case DN_SIMDHASH_INSERT_OK_ADDED_NEW:
 			hash->count++;
-			return 1;
+			return DN_SIMDHASH_ADD_INSERTED;
 		case DN_SIMDHASH_INSERT_OK_OVERWROTE_EXISTING:
 			// This shouldn't happen
 			dn_simdhash_assert(!"Overwrote an existing item while adding");
-			return 1;
+			return DN_SIMDHASH_INTERNAL_ERROR;
 		case DN_SIMDHASH_INSERT_KEY_ALREADY_PRESENT:
-			return 0;
+			return DN_SIMDHASH_ADD_FAILED;
 		case DN_SIMDHASH_INSERT_NEED_TO_GROW:
-			// We should always have enough space after growing once.
+			dn_simdhash_assert(!"After growing there was no space for a new item");
+			return DN_SIMDHASH_INTERNAL_ERROR;
 		default:
 			dn_simdhash_assert(!"Failed to add a new item but there was no existing item");
-			return 0;
+			return DN_SIMDHASH_INTERNAL_ERROR;
 	}
 }
 

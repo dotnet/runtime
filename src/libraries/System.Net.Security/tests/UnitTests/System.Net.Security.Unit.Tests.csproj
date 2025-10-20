@@ -34,6 +34,8 @@
     <Compile Include="$(CommonTestPath)System\Net\Security\FakeNegotiateServer.cs"
              Link="Common\System\Net\Security\FakeNegotiateServer.cs" />
     <!-- Common test files -->
+    <Compile Include="$(CommonPath)System\AppContextSwitchHelper.cs"
+             Link="Common\System\AppContextSwitchHelper.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"

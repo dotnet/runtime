@@ -64,9 +64,12 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     }
     CONTRACTL_END;
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     FreeUMEntryThunk();
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 void InteropSyncBlockInfo::FreeUMEntryThunk()
 {
     CONTRACTL
@@ -78,16 +81,14 @@ void InteropSyncBlockInfo::FreeUMEntryThunk()
     }
     CONTRACTL_END
 
-    if (!g_fEEShutDown)
+    UMEntryThunkData *pUMEntryThunk = m_pUMEntryThunk;
+    if (pUMEntryThunk != NULL)
     {
-        void *pUMEntryThunk = GetUMEntryThunk();
-        if (pUMEntryThunk != NULL)
-        {
-            UMEntryThunk::FreeUMEntryThunk((UMEntryThunk *)pUMEntryThunk);
-        }
+        UMEntryThunkData::FreeUMEntryThunk(pUMEntryThunk);
+        m_pUMEntryThunk = NULL;
     }
-    m_pUMEntryThunk = NULL;
 }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 #ifdef FEATURE_COMINTEROP
 // Returns either NULL or an RCW on which AcquireLock has been called.
@@ -513,7 +514,7 @@ void SyncBlockCache::CleanupSyncBlocks()
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    _ASSERTE(GetThread() == FinalizerThread::GetFinalizerThread());
+    _ASSERTE(FinalizerThread::IsCurrentThreadFinalizer());
 
     // Set the flag indicating sync block cleanup is in progress.
     // IMPORTANT: This must be set before the sync block cleanup bit is reset on the thread.
@@ -1815,7 +1816,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
     // NOTE: This function cannot have a dynamic contract.  If it does, the contract's
     // destructor will reset the CLR debug state to what it was before entering the
     // function, which will undo the BeginNoTriggerGC() call below.
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
 #ifdef _DEBUG
@@ -1869,7 +1869,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 #else
 DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 {
-    SCAN_SCOPE_BEGIN;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
 #ifdef _DEBUG
@@ -1906,7 +1905,6 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 
 DEBUG_NOINLINE void ObjHeader::ReleaseSpinLock()
 {
-    SCAN_SCOPE_END;
     LIMITED_METHOD_CONTRACT;
 
     INCONTRACT(Thread* pThread = GetThreadNULLOk());

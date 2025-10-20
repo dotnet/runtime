@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
         internal static bool TryExportPkcs8PrivateKey(
             MLDsa dsa,
             bool hasSeed,
-            bool hasSecretKey,
+            bool hasPrivateKey,
             Span<byte> destination,
             out int bytesWritten)
         {
@@ -36,12 +36,12 @@ namespace System.Security.Cryptography
                     written = buffer.Length;
                     privateKeyAsn.Seed = buffer;
                 }
-                else if (hasSecretKey)
+                else if (hasPrivateKey)
                 {
-                    int secretKeySize = dsa.Algorithm.SecretKeySizeInBytes;
-                    rented = CryptoPool.Rent(secretKeySize);
-                    Memory<byte> buffer = rented.AsMemory(0, secretKeySize);
-                    dsa.ExportMLDsaSecretKey(buffer.Span);
+                    int privateKeySize = dsa.Algorithm.PrivateKeySizeInBytes;
+                    rented = CryptoPool.Rent(privateKeySize);
+                    Memory<byte> buffer = rented.AsMemory(0, privateKeySize);
+                    dsa.ExportMLDsaPrivateKey(buffer.Span);
                     written = buffer.Length;
                     privateKeyAsn.ExpandedKey = buffer;
                 }

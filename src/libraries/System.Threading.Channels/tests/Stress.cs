@@ -12,6 +12,7 @@ namespace System.Threading.Channels.Tests
     {
         public static IEnumerable<object[]> ReadWriteVariations_TestData()
         {
+            // Unbounded
             foreach (var readDelegate in new Func<ChannelReader<int>, Task<bool>>[] { ReadSynchronous, ReadAsynchronous, ReadSyncAndAsync} )
             foreach (var writeDelegate in new Func<ChannelWriter<int>, int, Task>[] { WriteSynchronous, WriteAsynchronous, WriteSyncAndAsync} )
             foreach (bool singleReader in new [] {false, true})
@@ -19,15 +20,21 @@ namespace System.Threading.Channels.Tests
             foreach (bool allowSynchronousContinuations in new [] {false, true})
             {
                 Func<ChannelOptions, Channel<int>> unbounded = o => Channel.CreateUnbounded<int>((UnboundedChannelOptions)o);
-                yield return new object[] { unbounded, new UnboundedChannelOptions
-                                                            {
-                                                                SingleReader = singleReader,
-                                                                SingleWriter = singleWriter,
-                                                                AllowSynchronousContinuations = allowSynchronousContinuations
-                                                            }, readDelegate, writeDelegate
+                yield return new object[]
+                {
+                    unbounded,
+                    new UnboundedChannelOptions
+                    {
+                        SingleReader = singleReader,
+                        SingleWriter = singleWriter,
+                        AllowSynchronousContinuations = allowSynchronousContinuations
+                    },
+                    readDelegate,
+                    writeDelegate
                 };
             }
 
+            // Bounded
             foreach (var readDelegate in new Func<ChannelReader<int>, Task<bool>>[] { ReadSynchronous, ReadAsynchronous, ReadSyncAndAsync} )
             foreach (var writeDelegate in new Func<ChannelWriter<int>, int, Task>[] { WriteSynchronous, WriteAsynchronous, WriteSyncAndAsync} )
             foreach (BoundedChannelFullMode bco in Enum.GetValues(typeof(BoundedChannelFullMode)))
@@ -37,13 +44,44 @@ namespace System.Threading.Channels.Tests
             foreach (bool allowSynchronousContinuations in new [] {false, true})
             {
                 Func<ChannelOptions, Channel<int>> bounded = o => Channel.CreateBounded<int>((BoundedChannelOptions)o);
-                yield return new object[] { bounded, new BoundedChannelOptions(capacity)
-                                                        {
-                                                            SingleReader = singleReader,
-                                                            SingleWriter = singleWriter,
-                                                            AllowSynchronousContinuations = allowSynchronousContinuations,
-                                                            FullMode = bco
-                                                            }, readDelegate, writeDelegate
+                yield return new object[]
+                {
+                    bounded,
+                    new BoundedChannelOptions(capacity)
+                    {
+                        SingleReader = singleReader,
+                        SingleWriter = singleWriter,
+                        AllowSynchronousContinuations = allowSynchronousContinuations,
+                        FullMode = bco
+                    },
+                    readDelegate,
+                    writeDelegate
+                };
+            }
+
+            // Rendezvous
+            foreach (var readDelegate in new Func<ChannelReader<int>, Task<bool>>[] { ReadSynchronous, ReadAsynchronous, ReadSyncAndAsync, ReadAsynchronousNoWait } )
+            foreach (var writeDelegate in new Func<ChannelWriter<int>, int, Task>[] { WriteSynchronous, WriteAsynchronous, WriteSyncAndAsync, WriteAsynchronousNoWait } )
+            foreach (var bcfm in new[] { BoundedChannelFullMode.Wait, BoundedChannelFullMode.DropWrite })
+            foreach (bool allowSynchronousContinuations in new [] {false, true})
+            {
+                if (readDelegate != ReadAsynchronousNoWait &&
+                    writeDelegate != WriteAsynchronousNoWait)
+                {
+                    // At least one side must be persistent.
+                    continue;
+                }
+
+                yield return new object[]
+                {
+                    (Func<ChannelOptions, Channel<int>>)(o => Channel.CreateBounded<int>((BoundedChannelOptions)o)),
+                    new BoundedChannelOptions(0)
+                    {
+                        AllowSynchronousContinuations = allowSynchronousContinuations,
+                        FullMode = bcfm
+                    },
+                    readDelegate,
+                    writeDelegate
                 };
             }
         }
@@ -74,9 +112,21 @@ namespace System.Threading.Channels.Tests
             return false;
         }
 
+        private static async Task<bool> ReadAsynchronousNoWait(ChannelReader<int> reader)
+        {
+            await reader.ReadAsync();
+            return true;
+        }
+
+        private static async Task<bool> WriteAsynchronousNoWait(ChannelWriter<int> writer, int value)
+        {
+            await writer.WriteAsync(value);
+            return true;
+        }
+
         private static async Task<bool> ReadSyncAndAsync(ChannelReader<int> reader)
         {
-            if (!reader.TryRead(out int value))
+            if (!reader.TryRead(out _))
             {
                 if (await reader.WaitToReadAsync())
                 {

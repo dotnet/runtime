@@ -78,12 +78,10 @@ namespace
     {
         LIMITED_METHOD_CONTRACT;
 
-        LPCWSTR sysDirectory = GetInternalSystemDirectory();
-        LPCWSTR libFileName = MAKEDLLNAME(W("coredistools"));
-
         // Look for the coredistools module next to the clr binary
-        libPath.Append(sysDirectory);
-        libPath.Append(libFileName);
+        IfFailThrow(GetClrModuleDirectory(libPath));
+
+        libPath.Append(MAKEDLLNAME(W("coredistools")));
 
         LPCWSTR libraryName = libPath.GetUnicode();
         return CLRLoadLibrary(libraryName);

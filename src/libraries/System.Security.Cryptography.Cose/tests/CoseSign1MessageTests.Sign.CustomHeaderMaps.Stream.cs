@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal override Task<byte[]> SignDetachedAsync(Stream detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
             => CoseSign1Message.SignDetachedAsync(detachedContent, signer, associatedData);
 
-        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        internal override bool Verify(CoseMessage msg, IDisposable key, byte[] content, byte[]? associatedData = null)
         {
             Assert.True(!OnlySupportsDetachedContent || msg.Content == null);
             return Sign1Verify(msg, key, content, associatedData);
@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Cose.Tests
         internal override byte[] SignDetached(Stream detachedContent, CoseSigner signer, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null, byte[]? associatedData = null)
             => CoseSign1Message.SignDetached(detachedContent, signer, associatedData);
 
-        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        internal override bool Verify(CoseMessage msg, IDisposable key, byte[] content, byte[]? associatedData = null)
         {
             Assert.True(!OnlySupportsDetachedContent || msg.Content == null);
             return Sign1Verify(msg, key, content, associatedData);

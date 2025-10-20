@@ -73,7 +73,7 @@ namespace ILCompiler
             // Method not present: stub it out
             var emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
-            codeStream.EmitCallThrowHelper(emit, method.Context.SystemModule.GetKnownType("System.Runtime", "InternalCalls").GetKnownMethod("RhpFallbackFailFast", null));
+            codeStream.EmitCallThrowHelper(emit, method.Context.SystemModule.GetKnownType("System.Runtime"u8, "InternalCalls"u8).GetKnownMethod("RhpFallbackFailFast"u8, null));
             return emit.Link(method);
         }
     }

@@ -3127,6 +3127,7 @@ retry_instruction:
 						ins->data [2] = GINT_TO_UINT16 (ldsize);
 
 						interp_clear_ins (ins->prev);
+						td->var_values [ins->dreg].def = ins;
 					}
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldobj_vt pair :\n\t");
@@ -3207,6 +3208,7 @@ retry_instruction:
 						ins->data [2] = vtsize;
 
 						interp_clear_ins (ins->prev);
+						td->var_values [ins->dreg].def = ins;
 
 						// MINT_MOV_DST_OFF doesn't work if dreg is allocated at the same location as the
 						// field value to be stored, because its behavior is not atomic in nature. We first

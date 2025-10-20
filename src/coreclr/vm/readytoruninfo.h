@@ -119,6 +119,7 @@ class ReadyToRunInfo
     DWORD                           m_nHotColdMap;
 
     PTR_IMAGE_DATA_DIRECTORY        m_pSectionDelayLoadMethodCallThunks;
+    PTR_IMAGE_DATA_DIRECTORY        m_pSectionDebugInfo;
 
     PTR_READYTORUN_IMPORT_SECTION   m_pImportSections;
     DWORD                           m_nImportSections;
@@ -344,12 +345,14 @@ private:
 template<>
 struct cdac_data<ReadyToRunInfo>
 {
+    static constexpr size_t ReadyToRunHeader = offsetof(ReadyToRunInfo, m_pHeader);
     static constexpr size_t CompositeInfo = offsetof(ReadyToRunInfo, m_pCompositeInfo);
     static constexpr size_t NumRuntimeFunctions = offsetof(ReadyToRunInfo, m_nRuntimeFunctions);
     static constexpr size_t RuntimeFunctions = offsetof(ReadyToRunInfo, m_pRuntimeFunctions);
     static constexpr size_t NumHotColdMap = offsetof(ReadyToRunInfo, m_nHotColdMap);
     static constexpr size_t HotColdMap = offsetof(ReadyToRunInfo, m_pHotColdMap);
     static constexpr size_t DelayLoadMethodCallThunks = offsetof(ReadyToRunInfo, m_pSectionDelayLoadMethodCallThunks);
+    static constexpr size_t DebugInfoSection = offsetof(ReadyToRunInfo, m_pSectionDebugInfo);
     static constexpr size_t EntryPointToMethodDescMap = offsetof(ReadyToRunInfo, m_entryPointToMethodDescMap);
 };
 

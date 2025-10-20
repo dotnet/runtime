@@ -5,7 +5,7 @@ using System.Buffers.Binary;
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System.Security.Cryptography
@@ -258,52 +258,48 @@ namespace System.Security.Cryptography
 
             private static class Functions
             {
-                private const string XmlLinqAssemblyString = ", System.Private.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
+                private const string XmlLinqAssemblyString = ", System.Private.Xml.Linq";
+                private const string XDocumentTypeName = "System.Xml.Linq.XDocument" + XmlLinqAssemblyString;
+                private const string XContainerTypeName = "System.Xml.Linq.XContainer" + XmlLinqAssemblyString;
+                private const string XElementTypeName = "System.Xml.Linq.XElement" + XmlLinqAssemblyString;
+                private const string IEnumerableOfXElementTypeName = $"System.Collections.Generic.IEnumerable`1[[{XElementTypeName}]], System.Runtime";
 
-                private static readonly Func<string, object> s_xDocumentCreate;
-                private static readonly PropertyInfo s_docRootProperty;
-                private static readonly MethodInfo s_getElementsMethod;
-                private static readonly PropertyInfo s_elementNameProperty;
-                private static readonly PropertyInfo s_elementValueProperty;
-                private static readonly PropertyInfo s_nameNameProperty;
+                private const string XNameTypeName = "System.Xml.Linq.XName" + XmlLinqAssemblyString;
 
-#pragma warning disable CA1810 // explicit static cctor
-                static Functions()
-                {
-                    Type xDocument = Type.GetType("System.Xml.Linq.XDocument" + XmlLinqAssemblyString)!;
-                    s_xDocumentCreate = xDocument.GetMethod(
-                        "Parse",
-                        BindingFlags.Static | BindingFlags.Public,
-                        new[] { typeof(string) })!
-                            .CreateDelegate<Func<string, object>>();
+                [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "Parse")]
+                [return: UnsafeAccessorType(XDocumentTypeName)]
+                private static extern object XDocument_Parse(
+                [UnsafeAccessorType(XDocumentTypeName)] object?_, string xmlString);
 
-                    s_docRootProperty = xDocument.GetProperty("Root")!;
+                [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Root")]
+                [return: UnsafeAccessorType(XElementTypeName)]
+                private static extern object? XDocument_GetRoot([UnsafeAccessorType(XDocumentTypeName)] object xDocument);
 
-                    Type xElement = Type.GetType("System.Xml.Linq.XElement" + XmlLinqAssemblyString)!;
-                    s_getElementsMethod = xElement.GetMethod(
-                        "Elements",
-                        BindingFlags.Instance | BindingFlags.Public,
-                        Type.EmptyTypes)!;
+                [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Elements")]
+                [return: UnsafeAccessorType(IEnumerableOfXElementTypeName)]
+                private static extern object XContainer_Elements([UnsafeAccessorType(XContainerTypeName)] object xElement);
 
-                    s_elementNameProperty = xElement.GetProperty("Name")!;
-                    s_elementValueProperty = xElement.GetProperty("Value")!;
+                [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Name")]
+                [return: UnsafeAccessorType(XNameTypeName)]
+                private static extern object XElement_GetName([UnsafeAccessorType(XElementTypeName)] object xElement);
 
-                    Type xName = Type.GetType("System.Xml.Linq.XName" + XmlLinqAssemblyString)!;
-                    s_nameNameProperty = xName.GetProperty("LocalName")!;
-                }
-#pragma warning restore CA1810
+                [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Value")]
+                private static extern string? XElement_GetValue([UnsafeAccessorType(XElementTypeName)] object xElement);
+
+                [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_LocalName")]
+                private static extern string? XName_GetLocalName([UnsafeAccessorType(XNameTypeName)] object xName);
 
                 internal static object? ParseDocument(string xmlString) =>
-                    s_docRootProperty.GetValue(s_xDocumentCreate(xmlString));
+                    XDocument_GetRoot(XDocument_Parse(null, xmlString));
 
-                internal static IEnumerable? GetElements(object? element) =>
-                    (IEnumerable?)s_getElementsMethod.Invoke(element, Array.Empty<object>());
+                internal static IEnumerable GetElements(object? element) =>
+                    (IEnumerable)XContainer_Elements(element!);
 
                 internal static string? GetLocalName(object? element) =>
-                    (string?)s_nameNameProperty.GetValue(s_elementNameProperty.GetValue(element));
+                    XName_GetLocalName(XElement_GetName(element!));
 
                 internal static string? GetValue(object? element) =>
-                    (string?)s_elementValueProperty.GetValue(element);
+                    XElement_GetValue(element!);
             }
         }
     }

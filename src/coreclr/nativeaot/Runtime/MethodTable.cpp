@@ -7,8 +7,9 @@
 #include "rhassert.h"
 #include "rhbinder.h"
 #include "MethodTable.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
+#include "ObjectLayout.h"
 
 #include "CommonMacros.inl"
 #include "MethodTable.inl"
@@ -104,4 +105,18 @@ MethodTable * MethodTable::GetRelatedParameterType()
 	ASSERT(IsParameterizedType());
 
 	return PTR_EEType(reinterpret_cast<TADDR>(m_RelatedType.m_pRelatedParameterType));
+}
+
+//-----------------------------------------------------------------------------------------------------------
+uint32_t MethodTable::GetArrayRank()
+{
+    ASSERT(IsArray());
+    uint32_t boundsSize = GetParameterizedTypeShape() - SZARRAY_BASE_SIZE;
+    if (boundsSize > 0)
+    {
+        // Multidim array case: Base size includes space for two Int32s
+        // (upper and lower bound) per each dimension of the array.
+        return boundsSize / (2 * sizeof(uint32_t));
+    }
+    return 1;
 }

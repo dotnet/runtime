@@ -78,7 +78,7 @@ public class Program
             if (!Sse2.IsSupported) return 0;
 
             vec v = new vec();
-            Vector128<int> o = Vector128.Create(1);
+            Vector128<int> o = Vector128<int>.One;
             int vr16 = v.y;
             Sse2.Store(&v.x, o);
             return vr16;

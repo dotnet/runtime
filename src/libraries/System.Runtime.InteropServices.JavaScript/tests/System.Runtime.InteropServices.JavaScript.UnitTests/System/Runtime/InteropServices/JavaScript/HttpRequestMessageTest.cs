@@ -298,7 +298,6 @@ namespace System.Runtime.InteropServices.JavaScript.Http.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/113628", TestPlatforms.Browser)]
         public async Task HttpStreamingDisabledBy_WasmEnableStreamingResponse_InProject()
         {
             using var client = new HttpClient();
