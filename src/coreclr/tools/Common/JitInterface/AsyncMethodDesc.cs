@@ -21,7 +21,7 @@ namespace Internal.JitInterface
         public AsyncMethodDesc(MethodDesc wrappedMethod, AsyncMethodDescFactory factory)
             : base(wrappedMethod)
         {
-            Debug.Assert(wrappedMethod.ReturnsTaskLike());
+            Debug.Assert(wrappedMethod.IsTaskReturning());
             _factory = factory;
             // Salt with arbitrary constant so hash space differs from underlying method.
             _jitVisibleHashCode = HashCode.Combine(wrappedMethod.GetHashCode(), 0x51C0A54);
@@ -85,7 +85,10 @@ namespace Internal.JitInterface
 
     internal static class AsyncMethodDescExtensions
     {
-        public static bool ReturnsTaskLike(this MethodDesc method)
+        /// <summary>
+        /// Returns true if the method returns Task, Task&lt;T&gt;, ValueTask, or ValueTask&lt;T&gt;, otherwise false.
+        /// </summary>
+        public static bool IsTaskReturning(this MethodDesc method)
         {
             TypeDesc ret = method.GetTypicalMethodDefinition().Signature.ReturnType;
 
