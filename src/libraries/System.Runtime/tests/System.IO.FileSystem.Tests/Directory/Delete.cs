@@ -122,7 +122,7 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist");
         }
 
-        [ConditionalFact(nameof(RemoteExecutor.IsSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExtendedDirectoryWithSubdirectories()
         {
             RemoteExecutor.Invoke(() =>
@@ -135,7 +135,7 @@ namespace System.IO.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(RemoteExecutor.IsSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void LongPathExtendedDirectory()
         {
             RemoteExecutor.Invoke(() =>
