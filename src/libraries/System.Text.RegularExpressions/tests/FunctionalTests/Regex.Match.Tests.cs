@@ -182,6 +182,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?<=(abc)+?)", "123abc", RegexOptions.None, 0, 6, true, "");
                 yield return (@"(?<=(abc)+?)", "123ab", RegexOptions.None, 0, 5, false, "");
                 yield return (@"(?<=(abc)+?123)", "abcabc123", RegexOptions.None, 0, 9, true, "");
+                yield return (@"(?<=(abc)+?123)a", "abcabc123a", RegexOptions.None, 0, 10, true, "a");
+                yield return (@"(?<=(abc)+?)a", "abca", RegexOptions.None, 0, 4, true, "a");
                 yield return (@"a+(?!c)(?<=y)", "yaab", RegexOptions.None, 0, 4, false, "");
                 yield return (@"(?<=a{2,4})b+", "aaabbb", RegexOptions.None, 0, 6, true, "bbb");
                 yield return (@"(?<=a+)b+?", "aaabbb", RegexOptions.None, 0, 6, true, "b");
@@ -328,6 +330,26 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"(abc\d{2,3}?){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc45");
             yield return (@"(b|a|aa)((?:aa)+?)+?$", "aaaaaaaa", RegexOptions.None, 0, 8, true, "aaaaaaaa");
             yield return (@"(|a|aa)(((?:aa)+?)+?|aaaaab)\w$", "aaaaaabc", RegexOptions.None, 0, 8, true, "aaaaaabc");
+
+            // Lazy loops with empty matches
+            if (!PlatformDetection.IsNetFramework)
+            {
+                // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/111051
+                yield return (@"(.)+()+?b", "xyzb", RegexOptions.None, 0, 4, true, "xyzb");
+                yield return (@"^(.)+()+?b", "xyzb", RegexOptions.None, 0, 4, true, "xyzb");
+
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/58786
+                    yield return (@"(?<!a*(?:a?)+?)", @"x", RegexOptions.None, 0, 1, false, "");
+
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/114626
+                    yield return (@"(?>(-*)+?-*)$", "abc", RegexOptions.None, 0, 3, true, "");
+
+                    // Fails on .NET Framework: https://github.com/dotnet/runtime/issues/63385
+                    yield return (@"(^+?)?()", "1", RegexOptions.None, 0, 1, true, "");
+                }
+            }
 
             // Nested loops
             yield return (@"(abcd*)+e", "abcde", RegexOptions.None, 0, 5, true, "abcde");
@@ -573,6 +595,9 @@ namespace System.Text.RegularExpressions.Tests
 
                 // Actual - "abc(?(1)111|222)"
                 yield return ("(abbc)(?(1)111|222)", "abbc222", RegexOptions.None, 0, 7, false, string.Empty);
+
+                yield return (@"(?(?=(a)+?b)ab|no)", "ab", RegexOptions.None, 0, 2, true, "ab");
+                yield return (@"(?(?=(a)+?b)ab|no)", "c", RegexOptions.None, 0, 1, false, "");
             }
 
             // "x" option. Removes unescaped whitespace from the pattern: Actual - " ([^/]+) ","x"
@@ -655,6 +680,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?<cat>cat)\w+(?<dog-0>dog)", "cat_Hello_World_dog", RegexOptions.None, 0, 19, false, string.Empty);
                 yield return (@"(.)(?'2-1'(?'-1'))", "cat", RegexOptions.None, 0, 3, false, string.Empty);
                 yield return (@"(?'2-1'(.))", "cat", RegexOptions.None, 0, 3, true, "c");
+
+                // Balancing groups in negative lookarounds should not be removed
+                // The pattern captures group 1, uncaptures it, then checks the negative lookahead
+                // The negative lookahead contains a balancing group that should not be removed
+                yield return (@"()(?'-1')(?!(?'-1'))", "a", RegexOptions.None, 0, 1, true, string.Empty);
             }
 
             // Atomic Zero-Width Assertions \A \Z \z \b \B
