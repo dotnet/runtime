@@ -403,7 +403,7 @@ namespace System.PrivateUri.Tests
                 // Some schemes (particularly file) allow backslashes to separate the host and path
                 if (backslashIsAllowed)
                 {
-                    CheckProperties(new Uri($"{prefix}[{ipv6String}]\\extra"), implicitFile, port, path: "/extra");
+                    CheckProperties(new Uri($"{prefix}[{ipv6String}]\\extra"), port, path: "/extra");
                 }
                 else
                 {
@@ -411,28 +411,30 @@ namespace System.PrivateUri.Tests
                 }
 
                 // Regular delimiters like ? and # are allowed
-                CheckProperties(new Uri($"{prefix}[{ipv6String}] "), implicitFile, port);
-                CheckProperties(new Uri($"{prefix}[{ipv6String}]/extra"), implicitFile, port, path: "/extra");
-                CheckProperties(new Uri($"{prefix}[{ipv6String}]?extra"), implicitFile, port, query: "?extra");
-                CheckProperties(new Uri($"{prefix}[{ipv6String}]#extra"), implicitFile, port, fragment: "#extra");
+                CheckProperties(new Uri($"{prefix}[{ipv6String}] "), port);
+                CheckProperties(new Uri($"{prefix}[{ipv6String}]/extra"), port, path: "/extra");
+
+                if (implicitFile)
+                {
+                    // Implicit files don't support queries or fragments
+                    Assert.False(Uri.TryCreate($"{prefix}[{ipv6String}]?extra", UriKind.Absolute, out _));
+                    Assert.False(Uri.TryCreate($"{prefix}[{ipv6String}]#extra", UriKind.Absolute, out _));
+                }
+                else
+                {
+                    CheckProperties(new Uri($"{prefix}[{ipv6String}]?extra"), port, query: "?extra");
+                    CheckProperties(new Uri($"{prefix}[{ipv6String}]#extra"), port, fragment: "#extra");
+                }
 
                 if (port >= 0)
                 {
-                    CheckProperties(new Uri($"{prefix}[{ipv6String}]:"), implicitFile, port);
-                    CheckProperties(new Uri($"{prefix}[{ipv6String}]:123"), implicitFile, 123);
+                    CheckProperties(new Uri($"{prefix}[{ipv6String}]:"), port);
+                    CheckProperties(new Uri($"{prefix}[{ipv6String}]:123"), 123);
                 }
             }
 
-            void CheckProperties(Uri uri, bool implicitFile = false, int port = 80, string path = "/", string query = "", string fragment = "")
+            void CheckProperties(Uri uri, int port = 80, string path = "/", string query = "", string fragment = "")
             {
-                if (implicitFile)
-                {
-                    // Implicit file paths don't support queries/fragments, everything is treated as the path
-                    path += Uri.EscapeDataString(query) + Uri.EscapeDataString(fragment);
-                    query = "";
-                    fragment = "";
-                }
-
                 Assert.Equal(UriHostNameType.IPv6, uri.HostNameType);
                 Assert.Equal(expectedResultWithBrackets, uri.Host);
                 Assert.Equal(expected, uri.DnsSafeHost);
