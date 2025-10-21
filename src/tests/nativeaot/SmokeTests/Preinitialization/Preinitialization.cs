@@ -2065,6 +2065,24 @@ unsafe class TestComInterfaceEntry
         }
     }
 
+    class UnsafeAccessorVtableEntries
+    {
+        [FixedAddressValueType]
+        public static MyVTableEntries Entries;
+
+        static UnsafeAccessorVtableEntries()
+        {
+            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_IID_IAgileObject")]
+            [UnsafeAccessorType("InterfaceIIDs, Preinitialization")]
+            static extern ref readonly Guid IID_IAgileObject(object dummy);
+
+            Entries.TinyImpl.IID = IID_IAgileObject(null);
+            Entries.TinyImpl.Vtable = ITinyVtableImpl.VftablePtr;
+            Entries.SmallImpl.IID = new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98);
+            Entries.SmallImpl.Vtable = ISmallVtableImpl.VftablePtr;
+        }
+    }
+
     class ITinyVtableImpl
     {
         [FixedAddressValueType]
@@ -2113,6 +2131,33 @@ unsafe class TestComInterfaceEntry
         Assert.AreEqual(new Guid(0x1234, 0x4567, 0x789A, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89), VtableEntries.Entries.TinyImpl.IID);
         Assert.AreEqual(ISmallVtableImpl.VftablePtr, VtableEntries.Entries.SmallImpl.Vtable);
         Assert.AreEqual(new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98), VtableEntries.Entries.SmallImpl.IID);
+    }
+}
+
+class InterfaceIIDs
+{
+    public static ref readonly Guid IID_IAgileObject
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]   
+        get
+        {
+            ReadOnlySpan<byte> data =
+            [
+                0x94, 0x2B, 0xEA, 0x94,
+                0xCC, 0xE9,
+                0xE0, 0x49,
+                0xC0,
+                0xFF,
+                0xEE,
+                0x64,
+                0xCA,
+                0x8F,
+                0x5B,
+                0x90
+            ];
+
+            return ref Unsafe.As<byte, Guid>(ref MemoryMarshal.GetReference(data));
+        }
     }
 }
 
