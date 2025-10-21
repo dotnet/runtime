@@ -7826,7 +7826,7 @@ extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissin
         pPFrame->Pop(CURRENT_THREAD);
     }
 
-    POSTCONDITION(pThreadContext != NULL);
+    _ASSERTE(pThreadContext != NULL);
 
     return pThreadContext;
 }
