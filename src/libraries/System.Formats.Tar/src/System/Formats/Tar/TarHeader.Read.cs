@@ -48,9 +48,6 @@ namespace System.Formats.Tar
 
             await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-            // Check for compression magic numbers to provide better error messages if the file is a compressed tar archive (tar.gz, tar.bz2, etc.)
-            CheckForCompressionMagicNumbers(buffer.Span);
-
             TarHeader? header = TryReadAttributes(initialFormat, buffer.Span, archiveStream);
             if (header != null && processDataBlock)
             {
