@@ -2131,6 +2131,12 @@ unsafe class TestComInterfaceEntry
         Assert.AreEqual(new Guid(0x1234, 0x4567, 0x789A, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89), VtableEntries.Entries.TinyImpl.IID);
         Assert.AreEqual(ISmallVtableImpl.VftablePtr, VtableEntries.Entries.SmallImpl.Vtable);
         Assert.AreEqual(new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98), VtableEntries.Entries.SmallImpl.IID);
+
+        Assert.IsPreinitialized(typeof(UnsafeAccessorVtableEntries));
+        Assert.AreEqual(ITinyVtableImpl.VftablePtr, UnsafeAccessorVtableEntries.Entries.TinyImpl.Vtable);
+        Assert.AreEqual(InterfaceIIDs.IID_IAgileObject, UnsafeAccessorVtableEntries.Entries.TinyImpl.IID);
+        Assert.AreEqual(ISmallVtableImpl.VftablePtr, UnsafeAccessorVtableEntries.Entries.SmallImpl.Vtable);
+        Assert.AreEqual(new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98), UnsafeAccessorVtableEntries.Entries.SmallImpl.IID);
     }
 }
 
