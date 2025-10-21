@@ -479,7 +479,7 @@ HRESULT EEConfig::sync()
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
     {
         // InterpMode 3 disables all hw intrinsics
-        enableHWIntrinsic = 0;
+        enableHWIntrinsic = false;
     }
 #endif // FEATURE_INTERPRETER
 
