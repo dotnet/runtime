@@ -34,7 +34,6 @@ static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size)
     if (size < 0 || size > INT32_MAX)
     {
         RhExceptionHandling_FailedAllocation(pMT, true /* isOverflow */);
-        return nullptr;
     }
 
     Thread* thread = GetThread();
@@ -66,7 +65,6 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
     if (size < 0 || size > INT32_MAX)
     {
         RhExceptionHandling_FailedAllocation(pMT, true /* isOverflow */);
-        return nullptr;
     }
 
     Thread* thread = GetThread();
