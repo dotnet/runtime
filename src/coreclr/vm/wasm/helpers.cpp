@@ -574,7 +574,7 @@ namespace
         if (table == nullptr)
         {
             StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-            newTable->Reallocate(g_wasmThunksCount);
+            newTable->Reallocate(g_wasmThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
             for (size_t i = 0; i < g_wasmThunksCount; i++)
             {
                 newTable->Add(g_wasmThunks[i].key, g_wasmThunks[i].value);
