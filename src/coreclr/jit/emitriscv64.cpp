@@ -1793,19 +1793,9 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
     // Trim out any callee-trashed registers from the live set.
     // For tail calls, we don't trim registers since we're jumping to another function, not returning.
-    regMaskTP gcrefRegs;
-    regMaskTP byrefRegs;
-    if (params.isJump)
-    {
-        gcrefRegs = params.gcrefRegs;
-        byrefRegs = params.byrefRegs;
-    }
-    else
-    {
-        regMaskTP savedSet = emitGetGCRegsSavedOrModified(params.methHnd);
-        gcrefRegs          = params.gcrefRegs & savedSet;
-        byrefRegs          = params.byrefRegs & savedSet;
-    }
+    regMaskTP savedSet  = params.isJump ? RBM_ALLINT : emitGetGCRegsSavedOrModified(params.methHnd);
+    regMaskTP gcrefRegs = params.gcrefRegs & savedSet;
+    regMaskTP byrefRegs = params.byrefRegs & savedSet;
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
