@@ -10,7 +10,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessModuleTests : ProcessTestBase
     {
-        [ConditionalFact(typeof(PathFeatures), nameof(PathFeatures.AreAllLongPathsAvailable))]
+        [Fact]
         public void LongModuleFileNamesAreSupported()
         {
             // To be able to test Long Path support for ProcessModule.FileName we need a .dll that has a path > 260 chars.

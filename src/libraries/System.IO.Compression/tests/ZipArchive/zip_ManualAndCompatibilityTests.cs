@@ -10,7 +10,7 @@ namespace System.IO.Compression.Tests
 {
     public class zip_ManualAndCompatibilityTests : ZipFileTestBase
     {
-        public static bool IsUsingNewPathNormalization => !PathFeatures.IsUsingLegacyPathNormalization();
+        public static bool IsUsingNewPathNormalization => true;
 
         public static IEnumerable<object[]> Get_CompatibilityTests_Data()
         {
