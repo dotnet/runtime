@@ -2073,8 +2073,7 @@ unsafe class TestComInterfaceEntry
         static UnsafeAccessorVtableEntries()
         {
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_IID_IAgileObject")]
-            [UnsafeAccessorType("InterfaceIIDs, Preinitialization")]
-            static extern ref readonly Guid IID_IAgileObject(object dummy);
+            static extern ref readonly Guid IID_IAgileObject([UnsafeAccessorType("InterfaceIIDs, Preinitialization")] object dummy);
 
             Entries.TinyImpl.IID = IID_IAgileObject(null);
             Entries.TinyImpl.Vtable = ITinyVtableImpl.VftablePtr;
