@@ -428,7 +428,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
         private readonly void ThrowIfNotVarType(params VarEnum[] requiredType)
         {
-            if (Array.IndexOf(requiredType, VarType) == -1)
+            if (Array.IndexOf(requiredType, VarType) < 0)
             {
                 throw new InvalidOperationException(SR.Format(SR.ComVariant_TypeIsNotSupportedType, VarType, string.Join(", ", requiredType)));
             }

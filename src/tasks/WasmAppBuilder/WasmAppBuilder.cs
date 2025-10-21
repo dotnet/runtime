@@ -183,8 +183,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             var itemHash = Utils.ComputeIntegrity(item.ItemSpec);
 
             Dictionary<string, string>? resourceList = helper.GetNativeResourceTargetInBootConfig(bootConfig, name);
-            if (resourceList != null)
-                resourceList[name] = itemHash;
+            resourceList?[name] = itemHash;
         }
 
         string packageJsonPath = Path.Combine(AppDir, "package.json");

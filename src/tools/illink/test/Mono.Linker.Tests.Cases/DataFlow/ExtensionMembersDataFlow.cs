@@ -11,7 +11,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [SkipKeptItemsValidation]
-    [IgnoreTestCase("NativeAOT sometimes emits duplicate IL2041: https://github.com/dotnet/runtime/issues/119155", IgnoredBy = Tool.NativeAot)]
+    // [IgnoreTestCase("NativeAOT sometimes emits duplicate IL2041: https://github.com/dotnet/runtime/issues/119155", IgnoredBy = Tool.NativeAot)]
+    // Root the entire assembly to ensure that ILLink/ILC analyze extension properties which are otherwise unused in IL.
+    [SetupRootEntireAssembly("test")]
     [ExpectedNoWarnings]
     public class ExtensionMembersDataFlow
     {
@@ -98,7 +100,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             instance.ExtensionMembersPropertyMismatch = GetWithFields();
         }
 
-        [UnexpectedWarning("IL2072", "ExtensionMembersPropertyAnnotatedAccessor", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/80017")]
         static void TestExtensionPropertyAnnotatedAccessor()
         {
             var instance = GetWithFields();
@@ -123,7 +124,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             _ = GetWithFields().ExtensionMembersPropertyRequires;
         }
 
-        [UnexpectedWarning("IL2072", "ExtensionMembersPropertyConflict", nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/80017")]
         static void TestExtensionPropertyConflict()
         {
             var instance = GetWithFields();
@@ -131,7 +131,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             instance.ExtensionMembersPropertyConflict = GetWithFields();
         }
 
-        [UnexpectedWarning("IL2072", nameof(ExtensionMembers.op_Addition), nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/80017")]
         [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
         static void TestExtensionOperators()
         {
@@ -143,14 +142,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         [ExpectedWarning("IL2072", nameof(GetWithMethods), nameof(ExtensionMembers.op_Subtraction), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
         [ExpectedWarning("IL2072", nameof(GetWithMethods), nameof(ExtensionMembers.op_Subtraction), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
-        [ExpectedWarning("IL2072", nameof(ExtensionMembers.op_Subtraction), nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
-        [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
+        [ExpectedWarning("IL2072", nameof(ExtensionMembers.op_Subtraction), nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
+        [UnexpectedWarning("IL2062", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
         static void TestExtensionOperatorsMismatch()
         {
             var a = GetWithMethods();
             var b = GetWithMethods();
             var c = a - b;
-            c.RequiresPublicFields();
+            c.RequiresPublicMethods();
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
@@ -191,6 +190,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             public static void ExtensionMembersStaticMethodRequires() { }
 
             [ExpectedWarning("IL2041")]
+            [ExpectedWarning("IL2041", Tool.Trimmer | Tool.NativeAot, "Analyzer doesn't see generated extension metadata type", CompilerGeneratedCode = true)]
             [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             public void ExtensionMembersMethodAnnotation()
@@ -200,13 +200,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [ExpectedWarning("IL2041")]
+            [ExpectedWarning("IL2041", Tool.Trimmer | Tool.NativeAot, "Analyzer doesn't see generated extension metadata type", CompilerGeneratedCode = true)]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             public static void ExtensionMembersStaticMethodAnnotation()
             {
             }
 
-            // Annotations on extension properties have no effect:
-            // https://github.com/dotnet/runtime/issues/119113
+            [ExpectedWarning("IL2127", CompilerGeneratedCode = true)]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             public Type ExtensionMembersProperty
             {
@@ -216,8 +216,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 set => value.RequiresPublicMethods();
             }
 
-            // Annotations on extension properties have no effect:
-            // https://github.com/dotnet/runtime/issues/119113
+            [ExpectedWarning("IL2127", CompilerGeneratedCode = true)]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             public Type ExtensionMembersPropertyMismatch
             {
@@ -237,7 +236,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             public Type ExtensionMembersPropertyAnnotatedAccessorMismatch
             {
-                [ExpectedWarning("IL2073", nameof(ExtensionMembersDataFlow.GetWithFields), Tool.Analyzer, "https://github.com/dotnet/roslyn/issues/80017")]
+                [ExpectedWarning("IL2073", nameof(ExtensionMembersDataFlow.GetWithFields))]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
                 get => ExtensionMembersDataFlow.GetWithFields();
 
@@ -252,8 +251,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 get => null;
             }
 
-            // Annotations on extension properties have no effect:
-            // https://github.com/dotnet/runtime/issues/119113
+            [ExpectedWarning("IL2127", CompilerGeneratedCode = true)]
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             public Type ExtensionMembersPropertyConflict
             {
@@ -276,7 +274,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2067", "left", nameof(DataFlowTypeExtensions.RequiresPublicMethods))] 
             [ExpectedWarning("IL2067", "right", nameof(DataFlowTypeExtensions.RequiresPublicMethods))] 
-            [ExpectedWarning("IL2073", nameof(ExtensionMembersDataFlow.GetWithMethods), Tool.Analyzer, "https://github.com/dotnet/roslyn/issues/80017")] 
+            [ExpectedWarning("IL2073", nameof(ExtensionMembersDataFlow.GetWithMethods))]
             [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
             public static Type operator -(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type left,

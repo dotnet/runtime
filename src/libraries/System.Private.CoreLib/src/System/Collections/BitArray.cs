@@ -738,7 +738,7 @@ namespace System.Collections
                 Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
                 Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
 
-                if (Avx512BW.IsSupported && (uint)_bitLength >= Vector512<byte>.Count)
+                if (Vector512.IsHardwareAccelerated && (uint)_bitLength >= Vector512<byte>.Count)
                 {
                     Vector256<byte> upperShuffleMask_CopyToBoolArray256 = Vector256.Create(0x04040404_04040404, 0x05050505_05050505,
                                                                                              0x06060606_06060606, 0x07070707_07070707).AsByte();
@@ -753,17 +753,17 @@ namespace System.Collections
                         {
                             ulong bits = (ulong)(uint)in32Span[(int)(i / (uint)BitsPerInt32)] + ((ulong)in32Span[(int)(i / (uint)BitsPerInt32) + 1] << BitsPerInt32);
                             Vector512<ulong> scalar = Vector512.Create(bits);
-                            Vector512<byte> shuffled = Avx512BW.Shuffle(scalar.AsByte(), shuffleMask);
-                            Vector512<byte> extracted = Avx512F.And(shuffled, bitMask);
+                            Vector512<byte> shuffled = Vector512.Shuffle(scalar.AsByte(), shuffleMask);
+                            Vector512<byte> extracted = shuffled & bitMask;
 
                             // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
                             // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
-                            Vector512<byte> normalized = Avx512BW.Min(extracted, ones);
-                            Avx512F.Store((byte*)destination + i, normalized);
+                            Vector512<byte> normalized = Vector512.Min(extracted, ones);
+                            normalized.Store((byte*)destination + i);
                         }
                     }
                 }
-                else if (Avx2.IsSupported && (uint)_bitLength >= Vector256<byte>.Count)
+                else if (Vector256.IsHardwareAccelerated && (uint)_bitLength >= Vector256<byte>.Count)
                 {
                     Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
                     Vector256<byte> bitMask = Vector256.Create(0x80402010_08040201).AsByte();
@@ -775,17 +775,17 @@ namespace System.Collections
                         {
                             int bits = in32Span[(int)(i / (uint)BitsPerInt32)];
                             Vector256<int> scalar = Vector256.Create(bits);
-                            Vector256<byte> shuffled = Avx2.Shuffle(scalar.AsByte(), shuffleMask);
-                            Vector256<byte> extracted = Avx2.And(shuffled, bitMask);
+                            Vector256<byte> shuffled = Vector256.Shuffle(scalar.AsByte(), shuffleMask);
+                            Vector256<byte> extracted = shuffled & bitMask;
 
                             // The extracted bits can be anywhere between 0 and 255, so we normalise the value to either 0 or 1
                             // to ensure compatibility with "C# bool" (0 for false, 1 for true, rest undefined)
-                            Vector256<byte> normalized = Avx2.Min(extracted, ones);
-                            Avx.Store((byte*)destination + i, normalized);
+                            Vector256<byte> normalized = Vector256.Min(extracted, ones);
+                            normalized.Store((byte*)destination + i);
                         }
                     }
                 }
-                else if (Ssse3.IsSupported && ((uint)_bitLength >= Vector128<byte>.Count * 2u))
+                else if (Vector128.IsHardwareAccelerated && ((uint)_bitLength >= Vector128<byte>.Count * 2u))
                 {
                     Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
                     Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;
@@ -799,82 +799,19 @@ namespace System.Collections
                             int bits = in32Span[(int)(i / (uint)BitsPerInt32)];
                             Vector128<int> scalar = Vector128.CreateScalarUnsafe(bits);
 
-                            Vector128<byte> shuffledLower = Ssse3.Shuffle(scalar.AsByte(), lowerShuffleMask);
-                            Vector128<byte> extractedLower = Sse2.And(shuffledLower, bitMask128);
-                            Vector128<byte> normalizedLower = Sse2.Min(extractedLower, ones);
-                            Sse2.Store((byte*)destination + i, normalizedLower);
+                            Vector128<byte> shuffledLower = Vector128.Shuffle(scalar.AsByte(), lowerShuffleMask);
+                            Vector128<byte> extractedLower = shuffledLower & bitMask128;
+                            Vector128<byte> normalizedLower = Vector128.Min(extractedLower, ones);
+                            normalizedLower.Store((byte*)destination + i);
 
-                            Vector128<byte> shuffledHigher = Ssse3.Shuffle(scalar.AsByte(), upperShuffleMask);
-                            Vector128<byte> extractedHigher = Sse2.And(shuffledHigher, bitMask128);
-                            Vector128<byte> normalizedHigher = Sse2.Min(extractedHigher, ones);
-                            Sse2.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
+                            Vector128<byte> shuffledHigher = Vector128.Shuffle(scalar.AsByte(), upperShuffleMask);
+                            Vector128<byte> extractedHigher = shuffledHigher & bitMask128;
+                            Vector128<byte> normalizedHigher = Vector128.Min(extractedHigher, ones);
+                            normalizedHigher.Store((byte*)destination + i + Vector128<byte>.Count);
                         }
                     }
                 }
-                else if (PackedSimd.IsSupported && ((uint)_bitLength >= Vector128<byte>.Count * 2u))
-                {
-                    Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
-                    Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;
-                    Vector128<byte> ones = Vector128<byte>.One;
-                    Vector128<byte> bitMask128 = Vector128.Create(0x80402010_08040201).AsByte();
 
-                    fixed (bool* destination = &boolArray[index])
-                    {
-                        for (; (i + Vector128<byte>.Count * 2u) <= (uint)_bitLength; i += (uint)Vector128<byte>.Count * 2u)
-                        {
-                            int bits = in32Span[(int)(i / (uint)BitsPerInt32)];
-                            Vector128<int> scalar = Vector128.CreateScalarUnsafe(bits);
-
-                            Vector128<byte> shuffledLower = PackedSimd.Swizzle(scalar.AsByte(), lowerShuffleMask);
-                            Vector128<byte> extractedLower = PackedSimd.And(shuffledLower, bitMask128);
-                            Vector128<byte> normalizedLower = PackedSimd.Min(extractedLower, ones);
-                            PackedSimd.Store((byte*)destination + i, normalizedLower);
-
-                            Vector128<byte> shuffledHigher = PackedSimd.Swizzle(scalar.AsByte(), upperShuffleMask);
-                            Vector128<byte> extractedHigher = PackedSimd.And(shuffledHigher, bitMask128);
-                            Vector128<byte> normalizedHigher = PackedSimd.Min(extractedHigher, ones);
-                            PackedSimd.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
-                        }
-                    }
-                }
-                else if (AdvSimd.Arm64.IsSupported)
-                {
-                    Vector128<byte> ones = Vector128<byte>.One;
-                    Vector128<byte> bitMask128 = Vector128.Create(0x80402010_08040201).AsByte();
-
-                    fixed (bool* destination = &boolArray[index])
-                    {
-                        for (; (i + Vector128<byte>.Count * 2u) <= (uint)_bitLength; i += (uint)Vector128<byte>.Count * 2u)
-                        {
-                            int bits = in32Span[(int)(i / (uint)BitsPerInt32)];
-
-                            // Same logic as SSSE3 path, except we do not have Shuffle instruction.
-                            // (TableVectorLookup could be an alternative - dotnet/runtime#1277)
-                            // Instead we use chained ZIP1/2 instructions:
-                            // (A0 is the byte containing LSB, A3 is the byte containing MSB)
-                            // bits                                 - A0 A1 A2 A3
-                            // v1 = Vector128.Create                - A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3
-                            // v2 = ZipLow(v1, v1)                  - A0 A0 A1 A1 A2 A2 A3 A3 A0 A0 A1 A1 A2 A2 A3 A3
-                            // v3 = ZipLow(v2, v2)                  - A0 A0 A0 A0 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3 A3
-                            // shuffledLower = ZipLow(v3, v3)       - A0 A0 A0 A0 A0 A0 A0 A0 A1 A1 A1 A1 A1 A1 A1 A1
-                            // shuffledHigher = ZipHigh(v3, v3)     - A2 A2 A2 A2 A2 A2 A2 A2 A3 A3 A3 A3 A3 A3 A3 A3
-
-                            Vector128<byte> vector = Vector128.Create(bits).AsByte();
-                            vector = AdvSimd.Arm64.ZipLow(vector, vector);
-                            vector = AdvSimd.Arm64.ZipLow(vector, vector);
-
-                            Vector128<byte> shuffledLower = AdvSimd.Arm64.ZipLow(vector, vector);
-                            Vector128<byte> extractedLower = AdvSimd.And(shuffledLower, bitMask128);
-                            Vector128<byte> normalizedLower = AdvSimd.Min(extractedLower, ones);
-
-                            Vector128<byte> shuffledHigher = AdvSimd.Arm64.ZipHigh(vector, vector);
-                            Vector128<byte> extractedHigher = AdvSimd.And(shuffledHigher, bitMask128);
-                            Vector128<byte> normalizedHigher = AdvSimd.Min(extractedHigher, ones);
-
-                            AdvSimd.Arm64.StorePair((byte*)destination + i, normalizedLower, normalizedHigher);
-                        }
-                    }
-                }
 
             Remainder:
                 for (; i < (uint)_bitLength; i++)

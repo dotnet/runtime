@@ -739,7 +739,7 @@ void emitter::emitIns_R_R_I(
         INS_flw == ins || INS_slli_uw == ins || INS_rori == ins || INS_roriw == ins ||
         (INS_bseti <= ins && ins <= INS_binvi))
     {
-        assert(isGeneralRegister(reg2));
+        assert(isGeneralRegisterOrR0(reg2));
         code |= (reg1 & 0x1f) << 7; // rd
         code |= reg2 << 15;         // rs1
         code |= imm << 20;          // imm
@@ -5486,15 +5486,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                     // n * n bytes will store n bytes result
                     emitIns_R_R_R(ins, attr, dstReg, src1Reg, src2Reg);
-
-                    if ((dst->gtFlags & GTF_UNSIGNED) != 0)
-                    {
-                        if (attr == EA_4BYTE)
-                        {
-                            emitIns_R_R_I(INS_slli, EA_8BYTE, dstReg, dstReg, 32);
-                            emitIns_R_R_I(INS_srli, EA_8BYTE, dstReg, dstReg, 32);
-                        }
-                    }
 
                     if (needCheckOv)
                     {

@@ -31,17 +31,17 @@ namespace TypeSystemTests
             _testModule = _context.CreateModuleForSimpleName("CoreTestAssembly");
             _context.SetSystemModule(_testModule);
 
-            _simpleType = _testModule.GetType("TypeNameParsing", "Simple");
+            _simpleType = _testModule.GetType("TypeNameParsing"u8, "Simple"u8);
             _nestedType = _simpleType.GetNestedType("Nested");
             _nestedTwiceType = _nestedType.GetNestedType("NestedTwice");
 
-            _genericType = _testModule.GetType("TypeNameParsing", "Generic`1");
+            _genericType = _testModule.GetType("TypeNameParsing"u8, "Generic`1"u8);
             _nestedGenericType = _genericType.GetNestedType("NestedGeneric`1");
             _nestedNongenericType = _genericType.GetNestedType("NestedNongeneric");
 
-            _veryGenericType = _testModule.GetType("TypeNameParsing", "VeryGeneric`3");
+            _veryGenericType = _testModule.GetType("TypeNameParsing"u8, "VeryGeneric`3"u8);
 
-            _structType = _testModule.GetType("TypeNameParsing", "Struct");
+            _structType = _testModule.GetType("TypeNameParsing"u8, "Struct"u8);
 
             _coreAssemblyQualifier = ((IAssemblyDesc)_testModule).GetName().FullName;
         }

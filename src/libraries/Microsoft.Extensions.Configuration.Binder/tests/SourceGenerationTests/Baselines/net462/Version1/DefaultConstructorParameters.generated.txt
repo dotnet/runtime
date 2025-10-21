@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #region IConfiguration extensions.
         /// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
         [InterceptsLocation(1, "NfQsvTvxsxzujBWqpTrJJGIBAABzcmMtMC5jcw==")] // src-0.cs(13,16)
-        public static void Bind_ProgramClassWhereParametersHaveDefaultValue(this IConfiguration configuration, object? instance)
+        public static void Bind_Program__ClassWhereParametersHaveDefaultValue(this IConfiguration configuration, object? instance)
         {
             if (configuration is null)
             {
@@ -54,14 +54,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramClassWhereParametersHaveDefaultValue = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Name", "Address", "Age", "F", "D", "M", "SC", "C", "NAge", "NF", "ND", "NM", "NSC", "NC" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_Program__ClassWhereParametersHaveDefaultValue = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Name", "Address", "Age", "F", "D", "M", "SC", "C", "NAge", "NF", "ND", "NM", "NSC", "NC" });
 
         public static void BindCore(IConfiguration configuration, ref global::Program.ClassWhereParametersHaveDefaultValue instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
-            ValidateConfigurationKeys(typeof(global::Program.ClassWhereParametersHaveDefaultValue), s_configKeys_ProgramClassWhereParametersHaveDefaultValue, configuration, binderOptions);
+            ValidateConfigurationKeys(typeof(global::Program.ClassWhereParametersHaveDefaultValue), s_configKeys_Program__ClassWhereParametersHaveDefaultValue, configuration, binderOptions);
         }
 
-        public static global::Program.ClassWhereParametersHaveDefaultValue InitializeProgramClassWhereParametersHaveDefaultValue(IConfiguration configuration, BinderOptions? binderOptions)
+        public static global::Program.ClassWhereParametersHaveDefaultValue InitializeProgram__ClassWhereParametersHaveDefaultValue(IConfiguration configuration, BinderOptions? binderOptions)
         {
             string name = "John Doe"!;
             if (TryGetConfigurationValue(configuration, key: "Name", out string? value0))

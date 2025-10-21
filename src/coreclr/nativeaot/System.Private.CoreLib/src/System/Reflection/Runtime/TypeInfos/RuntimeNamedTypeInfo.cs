@@ -128,6 +128,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     case TypeAttributes.ExplicitLayout: layoutKind = LayoutKind.Explicit; break;
                     case TypeAttributes.AutoLayout: layoutKind = LayoutKind.Auto; break;
                     case TypeAttributes.SequentialLayout: layoutKind = LayoutKind.Sequential; break;
+                    case TypeAttributes.ExtendedLayout: layoutKind = LayoutKind.Extended; break;
                     default: layoutKind = LayoutKind.Auto; break;
                 }
 

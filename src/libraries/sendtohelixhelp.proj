@@ -108,11 +108,6 @@
     <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'">SetStressModes_$(Scenario).sh</TestEnvFileName>
   </PropertyGroup>
 
-  <ItemGroup>
-    <__HelixDependenciesToStageThatDontExist Include="@(HelixDependenciesToStage)" />
-    <__HelixDependenciesToStageThatDontExist Remove="@(HelixDependenciesToStage->Exists())" />
-  </ItemGroup>
-
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
        setting up the per-scenario environment.
   -->
@@ -362,7 +357,12 @@
         `WASI_SDK_PATH=/usr/local/wasi-sdk`
       .. then we need to stage that before passing the path to helix like under `artifacts/obj/helix-staging`
   -->
-  <Target Name="StageDependenciesForHelix" Condition="@(__HelixDependenciesToStageThatDontExist->Count()) > 0">
+  <Target Name="StageDependenciesForHelix"
+          Condition="'@(HelixDependenciesToStage->Exists())' != '@(HelixDependenciesToStage)'">
+    <ItemGroup>
+      <__HelixDependenciesToStageThatDontExist Include="@(HelixDependenciesToStage)" Condition="!Exists('%(Identity)')" />
+    </ItemGroup>
+
     <Error Condition="'%(__HelixDependenciesToStageThatDontExist.SourcePath)' == '' or !Exists(%(__HelixDependenciesToStageThatDontExist.SourcePath))"
            Text="Could not find %(__HelixDependenciesToStageThatDontExist.Name) at %(__HelixDependenciesToStageThatDontExist.SourcePath), needed to provision for running tests on helix" />
 

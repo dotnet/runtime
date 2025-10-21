@@ -100,10 +100,7 @@ namespace System.Net.Sockets
                     throw new InvalidOperationException(SR.net_tcplistener_mustbestopped);
                 }
 
-                if (_serverSocket != null)
-                {
-                    _serverSocket.ExclusiveAddressUse = value;
-                }
+                _serverSocket?.ExclusiveAddressUse = value;
                 _exclusiveAddressUse = value;
             }
         }

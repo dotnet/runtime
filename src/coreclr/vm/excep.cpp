@@ -3553,9 +3553,9 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
                 CreateCrashDumpIfEnabled(fSOException);
 #endif
                 // RaiseFailFastException validates that the context matches a valid return address on the stack as part of CET.
-                // If the return address is not valid, it rejects the context, flags it as a potential attack and asserts in 
-                // checked builds of Windows OS. 
-                // Avoid reporting thread context captured by EEPolicy::HandleFatalError since it has IP that does not 
+                // If the return address is not valid, it rejects the context, flags it as a potential attack and asserts in
+                // checked builds of Windows OS.
+                // Avoid reporting thread context captured by EEPolicy::HandleFatalError since it has IP that does not
                 // match a valid return address on the stack.
                 bool fAvoidReportContextToRaiseFailFast = tore.IsFatalError();
                 RaiseFailFastException(pExceptionInfo == NULL                                       ? NULL : pExceptionInfo->ExceptionRecord,
@@ -5926,6 +5926,7 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
 
+#ifndef FEATURE_PORTABLE_HELPERS
     // compare the IP against the list of known possible AV locations in the write barrier helpers
     for (size_t i = 0; i < sizeof(writeBarrierAVLocations)/sizeof(writeBarrierAVLocations[0]); i++)
     {
@@ -5957,6 +5958,7 @@ bool IsIPInMarkedJitHelper(PCODE uControlPc)
 #if defined(TARGET_AMD64) && defined(_DEBUG)
     CHECK_RANGE(JIT_WriteBarrier_Debug)
 #endif
+#endif // !FEATURE_PORTABLE_HELPERS
 
     return false;
 }
@@ -6180,7 +6182,10 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     //Ex.RhThrowHwEx(exceptionCode, &exInfo)
     CALL_MANAGED_METHOD_NORET(args)
 
+    DispatchExSecondPass(&exInfo);
+
     GCPROTECT_END();
+    UNREACHABLE();
 }
 
 #endif // USE_FEF && !TARGET_UNIX
@@ -7264,42 +7269,6 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
     }
 #endif
 }
-
-#ifdef FEATURE_EH_FUNCLETS
-//
-// This function continues exception interception unwind after it crossed native frames using
-// standard EH / SEH.
-//
-VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind()
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    GCX_COOP();
-
-    Thread *pThread = GetThread();
-    ThreadExceptionState* pExState = pThread->GetExceptionState();
-    UINT_PTR uInterceptStackFrame  = 0;
-
-    pExState->GetDebuggerState()->GetDebuggerInterceptInfo(NULL, NULL,
-                                                        (PBYTE*)&uInterceptStackFrame,
-                                                        NULL, NULL);
-
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__UNWIND_AND_INTERCEPT);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER((ExInfo*)pExState->GetCurrentExceptionTracker());
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(uInterceptStackFrame);
-    pThread->IncPreventAbort();
-
-    //Ex.RhUnwindAndIntercept(throwable, &exInfo)
-    CRITICAL_CALLSITE;
-    CALL_MANAGED_METHOD_NORET(args)
-
-    UNREACHABLE();
-}
-
-#endif // FEATURE_EH_FUNCLETS
 
 //
 // This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been

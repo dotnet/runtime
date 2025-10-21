@@ -37,6 +37,7 @@ enum class WellKnownAttribute : DWORD
     InlineArrayAttribute,
     UnsafeAccessorAttribute,
     UnsafeAccessorTypeAttribute,
+    ExtendedLayoutAttribute,
 
     CountOfWellKnownAttributes
 };
@@ -140,6 +141,9 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             break;
         case WellKnownAttribute::UnsafeAccessorTypeAttribute:
             ret = "System.Runtime.CompilerServices.UnsafeAccessorTypeAttribute";
+            break;
+        case WellKnownAttribute::ExtendedLayoutAttribute:
+            ret = "System.Runtime.InteropServices.ExtendedLayoutAttribute";
             break;
         case WellKnownAttribute::CountOfWellKnownAttributes:
         default:
