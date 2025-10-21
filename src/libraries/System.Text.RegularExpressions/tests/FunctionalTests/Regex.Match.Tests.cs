@@ -182,8 +182,6 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(?<=(abc)+?)", "123abc", RegexOptions.None, 0, 6, true, "");
                 yield return (@"(?<=(abc)+?)", "123ab", RegexOptions.None, 0, 5, false, "");
                 yield return (@"(?<=(abc)+?123)", "abcabc123", RegexOptions.None, 0, 9, true, "");
-                // Regression test for https://github.com/dotnet/runtime/issues/120882
-                // Lazy loops inside lookbehinds should generate valid code
                 yield return (@"(?<=(abc)+?123)a", "abcabc123a", RegexOptions.None, 0, 10, true, "a");
                 yield return (@"(?<=(abc)+?)a", "abca", RegexOptions.None, 0, 4, true, "a");
                 yield return (@"a+(?!c)(?<=y)", "yaab", RegexOptions.None, 0, 4, false, "");
@@ -598,8 +596,6 @@ namespace System.Text.RegularExpressions.Tests
                 // Actual - "abc(?(1)111|222)"
                 yield return ("(abbc)(?(1)111|222)", "abbc222", RegexOptions.None, 0, 7, false, string.Empty);
 
-                // Regression test for https://github.com/dotnet/runtime/issues/120882
-                // Conditional expressions with lazy loops in condition should generate valid code
                 yield return (@"(?(?=(a)+?b)ab|no)", "ab", RegexOptions.None, 0, 2, true, "ab");
                 yield return (@"(?(?=(a)+?b)ab|no)", "c", RegexOptions.None, 0, 1, false, "");
             }
