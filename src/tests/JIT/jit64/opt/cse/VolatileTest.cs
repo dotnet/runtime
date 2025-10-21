@@ -11,6 +11,7 @@ using Xunit;
 public class Program
 {
     [Fact]
+    [OuterLoop]
     [SkipOnCoreClr("", RuntimeTestModes.AnyGCStress)]
     public static int TestEntryPoint()
     {
