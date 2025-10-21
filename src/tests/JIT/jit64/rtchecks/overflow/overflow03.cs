@@ -326,7 +326,7 @@ public class OVFTest
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
 #if OP_DIV
         const string op = "div.ovf";
@@ -340,104 +340,64 @@ public class OVFTest
 
         Console.WriteLine("Runtime Checks [OP: {0}]", op);
 
-        int check = 8;
 
-        try
-        {
-            Console.Write("Type 'byte' . . : ");
-            byte a = Test_byte((byte)(OVFTest.rtv ? 1 + byte.MaxValue / 2 : 0));
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
 
-        try
+        Console.Write("Type 'byte' . . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'sbyte'. . : ");
-            sbyte a = Test_sbyte((sbyte)(OVFTest.rtv ? 1 + sbyte.MaxValue / 2 : 0));
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_byte((byte)(OVFTest.rtv ? 1 + byte.MaxValue / 2 : 0));
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'sbyte'. . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'short'. . : ");
-            short a = Test_short((short)(OVFTest.rtv ? 1 + short.MaxValue / 2 : 0));
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_sbyte((sbyte)(OVFTest.rtv ? 1 + sbyte.MaxValue / 2 : 0));
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'short'. . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'ushort' . : ");
-            ushort a = Test_ushort((ushort)(OVFTest.rtv ? 1 + ushort.MaxValue / 2 : 0));
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_short((short)(OVFTest.rtv ? 1 + short.MaxValue / 2 : 0));
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'ushort' . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'int'. . . : ");
-            int a = Test_int((int)(OVFTest.rtv ? 1 + int.MaxValue / 2 : 0));
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_ushort((ushort)(OVFTest.rtv ? 1 + ushort.MaxValue / 2 : 0));
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'int'. . . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'uint' . . : ");
-            uint a = Test_uint((uint)(OVFTest.rtv ? 1U + uint.MaxValue / 2U : 0U));
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_int((int)(OVFTest.rtv ? 1 + int.MaxValue / 2 : 0));
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'uint' . . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'long' . . : ");
-            long a = Test_long((long)(OVFTest.rtv ? 1L + long.MaxValue / 2L : 0L));
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_uint((uint)(OVFTest.rtv ? 1U + uint.MaxValue / 2U : 0U));
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'long' . . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'ulong'. . : ");
-            ulong a = Test_ulong((ulong)(OVFTest.rtv ? 1UL + ulong.MaxValue / 2UL : 0UL));
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_long((long)(OVFTest.rtv ? 1L + long.MaxValue / 2L : 0L));
+            Console.WriteLine(a);
+        });
 
-        return check == 0 ? 100 : 1;
+        Console.Write("Type 'ulong'. . : ");
+        Assert.Throws<OverflowException>(() =>
+        {
+            var a = Test_ulong((ulong)(OVFTest.rtv ? 1UL + ulong.MaxValue / 2UL : 0UL));
+            Console.WriteLine(a);
+        });
+
+        return;
     }
 }

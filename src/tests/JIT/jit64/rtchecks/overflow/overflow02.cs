@@ -158,7 +158,7 @@ public class OVFTest
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
 #if OP_DIV
 		const string op = "div.ovf";
@@ -172,104 +172,64 @@ public class OVFTest
 
         Console.WriteLine("Runtime Checks [OP: {0}]", op);
 
-        int check = 8;
 
-        try
-        {
-            Console.Write("Type 'byte' . . : ");
-            byte a = Test_byte();
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
 
-        try
+        Console.Write("Type 'byte' . . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'sbyte'. . : ");
-            sbyte a = Test_sbyte();
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_byte();
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'sbyte'. . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'short'. . : ");
-            short a = Test_short();
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_sbyte();
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'short'. . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'ushort' . : ");
-            ushort a = Test_ushort();
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_short();
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'ushort' . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'int'. . . : ");
-            int a = Test_int();
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_ushort();
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'int'. . . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'uint' . . : ");
-            uint a = Test_uint();
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_int();
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'uint' . . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'long' . . : ");
-            long a = Test_long();
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_uint();
+            Console.WriteLine(a);
+        });
 
-        try
+        Console.Write("Type 'long' . . : ");
+        Assert.Throws<OverflowException>(() =>
         {
-            Console.Write("Type 'ulong'. . : ");
-            ulong a = Test_ulong();
-            Console.WriteLine("failed! - a = " + a);
-        }
-        catch (System.OverflowException)
-        {
-            Console.WriteLine("passed");
-            check--;
-        }
+            var a = Test_long();
+            Console.WriteLine(a);
+        });
 
-        return check == 0 ? 100 : 1;
+        Console.Write("Type 'ulong'. . : ");
+        Assert.Throws<OverflowException>(() =>
+        {
+            var a = Test_ulong();
+            Console.WriteLine(a);
+        });
+
+        return;
     }
 }
