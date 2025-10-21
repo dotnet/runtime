@@ -136,25 +136,6 @@ internal static class TestData
     }
 
     /// <summary>
-    /// Filenames with control characters that are only valid on Unix.
-    /// Windows reserves control characters 0-31 as invalid.
-    /// Use ValidFileNames instead which includes these on Unix platforms.
-    /// </summary>
-    public static TheoryData<string> UnixOnlyFileNames
-    {
-        get
-        {
-            return new TheoryData<string>
-            {
-                "file\tname",      // tab
-                "file\rname",      // carriage return
-                "file\vname",      // vertical tab
-                "file\fname"       // form feed
-            };
-        }
-    }
-
-    /// <summary>
     /// Filenames with trailing spaces or periods. On Windows, these require \\?\ prefix for creation
     /// but can be enumerated. Direct string-based APIs will have the trailing characters stripped.
     /// </summary>
