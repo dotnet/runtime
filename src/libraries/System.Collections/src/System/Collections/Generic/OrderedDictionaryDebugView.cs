@@ -20,12 +20,8 @@ namespace System.Collections.Generic
         {
             get
             {
-                var items = new KeyValuePair<TKey, TValue>[_dictionary.Count];
-                int index = 0;
-                foreach (KeyValuePair<TKey, TValue> kvp in _dictionary)
-                {
-                    items[index++] = kvp;
-                }
+                KeyValuePair<TKey, TValue>[] items = new KeyValuePair<TKey, TValue>[_dictionary.Count];
+                ((ICollection<KeyValuePair<TKey, TValue>>)_dictionary).CopyTo(items, 0);
                 return items;
             }
         }
