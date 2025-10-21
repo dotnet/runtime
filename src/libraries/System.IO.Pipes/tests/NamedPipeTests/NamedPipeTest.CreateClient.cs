@@ -168,8 +168,8 @@ namespace System.IO.Pipes.Tests
                 server1.WaitForConnection();
 
                 var clientFromHandle = new NamedPipeClientStream(PipeDirection.InOut, false, client1.SafePipeHandle);
-                Assert.Throws<InvalidOperationException>(() => clientFromHandle.Connect());
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await clientFromHandle.ConnectAsync());
+                Assert.Throws<InvalidOperationException>(clientFromHandle.Connect);
+                await Assert.ThrowsAsync<InvalidOperationException>(clientFromHandle.ConnectAsync);
             }
 
 #pragma warning disable SYSLIB0063
@@ -180,8 +180,8 @@ namespace System.IO.Pipes.Tests
                 server2.WaitForConnection();
 
                 var clientFromHandleTrue = new NamedPipeClientStream(PipeDirection.InOut, isAsync: false, isConnected: true, client2.SafePipeHandle);
-                Assert.Throws<InvalidOperationException>(() => clientFromHandleTrue.Connect());
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await clientFromHandleTrue.ConnectAsync());
+                Assert.Throws<InvalidOperationException>(clientFromHandleTrue.Connect);
+                await Assert.ThrowsAsync<InvalidOperationException>(clientFromHandleTrue.ConnectAsync);
             }
 
             using (var server3 = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3, PipeTransmissionMode.Byte, PipeOptions.None))
@@ -191,8 +191,8 @@ namespace System.IO.Pipes.Tests
                 server3.WaitForConnection();
 
                 var clientFromHandleFalse = new NamedPipeClientStream(PipeDirection.InOut, isAsync: false, isConnected: false, client3.SafePipeHandle);
-                Assert.Throws<InvalidOperationException>(() => clientFromHandleFalse.Connect());
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await clientFromHandleFalse.ConnectAsync());
+                Assert.Throws<InvalidOperationException>(clientFromHandleFalse.Connect);
+                await Assert.ThrowsAsync<InvalidOperationException>(clientFromHandleFalse.ConnectAsync);
             }
 #pragma warning restore SYSLIB0063
         }
