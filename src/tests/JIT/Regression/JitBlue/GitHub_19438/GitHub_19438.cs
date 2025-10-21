@@ -65,7 +65,7 @@ namespace GitHub_19438
         }
 
         [Fact]
-        [SkipOnCoreClrAttribute("Test runs forever when interpreted, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
         public static void TestEntryPoint()
         {
             const int iterationCount = 10;

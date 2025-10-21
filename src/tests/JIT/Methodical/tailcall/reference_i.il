@@ -9,6 +9,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly ASSEMBLY_NAME { }
 .method public static class System.String 
         rems(int32& n,
@@ -77,9 +78,10 @@
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
       01 00 00 00
   )
-  .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
-      string('AV when running with the interpreter, https://github.com/dotnet/runtime/issues/120904')
-      int32(0x400) // InterpreterActive
+  .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+    string('https://github.com/dotnet/runtime/issues/120904')
+    type([TestLibrary]TestLibrary.Utilities)
+    string[1] ('IsCoreClrInterpreter')
   }
   .entrypoint
   // Code size       66 (0x42)

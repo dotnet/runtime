@@ -21,10 +21,7 @@ internal unsafe static class ExceptionInteropNative
 
 public unsafe static class ExceptionInterop
 {
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnMono("Exception interop not supported on Mono.")]
-    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/118965", RuntimeTestModes.InterpreterActive)]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
     public static void ThrowNativeExceptionAndCatchInFrame()
     {
         bool caughtException = false;
@@ -42,10 +39,7 @@ public unsafe static class ExceptionInterop
         Assert.True(caughtException);
     }
 
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnMono("Exception interop not supported on Mono.")]
-    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/118965", RuntimeTestModes.InterpreterActive)]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
     public static void ThrowManagedExceptionThroughNativeAndCatchInFrame()
     {
         bool caughtException = false;
@@ -69,10 +63,7 @@ public unsafe static class ExceptionInterop
         }
     }
 
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnMono("Exception interop not supported on Mono.")]
-    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/118965", RuntimeTestModes.InterpreterActive)]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
     public static void ThrowNativeExceptionAndCatchInFrameWithFilter()
     {
         bool caughtException = false;
@@ -98,10 +89,7 @@ public unsafe static class ExceptionInterop
         }
     }
 
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnMono("Exception interop not supported on Mono.")]
-    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/118965", RuntimeTestModes.InterpreterActive)]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
     public static void ThrowNativeExceptionAndCatchInFrameWithFinally()
     {
         bool caughtException = false;
@@ -127,10 +115,7 @@ public unsafe static class ExceptionInterop
         Assert.True(caughtException);
     }
 
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnMono("Exception interop not supported on Mono.")]
-    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/118965", RuntimeTestModes.InterpreterActive)]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
     public static void ThrowNativeExceptionInFrameWithFinallyCatchInOuterFrame()
     {
         bool caughtException = false;
@@ -184,10 +169,7 @@ public unsafe static class ExceptionInterop
         }
     }
 
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnMono("Exception interop not supported on Mono.")]
-    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/118965", RuntimeTestModes.InterpreterActive)]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
     public static void PropagateAndRethrowCppException()
     {
         try
@@ -203,10 +185,7 @@ public unsafe static class ExceptionInterop
     [DllImport(nameof(ExceptionInteropNative))]
     public static extern void InvokeCallbackOnNewThread(delegate*unmanaged<void> callBack);
 
-    [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnMono("Exception interop not supported on Mono.")]
-    [SkipOnCoreClr("Exception interop not supported with the interpreter, https://github.com/dotnet/runtime/issues/118965", RuntimeTestModes.InterpreterActive)]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
     public static void PropagateAndCatchCppException()
     {
         bool reportedUnhandledException = false;

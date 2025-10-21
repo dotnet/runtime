@@ -13,7 +13,7 @@ namespace SimpleArray_01
     public class Class1
     {
         [Fact]
-        [SkipOnCoreClrAttribute("Test runs forever when interpreted, https://github.com/dotnet/runtime/issues/120904", RuntimeTestModes.InterpreterActive)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
         public static int TestEntryPoint()
         {
             int retVal = 100;
