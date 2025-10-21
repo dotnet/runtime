@@ -944,7 +944,7 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         // For reference tuple types (System.Tuple), handle the Rest property specially for long tuples
-                        if (typeToGenerate.Type is INamedTypeSymbol namedType && namedType.IsTuple() && propertyInfo.Name == "Rest")
+                        if (typeToGenerate.Type is INamedTypeSymbol namedType && namedType.IsClassTuple() && propertyInfo.Name == "Rest")
                         {
                             // Skip Rest property - it will be handled specially during serialization
                             continue;

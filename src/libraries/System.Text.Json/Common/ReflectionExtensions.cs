@@ -224,7 +224,7 @@ namespace System.Text.Json.Reflection
         public static bool IsKeyValuePair(this Type type)
             => type.IsGenericType && type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>);
 
-        public static bool IsTuple(this Type type)
+        public static bool IsClassTuple(this Type type)
         {
             if (!type.IsGenericType)
             {

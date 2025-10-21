@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 PopulateValueTupleElements(tupleType, elements, offset);
             }
-            else if (tupleType.IsTuple())
+            else if (tupleType.IsClassTuple())
             {
                 PopulateReferenceTupleElements(tupleType, elements, offset);
             }
@@ -86,7 +86,7 @@ namespace System.Text.Json.Serialization.Converters
                         PropertyInfo restProp = property;
 
                         // For System.Tuple, we need to handle Rest differently since it's accessed through properties
-                        if (restType.IsValueTuple() || restType.IsTuple())
+                        if (restType.IsValueTuple() || restType.IsClassTuple())
                         {
                             // Create nested getters for Rest elements
                             PopulateNestedReferenceTupleElements(restType, elements, offset, restProp);
@@ -118,7 +118,7 @@ namespace System.Text.Json.Serialization.Converters
                     static void ProcessNestedRest(PropertyInfo property, PropertyInfo restProperty, List<(string, Type, Func<T, object?>)> elements, int offset)
                     {
                         Type nestedRestType = property.PropertyType;
-                        if (nestedRestType.IsValueTuple() || nestedRestType.IsTuple())
+                        if (nestedRestType.IsValueTuple() || nestedRestType.IsClassTuple())
                         {
                             // Chain the getters
                             PropertyInfo innerRestProp = property;
@@ -157,7 +157,7 @@ namespace System.Text.Json.Serialization.Converters
                     static void ProcessChainedRest(PropertyInfo property, PropertyInfo currentRestProp, Func<T, object?> baseGetter, List<(string, Type, Func<T, object?>)> elements, int offset)
                     {
                         Type nestedRestType = property.PropertyType;
-                        if (nestedRestType.IsValueTuple() || nestedRestType.IsTuple())
+                        if (nestedRestType.IsValueTuple() || nestedRestType.IsClassTuple())
                         {
                             PropertyInfo innerRestProp = property;
                             Func<T, object?> chainedGetter = (T tuple) =>

@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override bool CanConvert(Type typeToConvert)
         {
-            return typeToConvert.IsTuple() || typeToConvert.IsValueTuple();
+            return typeToConvert.IsClassTuple() || typeToConvert.IsValueTuple();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",

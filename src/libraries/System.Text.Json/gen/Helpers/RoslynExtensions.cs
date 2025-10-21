@@ -374,22 +374,29 @@ namespace System.Text.Json.SourceGeneration
             return inputType.NullableAnnotation is NullableAnnotation.NotAnnotated;
         }
 
-        public static bool IsTuple(this INamedTypeSymbol type)
+        public static bool IsClassTuple(this INamedTypeSymbol type)
         {
             if (!type.IsGenericType)
             {
                 return false;
             }
 
-            string typeFullName = type.ConstructedFrom.ToDisplayString();
-            return typeFullName == "System.Tuple<T1>" ||
-                   typeFullName == "System.Tuple<T1, T2>" ||
-                   typeFullName == "System.Tuple<T1, T2, T3>" ||
-                   typeFullName == "System.Tuple<T1, T2, T3, T4>" ||
-                   typeFullName == "System.Tuple<T1, T2, T3, T4, T5>" ||
-                   typeFullName == "System.Tuple<T1, T2, T3, T4, T5, T6>" ||
-                   typeFullName == "System.Tuple<T1, T2, T3, T4, T5, T6, T7>" ||
-                   typeFullName == "System.Tuple<T1, T2, T3, T4, T5, T6, T7, TRest>";
+            // Check if type is from System.Runtime (mscorlib/corelib)
+            if (type.ContainingAssembly?.Name != "System.Runtime" &&
+                type.ContainingAssembly?.Name != "mscorlib" &&
+                type.ContainingAssembly?.Name != "System.Private.CoreLib")
+            {
+                return false;
+            }
+
+            // Check namespace and name
+            if (type.ContainingNamespace?.ToDisplayString() != "System")
+            {
+                return false;
+            }
+
+            string name = type.Name;
+            return name == "Tuple" && (type.Arity >= 1 && type.Arity <= 8);
         }
 
         private static bool HasCodeAnalysisAttribute(this ISymbol symbol, string attributeName)
