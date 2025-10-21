@@ -210,7 +210,7 @@ namespace System.IO.Tests
         public void WindowsEnumerateFilesWithTrailingSpacePeriod(string fileName)
         {
             // Files with trailing spaces/periods must be created with \\?\ on Windows
-            // but enumeration can find them. This tests the scenario from issue #113120.
+            // but enumeration can find them.
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
             File.Create(@"\\?\" + filePath).Dispose();
@@ -218,14 +218,36 @@ namespace System.IO.Tests
             string[] files = GetEntries(testDir.FullName);
             Assert.Single(files);
             Assert.Contains(files, f => Path.GetFileName(f) == fileName);
+        }
+
+        [ConditionalTheory(nameof(UsingNewNormalization))]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/113120")]
+        public void WindowsEnumerateDirectoryWithTrailingSpace_Issue113120(string dirName)
+        {
+            // Reproduce the scenario from issue #113120:
+            // 1. Create a directory with a name from WindowsTrailingProblematicFileNames set
+            DirectoryInfo parentDir = Directory.CreateDirectory(GetTestFilePath());
+            string problematicDirPath = Path.Combine(parentDir.FullName, dirName);
+            Directory.CreateDirectory(@"\\?\" + problematicDirPath);
+
+            // 2. Create a file with non-problematic name in that directory
+            string normalFileName = "normalfile.txt";
+            string filePath = Path.Combine(problematicDirPath, normalFileName);
+            File.Create(@"\\?\" + filePath).Dispose();
+
+            // 3. Enumerate the directory
+            // Expected behavior: directory enumerator should return valid full path to the file
+            // Actual behavior: directory enumerator does not return valid full path
+            string[] files = GetEntries(problematicDirPath);
+            Assert.Single(files);
             
-            // The problematic scenario: enumeration returns the filename with trailing space/period,
-            // but File.Exists and File.OpenRead will fail on the returned path because
-            // normalization strips the trailing characters.
-            // This is tracked in issue #113120.
             string returnedPath = files[0];
-            // TODO: This should work but currently fails - tracked in #113120
-            // Assert.True(File.Exists(returnedPath));
+            // This is the bug: the returned path has trailing space/period in the directory part,
+            // making it unusable with File.Exists, File.OpenRead, etc.
+            Assert.True(File.Exists(returnedPath), 
+                $"File.Exists should work on path returned by Directory.GetFiles. Path: '{returnedPath}'");
         }
     }
 }
