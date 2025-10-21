@@ -280,6 +280,31 @@ namespace System.Collections.Tests
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
+        public static void TestDebuggerAttributes_OrderedDictionary()
+        {
+            // Validate that OrderedDictionary displays as a list of KeyValuePairs with implicit indexing
+            var dict = new OrderedDictionary<string, string> { { "One", "1" }, { "Two", "2" }, { "Three", "3" } };
+            
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(dict);
+            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(dict);
+            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
+            
+            // The debug view should return a KeyValuePair array
+            var items = itemProperty.GetValue(info.Instance) as Array;
+            Assert.NotNull(items);
+            Assert.Equal(3, items.Length);
+            
+            // Verify the items are KeyValuePairs in the correct order
+            var kvpArray = items.Cast<KeyValuePair<string, string>>().ToArray();
+            Assert.Equal("One", kvpArray[0].Key);
+            Assert.Equal("1", kvpArray[0].Value);
+            Assert.Equal("Two", kvpArray[1].Key);
+            Assert.Equal("2", kvpArray[1].Value);
+            Assert.Equal("Three", kvpArray[2].Key);
+            Assert.Equal("3", kvpArray[2].Value);
+        }
+
         private class CustomKeyedCollection<TKey, TValue> : KeyedCollection<TKey, TValue> where TKey : notnull
         {
             public CustomKeyedCollection() : base()
