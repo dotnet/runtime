@@ -122,6 +122,15 @@ internal static class TestData
                 "name with spaces.txt"
             };
 
+            // On Unix, control characters are also valid in filenames
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                data.Add("file\tname");      // tab
+                data.Add("file\rname");      // carriage return
+                data.Add("file\vname");      // vertical tab
+                data.Add("file\fname");      // form feed
+            }
+
             return data;
         }
     }
@@ -129,6 +138,7 @@ internal static class TestData
     /// <summary>
     /// Filenames with control characters that are only valid on Unix.
     /// Windows reserves control characters 0-31 as invalid.
+    /// Use ValidFileNames instead which includes these on Unix platforms.
     /// </summary>
     public static TheoryData<string> UnixOnlyFileNames
     {

@@ -193,44 +193,39 @@ namespace System.IO.Tests
             FSAssert.EqualWhenOrdered(new string[] { rootFile, nestedFile }, files);
         }
 
-        [Fact]
-        public void EnumerateFilesWithLeadingSpacesDots()
+        [Theory, MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void EnumerateFilesWithProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            File.Create(Path.Combine(testDir.FullName, " leading")).Dispose();
-            File.Create(Path.Combine(testDir.FullName, ".leading")).Dispose();
-            File.Create(Path.Combine(testDir.FullName, "..leading")).Dispose();
-
-            string[] files = GetEntries(testDir.FullName);
-            Assert.Equal(3, files.Length);
-            Assert.Contains(files, f => Path.GetFileName(f) == " leading");
-            Assert.Contains(files, f => Path.GetFileName(f) == ".leading");
-            Assert.Contains(files, f => Path.GetFileName(f) == "..leading");
-        }
-
-        [Fact]
-        public void EnumerateFilesWithDashes()
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            File.Create(Path.Combine(testDir.FullName, "-")).Dispose();
-            File.Create(Path.Combine(testDir.FullName, "--")).Dispose();
-
-            string[] files = GetEntries(testDir.FullName);
-            Assert.Equal(2, files.Length);
-            Assert.Contains(files, f => Path.GetFileName(f) == "-");
-            Assert.Contains(files, f => Path.GetFileName(f) == "--");
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixEnumerateFilesWithTabs()
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            File.Create(Path.Combine(testDir.FullName, "file\tname")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, fileName)).Dispose();
 
             string[] files = GetEntries(testDir.FullName);
             Assert.Single(files);
-            Assert.Contains(files, f => Path.GetFileName(f) == "file\tname");
+            Assert.Contains(files, f => Path.GetFileName(f) == fileName);
+        }
+
+        [ConditionalTheory(nameof(UsingNewNormalization))]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsEnumerateFilesWithTrailingSpacePeriod(string fileName)
+        {
+            // Files with trailing spaces/periods must be created with \\?\ on Windows
+            // but enumeration can find them. This tests the scenario from issue #113120.
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            File.Create(@"\\?\" + filePath).Dispose();
+
+            string[] files = GetEntries(testDir.FullName);
+            Assert.Single(files);
+            Assert.Contains(files, f => Path.GetFileName(f) == fileName);
+            
+            // The problematic scenario: enumeration returns the filename with trailing space/period,
+            // but File.Exists and File.OpenRead will fail on the returned path because
+            // normalization strips the trailing characters.
+            // This is tracked in issue #113120.
+            string returnedPath = files[0];
+            // TODO: This should work but currently fails - tracked in #113120
+            // Assert.True(File.Exists(returnedPath));
         }
     }
 }

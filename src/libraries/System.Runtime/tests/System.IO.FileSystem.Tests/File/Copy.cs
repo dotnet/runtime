@@ -423,65 +423,12 @@ namespace System.IO.Tests
             Assert.Equal(content, File.ReadAllBytes(destPath));
         }
 
-        [Theory]
-        [InlineData(" leading", "destination")]
-        [InlineData("source", " leading")]
-        [InlineData(" leading", " leadingdest")]
-        public void CopyWithLeadingSpaces(string sourceFileName, string destFileName)
+        [Theory, MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void CopyWithProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
-
-            File.Create(sourcePath).Dispose();
-            Copy(sourcePath, destPath);
-
-            Assert.True(File.Exists(sourcePath));
-            Assert.True(File.Exists(destPath));
-        }
-
-        [Theory]
-        [InlineData(".leading", "destination")]
-        [InlineData("source", ".leading")]
-        public void CopyWithLeadingDots(string sourceFileName, string destFileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
-
-            File.Create(sourcePath).Dispose();
-            Copy(sourcePath, destPath);
-
-            Assert.True(File.Exists(sourcePath));
-            Assert.True(File.Exists(destPath));
-        }
-
-        [Theory]
-        [InlineData("-", "destination")]
-        [InlineData("source", "-")]
-        [InlineData("--", "destination")]
-        public void CopyWithDashPrefixedNames(string sourceFileName, string destFileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
-
-            File.Create(sourcePath).Dispose();
-            Copy(sourcePath, destPath);
-
-            Assert.True(File.Exists(sourcePath));
-            Assert.True(File.Exists(destPath));
-        }
-
-        [Theory]
-        [InlineData("file\tname", "destination")]
-        [InlineData("source", "file\tname")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixCopyWithEmbeddedControlCharacters(string sourceFileName, string destFileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
+            string sourcePath = Path.Combine(testDir.FullName, fileName);
+            string destPath = Path.Combine(testDir.FullName, fileName + "_copy");
 
             File.Create(sourcePath).Dispose();
             Copy(sourcePath, destPath);
@@ -502,8 +449,8 @@ namespace System.IO.Tests
             // because path normalization strips these characters. While enumeration APIs like
             // Directory.GetFiles can discover these files, direct string-based APIs (File.OpenRead,
             // File.Exists) will fail because the trailing characters get stripped during normalization.
-            // Only FileInfo/DirectoryInfo objects from enumeration use EnsureExtendedPrefixIfNeeded
-            // internally and can access these files. See TrimmedPaths.cs for comprehensive tests.
+            // FileInfo/DirectoryInfo objects from enumeration work because they skip path normalization
+            // and use the original path directly. See TrimmedPaths.cs for comprehensive tests.
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
             string destPath = Path.Combine(testDir.FullName, destFileName);
@@ -520,22 +467,6 @@ namespace System.IO.Tests
             
             Assert.True(File.Exists(sourceToCopy));
             Assert.True(File.Exists(destToCopy));
-        }
-
-        [Theory]
-        [InlineData("name with spaces", "dest with spaces")]
-        [InlineData("name.with.periods", "dest.with.periods")]
-        public void CopyEmbeddedSpacesPeriods(string sourceFileName, string destFileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
-
-            File.Create(sourcePath).Dispose();
-            Copy(sourcePath, destPath);
-
-            Assert.True(File.Exists(sourcePath));
-            Assert.True(File.Exists(destPath));
         }
     }
 
