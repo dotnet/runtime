@@ -14,10 +14,6 @@ namespace System.IO.Tests
 
         static bool IsBindMountSupportedAndPrivilegedProcess => IsBindMountSupported && PlatformDetection.IsPrivilegedProcess;
 
-        static bool IsRemoteExecutorSupportedAndUsingNewNormalization => RemoteExecutor.IsSupported;
-
-        static bool IsRemoteExecutorSupportedAndLongPathsAreNotBlockedAndUsingNewNormalization => RemoteExecutor.IsSupported;
-
         #region Utilities
 
         protected virtual void Delete(string path)
@@ -126,7 +122,7 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist");
         }
 
-        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndUsingNewNormalization))]
+        [ConditionalFact(nameof(RemoteExecutor.IsSupported))]
         public void ExtendedDirectoryWithSubdirectories()
         {
             RemoteExecutor.Invoke(() =>
@@ -139,7 +135,7 @@ namespace System.IO.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndLongPathsAreNotBlockedAndUsingNewNormalization))]
+        [ConditionalFact(nameof(RemoteExecutor.IsSupported))]
         public void LongPathExtendedDirectory()
         {
             RemoteExecutor.Invoke(() =>

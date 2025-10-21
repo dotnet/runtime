@@ -237,17 +237,11 @@ namespace System.IO.Tests
             InlineData(@"\\.\UNC\LOCALHOST\shareF\test.txt.~SS", @"\\.\UNC\LOCALHOST\shareF\test.txt.~SS"),
             InlineData(@"\\.\UNC\LOCALHOST\shareG", @"\\.\UNC\LOCALHOST\shareG"),
             InlineData(@"\\.\UNC\LOCALHOST\shareH\dir", @"\\.\UNC\LOCALHOST\shareH\dir"),
+            InlineData(@"\\.\UNC\LOCALHOST\shareI\. ", @"\\.\UNC\LOCALHOST\shareI\"),
+            InlineData(@"\\.\UNC\LOCALHOST\shareJ\.. ", @"\\.\UNC\LOCALHOST\shareJ\"),
             InlineData(@"\\.\UNC\LOCALHOST\shareK\    ", @"\\.\UNC\LOCALHOST\shareK\"),
             InlineData(@"\\.\UNC\LOCALHOST\  shareL\", @"\\.\UNC\LOCALHOST\  shareL\")]
         public void GetFullPath_UNC_Valid(string path, string expected)
-        {
-            Assert.Equal(expected, Path.GetFullPath(path));
-        }
-
-        [Theory,
-            InlineData(@"\\.\UNC\LOCALHOST\shareI\. ", @"\\.\UNC\LOCALHOST\shareI\"),
-            InlineData(@"\\.\UNC\LOCALHOST\shareJ\.. ", @"\\.\UNC\LOCALHOST\shareJ\")]
-        public static void GetFullPath_Windows_UNC_Valid_LegacyPathSupport(string path, string expected)
         {
             Assert.Equal(expected, Path.GetFullPath(path));
         }
