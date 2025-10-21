@@ -9158,7 +9158,7 @@ HRESULT CordbJITILFrame::GetCodeEx(ILCodeKind flags, ICorDebugCode **ppCode)
             m_pReJitCode->ExternalAddRef();
         }
 #else
-        return E_NOTIMPL;
+        *ppCode = NULL;
 #endif // FEATURE_CODE_VERSIONING
     }
     return S_OK;

@@ -4650,7 +4650,6 @@ HRESULT ClrDataAccess::GetClrNotification(CLRDATA_ADDRESS arguments[], int count
 
 HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejitId)
 {
-#ifdef FEATURE_CODE_VERSIONING
     if (methodDesc == 0 || pRejitId == NULL)
     {
         return E_INVALIDARG;
@@ -4659,6 +4658,7 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     SOSDacEnter();
 
     *pRejitId = -1;
+#ifdef FEATURE_CODE_VERSIONING
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
@@ -4676,24 +4676,23 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     {
         hr = S_FALSE;
     }
-
+#else
+    hr = S_FALSE;
+#endif // FEATURE_CODE_VERSIONING
     SOSDacLeave();
 
     return hr;
-#else
-    return E_NOTIMPL;
-#endif // FEATURE_CODE_VERSIONING
 }
 
 HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejitId, struct DacpReJitData2 *pReJitData)
 {
-#ifdef FEATURE_CODE_VERSIONING
     if (methodDesc == 0 || rejitId < 0 || pReJitData == NULL)
     {
         return E_INVALIDARG;
     }
 
     SOSDacEnter();
+#ifdef FEATURE_CODE_VERSIONING
 
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
@@ -4728,19 +4727,21 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
         PTR_ILCodeVersionNode nodePtr = ilVersion.IsDefaultVersion() ? NULL : ilVersion.AsNode();
         pReJitData->ilCodeVersionNodePtr = TO_CDADDR(PTR_TO_TADDR(nodePtr));
     }
+#else
+    pReJitData->rejitID = rejitId;
+    pReJitData->flags = DacpReJitData2::kActive;
+    pReJitData->il = 0;
+    pReJitData->ilCodeVersionNodePtr = 0;
+#endif // FEATURE_CODE_VERSIONING
 
     SOSDacLeave();
 
     return hr;
-#else
-    return E_NOTIMPL;
-#endif // FEATURE_CODE_VERSIONING
 }
 
 
 HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDesc, struct DacpProfilerILData *pILData)
 {
-#ifdef FEATURE_CODE_VERSIONING
     if (methodDesc == 0 || pILData == NULL)
     {
         return E_INVALIDARG;
@@ -4753,6 +4754,7 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
     pILData->il = (CLRDATA_ADDRESS)NULL;
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
+#ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
@@ -4761,6 +4763,7 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
         pILData->type = DacpProfilerILData::ReJITModified;
         pILData->rejitID = static_cast<ULONG>(pCodeVersionManager->GetActiveILCodeVersion(pMD).GetVersionId());
     }
+#endif // FEATURE_CODE_VERSIONING
 
     TADDR pDynamicIL = pMD->GetModule()->GetDynamicIL(pMD->GetMemberDef());
     if (pDynamicIL != (TADDR)NULL)
@@ -4772,14 +4775,10 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
     SOSDacLeave();
 
     return hr;
-#else
-    return E_NOTIMPL;
-#endif // FEATURE_CODE_VERSIONING
 }
 
 HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLRDATA_ADDRESS *methodDescs, int cMethodDescs, int *pcMethodDescs)
 {
-#ifdef FEATURE_CODE_VERSIONING
     if (mod == 0 || methodDescs == NULL || cMethodDescs == 0 || pcMethodDescs == NULL)
     {
         return E_INVALIDARG;
@@ -4789,6 +4788,7 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
 
     *pcMethodDescs = 0;
 
+#ifdef FEATURE_CODE_VERSIONING
     PTR_Module pModule = PTR_Module(TO_TADDR(mod));
     CodeVersionManager* pCodeVersionManager = pModule->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
@@ -4823,13 +4823,10 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
             }
         }
     }
-
+#endif // FEATURE_CODE_VERSIONING
     SOSDacLeave();
 
     return hr;
-#else
-    return E_NOTIMPL;
-#endif // FEATURE_CODE_VERSIONING
 }
 
 HRESULT ClrDataAccess::GetNumberGenerations(unsigned int *pGenerations)

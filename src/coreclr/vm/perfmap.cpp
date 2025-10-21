@@ -146,10 +146,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
             }
         }
 
-#ifdef FEATURE_CODE_VERSIONING
         {
-            CodeVersionManager::LockHolder codeVersioningLockHolder;
-
             CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator();
             while (heapIterator.Next())
             {
@@ -160,12 +157,14 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 }
 
                 PCODE codeStart = PINSTRToPCODE(heapIterator.GetMethodCode());
+#ifdef FEATURE_CODE_VERSIONING
                 NativeCodeVersion nativeCodeVersion;
                 nativeCodeVersion = pMethod->GetCodeVersionManager()->GetNativeCodeVersion(pMethod, codeStart);
                 if (nativeCodeVersion.IsNull() && codeStart != pMethod->GetNativeCode())
                 {
                     continue;
                 }
+#endif // FEATURE_CODE_VERSIONING
 
                 EECodeInfo codeInfo(codeStart);
                 IJitManager::MethodRegionInfo methodRegionInfo;
@@ -173,11 +172,14 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 _ASSERTE(methodRegionInfo.hotStartAddress == codeStart);
                 _ASSERTE(methodRegionInfo.hotSize > 0);
 
+#ifdef FEATURE_CODE_VERSIONING
                 PrepareCodeConfig config(!nativeCodeVersion.IsNull() ? nativeCodeVersion : NativeCodeVersion(pMethod), FALSE, FALSE);
+#else
+                PrepareCodeConfig config(NativeCodeVersion(pMethod), FALSE, FALSE);
+#endif // FEATURE_CODE_VERSIONING
                 PerfMap::LogJITCompiledMethod(pMethod, codeStart, methodRegionInfo.hotSize, &config);
             }
         }
-#endif // FEATURE_CODE_VERSIONING
     }
 }
 
