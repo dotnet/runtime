@@ -39,6 +39,16 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public void CreateHardLink_RelativePath()
+        {
+            string relativePathToTarget = GetRandomFileName();
+            string relativePath = GetRandomFileName();
+
+            CreateFile(relativePathToTarget);
+            CreateHardLink(relativePath, relativePathToTarget);
+        }
+
+        [Fact]
         public void CreateHardLink_TargetDoesNotExist_Throws()
         {
             string linkPath = GetRandomFilePath();
