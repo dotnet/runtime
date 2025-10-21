@@ -443,7 +443,7 @@ namespace System.IO.Tests
         public void WindowsCopyWithTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
         {
             // Windows path normalization strips trailing spaces/periods unless using \\?\ extended syntax.
-            // See https://learn.microsoft.com/windows/win32/fileio/naming-a-file for details.
+            // This behavior should be documented in .NET API documentation.
             DirectoryInfo sourceDir = Directory.CreateDirectory(GetTestFilePath());
             DirectoryInfo destDir = Directory.CreateDirectory(GetTestFilePath());
             string sourcePath = Path.Combine(sourceDir.FullName, fileName);
