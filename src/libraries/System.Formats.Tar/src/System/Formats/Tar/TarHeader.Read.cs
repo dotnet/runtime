@@ -439,19 +439,13 @@ namespace System.Formats.Tar
             int calculatedChecksum = 0;
 
             // Process bytes before the checksum field
-            for (int i = 0; i < FieldLocations.Checksum; i++)
-            {
-                calculatedChecksum += buffer[i];
-            }
+            calculatedChecksum += Checksum(buffer.Slice(0, FieldLocations.Checksum));
 
             // For the checksum field, treat all bytes as spaces (ASCII 32)
             calculatedChecksum += (byte)' ' * FieldLengths.Checksum;
 
             // Process bytes after the checksum field
-            for (int i = FieldLocations.Checksum + FieldLengths.Checksum; i < TarHelpers.RecordSize; i++)
-            {
-                calculatedChecksum += buffer[i];
-            }
+            calculatedChecksum += Checksum(buffer.Slice(FieldLocations.Checksum + FieldLengths.Checksum, TarHelpers.RecordSize - (FieldLocations.Checksum + FieldLengths.Checksum)));
 
             return calculatedChecksum;
         }
