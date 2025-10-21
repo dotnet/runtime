@@ -47,6 +47,7 @@ namespace System.IO.Compression
         private byte[]? _lhTrailingExtraFieldData;
         private byte[] _fileComment;
         private readonly CompressionLevel _compressionLevel;
+        //private ReadOnlyMemory<char> _password;
 
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -159,6 +160,22 @@ namespace System.IO.Compression
 
             Changes = ZipArchive.ChangeState.Unchanged;
         }
+        ///// <summary>
+        ///// Gets the password as a read-only memory block of characters.
+        ///// </summary>
+        ///// <remarks>The password is stored in a read-only memory block to enhance security by minimizing
+        ///// exposure in memory.</remarks>
+        //internal ReadOnlyMemory<char> Password {
+
+        //    get
+        //    {
+        //        return _password;
+        //    }
+        //    set
+        //    {
+        //        _password = value;
+        //    }
+        //}
 
         /// <summary>
         /// The ZipArchive that this entry belongs to. If this entry has been deleted, this will return null.
@@ -353,6 +370,30 @@ namespace System.IO.Compression
             {
                 case ZipArchiveMode.Read:
                     return OpenInReadMode(checkOpenable: true);
+                case ZipArchiveMode.Create:
+                    return OpenInWriteMode();
+                case ZipArchiveMode.Update:
+                default:
+                    Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                    return OpenInUpdateMode();
+            }
+        }
+
+
+        /// <summary>
+        /// Opens the entry. If the archive that the entry belongs to was opened in Read mode, the returned stream will be readable, and it may or may not be seekable. If Create mode, the returned stream will be writable and not seekable. If Update mode, the returned stream will be readable, writable, seekable, and support SetLength.
+        /// </summary>
+        /// <returns>A Stream that represents the contents of the entry.</returns>
+        /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
+        /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
+        /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
+        public Stream Open(string password)
+        {
+            ThrowIfInvalidArchive();
+            switch (_archive.Mode)
+            {
+                case ZipArchiveMode.Read:
+                    return OpenInReadMode(checkOpenable: true, password.AsMemory());
                 case ZipArchiveMode.Create:
                     return OpenInWriteMode();
                 case ZipArchiveMode.Update:
@@ -762,7 +803,7 @@ namespace System.IO.Compression
         // TODO: Change based on specs
         // private static bool UsesAes() => false;
 
-        private Stream GetDataDecompressor(Stream compressedStreamToRead)
+        private Stream GetDataDecompressor(Stream compressedStreamToRead, ReadOnlyMemory<char> password = default)
         {
 
             Stream toDecompress = compressedStreamToRead;
@@ -771,7 +812,6 @@ namespace System.IO.Compression
                 // if (UsesAes()) for future
                 //   throw new NotSupportedException("AES-encrypted ZIP entries are not supported yet.");
 
-                ReadOnlySpan<char> password = "123456789";
                 if (password.IsEmpty)
                     throw new InvalidDataException("Password required for encrypted ZIP entry.");
 
@@ -803,17 +843,17 @@ namespace System.IO.Compression
             return uncompressedStream;
         }
 
-        private Stream OpenInReadMode(bool checkOpenable)
+        private Stream OpenInReadMode(bool checkOpenable, ReadOnlyMemory<char> password = default)
         {
             if (checkOpenable)
                 ThrowIfNotOpenable(needToUncompress: true, needToLoadIntoMemory: false);
-            return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData());
+            return OpenInReadModeGetDataCompressor(GetOffsetOfCompressedData(), password);
         }
 
-        private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData)
+        private Stream OpenInReadModeGetDataCompressor(long offsetOfCompressedData, ReadOnlyMemory<char> password = default)
         {
             Stream compressedStream = new SubReadStream(_archive.ArchiveStream, offsetOfCompressedData, _compressedSize);
-            return GetDataDecompressor(compressedStream);
+            return GetDataDecompressor(compressedStream, password);
         }
 
         private WrappedStream OpenInWriteMode()

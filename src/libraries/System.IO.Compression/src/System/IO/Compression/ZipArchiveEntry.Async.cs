@@ -37,6 +37,24 @@ public partial class ZipArchiveEntry
         }
     }
 
+    public async Task<Stream> OpenAsync(CancellationToken cancellationToken = default, string password = "")
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ThrowIfInvalidArchive();
+
+        switch (_archive.Mode)
+        {
+            case ZipArchiveMode.Read:
+                return await OpenInReadModeAsync(checkOpenable: true, cancellationToken, password.AsMemory()).ConfigureAwait(false);
+            case ZipArchiveMode.Create:
+                return OpenInWriteMode();
+            case ZipArchiveMode.Update:
+            default:
+                Debug.Assert(_archive.Mode == ZipArchiveMode.Update);
+                return await OpenInUpdateModeAsync(cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     internal async Task<long> GetOffsetOfCompressedDataAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -193,14 +211,14 @@ public partial class ZipArchiveEntry
             throw new InvalidDataException(message);
     }
 
-    private async Task<Stream> OpenInReadModeAsync(bool checkOpenable, CancellationToken cancellationToken)
+    private async Task<Stream> OpenInReadModeAsync(bool checkOpenable, CancellationToken cancellationToken, ReadOnlyMemory<char> password = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         if (checkOpenable)
             await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: false, cancellationToken).ConfigureAwait(false);
 
         return OpenInReadModeGetDataCompressor(
-            await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false));
+            await GetOffsetOfCompressedDataAsync(cancellationToken).ConfigureAwait(false), password);
     }
 
     private async Task<WrappedStream> OpenInUpdateModeAsync(CancellationToken cancellationToken)

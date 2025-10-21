@@ -4,8 +4,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Compression.Tests
 {
@@ -219,11 +221,158 @@ namespace System.IO.Compression.Tests
             using var archive = ZipFile.OpenRead(zipPath);
 
             var entry = archive.Entries.First(e => e.FullName.EndsWith("hello.txt"));
-            using var stream = entry.Open();
+            using var stream = entry.Open("123456789");
             using var reader = new StreamReader(stream);
             string content = reader.ReadToEnd();
 
             Assert.Equal("Hello ZipCrypto!", content);
+        }
+
+
+        [Fact]
+        public void ExtractEncryptedEntryToFile_ShouldCreatePlaintextFile()
+        {
+
+
+            string ZipPath = @"C:\Users\spahontu\Downloads\test.zip";
+            string EntryName = "hello.txt";
+            string CorrectPassword = "123456789";
+
+            string tempFile = Path.Combine(Path.GetTempPath(), "hello_extracted.txt");
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+
+            using var archive = ZipFile.OpenRead(ZipPath);
+            var entry = archive.Entries.First(e => e.FullName.EndsWith(EntryName, StringComparison.OrdinalIgnoreCase));
+
+            // Act: Extract using password
+            entry.ExtractToFile(tempFile, overwrite: true, password: CorrectPassword);
+
+            // Assert: File exists and content matches expected plaintext
+            Assert.True(File.Exists(tempFile), "Extracted file was not created.");
+            string content = File.ReadAllText(tempFile);
+            Assert.Equal("Hello ZipCrypto!", content);
+
+            // Cleanup
+            File.Delete(tempFile);
+        }
+
+        [Fact]
+        public void ExtractEncryptedEntryToFile_WithWrongPassword_ShouldThrow()
+        {
+            string ZipPath = @"C:\Users\spahontu\Downloads\test.zip";
+            string EntryName = "hello.txt";
+            ReadOnlyMemory<char> CorrectPassword = "123456789".AsMemory();
+
+            string tempFile = Path.Combine(Path.GetTempPath(), "hello_extracted.txt");
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+
+            using var archive = ZipFile.OpenRead(ZipPath);
+            var entry = archive.Entries.First(e => e.FullName.EndsWith(EntryName, StringComparison.OrdinalIgnoreCase));
+
+            Assert.Throws<InvalidDataException>(() =>
+            {
+                entry.ExtractToFile(tempFile, overwrite: true, password: "wrongpass");
+            });
+        }
+
+        [Fact]
+        public void ExtractEncryptedEntryToFile_WithoutPassword_ShouldThrow()
+        {
+            string ZipPath = @"C:\Users\spahontu\Downloads\test.zip";
+            string EntryName = "hello.txt";
+            ReadOnlyMemory<char> CorrectPassword = "123456789".AsMemory();
+
+            string tempFile = Path.Combine(Path.GetTempPath(), "hello_extracted.txt");
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+
+            using var archive = ZipFile.OpenRead(ZipPath);
+            var entry = archive.Entries.First(e => e.FullName.EndsWith(EntryName, StringComparison.OrdinalIgnoreCase));
+
+            Assert.Throws<InvalidDataException>(() =>
+            {
+                entry.ExtractToFile(tempFile, overwrite: true); // No password passed
+            });
+        }
+
+
+        [Fact]
+        public async Task ExtractToFileAsync_WithPassword_ShouldCreatePlaintextFile()
+        {
+            string zipPath = @"C:\Users\spahontu\Downloads\test.zip";
+            Assert.True(File.Exists(zipPath), $"Test ZIP not found at {zipPath}");
+
+            string tempFile = Path.Combine(Path.GetTempPath(), "hello_async.txt");
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+
+            using var archive = ZipFile.OpenRead(zipPath);
+            var entry = archive.Entries.First(e => e.FullName.EndsWith("hello.txt", StringComparison.OrdinalIgnoreCase));
+
+            await entry.ExtractToFileAsync(tempFile, overwrite: true, password: "123456789");
+
+            Assert.True(File.Exists(tempFile), "Extracted file was not created.");
+            string content = await File.ReadAllTextAsync(tempFile);
+            Assert.Equal("Hello ZipCrypto!", content);
+
+            File.Delete(tempFile);
+        }
+
+        [Fact]
+        public async Task ExtractToFileAsync_WithWrongPassword_ShouldThrow()
+        {
+            string zipPath = @"C:\Users\spahontu\Downloads\test.zip";
+            Assert.True(File.Exists(zipPath), $"Test ZIP not found at {zipPath}");
+
+            string tempFile = Path.Combine(Path.GetTempPath(), "hello_async.txt");
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+
+            using var archive = ZipFile.OpenRead(zipPath);
+            var entry = archive.Entries.First(e => e.FullName.EndsWith("hello.txt", StringComparison.OrdinalIgnoreCase));
+
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
+            {
+                await entry.ExtractToFileAsync(tempFile, overwrite: true, password: "wrongpass");
+            });
+        }
+
+
+        [Fact]
+        public async Task ExtractToFileAsync_WithoutPassword_ShouldThrow()
+        {
+            string zipPath = @"C:\Users\spahontu\Downloads\test.zip";
+            Assert.True(File.Exists(zipPath), $"Test ZIP not found at {zipPath}");
+
+            string tempFile = Path.Combine(Path.GetTempPath(), "hello_async.txt");
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+
+            using var archive = ZipFile.OpenRead(zipPath);
+            var entry = archive.Entries.First(e => e.FullName.EndsWith("hello.txt", StringComparison.OrdinalIgnoreCase));
+
+            await Assert.ThrowsAsync<InvalidDataException>(async () =>
+            {
+                await entry.ExtractToFileAsync(tempFile, overwrite: true, cancellationToken: default); // No password passed
+            });
+        }
+
+
+
+        [Fact]
+        public async Task ExtractToFileAsync_WithCancellation_ShouldCancel()
+        {
+            string zipPath = @"C:\Users\spahontu\Downloads\test.zip";
+            Assert.True(File.Exists(zipPath), $"Test ZIP not found at {zipPath}");
+
+            string tempFile = Path.Combine(Path.GetTempPath(), "hello_async_cancel.txt");
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+
+            using var archive = ZipFile.OpenRead(zipPath);
+            var entry = archive.Entries.First(e => e.FullName.EndsWith("hello.txt", StringComparison.OrdinalIgnoreCase));
+
+            using var cts = new CancellationTokenSource();
+            cts.Cancel(); // Cancel immediately
+            await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            {
+                await entry.ExtractToFileAsync(tempFile, overwrite: true, cts.Token, password: "123456789");
+            });
         }
 
         [Fact]
@@ -239,7 +388,7 @@ namespace System.IO.Compression.Tests
             var entry = archive.Entries.First(e => e.FullName.EndsWith("test.jpg", StringComparison.OrdinalIgnoreCase));
 
             // Act: open decrypted + decompressed stream
-            using var stream = entry.Open();
+            using var stream = entry.Open("123456789");
 
             // Read all bytes
             using var ms = new MemoryStream();
@@ -267,7 +416,7 @@ namespace System.IO.Compression.Tests
 
             // 1) Validate hello.txt
             var txtEntry = archive.Entries.First(e => e.FullName.EndsWith("hello.txt", StringComparison.OrdinalIgnoreCase));
-            using (var txtStream = txtEntry.Open())
+            using (var txtStream = txtEntry.Open("123456789"))
             using (var reader = new StreamReader(txtStream))
             {
                 string content = reader.ReadToEnd();
@@ -276,7 +425,7 @@ namespace System.IO.Compression.Tests
 
             // 2) Validate test.jpg
             var jpgEntry = archive.Entries.First(e => e.FullName.EndsWith("test.jpg", StringComparison.OrdinalIgnoreCase));
-            using (var jpgStream = jpgEntry.Open())
+            using (var jpgStream = jpgEntry.Open("123456789"))
             using (var ms = new MemoryStream())
             {
                 jpgStream.CopyTo(ms);
@@ -316,7 +465,7 @@ namespace System.IO.Compression.Tests
 
             // 2) Validate test.jpg
             var jpgEntry = archive.Entries.First(e => e.FullName.EndsWith("test.jpg", StringComparison.OrdinalIgnoreCase));
-            using (var jpgStream = jpgEntry.Open())
+            using (var jpgStream = jpgEntry.Open("123456789"))
             using (var ms = new MemoryStream())
             {
                 jpgStream.CopyTo(ms);

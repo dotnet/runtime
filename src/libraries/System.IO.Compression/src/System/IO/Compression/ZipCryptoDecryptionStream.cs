@@ -29,10 +29,10 @@ namespace System.IO.Compression
 
         }
 
-        public ZipCryptoDecryptionStream(Stream baseStream, ReadOnlySpan<char> password, byte expectedCheckByte)
+        public ZipCryptoDecryptionStream(Stream baseStream, ReadOnlyMemory<char> password, byte expectedCheckByte)
         {
             _base = baseStream ?? throw new ArgumentNullException(nameof(baseStream));
-            InitKeys(password);
+            InitKeys(password.Span);
             ValidateHeader(expectedCheckByte); // reads & consumes 12 bytes
         }
 

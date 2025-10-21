@@ -73,6 +73,29 @@ namespace System.IO.Compression
             ExtractToFileFinalize(source, destinationFileName);
         }
 
+
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, string password) =>
+            ExtractToFile(source, destinationFileName, false, password);
+
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite, string password)
+        {
+            ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
+
+            using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
+            {
+                if (password.Length > 0)
+                {
+                    using (Stream es = source.Open(password))
+                        es.CopyTo(fs);
+                }
+                else
+                    using (Stream es = source.Open())
+                        es.CopyTo(fs);
+            }
+
+            ExtractToFileFinalize(source, destinationFileName);
+        }
+
         private static void ExtractToFileInitialize(ZipArchiveEntry source, string destinationFileName, bool overwrite, out FileStreamOptions fileStreamOptions)
         {
             ArgumentNullException.ThrowIfNull(source);

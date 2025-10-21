@@ -86,6 +86,32 @@ public static partial class ZipFileExtensions
         ExtractToFileFinalize(source, destinationFileName);
     }
 
+    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, CancellationToken cancellationToken = default, string password = "") =>
+        await ExtractToFileAsync(source, destinationFileName, false, cancellationToken, password).ConfigureAwait(false);
+
+    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, bool overwrite, CancellationToken cancellationToken = default, string password = "")
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        ExtractToFileInitialize(source, destinationFileName, overwrite, out FileStreamOptions fileStreamOptions);
+
+        FileStream fs = new FileStream(destinationFileName, fileStreamOptions);
+        await using (fs)
+        {
+            Stream es;
+            if (password.Length > 1)
+                es = await source.OpenAsync(cancellationToken, password).ConfigureAwait(false);
+            else
+                es = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
+            await using (es)
+            {
+                await es.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        ExtractToFileFinalize(source, destinationFileName);
+    }
+
     internal static async Task ExtractRelativeToDirectoryAsync(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
