@@ -357,7 +357,7 @@ namespace TestCompareZero
                 foo();
         }
 
-                [MethodImpl(MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         static void CompareLeZeroJumpSByte(sbyte a)
         {
             //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
