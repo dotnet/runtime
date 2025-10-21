@@ -1,5 +1,6 @@
 <Project>
   <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+    <Error Condition="'@(TestDirectories)' != '' and '$(ContinuousIntegrationBuild)' == 'true'" Text="The legacy XUnit wrappers should not be used on CI builds." />
     <MSBuild
       Projects="$(MSBuildProjectFile)"
       Targets="CreateXunitWrapper;BuildXunitWrapper"
