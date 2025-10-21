@@ -8067,7 +8067,7 @@ namespace System.Text.Json.Tests
             from anotherValue in anothers
             select new object[] { options, inputValue, anotherValue };
 
-        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [OuterLoop]
         public static void WritePropertyWithExtremelyLongName_ThrowsArgumentException()
         {
@@ -8081,7 +8081,7 @@ namespace System.Text.Json.Tests
             Assert.Throws<ArgumentException>(() => writer.WritePropertyName(longName.AsSpan()));
         }
 
-        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [OuterLoop]
         public static void WriteValueWithExtremelyLongValue_ThrowsArgumentException()
         {
