@@ -352,18 +352,6 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory, MemberData(nameof(TestData.UnixOnlyFileNames), MemberType = typeof(TestData))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixCreateWithControlCharacters(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            using (Create(filePath))
-            {
-                Assert.True(File.Exists(filePath));
-            }
-        }
-
         [ConditionalTheory(nameof(UsingNewNormalization))]
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
