@@ -865,6 +865,134 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Equal("decimal value", cache.Get(key1));
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void GetOrCreate_WithShouldNotStore_DoesNotCache(bool trackLinkedCacheEntries)
+        {
+            var cache = CreateCache(trackLinkedCacheEntries);
+            string key = "myKey";
+            int callCount = 0;
+
+            var result1 = cache.GetOrCreate(key, entry =>
+            {
+                callCount++;
+                entry.ShouldNotStore = true;
+                return "value1";
+            });
+
+            Assert.Equal("value1", result1);
+            Assert.Equal(1, callCount);
+            Assert.False(cache.TryGetValue(key, out _));
+
+            var result2 = cache.GetOrCreate(key, entry =>
+            {
+                callCount++;
+                return "value2";
+            });
+
+            Assert.Equal("value2", result2);
+            Assert.Equal(2, callCount);
+            Assert.True(cache.TryGetValue(key, out string cachedValue));
+            Assert.Equal("value2", cachedValue);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GetOrCreateAsync_WithShouldNotStore_DoesNotCache(bool trackLinkedCacheEntries)
+        {
+            var cache = CreateCache(trackLinkedCacheEntries);
+            string key = "myKey";
+            int callCount = 0;
+
+            var result1 = await cache.GetOrCreateAsync(key, async entry =>
+            {
+                callCount++;
+                entry.ShouldNotStore = true;
+                await Task.Yield();
+                return "value1";
+            });
+
+            Assert.Equal("value1", result1);
+            Assert.Equal(1, callCount);
+            Assert.False(cache.TryGetValue(key, out _));
+
+            var result2 = await cache.GetOrCreateAsync(key, async entry =>
+            {
+                callCount++;
+                await Task.Yield();
+                return "value2";
+            });
+
+            Assert.Equal("value2", result2);
+            Assert.Equal(2, callCount);
+            Assert.True(cache.TryGetValue(key, out string cachedValue));
+            Assert.Equal("value2", cachedValue);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void GetOrCreate_WithoutShouldNotStore_DoesCache(bool trackLinkedCacheEntries)
+        {
+            var cache = CreateCache(trackLinkedCacheEntries);
+            string key = "myKey";
+            int callCount = 0;
+
+            var result1 = cache.GetOrCreate(key, entry =>
+            {
+                callCount++;
+                return "value1";
+            });
+
+            Assert.Equal("value1", result1);
+            Assert.Equal(1, callCount);
+            Assert.True(cache.TryGetValue(key, out string cachedValue));
+            Assert.Equal("value1", cachedValue);
+
+            var result2 = cache.GetOrCreate(key, entry =>
+            {
+                callCount++;
+                return "value2";
+            });
+
+            Assert.Equal("value1", result2);
+            Assert.Equal(1, callCount);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GetOrCreateAsync_WithoutShouldNotStore_DoesCache(bool trackLinkedCacheEntries)
+        {
+            var cache = CreateCache(trackLinkedCacheEntries);
+            string key = "myKey";
+            int callCount = 0;
+
+            var result1 = await cache.GetOrCreateAsync(key, async entry =>
+            {
+                callCount++;
+                await Task.Yield();
+                return "value1";
+            });
+
+            Assert.Equal("value1", result1);
+            Assert.Equal(1, callCount);
+            Assert.True(cache.TryGetValue(key, out string cachedValue));
+            Assert.Equal("value1", cachedValue);
+
+            var result2 = await cache.GetOrCreateAsync(key, async entry =>
+            {
+                callCount++;
+                await Task.Yield();
+                return "value2";
+            });
+
+            Assert.Equal("value1", result2);
+            Assert.Equal(1, callCount);
+        }
+
         private class TestKey
         {
             public override bool Equals(object obj) => true;

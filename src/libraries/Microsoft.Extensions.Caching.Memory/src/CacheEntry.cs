@@ -30,6 +30,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private bool _isDisposed;
         private bool _isExpired;
         private bool _isValueSet;
+        private bool _shouldNotStore;
         private byte _evictionReason;
         private byte _priority = (byte)CacheItemPriority.Normal;
 
@@ -170,6 +171,12 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
+        public bool ShouldNotStore
+        {
+            get => _shouldNotStore;
+            set => _shouldNotStore = value;
+        }
+
         public object Key { get; }
 
         public object? Value
@@ -196,7 +203,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     CommitWithTracking();
                 }
-                else if (_isValueSet)
+                else if (_isValueSet && !_shouldNotStore)
                 {
                     _cache.SetEntry(this);
                 }
@@ -211,7 +218,7 @@ namespace Microsoft.Extensions.Caching.Memory
             // Don't commit or propagate options if the CacheEntry Value was never set.
             // We assume an exception occurred causing the caller to not set the Value successfully,
             // so don't use this entry.
-            if (_isValueSet)
+            if (_isValueSet && !_shouldNotStore)
             {
                 _cache.SetEntry(this);
 

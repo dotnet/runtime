@@ -59,5 +59,12 @@ namespace Microsoft.Extensions.Caching.Memory
         /// Gets or set the size of the cache entry value.
         /// </summary>
         long? Size { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the cache entry should not be stored in the cache.
+        /// When set to <c>true</c>, the entry will not be added to the cache and subsequent
+        /// requests will re-execute the factory method.
+        /// </summary>
+        bool ShouldNotStore { get; set; }
     }
 }
