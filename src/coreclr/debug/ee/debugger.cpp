@@ -8643,12 +8643,16 @@ int Debugger::NotifyUserOfFault(bool userBreakpoint, DebuggerLaunchSetting dls)
         if (userBreakpoint)
         {
             msg = "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint.";
+#ifdef HOST_WINDOWS
             flags |= MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION;
+#endif
         }
         else
         {
             msg = "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application.";
+#ifdef HOST_WINDOWS
             flags |= MB_OKCANCEL | MB_ICONEXCLAMATION;
+#endif
         }
 
         // Format message string using optional parameters

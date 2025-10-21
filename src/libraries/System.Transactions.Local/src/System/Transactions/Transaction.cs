@@ -1126,31 +1126,29 @@ namespace System.Transactions
 
         internal bool _asyncFlow;
 
-        [ThreadStatic]
-        private static ContextData? t_staticData;
-
         internal ContextData(bool asyncFlow)
         {
             _asyncFlow = asyncFlow;
         }
 
         [AllowNull]
+        [field: ThreadStatic]
         internal static ContextData TLSCurrentData
         {
-            get => t_staticData ??= new ContextData(false);
+            get => field ??= new(false);
             set
             {
-                if (value == null && t_staticData != null)
+                if (value == null && field != null)
                 {
                     // set each property to null to retain one TLS ContextData copy.
-                    t_staticData.CurrentScope = null;
-                    t_staticData.CurrentTransaction = null;
-                    t_staticData.DefaultComContextState = DefaultComContextState.Unknown;
-                    t_staticData.WeakDefaultComContext = null;
+                    field.CurrentScope = null;
+                    field.CurrentTransaction = null;
+                    field.DefaultComContextState = DefaultComContextState.Unknown;
+                    field.WeakDefaultComContext = null;
                 }
                 else
                 {
-                    t_staticData = value;
+                    field = value;
                 }
             }
         }

@@ -1656,18 +1656,18 @@ void interceptor_ICJI::getCallInfo(
     });
 }
 
-size_t interceptor_ICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* interceptor_ICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("getClassStaticDynamicInfo");
-    size_t temp = original_ICorJitInfo->getClassStaticDynamicInfo(cls);
+    void* temp = original_ICorJitInfo->getClassStaticDynamicInfo(cls);
     mc->recGetClassStaticDynamicInfo(cls, temp);
     return temp;
 }
 
-size_t interceptor_ICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* interceptor_ICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     mc->cr->AddCall("getClassThreadStaticDynamicInfo");
-    size_t temp = original_ICorJitInfo->getClassThreadStaticDynamicInfo(cls);
+    void* temp = original_ICorJitInfo->getClassThreadStaticDynamicInfo(cls);
     mc->recGetClassThreadStaticDynamicInfo(cls, temp);
     return temp;
 }
@@ -1780,6 +1780,14 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
     CORINFO_METHOD_HANDLE stub = original_ICorJitInfo->getAsyncResumptionStub();
     mc->recGetAsyncResumptionStub(stub);
     return stub;
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize)
+{
+    mc->cr->AddCall("getContinuationType");
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getContinuationType(dataSize, objRefs, objRefsSize);
+    mc->recGetContinuationType(dataSize, objRefs, objRefsSize, result);
+    return result;
 }
 
 void interceptor_ICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)

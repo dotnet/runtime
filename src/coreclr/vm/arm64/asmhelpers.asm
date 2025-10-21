@@ -1627,6 +1627,12 @@ RefCopyDone$argReg
         EPILOG_BRANCH_REG x11
     LEAF_END Store_D1_D2_D3_D4_D5_D6_D7
 
+    LEAF_ENTRY InjectInterpStackAlign
+        add x9, x9, #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END InjectInterpStackAlign
+
     ; Routines for passing value type arguments by reference in general purpose registers X0..X7
     ; from the interpreter to native code
     ; Copy arguments from the interpreter stack to the processor stack

@@ -935,6 +935,11 @@ void DacDbiInterfaceImpl::GetSequencePoints(MethodDesc *     pMethodDesc,
 // Function Data
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+// Workaround for https://developercommunity.visualstudio.com/t/C-compiling-hangs-building-checked-bui/10974056 . Delete
+// once MSVC compiler with a fix is released.
+#ifdef _MSC_VER
+#pragma optimize("", off)
+#endif
 
 // GetILCodeAndSig returns the function's ILCode and SigToken given
 // a module and a token. The info will come from a MethodDesc, if
@@ -995,6 +1000,10 @@ void DacDbiInterfaceImpl::GetILCodeAndSig(VMPTR_DomainAssembly vmDomainAssembly,
     *pLocalSigToken = GetILCodeAndSigHelper(pModule, pMethodDesc, functionToken, methodRVA, pCodeInfo);
 
 } // GetILCodeAndSig
+
+#ifdef _MSC_VER
+#pragma optimize("", on)
+#endif
 
 //---------------------------------------------------------------------------------------
 //
