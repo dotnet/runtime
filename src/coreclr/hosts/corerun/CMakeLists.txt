@@ -77,6 +77,7 @@ else()
                 -sEXIT_RUNTIME=1
                 -sINITIAL_MEMORY=134217728
                 -sSTACK_SIZE=5MB
+                -sEXPORTED_FUNCTIONS=_main,_GetDotNetRuntimeContractDescriptor
                 -sENVIRONMENT=node,shell,web
                 -Wl,-error-limit=0)
 

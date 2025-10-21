@@ -44,19 +44,6 @@ public:
 };
 #endif // TARGET_UNIX
 
-#ifdef TARGET_WASM
-#include <emscripten.h>
-#include <contract-descriptor.h>
-extern "C" ContractDescriptor DotNetRuntimeContractDescriptor;
-
-// Needed to export the contract descriptor symbol with emscripten and
-// ensure it is not removed by the linker.
-extern "C" EMSCRIPTEN_KEEPALIVE void* GetDotNetRuntimeContractDescriptor()
-{
-    return (void*)&DotNetRuntimeContractDescriptor;
-}
-#endif // TARGET_WASM
-
 // Holder for const wide strings
 typedef NewArrayHolder<const WCHAR> ConstWStringHolder;
 
