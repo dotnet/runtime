@@ -166,6 +166,7 @@ EXTERN_C FCDECL1(Object*, RhpNewFast, MethodTable* pMT)
     return AllocateObject(pMT, 0, 0);
 }
 
+#if defined(FEATURE_64BIT_ALIGNMENT)
 EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
 {
     FCALL_CONTRACT;
@@ -241,6 +242,7 @@ EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
 
     return AllocateObject(pMT, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0);
 }
+#endif // FEATURE_64BIT_ALIGNMENT
 
 #define MAX_STRING_LENGTH 0x3FFFFFDF
 
