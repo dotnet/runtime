@@ -1420,6 +1420,7 @@ namespace System.IO
         /// <exception cref="ArgumentException"><paramref name="path"/> or <paramref name="pathToTarget"/> is empty.
         /// -or-
         /// <paramref name="path"/> or <paramref name="pathToTarget"/> contains a null character.</exception>
+        /// <exception cref="FileNotFoundException">The file specified by <paramref name="pathToTarget"/> does not exist.</exception>
         /// <exception cref="IOException">A file or directory already exists in the location of <paramref name="path"/>.
         /// -or-
         /// An I/O error occurred.</exception>
