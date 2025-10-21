@@ -395,64 +395,12 @@ namespace System.IO.Tests
             Assert.Equal(destContents, File.ReadAllBytes(destPath));
         }
 
-        [Theory]
-        [InlineData(" leading", "destination")]
-        [InlineData("source", " leading")]
-        [InlineData(" leading", " moved")]
-        public void MoveWithLeadingSpaces(string sourceFileName, string destFileName)
+        [Theory, MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void MoveWithProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
-
-            File.Create(srcPath).Dispose();
-            Move(srcPath, destPath);
-
-            Assert.False(File.Exists(srcPath));
-            Assert.True(File.Exists(destPath));
-        }
-
-        [Theory]
-        [InlineData(".leading", "destination")]
-        [InlineData("source", ".leading")]
-        public void MoveWithLeadingDots(string sourceFileName, string destFileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
-
-            File.Create(srcPath).Dispose();
-            Move(srcPath, destPath);
-
-            Assert.False(File.Exists(srcPath));
-            Assert.True(File.Exists(destPath));
-        }
-
-        [Theory]
-        [InlineData("-", "destination")]
-        [InlineData("source", "--")]
-        public void MoveWithDashPrefixedNames(string sourceFileName, string destFileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
-
-            File.Create(srcPath).Dispose();
-            Move(srcPath, destPath);
-
-            Assert.False(File.Exists(srcPath));
-            Assert.True(File.Exists(destPath));
-        }
-
-        [Theory]
-        [InlineData("file\tname", "destination")]
-        [InlineData("source", "file\rname")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixMoveWithEmbeddedControlCharacters(string sourceFileName, string destFileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
+            string srcPath = Path.Combine(testDir.FullName, fileName);
+            string destPath = Path.Combine(testDir.FullName, fileName + "_moved");
 
             File.Create(srcPath).Dispose();
             Move(srcPath, destPath);
@@ -486,22 +434,6 @@ namespace System.IO.Tests
             
             Assert.False(File.Exists(sourceToMove));
             Assert.True(File.Exists(destToMove));
-        }
-
-        [Theory]
-        [InlineData("name with spaces", "dest with spaces")]
-        [InlineData("name.with.periods", "dest.with.periods")]
-        public void MoveEmbeddedSpacesPeriods(string sourceFileName, string destFileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
-
-            File.Create(srcPath).Dispose();
-            Move(srcPath, destPath);
-
-            Assert.False(File.Exists(srcPath));
-            Assert.True(File.Exists(destPath));
         }
     }
 }

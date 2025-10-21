@@ -201,41 +201,8 @@ namespace System.IO.Tests
             Assert.True(testFile.Exists);
         }
 
-        [Theory]
-        [InlineData(" leading")]
-        [InlineData("  leading")]
-        [InlineData(".leading")]
-        [InlineData("..leading")]
-        public void DeleteLeadingSpacesDots(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            File.Create(filePath).Dispose();
-            Assert.True(File.Exists(filePath));
-            Delete(filePath);
-            Assert.False(File.Exists(filePath));
-        }
-
-        [Theory]
-        [InlineData("-")]
-        [InlineData("--")]
-        [InlineData("-filename")]
-        public void DeleteDashPrefixedNames(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            File.Create(filePath).Dispose();
-            Assert.True(File.Exists(filePath));
-            Delete(filePath);
-            Assert.False(File.Exists(filePath));
-        }
-
-        [Theory]
-        [InlineData("file\tname")]
-        [InlineData("file\rname")]
-        [InlineData("file\vname")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixDeleteEmbeddedControlCharacters(string fileName)
+        [Theory, MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void DeleteWithProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
@@ -246,10 +213,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalTheory(nameof(UsingNewNormalization))]
-        [InlineData("trailing ")]
-        [InlineData("trailing  ")]
-        [InlineData("trailing.")]
-        [InlineData("trailing..")]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsDeleteTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
         {
@@ -263,19 +227,6 @@ namespace System.IO.Tests
             
             Delete(extendedPath);
             Assert.False(File.Exists(extendedPath));
-        }
-
-        [Theory]
-        [InlineData("name with spaces")]
-        [InlineData("name.with.periods")]
-        public void DeleteEmbeddedSpacesPeriods(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            File.Create(filePath).Dispose();
-            Assert.True(File.Exists(filePath));
-            Delete(filePath);
-            Assert.False(File.Exists(filePath));
         }
 
         #endregion

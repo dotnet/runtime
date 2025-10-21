@@ -230,37 +230,8 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
-        [Theory]
-        [InlineData(" leading")]
-        [InlineData("  leading")]
-        [InlineData(".leading")]
-        [InlineData("..leading")]
-        public void ExistsLeadingSpacesDots(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            File.Create(filePath).Dispose();
-            Assert.True(Exists(filePath));
-        }
-
-        [Theory]
-        [InlineData("-")]
-        [InlineData("--")]
-        [InlineData("-filename")]
-        public void ExistsDashPrefixedNames(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            File.Create(filePath).Dispose();
-            Assert.True(Exists(filePath));
-        }
-
-        [Theory]
-        [InlineData("file\tname")]
-        [InlineData("file\rname")]
-        [InlineData("file\vname")]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void UnixExistsEmbeddedControlCharacters(string fileName)
+        [Theory, MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void ExistsWithProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
@@ -269,10 +240,7 @@ namespace System.IO.Tests
         }
 
         [ConditionalTheory(nameof(UsingNewNormalization))]
-        [InlineData("trailing ")]
-        [InlineData("trailing  ")]
-        [InlineData("trailing.")]
-        [InlineData("trailing..")]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsExistsTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
         {
@@ -286,17 +254,6 @@ namespace System.IO.Tests
             
             // Without extended syntax, the trailing space/period is trimmed
             Assert.False(Exists(filePath));
-        }
-
-        [Theory]
-        [InlineData("name with spaces")]
-        [InlineData("name.with.periods")]
-        public void ExistsEmbeddedSpacesPeriods(string fileName)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string filePath = Path.Combine(testDir.FullName, fileName);
-            File.Create(filePath).Dispose();
-            Assert.True(Exists(filePath));
         }
 
         #endregion
