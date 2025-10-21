@@ -1300,16 +1300,15 @@ StoreCopyLoop
 
     MACRO
         Copy_Ref $argReg
-        cmp x11, #16
+        subs x11, x11, #16
         blt CopyBy8$argReg
-        sub x11, x11, #16
 RefCopyLoop16$argReg
         ldp x13, x14, [$argReg], #16
         stp x13, x14, [x9], #16
         subs x11, x11, #16
         bge RefCopyLoop16$argReg
-        add x11, x11, #16
 CopyBy8$argReg
+        add x11, x11, #16
         cmp x11, #8
         blt RefCopyLoop1$argReg
         ldr x13, [$argReg], #8
