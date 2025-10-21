@@ -39,6 +39,8 @@ internal static unsafe partial class MonoDroidExports
         // The NativeAOT runtime does not need to be initialized, but the crypto library does.
         JavaVM* javaVM = env->GetJavaVM();
         AndroidCryptoNative_InitLibraryOnLoad(javaVM, null);
+
+        AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", env->GetStringUTFChars(j_files_dir) ?? string.Empty);
         return 0;
     }
 
