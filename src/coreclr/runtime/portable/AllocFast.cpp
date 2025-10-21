@@ -82,7 +82,6 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
     {
         // We are assuming that allocation of minimal object flips the alignment
         paddedSize += MIN_OBJECT_SIZE;
-        _ASSERTE(IS_ALIGNED(alloc_ptr + MIN_OBJECT_SIZE, sizeof(int64_t)));
     }
 
     _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
@@ -95,6 +94,7 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size)
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
+        _ASSERTE(IS_ALIGNED(alloc_ptr, sizeof(int64_t)));
         PtrArray* pObject = (PtrArray *)alloc_ptr;
         pObject->SetMethodTable(pMT);
         pObject->SetNumComponents((INT32)size);
@@ -185,7 +185,6 @@ EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
     {
         // We are assuming that allocation of minimal object flips the alignment
         paddedSize += MIN_OBJECT_SIZE;
-        _ASSERTE(IS_ALIGNED(alloc_ptr + MIN_OBJECT_SIZE, sizeof(int64_t)));
     }
 
     _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
@@ -198,6 +197,7 @@ EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
+        _ASSERTE(IS_ALIGNED(alloc_ptr, sizeof(int64_t)));
         PtrArray* pObject = (PtrArray*)alloc_ptr;
         pObject->SetMethodTable(pMT);
         return pObject;
@@ -223,11 +223,6 @@ EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
     {
         // We are assuming that allocation of minimal object flips the alignment
         paddedSize += MIN_OBJECT_SIZE;
-        _ASSERTE(IS_ALIGNED(MIN_OBJECT_SIZE + sizeof(int32_t), sizeof(int64_t)));
-    }
-    else
-    {
-        _ASSERTE((((uint32_t)alloc_ptr) & (sizeof(int64_t) - 1)) == sizeof(int32_t));
     }
 
     _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
@@ -240,6 +235,7 @@ EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
+        _ASSERTE((((uint32_t)alloc_ptr) & (sizeof(int64_t) - 1)) == sizeof(int32_t));
         PtrArray* pObject = (PtrArray*)alloc_ptr;
         pObject->SetMethodTable(pMT);
         return pObject;
