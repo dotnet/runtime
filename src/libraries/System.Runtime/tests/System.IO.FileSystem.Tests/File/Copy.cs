@@ -426,9 +426,10 @@ namespace System.IO.Tests
         [Theory, MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
         public void CopyWithProblematicNames(string fileName)
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string sourcePath = Path.Combine(testDir.FullName, fileName);
-            string destPath = Path.Combine(testDir.FullName, fileName + "_copy");
+            DirectoryInfo sourceDir = Directory.CreateDirectory(GetTestFilePath());
+            DirectoryInfo destDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(sourceDir.FullName, fileName);
+            string destPath = Path.Combine(destDir.FullName, fileName);
 
             File.Create(sourcePath).Dispose();
             Copy(sourcePath, destPath);
@@ -441,12 +442,8 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsCopyWithTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
         {
-            // On Windows, files with trailing spaces/periods must use \\?\ prefix for creation
-            // because path normalization strips these characters. While enumeration APIs like
-            // Directory.GetFiles can discover these files, direct string-based APIs (File.OpenRead,
-            // File.Exists) will fail because the trailing characters get stripped during normalization.
-            // FileInfo/DirectoryInfo objects from enumeration work because they skip path normalization
-            // and use the original path directly. See TrimmedPaths.cs for comprehensive tests.
+            // Windows path normalization strips trailing spaces/periods unless using \\?\ extended syntax.
+            // See https://learn.microsoft.com/windows/win32/fileio/naming-a-file for details.
             DirectoryInfo sourceDir = Directory.CreateDirectory(GetTestFilePath());
             DirectoryInfo destDir = Directory.CreateDirectory(GetTestFilePath());
             string sourcePath = Path.Combine(sourceDir.FullName, fileName);

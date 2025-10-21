@@ -224,28 +224,20 @@ namespace System.IO.Tests
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/113120")]
-        public void WindowsEnumerateDirectoryWithTrailingSpace_Issue113120(string dirName)
+        public void WindowsEnumerateDirectoryWithTrailingSpace(string dirName)
         {
-            // Reproduce the scenario from issue #113120:
-            // 1. Create a directory with a name from WindowsTrailingProblematicFileNames set
             DirectoryInfo parentDir = Directory.CreateDirectory(GetTestFilePath());
             string problematicDirPath = Path.Combine(parentDir.FullName, dirName);
             Directory.CreateDirectory(@"\\?\" + problematicDirPath);
 
-            // 2. Create a file with non-problematic name in that directory
             string normalFileName = "normalfile.txt";
             string filePath = Path.Combine(problematicDirPath, normalFileName);
             File.Create(filePath).Dispose();
 
-            // 3. Enumerate the directory
-            // Expected behavior: directory enumerator should return valid full path to the file
-            // Actual behavior: directory enumerator does not return valid full path
             string[] files = GetEntries(problematicDirPath);
             Assert.Single(files);
             
             string returnedPath = files[0];
-            // This is the bug: the returned path has trailing space/period in the directory part,
-            // making it unusable with File.Exists, File.OpenRead, etc.
             Assert.True(File.Exists(returnedPath), 
                 $"File.Exists should work on path returned by Directory.GetFiles. Path: '{returnedPath}'");
         }
