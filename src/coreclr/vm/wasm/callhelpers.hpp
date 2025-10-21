@@ -11,7 +11,7 @@ struct StringToWasmSigThunk
     void*       value;
 };
 
-extern const StringToWasmSigThunk* g_wasmThunks;
+extern const StringToWasmSigThunk g_wasmThunks[];
 extern const size_t g_wasmThunksCount;
 
 #endif // __callhelpers_h__
