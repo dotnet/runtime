@@ -1065,6 +1065,7 @@ JIT_PollGCRarePath
 
         INLINE_GETTHREAD x20, x19
         cbz x20, NoManagedThreadOrCallStub
+        mov x19, METHODDESC_REGISTER ; x19 contains IR bytecode address
 
         ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
         cbnz x11, HaveInterpThreadContext
@@ -1079,8 +1080,7 @@ NoManagedThreadOrCallStub
 
 HaveInterpThreadContext
         ; IR bytecode address
-        mov x19, METHODDESC_REGISTER
-        ldr x9, [METHODDESC_REGISTER]
+        ldr x9, [x19]
         ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
         cbz x9, NoManagedThreadOrCallStub
         add x10, x9, #OFFSETOF__CallStubHeader__Routines
