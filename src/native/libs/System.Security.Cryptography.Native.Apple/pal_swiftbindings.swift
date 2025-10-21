@@ -7,10 +7,8 @@ import Foundation
 @available(iOS 13, tvOS 13, *)
 final class HashBox {
     var value: any HashFunction
-    var algorithm : PAL_HashAlgorithm
-    init(_ value: any HashFunction, algorithm: PAL_HashAlgorithm) {
+    init(_ value: any HashFunction) {
         self.value = value
-        self.algorithm = algorithm
     }
 }
 
@@ -422,23 +420,23 @@ public func AppleCryptoNative_DigestCreate(algorithm: Int32, pcbDigest: UnsafeMu
     switch hashAlgorithm {
         case .md5:
             pcbDigest.pointee = Int32(Insecure.MD5.byteCount)
-            let box = HashBox(Insecure.MD5(), algorithm: .md5)
+            let box = HashBox(Insecure.MD5())
             return Unmanaged.passRetained(box).toOpaque()
         case .sha1:
             pcbDigest.pointee = Int32(Insecure.SHA1.byteCount)
-            let box = HashBox(Insecure.SHA1(), algorithm: .sha1)
+            let box = HashBox(Insecure.SHA1())
             return Unmanaged.passRetained(box).toOpaque()
         case .sha256:
             pcbDigest.pointee = Int32(SHA256.byteCount)
-            let box = HashBox(SHA256(), algorithm: .sha256)
+            let box = HashBox(SHA256())
             return Unmanaged.passRetained(box).toOpaque()
         case .sha384:
             pcbDigest.pointee = Int32(SHA384.byteCount)
-            let box = HashBox(SHA384(), algorithm: .sha384)
+            let box = HashBox(SHA384())
             return Unmanaged.passRetained(box).toOpaque()
         case .sha512:
             pcbDigest.pointee = Int32(SHA512.byteCount)
-            let box = HashBox(SHA512(), algorithm: .sha512)
+            let box = HashBox(SHA512())
             return Unmanaged.passRetained(box).toOpaque()
         default:
             pcbDigest.pointee = 0
@@ -459,36 +457,10 @@ public func AppleCryptoNative_DigestUpdate(ctx: UnsafeMutableRawPointer?, pBuf: 
 
     let box = Unmanaged<HashBox>.fromOpaque(ctx).takeUnretainedValue()
     let source = Data(bytesNoCopy: pBuf, count: Int(cBuf), deallocator: Data.Deallocator.none)
-
-    switch box.algorithm {
-        case .md5:
-            var hash = box.value as! Insecure.MD5
-            hash.update(data: source)
-            box.value = hash
-            return 1
-        case .sha1:
-            var hash = box.value as! Insecure.SHA1
-            hash.update(data: source)
-            box.value = hash
-            return 1
-        case .sha256:
-            var hash = box.value as! SHA256
-            hash.update(data: source)
-            box.value = hash
-            return 1
-        case .sha384:
-            var hash = box.value as! SHA384
-            hash.update(data: source)
-            box.value = hash
-            return 1
-        case .sha512:
-            var hash = box.value as! SHA512
-            hash.update(data: source)
-            box.value = hash
-            return 1
-        default:
-            return -1
-    }
+    var hash = box.value
+    hash.update(data: source)
+    box.value = hash
+    return 1
 }
 
 @_silgen_name("AppleCryptoNative_DigestReset")
@@ -500,20 +472,20 @@ public func AppleCryptoNative_DigestReset(ctx: UnsafeMutableRawPointer?) -> Int3
 
     let box = Unmanaged<HashBox>.fromOpaque(ctx).takeUnretainedValue()
 
-    switch box.algorithm {
-        case .md5:
+    switch box.value {
+        case is Insecure.MD5:
             box.value = Insecure.MD5()
             return 1
-        case .sha1:
+        case is Insecure.SHA1:
             box.value = Insecure.SHA1()
             return 1
-        case .sha256:
+        case is SHA256:
             box.value = SHA256()
             return 1
-        case .sha384:
+        case is SHA384:
             box.value = SHA384()
             return 1
-        case .sha512:
+        case is SHA512:
             box.value = SHA512()
             return 1
         default:
@@ -531,31 +503,8 @@ public func AppleCryptoNative_DigestFinal(ctx: UnsafeMutableRawPointer?, pOutput
     let box = Unmanaged<HashBox>.fromOpaque(ctx).takeUnretainedValue()
     let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
 
-    switch box.algorithm {
-        case .md5:
-            let hash = (box.value as! Insecure.MD5).finalize()
-            _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
-            break
-        case .sha1:
-            let hash = (box.value as! Insecure.SHA1).finalize()
-            _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
-            break
-        case .sha256:
-            let hash = (box.value as! SHA256).finalize()
-            _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
-            break
-        case .sha384:
-            let hash = (box.value as! SHA384).finalize()
-            _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
-            break
-        case .sha512:
-            let hash = (box.value as! SHA512).finalize()
-            _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
-            break
-        default:
-            return -1
-    }
-
+    let hash = box.value.finalize()
+    _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
     return AppleCryptoNative_DigestReset(ctx: ctx)
 }
 
@@ -575,36 +524,10 @@ public func AppleCryptoNative_DigestClone(ctx: UnsafeMutableRawPointer?) -> Unsa
     }
 
     let box = Unmanaged<HashBox>.fromOpaque(ctx).takeUnretainedValue()
-
-    switch box.algorithm {
-        case .md5:
-            let hash = box.value as! Insecure.MD5
-            let copy = hash
-            let cloneBox = HashBox(copy, algorithm: .md5)
-            return Unmanaged.passRetained(cloneBox).toOpaque()
-        case .sha1:
-            let hash = box.value as! Insecure.SHA1
-            let copy = hash
-            let cloneBox = HashBox(copy, algorithm: .sha1)
-            return Unmanaged.passRetained(cloneBox).toOpaque()
-        case .sha256:
-            let hash = box.value as! SHA256
-            let copy = hash
-            let cloneBox = HashBox(copy, algorithm: .sha256)
-            return Unmanaged.passRetained(cloneBox).toOpaque()
-        case .sha384:
-            let hash = box.value as! SHA384
-            let copy = hash
-            let cloneBox = HashBox(copy, algorithm: .sha384)
-            return Unmanaged.passRetained(cloneBox).toOpaque()
-        case .sha512:
-            let hash = box.value as! SHA512
-            let copy = hash
-            let cloneBox = HashBox(copy, algorithm: .sha512)
-            return Unmanaged.passRetained(cloneBox).toOpaque()
-        default:
-            return nil
-    }
+    let hash = box.value
+    let copy = hash
+    let cloneBox = HashBox(copy)
+    return Unmanaged.passRetained(cloneBox).toOpaque()
 }
 
 @_silgen_name("AppleCryptoNative_DigestCurrent")
@@ -616,29 +539,7 @@ public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutp
 
     let box = Unmanaged<HashBox>.fromOpaque(ctx).takeUnretainedValue()
     let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
-
-    switch box.algorithm {
-        case .md5:
-            let hash = (box.value as! Insecure.MD5).finalize()
-            _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
-            return 1
-        case .sha1:
-            let hash = (box.value as! Insecure.SHA1).finalize()
-            _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
-            return 1
-        case .sha256:
-            let hash = (box.value as! SHA256).finalize()
-            _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
-            return 1
-        case .sha384:
-            let hash = (box.value as! SHA384).finalize()
-            _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
-            return 1
-        case .sha512:
-            let hash = (box.value as! SHA512).finalize()
-            _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
-            return 1
-        default:
-            return -1
-    }
+    let hash = box.value.finalize()
+    _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
+    return 1
 }
