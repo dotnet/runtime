@@ -40,7 +40,9 @@ internal static unsafe partial class MonoDroidExports
         JavaVM* javaVM = env->GetJavaVM();
         AndroidCryptoNative_InitLibraryOnLoad(javaVM, null);
 
-        AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", env->GetStringUTFChars(j_files_dir) ?? string.Empty);
+        var filesDir = env->GetStringUTFChars(j_files_dir) ?? string.Empty;
+        AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", filesDir);
+        Environment.CurrentDirectory = filesDir;
         return 0;
     }
 
