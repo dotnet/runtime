@@ -201,16 +201,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     public CompilerFeatureRequiredAttribute(string featureName) { }
                 }
             }
-
-            namespace System.Diagnostics.CodeAnalysis
-            {
-                internal sealed class ExperimentalAttribute : Attribute
-                {
-                    public ExperimentalAttribute(string diagnosticId) => DiagnosticId = diagnosticId;
-                    public string DiagnosticId { get; }
-                    public string UrlFormat { get; set; }
-                }
-            }
             """;
 #endif
 
