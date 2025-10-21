@@ -1365,7 +1365,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     if (g_pConfig->ShouldBreakOnClassBuild(className))
     {
-        CONSISTENCY_CHECK_MSGF(false, ("BreakOnClassBuild: typename '%s' ", className));
         GetHalfBakedClass()->m_fDebuggingClass = TRUE;
     }
 
@@ -4710,7 +4709,7 @@ BOOL MethodTableBuilder::TestOverrideForAccessibility(
     if (IsMdCheckAccessOnOverride(dwParentAttrs))
     {
         // Same Assembly
-        if (isSameAssembly || pParentAssembly->GrantsFriendAccessTo(pChildAssembly, hParentMethod.GetMethodDesc())
+        if (isSameAssembly || pParentAssembly->GrantsFriendAccessTo(pChildAssembly)
             || pChildAssembly->IgnoresAccessChecksTo(pParentAssembly))
         {
             // Can always override any method that has accessibility greater than mdPrivate
@@ -4813,7 +4812,7 @@ VOID MethodTableBuilder::TestOverRide(bmtMethodHandle hParentMethod,
     WIDENING_STATUS entry = rgWideningTable[idxMember][idxParent];
 
     if (entry == e_NO ||
-        (entry == e_SA && !isSameAssembly && !pParentAssembly->GrantsFriendAccessTo(pAssembly, hParentMethod.GetMethodDesc())
+        (entry == e_SA && !isSameAssembly && !pParentAssembly->GrantsFriendAccessTo(pAssembly)
          && !pAssembly->IgnoresAccessChecksTo(pParentAssembly)) ||
         (entry == e_NSA && isSameAssembly) ||
         (entry == e_SM && !isSameModule)
@@ -11221,7 +11220,7 @@ MethodTableBuilder::SetupMethodTable2(
                 {
                     // The rest of the system assumes that certain methods always have stable entrypoints.
                     // Create them now.
-                    pMD->MarkPrecodeAsStableEntrypoint();
+                    pMD->MarkStableEntryPoint();
                 }
             }
         }

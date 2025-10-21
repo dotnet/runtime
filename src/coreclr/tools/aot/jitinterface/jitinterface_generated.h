@@ -166,6 +166,7 @@ struct JitInterfaceCallbacks
     CORINFO_METHOD_HANDLE (* GetDelegateCtor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE methHnd, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE targetMethodHnd, DelegateCtorArgs* pCtorData);
     void (* MethodCompileComplete)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE methHnd);
     bool (* getTailCallHelpers)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
+    CORINFO_CLASS_HANDLE (* getContinuationType)(void * thisHandle, CorInfoExceptionClass** ppException, size_t dataSize, bool* objRefs, size_t objRefsSize);
     CORINFO_METHOD_HANDLE (* getAsyncResumptionStub)(void * thisHandle, CorInfoExceptionClass** ppException);
     bool (* convertPInvokeCalliToCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool mustConvert);
     bool (* notifyInstructionSetUsage)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_InstructionSet instructionSet, bool supportEnabled);
@@ -1710,6 +1711,17 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->getTailCallHelpers(_thisHandle, &pException, callToken, sig, flags, pResult);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CORINFO_CLASS_HANDLE getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_CLASS_HANDLE temp = _callbacks->getContinuationType(_thisHandle, &pException, dataSize, objRefs, objRefsSize);
     if (pException != nullptr) throw pException;
     return temp;
 }
