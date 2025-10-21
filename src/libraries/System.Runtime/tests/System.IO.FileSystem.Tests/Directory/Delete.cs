@@ -14,9 +14,9 @@ namespace System.IO.Tests
 
         static bool IsBindMountSupportedAndPrivilegedProcess => IsBindMountSupported && PlatformDetection.IsPrivilegedProcess;
 
-        static bool IsRemoteExecutorSupportedAndUsingNewNormalization => RemoteExecutor.IsSupported && UsingNewNormalization;
+        static bool IsRemoteExecutorSupportedAndUsingNewNormalization => RemoteExecutor.IsSupported;
 
-        static bool IsRemoteExecutorSupportedAndLongPathsAreNotBlockedAndUsingNewNormalization => RemoteExecutor.IsSupported && LongPathsAreNotBlocked && UsingNewNormalization;
+        static bool IsRemoteExecutorSupportedAndLongPathsAreNotBlockedAndUsingNewNormalization => RemoteExecutor.IsSupported;
 
         #region Utilities
 
@@ -166,7 +166,7 @@ namespace System.IO.Tests
             testDir.Attributes = FileAttributes.Normal;
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Deleting extended readonly directory throws IOException
         public void WindowsDeleteExtendedReadOnlyDirectory()
         {
@@ -197,7 +197,7 @@ namespace System.IO.Tests
             Assert.False(testDir.Exists);
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Deleting extended hidden directory succeeds
         public void WindowsShouldBeAbleToDeleteExtendedHiddenDirectory()
         {

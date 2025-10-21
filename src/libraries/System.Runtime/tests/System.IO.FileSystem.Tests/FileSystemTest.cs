@@ -11,12 +11,6 @@ namespace System.IO.Tests
     {
         public static readonly byte[] TestBuffer = { 0xBA, 0x5E, 0xBA, 0x11, 0xF0, 0x07, 0xBA, 0x11 };
 
-        public static bool AreAllLongPathsAvailable => true;
-
-        public static bool LongPathsAreNotBlocked => true;
-
-        public static bool UsingNewNormalization => true;
-
         public static bool ReservedDeviceNamesAreBlocked => PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater;
 
         public static TheoryData<string> PathsWithInvalidColons = TestData.PathsWithInvalidColons;
