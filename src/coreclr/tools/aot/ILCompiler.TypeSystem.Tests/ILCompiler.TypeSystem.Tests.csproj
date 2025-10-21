@@ -8,13 +8,13 @@
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
     <!-- xunit.runner.visualstudio is restored for .NET Framework instead of Core-->
     <NoWarn>$(NoWarn);NU1701</NoWarn>
-    <!-- By default the subdirectories containing CoreTestAssembly and ILTestAssembly would be 
+    <!-- By default the subdirectories containing CoreTestAssembly and ILTestAssembly would be
          included in compilation of this project -->
     <EnableDefaultItems>false</EnableDefaultItems>
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    
+
     <!-- Avoids having to include InteropStateManager.cs to get files in Common/TypeSystem/Interop/IL building -->
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
