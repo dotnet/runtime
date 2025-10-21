@@ -3358,7 +3358,25 @@ namespace Internal.JitInterface
 
         private void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
         {
-            throw new NotImplementedException();
+            DefType continuation = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
+            pAsyncInfoOut.continuationClsHnd = ObjectToHandle(continuation);
+            pAsyncInfoOut.continuationNextFldHnd = ObjectToHandle(continuation.GetKnownField("Next"u8));
+            pAsyncInfoOut.continuationResumeFldHnd = ObjectToHandle(continuation.GetKnownField("Resume"u8));
+            pAsyncInfoOut.continuationStateFldHnd = ObjectToHandle(continuation.GetKnownField("State"u8));
+            pAsyncInfoOut.continuationFlagsFldHnd = ObjectToHandle(continuation.GetKnownField("Flags"u8));
+            DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            DefType executionContext = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Threading"u8, "ExecutionContext"u8);
+            pAsyncInfoOut.captureExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null));
+            pAsyncInfoOut.restoreExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null));
+            pAsyncInfoOut.captureContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null));
+            pAsyncInfoOut.captureContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureContexts"u8, null));
+            pAsyncInfoOut.restoreContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreContexts"u8, null));
+        }
+
+        private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
+        {
+            Debug.Assert(objRefsSize == (dataSize + (nuint)(PointerSize - 1)) / (nuint)PointerSize);
+            throw new NotImplementedException("getContinuationType");
         }
 
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
@@ -3713,7 +3731,7 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
 #pragma warning restore CA1822 // Mark members as static
         {
-            return null;
+            throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
         }
 
         private byte[] _code;
@@ -4295,6 +4313,11 @@ namespace Internal.JitInterface
             if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.NativeAotArmel)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
+            }
+
+            if (this.MethodBeingCompiled.IsAsync)
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
 
             return (uint)sizeof(CORJIT_FLAGS);
