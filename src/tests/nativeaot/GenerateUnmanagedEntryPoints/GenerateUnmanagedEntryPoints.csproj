@@ -8,8 +8,7 @@
       Disable for now.
     -->
     <DisableProjectBuild Condition="'$(EnableNativeSanitizers)' != ''">true</DisableProjectBuild>
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,4 +22,12 @@
     <UnmanagedEntryPointsAssembly Include="ReferencedAssembly1" />
   </ItemGroup>
 
+  <!--
+    Treat this test as a merged test runner.
+    This test needs to be its own executable to validate the UnmanagedEntryPointsAssembly feature,
+    but we want to run this test on mobile platforms as well.
+    However, mobile platforms don't support tests that require process isolation, so we can't use RequiresProcessIsolation.
+    Instead, we treat this test as a merged test runner itself, so that it can run on mobile platforms.
+  -->
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>
