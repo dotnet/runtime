@@ -209,8 +209,6 @@ public class PassingByRefTest
     }
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsExceptionInteropSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34196", TestRuntimes.Mono)]
-    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/167", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
