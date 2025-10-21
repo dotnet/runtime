@@ -153,14 +153,13 @@ EXTERN_C FCDECL1(Object*, RhpNewFast, MethodTable* pMT)
     ee_alloc_context* cxt = thread->GetEEAllocContext();
 
     size_t sizeInBytes = (size_t)pMT->GetBaseSize();
-    sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
     _ASSERTE(alloc_ptr <= cxt->getAllocLimit());
     if ((size_t)(cxt->getAllocLimit() - alloc_ptr) >= sizeInBytes)
     {
         cxt->setAllocPtr(alloc_ptr + sizeInBytes);
-        PtrArray* pObject = (PtrArray *)alloc_ptr;
+        PtrArray* pObject = (PtrArray*)alloc_ptr;
         pObject->SetMethodTable(pMT);
         return pObject;
     }
@@ -177,7 +176,6 @@ EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
     ee_alloc_context* cxt = thread->GetEEAllocContext();
 
     size_t sizeInBytes = (size_t)pMT->GetBaseSize();
-    sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
     bool requiresAlignObject = !IS_ALIGNED(alloc_ptr, sizeof(int64_t));
@@ -198,7 +196,7 @@ EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
-        PtrArray* pObject = (PtrArray *)alloc_ptr;
+        PtrArray* pObject = (PtrArray*)alloc_ptr;
         pObject->SetMethodTable(pMT);
         return pObject;
     }
@@ -215,7 +213,6 @@ EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
     ee_alloc_context* cxt = thread->GetEEAllocContext();
 
     size_t sizeInBytes = (size_t)pMT->GetBaseSize();
-    sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
     bool requiresAlignObject = IS_ALIGNED(alloc_ptr, sizeof(int64_t));
@@ -240,7 +237,7 @@ EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
-        PtrArray* pObject = (PtrArray *)alloc_ptr;
+        PtrArray* pObject = (PtrArray*)alloc_ptr;
         pObject->SetMethodTable(pMT);
         return pObject;
     }
