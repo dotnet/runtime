@@ -3407,7 +3407,7 @@ TypeHandle InterpreterJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClau
             _ASSERTE(!declaringType.IsNull());
 
             SigTypeContext typeContext(pMD, declaringType);
-            
+
             Module* pModule = pMD->GetModule();
 
             thResolved = ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, pEHClause->ClassToken, &typeContext,
@@ -5127,7 +5127,7 @@ MethodDesc * ExecutionManager::GetCodeMethodDesc(PCODE currentPC)
     CONTRACTL_END
 
     ExecutionManager::ScanFlag scanFlag = ExecutionManager::GetScanFlags();
-#ifdef FEATURE_INTERPRETER
+#if defined(FEATURE_INTERPRETER) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
     RangeSection * pRS = ExecutionManager::FindCodeRange(currentPC, scanFlag);
     if (pRS == NULL)
         return NULL;
@@ -5143,7 +5143,7 @@ MethodDesc * ExecutionManager::GetCodeMethodDesc(PCODE currentPC)
             }
         }
     }
-#endif // FEATURE_INTERPRETER
+#endif // FEATURE_INTERPRETER && !FEATURE_PORTABLE_ENTRYPOINTS
 
     EECodeInfo codeInfo(currentPC, scanFlag);
     if (!codeInfo.IsValid())
@@ -5953,38 +5953,26 @@ static void GetFuncletStartOffsetsHelper(PCODE pCodeStart, SIZE_T size, SIZE_T o
 //   pRtf: The target function table entry to be located
 //   pNativeLayout: A pointer to the loaded native layout for the module containing pRtf
 //
-static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR_PEImageLayout pNativeLayout)
+static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR_RUNTIME_FUNCTION pFirstFunctionEntry, UINT32 numFunctionEntries)
 {
     pRtf.EnumMem();
 
-    if (pNativeLayout == NULL)
+    if (pFirstFunctionEntry == NULL || numFunctionEntries == 0)
     {
         return;
     }
 
-    IMAGE_DATA_DIRECTORY * pProgramExceptionsDirectory = pNativeLayout->GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXCEPTION);
-    if (!pProgramExceptionsDirectory ||
-        (pProgramExceptionsDirectory->Size == 0) ||
-        (pProgramExceptionsDirectory->Size % sizeof(T_RUNTIME_FUNCTION) != 0))
+    if (pRtf < pFirstFunctionEntry ||
+        ((dac_cast<TADDR>(pRtf) - dac_cast<TADDR>(pFirstFunctionEntry)) % sizeof(T_RUNTIME_FUNCTION) != 0))
     {
-        // Program exceptions directory malformatted
+        // Runtime function table is malformed.
         return;
     }
 
-    PTR_BYTE moduleBase(pNativeLayout->GetBase());
-    PTR_RUNTIME_FUNCTION firstFunctionEntry(moduleBase + pProgramExceptionsDirectory->VirtualAddress);
-
-    if (pRtf < firstFunctionEntry ||
-        ((dac_cast<TADDR>(pRtf) - dac_cast<TADDR>(firstFunctionEntry)) % sizeof(T_RUNTIME_FUNCTION) != 0))
-    {
-        // Program exceptions directory malformatted
-        return;
-    }
-
-    UINT_PTR indexToLocate = pRtf - firstFunctionEntry;
+    UINT_PTR indexToLocate = pRtf - pFirstFunctionEntry;
 
     UINT_PTR low = 0; // index in the function entry table of low end of search range
-    UINT_PTR high = (pProgramExceptionsDirectory->Size) / sizeof(T_RUNTIME_FUNCTION) - 1; // index of high end of search range
+    UINT_PTR high = numFunctionEntries - 1; // index of high end of search range
     UINT_PTR mid = (low + high) / 2; // index of entry to be compared
 
     if (indexToLocate > high)
@@ -5994,7 +5982,7 @@ static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR
 
     while (indexToLocate != mid)
     {
-        PTR_RUNTIME_FUNCTION functionEntry = firstFunctionEntry + mid;
+        PTR_RUNTIME_FUNCTION functionEntry = pFirstFunctionEntry + mid;
         functionEntry.EnumMem();
         if (indexToLocate > mid)
         {
@@ -6220,7 +6208,7 @@ ReadyToRunJitManager::ReadyToRunJitManager()
 
 #endif // #ifndef DACCESS_COMPILE
 
-ReadyToRunInfo * ReadyToRunJitManager::JitTokenToReadyToRunInfo(const METHODTOKEN& MethodToken)
+PTR_ReadyToRunInfo ReadyToRunJitManager::JitTokenToReadyToRunInfo(const METHODTOKEN& MethodToken)
 {
     CONTRACTL {
         NOTHROW;
@@ -6873,8 +6861,8 @@ void ReadyToRunJitManager::EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemor
     }
 
     // Enumerate the function entry and other entries needed to locate it in the program exceptions directory
-    ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(pCodeInfo->GetMethodToken());
-    EnumRuntimeFunctionEntriesToFindEntry(pRtf, pReadyToRunInfo->GetImage());
+    PTR_ReadyToRunInfo pReadyToRunInfo = JitTokenToReadyToRunInfo(pCodeInfo->GetMethodToken());
+    EnumRuntimeFunctionEntriesToFindEntry(pRtf, pReadyToRunInfo->m_pRuntimeFunctions, pReadyToRunInfo->m_nRuntimeFunctions);
 
     SIZE_T size;
     PTR_VOID pUnwindData = GetUnwindDataBlob(pCodeInfo->GetModuleBase(), pRtf, &size);

@@ -723,13 +723,6 @@ public class InterpreterTest
 
     static int Main(string[] args)
     {
-        // WASM-TODO this is just hello world for now
-        if (RuntimeInformation.ProcessArchitecture == Architecture.Wasm)
-        {
-            Console.WriteLine("WASM-TODO: Interpreter tests");
-            return 100;
-        }
-
         jitField1 = 42;
         jitField2 = 43;
 
@@ -1978,7 +1971,6 @@ public class InterpreterTest
         retType = itest.GenericVirtualMethod<string>(out isBase);
         if (retType != typeof(string) || isBase)
             return false;
-
         bc = new BaseClass();
         itest = bc;
         Console.WriteLine("bc.NonVirtualMethod");
@@ -2500,7 +2492,7 @@ public class InterpreterTest
         if (!ArrayUInt32(32, uint.MinValue)) return false;
         if (!ArrayUInt32(32, uint.MaxValue)) return false;
 
-        // // long
+        // long
         if (!ArrayInt64(0, 0)) return false;
         if (!ArrayInt64(1, 1)) return false;
         if (!ArrayInt64(32, 32)) return false;
@@ -2940,7 +2932,6 @@ public class InterpreterTest
             return false;
         }
 
-
         GetCalliGeneric<object>()();
         if (_typeFromFill != typeof(object))
         {
@@ -2954,6 +2945,7 @@ public class InterpreterTest
             Console.WriteLine("Calli generic test failed: expected string, got " + _typeFromFill);
             return false;
         }
+
         return true;
     }
 

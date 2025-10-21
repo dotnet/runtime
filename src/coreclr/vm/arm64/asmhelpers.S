@@ -949,25 +949,21 @@ LEAF_END Load_Stack_Ref, _TEXT
 
 
 .macro Copy_Ref argReg
-    cmp x11, #16
+    subs x11, x11, #16
     blt LOCAL_LABEL(CopyBy8\argReg)
 LOCAL_LABEL(RefCopyLoop16\argReg):
     ldp x13, x14, [\argReg], #16
     stp x13, x14, [x9], #16
     subs x11, x11, #16
-    bgt LOCAL_LABEL(RefCopyLoop16\argReg)
-    beq LOCAL_LABEL(RefCopyDone\argReg)
-    add x11, x11, #16
+    bge LOCAL_LABEL(RefCopyLoop16\argReg)
 LOCAL_LABEL(CopyBy8\argReg):
+    add x11, x11, #16
     cmp x11, #8
     blt LOCAL_LABEL(RefCopyLoop1\argReg)
-LOCAL_LABEL(RefCopyLoop8\argReg):
     ldr x13, [\argReg], #8
     str x13, [x9], #8
     subs x11, x11, #8
-    bgt LOCAL_LABEL(RefCopyLoop8\argReg)
     beq LOCAL_LABEL(RefCopyDone\argReg)
-    add x11, x11, #8
 LOCAL_LABEL(RefCopyLoop1\argReg):
     ldrb w13, [\argReg], #1
     strb w13, [x9], #1
@@ -1311,6 +1307,12 @@ ALTERNATE_ENTRY Store_D7
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Store_D1_D2_D3_D4_D5_D6_D7
+
+LEAF_ENTRY InjectInterpStackAlign
+    add x9, x9, #8
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END InjectInterpStackAlign
 
 // Copy arguments from the interpreter stack to the processor stack
 // The CPU stack slots are aligned to pointer size.

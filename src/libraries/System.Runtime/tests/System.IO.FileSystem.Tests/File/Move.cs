@@ -202,7 +202,7 @@ namespace System.IO.Tests
             Assert.False(File.Exists(testFileSource));
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Path longer than max path limit
         public void OverMaxPathWorks_Windows()
         {
