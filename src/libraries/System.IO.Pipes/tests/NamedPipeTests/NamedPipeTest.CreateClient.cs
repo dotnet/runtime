@@ -160,40 +160,43 @@ namespace System.IO.Pipes.Tests
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
             
-            // Test new constructor - should throw InvalidOperationException when Connect is called
-            using (var server1 = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
-            using (var client1 = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous))
+            // Test new constructor - should throw InvalidOperationException when Connect and ConnectAsync are called
+            using (var server1 = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3, PipeTransmissionMode.Byte, PipeOptions.None))
+            using (var client1 = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None))
             {
                 client1.Connect();
                 server1.WaitForConnection();
 
                 // Create new instance from handle - the handle is not owned, so we don't dispose clientFromHandle
-                var clientFromHandle = new NamedPipeClientStream(PipeDirection.InOut, true, new SafePipeHandle(client1.SafePipeHandle.DangerousGetHandle(), ownsHandle: false));
+                var clientFromHandle = new NamedPipeClientStream(PipeDirection.InOut, false, new SafePipeHandle(client1.SafePipeHandle.DangerousGetHandle(), ownsHandle: false));
                 Assert.Throws<InvalidOperationException>(() => clientFromHandle.Connect());
+                Assert.ThrowsAsync<InvalidOperationException>(async () => await clientFromHandle.ConnectAsync()).GetAwaiter().GetResult();
             }
 
-            // Test obsolete constructor with isConnected: true - should throw InvalidOperationException when Connect is called
+            // Test obsolete constructor with isConnected: true - should throw InvalidOperationException when Connect and ConnectAsync are called
 #pragma warning disable SYSLIB0063
-            using (var server2 = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
-            using (var client2 = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous))
+            using (var server2 = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3, PipeTransmissionMode.Byte, PipeOptions.None))
+            using (var client2 = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None))
             {
                 client2.Connect();
                 server2.WaitForConnection();
 
-                var clientFromHandleTrue = new NamedPipeClientStream(PipeDirection.InOut, true, true, new SafePipeHandle(client2.SafePipeHandle.DangerousGetHandle(), ownsHandle: false));
+                var clientFromHandleTrue = new NamedPipeClientStream(PipeDirection.InOut, false, true, new SafePipeHandle(client2.SafePipeHandle.DangerousGetHandle(), ownsHandle: false));
                 Assert.Throws<InvalidOperationException>(() => clientFromHandleTrue.Connect());
+                Assert.ThrowsAsync<InvalidOperationException>(async () => await clientFromHandleTrue.ConnectAsync()).GetAwaiter().GetResult();
             }
 
             // Test obsolete constructor with isConnected: false - should also throw InvalidOperationException 
             // because the constructor now ignores isConnected and always sets state to Connected
-            using (var server3 = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
-            using (var client3 = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous))
+            using (var server3 = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 3, PipeTransmissionMode.Byte, PipeOptions.None))
+            using (var client3 = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None))
             {
                 client3.Connect();
                 server3.WaitForConnection();
 
-                var clientFromHandleFalse = new NamedPipeClientStream(PipeDirection.InOut, true, false, new SafePipeHandle(client3.SafePipeHandle.DangerousGetHandle(), ownsHandle: false));
+                var clientFromHandleFalse = new NamedPipeClientStream(PipeDirection.InOut, false, false, new SafePipeHandle(client3.SafePipeHandle.DangerousGetHandle(), ownsHandle: false));
                 Assert.Throws<InvalidOperationException>(() => clientFromHandleFalse.Connect());
+                Assert.ThrowsAsync<InvalidOperationException>(async () => await clientFromHandleFalse.ConnectAsync()).GetAwaiter().GetResult();
             }
 #pragma warning restore SYSLIB0063
         }
