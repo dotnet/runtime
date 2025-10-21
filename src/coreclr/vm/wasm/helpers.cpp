@@ -3,7 +3,7 @@
 //
 
 #include <interpretershared.h>
-#include <callhelpers.hpp>
+#include "callhelpers.hpp"
 #include "shash.h"
 
 extern "C" void STDCALL CallCountingStubCode()
