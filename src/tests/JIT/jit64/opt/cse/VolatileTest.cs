@@ -11,6 +11,7 @@ using Xunit;
 public class Program
 {
     [Fact]
+    [SkipOnCoreClr("", RuntimeTestModes.AnyGCStress)]
     public static int TestEntryPoint()
     {
         Console.WriteLine("this test is designed to hang if jit cse doesnt honor volatile");
