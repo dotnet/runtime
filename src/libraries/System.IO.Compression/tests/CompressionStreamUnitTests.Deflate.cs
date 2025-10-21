@@ -234,5 +234,22 @@ namespace System.IO.Compression
                 Assert.True(ms.Length > 0, "Empty DeflateStream should write finalization data");
             }
         }
+
+        [Fact]
+        public void EmptyStream_CanBeDecompressed()
+        {
+            // for compatibility reasons, an empty stream should be decompressible back to an empty stream
+            using (var ms = new MemoryStream())
+            {
+                ms.Position = 0;
+
+                using (var deflateStream = new DeflateStream(ms, CompressionMode.Decompress))
+                using (var reader = new StreamReader(deflateStream))
+                {
+                    string result = reader.ReadToEnd();
+                    Assert.Equal(string.Empty, result);
+                }
+            }
+        }
     }
 }
