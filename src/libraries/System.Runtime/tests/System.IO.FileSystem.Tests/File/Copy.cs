@@ -437,13 +437,9 @@ namespace System.IO.Tests
             Assert.True(File.Exists(destPath));
         }
 
-        [Theory]
-        [InlineData("trailing ", "destination")]
-        [InlineData("source", "trailing ")]
-        [InlineData("trailing.", "destination")]
-        [InlineData("source", "trailing.")]
+        [Theory, MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsCopyWithTrailingSpacePeriod_ViaExtendedSyntax(string sourceFileName, string destFileName)
+        public void WindowsCopyWithTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
         {
             // On Windows, files with trailing spaces/periods must use \\?\ prefix for creation
             // because path normalization strips these characters. While enumeration APIs like
@@ -451,22 +447,19 @@ namespace System.IO.Tests
             // File.Exists) will fail because the trailing characters get stripped during normalization.
             // FileInfo/DirectoryInfo objects from enumeration work because they skip path normalization
             // and use the original path directly. See TrimmedPaths.cs for comprehensive tests.
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string sourcePath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
+            DirectoryInfo sourceDir = Directory.CreateDirectory(GetTestFilePath());
+            DirectoryInfo destDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(sourceDir.FullName, fileName);
+            string destPath = Path.Combine(destDir.FullName, fileName);
             
-            // Create source with extended syntax if needed
-            string sourceToCreate = sourceFileName.TrimEnd(' ', '.') != sourceFileName ? @"\\?\" + sourcePath : sourcePath;
-            File.Create(sourceToCreate).Dispose();
+            // Create source with extended syntax (required for trailing spaces/periods)
+            File.Create(@"\\?\" + sourcePath).Dispose();
             
-            // Copy with extended syntax if needed
-            string sourceToCopy = sourceFileName.TrimEnd(' ', '.') != sourceFileName ? @"\\?\" + sourcePath : sourcePath;
-            string destToCopy = destFileName.TrimEnd(' ', '.') != destFileName ? @"\\?\" + destPath : destPath;
+            // Copy to destination with extended syntax (required for trailing spaces/periods)
+            Copy(@"\\?\" + sourcePath, @"\\?\" + destPath);
             
-            Copy(sourceToCopy, destToCopy);
-            
-            Assert.True(File.Exists(sourceToCopy));
-            Assert.True(File.Exists(destToCopy));
+            Assert.True(File.Exists(@"\\?\" + sourcePath));
+            Assert.True(File.Exists(@"\\?\" + destPath));
         }
     }
 

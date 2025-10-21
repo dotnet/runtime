@@ -235,7 +235,7 @@ namespace System.IO.Tests
             // 2. Create a file with non-problematic name in that directory
             string normalFileName = "normalfile.txt";
             string filePath = Path.Combine(problematicDirPath, normalFileName);
-            File.Create(@"\\?\" + filePath).Dispose();
+            File.Create(filePath).Dispose();
 
             // 3. Enumerate the directory
             // Expected behavior: directory enumerator should return valid full path to the file
