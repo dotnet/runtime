@@ -253,5 +253,85 @@ namespace System.IO.Compression.Tests
         }
 
 
+        [Fact]
+        public void OpenEncryptedArchive_WithMultipleEntries_ShouldDecryptBoth()
+        {
+            // Arrange
+            string zipPath = @"C:\Users\spahontu\Downloads\combined.zip";
+            string originalJpgPath = @"C:\Users\spahontu\Downloads\test.jpg";
+            Assert.True(File.Exists(zipPath), $"Encrypted ZIP not found at {zipPath}");
+            Assert.True(File.Exists(originalJpgPath), $"Original JPEG not found at {originalJpgPath}");
+
+            // Open archive with password
+            using var archive = ZipFile.OpenRead(zipPath);
+
+            // 1) Validate hello.txt
+            var txtEntry = archive.Entries.First(e => e.FullName.EndsWith("hello.txt", StringComparison.OrdinalIgnoreCase));
+            using (var txtStream = txtEntry.Open())
+            using (var reader = new StreamReader(txtStream))
+            {
+                string content = reader.ReadToEnd();
+                Assert.Equal("Hello ZipCrypto!", content);
+            }
+
+            // 2) Validate test.jpg
+            var jpgEntry = archive.Entries.First(e => e.FullName.EndsWith("test.jpg", StringComparison.OrdinalIgnoreCase));
+            using (var jpgStream = jpgEntry.Open())
+            using (var ms = new MemoryStream())
+            {
+                jpgStream.CopyTo(ms);
+                byte[] actualBytes = ms.ToArray();
+
+                // Quick sanity: JPEG SOI marker
+                Assert.True(actualBytes.Length > 3, "JPEG too small");
+                Assert.Equal(new byte[] { 0xFF, 0xD8, 0xFF }, actualBytes.Take(3).ToArray());
+
+                // Full comparison with original file
+                byte[] expectedBytes = File.ReadAllBytes(originalJpgPath);
+                Assert.Equal(expectedBytes.Length, actualBytes.Length);
+                Assert.Equal(expectedBytes, actualBytes);
+            }
+        }
+
+        [Fact]
+        public void OpenEncryptedArchive_WithMultipleEntries_DifferentPassword_ShouldDecryptBoth()
+        {
+            // Arrange
+            string zipPath = @"C:\Users\spahontu\Downloads\combinedpass.zip";
+            string originalJpgPath = @"C:\Users\spahontu\Downloads\test.jpg";
+            Assert.True(File.Exists(zipPath), $"Encrypted ZIP not found at {zipPath}");
+            Assert.True(File.Exists(originalJpgPath), $"Original JPEG not found at {originalJpgPath}");
+
+            // Open archive with password
+            using var archive = ZipFile.OpenRead(zipPath);
+
+            // 1) Validate hello.txt
+            var txtEntry = archive.Entries.First(e => e.FullName.EndsWith("hello.txt", StringComparison.OrdinalIgnoreCase));
+            using (var txtStream = txtEntry.Open())
+            using (var reader = new StreamReader(txtStream))
+            {
+                string content = reader.ReadToEnd();
+                Assert.Equal("Hello ZipCrypto!", content);
+            }
+
+            // 2) Validate test.jpg
+            var jpgEntry = archive.Entries.First(e => e.FullName.EndsWith("test.jpg", StringComparison.OrdinalIgnoreCase));
+            using (var jpgStream = jpgEntry.Open())
+            using (var ms = new MemoryStream())
+            {
+                jpgStream.CopyTo(ms);
+                byte[] actualBytes = ms.ToArray();
+
+                // Quick sanity: JPEG SOI marker
+                Assert.True(actualBytes.Length > 3, "JPEG too small");
+                Assert.Equal(new byte[] { 0xFF, 0xD8, 0xFF }, actualBytes.Take(3).ToArray());
+
+                // Full comparison with original file
+                byte[] expectedBytes = File.ReadAllBytes(originalJpgPath);
+                Assert.Equal(expectedBytes.Length, actualBytes.Length);
+                Assert.Equal(expectedBytes, actualBytes);
+            }
+        }
+
     }
 }
