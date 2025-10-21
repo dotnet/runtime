@@ -698,14 +698,14 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     mov x21, x0
 #endif
     INLINE_GETTHREAD x20 // thrashes x0 on Apple OSes (and possibly other arg registers on other Unixes)
-    cbz x20, LOCAL_LABEL(NoManagedThread)
+    cbz x20, LOCAL_LABEL(NoManagedThreadOrCallStub)
 
     ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
     cbnz x11, LOCAL_LABEL(HaveInterpThreadContext)
 
-LOCAL_LABEL(NoManagedThread):
+LOCAL_LABEL(NoManagedThreadOrCallStub):
 #ifdef TARGET_APPLE
-    // GetInterpThreadContextWithPossiblyMissingThread can destroy all argument registers, so we
+    // GetInterpThreadContextWithPossiblyMissingThreadOrCallStub can destroy all argument registers, so we
     // need to save them. For non-Apple, they have been already saved in the PROLOG_WITH_TRANSITION_BLOCK
     // Restore x0 thrashed by the INLINE_GETTHREAD
     mov x0, x21
@@ -713,8 +713,9 @@ LOCAL_LABEL(NoManagedThread):
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
 #endif
 
-    mov x0, x20
-    bl C_FUNC(GetInterpThreadContextWithPossiblyMissingThread)
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19
+    bl C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub)
     mov x11, x0
 
 #ifndef TARGET_APPLE
@@ -733,6 +734,7 @@ LOCAL_LABEL(HaveInterpThreadContext):
 
     ldr x9, [x19] // InterpMethod*
     ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
+    cbz x9, LOCAL_LABEL(NoManagedThreadOrCallStub)
     add x10, x9, #OFFSETOF__CallStubHeader__Routines
     ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
     // x19 contains IR bytecode address
