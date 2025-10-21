@@ -979,7 +979,7 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R8:
-                    ConvFpHelper<uint16_t, uint32_t, float>(stack, ip);
+                    ConvFpHelper<uint16_t, uint32_t, double>(stack, ip);
                     ip += 3;
                     break;
                 case INTOP_CONV_I4_R4:
