@@ -299,7 +299,9 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
     CallStubGenerator callStubGenerator;
     CallStubHeader *pHeader = VolatileLoadWithoutBarrier(&pInterpMethod->pCallStub);
     if (pHeader != NULL)
+    {
         return pHeader;
+    }
     GCX_PREEMP();
 
     AllocMemTracker amTracker;
