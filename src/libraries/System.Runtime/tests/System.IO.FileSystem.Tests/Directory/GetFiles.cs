@@ -204,7 +204,7 @@ namespace System.IO.Tests
             Assert.Contains(files, f => Path.GetFileName(f) == fileName);
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization))]
+        [Theory]
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsEnumerateFilesWithTrailingSpacePeriod(string fileName)
@@ -220,7 +220,7 @@ namespace System.IO.Tests
             Assert.Contains(files, f => Path.GetFileName(f) == fileName);
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization))]
+        [Theory]
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/113120")]

@@ -437,7 +437,7 @@ namespace System.IO.Tests
             Assert.True(File.Exists(destPath));
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization))]
+        [Theory]
         [InlineData("trailing ", "destination")]
         [InlineData("source", "trailing ")]
         [InlineData("trailing.", "destination")]

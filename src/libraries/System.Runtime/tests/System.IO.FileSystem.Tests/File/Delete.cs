@@ -212,7 +212,7 @@ namespace System.IO.Tests
             Assert.False(File.Exists(filePath));
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization))]
+        [Theory]
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsDeleteTrailingSpacePeriod_ViaExtendedSyntax(string fileName)

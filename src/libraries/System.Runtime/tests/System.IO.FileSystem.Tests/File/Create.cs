@@ -352,7 +352,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization))]
+        [Theory]
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsCreateWithTrailingSpacePeriod(string fileName)
