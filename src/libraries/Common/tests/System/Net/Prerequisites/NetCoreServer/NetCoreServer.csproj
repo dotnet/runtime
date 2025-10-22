@@ -29,10 +29,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="swagger.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="$(CommonTestPath)System/Net/WebSockets/WebSocketEchoHelper.cs" />
     <Compile Include="$(CommonTestPath)System/Net/WebSockets/WebSocketEchoOptions.cs" />
     <Compile Include="Handlers\DeflateHandler.cs" />

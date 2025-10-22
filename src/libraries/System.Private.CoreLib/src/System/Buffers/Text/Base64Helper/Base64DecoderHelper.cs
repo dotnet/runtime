@@ -771,7 +771,7 @@ namespace System.Buffers.Text
                     break;
                 }
 
-                Vector256<sbyte> hiNibbles = Avx2.And(Avx2.ShiftRightLogical(str.AsInt32(), 4).AsSByte(), maskSlashOrUnderscore);
+                Vector256<sbyte> hiNibbles = ((str.AsInt32()) >>> 4).AsSByte() & maskSlashOrUnderscore;
 
                 if (!decoder.TryDecode256Core(str, hiNibbles, maskSlashOrUnderscore, lutLo, lutHi, lutShift, shiftForUnderscore, out str))
                 {
@@ -1325,7 +1325,7 @@ namespace System.Buffers.Text
                 Vector256<sbyte> _,
                 out Vector256<sbyte> result)
             {
-                Vector256<sbyte> loNibbles = Avx2.And(str, maskSlashOrUnderscore);
+                Vector256<sbyte> loNibbles = str & maskSlashOrUnderscore;
                 Vector256<sbyte> hi = Avx2.Shuffle(lutHigh, hiNibbles);
                 Vector256<sbyte> lo = Avx2.Shuffle(lutLow, loNibbles);
 
@@ -1336,9 +1336,9 @@ namespace System.Buffers.Text
                 }
 
                 Vector256<sbyte> eq2F = Avx2.CompareEqual(str, maskSlashOrUnderscore);
-                Vector256<sbyte> shift = Avx2.Shuffle(lutShift, Avx2.Add(eq2F, hiNibbles));
+                Vector256<sbyte> shift = Avx2.Shuffle(lutShift, eq2F + hiNibbles);
 
-                result = Avx2.Add(str, shift);
+                result = str + shift;
 
                 return true;
             }

@@ -474,20 +474,6 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetApartmentState(QCall::ObjectHandleOnS
 
     retVal = thread->GetApartment();
 
-#ifdef FEATURE_COMINTEROP
-    if (retVal == Thread::AS_Unknown)
-    {
-        // If the CLR hasn't started COM yet, start it up and attempt the call again.
-        // We do this in order to minimize the number of situations under which we return
-        // ApartmentState.Unknown to our callers.
-        if (!g_fComStarted)
-        {
-            EnsureComStarted();
-            retVal = thread->GetApartment();
-        }
-    }
-#endif // FEATURE_COMINTEROP
-
     END_QCALL;
     return retVal;
 }

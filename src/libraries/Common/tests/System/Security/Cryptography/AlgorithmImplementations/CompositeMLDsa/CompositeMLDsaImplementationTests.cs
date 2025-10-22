@@ -143,10 +143,9 @@ namespace System.Security.Cryptography.Tests
             // Generate new key
             using CompositeMLDsa dsa = GenerateKey(algorithm);
             byte[] publicKey = dsa.ExportCompositeMLDsaPublicKey();
-            byte[] privateKey = dsa.ExportCompositeMLDsaPrivateKey();
 
-            CompositeMLDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
-                CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
+            CompositeMLDsaTestHelpers.AssertExportSubjectPublicKeyInfo(export =>
+                CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import =>
                 {
                     // Roundtrip it using SPKI
                     using CompositeMLDsa roundTrippedDsa = import(export(dsa));
@@ -154,7 +153,7 @@ namespace System.Security.Cryptography.Tests
                     // The keys should be the same
                     Assert.Equal(algorithm, roundTrippedDsa.Algorithm);
                     AssertExtensions.SequenceEqual(publicKey, roundTrippedDsa.ExportCompositeMLDsaPublicKey());
-                    AssertExtensions.SequenceEqual(privateKey, roundTrippedDsa.ExportCompositeMLDsaPrivateKey());
+                    Assert.Throws<CryptographicException>(() => roundTrippedDsa.ExportCompositeMLDsaPrivateKey());
                 }));
         }
 
@@ -282,7 +281,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public void RoundTrip_Import_Export_SpkiPublicKey(CompositeMLDsaTestData.CompositeMLDsaTestVector info)
         {
-            CompositeMLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
+            CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import =>
                 CompositeMLDsaTestHelpers.AssertExportSubjectPublicKeyInfo(export =>
                     CompositeMLDsaTestHelpers.WithDispose(import(info.Spki), dsa =>
                         AssertExtensions.SequenceEqual(info.Spki, export(dsa)))));

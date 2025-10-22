@@ -1348,25 +1348,46 @@ namespace System.Runtime.InteropServices
                 _lock.EnterReadLock();
                 try
                 {
-                    if (_cache.TryGetValue(comPointer, out GCHandle existingHandle))
+                    if (!_cache.TryGetValue(comPointer, out GCHandle existingHandle))
                     {
-                        if (existingHandle.Target is NativeObjectWrapper { ProxyHandle.Target: object cachedProxy })
-                        {
-                            // The target exists and is still alive. Return it.
-                            return cachedProxy;
-                        }
-
-                        // The target was collected, so we need to remove the entry from the cache.
-                        _cache.Remove(comPointer);
-                        existingHandle.Free();
+                        // No entry in the cache.
+                        return null;
                     }
-
-                    return null;
+                    if (existingHandle.Target is NativeObjectWrapper { ProxyHandle.Target: object cachedProxy })
+                    {
+                        // The target exists and is still alive. Return it.
+                        return cachedProxy;
+                    }
+                    // The target was collected, so we need to remove the entry from the cache.
+                    // We'll do this in a write lock after we exit the read lock.
+                    // We don't use an upgradeable lock here as only one thread can hold an upgradeable lock at a time,
+                    // effectively eliminating the benefit of using a reader-writer lock.
                 }
                 finally
                 {
                     _lock.ExitReadLock();
                 }
+
+                _lock.EnterWriteLock();
+                try
+                {
+                    // Someone else could have removed the entry or added a new one in the time
+                    // between us releasing the read lock and acquiring the write lock.
+                    if (_cache.TryGetValue(comPointer, out GCHandle existingHandle)
+                        && existingHandle.Target is null)
+                    {
+                        // There's still a dead entry in the cache,
+                        // remove it.
+                        _cache.Remove(comPointer);
+                        existingHandle.Free();
+                    }
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
+                }
+
+                return null;
             }
 
             public void Remove(IntPtr comPointer, NativeObjectWrapper wrapper)

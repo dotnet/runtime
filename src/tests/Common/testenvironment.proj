@@ -72,6 +72,7 @@
       DOTNET_JitOptRepeat;
       DOTNET_JitOptRepeatCount;
       DOTNET_JitDoReversePostOrderLayout;
+      DOTNET_JitInstrumentIfOptimizing;
     </DOTNETVariables>
   </PropertyGroup>
   <ItemGroup>
@@ -199,6 +200,7 @@
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
     <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' == 'true'" gcServer="1" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' != 'true'" gcServer="1" GCName="libclrgc.so"/>
+    <TestEnvironment Include="instrument_if_optimizing" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" JitInstrumentIfOptimizing="1" />
   </ItemGroup>
 
   <!-- Create a random number for use by random JitStress. Note that we want to define a random value here,

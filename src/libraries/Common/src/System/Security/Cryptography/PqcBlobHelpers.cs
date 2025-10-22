@@ -216,7 +216,7 @@ namespace System.Security.Cryptography
             string blobKind,
             ReadOnlySpan<byte> blob);
 
-        internal static TReturn EncodeMLKemBlob<TState, TReturn>(
+        internal static unsafe TReturn EncodeMLKemBlob<TState, TReturn>(
             KeyBlobMagicNumber kind,
             MLKemAlgorithm algorithm,
             ReadOnlySpan<byte> key,
@@ -230,7 +230,7 @@ namespace System.Security.Cryptography
                 // try to accommodate them.
                 const int MaxKeyStackSize = 128;
                 string parameterSet = GetMLKemParameterSet(algorithm);
-                int blobHeaderSize = Marshal.SizeOf<BCRYPT_MLKEM_KEY_BLOB>();
+                int blobHeaderSize = sizeof(BCRYPT_MLKEM_KEY_BLOB);
                 int parameterSetMarshalLength = (parameterSet.Length + 1) * 2;
                 int blobSize =
                     blobHeaderSize +
@@ -246,15 +246,12 @@ namespace System.Security.Cryptography
                 {
                     buffer.Clear();
 
-                    unsafe
+                    fixed (byte* pBuffer = buffer)
                     {
-                        fixed (byte* pBuffer = buffer)
-                        {
-                            BCRYPT_MLKEM_KEY_BLOB* blob = (BCRYPT_MLKEM_KEY_BLOB*)pBuffer;
-                            blob->dwMagic = kind;
-                            blob->cbParameterSet = (uint)parameterSetMarshalLength;
-                            blob->cbKey = (uint)key.Length;
-                        }
+                        BCRYPT_MLKEM_KEY_BLOB* blob = (BCRYPT_MLKEM_KEY_BLOB*)pBuffer;
+                        blob->dwMagic = kind;
+                        blob->cbParameterSet = (uint)parameterSetMarshalLength;
+                        blob->cbKey = (uint)key.Length;
                     }
 
                     // This won't write the null byte, but we zeroed the whole buffer earlier.
