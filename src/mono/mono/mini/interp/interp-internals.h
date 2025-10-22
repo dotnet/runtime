@@ -148,6 +148,7 @@ struct InterpMethod {
 	/* locals_size is equal to the offset of the param_area */
 	guint32 locals_size;
 	guint32 alloca_size;
+	int n_data_items;
 	int num_clauses; // clauses
 	int transformed; // boolean
 	unsigned int param_count;
