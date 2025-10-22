@@ -2720,6 +2720,14 @@ void InterpCompiler::EmitCompareOp(int32_t opBase)
             EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
         if (m_pStackPointer[-1].type == StackTypeR8 && m_pStackPointer[-2].type == StackTypeR4)
             EmitConv(m_pStackPointer - 2, StackTypeR8, INTOP_CONV_R8_R4);
+
+#ifdef TARGET_64BIT
+        // Support comparisons between I and I4 by inserting an implicit conversion to I8
+        if (m_pStackPointer[-1].type == StackTypeI4 && m_pStackPointer[-2].type == StackTypeI8)
+            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+        if (m_pStackPointer[-1].type == StackTypeI8 && m_pStackPointer[-2].type == StackTypeI4)
+            EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
         AddIns(opBase + m_pStackPointer[-1].type - StackTypeI4);
     }
     m_pStackPointer -= 2;
@@ -4586,7 +4594,20 @@ void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 
 void InterpCompiler::EmitStelem(InterpType interpType)
 {
+#ifdef TARGET_64BIT
+    // nint and int32 can be used interchangeably. Add implicit conversions.
+    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
+        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+
+    // Handle floating point conversions
+    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
+        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
     m_pStackPointer -= 3;
+
     int32_t opcode = GetStelemForType(interpType);
     AddIns(opcode);
     m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
@@ -4765,14 +4786,14 @@ void InterpCompiler::EmitLdLocA(int32_t var)
         m_pLastNewIns->data[0] = m_pVars[var].offset;
         m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
         m_pStackPointer--;
-        PushInterpType(InterpTypeByRef, NULL);
+        PushInterpType(InterpTypeI, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
         return;
     }
 
     AddIns(INTOP_LDLOCA);
     m_pLastNewIns->SetSVar(var);
-    PushInterpType(InterpTypeByRef, NULL);
+    PushInterpType(InterpTypeI, NULL);
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
@@ -5827,6 +5848,36 @@ retry_emit:
                 else
                 {
                     CheckStackExact(1);
+
+#ifdef TARGET_64BIT
+                    // nint and int32 can be used interchangeably. Add implicit conversions.
+                    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
+                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+                    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
+                        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+                    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
+                        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
+                    if (m_pStackPointer[-1].type != g_stackTypeFromInterpType[retType])
+                    {
+                        StackType retStackType = g_stackTypeFromInterpType[retType];
+                        StackType stackType = m_pStackPointer[-1].type;
+
+                        if (stackType == StackTypeI && (retStackType == StackTypeO || retStackType == StackTypeByRef))
+                        {
+                            // Allow implicit conversion from nint to ref or byref
+                        }
+                        else if (retStackType == StackTypeI && (stackType == StackTypeO || stackType == StackTypeByRef))
+                        {
+                            // Allow implicit conversion from nint to ref or byref
+                        }
+                        else
+                        {
+                            BADCODE("return type mismatch");
+                        }
+                    }
+
                     AddIns(INTOP_RET);
                     m_pStackPointer--;
                     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
@@ -7300,7 +7351,7 @@ retry_emit:
 
                 AddIns(INTOP_LDLOCA);
                 m_pLastNewIns->SetSVar(typedByRefVar);
-                PushInterpType(InterpTypeByRef, NULL);
+                PushInterpType(InterpTypeI, NULL);
                 int byrefOfTypedRefVar = m_pStackPointer[-1].var;
                 m_pLastNewIns->SetDVar(byrefOfTypedRefVar);
                 m_pStackPointer--;
