@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Speech.Internal;
 using System.Speech.Internal.SrgsCompiler;
@@ -91,7 +92,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Base URI of _grammar (xml:base).
         /// </summary>
-        public Uri XmlBase
+        public Uri? XmlBase
         {
             get
             {
@@ -129,7 +130,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Root rule (srgs:root)
         /// </summary>
-        public SrgsRule Root
+        public SrgsRule? Root
         {
             get
             {
@@ -190,7 +191,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// Programming Language used for the inline code; C#, VB or JScript
         /// </summary>
-        public string Language
+        public string? Language
         {
             get
             {
@@ -208,7 +209,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         /// <summary>
         /// namespace
         /// </summary>
-        public string Namespace
+        public string? Namespace
         {
             get
             {
@@ -292,6 +293,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         #region Internal methods
 
         // Initialize an SrgsDocument from an Srgs text source.
+        [MemberNotNull(nameof(_grammar))]
         internal void Load(XmlReader srgsGrammar)
         {
             // New grammar
@@ -377,7 +379,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
         }
 
-        internal Uri BaseUri
+        internal Uri? BaseUri
         {
             get
             {
@@ -401,7 +403,7 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         // Path the grammar was actually loaded from, if this exists.
         // Note this is different to SrgsGrammar.XmlBase which is the value of the xml:base attribute in the document itself.
-        private Uri _baseUri;
+        private Uri? _baseUri;
 
         #endregion Fields
     }
