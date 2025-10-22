@@ -852,7 +852,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             // For these intrinsics we cannot use movprfx instruction to populate `targetReg` with
                             // `embMaskOp1Reg`. Thus, we need to perform move before the operation, and then "sel" to
                             // select the active lanes.
-                            assert(targetReg != embMaskOp2Reg);
+                            assert((targetReg != embMaskOp2Reg) || (embMaskOp1Reg == targetReg));
                             GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp1Reg,
                                                       /* canSkip */ true, INS_OPTS_SCALABLE_S);
                             emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
