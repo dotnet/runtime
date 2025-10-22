@@ -1,0 +1,312 @@
+# Helix Platform Definitions
+# This template defines platform version aliases for Helix queue names.
+# Both latest (newest) and oldest (baseline) supported versions are included.
+#
+# Usage in templates:
+#   - template: /eng/pipelines/helix-platforms.yml
+#
+# Then reference platforms using:
+#   ${{ variables.helix_macos_arm64_latest }}
+#   ${{ variables.helix_macos_arm64_oldest }}
+#   ${{ variables.helix_linux_latest }}
+#   ${{ variables.helix_linux_oldest }}
+#   etc.
+
+variables:
+  # ===========================================
+  # macOS Platforms - Latest
+  # ===========================================
+  
+  # Latest macOS on ARM64 (Apple Silicon) - Sequoia 15 (macOS 26.x kernel)
+  - name: helix_macos_arm64_latest
+    value: OSX.26.Arm64.Open
+  
+  - name: helix_macos_arm64_latest_internal
+    value: OSX.26.Arm64
+  
+  # Latest macOS on x64 (Intel) - Ventura 13
+  - name: helix_macos_x64_latest
+    value: OSX.13.Amd64.Open
+  
+  - name: helix_macos_x64_latest_internal
+    value: OSX.13.Amd64
+  
+  # Latest macOS for iOS/tvOS simulator (ARM64) - Sonoma 14
+  - name: helix_macos_ios_simulator_arm64_latest
+    value: OSX.15.Amd64.Open
+  
+  # Latest macOS for iOS/tvOS simulator (x64) - Sonoma 15
+  - name: helix_macos_ios_simulator_x64_latest
+    value: OSX.15.Amd64.Open
+  
+  # Latest macOS for iOS device testing
+  - name: helix_macos_ios_device_latest
+    value: OSX.13.Amd64.Iphone.Open
+  
+  # Latest macOS for tvOS device testing
+  - name: helix_macos_tvos_device_latest
+    value: OSX.13.Amd64.AppleTV.Open
+  
+  # ===========================================
+  # macOS Platforms - Oldest/Baseline
+  # ===========================================
+  
+  # Oldest supported macOS on ARM64 (Apple Silicon) - Ventura 13
+  - name: helix_macos_arm64_oldest
+    value: OSX.13.Arm64.Open
+  
+  - name: helix_macos_arm64_oldest_internal
+    value: OSX.13.Arm64
+  
+  # Oldest supported macOS on x64 (Intel) - Ventura 13
+  - name: helix_macos_x64_oldest
+    value: OSX.13.Amd64.Open
+  
+  - name: helix_macos_x64_oldest_internal
+    value: OSX.13.Amd64
+  
+  # Oldest supported macOS for iOS/tvOS simulator (ARM64) - Ventura 13
+  - name: helix_macos_ios_simulator_arm64_oldest
+    value: OSX.13.Amd64.Open
+  
+  # Oldest supported macOS for iOS/tvOS simulator (x64) - Ventura 13
+  - name: helix_macos_ios_simulator_x64_oldest
+    value: OSX.13.Amd64.Open
+  
+  # Oldest supported macOS for iOS device testing
+  - name: helix_macos_ios_device_oldest
+    value: OSX.13.Amd64.Iphone.Open
+  
+  # Oldest supported macOS for tvOS device testing
+  - name: helix_macos_tvos_device_oldest
+    value: OSX.13.Amd64.AppleTV.Open
+  
+  # ===========================================
+  # Linux Platforms - Latest
+  # ===========================================
+  
+  # Latest Azure Linux x64 - 3.0
+  - name: helix_linux_x64_latest
+    value: AzureLinux.3.Amd64.Open
+  
+  - name: helix_linux_x64_latest_internal
+    value: AzureLinux.3.Amd64
+  
+  # Latest Ubuntu x64 - 25.10
+  - name: helix_linux_x64_ubuntu_latest
+    value: (Ubuntu.2510.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.10-helix-amd64
+  
+  # Latest Debian x64 - 13
+  - name: helix_linux_x64_debian_latest
+    value: (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
+  
+  # Latest Fedora x64 - 42
+  - name: helix_linux_x64_fedora_latest
+    value: (Fedora.42.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-42-helix-amd64
+  
+  # Latest openSUSE x64 - 15.6
+  - name: helix_linux_x64_opensuse_latest
+    value: (openSUSE.15.6.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.6-helix-amd64
+  
+  # Latest CentOS Stream x64 - 10
+  - name: helix_linux_x64_centos_latest
+    value: (Centos.10.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-10-helix-amd64
+  
+  # Latest Linux ARM32 - Debian 13
+  - name: helix_linux_arm32_latest
+    value: (Debian.13.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+  
+  - name: helix_linux_arm32_latest_internal
+    value: (Debian.13.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-arm32v7
+  
+  # Latest Linux ARM64 - Ubuntu 25.10
+  - name: helix_linux_arm64_latest
+    value: (Ubuntu.2510.ArmArch.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.10-helix-arm64v8
+  
+  # Latest Linux musl x64 - Alpine edge
+  - name: helix_linux_musl_x64_latest
+    value: (Alpine.edge.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64
+  
+  # Latest Linux musl ARM32 - Alpine 3.22
+  - name: helix_linux_musl_arm32_latest
+    value: (Alpine.322.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm32v7
+  
+  - name: helix_linux_musl_arm32_latest_internal
+    value: (Alpine.322.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm32v7
+  
+  # Latest Linux musl ARM64 - Alpine 3.22
+  - name: helix_linux_musl_arm64_latest
+    value: (Alpine.322.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm64v8
+  
+  - name: helix_linux_musl_arm64_latest_internal
+    value: (Alpine.322.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-arm64v8
+  
+  # ===========================================
+  # Linux Platforms - Oldest/Baseline
+  # ===========================================
+  
+  # Oldest supported Linux x64 - Ubuntu 22.04
+  - name: helix_linux_x64_oldest
+    value: Ubuntu.2204.Amd64.Open
+  
+  - name: helix_linux_x64_oldest_internal
+    value: Ubuntu.2204.Amd64
+  
+  # Oldest supported Ubuntu x64 - 22.04
+  - name: helix_linux_x64_ubuntu_oldest
+    value: Ubuntu.2204.Amd64.Open
+  
+  # Oldest supported Debian x64 - 12
+  - name: helix_linux_x64_debian_oldest
+    value: (Debian.12.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-amd64
+  
+  # Oldest supported Fedora x64 - 40
+  - name: helix_linux_x64_fedora_oldest
+    value: (Fedora.40.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-40-helix-amd64
+  
+  # Oldest supported openSUSE x64 - 15.5
+  - name: helix_linux_x64_opensuse_oldest
+    value: (openSUSE.15.5.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.5-helix-amd64
+  
+  # Oldest supported CentOS Stream x64 - 9
+  - name: helix_linux_x64_centos_oldest
+    value: (Centos.9.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-9-helix-amd64
+  
+  # Oldest supported Linux ARM32 - Debian 12
+  - name: helix_linux_arm32_oldest
+    value: (Debian.12.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
+  
+  - name: helix_linux_arm32_oldest_internal
+    value: (Debian.12.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
+  
+  # Oldest supported Linux ARM64 - Ubuntu 22.04
+  - name: helix_linux_arm64_oldest
+    value: Ubuntu.2204.ArmArch.Open
+  
+  # Oldest supported Linux musl x64 - Alpine 3.20
+  - name: helix_linux_musl_x64_oldest
+    value: (Alpine.320.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-amd64
+  
+  # Oldest supported Linux musl ARM32 - Alpine 3.20
+  - name: helix_linux_musl_arm32_oldest
+    value: (Alpine.320.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-arm32v7
+  
+  - name: helix_linux_musl_arm32_oldest_internal
+    value: (Alpine.320.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-arm32v7
+  
+  # Oldest supported Linux musl ARM64 - Alpine 3.20
+  - name: helix_linux_musl_arm64_oldest
+    value: (Alpine.320.Arm64.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-arm64v8
+  
+  - name: helix_linux_musl_arm64_oldest_internal
+    value: (Alpine.320.Arm64)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.20-helix-arm64v8
+  
+  # ===========================================
+  # Windows Platforms - Latest
+  # ===========================================
+  
+  # Latest Windows x64 - Windows 11
+  - name: helix_windows_x64_latest
+    value: Windows.11.Amd64.Client.Open
+  
+  - name: helix_windows_x64_latest_internal
+    value: Windows.11.Amd64
+  
+  # Latest Windows Server - Server 2025
+  - name: helix_windows_server_latest
+    value: Windows.Server2025.Amd64.Open
+  
+  # Latest Windows ARM64 - Windows 11
+  - name: helix_windows_arm64_latest
+    value: Windows.11.Arm64.Open
+  
+  - name: helix_windows_arm64_latest_internal
+    value: Windows.11.Arm64
+  
+  # Windows 11 with CET (Control-flow Enforcement Technology)
+  - name: helix_windows_x64_latest_cet
+    value: Windows.11.Amd64.Cet.Open
+  
+  # ===========================================
+  # Windows Platforms - Oldest/Baseline
+  # ===========================================
+  
+  # Oldest supported Windows x64 - Windows 10
+  - name: helix_windows_x64_oldest
+    value: Windows.10.Amd64.Open
+  
+  - name: helix_windows_x64_oldest_internal
+    value: Windows.10.Amd64
+  
+  # Oldest supported Windows Server - Server 2019
+  - name: helix_windows_server_oldest
+    value: Windows.Server2019.Amd64.Open
+  
+  # Oldest supported Windows ARM64 - Windows 10
+  - name: helix_windows_arm64_oldest
+    value: Windows.10.Arm64.Open
+  
+  - name: helix_windows_arm64_oldest_internal
+    value: Windows.10.Arm64
+  
+  # ===========================================
+  # Browser/WASM Platforms - Latest
+  # ===========================================
+  
+  # Latest Browser WASM - Ubuntu 24.04
+  - name: helix_browser_wasm_latest
+    value: (Ubuntu.2404.Amd64)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-webassembly-amd64
+  
+  # ===========================================
+  # Browser/WASM Platforms - Oldest/Baseline
+  # ===========================================
+  
+  # Oldest supported Browser WASM - Ubuntu 22.04
+  - name: helix_browser_wasm_oldest
+    value: (Ubuntu.2204.Amd64)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-helix-webassembly-amd64
+  
+  # ===========================================
+  # Android Platforms - Latest
+  # ===========================================
+  
+  # Latest Android on Windows (ARM/ARM64)
+  - name: helix_android_latest
+    value: Windows.11.Amd64.Android.Open
+  
+  # Latest Android on Ubuntu (x86/x64) - API 29
+  - name: helix_android_ubuntu_latest
+    value: Ubuntu.2204.Amd64.Android.29.Open
+  
+  # ===========================================
+  # Android Platforms - Oldest/Baseline
+  # ===========================================
+  
+  # Oldest supported Android on Windows (ARM/ARM64)
+  - name: helix_android_oldest
+    value: Windows.10.Amd64.Android.Open
+  
+  # Oldest supported Android on Ubuntu (x86/x64) - API 21
+  - name: helix_android_ubuntu_oldest
+    value: Ubuntu.2204.Amd64.Android.21.Open
+  
+  # ===========================================
+  # Common Aliases
+  # ===========================================
+  
+  - name: helix_macos_latest
+    value: ${{ variables.helix_macos_arm64_latest }}
+  
+  - name: helix_macos_oldest
+    value: ${{ variables.helix_macos_arm64_oldest }}
+  
+  - name: helix_linux_latest
+    value: ${{ variables.helix_linux_x64_latest }}
+  
+  - name: helix_linux_oldest
+    value: ${{ variables.helix_linux_x64_oldest }}
+  
+  - name: helix_windows_latest
+    value: ${{ variables.helix_windows_x64_latest }}
+  
+  - name: helix_windows_oldest
+    value: ${{ variables.helix_windows_x64_oldest }}
