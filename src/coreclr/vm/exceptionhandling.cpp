@@ -43,8 +43,6 @@ EXTERN_C BOOL CallRtlUnwind(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame, PV
 #endif
 #endif // !TARGET_UNIX
 
-bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
-
 #ifdef USE_CURRENT_CONTEXT_IN_FILTER
 inline void CaptureNonvolatileRegisters(PKNONVOLATILE_CONTEXT pNonvolatileContext, PCONTEXT pContext)
 {
