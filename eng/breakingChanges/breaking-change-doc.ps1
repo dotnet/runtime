@@ -528,13 +528,6 @@ if ($PrNumber) {
         $prJson = gh pr view $PrNumber --repo $Config.SourceRepo --json number,title,url,baseRefName,closedAt,mergeCommit,labels,files,state
         $prData = $prJson | ConvertFrom-Json
 
-        # Verify PR has the target label
-        $hasTargetLabel = $prData.labels | Where-Object { $_.name -eq $Config.TargetLabel }
-        if (-not $hasTargetLabel) {
-            Write-Error "PR #$PrNumber does not have the '$($Config.TargetLabel)' label"
-            exit 1
-        }
-
         $prs = @($prData)
         Write-Host "   Found PR #$($prs[0].number): $($prs[0].title)"
     } catch {
