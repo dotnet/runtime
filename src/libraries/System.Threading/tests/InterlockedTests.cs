@@ -916,40 +916,40 @@ namespace System.Threading.Tests
         public void InterlockedAnd_Generic_Byte()
         {
             byte value = 0xF0;
-            Assert.Equal((byte)0xF0, Interlocked.And(ref value, (byte)0x3C));
+            Assert.Equal((byte)0xF0, Interlocked.And<byte>(ref value, (byte)0x3C));
             Assert.Equal((byte)0x30, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.And(ref Unsafe.NullRef<byte>(), (byte)0x3C));
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<byte>(ref Unsafe.NullRef<byte>(), (byte)0x3C));
         }
 
         [Fact]
         public void InterlockedAnd_Generic_SByte()
         {
             sbyte value = 0x70;
-            Assert.Equal((sbyte)0x70, Interlocked.And(ref value, (sbyte)0x21));
+            Assert.Equal((sbyte)0x70, Interlocked.And<sbyte>(ref value, (sbyte)0x21));
             Assert.Equal((sbyte)0x20, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.And(ref Unsafe.NullRef<sbyte>(), (sbyte)0x21));
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<sbyte>(ref Unsafe.NullRef<sbyte>(), (sbyte)0x21));
         }
 
         [Fact]
         public void InterlockedAnd_Generic_UInt16()
         {
             ushort value = 0x1234;
-            Assert.Equal((ushort)0x1234, Interlocked.And(ref value, (ushort)0x5678));
+            Assert.Equal((ushort)0x1234, Interlocked.And<ushort>(ref value, (ushort)0x5678));
             Assert.Equal((ushort)0x1230, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.And(ref Unsafe.NullRef<ushort>(), (ushort)0x5678));
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<ushort>(ref Unsafe.NullRef<ushort>(), (ushort)0x5678));
         }
 
         [Fact]
         public void InterlockedAnd_Generic_Int16()
         {
             short value = 0x1234;
-            Assert.Equal((short)0x1234, Interlocked.And(ref value, (short)0x5678));
+            Assert.Equal((short)0x1234, Interlocked.And<short>(ref value, (short)0x5678));
             Assert.Equal((short)0x1230, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.And(ref Unsafe.NullRef<short>(), (short)0x5678));
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<short>(ref Unsafe.NullRef<short>(), (short)0x5678));
         }
 
         [Fact]
@@ -959,7 +959,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x12345670, Interlocked.And<int>(ref value, 0x7654321));
             Assert.Equal(0x02244220, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.And(ref Unsafe.NullRef<int>(), 0x7654321));
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<int>(ref Unsafe.NullRef<int>(), 0x7654321));
         }
 
         [Fact]
@@ -969,7 +969,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x12345670u, Interlocked.And<uint>(ref value, 0x7654321));
             Assert.Equal(0x02244220u, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.And(ref Unsafe.NullRef<uint>(), 0x7654321u));
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<uint>(ref Unsafe.NullRef<uint>(), 0x7654321u));
         }
 
         [Fact]
@@ -979,7 +979,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x12345670, Interlocked.And<long>(ref value, 0x7654321));
             Assert.Equal(0x02244220, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.And(ref Unsafe.NullRef<long>(), 0x7654321L));
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<long>(ref Unsafe.NullRef<long>(), 0x7654321L));
         }
 
         [Fact]
@@ -989,7 +989,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x12345670u, Interlocked.And<ulong>(ref value, 0x7654321));
             Assert.Equal(0x02244220u, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.And(ref Unsafe.NullRef<ulong>(), 0x7654321UL));
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<ulong>(ref Unsafe.NullRef<ulong>(), 0x7654321UL));
         }
 
         [Fact]
@@ -999,54 +999,54 @@ namespace System.Threading.Tests
             Assert.Equal((DayOfWeek)0x7, Interlocked.And<DayOfWeek>(ref value, (DayOfWeek)0x3));
             Assert.Equal((DayOfWeek)0x3, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.And(ref Unsafe.NullRef<DayOfWeek>(), DayOfWeek.Monday));
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<DayOfWeek>(ref Unsafe.NullRef<DayOfWeek>(), DayOfWeek.Monday));
         }
 
         [Fact]
         public void InterlockedAnd_Generic_Unsupported()
         {
             DateTime value = default;
-            Assert.Throws<NotSupportedException>(() => Interlocked.And(ref value, default));
+            Assert.Throws<NotSupportedException>(() => Interlocked.And<DateTime>(ref value, default));
         }
 
         [Fact]
         public void InterlockedOr_Generic_Byte()
         {
             byte value = 0xF0;
-            Assert.Equal((byte)0xF0, Interlocked.Or(ref value, (byte)0x0C));
+            Assert.Equal((byte)0xF0, Interlocked.Or<byte>(ref value, (byte)0x0C));
             Assert.Equal((byte)0xFC, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or(ref Unsafe.NullRef<byte>(), (byte)0x0C));
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<byte>(ref Unsafe.NullRef<byte>(), (byte)0x0C));
         }
 
         [Fact]
         public void InterlockedOr_Generic_SByte()
         {
             sbyte value = 0x50;
-            Assert.Equal((sbyte)0x50, Interlocked.Or(ref value, (sbyte)0x21));
+            Assert.Equal((sbyte)0x50, Interlocked.Or<sbyte>(ref value, (sbyte)0x21));
             Assert.Equal((sbyte)0x71, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or(ref Unsafe.NullRef<sbyte>(), (sbyte)0x21));
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<sbyte>(ref Unsafe.NullRef<sbyte>(), (sbyte)0x21));
         }
 
         [Fact]
         public void InterlockedOr_Generic_UInt16()
         {
             ushort value = 0x1234;
-            Assert.Equal((ushort)0x1234, Interlocked.Or(ref value, (ushort)0x5008));
+            Assert.Equal((ushort)0x1234, Interlocked.Or<ushort>(ref value, (ushort)0x5008));
             Assert.Equal((ushort)0x523C, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or(ref Unsafe.NullRef<ushort>(), (ushort)0x5008));
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<ushort>(ref Unsafe.NullRef<ushort>(), (ushort)0x5008));
         }
 
         [Fact]
         public void InterlockedOr_Generic_Int16()
         {
             short value = 0x1234;
-            Assert.Equal((short)0x1234, Interlocked.Or(ref value, (short)0x5008));
+            Assert.Equal((short)0x1234, Interlocked.Or<short>(ref value, (short)0x5008));
             Assert.Equal((short)0x523C, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or(ref Unsafe.NullRef<short>(), (short)0x5008));
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<short>(ref Unsafe.NullRef<short>(), (short)0x5008));
         }
 
         [Fact]
@@ -1056,7 +1056,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x12345670, Interlocked.Or<int>(ref value, 0x7654321));
             Assert.Equal(0x17755771, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or(ref Unsafe.NullRef<int>(), 0x7654321));
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<int>(ref Unsafe.NullRef<int>(), 0x7654321));
         }
 
         [Fact]
@@ -1066,7 +1066,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x12345670u, Interlocked.Or<uint>(ref value, 0x7654321));
             Assert.Equal(0x17755771u, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or(ref Unsafe.NullRef<uint>(), 0x7654321u));
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<uint>(ref Unsafe.NullRef<uint>(), 0x7654321u));
         }
 
         [Fact]
@@ -1076,7 +1076,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x12345670, Interlocked.Or<long>(ref value, 0x7654321));
             Assert.Equal(0x17755771, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or(ref Unsafe.NullRef<long>(), 0x7654321L));
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<long>(ref Unsafe.NullRef<long>(), 0x7654321L));
         }
 
         [Fact]
@@ -1086,7 +1086,7 @@ namespace System.Threading.Tests
             Assert.Equal(0x12345670u, Interlocked.Or<ulong>(ref value, 0x7654321));
             Assert.Equal(0x17755771u, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or(ref Unsafe.NullRef<ulong>(), 0x7654321UL));
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<ulong>(ref Unsafe.NullRef<ulong>(), 0x7654321UL));
         }
 
         [Fact]
@@ -1096,14 +1096,14 @@ namespace System.Threading.Tests
             Assert.Equal((DayOfWeek)0x1, Interlocked.Or<DayOfWeek>(ref value, (DayOfWeek)0x2));
             Assert.Equal((DayOfWeek)0x3, value);
 
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or(ref Unsafe.NullRef<DayOfWeek>(), DayOfWeek.Monday));
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<DayOfWeek>(ref Unsafe.NullRef<DayOfWeek>(), DayOfWeek.Monday));
         }
 
         [Fact]
         public void InterlockedOr_Generic_Unsupported()
         {
             DateTime value = default;
-            Assert.Throws<NotSupportedException>(() => Interlocked.Or(ref value, default));
+            Assert.Throws<NotSupportedException>(() => Interlocked.Or<DateTime>(ref value, default));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
