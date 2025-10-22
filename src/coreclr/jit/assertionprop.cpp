@@ -157,6 +157,7 @@ bool IntegralRange::Contains(int64_t value) const
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
         case GT_AND:
+        {
             IntegralRange leftRange  = IntegralRange::ForNode(node->gtGetOp1(), compiler);
             IntegralRange rightRange = IntegralRange::ForNode(node->gtGetOp2(), compiler);
             if (leftRange.Equals({SymbolicIntegerValue::Zero, SymbolicIntegerValue::One}) ||
@@ -165,6 +166,7 @@ bool IntegralRange::Contains(int64_t value) const
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
             }
             break;
+        }
 
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
