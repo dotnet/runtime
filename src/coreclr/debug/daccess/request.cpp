@@ -4730,7 +4730,7 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
 #else
     pReJitData->rejitID = rejitId;
     pReJitData->flags = DacpReJitData2::kActive;
-    pReJitData->il = 0;
+    pReJitData->il = pMD->GetILHeader();
     pReJitData->ilCodeVersionNodePtr = 0;
 #endif // FEATURE_CODE_VERSIONING
 
