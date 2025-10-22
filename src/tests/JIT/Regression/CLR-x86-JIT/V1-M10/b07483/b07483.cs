@@ -9,6 +9,7 @@ public class Test_b07483
     private int _t = 0;
     private int _f = 0;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -9,6 +9,7 @@ using Xunit;
 
 public class Test_DDB188478
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

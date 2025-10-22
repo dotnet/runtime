@@ -16,6 +16,7 @@ namespace Test
 
         static bool Static1(float[] param1) { return false; }
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

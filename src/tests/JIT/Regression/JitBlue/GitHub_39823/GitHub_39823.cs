@@ -24,6 +24,7 @@ public class Runtime_39823
     }
 
 
+    [OuterLoop]
     [Fact]
     public static unsafe int TestEntryPoint()
     {

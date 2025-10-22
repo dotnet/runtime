@@ -65,6 +65,7 @@ public class Runtime_66254
         }
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -16,6 +16,7 @@ public class MainApp
 {
     static byte s = 1;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

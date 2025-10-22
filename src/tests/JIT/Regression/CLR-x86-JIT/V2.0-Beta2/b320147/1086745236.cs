@@ -31,6 +31,7 @@ public struct AA
 [StructLayout(LayoutKind.Sequential)]
 public class App
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

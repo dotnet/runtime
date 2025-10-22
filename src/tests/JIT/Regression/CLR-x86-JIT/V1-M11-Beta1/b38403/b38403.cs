@@ -26,6 +26,7 @@ namespace Test
             while (AA.m_bStatic1) ;
         }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

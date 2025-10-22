@@ -931,6 +931,7 @@ public class Mutate
     }
 
     [Fact]
+    [SkipOnCoreClr("This test takes too long and internally times out under GCStress/heap verify. It is not fundamentally incompatible if stress testing is fast enough.", RuntimeTestModes.AnyGCStress | RuntimeTestModes.HeapVerify)]
     public static int TestEntryPoint()
     {
         try

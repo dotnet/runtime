@@ -11,6 +11,7 @@ namespace DefaultNamespace
 {
     public class cinfo
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

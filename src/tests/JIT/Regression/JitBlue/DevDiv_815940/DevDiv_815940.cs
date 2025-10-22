@@ -10,6 +10,7 @@ public class Repro
     static char c1 = (char)32768;
     static char c2 = (char)0;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -17,6 +17,7 @@ namespace DefaultNamespace
             return (UInt16)i;
         }
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

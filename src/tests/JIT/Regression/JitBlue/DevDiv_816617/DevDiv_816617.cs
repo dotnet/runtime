@@ -9,6 +9,7 @@ public static class Repro
 {
     static double NegativeZero = -0.0;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

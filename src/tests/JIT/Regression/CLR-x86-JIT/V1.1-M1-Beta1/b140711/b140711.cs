@@ -8,6 +8,7 @@ using Xunit;
 public class BadMath
 {
     public static double[,] Res = new double[2, 40];
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

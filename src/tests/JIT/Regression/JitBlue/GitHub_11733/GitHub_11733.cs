@@ -19,6 +19,7 @@ public class C
         return (float)Math.Pow(a, (float)Math.Pow(b, a));
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -16,6 +16,7 @@ public class Program
             throw new Exception("FAILED");
         }
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

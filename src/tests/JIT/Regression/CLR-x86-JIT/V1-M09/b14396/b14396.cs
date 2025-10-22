@@ -11,6 +11,7 @@ namespace DefaultNamespace
 
     public class Bug
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

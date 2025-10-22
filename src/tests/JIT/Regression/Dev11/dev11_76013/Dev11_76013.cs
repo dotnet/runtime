@@ -19,6 +19,7 @@ namespace Test
 
     public class Program
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

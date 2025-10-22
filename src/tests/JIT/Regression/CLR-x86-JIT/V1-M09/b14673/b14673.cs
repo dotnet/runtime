@@ -19,6 +19,7 @@ namespace DefaultNamespace
             else
                 Console.WriteLine("Test FAiLED");
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

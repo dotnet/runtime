@@ -18,6 +18,7 @@ public class AA
         param1 = param1;
 #pragma warning restore 1717
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

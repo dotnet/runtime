@@ -13,6 +13,7 @@ namespace DefaultNamespace
             return UInt16.MaxValue;
         }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

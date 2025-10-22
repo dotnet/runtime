@@ -12,6 +12,7 @@ public class X
     static ushort us_8712 = 8712;
     static ushort us_973 = 973;
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

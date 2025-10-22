@@ -8201,6 +8201,7 @@ public class f8192
         int a8192
         )
     { }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -12,6 +12,7 @@ public class Test_devdiv_174983
 
     public static int l;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -30,6 +30,7 @@ public sealed class C
         return 100;
     }
     
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

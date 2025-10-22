@@ -14,6 +14,7 @@ namespace Test
             return new BB();
         }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

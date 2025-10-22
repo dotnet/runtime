@@ -25,6 +25,7 @@ public class Program
         var hmm = box.GetHashCode();
     }
     
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -8,6 +8,7 @@ using Xunit;
 public class Light
 {
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

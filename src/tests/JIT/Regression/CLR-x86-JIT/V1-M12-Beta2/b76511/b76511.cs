@@ -16,6 +16,7 @@ public class bug1
     }
     public static VT vtstatic = new VT();
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

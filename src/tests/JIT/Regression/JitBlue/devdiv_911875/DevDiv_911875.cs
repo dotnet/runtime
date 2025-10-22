@@ -11,6 +11,7 @@ public class Repro
     public float x;
     public float y;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

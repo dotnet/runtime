@@ -10,6 +10,7 @@ namespace Test
     public class BB
     {
         static void Method1() { }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

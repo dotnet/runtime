@@ -21,6 +21,7 @@ public class B
         return a20;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

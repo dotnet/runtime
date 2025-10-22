@@ -10,6 +10,7 @@ namespace Test
     public class BB
     {
         public static ulong m_ulStatic1 = 237u;
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -26,6 +26,7 @@ public unsafe class testout1
         return retval_1;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

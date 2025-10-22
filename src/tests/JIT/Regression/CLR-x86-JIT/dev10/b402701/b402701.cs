@@ -23,6 +23,7 @@ public class Foo
         }
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

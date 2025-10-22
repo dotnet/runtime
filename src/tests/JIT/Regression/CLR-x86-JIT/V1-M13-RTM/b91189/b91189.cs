@@ -9,6 +9,7 @@ using Xunit;
 
 public struct AA
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint() => Run(new string[0]);
 

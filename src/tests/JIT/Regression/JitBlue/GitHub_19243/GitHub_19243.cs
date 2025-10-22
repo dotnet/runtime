@@ -38,6 +38,7 @@ public class GitHub_19243
         return ref s_37;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -16,6 +16,7 @@ public class MutateStructArg
         public int X;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

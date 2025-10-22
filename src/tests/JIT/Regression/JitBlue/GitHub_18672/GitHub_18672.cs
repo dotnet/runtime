@@ -33,6 +33,7 @@ struct S24W
 
 public class Program
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

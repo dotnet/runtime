@@ -31,6 +31,7 @@ namespace Test
                 } while ((uint)param1[2] < 0);
             }
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

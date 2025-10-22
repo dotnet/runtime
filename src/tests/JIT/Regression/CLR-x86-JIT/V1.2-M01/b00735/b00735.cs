@@ -18,6 +18,7 @@ public struct AA
         }
         do { } while (flag);
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

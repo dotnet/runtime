@@ -7,6 +7,7 @@ using Xunit;
 
 public class BasicMath
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

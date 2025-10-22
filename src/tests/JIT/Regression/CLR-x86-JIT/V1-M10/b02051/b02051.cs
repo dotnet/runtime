@@ -8,6 +8,7 @@ namespace DefaultNamespace
     using System;
     public class JITcrash
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -10,6 +10,7 @@ public class test
     static short si16;
     static uint su32;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

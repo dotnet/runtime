@@ -78,6 +78,7 @@ public class ProgressConsumerBuilder
 
 public class MainApp
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

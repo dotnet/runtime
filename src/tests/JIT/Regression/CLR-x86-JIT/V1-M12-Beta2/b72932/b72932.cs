@@ -10,6 +10,7 @@ public unsafe class testout1
         public long a1;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

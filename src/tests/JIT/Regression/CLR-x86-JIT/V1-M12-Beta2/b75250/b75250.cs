@@ -39,6 +39,7 @@ public class testout1
         return retval;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

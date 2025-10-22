@@ -24,6 +24,7 @@ public class Bug26518
         one = 1,
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

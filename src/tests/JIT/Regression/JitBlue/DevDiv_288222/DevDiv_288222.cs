@@ -22,6 +22,7 @@ public class Program
         doCopy(array, start);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

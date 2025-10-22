@@ -43,6 +43,7 @@ public class Bug7907
         return count;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

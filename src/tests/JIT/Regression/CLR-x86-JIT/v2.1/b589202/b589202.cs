@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using Xunit;
 public class Program
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

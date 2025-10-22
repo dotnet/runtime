@@ -9,6 +9,7 @@ namespace DefaultNamespace
 
     public class Bug4
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

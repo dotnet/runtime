@@ -82,6 +82,7 @@ struct BigStruct
 
 public class My
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

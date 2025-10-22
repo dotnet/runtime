@@ -9,6 +9,7 @@ namespace DefaultNamespace
 
     public class TestClass
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

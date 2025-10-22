@@ -3,6 +3,8 @@
 //
 
 using Xunit;
+using TestLibrary;
+
 namespace Test
 {
     using System;
@@ -14,7 +16,7 @@ namespace Test
         static bool[] Static3(ref int param1, uint[] param2, ref double param3,
             object param4, ref float[] param5, ref object[] param6) { return null; }
 
-        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsVarArgSupported))]
         public static void TestEntryPoint()
         {
             Static2(__arglist());

@@ -22,6 +22,7 @@ namespace Test
             }
             return arr[0];
         }
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

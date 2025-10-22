@@ -77,6 +77,7 @@ public class Program
         return (attribute.Field == (ulong)6);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

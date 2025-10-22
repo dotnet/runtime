@@ -13,6 +13,7 @@ public unsafe class bug1
     {
         return *a0;
     }
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

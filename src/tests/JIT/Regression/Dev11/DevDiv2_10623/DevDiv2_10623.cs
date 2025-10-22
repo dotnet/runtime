@@ -10,6 +10,7 @@ public class Program
     {
         return item is Guid;
     }
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

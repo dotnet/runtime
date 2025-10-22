@@ -8,6 +8,7 @@ using Xunit;
 
 public class BoundsCheck
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

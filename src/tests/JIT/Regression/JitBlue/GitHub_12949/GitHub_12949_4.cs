@@ -23,6 +23,7 @@ public class X<K>
 
 public class B
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

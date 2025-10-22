@@ -42,6 +42,7 @@ public class PerfNotIf
         return i;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -33,6 +33,7 @@ namespace DefaultNamespace
             return true;
         }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

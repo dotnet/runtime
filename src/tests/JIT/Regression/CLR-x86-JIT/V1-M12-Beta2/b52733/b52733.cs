@@ -13,6 +13,7 @@ namespace Test
 
         private static float[] Method1() { return s_af = new float[5]; }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

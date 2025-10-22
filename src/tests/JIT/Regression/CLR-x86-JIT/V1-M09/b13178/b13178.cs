@@ -13,6 +13,7 @@ namespace DefaultNamespace
 
     public class Ternary3b
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

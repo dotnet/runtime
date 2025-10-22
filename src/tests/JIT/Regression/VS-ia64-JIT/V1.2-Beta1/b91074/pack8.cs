@@ -26,6 +26,7 @@ internal sealed class tagDBPROPSET
 
 public class a
 {
+    [OuterLoop]
     [Fact]
     static public int TestEntryPoint()
     {

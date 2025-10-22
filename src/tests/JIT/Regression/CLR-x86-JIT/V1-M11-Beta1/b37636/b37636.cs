@@ -11,6 +11,7 @@ namespace Test
     {
         static float[] m_af = new float[2];
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

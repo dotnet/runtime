@@ -22,6 +22,7 @@ public class C : IFoo<A>, IFoo<B>
         System.Console.WriteLine("B");
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

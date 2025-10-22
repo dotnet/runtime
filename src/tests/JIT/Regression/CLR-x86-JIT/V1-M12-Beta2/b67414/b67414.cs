@@ -9,6 +9,7 @@ using Xunit;
 
 public class bug
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

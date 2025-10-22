@@ -22,6 +22,7 @@ public class Runtime_35724
         return a / b;
     }
 	
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

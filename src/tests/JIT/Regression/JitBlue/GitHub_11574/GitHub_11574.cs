@@ -21,6 +21,7 @@ public class Program
         return (actual == expected) ? rv : 0;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

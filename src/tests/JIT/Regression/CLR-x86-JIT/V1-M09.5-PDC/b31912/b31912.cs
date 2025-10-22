@@ -8,6 +8,7 @@ namespace Test
     using System;
     public class AA
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

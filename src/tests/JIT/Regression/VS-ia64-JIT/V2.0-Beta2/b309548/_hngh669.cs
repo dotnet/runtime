@@ -36,6 +36,7 @@ public class AA
 
 public class App
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

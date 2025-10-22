@@ -27,6 +27,7 @@ public class MainApp
         return new MyStruct();
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

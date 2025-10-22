@@ -11,6 +11,7 @@ public struct CC
         return
             82 * (ulong)N * (float)(((ulong)N) ^ (82u * (ulong)N));
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -6,6 +6,7 @@ using System;
 using Xunit;
 public class CC
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

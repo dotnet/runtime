@@ -10,6 +10,7 @@ namespace Test
     {
         private static void Func(TypedReference tr) { }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

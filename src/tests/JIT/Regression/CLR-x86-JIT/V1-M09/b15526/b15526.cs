@@ -17,6 +17,7 @@ namespace DefaultNamespace
             int iVal2 = 3;
             Console.WriteLine(Math.Min(iVal1, iVal2));
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -32,6 +32,7 @@ public class Runtime_49101
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

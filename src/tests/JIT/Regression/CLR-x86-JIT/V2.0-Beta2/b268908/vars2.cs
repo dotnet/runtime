@@ -16,6 +16,7 @@ using Xunit;
 public class Test_vars2
 {
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

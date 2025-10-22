@@ -10,6 +10,7 @@ namespace Test
     public class AA
     {
         static uint m_u;
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

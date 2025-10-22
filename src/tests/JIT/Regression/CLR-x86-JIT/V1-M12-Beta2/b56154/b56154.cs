@@ -17,6 +17,7 @@ namespace Test
                 Array[] a = new Array[2];
             }
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -10,6 +10,7 @@ namespace N
 {
     public static class C
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

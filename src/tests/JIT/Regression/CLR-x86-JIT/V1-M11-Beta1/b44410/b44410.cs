@@ -19,6 +19,7 @@ namespace Test
             if (m_ul == 1u)
                 param1 = param2;
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

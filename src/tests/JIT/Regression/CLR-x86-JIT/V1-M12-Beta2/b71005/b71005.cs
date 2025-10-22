@@ -36,6 +36,7 @@ public class testout1
         return false;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

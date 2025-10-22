@@ -12,6 +12,7 @@ public class GitHub_10215
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool Test(Vector<int> x, Vector<int> y) => x[0] == y[0];
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

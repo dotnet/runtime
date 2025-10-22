@@ -7,6 +7,7 @@ using Xunit;
 
 public class InternTest
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

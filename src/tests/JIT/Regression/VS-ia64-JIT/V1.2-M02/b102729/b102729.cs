@@ -21,6 +21,7 @@ public class Bar
         arg = _myArray[3];
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

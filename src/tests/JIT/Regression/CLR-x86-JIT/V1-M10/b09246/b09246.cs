@@ -6,6 +6,7 @@ using Xunit;
 public class MyClass
 {
     //extern modifier
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

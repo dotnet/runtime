@@ -19,6 +19,7 @@ public class cs1
 
     [System.Runtime.CompilerServices.MethodImpl(
       System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

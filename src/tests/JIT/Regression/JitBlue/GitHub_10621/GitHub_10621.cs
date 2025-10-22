@@ -15,6 +15,7 @@ public class GitHub_10621
 
     // An empty try with nested try finallys where
     // the inner finally cannot be cloned.
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

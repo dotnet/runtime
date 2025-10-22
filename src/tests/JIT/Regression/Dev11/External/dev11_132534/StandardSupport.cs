@@ -160,6 +160,7 @@ namespace Test
 
     public static class App
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

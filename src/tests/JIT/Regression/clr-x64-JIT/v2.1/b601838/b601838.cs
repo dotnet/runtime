@@ -25,6 +25,7 @@ public static class GenericSecurity
         }
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

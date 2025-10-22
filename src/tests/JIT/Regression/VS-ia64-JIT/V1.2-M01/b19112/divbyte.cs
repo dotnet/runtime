@@ -10,6 +10,7 @@ public class foo
     public static sbyte a, b, c;
 #pragma warning restore 0414
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -27,6 +27,7 @@ public class GitHub_19171
             returnVal = -1;
         }
     }
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

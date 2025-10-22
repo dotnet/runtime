@@ -28,6 +28,7 @@ public class cs1
 #pragma warning restore 0414
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

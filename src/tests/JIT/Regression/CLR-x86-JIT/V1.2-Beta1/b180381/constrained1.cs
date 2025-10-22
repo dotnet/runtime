@@ -13,6 +13,7 @@ public class Test_constrained1
         Console.WriteLine(type);
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

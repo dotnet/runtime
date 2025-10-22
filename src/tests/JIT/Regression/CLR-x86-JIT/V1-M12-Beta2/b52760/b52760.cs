@@ -14,6 +14,7 @@ namespace Test
             ulong loc = 10;
             return loc *= loc;
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

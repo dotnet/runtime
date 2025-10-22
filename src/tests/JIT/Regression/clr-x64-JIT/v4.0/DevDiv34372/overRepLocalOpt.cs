@@ -58,6 +58,7 @@ public static class DeadEH
     }
 
     // Get everything jitted before we call
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

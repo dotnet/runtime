@@ -44,6 +44,7 @@ public unsafe class testout1
         return 1;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

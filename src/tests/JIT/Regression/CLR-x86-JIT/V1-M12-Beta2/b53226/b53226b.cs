@@ -15,6 +15,7 @@ namespace Test
             byte bb = __refvalue((b ? __makeref(b) : tr), byte);
             return 0;
         }
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -6,6 +6,7 @@ using System;
 using Xunit;
 public struct AA
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

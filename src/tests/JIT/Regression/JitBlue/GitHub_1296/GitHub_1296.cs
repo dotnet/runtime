@@ -22,6 +22,7 @@ public class Program
 
     static int Pass = 100;
     static int Fail = -1;
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

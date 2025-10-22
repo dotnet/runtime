@@ -15,6 +15,7 @@ internal struct VC
 
 public class A
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

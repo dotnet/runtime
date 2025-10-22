@@ -7,6 +7,7 @@ using Xunit;
 
 public class Repro
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

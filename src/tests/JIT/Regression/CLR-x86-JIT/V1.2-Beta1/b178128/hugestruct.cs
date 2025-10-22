@@ -136,6 +136,7 @@ struct Big100000DW
 
 public class Test_hugestruct
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

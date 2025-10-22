@@ -22,6 +22,7 @@ namespace Test
                 }
             }
         }
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -14,6 +14,7 @@ public class Test_b119294
     public int[,] m_nSourceDestMap;
     public static int m_coSourceLength = 100;
     public static int m_coDestLength = 100;
+    [OuterLoop]
     [Fact]
     static public void TestEntryPoint()
     {

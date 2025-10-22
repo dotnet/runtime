@@ -6,6 +6,7 @@ namespace DefaultNamespace
 {
     public class Prob
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -19,6 +19,7 @@ namespace Test
             uint u = (uint)(param3.Method3(param3.Method3(d)[0])[0]);
             return new uint[4];
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

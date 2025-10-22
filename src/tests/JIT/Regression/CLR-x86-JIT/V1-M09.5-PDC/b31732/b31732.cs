@@ -30,6 +30,7 @@ namespace Test
             }
             return 0.0f;
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -5,6 +5,7 @@ using System;
 using Xunit;
 public class SamplesArray
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

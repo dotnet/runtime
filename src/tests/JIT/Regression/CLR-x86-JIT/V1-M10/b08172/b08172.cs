@@ -9,6 +9,7 @@ using Xunit;
 
 public class Test
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint() {
         Test app = new Test();

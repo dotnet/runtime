@@ -34,6 +34,7 @@ public class small_repro
         return new short[] { 0x100, 0x101, 0x102 };
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

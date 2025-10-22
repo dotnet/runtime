@@ -13,6 +13,7 @@ namespace Test
 
     public class Test
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -91,6 +91,7 @@ public class Program
         return (int)(s.f1 + s.f2 + (int)s.f3 + s.f4);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

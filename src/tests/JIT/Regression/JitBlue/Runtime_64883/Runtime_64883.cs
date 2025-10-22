@@ -18,6 +18,7 @@ using Xunit;
 public class Runtime_64883
 {
     public static uint s_29;
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

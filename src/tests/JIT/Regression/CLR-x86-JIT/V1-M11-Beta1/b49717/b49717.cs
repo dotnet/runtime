@@ -10,6 +10,7 @@ namespace Test
     public class AA
     {
         static void DoAnything() { throw new Exception(); }
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

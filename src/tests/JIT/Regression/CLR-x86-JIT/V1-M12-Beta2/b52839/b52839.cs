@@ -14,6 +14,7 @@ namespace Test
     public struct CC
     {
         float Method1() { return 0; }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

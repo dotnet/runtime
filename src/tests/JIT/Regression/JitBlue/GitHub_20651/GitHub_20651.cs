@@ -16,6 +16,7 @@ public class X
     }
 
     // Ensure GTF_CALL flag is propagated to MD array accessor
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -66,6 +66,7 @@ public class Program
         d.j = 0x77777777;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

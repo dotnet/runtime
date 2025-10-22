@@ -2822,6 +2822,7 @@ public class Test_Inline_Vars2
         Console.WriteLine(a400);
         return 100;
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

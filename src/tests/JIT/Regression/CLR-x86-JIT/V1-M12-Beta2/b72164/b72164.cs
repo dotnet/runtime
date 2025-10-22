@@ -11,6 +11,7 @@ public unsafe class bug1
         Console.WriteLine(*a01 + (*a01 - (*a01 + -5.0)));
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

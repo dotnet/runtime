@@ -18,6 +18,7 @@ public static class CoreFX15913
         return v3 + v.X + v.Y + v.Z;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

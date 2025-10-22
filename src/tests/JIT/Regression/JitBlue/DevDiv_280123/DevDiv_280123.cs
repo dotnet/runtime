@@ -34,6 +34,7 @@ public static class C
         return b ? 0 : 1;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

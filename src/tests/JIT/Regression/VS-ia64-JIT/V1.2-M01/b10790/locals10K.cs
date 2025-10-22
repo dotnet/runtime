@@ -11,6 +11,7 @@ namespace test
     public class Locals10K
     {
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

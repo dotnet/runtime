@@ -6,6 +6,7 @@ using Xunit;
 
 public class TailCallOptTest
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -3,6 +3,7 @@
 //
 
 using Xunit;
+using TestLibrary;
 namespace Test
 {
     using System;

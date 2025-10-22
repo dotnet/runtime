@@ -40,6 +40,7 @@ public class DevDiv_142976
         }
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -9,6 +9,7 @@ public class Program
 {
     static bool flag;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {            

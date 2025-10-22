@@ -26,6 +26,7 @@ namespace Test
                     throw new Exception();
             } while (flag3);
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

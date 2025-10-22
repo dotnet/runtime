@@ -9,6 +9,7 @@ namespace DefaultNamespace
 
     public class BB
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

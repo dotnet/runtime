@@ -8,6 +8,7 @@ public class Program
 {
     static ushort SkillLevel;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

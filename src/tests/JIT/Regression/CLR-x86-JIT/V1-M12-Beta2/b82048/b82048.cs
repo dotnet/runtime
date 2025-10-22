@@ -8,6 +8,7 @@ public struct AA
 {
     public static sbyte m_suFwd3;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -47,6 +47,7 @@ public class X<K> where K: IGet
 
 public class B
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

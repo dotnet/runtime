@@ -9,6 +9,7 @@ namespace defaultNamespace
 
     public class jitbug
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

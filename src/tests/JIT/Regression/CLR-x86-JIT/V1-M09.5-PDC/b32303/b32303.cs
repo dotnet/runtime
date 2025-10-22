@@ -9,6 +9,7 @@ namespace Test
 
     public class Temp
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

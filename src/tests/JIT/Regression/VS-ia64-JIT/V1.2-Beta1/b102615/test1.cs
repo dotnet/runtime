@@ -25,6 +25,7 @@ class C
 
 public class Test_test1
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

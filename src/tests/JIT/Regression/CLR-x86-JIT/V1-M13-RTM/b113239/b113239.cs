@@ -137,6 +137,7 @@ public class B
 
 public class Test_b113239
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

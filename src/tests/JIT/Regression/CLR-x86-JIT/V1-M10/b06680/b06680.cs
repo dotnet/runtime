@@ -13,6 +13,7 @@ namespace DefaultNamespace
     {
         private static int n = 0;
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

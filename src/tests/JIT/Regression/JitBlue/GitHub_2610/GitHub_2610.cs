@@ -23,6 +23,7 @@ public struct MyStruct
 
 public class Program
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

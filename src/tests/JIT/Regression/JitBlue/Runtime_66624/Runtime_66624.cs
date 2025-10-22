@@ -56,6 +56,7 @@ public class Runtime_66624
     public static IRuntime s_rt;
     public static C0 s_1 = new C0(0, 0, 0);
     public static C1[][] s_3 = new C1[][] { new C1[] { new C1(new C0(0, 0, 0)) } };
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

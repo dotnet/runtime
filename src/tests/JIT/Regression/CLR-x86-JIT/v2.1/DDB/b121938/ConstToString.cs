@@ -67,6 +67,7 @@ public class ConstToString
         }
         return iret;
     }
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

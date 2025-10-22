@@ -25,6 +25,7 @@ public class Hijo : Padre
 }
 public class Test_b64579
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

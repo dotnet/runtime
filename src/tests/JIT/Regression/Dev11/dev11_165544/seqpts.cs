@@ -30,6 +30,7 @@ struct BigCopy
 
 public static class Repro
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

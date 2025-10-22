@@ -6,6 +6,7 @@ using Xunit;
 
 public class Bug
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -43,6 +43,7 @@ public class M
         return result;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

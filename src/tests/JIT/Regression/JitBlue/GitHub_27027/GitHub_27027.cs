@@ -15,6 +15,7 @@ public class Test_GitHub_27027
 {
     public S s;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

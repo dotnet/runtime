@@ -13,6 +13,7 @@ namespace Test
 
         static bool Static1(ref int[] param1) { return false; }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

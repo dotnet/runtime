@@ -11,6 +11,7 @@ namespace Test
     {
         static void Static1(ulong param2, object param3) { }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

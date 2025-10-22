@@ -11,6 +11,7 @@ namespace DefaultNamespace
 
     public class unsignedNegative
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

@@ -10,6 +10,7 @@ namespace Test
 {
     public class AA
     {
+        [OuterLoop]
         [Fact]
         public static unsafe void TestEntryPoint()
         {

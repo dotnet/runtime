@@ -7,6 +7,7 @@ using Xunit;
 
 public class rep
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

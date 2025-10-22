@@ -133,6 +133,7 @@ public class bug178119
         return result;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

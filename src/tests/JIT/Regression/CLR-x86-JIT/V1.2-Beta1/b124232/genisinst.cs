@@ -28,6 +28,7 @@ class C2
 }
 public class Test_genisinst
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

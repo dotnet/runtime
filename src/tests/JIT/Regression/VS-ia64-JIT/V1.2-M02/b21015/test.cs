@@ -29,6 +29,7 @@ struct T
 
 public class Tester
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

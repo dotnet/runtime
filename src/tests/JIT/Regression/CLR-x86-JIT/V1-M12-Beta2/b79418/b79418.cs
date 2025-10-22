@@ -14,6 +14,7 @@ public class PInvokeTest
     static String foo = "foo";
     static String bar = "bar";
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -381,6 +381,7 @@ public class Test
                                  M41, M42, M43, M44);
         }
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

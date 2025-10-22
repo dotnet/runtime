@@ -20,6 +20,7 @@ public class Test_struct1
         GC.Collect();
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

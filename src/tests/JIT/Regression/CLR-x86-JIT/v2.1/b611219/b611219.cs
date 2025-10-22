@@ -27,6 +27,7 @@ public class Derived : Base<string>
         return n;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

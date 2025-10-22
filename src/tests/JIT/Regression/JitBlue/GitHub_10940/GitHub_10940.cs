@@ -51,6 +51,7 @@ public class Test_GitHub_10940
         return vs.GetReturnValue();
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

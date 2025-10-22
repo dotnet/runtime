@@ -5,6 +5,7 @@ using System;
 using Xunit;
 public class ReproBoxProblem
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

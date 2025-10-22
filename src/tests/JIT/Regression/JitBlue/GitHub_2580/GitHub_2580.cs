@@ -46,6 +46,7 @@ public static class MicrsoftNETBug
 
 
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

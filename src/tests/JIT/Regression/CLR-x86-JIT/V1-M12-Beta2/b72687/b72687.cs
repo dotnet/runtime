@@ -45,6 +45,7 @@ public unsafe class CSE2
         return retval;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

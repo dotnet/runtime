@@ -8,6 +8,7 @@ namespace Test
     public class App
     {
         private static void Method1(TypedReference param1, object obj) { }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -10,6 +10,7 @@ namespace DefaultNamespace
 {
     public class AppStarter
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

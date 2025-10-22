@@ -8,6 +8,7 @@ public class Test_b79642
 {
     public byte m_value;
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

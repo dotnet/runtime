@@ -20,6 +20,7 @@ public class Bug
         Func(ref str[0]);
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

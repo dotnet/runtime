@@ -10,6 +10,7 @@ namespace Test
 
     public class C2
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

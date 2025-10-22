@@ -8,6 +8,7 @@ namespace DefaultNamespace
 
     public class NStructTun
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

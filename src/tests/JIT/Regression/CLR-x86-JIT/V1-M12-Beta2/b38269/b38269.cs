@@ -20,6 +20,7 @@ namespace Test
     {
         static AA s_aa = new AA(0);
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

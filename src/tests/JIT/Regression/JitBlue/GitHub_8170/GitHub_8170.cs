@@ -16,6 +16,7 @@ public static class C
         return (uint)(l % 10000000);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

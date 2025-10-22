@@ -10,6 +10,7 @@ namespace DefaultNamespace
 {
     public class MainClass
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

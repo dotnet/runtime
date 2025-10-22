@@ -31,6 +31,7 @@ public class My
         return null;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

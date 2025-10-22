@@ -38,6 +38,7 @@ namespace Test
             return ptr.m_afField1[2];
         }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -11,6 +11,7 @@ namespace DefaultNamespace
         {
             return new float[7];
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

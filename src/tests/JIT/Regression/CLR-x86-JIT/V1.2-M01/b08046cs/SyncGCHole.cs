@@ -38,6 +38,7 @@ public class ExternalException : Exception
     public static int ExitCode { get; set; }
     public static int Ignored { get; set; }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

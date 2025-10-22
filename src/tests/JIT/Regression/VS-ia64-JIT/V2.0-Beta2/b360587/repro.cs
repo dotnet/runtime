@@ -284,6 +284,7 @@ public class Test_repro
         return 0;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

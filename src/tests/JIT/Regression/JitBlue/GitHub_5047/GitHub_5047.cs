@@ -27,6 +27,7 @@ public class Program
         return x;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

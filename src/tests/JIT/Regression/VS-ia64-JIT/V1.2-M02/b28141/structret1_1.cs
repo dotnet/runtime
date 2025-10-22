@@ -92,6 +92,7 @@ public class Test_structret1_1
         return (s1);
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

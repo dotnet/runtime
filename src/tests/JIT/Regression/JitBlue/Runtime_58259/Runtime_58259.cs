@@ -4,6 +4,7 @@
 using Xunit;
 public unsafe class Runtime_58259
 {
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

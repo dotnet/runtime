@@ -11,6 +11,7 @@ namespace Test
     {
         bool m_b;
         static void Static1(BB param3, ref bool param5) { }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -33,6 +33,7 @@ public class TestApp
     {
         return AA.get_pb(px)->m_bval;
     }
+    [OuterLoop]
     [Fact]
     public static unsafe void TestEntryPoint()
     {

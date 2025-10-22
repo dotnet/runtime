@@ -133,6 +133,7 @@ namespace DefaultNamespace
         internal static readonly String[,] strArr = {{"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."},
                                                                              {"This", " ", "a", " ", "test", " ", "of", " ", "patience", "."}};
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

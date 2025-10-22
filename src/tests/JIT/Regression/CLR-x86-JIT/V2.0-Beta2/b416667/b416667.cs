@@ -7,6 +7,7 @@ using Xunit;
 public class CMain
 {
     public static int Count = 0;
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -30,6 +30,7 @@ public class TestApp
     {
         return 0;
     }
+    [OuterLoop]
     [Fact]
     public static unsafe void TestEntryPoint()
     {

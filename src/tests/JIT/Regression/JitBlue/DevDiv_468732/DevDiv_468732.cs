@@ -22,6 +22,7 @@ public struct S
         return s;
     }
 
+    [OuterLoop]
     [Fact]
     public static unsafe int TestEntryPoint()
     {

@@ -20,6 +20,7 @@ namespace DefaultNamespace
          * @param args Array of parameters passed to the application
          * via the command line.
          */
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

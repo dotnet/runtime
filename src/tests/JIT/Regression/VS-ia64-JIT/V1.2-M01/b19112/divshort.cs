@@ -8,6 +8,7 @@ public class foo
 
     public static short a, b, c;
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

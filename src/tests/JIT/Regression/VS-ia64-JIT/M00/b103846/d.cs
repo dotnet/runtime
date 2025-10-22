@@ -6,6 +6,7 @@ using Xunit;
 public class Bug
 {
     static short s1 = 8712, s2 = -973;
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

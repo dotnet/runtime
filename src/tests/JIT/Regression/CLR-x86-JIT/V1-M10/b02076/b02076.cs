@@ -42,6 +42,7 @@ class CSwarm
 
 public class MainClass
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

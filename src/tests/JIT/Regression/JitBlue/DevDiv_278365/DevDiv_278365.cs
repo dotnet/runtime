@@ -13,6 +13,7 @@ using Xunit;
 public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [OuterLoop]
     [Fact]
     public static int Bar()
     {

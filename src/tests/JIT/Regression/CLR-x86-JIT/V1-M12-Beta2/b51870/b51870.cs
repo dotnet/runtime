@@ -11,6 +11,7 @@ namespace Test
     {
         int m_iField4;
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

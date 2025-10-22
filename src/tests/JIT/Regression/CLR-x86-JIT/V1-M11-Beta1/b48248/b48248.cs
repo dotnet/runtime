@@ -27,6 +27,7 @@ public struct test
         int6 = i;
         int7 = i;
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

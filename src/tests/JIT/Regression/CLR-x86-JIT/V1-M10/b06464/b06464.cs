@@ -27,6 +27,7 @@ public class Test_b06464
         return 1;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

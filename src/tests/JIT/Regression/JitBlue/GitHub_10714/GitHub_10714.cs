@@ -17,6 +17,7 @@ public class GitHub_10714
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Test() => Interlocked.Exchange(ref intToExchange, innerShort);
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -76,6 +76,7 @@ public class DblArray3
 
 
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

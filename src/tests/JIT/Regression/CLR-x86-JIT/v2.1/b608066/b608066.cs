@@ -163,6 +163,7 @@ public class ReproTwo
 
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint() => Run(0);
 

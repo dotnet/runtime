@@ -15,6 +15,7 @@ public class My
         Thread.Sleep(5);
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

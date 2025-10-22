@@ -19,6 +19,7 @@ public struct AA
         return (new int[1, 1]);
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

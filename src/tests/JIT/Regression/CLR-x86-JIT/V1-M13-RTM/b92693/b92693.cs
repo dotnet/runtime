@@ -14,6 +14,7 @@ public struct AA
     {
         return new TestEnum[(long)(m_shStatic1 * 11u - m_shStatic1 * 11u)];
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

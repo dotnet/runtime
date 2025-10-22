@@ -18,6 +18,7 @@ public class ClassWithCctor<T>
 
 public class Repro
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -36,6 +36,7 @@ struct Struct1 : Inter1, Inter2, Inter3
 
 public class Test
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

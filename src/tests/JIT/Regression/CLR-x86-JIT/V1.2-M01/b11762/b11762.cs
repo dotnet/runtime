@@ -18,6 +18,7 @@ public class test1
         Console.Write(".");
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

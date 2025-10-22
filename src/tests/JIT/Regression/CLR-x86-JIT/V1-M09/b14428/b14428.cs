@@ -12,6 +12,7 @@ namespace DefaultNamespace
     public class DateTimeCompare
     {
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

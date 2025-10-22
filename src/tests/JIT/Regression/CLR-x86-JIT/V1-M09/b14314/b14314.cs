@@ -29,6 +29,7 @@ namespace DefaultNamespace
 
     public class Finalize
     {
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {
