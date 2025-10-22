@@ -4725,7 +4725,7 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
 #else
     pReJitData->rejitID = rejitId;
     pReJitData->flags = DacpReJitData2::kActive;
-    pReJitData->il = pMD->GetILHeader();
+    pReJitData->il = (CLRDATA_ADDRESS)pMD->GetILHeader();
     pReJitData->ilCodeVersionNodePtr = 0;
 #endif // FEATURE_CODE_VERSIONING
 
