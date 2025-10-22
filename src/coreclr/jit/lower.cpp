@@ -2127,7 +2127,7 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
 
     // Finally move all GT_PUTARG_* nodes
     // Re-use the existing logic for CFG call args here
-    MoveCFGCallArgs(call);
+    MovePutArgNodesUpToCall(call);
 
     BlockRange().Remove(destPlaceholder);
     BlockRange().Remove(srcPlaceholder);
@@ -2899,13 +2899,24 @@ GenTree* Lowering::LowerCall(GenTree* node)
     if (call->IsTailCallViaJitHelper())
     {
         // Either controlExpr or gtCallAddr must contain real call target.
-        if (controlExpr == nullptr)
+        if (controlExpr != nullptr)
         {
+            // Link controlExpr into the IR before the call.
+            // The callTarget tree needs to be sequenced.
+            LIR::Range callTargetRange = LIR::SeqTree(comp, controlExpr);
+            ContainCheckRange(callTargetRange);
+            BlockRange().InsertBefore(call, std::move(callTargetRange));
+        }
+        else
+        {
+            // gtCallAddr is already sequenced and just before the call.
             assert(call->gtCallType == CT_INDIRECT);
             assert(call->gtCallAddr != nullptr);
             controlExpr = call->gtCallAddr;
         }
 
+        // LowerTailCallViaJitHelper will turn the control expr
+        // into an arg and produce a new control expr for the helper call.
         controlExpr = LowerTailCallViaJitHelper(call, controlExpr);
     }
 
@@ -3468,21 +3479,6 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(call));
     }
 
-    // Remove gtCallAddr from execution order if present.
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        assert(call->gtCallAddr != nullptr);
-
-        bool               isClosed;
-        LIR::ReadOnlyRange callAddrRange = BlockRange().GetTreeRange(call->gtCallAddr, &isClosed);
-        assert(isClosed);
-
-        BlockRange().Remove(std::move(callAddrRange));
-    }
-
-    // The callTarget tree needs to be sequenced.
-    LIR::Range callTargetRange = LIR::SeqTree(comp, callTarget);
-
     // Verify the special args are what we expect, and replace the dummy args with real values.
     // We need to figure out the size of the outgoing stack arguments, not including the special args.
     // The number of 4-byte words is passed to the helper for the incoming and outgoing argument sizes.
@@ -3499,9 +3495,6 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     CallArg* argEntry = call->gtArgs.GetArgByIndex(numArgs - 1);
     assert(argEntry != nullptr);
     GenTree* arg0 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
-
-    ContainCheckRange(callTargetRange);
-    BlockRange().InsertAfter(arg0, std::move(callTargetRange));
 
     bool               isClosed;
     LIR::ReadOnlyRange secondArgRange = BlockRange().GetTreeRange(arg0, &isClosed);
@@ -3535,6 +3528,9 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     GenTree* arg3 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
     assert(arg3->OperIs(GT_CNS_INT));
 #endif // DEBUG
+
+    // Now reorder so all the putargs are just before the call.
+    MovePutArgNodesUpToCall(call);
 
     // Transform this call node into a call to Jit tail call helper.
     call->gtCallType    = CT_HELPER;
@@ -3704,7 +3700,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             LowerNode(regNode);
 
             // Finally move all GT_PUTARG_* nodes
-            MoveCFGCallArgs(call);
+            MovePutArgNodesUpToCall(call);
             break;
         }
         case CFGCallKind::Dispatch:
@@ -3800,12 +3796,12 @@ bool Lowering::IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive
 }
 
 //------------------------------------------------------------------------
-// MoveCFGCallArg: Given a call that will be CFG transformed using the
-// validate+call scheme, and an argument GT_PUTARG_* or GT_FIELD_LIST node,
+// MovePutArgUpToCall: Given a call that will be transformed using the
+// CFG validate+call or similar scheme, and an argument GT_PUTARG_* or GT_FIELD_LIST node,
 // move that node right before the call.
 //
 // Arguments:
-//    call - The call that is being CFG transformed
+//    call - The call that is being transformed
 //    node - The argument node
 //
 // Remarks:
@@ -3814,7 +3810,7 @@ bool Lowering::IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive
 //    are not always safe to move further ahead; for invariant operands, we
 //    move them ahead as well to shorten the lifetime of these values.
 //
-void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
+void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
 {
     assert(node->OperIsPutArg() || node->OperIsFieldList());
 
@@ -3824,7 +3820,7 @@ void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
         for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
         {
             assert(operand.GetNode()->OperIsPutArg());
-            MoveCFGCallArg(call, operand.GetNode());
+            MovePutArgUpToCall(call, operand.GetNode());
         }
     }
     else
@@ -3852,30 +3848,29 @@ void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
 }
 
 //------------------------------------------------------------------------
-// MoveCFGCallArgs: Given a call that will be CFG transformed using the
-// validate+call scheme, move all GT_PUTARG_* or GT_FIELD_LIST nodes right before the call.
+// MovePutArgNodesUpToCall: Move all GT_PUTARG_* or GT_FIELD_LIST nodes right before the call.
 //
 // Arguments:
-//    call - The call that is being CFG transformed
+//    call - The call that is being transformed
 //
 // Remarks:
-//    See comments in MoveCFGCallArg for more details.
+//    See comments in MovePutArgUpToCall for more details.
 //
-void Lowering::MoveCFGCallArgs(GenTreeCall* call)
+void Lowering::MovePutArgNodesUpToCall(GenTreeCall* call)
 {
     // Finally move all GT_PUTARG_* nodes
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* node = arg.GetEarlyNode();
         assert(node->OperIsPutArg() || node->OperIsFieldList());
-        MoveCFGCallArg(call, node);
+        MovePutArgUpToCall(call, node);
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         GenTree* node = arg.GetLateNode();
         assert(node->OperIsPutArg() || node->OperIsFieldList());
-        MoveCFGCallArg(call, node);
+        MovePutArgUpToCall(call, node);
     }
 }
 
@@ -9786,7 +9781,7 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 
     // Finally move all GT_PUTARG_* nodes
     // Re-use the existing logic for CFG call args here
-    MoveCFGCallArgs(call);
+    MovePutArgNodesUpToCall(call);
 
     BlockRange().Remove(destPlaceholder);
     BlockRange().Remove(sizePlaceholder);
@@ -9922,7 +9917,7 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 
     // Finally move all GT_PUTARG_* nodes
     // Re-use the existing logic for CFG call args here
-    MoveCFGCallArgs(call);
+    MovePutArgNodesUpToCall(call);
 
     BlockRange().Remove(destPlaceholder);
     BlockRange().Remove(sizePlaceholder);
