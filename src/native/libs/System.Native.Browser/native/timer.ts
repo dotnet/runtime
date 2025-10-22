@@ -15,5 +15,18 @@ export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
         _SystemJS_ExecuteTimerCallback();
     }
 }
-
 SystemJS_ScheduleTimer["__deps"] = ['SystemJS_ExecuteTimerCallback'];
+
+export function SystemJS_ScheduleBackgroundJob(): void {
+    if (DOTNET.lastScheduledThreadPoolId) {
+        globalThis.clearTimeout(DOTNET.lastScheduledThreadPoolId);
+        DOTNET.lastScheduledThreadPoolId = undefined;
+    }
+    DOTNET.lastScheduledThreadPoolId = Module.safeSetTimeout(timerTick, 0);
+
+    function timerTick(): void {
+        Module.maybeExit();
+        _SystemJS_ExecuteBackgroundJobCallback();
+    }
+}
+SystemJS_ScheduleBackgroundJob["__deps"] = ['SystemJS_ExecuteBackgroundJobCallback'];

@@ -77,12 +77,19 @@ namespace System.Threading
 
         public static long CompletedWorkItemCount => 0;
 
+#if !MONO
+        [DynamicDependency(nameof(BackgroundJobHandler))]
+#endif
         internal static unsafe void RequestWorkerThread()
         {
             if (_callbackQueued)
                 return;
             _callbackQueued = true;
+#if MONO
             MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+#else
+            SystemJS_ScheduleBackgroundJob();
+#endif
         }
 
         internal static void NotifyWorkItemProgress()
@@ -115,8 +122,14 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
+
+#if MONO
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe void MainThreadScheduleBackgroundJob(void* callback);
+#else
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SystemJS_ScheduleBackgroundJob")]
+        private static unsafe partial void SystemJS_ScheduleBackgroundJob();
+#endif
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

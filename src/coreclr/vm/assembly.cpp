@@ -1307,7 +1307,7 @@ static void RunMainInternal(Param* pParam)
                 ObjToArgSlot(exitCodeTask)
             };
 
-            MethodDescCallSite mainWrapper(METHOD__STARTUP_HOOK_PROVIDER__MAIN_WRAPPER);
+            MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__MAIN_WRAPPER);
             mainWrapper.Call(stackVarWrapper);
         }
         else if(pParam->EntryType == EntryManagedMainAsyncVoid)

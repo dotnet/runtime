@@ -552,8 +552,8 @@ static const Entry s_QCall[] =
 #ifdef TARGET_BROWSER
     DllImportEntry(SystemJS_ResolveMainPromise)
     DllImportEntry(SystemJS_RejectMainPromise)
-    DllImportEntry(SystemJS_InstallTimerCallback)
     DllImportEntry(SystemJS_ScheduleTimer)
+    DllImportEntry(SystemJS_ScheduleBackgroundJob)
 #endif
 };
 

@@ -31,17 +31,6 @@ namespace System.Threading
         {
         }
 
-#if !MONO
-        static unsafe TimerQueue()
-        {
-            SystemJS_InstallTimerCallback((delegate* unmanaged[Cdecl]<void>)&TimerHandler);
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SystemJS_InstallTimerCallback")]
-        private static unsafe partial void SystemJS_InstallTimerCallback(void* callback);
-#endif
-
-
         // This replaces the current pending setTimeout with shorter one
 #if MONO
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -91,6 +80,9 @@ namespace System.Threading
             return true;
         }
 
+#if !MONO
+        [DynamicDependency(nameof(TimerHandler))]
+#endif
         // shortest time of all TimerQueues
         private static unsafe void ReplaceNextTimer(long shortestDueTimeMs, long currentTimeMs)
         {

@@ -739,6 +739,17 @@ DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTINUATION_CONTEXT, CaptureContinuat
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS, CaptureContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS, RestoreContexts, NoSig)
 
+#if defined(TARGET_BROWSER)
+DEFINE_METHOD(ASYNC_HELPERS,      MAIN_WRAPPER, MainWrapper, SM_Obj_RetVoid)
+DEFINE_METHOD(ASYNC_HELPERS,      MAIN_WRAPPER_VOID, MainWrapperVoid, SM_Obj_RetVoid)
+
+DEFINE_CLASS(TIMER_QUEUE,         Threading, TimerQueue)
+DEFINE_METHOD(TIMER_QUEUE,        TIMER_HANDLER, TimerHandler, SM_RetVoid)
+
+DEFINE_CLASS(THREAD_POOL,         Threading, ThreadPool)
+DEFINE_METHOD(THREAD_POOL,        BACKGROUND_JOB_HANDLER, BackgroundJobHandler, SM_RetVoid)
+#endif // TARGET_BROWSER
+
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
 DEFINE_METHOD(SPAN_HELPERS,         MEMZERO,                ClearWithoutReferences, SM_RefByte_UIntPtr_RetVoid)
@@ -905,8 +916,6 @@ DEFINE_METHOD(EVENT_SOURCE,          INITIALIZE_DEFAULT_EVENT_SOURCES, Initializ
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_RetVoid)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, CALL_STARTUP_HOOK, CallStartupHook, SM_PtrChar_RetVoid)
-DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MAIN_WRAPPER, MainWrapper, SM_Obj_RetVoid)
-DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MAIN_WRAPPER_VOID, MainWrapperVoid, SM_Obj_RetVoid)
 
 DEFINE_CLASS(STREAM,                IO,                     Stream)
 DEFINE_METHOD(STREAM,               BEGIN_READ,             BeginRead,  IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult)
