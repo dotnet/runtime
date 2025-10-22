@@ -22,7 +22,7 @@
             g_evpFetch##export = EVP_MD_fetch(NULL, name, query); \
         } \
 \
-        if (g_evpFetch##export == NULL) \
+        if (g_evpFetch##export == NULL && API_EXISTS(fn)) \
         { \
             g_evpFetch##export = fn(); \
         } \
