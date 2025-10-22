@@ -1,6 +1,7 @@
 Documents Index
 ===============
 DUMMY CHANGE, DO NOT MERGE ME
+Reopening did not re-trigger Build Analysis, even though we got the new job running and green. Let's try a re-push.
 
 This repo includes several documents that explain both high-level and low-level concepts about the .NET runtime and libraries. These are very useful for contributors, to get context that can be very difficult to acquire from just reading code.
 
