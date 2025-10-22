@@ -321,7 +321,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 var asset = new VfsAsset()
                 {
                     virtualPath = a.Key,
-                    name = a.Value.Keys.First(),
+                    name = $"../{a.Value.Keys.First()}",
                     integrity = a.Value.Values.First()
                 };
 
