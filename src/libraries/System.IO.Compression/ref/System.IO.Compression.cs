@@ -130,6 +130,11 @@ namespace System.IO.Compression
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken), string password = "") { throw null; }
         public override string ToString() { throw null; }
+        public enum EncryptionMethod : byte
+        {
+            None = (byte)0,
+            ZipCrypto = (byte)1,
+        }
     }
     public enum ZipArchiveMode
     {

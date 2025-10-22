@@ -160,22 +160,6 @@ namespace System.IO.Compression
 
             Changes = ZipArchive.ChangeState.Unchanged;
         }
-        ///// <summary>
-        ///// Gets the password as a read-only memory block of characters.
-        ///// </summary>
-        ///// <remarks>The password is stored in a read-only memory block to enhance security by minimizing
-        ///// exposure in memory.</remarks>
-        //internal ReadOnlyMemory<char> Password {
-
-        //    get
-        //    {
-        //        return _password;
-        //    }
-        //    set
-        //    {
-        //        _password = value;
-        //    }
-        //}
 
         /// <summary>
         /// The ZipArchive that this entry belongs to. If this entry has been deleted, this will return null.
@@ -818,7 +802,7 @@ namespace System.IO.Compression
                 byte expectedCheckByte = CalculateZipCryptoCheckByte();
 
                 // This stream will read & validate the 12-byte header and then yield plaintext compressed bytes.
-                toDecompress = new ZipCryptoDecryptionStream(toDecompress, password, expectedCheckByte);
+                toDecompress = new ZipCryptoStream(toDecompress, password, expectedCheckByte);
             }
 
             Stream? uncompressedStream;
@@ -1695,6 +1679,14 @@ namespace System.IO.Compression
             DataDescriptor = 0x8,
             UnicodeFileNameAndComment = 0x800
         }
+
+        public enum EncryptionMethod : byte
+        {
+            None = 0,
+            ZipCrypto = 1
+            //Aes256 = 4,
+        }
+
 
         internal enum CompressionMethodValues : ushort
         {

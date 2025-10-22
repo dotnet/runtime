@@ -7,8 +7,9 @@ namespace System.IO.Compression
     //  - Initializes ZipCrypto keys from the password
     //  - Reads & decrypts the 12-byte header and validates the check byte
     //  - Decrypts subsequent bytes on Read(...)
-    internal sealed class ZipCryptoDecryptionStream : Stream
+    internal sealed class ZipCryptoStream : Stream
     {
+        private readonly bool _encrypting;
         private readonly Stream _base;
         private uint _key0;
         private uint _key1;
@@ -29,12 +30,65 @@ namespace System.IO.Compression
 
         }
 
-        public ZipCryptoDecryptionStream(Stream baseStream, ReadOnlyMemory<char> password, byte expectedCheckByte)
+        // decryption constructor
+        public ZipCryptoStream(Stream baseStream, ReadOnlyMemory<char> password, byte expectedCheckByte)
         {
             _base = baseStream ?? throw new ArgumentNullException(nameof(baseStream));
             InitKeys(password.Span);
             ValidateHeader(expectedCheckByte); // reads & consumes 12 bytes
         }
+
+        public ZipCryptoStream(Stream baseStream, ReadOnlyMemory<char> password, ushort passwordVerifierLow2Bytes, uint? crc32 = null)
+        {
+            _base = baseStream ?? throw new ArgumentNullException(nameof(baseStream));
+            _encrypting = true;
+
+            InitKeys(password.Span);
+            CreateAndWriteHeader(passwordVerifierLow2Bytes, crc32);
+        }
+
+        private void CreateAndWriteHeader(ushort verifierLow2Bytes, uint? crc32)
+        {
+            byte[] hdrPlain = new byte[12];
+
+            // 0..9: random
+            for (int i = 0; i < 10; i++)
+                hdrPlain[i] = 0;
+
+
+            // 10..11: check bytes
+            if (crc32.HasValue)
+            {
+                uint crc = crc32.Value;
+                hdrPlain[10] = (byte)((crc >> 16) & 0xFF);
+                hdrPlain[11] = (byte)((crc >> 24) & 0xFF);
+            }
+            else
+            {
+                // Fallback when CRC32 is not yet known
+                hdrPlain[10] = (byte)(verifierLow2Bytes & 0xFF);
+                hdrPlain[11] = (byte)((verifierLow2Bytes >> 8) & 0xFF);
+            }
+
+            // Encrypt header and write
+            byte[] hdrCiph = new byte[12];
+            for (int i = 0; i < 12; i++)
+            {
+                hdrCiph[i] = EncryptByte(hdrPlain[i]); // EncryptByte updates keys with PLAINTEXT
+            }
+
+            _base.Write(hdrCiph, 0, hdrCiph.Length);
+        }
+
+
+        private byte EncryptByte(byte plain)
+        {
+            byte ks = DecipherByte();
+            byte ciph = (byte)(plain ^ ks);
+            UpdateKeys(plain);
+            return ciph;
+        }
+
 
         private void InitKeys(ReadOnlySpan<char> password)
         {
@@ -125,8 +179,43 @@ namespace System.IO.Compression
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override void SetLength(long value) => throw new NotSupportedException();
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            if (_encrypting)
+            {
+                ArgumentNullException.ThrowIfNull(buffer);
+                if ((uint)offset > (uint)buffer.Length || (uint)count > (uint)(buffer.Length - offset))
+                    throw new ArgumentOutOfRangeException();
+
+                // Simple temporary buffer; no ArrayPool, no async
+                byte[] tmp = new byte[count];
+                for (int i = 0; i < count; i++)
+                {
+                    tmp[i] = EncryptByte(buffer[offset + i]);
+                }
+                _base.Write(tmp, 0, count);
+                return;
+            }
+            throw new NotSupportedException("Stream is in decryption (read-only) mode.");
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            if (_encrypting)
+            {
+                // Simple temporary buffer; no ArrayPool, no async
+                byte[] tmp = new byte[buffer.Length];
+                for (int i = 0; i < buffer.Length; i++)
+                {
+                    tmp[i] = EncryptByte(buffer[i]);
+                }
+                _base.Write(tmp, 0, tmp.Length);
+                return;
+            }
+            throw new NotSupportedException("Stream is in decryption (read-only) mode.");
+        }
+
 
         protected override void Dispose(bool disposing)
         {
