@@ -357,9 +357,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsCreateWithTrailingSpacePeriod(string fileName)
         {
-            // On Windows, files with trailing spaces/periods must be created using \\?\ prefix.
-            // This is by design - Windows path normalization strips these characters unless
-            // the extended path syntax is used. See TrimmedPaths.cs for more detailed tests.
+             // Windows path normalization strips trailing spaces/periods unless using \\?\ extended syntax.
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
             string extendedPath = @"\\?\" + filePath;
