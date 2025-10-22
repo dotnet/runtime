@@ -1006,12 +1006,11 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
     // The src must be a register.
     regNumber operandReg = genConsumeReg(operand);
     emitAttr  attr       = emitActualTypeSize(tree);
+    assert(EA_SIZE(attr) == EA_PTRSIZE);
+    noway_assert(targetReg != operandReg); // lifetime of the operand register should have been extended
 
-    BasicBlock* skip = genCreateTempLabel();
-    GetEmitter()->emitIns_R_R_I(INS_addi, attr, targetReg, operandReg, 1);
-    GetEmitter()->emitIns_J_cond_la(INS_bne, skip, targetReg, REG_R0);
-    GetEmitter()->emitIns_R_R(INS_not, attr, targetReg, targetReg);
-    genDefineTempLabel(skip);
+    GetEmitter()->emitIns_R_R_I(INS_sltiu, attr, targetReg, operandReg, SIZE_T_MAX); // temp = (operand < max) ? 1 : 0;
+    GetEmitter()->emitIns_R_R_R(INS_add, attr, targetReg, operandReg, targetReg);    // target = operand + temp;
 
     genProduceReg(tree);
 }
@@ -1366,6 +1365,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     regNumber            targetReg                = tree->GetRegNum();
     regNumber            regCnt                   = REG_NA;
     regNumber            tempReg                  = REG_NA;
+    regNumber            spSourceReg              = REG_SPBASE;
     var_types            type                     = genActualType(size->gtType);
     emitAttr             easz                     = emitTypeSize(type);
     BasicBlock*          endLabel                 = nullptr; // can optimize for riscv64.
@@ -1564,44 +1564,31 @@ void CodeGen::genLclHeap(GenTree* tree)
         // case SP is on the last byte of the guard page.  Thus you must
         // touch SP-0 first not SP-0x1000.
         //
-        //
         // Note that we go through a few hoops so that SP never points to
         // illegal pages at any time during the tickling process.
-        //
-        //       sltu     RA, SP, regCnt
-        //       sub      regCnt, SP, regCnt      // regCnt now holds ultimate SP
-        //       beq      RA, REG_R0, Skip
-        //       addi     regCnt, REG_R0, 0
-        //
-        //  Skip:
-        //       lui      regPageSize, eeGetPageSize()>>12
-        //       addi     regTmp, SP, 0
-        //  Loop:
-        //       lw       r0, 0(regTmp)           // tickle the page - read from the page
-        //       sub      regTmp, regTmp, regPageSize
-        //       bgeu     regTmp, regCnt, Loop
-        //
-        //  Done:
-        //       addi     SP, regCnt, 0
-        //
 
         if (tempReg == REG_NA)
             tempReg = internalRegisters.Extract(tree);
 
         assert(regCnt != tempReg);
-        emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
+        if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
+        {
+            emit->emitIns_R_R_R(INS_maxu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
+            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, tempReg, regCnt); // regCnt now holds ultimate SP
+        }
+        else
+        {
+            emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt); // temp = overflow ? 1 : 0;
 
-        // sub  regCnt, SP, regCnt      // regCnt now holds ultimate SP
-        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
+            // sub  regCnt, SP, regCnt      // regCnt now holds ultimate SP
+            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
 
-        // Overflow, set regCnt to lowest possible value
-        BasicBlock* skip = genCreateTempLabel();
-        emit->emitIns_J_cond_la(INS_beq, skip, tempReg, REG_R0);
-        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, regCnt, REG_R0);
-        genDefineTempLabel(skip);
+            // If overflow, set regCnt to lowest possible value
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -1);   // temp = overflow ? 0 : full_mask;
+            emit->emitIns_R_R_R(INS_and, EA_PTRSIZE, regCnt, regCnt, tempReg); // cnt  = overflow ? 0 : cnt;
+        }
 
         regNumber rPageSize = internalRegisters.GetSingle(tree);
-
         noway_assert(rPageSize != tempReg);
 
         emit->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
@@ -1620,6 +1607,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // we're going to assume the worst and probe.
         // Move the final value to SP
         emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, regCnt);
+        spSourceReg = regCnt; // regCnt may be same as targetReg which gives advantage in returning the address below
     }
 
 ALLOC_DONE:
@@ -1647,7 +1635,7 @@ ALLOC_DONE:
     else // stackAdjustment == 0
     {
         // Move the final value of SP to targetReg
-        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, targetReg, REG_SPBASE);
+        emit->emitIns_Mov(EA_PTRSIZE, targetReg, spSourceReg, true);
     }
 
 BAILOUT:

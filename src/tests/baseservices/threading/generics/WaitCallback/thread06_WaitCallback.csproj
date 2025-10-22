@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="thread06.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
 </Project>
