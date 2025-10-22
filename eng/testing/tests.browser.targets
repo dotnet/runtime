@@ -9,6 +9,7 @@
     <IsBrowserWasmProject Condition="'$(IsBrowserWasmProject)' == ''">true</IsBrowserWasmProject>
     <WasmEnableHotReload>false</WasmEnableHotReload>
     <CompressionEnabled>false</CompressionEnabled>
+    <DisableBuildCompression>true</DisableBuildCompression>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
 
     <!-- set this when provisioning emsdk on CI -->
