@@ -385,25 +385,25 @@ public func AppleCryptoNative_DigestOneShot(
 
     switch hashAlgorithm {
         case .md5:
-            _ = Insecure.MD5.hash(data: data).withUnsafeBytes { digest in digest.copyBytes(to: destination) }
+            let written = Insecure.MD5.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
             cbDigest.pointee = Int32(Insecure.MD5.byteCount)
-            return 1
+            return written != Insecure.MD5.byteCount ? -1 : 1
         case .sha1:
-            _ = Insecure.SHA1.hash(data: data).withUnsafeBytes { digest in digest.copyBytes(to: destination) }
+            let written = Insecure.SHA1.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
             cbDigest.pointee = Int32(Insecure.SHA1.byteCount)
-            return 1
+            return written != Insecure.SHA1.byteCount ? -1 : 1
         case .sha256:
-            _ = SHA256.hash(data: data).withUnsafeBytes { digest in digest.copyBytes(to: destination) }
+            let written = SHA256.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
             cbDigest.pointee = Int32(SHA256.byteCount)
-            return 1
+            return written != SHA256.byteCount ? -1 : 1
         case .sha384:
-            _ = SHA384.hash(data: data).withUnsafeBytes { digest in digest.copyBytes(to: destination) }
+            let written = SHA384.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
             cbDigest.pointee = Int32(SHA384.byteCount)
-            return 1
+            return written != SHA384.byteCount ? -1 : 1
         case .sha512:
-            _ = SHA512.hash(data: data).withUnsafeBytes { digest in digest.copyBytes(to: destination) }
+            let written = SHA512.hash(data: data).withUnsafeBytes { digest in return digest.copyBytes(to: destination) }
             cbDigest.pointee = Int32(SHA512.byteCount)
-            return 1
+            return written != SHA512.byteCount ? -1 : 1
         default:
             cbDigest.pointee = 0
             return -1
@@ -504,7 +504,14 @@ public func AppleCryptoNative_DigestFinal(ctx: UnsafeMutableRawPointer?, pOutput
     let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
 
     let hash = box.value.finalize()
-    _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
+    let copied = hash.withUnsafeBytes { digest in
+        return digest.copyBytes(to: destination) == digest.count
+    }
+
+    if (!copied) {
+        return -1
+    }
+
     return AppleCryptoNative_DigestReset(ctx: ctx)
 }
 
@@ -540,6 +547,13 @@ public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutp
     let box = Unmanaged<HashBox>.fromOpaque(ctx).takeUnretainedValue()
     let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
     let hash = box.value.finalize()
-    _ = hash.withUnsafeBytes { digest in digest.copyBytes(to: destination) }
+    let copied = hash.withUnsafeBytes { digest in
+        return digest.copyBytes(to: destination) == digest.count
+    }
+
+    if (!copied) {
+        return -1
+    }
+
     return 1
 }
