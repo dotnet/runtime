@@ -15,14 +15,10 @@ struct StackVal
     union
     {
         int32_t i;
-#ifdef TARGET_64BIT
         int64_t l;
-#endif // TARGET_64BIT
         size_t s;
         float f;
-#ifdef TARGET_64BIT
         double d;
-#endif // TARGET_64BIT
         void *o;
         void *p;
     } data;

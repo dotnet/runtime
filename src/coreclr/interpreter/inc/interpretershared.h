@@ -14,11 +14,7 @@
 #define INTERP_API __attribute__ ((visibility ("default")))
 #endif // _MSC_VER
 
-#if defined(TARGET_64BIT) || defined(TARGET_WASM)
 #define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
-#else // !TARGET_64BIT && !TARGET_WASM
-#define INTERP_STACK_SLOT_SIZE 4    // Alignment of each var offset on the interpreter stack
-#endif // TARGET_64BIT || TARGET_WASM
 #define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
 
 struct InterpHelperData {

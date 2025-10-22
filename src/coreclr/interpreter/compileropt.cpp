@@ -14,13 +14,6 @@ int32_t InterpCompiler::AllocVarOffset(int var, int32_t *pPos)
 
     size_t align = INTERP_STACK_SLOT_SIZE;
 
-#ifdef TARGET_ARM
-    if(m_pVars[var].interpType == InterpTypeI8 || m_pVars[var].interpType == InterpTypeR8)
-    {
-        align = INTERP_STACK_SLOT_SIZE * 2;
-    }
-    else
-#endif // TARGET_ARM
     if (size > INTERP_STACK_SLOT_SIZE)
     {
         assert(m_pVars[var].interpType == InterpTypeVT);

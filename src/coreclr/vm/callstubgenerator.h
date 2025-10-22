@@ -132,6 +132,10 @@ class CallStubGenerator
 #endif // TARGET_APPLE && TARGET_ARM64
     PCODE GetFPRegRangeRoutine(int x1, int x2);
     PCODE GetGPRegRangeRoutine(int r1, int r2);
+#ifdef TARGET_ARM
+    PCODE GetRegRoutine_4B(int r1, int r2);
+    PCODE GetStackRoutine_4B();
+#endif // TARGET_ARM
     ReturnType GetReturnType(ArgIterator *pArgIt);
     CallStubHeader::InvokeFunctionPtr GetInvokeFunctionPtr(ReturnType returnType);
     PCODE GetInterpreterReturnTypeHandler(ReturnType returnType);

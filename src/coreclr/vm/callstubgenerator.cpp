@@ -1004,6 +1004,15 @@ extern "C" void Store_R2();
 extern "C" void Store_R2_R3();
 extern "C" void Store_R3();
 
+extern "C" void Load_R0_R1_4B();
+extern "C" void Load_R0_R1_R2_R3_4B();
+extern "C" void Load_R2_R3_4B();
+extern "C" void Load_Stack_4B();
+extern "C" void Store_R0_R1_4B();
+extern "C" void Store_R0_R1_R2_R3_4B();
+extern "C" void Store_R2_R3_4B();
+extern "C" void Store_Stack_4B();
+
 PCODE GPRegsRoutines[] =
 {
     (PCODE)Load_R0,                         // 00
@@ -1042,6 +1051,46 @@ PCODE GPRegsStoreRoutines[] =
     (PCODE)0,                                // 13
     (PCODE)0,                                // 14
     (PCODE)Store_R3,                         // 15
+};
+
+PCODE GPRegLoadRoutines_4B[] =
+{
+    (PCODE)0,                                // 00
+    (PCODE)Load_R0_R1_4B,                    // 01
+    (PCODE)0,                                // 02
+    (PCODE)Load_R0_R1_R2_R3_4B,              // 03
+    (PCODE)0,                                // 04
+    (PCODE)0,                                // 05
+    (PCODE)0,                                // 06
+    (PCODE)0,                                // 07
+    (PCODE)0,                                // 08
+    (PCODE)0,                                // 09
+    (PCODE)0,                                // 10
+    (PCODE)Load_R2_R3_4B,                    // 11
+    (PCODE)0,                                // 12
+    (PCODE)0,                                // 13
+    (PCODE)0,                                // 14
+    (PCODE)0,                                // 15
+};
+
+PCODE GPRegStoreRoutines_4B[] =
+{
+    (PCODE)0,                                // 00
+    (PCODE)Store_R0_R1_4B,                   // 01
+    (PCODE)0,                                // 02
+    (PCODE)Store_R0_R1_R2_R3_4B,             // 03
+    (PCODE)0,                                // 04
+    (PCODE)0,                                // 05
+    (PCODE)0,                                // 06
+    (PCODE)0,                                // 07
+    (PCODE)0,                                // 08
+    (PCODE)0,                                // 09
+    (PCODE)0,                                // 10
+    (PCODE)Store_R2_R3_4B,                   // 11
+    (PCODE)0,                                // 12
+    (PCODE)0,                                // 13
+    (PCODE)0,                                // 14
+    (PCODE)0,                                // 15
 };
 
 #endif // TARGET_ARM
@@ -1124,6 +1173,25 @@ PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
     return m_interpreterToNative ? FPRegsRoutines[index] : FPRegsStoreRoutines[index];
 #endif
 }
+
+#ifdef TARGET_ARM
+PCODE CallStubGenerator::GetRegRoutine_4B(int r1, int r2)
+{
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetRegRoutine_4B\n");
+#endif
+    int index = r1 * NUM_ARGUMENT_REGISTERS + r2;
+    return m_interpreterToNative ? GPRegLoadRoutines_4B[index] : GPRegStoreRoutines_4B[index];
+}
+
+PCODE CallStubGenerator::GetStackRoutine_4B()
+{
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetStackRoutine_4B\n");
+#endif
+    return m_interpreterToNative ? (PCODE)Load_Stack_4B : (PCODE)Store_Stack_4B;
+}
+#endif // TARGET_ARM
 
 extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
@@ -1603,27 +1671,6 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
         // Each entry on the interpreter stack is always aligned to at least 8 bytes, but some arguments are 16 byte aligned
         TypeHandle thArgTypeHandle;
         CorElementType corType = argIt.GetArgType(&thArgTypeHandle);
-#ifdef TARGET_ARM
-        if (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8 || corType == ELEMENT_TYPE_R8)
-        {
-            unsigned align = INTERP_STACK_SLOT_SIZE * 2;
-            if (interpreterStackOffset != ALIGN_UP(interpreterStackOffset, align))
-            {
-                TerminateCurrentRoutineIfNotOfNewType(RoutineType::None, pRoutines);
-
-                interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
-                pRoutines[m_routineIndex++] = (PCODE)InjectInterpStackAlign;
-#if LOG_COMPUTE_CALL_STUB
-                printf("Inject stack align argument\n");
-#endif
-            }
-
-            assert(interpreterStackOffset == ALIGN_UP(interpreterStackOffset, align));
-
-            interpStackSlotSize = INTERP_STACK_SLOT_SIZE * 2;
-        }
-        else
-#endif
         if ((corType == ELEMENT_TYPE_VALUETYPE) && thArgTypeHandle.GetSize() > INTERP_STACK_SLOT_SIZE)
         {
             unsigned align = CEEInfo::getClassAlignmentRequirementStatic(thArgTypeHandle);
@@ -1753,6 +1800,20 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
 #if LOG_COMPUTE_CALL_STUB
         printf("m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg);
 #endif // LOG_COMPUTE_CALL_STUB
+#ifdef TARGET_ARM
+        TypeHandle thArgTypeHandle;
+        CorElementType corType = pArgIt ? pArgIt->GetArgType(&thArgTypeHandle) : ELEMENT_TYPE_END;
+        if (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8 || corType == ELEMENT_TYPE_R8 || (corType == ELEMENT_TYPE_VALUETYPE && thArgTypeHandle.GetSize() >= INTERP_STACK_SLOT_SIZE))
+        {
+            if (m_r1 != NoRange)
+            {
+                pRoutines[m_routineIndex++] = GetGPRegRangeRoutine(m_r1, m_r2);
+            }
+            pRoutines[m_routineIndex++] = GetRegRoutine_4B(argLocDesc.m_idxGenReg, argLocDesc.m_idxGenReg + argLocDesc.m_cGenReg - 1);
+            m_r1 = NoRange;
+        }
+        else
+#endif // TARGET_ARM
         if (m_r1 == NoRange) // No active range yet
         {
             // Start a new range
@@ -1808,6 +1869,24 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
 #if LOG_COMPUTE_CALL_STUB
         printf("m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize);
 #endif // LOG_COMPUTE_CALL_STUB
+#ifdef TARGET_ARM
+        TypeHandle thArgTypeHandle;
+        CorElementType corType = pArgIt ? pArgIt->GetArgType(&thArgTypeHandle) : ELEMENT_TYPE_END;
+        if (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8 || corType == ELEMENT_TYPE_R8 || (corType == ELEMENT_TYPE_VALUETYPE && thArgTypeHandle.GetSize() >= INTERP_STACK_SLOT_SIZE))
+        {
+            if (m_s1 != NoRange)
+            {
+                pRoutines[m_routineIndex++] = GetStackRoutine();
+                pRoutines[m_routineIndex++] = m_s1;
+                pRoutines[m_routineIndex++] = m_s2 - m_s1 + 1;
+            }
+            pRoutines[m_routineIndex++] = GetStackRoutine_4B();
+            pRoutines[m_routineIndex++] = argLocDesc.m_byteStackIndex;
+            pRoutines[m_routineIndex++] = argLocDesc.m_byteStackSize;
+            m_s1 = NoRange;
+        }
+        else
+#endif // TARGET_ARM
         if (m_s1 == NoRange) // No active range yet
         {
             // Start a new range
