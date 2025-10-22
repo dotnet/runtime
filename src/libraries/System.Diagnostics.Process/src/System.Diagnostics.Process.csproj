@@ -47,6 +47,10 @@
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
              Link="Common\System\Collections\Generic\ArrayBuilder.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Generic\StackArrayBuilder.cs" 
+             Link="Common\System\Collections\Generic\StackArrayBuilder.cs" />
+    <Compile Include="..\..\Common\src\System\Collections\Generic\StackArrayBuilder8.cs"
+             Link="Common\System\Collections\Generic\StackArrayBuilder8.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
