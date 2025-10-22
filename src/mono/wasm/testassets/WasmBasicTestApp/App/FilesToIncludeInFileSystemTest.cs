@@ -6,7 +6,7 @@ using System.IO;
 using System.Text.Json;
 using System.Runtime.InteropServices.JavaScript;
 
-public partial class AppSettingsTest
+public partial class FilesToIncludeInFileSystemTest
 {
     [JSExport]
     public static void Run()
