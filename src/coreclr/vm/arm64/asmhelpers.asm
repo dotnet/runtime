@@ -1310,22 +1310,18 @@ RefCopyLoop16$argReg
         bge RefCopyLoop16$argReg
 CopyBy8$argReg
         add x11, x11, #16
-        subs x11, x11, #8
+        cmp x11, #8
         blt CopyBy1$argReg
-RefCopyLoop8$argReg
         ldr x13, [$argReg], #8
         str x13, [x9], #8
         subs x11, x11, #8
-        bge RefCopyLoop8$argReg
 CopyBy1$argReg
-        add x11, x11, #8
-        subs x11, x11, #1
-        blt RefCopyDone$argReg
+        cbz x11, RefCopyDone$argReg
 RefCopyLoop1$argReg
         ldrb w13, [$argReg], #1
         strb w13, [x9], #1
         subs x11, x11, #1
-        bge  RefCopyLoop1$argReg
+        bne  RefCopyLoop1$argReg
 RefCopyDone$argReg
         ; Align x9 to the stack slot size
         add x9, x9, 7
