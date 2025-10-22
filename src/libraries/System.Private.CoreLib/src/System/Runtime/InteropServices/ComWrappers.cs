@@ -444,14 +444,13 @@ namespace System.Runtime.InteropServices
 
             private void SetFlag(CreateComInterfaceFlagsEx flag)
             {
-                int setMask = (int)flag;
-                Interlocked.Or(ref Unsafe.As<CreateComInterfaceFlagsEx, int>(ref Flags), setMask);
+                Interlocked.Or(ref Flags, flag);
             }
 
             private void ResetFlag(CreateComInterfaceFlagsEx flag)
             {
-                int resetMask = ~(int)flag;
-                Interlocked.And(ref Unsafe.As<CreateComInterfaceFlagsEx, int>(ref Flags), resetMask);
+                CreateComInterfaceFlagsEx resetMask = (CreateComInterfaceFlagsEx)(~(int)flag);
+                Interlocked.And(ref Flags, resetMask);
             }
 
             private static uint GetTrackerCount(ulong c)
