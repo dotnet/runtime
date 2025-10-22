@@ -4688,10 +4688,9 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
     }
 
     SOSDacEnter();
-#ifdef FEATURE_CODE_VERSIONING
 
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
-
+#ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetILCodeVersion(pMD, rejitId);
