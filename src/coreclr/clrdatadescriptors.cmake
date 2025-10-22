@@ -11,6 +11,7 @@ function(generate_data_descriptors)
   set(LIBRARY ${DATA_DESCRIPTORS_LIBRARY_NAME})
 
   set(DATA_DESCRIPTOR_SHARED_SOURCE_DIR "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/debug/datadescriptor-shared")
+  set(DATA_DESCRIPTOR_SHARED_INCLUDE_DIR "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/debug/datadescriptor-shared/inc")
   set(GENERATED_CDAC_DESCRIPTOR_DIR "${CMAKE_CURRENT_BINARY_DIR}/cdac-${LIBRARY}")
 
   # configure contract export name
@@ -73,6 +74,7 @@ function(generate_data_descriptors)
     )
     add_dependencies(${LIBRARY} ${INTERMEDIARY_LIBRARY})
 
+    target_include_directories(${LIBRARY} PUBLIC ${DATA_DESCRIPTOR_SHARED_INCLUDE_DIR})
     target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
 
     # inherit definitions, include directories, and dependencies from the INTERFACE target
