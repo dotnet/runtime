@@ -350,7 +350,7 @@ if defined RunCrossGen2 (
 )
 
 if defined RunInterpreter (
-  if "DOTNET_InterpMode"=="" (
+  if "%DOTNET_InterpMode%"=="" (
     SET "DOTNET_Interpreter=$(AssemblyName)^!*"
   )
 )

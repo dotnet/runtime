@@ -474,12 +474,12 @@ HRESULT EEConfig::sync()
 #endif // FEATURE_JIT
 #endif // FEATURE_INTERPRETER
 
-    enableHWIntrinsic = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic);
+    enableHWIntrinsic = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic) != 0);
 #ifdef FEATURE_INTERPRETER
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
     {
         // InterpMode 3 disables all hw intrinsics
-        enableHWIntrinsic = 0;
+        enableHWIntrinsic = false;
     }
 #endif // FEATURE_INTERPRETER
 
