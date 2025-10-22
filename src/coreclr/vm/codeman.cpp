@@ -1195,7 +1195,6 @@ void EEJitManager::SetCpuInfo()
 
     // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
-    bool allowHWIntrinsic = true;
 
 #if defined(FEATURE_INTERPRETER)
     if (maxVectorTBitWidth != 128 && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InterpMode) == 3)
@@ -1222,7 +1221,7 @@ void EEJitManager::SetCpuInfo()
 
     // x86-64-v2
 
-    if (allowHWIntrinsic && g_pConfig->EnableHWIntrinsic())
+    if (g_pConfig->EnableHWIntrinsic())
     {
         CPUCompileFlags.Set(InstructionSet_X86Base);
     }
@@ -1333,7 +1332,7 @@ void EEJitManager::SetCpuInfo()
 #elif defined(TARGET_ARM64)
     CPUCompileFlags.Set(InstructionSet_VectorT128);
 
-    if (allowHWIntrinsic && g_pConfig->EnableHWIntrinsic())
+    if (g_pConfig->EnableHWIntrinsic())
     {
         CPUCompileFlags.Set(InstructionSet_ArmBase);
         CPUCompileFlags.Set(InstructionSet_AdvSimd);
@@ -1417,7 +1416,7 @@ void EEJitManager::SetCpuInfo()
         g_arm64_atomics_present = true;
     }
 #elif defined(TARGET_RISCV64)
-    if (allowHWIntrinsic && g_pConfig->EnableHWIntrinsic())
+    if (g_pConfig->EnableHWIntrinsic())
     {
         CPUCompileFlags.Set(InstructionSet_RiscV64Base);
     }
