@@ -357,7 +357,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsCreateWithTrailingSpacePeriod(string fileName)
         {
-             // Windows path normalization strips trailing spaces/periods unless using \\?\ extended syntax.
+            // Windows path normalization strips trailing spaces/periods unless using \\?\ extended syntax.
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string filePath = Path.Combine(testDir.FullName, fileName);
             string extendedPath = @"\\?\" + filePath;

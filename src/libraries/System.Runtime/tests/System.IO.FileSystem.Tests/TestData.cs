@@ -154,4 +154,22 @@ internal static class TestData
             };
         }
     }
+
+    /// <summary>
+    /// Pairs of source and destination filenames where at least one has trailing spaces or periods.
+    /// Used for testing copy/move operations on Windows.
+    /// </summary>
+    public static TheoryData<string, string> WindowsTrailingProblematicFileNamePairs
+    {
+        get
+        {
+            return new TheoryData<string, string>
+            {
+                { "trailing ", "destination" },
+                { "source", "trailing " },
+                { "trailing.", "destination" },
+                { "source", "trailing." }
+            };
+        }
+    }
 }

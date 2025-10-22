@@ -410,10 +410,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [InlineData("trailing ", "destination")]
-        [InlineData("source", "trailing ")]
-        [InlineData("trailing.", "destination")]
-        [InlineData("source", "trailing.")]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNamePairs), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsMoveWithTrailingSpacePeriod_ViaExtendedSyntax(string sourceFileName, string destFileName)
         {
