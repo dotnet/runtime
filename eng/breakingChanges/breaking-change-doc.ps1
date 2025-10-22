@@ -151,11 +151,6 @@ if ($CleanStart) {
     Write-Host "✅ Cleanup completed" -ForegroundColor Green
 }
 
-# Create output directories
-New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
-New-Item -ItemType Directory -Path $issueDraftsDir -Force | Out-Null
-New-Item -ItemType Directory -Path $commentDraftsDir -Force | Out-Null
-
 # Validate parameters
 if (-not $PrNumber -and -not $Query) {
     Write-Error @"
@@ -194,7 +189,7 @@ $actionMode = if ($CollectOnly) { "Collect Only" }
 
 Write-Host "   Action Mode: $actionMode" -ForegroundColor Cyan
 if (-not $executeActions -and -not $CollectOnly) {
-    Write-Host "   � Will generate drafts without making changes to GitHub" -ForegroundColor Yellow
+    Write-Host "   📝 Will generate drafts without making changes to GitHub" -ForegroundColor Yellow
 }
 
 # Function to safely truncate text
@@ -705,7 +700,7 @@ $($analysisData | Where-Object HasDocsIssue | ForEach-Object {
 
 $summaryReport | Out-File (Join-Path $dataDir "summary_report.md") -Encoding UTF8
 
-Write-Host "✅ Data collection completed completed" -ForegroundColor Green
+Write-Host "✅ Data collection completed" -ForegroundColor Green
 Write-Host "   📊 Summary: $(Join-Path $dataDir "summary_report.md")"
 Write-Host "   📋 Combined: $(Join-Path $dataDir "combined.json")"
 Write-Host "   📄 Individual: $(Join-Path $dataDir "pr_*.json") ($($analysisData.Count) files)"
@@ -919,10 +914,10 @@ $issueBody
     # Handle different action modes
     if (-not $executeActions) {
         # Draft only mode, just log the commands that could be run.
-        Write-Host "     � To create an issue use command:" -ForegroundColor Yellow
+        Write-Host "     📝 To create an issue use command:" -ForegroundColor Yellow
         Write-Host "       gh issue create --repo $($Config.DocsRepo) --title `"$issueTitle`" --body `"...[content truncated]...`" --label `"$($Config.IssueTemplate.Labels -join ',')`" --assignee `"$($Config.IssueTemplate.Assignee)`"" -ForegroundColor Gray
 
-        Write-Host "     � To add a comment use command:" -ForegroundColor Yellow
+        Write-Host "     💬 To add a comment use command:" -ForegroundColor Yellow
         Write-Host "       gh pr comment $($pr.Number) --repo $($Config.SourceRepo) --body-file `"$commentFile`"" -ForegroundColor Gray
 
     } elseif ($CreateIssues) {
