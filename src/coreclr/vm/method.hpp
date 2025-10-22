@@ -723,6 +723,7 @@ public:
     inline PTR_DynamicMethodDesc AsDynamicMethodDesc();
     inline bool IsDynamicMethod();
     inline bool IsILStub();
+    inline bool IsDiagnosticsILStub();
     inline bool IsLCGMethod();
 
     inline DWORD IsPInvoke()
