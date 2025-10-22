@@ -23,9 +23,8 @@ jobs:
       run: |
         pwsh --version
 
-    - name: Install GitHub CLI
+    - name: Verify GitHub CLI
       run: |
-        # GitHub CLI is pre-installed on ubuntu-latest, but ensure it's latest
         gh --version
 
     - name: Install GitHub Models extension
@@ -41,27 +40,7 @@ jobs:
     - name: Run breaking change documentation script
       shell: pwsh
       working-directory: eng/breakingChanges
-      run: |
-        try {
-          # Authenticate GitHub CLI with the workflow token
-          echo "${{ github.token }}" | gh auth login --with-token
-
-          # Verify authentication
-          gh auth status
-
-          Write-Host "Starting breaking change documentation for PR #${{ github.event.pull_request.number }}"
-          Write-Host "Triggered by label: ${{ github.event.label.name }}"
-
-          # Run the script with the PR number, Comment flag, and skip label validation
-          ./breaking-change-doc.ps1 -PrNumber ${{ github.event.pull_request.number }} -Comment
-
-          Write-Host "Breaking change documentation workflow completed successfully"
-        }
-        catch {
-          Write-Error "Breaking change documentation workflow failed: $($_.Exception.Message)"
-          Write-Host "Error details: $($_.Exception)"
-          exit 1
-        }
+      run: ./breaking-change-doc.ps1 -PrNumber ${{ github.event.pull_request.number }} -Comment
       env:
         GH_TOKEN: ${{ github.token }}
 
