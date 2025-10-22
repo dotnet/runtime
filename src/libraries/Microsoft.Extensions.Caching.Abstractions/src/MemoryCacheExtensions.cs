@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="value">The value to associate with the key.</param>
         /// <param name="absoluteExpiration">The point in time at which the cache entry will expire.</param>
         /// <returns>The value that was set.</returns>
-        public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value, DateTimeOffset absoluteExpiration)
+        public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value, DateTimeOffset? absoluteExpiration)
         {
             using ICacheEntry entry = cache.CreateEntry(key);
             entry.AbsoluteExpiration = absoluteExpiration;
@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="value">The value to associate with the key.</param>
         /// <param name="absoluteExpirationRelativeToNow">The duration from now after which the cache entry will expire.</param>
         /// <returns>The value that was set.</returns>
-        public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value, TimeSpan absoluteExpirationRelativeToNow)
+        public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value, TimeSpan? absoluteExpirationRelativeToNow)
         {
             using ICacheEntry entry = cache.CreateEntry(key);
             entry.AbsoluteExpirationRelativeToNow = absoluteExpirationRelativeToNow;
