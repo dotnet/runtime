@@ -531,9 +531,7 @@ public func AppleCryptoNative_DigestClone(ctx: UnsafeMutableRawPointer?) -> Unsa
     }
 
     let box = Unmanaged<HashBox>.fromOpaque(ctx).takeUnretainedValue()
-    let hash = box.value
-    let copy = hash
-    let cloneBox = HashBox(copy)
+    let cloneBox = HashBox(box.value)
     return Unmanaged.passRetained(cloneBox).toOpaque()
 }
 
