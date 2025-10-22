@@ -1786,6 +1786,14 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     LIMITED_METHOD_CONTRACT;
 
     RoutineType argType = RoutineType::None;
+#ifdef TARGET_ARM
+    TypeHandle thArgTypeHandle;
+    CorElementType corType = pArgIt ? pArgIt->GetArgType(&thArgTypeHandle) : ELEMENT_TYPE_END;
+    bool splitRequired = (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8 || corType == ELEMENT_TYPE_R8 || (corType == ELEMENT_TYPE_VALUETYPE && thArgTypeHandle.GetSize() >= INTERP_STACK_SLOT_SIZE));
+    if (splitRequired)
+        argType = RoutineType::None;
+    else
+#endif // TARGET_ARM
     if (argLocDesc.m_cGenReg != 0)
         argType = RoutineType::GPReg;
     else if (argLocDesc.m_cFloatReg != 0)
@@ -1801,16 +1809,9 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         printf("m_cGenReg=%d\n", (int)argLocDesc.m_cGenReg);
 #endif // LOG_COMPUTE_CALL_STUB
 #ifdef TARGET_ARM
-        TypeHandle thArgTypeHandle;
-        CorElementType corType = pArgIt ? pArgIt->GetArgType(&thArgTypeHandle) : ELEMENT_TYPE_END;
-        if (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8 || corType == ELEMENT_TYPE_R8 || (corType == ELEMENT_TYPE_VALUETYPE && thArgTypeHandle.GetSize() >= INTERP_STACK_SLOT_SIZE))
+        if (splitRequired)
         {
-            if (m_r1 != NoRange)
-            {
-                pRoutines[m_routineIndex++] = GetGPRegRangeRoutine(m_r1, m_r2);
-            }
             pRoutines[m_routineIndex++] = GetRegRoutine_4B(argLocDesc.m_idxGenReg, argLocDesc.m_idxGenReg + argLocDesc.m_cGenReg - 1);
-            m_r1 = NoRange;
         }
         else
 #endif // TARGET_ARM
@@ -1870,20 +1871,11 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         printf("m_byteStackSize=%d\n", (int)argLocDesc.m_byteStackSize);
 #endif // LOG_COMPUTE_CALL_STUB
 #ifdef TARGET_ARM
-        TypeHandle thArgTypeHandle;
-        CorElementType corType = pArgIt ? pArgIt->GetArgType(&thArgTypeHandle) : ELEMENT_TYPE_END;
-        if (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8 || corType == ELEMENT_TYPE_R8 || (corType == ELEMENT_TYPE_VALUETYPE && thArgTypeHandle.GetSize() >= INTERP_STACK_SLOT_SIZE))
+        if (splitRequired)
         {
-            if (m_s1 != NoRange)
-            {
-                pRoutines[m_routineIndex++] = GetStackRoutine();
-                pRoutines[m_routineIndex++] = m_s1;
-                pRoutines[m_routineIndex++] = m_s2 - m_s1 + 1;
-            }
             pRoutines[m_routineIndex++] = GetStackRoutine_4B();
             pRoutines[m_routineIndex++] = argLocDesc.m_byteStackIndex;
             pRoutines[m_routineIndex++] = argLocDesc.m_byteStackSize;
-            m_s1 = NoRange;
         }
         else
 #endif // TARGET_ARM
