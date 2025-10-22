@@ -242,70 +242,6 @@ namespace
     }
 }
 
-// static
-NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryFromPath(LPCWSTR libraryPath, BOOL throwOnError)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(libraryPath));
-    }
-    CONTRACTL_END;
-
-    LoadLibErrorTracker errorTracker;
-    const NATIVE_LIBRARY_HANDLE hmod =
-        LocalLoadLibraryHelper(libraryPath, GetLoadWithAlteredSearchPathFlag(), &errorTracker);
-
-    if (throwOnError && (hmod == nullptr))
-    {
-        SString libraryPathSString(libraryPath);
-        errorTracker.Throw(libraryPathSString);
-    }
-    return hmod;
-}
-
-// static
-void NativeLibrary::FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(handle != NULL);
-
-#ifndef TARGET_UNIX
-    BOOL retVal = FreeLibrary(handle);
-#else // !TARGET_UNIX
-    BOOL retVal = PAL_FreeLibraryDirect(handle);
-#endif // !TARGET_UNIX
-
-    if (retVal == 0)
-        COMPlusThrow(kInvalidOperationException, W("Arg_InvalidOperationException"));
-}
-
-//static
-INT_PTR NativeLibrary::GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(handle));
-        PRECONDITION(CheckPointer(symbolName));
-    }
-    CONTRACTL_END;
-
-    MAKE_UTF8PTR_FROMWIDE(lpstr, symbolName);
-
-#ifndef TARGET_UNIX
-    INT_PTR address = reinterpret_cast<INT_PTR>(GetProcAddress((HMODULE)handle, lpstr));
-    if ((address == 0) && throwOnError)
-        COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_WIN_DLL, symbolName);
-#else // !TARGET_UNIX
-    INT_PTR address = reinterpret_cast<INT_PTR>(PAL_GetProcAddressDirect(handle, lpstr));
-    if ((address == 0) && throwOnError)
-        COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_UNIX_SO, symbolName);
-#endif // !TARGET_UNIX
-
-    return address;
-}
-
 namespace
 {
 #ifndef TARGET_UNIX
@@ -768,62 +704,6 @@ namespace
         Assembly *pAssembly = pMD->GetMethodTable()->GetAssembly();
         return LoadNativeLibraryBySearch(pAssembly, userSpecifiedSearchFlags, searchAssemblyDirectory, dllImportSearchPathFlags, pErrorTracker, wszLibName);
     }
-}
-
-// static
-NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Assembly *callingAssembly,
-    BOOL hasDllImportSearchFlags, DWORD dllImportSearchFlags,
-    BOOL throwOnError)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(libraryName));
-        PRECONDITION(CheckPointer(callingAssembly));
-    }
-    CONTRACTL_END;
-
-    NATIVE_LIBRARY_HANDLE hmod = nullptr;
-
-    // Resolve using the AssemblyLoadContext.LoadUnmanagedDll implementation
-    hmod = LoadNativeLibraryViaAssemblyLoadContext(callingAssembly, libraryName);
-    if (hmod != nullptr)
-        return hmod;
-
-    // Check if a default dllImportSearchPathFlags was passed in. If so, use that value.
-    // Otherwise, check if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
-    // If so, use that value.
-    BOOL searchAssemblyDirectory;
-    DWORD dllImportSearchPathFlags;
-    if (hasDllImportSearchFlags)
-    {
-        dllImportSearchPathFlags = dllImportSearchFlags & ~DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
-        searchAssemblyDirectory = dllImportSearchFlags & DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
-
-    }
-    else
-    {
-        hasDllImportSearchFlags = GetDllImportSearchPathFlags(callingAssembly->GetModule(),
-                                    &dllImportSearchPathFlags, &searchAssemblyDirectory);
-    }
-
-    LoadLibErrorTracker errorTracker;
-    hmod = LoadNativeLibraryBySearch(callingAssembly, hasDllImportSearchFlags, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
-    if (hmod != nullptr)
-        return hmod;
-
-    // Resolve using the AssemblyLoadContext.ResolvingUnmanagedDll event
-    hmod = LoadNativeLibraryViaAssemblyLoadContextEvent(callingAssembly, libraryName);
-    if (hmod != nullptr)
-        return hmod;
-
-    if (throwOnError)
-    {
-        SString libraryPathSString(libraryName);
-        errorTracker.Throw(libraryPathSString);
-    }
-
-    return hmod;
 }
 
 namespace
