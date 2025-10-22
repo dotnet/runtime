@@ -40,13 +40,13 @@ We assume that all supported platform versions in between have sufficient covera
 
 ### .NET lifecycle
 
-We currently regularly maintain three .NET versions:
+We regularly maintain three .NET versions:
 
-1. `main`, i.e. the next release
-2. The previous release
-3. The release before the previous release
+1. `main`, i.e. the next release.
+2. The previous release.
+3. The release before the previous release.
 
-The last two versions (which have already been released) are called "servicing" releases.
+The last two versions (which have already been released) are called "servicing" releases. During the Release Candidate (RC1, RC2, GA) phase of the next release, its release branches are treated the same as "servicing" releases.
 
 Because the policy differs between main and servicing, whenever the main branch is snapped to a servicing release, the PR configuration needs to change. In particular, the following tasks have to be done:
 
