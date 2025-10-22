@@ -120,7 +120,6 @@ namespace TestLibrary
 #else
         public static bool IsReflectionEmitSupported => true;
 #endif
-        public static bool SupportsExceptionInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
         public static bool IsGCStress => (Environment.GetEnvironmentVariable("DOTNET_GCStress") != null);
 
         public static string ByteArrayToString(byte[] bytes)

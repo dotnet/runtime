@@ -83,7 +83,7 @@ namespace System.IO.Tests
             Assert.Empty(File.ReadAllBytes(testFile));
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix
         public void ValidCreation_ExtendedSyntax()
         {
@@ -98,7 +98,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix, long path
         public void ValidCreation_LongPathExtendedSyntax()
         {

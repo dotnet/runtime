@@ -11,5 +11,8 @@
       <CMakeProjectReference Include="CMakeLists.txt" />
       <Compile Include="ExceptionInterop.cs" />
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    </ItemGroup>
   </Project>
   
