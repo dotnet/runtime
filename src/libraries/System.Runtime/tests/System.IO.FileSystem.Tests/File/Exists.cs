@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO.Pipes;
+using System.Threading;
 using Xunit;
 
 namespace System.IO.Tests
@@ -228,6 +230,44 @@ namespace System.IO.Tests
         public void DirectoryWithComponentLongerThanMaxComponentAsPath_ReturnsFalse(string component)
         {
             Assert.False(Exists(component));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Windows-specific pipes behavior
+        public void CheckPipeExistsViaFileApi()
+        {
+            var pipeName = GetNamedPipeServerStreamName();
+            using var server = new NamedPipeServerStream(pipeName);
+            Assert.True(Exists(@$"\\.\pipe\{pipeName}"));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Windows-specific pipes behavior
+        public void CheckPipeDoesNotExistViaFileApi()
+        {
+            var pipeName = GetNamedPipeServerStreamName();
+            new NamedPipeServerStream(pipeName).Dispose();
+            Assert.False(Exists(@$"\\.\pipe\{pipeName}"));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Windows-specific pipes behavior
+        public void CheckingPipeExistenceViaFileApiDoesNotInvalidateIt()
+        {
+            var pipeName = GetNamedPipeServerStreamName();
+
+            using var server = new NamedPipeServerStream(pipeName);
+            var connectedEvent = new ManualResetEventSlim(initialState: false);
+            var connectResult = server.BeginWaitForConnection(_ => { connectedEvent.Set(); }, state: null);
+
+            Assert.True(Exists(@$"\\.\pipe\{pipeName}"));
+
+            using var client = new NamedPipeClientStream(pipeName);
+            client.Connect(timeout: 1000);
+
+            server.EndWaitForConnection(connectResult);
+
+            Assert.True(connectedEvent.Wait(millisecondsTimeout: 1000));
         }
 
         #endregion
