@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   generate-breaking-change-doc:
-    if: contains(github.event.label.name, 'needs-breaking-change-doc-created')
+    if: contains(github.event.label.name, 'needs-breaking-change-doc-created') && github.repository_owner == 'dotnet'
     runs-on: ubuntu-latest
 
     steps:
