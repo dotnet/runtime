@@ -1298,6 +1298,7 @@ static void RunMainInternal(Param* pParam)
     }
     else
     {
+#if !defined(TARGET_BROWSER)
         if(pParam->EntryType == EntryManagedMainAsync)
         {
             *pParam->piRetVal = 0;
@@ -1312,9 +1313,18 @@ static void RunMainInternal(Param* pParam)
         }
         else if(pParam->EntryType == EntryManagedMainAsyncVoid)
         {
-            // TODO
+            *pParam->piRetVal = 0;
+            OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
+            ARG_SLOT stackVarWrapper[] =
+            {
+                ObjToArgSlot(exitCodeTask)
+            };
+
+            MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__MAIN_WRAPPER_VOID);
+            mainWrapper.Call(stackVarWrapper);
         }
         else
+#endif // !TARGET_BROWSER
         {
             // Call the main method
             *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);

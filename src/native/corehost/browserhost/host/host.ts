@@ -42,8 +42,11 @@ export function BrowserHost_ExternalAssemblyProbe(pathPtr:CharPtr, outDataStartP
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function runMain(mainAssemblyName?: string, args?: string[]): Promise<number> {
-    // int BrowserHost_ExecuteAssembly(char * assemblyPath)
-    const res = Module.ccall("BrowserHost_ExecuteAssembly", "number", ["string"], [mainAssemblyName]) as number;
+    if(!mainAssemblyName){
+        const config = dotnetApi.getConfig();
+        mainAssemblyName = config.mainAssemblyName!;
+    }
+    const res = _BrowserHost_ExecuteAssembly(mainAssemblyName);
     if (res != 0) {
         const reason = new Error("Failed to execute assembly");
         dotnetApi.exit(res, reason);
@@ -52,6 +55,7 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
 
     return dotnetLoaderExports.getRunMainPromise();
 }
+runMain["__deps"] = ["_BrowserHost_ExecuteAssembly"];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function runMainAndExit(mainAssemblyName?: string, args?: string[]): Promise<number> {

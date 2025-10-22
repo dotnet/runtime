@@ -128,6 +128,9 @@ In config below please replace `/path/to/runtime/` by a **absolute unix path** t
                 "env": {
                     "CORE_ROOT":"/path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/"
                 },
+                "runtimeArgs": [
+                    "--stack-trace-limit=1000"
+                ],
                 "args": [
                     "/path/to/runtime/artifacts/bin/coreclr/browser.wasm.Debug/IL/helloworld.dll"
                 ],
@@ -139,6 +142,9 @@ In config below please replace `/path/to/runtime/` by a **absolute unix path** t
                 "request": "launch",
                 "skipFiles": [
                     "<node_internals>/**"
+                ],
+                "runtimeArgs": [
+                    "--stack-trace-limit=1000"
                 ],
                 "args": [
                     "HelloWorld.dll"
