@@ -27,6 +27,8 @@ namespace TestLibrary
 
         public static bool IsCollectibleAssembliesSupported => !Utilities.IsNativeAot;
 
+        public static bool IsVarArgsSupported => IsWindows && !Utilities.IsMonoRuntime && !Utilities.IsNativeAot;
+
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
         {
