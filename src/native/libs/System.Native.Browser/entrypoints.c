@@ -19,6 +19,7 @@ static const Entry s_browserNative[] =
     DllImportEntry(SystemJS_RandomBytes)
     DllImportEntry(SystemJS_GetLocaleInfo)
     DllImportEntry(SystemJS_ScheduleTimer)
+    DllImportEntry(SystemJS_ScheduleBackgroundJob)
 };
 
 EXTERN_C const void* SystemJSResolveDllImport(const char* name);

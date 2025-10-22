@@ -16,27 +16,23 @@ namespace System.Runtime.CompilerServices
         {
         }
 
-        internal static void MainWrapper(object exitCodeTask)
+        private static void MainWrapper(object exitCodeTask)
         {
             var task = (Task<int>)exitCodeTask;
             task.ContinueWith(t =>
             {
-                Internal.Console.WriteLine("MainWrapper continuation A");
                 if (t.IsFaulted)
                 {
-                    Internal.Console.WriteLine("MainWrapper continuation B");
                     SystemJS_RejectMainPromise(t.Exception.Message);
                 }
                 else
                 {
-                    Internal.Console.WriteLine("MainWrapper continuation C");
                     SystemJS_ResolveMainPromise(t.Result);
                 }
             }, TaskScheduler.Default);
-            Internal.Console.WriteLine("MainWrapper completed");
         }
 
-        internal static void MainWrapperVoid(object exitCodeTask)
+        private static void MainWrapperVoid(object exitCodeTask)
         {
             var task = (Task)exitCodeTask;
             task.ContinueWith(t =>
@@ -50,7 +46,6 @@ namespace System.Runtime.CompilerServices
                     SystemJS_ResolveMainPromise(0);
                 }
             }, TaskScheduler.Default);
-            Internal.Console.WriteLine("MainWrapper completed");
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SystemJS_RejectMainPromise")]

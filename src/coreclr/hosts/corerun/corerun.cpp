@@ -11,7 +11,6 @@
 
 #ifdef TARGET_WASM
 #include <pinvoke_override.hpp>
-#include <emscripten.h>
 #endif // TARGET_WASM
 
 #include <fstream>
@@ -556,7 +555,6 @@ static int run(const configuration& config)
     ::free((void*)s_core_root_path);
     return exit_code;
 #else // TARGET_BROWSER
-
     // In browser we don't shutdown the runtime here as we want to keep it alive
     return 0;
 #endif // TARGET_BROWSER
