@@ -5297,12 +5297,16 @@ unsigned Compiler::fgRunSubgraphDfs(VisitPreorder  visitPreorder,
         }
     }
 
-    // Kick off a DFS from each entry
+    // Kick off a DFS from each unvisited entry
     //
     while (entries.Height() > 0)
     {
         BasicBlock* const block = entries.Pop();
-        dfsFrom(block);
+
+        if (!BitVecOps::IsMember(&traits, visited, block->bbNum))
+        {
+            dfsFrom(block);
+        }
     }
 
     assert(preOrderIndex == postOrderIndex);

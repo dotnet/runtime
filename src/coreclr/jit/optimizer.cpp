@@ -2360,7 +2360,29 @@ void Compiler::optFindLoops()
         m_dfsTree = fgComputeDfs();
         m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
 
-        assert(failedToModifyAll || (m_loops->ImproperLoopHeaders() == 0));
+#ifdef DEBUG
+        // If there are SCCs that pass through finallys, faults, or catches, we won't have remediated them above.
+        // These seem to be relatively rare, and won't represent unstructured flow in wasm, so we can ignore such cases.
+        //
+        // Note in the assert below we don't know for sure the unstructured flow goes
+        // through any EH construct, but it's a start.
+        //
+        bool hasEH = false;
+        for (EHblkDsc* const ehDsc : EHClauses(this))
+        {
+            hasEH = true;
+            break;
+        }
+
+        JITDUMP("Graph %s EH; %u improper headers; %s SCC transformations failed\n", hasEH ? "has" : "does not have",
+                m_loops->ImproperLoopHeaders(), failedToModifyAll ? "some" : "no");
+
+        // We currently think we handle all expected cases. This may change.
+        assert(!failedToModifyAll);
+
+        // We should only see residual improper heades if there is EH
+        assert(hasEH || (m_loops->ImproperLoopHeaders() == 0));
+#endif
     }
 
     optCompactLoops();
@@ -3177,13 +3199,13 @@ public:
             JITDUMP("Transforming SCC via switch dispatch: ");
             JITDUMPEXEC(Dump());
 
-//            if (HasOSREntryHeaderInTry())
-//            {
-//                JITDUMP("  cannot transform: header " FMT_BB " is OSR entry in a try region\n",
-//                        m_comp->fgOSREntryBB->bbNum);
-//                failedToModify = true;
-//                return false;
-//            }
+            //            if (HasOSREntryHeaderInTry())
+            //            {
+            //                JITDUMP("  cannot transform: header " FMT_BB " is OSR entry in a try region\n",
+            //                        m_comp->fgOSREntryBB->bbNum);
+            //                failedToModify = true;
+            //                return false;
+            //            }
 
             modified                       = true;
             const unsigned   controlVarNum = m_comp->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("SCC control var"));
@@ -3251,11 +3273,12 @@ public:
                 // and then branch to the outermost enclosing try's header.
                 //
                 FlowEdge* dispatchToHeaderEdge = nullptr;
-//                if ((header == m_comp->fgOSREntryBB) && (header->bbTryIndex != dispatcher->bbTryIndex))
-//                {
-//                    assert(!"Transforming SCC with OSR entry in try region not implemented");
-//                }
-//                else
+                //                if ((header == m_comp->fgOSREntryBB) && (header->bbTryIndex !=
+                //                dispatcher->bbTryIndex))
+                //                {
+                //                    assert(!"Transforming SCC with OSR entry in try region not implemented");
+                //                }
+                //                else
                 {
                     dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
                 }
