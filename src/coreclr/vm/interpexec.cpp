@@ -2978,8 +2978,6 @@ CALL_INTERP_METHOD:
                 case INTOP_NEWARR:
                 {
                     int32_t length = LOCAL_VAR(ip[2], int32_t);
-                    if (length < 0)
-                        COMPlusThrow(kArgumentOutOfRangeException);
 
                     MethodTable* arrayClsHnd = (MethodTable*)pMethod->pDataItems[ip[3]];
                     HELPER_FTN_NEWARR helper = GetPossiblyIndirectHelper<HELPER_FTN_NEWARR>(pMethod, ip[4]);
@@ -2993,8 +2991,6 @@ CALL_INTERP_METHOD:
                 case INTOP_NEWARR_GENERIC:
                 {
                     int32_t length = LOCAL_VAR(ip[3], int32_t);
-                    if (length < 0)
-                        COMPlusThrow(kArgumentOutOfRangeException);
 
                     InterpGenericLookup *pLookup = (InterpGenericLookup*)&pMethod->pDataItems[ip[5]];
                     MethodTable *arrayClsHnd = (MethodTable*)DoGenericLookup(LOCAL_VAR(ip[2], void*), pLookup);
