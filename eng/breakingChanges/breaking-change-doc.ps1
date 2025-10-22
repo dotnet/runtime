@@ -151,11 +151,6 @@ if ($CleanStart) {
     Write-Host "✅ Cleanup completed" -ForegroundColor Green
 }
 
-# Create output directories
-New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
-New-Item -ItemType Directory -Path $issueDraftsDir -Force | Out-Null
-New-Item -ItemType Directory -Path $commentDraftsDir -Force | Out-Null
-
 # Validate parameters
 if (-not $PrNumber -and -not $Query) {
     Write-Error @"
@@ -194,7 +189,7 @@ $actionMode = if ($CollectOnly) { "Collect Only" }
 
 Write-Host "   Action Mode: $actionMode" -ForegroundColor Cyan
 if (-not $executeActions -and -not $CollectOnly) {
-    Write-Host "   � Will generate drafts without making changes to GitHub" -ForegroundColor Yellow
+    Write-Host "   📝 Will generate drafts without making changes to GitHub" -ForegroundColor Yellow
 }
 
 # Function to safely truncate text
@@ -236,7 +231,9 @@ function Get-UrlEncodedText {
 function Get-IssueTemplate {
     try {
         Write-Host "     📋 Fetching issue template..." -ForegroundColor DarkGray
-        $templateContent = gh api "repos/$($Config.DocsRepo)/contents/$($Config.IssueTemplatePath)" --jq '.content' | ForEach-Object { [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($_)) }
+        # Use public GitHub API (no auth required for public repos)
+        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$($Config.DocsRepo)/contents/$($Config.IssueTemplatePath)" -Headers @{ 'User-Agent' = 'dotnet-runtime-breaking-change-tool' }
+        $templateContent = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($response.content))
         return $templateContent
     }
     catch {
@@ -250,20 +247,20 @@ function Get-IssueTemplate {
 function Get-ExampleBreakingChangeIssues {
     try {
         Write-Host "     📚 Fetching example breaking change issues..." -ForegroundColor DarkGray
-        $exampleIssuesJson = gh issue list --repo $Config.DocsRepo --label "breaking-change" --limit 3 --json number,title,body,url
-        $exampleIssues = $exampleIssuesJson | ConvertFrom-Json
+        # Use public GitHub API for issues
+        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$($Config.DocsRepo)/issues?labels=breaking-change&state=all&per_page=3" -Headers @{ 'User-Agent' = 'dotnet-runtime-breaking-change-tool' }
 
-        if ($exampleIssues.Count -eq 0) {
+        if ($response.Count -eq 0) {
             Write-Error "❌ No example breaking change issues found in $($Config.DocsRepo) with label 'breaking-change'"
             Write-Error "   Examples are required for high-quality documentation generation. Please check repository and label."
             exit 1
         }
 
         $examples = @()
-        foreach ($issue in $exampleIssues) {
+        foreach ($issue in $response) {
             $examples += @"
 **Example #$($issue.number)**: $($issue.title)
-URL: $($issue.url)
+URL: $($issue.html_url)
 Body: $(Limit-Text -text $issue.body -maxLength 800)
 "@
         }
@@ -703,7 +700,7 @@ $($analysisData | Where-Object HasDocsIssue | ForEach-Object {
 
 $summaryReport | Out-File (Join-Path $dataDir "summary_report.md") -Encoding UTF8
 
-Write-Host "✅ Data collection completed completed" -ForegroundColor Green
+Write-Host "✅ Data collection completed" -ForegroundColor Green
 Write-Host "   📊 Summary: $(Join-Path $dataDir "summary_report.md")"
 Write-Host "   📋 Combined: $(Join-Path $dataDir "combined.json")"
 Write-Host "   📄 Individual: $(Join-Path $dataDir "pr_*.json") ($($analysisData.Count) files)"
@@ -917,10 +914,10 @@ $issueBody
     # Handle different action modes
     if (-not $executeActions) {
         # Draft only mode, just log the commands that could be run.
-        Write-Host "     � To create an issue use command:" -ForegroundColor Yellow
+        Write-Host "     📝 To create an issue use command:" -ForegroundColor Yellow
         Write-Host "       gh issue create --repo $($Config.DocsRepo) --title `"$issueTitle`" --body `"...[content truncated]...`" --label `"$($Config.IssueTemplate.Labels -join ',')`" --assignee `"$($Config.IssueTemplate.Assignee)`"" -ForegroundColor Gray
 
-        Write-Host "     � To add a comment use command:" -ForegroundColor Yellow
+        Write-Host "     💬 To add a comment use command:" -ForegroundColor Yellow
         Write-Host "       gh pr comment $($pr.Number) --repo $($Config.SourceRepo) --body-file `"$commentFile`"" -ForegroundColor Gray
 
     } elseif ($CreateIssues) {
