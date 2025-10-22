@@ -45,6 +45,7 @@
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" />
+      <WasmAssembliesToBundle Condition="'%(WasmAssembliesToBundle.FileName)' == 'WasmSymbolicator'" AOT_InternalForceToInterpret="true" />
 
       <_VFSFiles Include="$(VFSFilesPath)**\*" />
       <WasmFilesToIncludeInFileSystem Include="@(_VFSFiles)" TargetPath="%(RecursiveDir)%(FileName)%(Extension)" />

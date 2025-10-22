@@ -189,6 +189,7 @@
       <WasmExtraFilesToDeploy Include="$(WasmMainHtmlPath)" />
 
       <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" Condition="'$(BuildAOTTestsOnHelix)' == 'true'" />
+      <WasmAssembliesToBundle Condition="'%(WasmAssembliesToBundle.FileName)' == 'WasmSymbolicator'" AOT_InternalForceToInterpret="true" />
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
 
       <_CopyLocalPaths
