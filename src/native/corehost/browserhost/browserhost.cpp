@@ -51,8 +51,8 @@ extern "C"
     const void* CompressionResolveDllImport(const char* name);
 
     bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
-    void BrowserHost_ResolveMain(int exitCode);
-    void BrowserHost_RejectMain(const char *reason);
+    void SystemJS_ResolveMainPromise(int exitCode);
+    void SystemJS_RejectMainPromise(const char16_t *reason);
 }
 
 // The current CoreCLR instance details.
@@ -160,11 +160,11 @@ extern "C" int BrowserHost_ExecuteAssembly(const char* assemblyPath)
         std::fprintf(stderr, "coreclr_shutdown_2 failed - Error: 0x%08x\n", retval);
         exit_code = -1;
         // WASM-TODO: this is too trivial
-        BrowserHost_RejectMain("coreclr_shutdown_2 failed");
+        SystemJS_RejectMainPromise(u"coreclr_shutdown_2 failed");
     }
 
     // WASM-TODO: this is too trivial
     // because nothing runs continuations yet and also coreclr_execute_assembly is sync looping
-    BrowserHost_ResolveMain(exit_code);
+    SystemJS_ResolveMainPromise(exit_code);
     return retval;
 }

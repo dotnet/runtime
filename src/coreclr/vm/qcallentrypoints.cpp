@@ -75,6 +75,11 @@
 
 #include "versionresilienthashcode.h"
 
+#ifdef TARGET_BROWSER
+#include "wasm/wasm-entrypoints.h"
+#endif
+
+
 static const Entry s_QCall[] =
 {
     DllImportEntry(ArgIterator_Init)
@@ -544,6 +549,12 @@ static const Entry s_QCall[] =
     DllImportEntry(IsInstanceOf_NoCacheLookup)
     DllImportEntry(VersionResilientHashCode_TypeHashCode)
     DllImportEntry(TailCallHelp_AllocTailCallArgBufferInternal)
+#ifdef TARGET_BROWSER
+    DllImportEntry(SystemJS_ResolveMainPromise)
+    DllImportEntry(SystemJS_RejectMainPromise)
+    DllImportEntry(SystemJS_InstallTimerCallback)
+    DllImportEntry(SystemJS_ScheduleTimer)
+#endif
 };
 
 const void* QCallResolveDllImport(const char* name)

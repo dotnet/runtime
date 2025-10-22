@@ -1044,6 +1044,20 @@ class MetaSig
             TokenPairList*      pVisited = NULL
         );
 
+        static BOOL CompareMethodSigs(
+            PCCOR_SIGNATURE     pSig1,
+            DWORD               cSig1,
+            ModuleBase*         pModule1,
+            const Substitution* pSubst1,
+            PCCOR_SIGNATURE     pSig2,
+            DWORD               cSig2,
+            ModuleBase*         pModule2,
+            const Substitution* pSubst2,
+            BOOL                skipReturnTypeSig,
+            BOOL                skipCallConv,
+            TokenPairList*      pVisited = NULL
+        );
+
         static BOOL CompareFieldSigs(
             PCCOR_SIGNATURE pSig1,
             DWORD       cSig1,

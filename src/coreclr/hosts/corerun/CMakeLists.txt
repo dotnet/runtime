@@ -74,13 +74,14 @@ else()
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
                 -fwasm-exceptions
-                -sEXIT_RUNTIME=1
+                -sEXIT_RUNTIME=0
                 -sINITIAL_MEMORY=134217728
                 -sMAXIMUM_MEMORY=2147483648
                 -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sEXPORTED_FUNCTIONS=_main,_GetDotNetRuntimeContractDescriptor
                 -sENVIRONMENT=node,shell,web
+                -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,safeSetTimeout,maybeExit
                 -Wl,-error-limit=0)
 
             if (CORERUN_IN_BROWSER)

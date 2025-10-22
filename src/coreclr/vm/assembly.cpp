@@ -1060,8 +1060,10 @@ void Assembly::AddDiagnosticStartupHookPath(LPCWSTR wszPath)
 
 enum CorEntryPointType
 {
-    EntryManagedMain,                   // void main(String[])
-    EntryCrtMain                        // unsigned main(void)
+    EntryManagedMain,                   // void Main(String[])
+    EntryCrtMain,                       // unsigned main(void)
+    EntryManagedMainAsync,              // Task<int> Main(String[])
+    EntryManagedMainAsyncVoid,          // Task Main(String[])
 };
 
 void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
@@ -1127,30 +1129,126 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
     if (FAILED(sig.GetElemType(&nReturnType)))
         ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
 
+#if !defined(TARGET_BROWSER)
     if ((nReturnType != ELEMENT_TYPE_VOID) && (nReturnType != ELEMENT_TYPE_I4) && (nReturnType != ELEMENT_TYPE_U4))
          ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
 
     if (nParamCount == 0)
+    {
         *pType = EntryCrtMain;
-    else {
-        *pType = EntryManagedMain;
+        return;
+    }
+#else
+    // validate that the return type is Task or Task<int>
+    if (nReturnType == ELEMENT_TYPE_VOID || nReturnType == ELEMENT_TYPE_I4 || nReturnType == ELEMENT_TYPE_U4)
+    {
+        ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
+    }
 
-        if (nParamCount != 1)
-            ThrowMainMethodException(pFD, IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN);
+    mdToken tk;
+    LPCSTR name = "";
+    LPCSTR nameSpace = "";
+    Module* pModule = pFD->GetModule();
+    IMDInternalImport* pImport = pModule->GetMDImport();
 
-        CorElementType argType;
-        CorElementType argType2 = ELEMENT_TYPE_END;
-
-        if (FAILED(sig.GetElemType(&argType)))
+    if (nReturnType == ELEMENT_TYPE_GENERICINST)
+    {
+        // Task<int> case
+        CorElementType innerType;
+        if (FAILED(sig.GetElemType(&innerType)))
             ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
 
-        if (argType == ELEMENT_TYPE_SZARRAY)
-            if (FAILED(sig.GetElemType(&argType2)))
-                ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
+        if (innerType != ELEMENT_TYPE_CLASS)
+            ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
 
-        if (argType != ELEMENT_TYPE_SZARRAY || argType2 != ELEMENT_TYPE_STRING)
-            ThrowMainMethodException(pFD, IDS_EE_LOAD_BAD_MAIN_SIG);
+        if (FAILED(sig.GetToken(&tk)))
+            ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
+
+        // Get the type name
+        if (TypeFromToken(tk) == mdtTypeDef)
+        {
+            if (FAILED(pImport->GetNameOfTypeDef(tk, &name, &nameSpace)))
+                ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
+        }
+        else if (TypeFromToken(tk) == mdtTypeRef)
+        {
+            if (FAILED(pImport->GetNameOfTypeRef(tk, &nameSpace, &name)))
+                ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
+        }
+        else
+        {
+            ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
+        }
+
+        // Verify it's Task`1
+        if (strcmp(name, "Task`1") != 0 || strcmp(nameSpace, "System.Threading.Tasks") != 0)
+            ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
+
+        // Get the generic argument count and check it's 1
+        uint32_t argCount;
+        if (FAILED(sig.GetData(&argCount)) || argCount != 1)
+            ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
+
+        // Get the generic argument type (should be int)
+        CorElementType genericArgType;
+        if (FAILED(sig.GetElemType(&genericArgType)))
+            ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
+
+        if (genericArgType != ELEMENT_TYPE_I4)
+            ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
+
+        *pType = EntryManagedMainAsync;
+        return;
     }
+
+    if (nReturnType == ELEMENT_TYPE_CLASS)
+    {
+        // Non-generic Task case
+        if (FAILED(sig.GetToken(&tk)))
+            ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
+
+        // Get the type name
+        if (TypeFromToken(tk) == mdtTypeDef)
+        {
+            if (FAILED(pImport->GetNameOfTypeDef(tk, &name, &nameSpace)))
+                ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
+        }
+        else if (TypeFromToken(tk) == mdtTypeRef)
+        {
+            if (FAILED(pImport->GetNameOfTypeRef(tk, &nameSpace, &name)))
+                ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
+        }
+        else
+        {
+            ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
+        }
+
+        // Verify it's Task, TODO ValueTask
+        if (strcmp(name, "Task") != 0 || strcmp(nameSpace, "System.Threading.Tasks") != 0)
+            ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
+
+        *pType = EntryManagedMainAsyncVoid;
+        return;
+    }
+#endif // !TARGET_BROWSER
+
+    *pType = EntryManagedMain;
+
+    if (nParamCount != 1)
+        ThrowMainMethodException(pFD, IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN);
+
+    CorElementType argType;
+    CorElementType argType2 = ELEMENT_TYPE_END;
+
+    if (FAILED(sig.GetElemType(&argType)))
+        ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
+
+    if (argType == ELEMENT_TYPE_SZARRAY)
+        if (FAILED(sig.GetElemType(&argType2)))
+            ThrowMainMethodException(pFD, BFA_BAD_SIGNATURE);
+
+    if (argType != ELEMENT_TYPE_SZARRAY || argType2 != ELEMENT_TYPE_STRING)
+        ThrowMainMethodException(pFD, IDS_EE_LOAD_BAD_MAIN_SIG);
 }
 
 struct Param
@@ -1172,7 +1270,10 @@ static void RunMainInternal(Param* pParam)
     GCPROTECT_BEGIN(StrArgArray);
 
     // Build the parameter array and invoke the method.
-    if (pParam->EntryType == EntryManagedMain) {
+    if (pParam->EntryType == EntryManagedMain
+        || pParam->EntryType == EntryManagedMainAsync
+        || pParam->EntryType == EntryManagedMainAsyncVoid
+        ) {
         if (pParam->stringArgs == NULL) {
             // Allocate a COM Array object with enough slots for cCommandArgs - 1
             StrArgArray = (PTRARRAYREF) AllocateObjectArray((pParam->cCommandArgs - pParam->numSkipArgs), g_pStringClass);
@@ -1197,8 +1298,28 @@ static void RunMainInternal(Param* pParam)
     }
     else
     {
-        *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
-        SetLatchedExitCode(*pParam->piRetVal);
+        if(pParam->EntryType == EntryManagedMainAsync)
+        {
+            *pParam->piRetVal = 0;
+            OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
+            ARG_SLOT stackVarWrapper[] =
+            {
+                ObjToArgSlot(exitCodeTask)
+            };
+
+            MethodDescCallSite mainWrapper(METHOD__STARTUP_HOOK_PROVIDER__MAIN_WRAPPER);
+            mainWrapper.Call(stackVarWrapper);
+        }
+        else if(pParam->EntryType == EntryManagedMainAsyncVoid)
+        {
+            // TODO
+        }
+        else
+        {
+            // Call the main method
+            *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
+            SetLatchedExitCode(*pParam->piRetVal);
+        }
     }
 
     GCPROTECT_END();
@@ -1392,7 +1513,9 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
             hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
 
+#if !defined(TARGET_BROWSER)
             Thread::CleanUpForManagedThreadInNative(pThread);
+#endif // !TARGET_BROWSER
         }
     }
 
@@ -1401,8 +1524,10 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
     //to decide when the process should get torn down.  So, don't call it from
     // AppDomain.ExecuteAssembly()
     if (pMeth) {
+#if !defined(TARGET_BROWSER)
         if (waitForOtherThreads)
             RunMainPost();
+#endif // !TARGET_BROWSER
     }
     else {
         StackSString displayName;
@@ -1482,6 +1607,7 @@ MethodDesc* Assembly::GetEntryPoint()
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, IDS_EE_ILLEGAL_TOKEN_FOR_MAIN, displayName);
     }
 
+    MethodTable * pInitialMT;
     if (mdParent != COR_GLOBAL_PARENT_TOKEN) {
         GCX_COOP();
         // This code needs a class init frame, because without it, the
@@ -1489,7 +1615,7 @@ MethodDesc* Assembly::GetEntryPoint()
         // type handle (ie, loading an assembly) is the first line of a program.
         DebuggerClassInitMarkFrame __dcimf;
 
-        MethodTable * pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
+        pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
                                                                        ClassLoader::ThrowIfNotFound,
                                                                        ClassLoader::FailIfUninstDefOrRef).GetMethodTable();
 
@@ -1499,8 +1625,52 @@ MethodDesc* Assembly::GetEntryPoint()
     }
     else
     {
+#if defined(TARGET_BROWSER)
+        // we only support IL entrypoints in browser
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+#endif // TARGET_BROWSER
         m_pEntryPoint = pModule->FindMethod(mdEntry);
     }
+#if defined(TARGET_BROWSER)
+    // if this is async method we need to find the original method, instead of the roslyn generated wrapper
+    if (m_pEntryPoint) {
+        LPCUTF8 szName = m_pEntryPoint->GetName();
+        size_t nameLength = strlen(szName);
+        LPCUTF8 szEnd = szName + nameLength - 1;
+        DWORD dwAttrs = m_pEntryPoint->GetAttrs();
+        if (IsMdSpecialName(dwAttrs) && (*szName == '<') && (*szEnd == '>'))
+        {
+            PCCOR_SIGNATURE pSig;
+            DWORD           cSig;
+            m_pEntryPoint->GetSig(&pSig, &cSig);
+
+            // look for "<Name>$"
+            LPUTF8 pszAsyncName = (LPUTF8)malloc (nameLength + 2);
+            snprintf (pszAsyncName, nameLength + 2, "%s$", szName);
+            m_pEntryPoint = MemberLoader::FindMethod(pInitialMT, pszAsyncName,
+                pSig, cSig,
+                pModule,
+                (MemberLoader::FM_Flags)(MemberLoader::FM_IgnoreReturnType | MemberLoader::FM_IgnoreCallConv),
+                NULL
+            );
+
+            if (m_pEntryPoint == NULL)
+            {
+                // look for "Name" by trimming the first and last character of "<Name>"
+                pszAsyncName [nameLength - 1] = '\0';
+
+                m_pEntryPoint = MemberLoader::FindMethod(pInitialMT, pszAsyncName + 1,
+                    pSig, cSig,
+                    pModule,
+                    (MemberLoader::FM_Flags)(MemberLoader::FM_IgnoreReturnType | MemberLoader::FM_IgnoreCallConv),
+                    NULL
+                );
+            }
+
+            free (pszAsyncName);
+        }
+    }
+#endif // TARGET_BROWSER
 
     RETURN m_pEntryPoint;
 }

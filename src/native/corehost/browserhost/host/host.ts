@@ -40,14 +40,6 @@ export function BrowserHost_ExternalAssemblyProbe(pathPtr:CharPtr, outDataStartP
     return false;
 }
 
-export function BrowserHost_ResolveMain(exitCode:number) {
-    dotnetLoaderExports.resolveRunMainPromise(exitCode);
-}
-
-export function BrowserHost_RejectMain(reason:any) {
-    dotnetLoaderExports.rejectRunMainPromise(reason);
-}
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function runMain(mainAssemblyName?: string, args?: string[]): Promise<number> {
     // int BrowserHost_ExecuteAssembly(char * assemblyPath)

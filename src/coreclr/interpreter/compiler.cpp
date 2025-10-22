@@ -53,7 +53,7 @@ bool IsInterpDumpActive()
 #ifdef DEBUG
     return t_interpDump;
 #else // !DEBUG
-    return false;
+    return true;
 #endif // DEBUG
 }
 
