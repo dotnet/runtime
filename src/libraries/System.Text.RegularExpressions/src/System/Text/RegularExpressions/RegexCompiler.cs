@@ -509,24 +509,22 @@ namespace System.Text.RegularExpressions
                     case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
                         // If we also have a trailing End anchor with fixed length, we can check for exact length match.
                         // Compute this lazily to avoid overhead in the interpreter.
+                        if (RegexPrefixAnalyzer.FindTrailingAnchor(_regexTree.Root) == RegexNodeKind.End &&
+                            _regexTree.Root.ComputeMaxLength() == _regexTree.FindOptimizations.MinRequiredLength)
                         {
-                            if (RegexPrefixAnalyzer.FindTrailingAnchor(_regexTree.Root) == RegexNodeKind.End &&
-                                _regexTree.Root.ComputeMaxLength() == _regexTree.FindOptimizations.MinRequiredLength)
-                            {
-                                // if (pos != 0 || inputSpan.Length != exactLength) goto returnFalse;
-                                // return true;
-                                int minRequiredLength = _regexTree.FindOptimizations.MinRequiredLength;
-                                Ldloc(pos);
-                                Ldc(0);
-                                Bne(returnFalse);
-                                Ldloca(inputSpan);
-                                Call(SpanGetLengthMethod);
-                                Ldc(minRequiredLength);
-                                Bne(returnFalse);
-                                Ldc(1);
-                                Ret();
-                                return true;
-                            }
+                            // if (pos != 0 || inputSpan.Length != minRequiredLength) goto returnFalse;
+                            // return true;
+                            int minRequiredLength = _regexTree.FindOptimizations.MinRequiredLength;
+                            Ldloc(pos);
+                            Ldc(0);
+                            Bne(returnFalse);
+                            Ldloca(inputSpan);
+                            Call(SpanGetLengthMethod);
+                            Ldc(minRequiredLength);
+                            Bne(returnFalse);
+                            Ldc(1);
+                            Ret();
+                            return true;
                         }
 
                         // if (pos != 0) goto returnFalse;
