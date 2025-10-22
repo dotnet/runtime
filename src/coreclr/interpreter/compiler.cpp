@@ -4786,14 +4786,14 @@ void InterpCompiler::EmitLdLocA(int32_t var)
         m_pLastNewIns->data[0] = m_pVars[var].offset;
         m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
         m_pStackPointer--;
-        PushInterpType(InterpTypeI, NULL);
+        PushInterpType(InterpTypeByRef, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
         return;
     }
 
     AddIns(INTOP_LDLOCA);
     m_pLastNewIns->SetSVar(var);
-    PushInterpType(InterpTypeI, NULL);
+    PushInterpType(InterpTypeByRef, NULL);
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
@@ -7351,7 +7351,7 @@ retry_emit:
 
                 AddIns(INTOP_LDLOCA);
                 m_pLastNewIns->SetSVar(typedByRefVar);
-                PushInterpType(InterpTypeI, NULL);
+                PushInterpType(InterpTypeByRef, NULL);
                 int byrefOfTypedRefVar = m_pStackPointer[-1].var;
                 m_pLastNewIns->SetDVar(byrefOfTypedRefVar);
                 m_pStackPointer--;
