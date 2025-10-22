@@ -37,9 +37,9 @@ namespace Microsoft.DotNet.CoreSetup.Packaging.Tests
             string nupkgPath = Path.Combine(
                 dirs.BaseArtifactsFolder,
                 "packages",
-                HostTestContext.Configuration,
+                TestContext.Configuration,
                 "Shipping",
-                $"{id}.{HostTestContext.MicrosoftNETCoreAppVersion}.nupkg");
+                $"{id}.{TestContext.MicrosoftNETCoreAppVersion}.nupkg");
 
             // If the nuspec exists, the nupkg should exist.
             Assert.True(File.Exists(nupkgPath));

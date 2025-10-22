@@ -27,7 +27,7 @@ namespace AppHost.Bundle.Tests
             Command.Create(path)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(selfContained ? null : HostTestContext.BuiltDotNet.BinPath)
+                .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World!");
@@ -75,9 +75,9 @@ namespace AppHost.Bundle.Tests
             if (OperatingSystem.IsWindows())
             {
                 // StandaloneApp sets FileVersion to NETCoreApp version. On Windows, this should be copied to singlefilehost resources.
-                string expectedVersion = HostTestContext.MicrosoftNETCoreAppVersion.Contains('-')
-                    ? HostTestContext.MicrosoftNETCoreAppVersion[..HostTestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
-                    : HostTestContext.MicrosoftNETCoreAppVersion;
+                string expectedVersion = TestContext.MicrosoftNETCoreAppVersion.Contains('-')
+                    ? TestContext.MicrosoftNETCoreAppVersion[..TestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
+                    : TestContext.MicrosoftNETCoreAppVersion;
                 Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
             }
         }
@@ -103,17 +103,14 @@ namespace AppHost.Bundle.Tests
             if (OperatingSystem.IsWindows())
             {
                 // StandaloneApp sets FileVersion to NETCoreApp version. On Windows, this should be copied to singlefilehost resources.
-                string expectedVersion = HostTestContext.MicrosoftNETCoreAppVersion.Contains('-')
-                    ? HostTestContext.MicrosoftNETCoreAppVersion[..HostTestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
-                    : HostTestContext.MicrosoftNETCoreAppVersion;
+                string expectedVersion = TestContext.MicrosoftNETCoreAppVersion.Contains('-')
+                    ? TestContext.MicrosoftNETCoreAppVersion[..TestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
+                    : TestContext.MicrosoftNETCoreAppVersion;
                 Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
             }
         }
 
-        [Theory(
-            SkipType = typeof(Binaries.CetCompat),
-            SkipUnless = nameof(Binaries.CetCompat.IsSupported),
-            Skip = "CET is not supported on this platform")]
+        [ConditionalTheory(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void DisableCetCompat(bool selfContained)
@@ -127,12 +124,12 @@ namespace AppHost.Bundle.Tests
             Command.Create(singleFile)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .DotNetRoot(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildArchitecture)
+                .DotNetRoot(TestContext.BuiltDotNet.BinPath, TestContext.BuildArchitecture)
                 .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Theory]
@@ -161,7 +158,7 @@ namespace AppHost.Bundle.Tests
 
             using (var dotnetWithMockHostFxr = TestArtifact.Create("mockhostfxrFrameworkMissingFailure"))
             {
-                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, HostTestContext.BuiltDotNet.BinPath, null)
+                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(2, 2, 0))
                     .Build();
@@ -180,7 +177,7 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void FrameworkDependent_GUI_DownlevelHostFxr_ErrorDialog()
         {
             var singleFile = sharedTestState.FrameworkDependentApp.Bundle();
@@ -191,14 +188,14 @@ namespace AppHost.Bundle.Tests
             {
                 string expectedErrorCode = Constants.ErrorCode.BundleExtractionFailure.ToString("x");
 
-                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, HostTestContext.BuiltDotNet.BinPath, null)
+                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(5, 0, 0))
                     .Build();
 
                 Command command = Command.Create(singleFile)
                     .EnableTracingAndCaptureOutputs()
-                    .DotNetRoot(dotnet.BinPath, HostTestContext.BuildArchitecture)
+                    .DotNetRoot(dotnet.BinPath, TestContext.BuildArchitecture)
                     .Start();
 
                 WindowsUtils.WaitForPopupFromProcess(command.Process);

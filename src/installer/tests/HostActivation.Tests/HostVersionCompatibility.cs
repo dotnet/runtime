@@ -30,8 +30,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             string appExe = app.AppExe;
 
             RuntimeConfig appConfig = RuntimeConfig.FromFile(app.RuntimeConfigJson);
-            Assert.NotEqual(appConfig.Tfm, HostTestContext.Tfm);
-            Assert.NotEqual(appConfig.GetIncludedFramework(Constants.MicrosoftNETCoreApp).Version, HostTestContext.MicrosoftNETCoreAppVersion);
+            Assert.NotEqual(appConfig.Tfm, TestContext.Tfm);
+            Assert.NotEqual(appConfig.GetIncludedFramework(Constants.MicrosoftNETCoreApp).Version, TestContext.MicrosoftNETCoreAppVersion);
 
             // Use the newer apphost
             // This emulates the case when:
@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {HostTestContext.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdErrContaining($"--- Invoked apphost [version: {TestContext.MicrosoftNETCoreAppVersion}");
 
             // Use the newer apphost and hostFxr
             // This emulates the case when:
@@ -55,7 +55,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"--- Invoked apphost [version: {HostTestContext.MicrosoftNETCoreAppVersion}");
+                .And.HaveStdErrContaining($"--- Invoked apphost [version: {TestContext.MicrosoftNETCoreAppVersion}");
         }
 
         [Fact]
@@ -71,8 +71,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             RuntimeConfig previousAppConfig = RuntimeConfig.FromFile(previousVersionApp.RuntimeConfigJson);
             string previousVersion = previousAppConfig.GetIncludedFramework(Constants.MicrosoftNETCoreApp).Version;
-            Assert.NotEqual(HostTestContext.Tfm, previousAppConfig.Tfm);
-            Assert.NotEqual(HostTestContext.MicrosoftNETCoreAppVersion, previousVersion);
+            Assert.NotEqual(TestContext.Tfm, previousAppConfig.Tfm);
+            Assert.NotEqual(TestContext.MicrosoftNETCoreAppVersion, previousVersion);
 
             // Use the older apphost
             // This emulates the case when:
