@@ -1400,7 +1400,10 @@ void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, reg
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
-    id->idjShort             = false;
+    // Start from the worst case: "[branch (reversed);] auipc; jalr"
+    id->idjShort = false;
+    id->idCodeSize((emitIsCmpJump(id) ? 3 : 2) * sizeof(code_t));
+    id->idInsOpt(INS_OPTS_JUMP);
     id->idAddr()->iiaBBlabel = dst;
 
     id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
@@ -1421,12 +1424,9 @@ void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, reg
     emitTotalIGjmps++;
 #endif
 
-    // Start from the worst case: "[branch (reversed);] auipc; jalr"
-    id->idCodeSize((emitIsCmpJump(id) ? 3 : 2) * sizeof(code_t));
-    id->idInsOpt(INS_OPTS_JUMP);
-
     /* Figure out the max. size of the jump/call instruction */
-    if (insGroup* tgt = (insGroup*)emitCodeGetCookie(dst); !id->idjKeepLong && (tgt != nullptr))
+    insGroup* tgt = (insGroup*)emitCodeGetCookie(dst);
+    if (!id->idjKeepLong && (tgt != nullptr))
     {
         /* This is a backward jump - figure out the distance */
         UNATIVE_OFFSET srcOffs = emitCurCodeOffset + emitCurIGsize;
