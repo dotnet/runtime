@@ -959,22 +959,18 @@ LOCAL_LABEL(RefCopyLoop16\argReg):
     bge LOCAL_LABEL(RefCopyLoop16\argReg)
 LOCAL_LABEL(CopyBy8\argReg):
     add x11, x11, #16
-    subs x11, x11, #8
+    cmp x11, #8
     blt LOCAL_LABEL(CopyBy1\argReg)
-LOCAL_LABEL(RefCopyLoop8\argReg):
     ldr x13, [\argReg], #8
     str x13, [x9], #8
     subs x11, x11, #8
-    bge LOCAL_LABEL(RefCopyDone\argReg)
 LOCAL_LABEL(CopyBy1\argReg):
-    add x11, x11, #8
-    subs x11, x11, #1
-    blt LOCAL_LABEL(RefCopyDone\argReg)
+    cbz x11, LOCAL_LABEL(RefCopyDone\argReg)
 LOCAL_LABEL(RefCopyLoop1\argReg):
     ldrb w13, [\argReg], #1
     strb w13, [x9], #1
     subs x11, x11, #1
-    bge  LOCAL_LABEL(RefCopyLoop1\argReg)
+    bne  LOCAL_LABEL(RefCopyLoop1\argReg)
 LOCAL_LABEL(RefCopyDone\argReg):
     // Align x9 to the stack slot size
     add x9, x9, 7
