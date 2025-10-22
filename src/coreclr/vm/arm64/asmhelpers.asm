@@ -24,7 +24,7 @@
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
 #ifdef FEATURE_INTERPRETER
-    IMPORT GetInterpThreadContextWithPossiblyMissingThread
+    IMPORT GetInterpThreadContextWithPossiblyMissingThreadOrCallStub
     IMPORT ExecuteInterpretedMethod
 #endif
 
@@ -1064,23 +1064,25 @@ JIT_PollGCRarePath
         PROLOG_WITH_TRANSITION_BLOCK
 
         INLINE_GETTHREAD x20, x19
-        cbz x20, NoManagedThread
+        cbz x20, NoManagedThreadOrCallStub
+        mov x19, METHODDESC_REGISTER ; x19 contains IR bytecode address
 
         ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
         cbnz x11, HaveInterpThreadContext
 
-NoManagedThread
-        mov x0, x20
-        bl GetInterpThreadContextWithPossiblyMissingThread
+NoManagedThreadOrCallStub
+        add x0, sp, #__PWTB_TransitionBlock + 16
+        mov x1, x19
+        bl GetInterpThreadContextWithPossiblyMissingThreadOrCallStub
         mov x11, x0
         RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
         RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
 
 HaveInterpThreadContext
         ; IR bytecode address
-        mov x19, METHODDESC_REGISTER
-        ldr x9, [METHODDESC_REGISTER]
+        ldr x9, [x19]
         ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
+        cbz x9, NoManagedThreadOrCallStub
         add x10, x9, #OFFSETOF__CallStubHeader__Routines
         ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
         ; x19 contains IR bytecode address
