@@ -126,6 +126,11 @@ namespace System.Runtime.Loader
             return context.LoadUnmanagedDll(unmanagedDllName);
         }
 
+        internal IntPtr ResolveUnmanagedDll(string unmanagedDllName)
+        {
+            return LoadUnmanagedDll(unmanagedDllName);
+        }
+
         // This method is invoked by the VM to resolve a native library using the ResolvingUnmanagedDll event
         // after trying all other means of resolution.
         private static IntPtr ResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchAssemblyLoadContext)

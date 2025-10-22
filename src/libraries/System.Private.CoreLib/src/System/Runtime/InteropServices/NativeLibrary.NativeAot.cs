@@ -3,7 +3,7 @@
 
 using System.IO;
 using System.Reflection;
-
+using System.Runtime.Loader;
 using LibraryNameVariation = System.Runtime.Loader.LibraryNameVariation;
 
 namespace System.Runtime.InteropServices
@@ -24,6 +24,13 @@ namespace System.Runtime.InteropServices
 
         internal static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, bool throwOnError)
         {
+#if !NATIVEAOT
+            // Resolve using the AssemblyLoadContext.LoadUnmanagedDll implementation
+            IntPtr mod = LoadNativeLibraryViaAssemblyLoadContext(assembly, libraryName);
+            if (mod != IntPtr.Zero)
+                return mod;
+#endif
+
             // First checks if a default dllImportSearchPathFlags was passed in, if so, use that value.
             // Otherwise checks if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
             // If so, use that value.
@@ -42,12 +49,50 @@ namespace System.Runtime.InteropServices
 
             LoadLibErrorTracker errorTracker = default;
             IntPtr ret = LoadBySearch(assembly, userSpecifiedSearchFlags, searchAssemblyDirectory, searchPathFlags, ref errorTracker, libraryName);
+
+            // Resolve using the AssemblyLoadContext.ResolvingUnmanagedDll event
+            if (ret == IntPtr.Zero)
+            {
+                ret = LoadNativeLibraryViaAssemblyLoadContextEvent(assembly, libraryName);
+            }
+
             if (throwOnError && ret == IntPtr.Zero)
             {
                 errorTracker.Throw(libraryName);
             }
 
             return ret;
+        }
+
+#if !NATIVEAOT
+        private static IntPtr LoadNativeLibraryViaAssemblyLoadContext(Assembly callingAssembly, string libraryName)
+        {
+#if TARGET_WINDOWS
+            // This is replicating quick check from the OS implementation of api sets.
+            if (libraryName.StartsWithOrdinalIgnoreCase("api-") ||
+                libraryName.StartsWithOrdinalIgnoreCase("ext-"))
+            {
+                // Prevent Overriding of Windows API sets.
+                return IntPtr.Zero;
+            }
+#endif
+            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(callingAssembly);
+            if (alc is null || alc == AssemblyLoadContext.Default)
+            {
+                // For assemblies bound via default binder, we should use the standard mechanism to make the pinvoke call.
+                return IntPtr.Zero;
+            }
+
+            // Call System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll to give
+            // The custom assembly context a chance to load the unmanaged dll.
+            return alc.ResolveUnmanagedDll(libraryName);
+        }
+#endif
+
+        private static IntPtr LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly callingAssembly, string libraryName)
+        {
+            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(callingAssembly);
+            return alc?.GetResolvedUnmanagedDll(callingAssembly, libraryName) ?? IntPtr.Zero;
         }
 
         private static DllImportSearchPath GetDllImportSearchPath(Assembly callingAssembly, out bool userSpecifiedSearchFlags)
