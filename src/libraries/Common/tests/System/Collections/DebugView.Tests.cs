@@ -166,7 +166,9 @@ namespace System.Collections.Tests
             yield return new object[] { new SortedList<int, string>() };
             yield return new object[] { new SortedSet<int>() };
             yield return new object[] { new Stack<object>() };
+#if !NETFRAMEWORK
             yield return new object[] { new OrderedDictionary<string, string>() };
+#endif
 
             yield return new object[] { new Dictionary<double, float>().Keys };
             yield return new object[] { new Dictionary<float, double>().Values };
@@ -194,7 +196,9 @@ namespace System.Collections.Tests
             stack.Push(2);
             yield return new object[] { stack };
 
+#if !NETFRAMEWORK
             yield return new object[] { new OrderedDictionary<string, string> { { "One", "1" }, { "Two", "2" } } };
+#endif
 
             yield return new object[] { new SortedList<string, int> { { "One", 1 }, { "Two", 2 } }.Keys };
             yield return new object[] { new SortedList<float, long> { { 1f, 1L }, { 2f, 2L } }.Values };
@@ -280,6 +284,7 @@ namespace System.Collections.Tests
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
+#if !NETFRAMEWORK
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_OrderedDictionary()
         {
@@ -304,6 +309,7 @@ namespace System.Collections.Tests
             Assert.Equal("Three", kvpArray[2].Key);
             Assert.Equal("3", kvpArray[2].Value);
         }
+#endif
 
         private class CustomKeyedCollection<TKey, TValue> : KeyedCollection<TKey, TValue> where TKey : notnull
         {
