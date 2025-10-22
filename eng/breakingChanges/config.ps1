@@ -10,7 +10,6 @@ $Config = @{
     # GitHub Settings
     SourceRepo = "dotnet/runtime"
     DocsRepo = "dotnet/docs"
-    LocalRepoPath = "c:\src\dotnet\runtime"  # Path to local clone of the runtime repository
     TargetLabel = "needs-breaking-change-doc-created"
     IssueTemplatePath = ".github/ISSUE_TEMPLATE/02-breaking-change.yml"  # Path to issue template in DocsRepo
 

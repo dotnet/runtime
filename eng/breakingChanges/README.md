@@ -17,9 +17,8 @@ This script automates the creation of high-quality breaking change documentation
 
 1. **Install Prerequisites:**
    - GitHub CLI: `gh auth login`
-   - **Local Repository**: Clone dotnet/runtime locally for accurate version detection
    - Choose LLM provider:
-     - **GitHub Models** (recommended): `gh extension install github/gh-models`  
+     - **GitHub Models** (recommended): `gh extension install github/gh-models`
      - **OpenAI**: Set `$env:OPENAI_API_KEY = "your-key"`
      - **Others**: See configuration section below
 
@@ -27,7 +26,6 @@ This script automates the creation of high-quality breaking change documentation
    ```powershell
    # Edit config.ps1 to set:
    # - LlmProvider = "github-models" (or other provider)
-   # - LocalRepoPath = "path\to\your\dotnet\runtime\clone"
    ```
 
 3. **Run the workflow:**
@@ -39,10 +37,10 @@ This script automates the creation of high-quality breaking change documentation
    ```powershell
    # Default: Add comments with create issue links (recommended)
    .\breaking-change-doc.ps1
-   
+
    # Create issues directly
    .\breaking-change-doc.ps1 -CreateIssues
-   
+
    # Just collect data
    .\breaking-change-doc.ps1 -CollectOnly
    ```
@@ -75,7 +73,6 @@ This script automates the creation of high-quality breaking change documentation
 ## Configuration
 
 Edit `config.ps1` to customize:
-- **LocalRepoPath**: Path to your local clone of dotnet/runtime (required for accurate version detection)
 - **LLM provider**: GitHub Models, OpenAI, Anthropic, Azure OpenAI
 - **Search parameters**: Date ranges, labels, excluded milestones
 - **Output settings**: Labels, assignees, notification emails
@@ -108,9 +105,9 @@ $env:AZURE_OPENAI_API_KEY = "your-key"
 
 ## Output
 
-- **Data Collection**: `.\data\summary_report.md`, `.\data\pr_*.json`
-- **Issue Drafts**: `.\issue-drafts\*.md`
-- **Comment Drafts**: `.\comment-drafts\*.md`
+- **Data Collection**: `(repoRoot)\artifacts\docs\breakingChanges\data\summary_report.md`, `(repoRoot)\artifacts\docs\breakingChanges\data\pr_*.json`
+- **Issue Drafts**: `(repoRoot)\artifacts\docs\breakingChanges\issue-drafts\*.md`
+- **Comment Drafts**: `(repoRoot)\artifacts\docs\breakingChanges\comment-drafts\*.md`
 - **GitHub Issues**: Created automatically (unless -DryRun)
 
 ## Workflow Steps
@@ -123,14 +120,12 @@ $env:AZURE_OPENAI_API_KEY = "your-key"
 
 ## Version Detection
 
-The script automatically determines accurate .NET version information using your local git repository:
-- **Fast and reliable**: Uses `git describe` commands on local repository clone
+The script automatically determines accurate .NET version information using the local git repository:
+- **Fast and reliable**: Uses `git describe` commands on the repository
 - **No API rate limits**: Avoids GitHub API calls for version detection
 - **Accurate timing**: Analyzes actual commit ancestry and tag relationships
 - **Merge commit analysis**: For merged PRs, finds the exact merge commit and determines version context
 - **Branch-aware**: For unmerged PRs, uses target branch information
-
-**Requirements**: Local clone of dotnet/runtime repository configured in `LocalRepoPath`
 
 ## Manual Review
 
@@ -149,7 +144,6 @@ Between runs:
 ## Troubleshooting
 
 **GitHub CLI**: `gh auth status` and `gh auth login`
-**Local Repository**: Ensure `LocalRepoPath` in config.ps1 points to a valid dotnet/runtime clone
 **API Keys**: Verify environment variables are set for non-GitHub Models providers
 **Rate Limits**: Use -DryRun for testing, script includes delays
 **Git Operations**: Ensure git is in PATH and repository is up to date (`git fetch --tags`)

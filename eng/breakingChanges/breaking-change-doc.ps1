@@ -20,7 +20,7 @@ Breaking Change Documentation Workflow
 DESCRIPTION:
     Automates the creation of high-quality breaking change documentation
     for .NET runtime PRs using an LLM to analyze and author docs.
-    
+
     DEFAULT BEHAVIOR: Analyzes PRs and generates documentation drafts without
     making any changes to GitHub. Use -CreateIssues or -Comment to execute actions.
 
@@ -28,7 +28,7 @@ USAGE:
     .\breaking-change-doc.ps1 [parameters]
 
 PARAMETERS:
-    -CollectOnly    Only collect PR data, don't create documentation  
+    -CollectOnly    Only collect PR data, don't create documentation
     -CreateIssues   Create GitHub issues directly
     -Comment        Add comments with links to create issues
     -CleanStart     Clean previous data before starting
@@ -46,10 +46,10 @@ EXAMPLES:
 QUERY EXAMPLES:
     # PRs merged after specific date, excluding milestone:
     "repo:dotnet/runtime state:closed label:needs-breaking-change-doc-created is:merged merged:>2024-09-16 -milestone:11.0.0"
-    
+
     # All PRs with the target label:
     "repo:dotnet/runtime state:closed label:needs-breaking-change-doc-created is:merged"
-    
+
     # PRs from specific author:
     "repo:dotnet/runtime state:closed label:needs-breaking-change-doc-created is:merged author:username"
 
@@ -130,27 +130,31 @@ if ($llmProvider -eq "github-models") {
     Write-Host "✅ LLM API key found ($llmProvider)" -ForegroundColor Green
 }
 
-# Check local repository path
-if (-not (Test-Path $Config.LocalRepoPath)) {
-    Write-Warning "⚠️ Local repository path not found: $($Config.LocalRepoPath)"
-    Write-Host "   Version detection will be limited. Consider cloning the repository or updating the path in config.ps1"
-} else {
-    Write-Host "✅ Local repository found: $($Config.LocalRepoPath)" -ForegroundColor Green
-}
+# Determine repository root and set up output paths
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+$repoRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
+$outputRoot = Join-Path $repoRoot "artifacts\docs\breakingChanges"
+
+# Create output directories
+$dataDir = Join-Path $outputRoot "data"
+$issueDraftsDir = Join-Path $outputRoot "issue-drafts"
+$commentDraftsDir = Join-Path $outputRoot "comment-drafts"
+
+New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
+New-Item -ItemType Directory -Path $issueDraftsDir -Force | Out-Null
+New-Item -ItemType Directory -Path $commentDraftsDir -Force | Out-Null
 
 # Clean start if requested
 if ($CleanStart) {
     Write-Host "`n🧹 Cleaning previous data..." -ForegroundColor Yellow
-    if (Test-Path ".\data") { Remove-Item ".\data" -Recurse -Force }
-    if (Test-Path ".\issue-drafts") { Remove-Item ".\issue-drafts" -Recurse -Force }
-    if (Test-Path ".\comment-drafts") { Remove-Item ".\comment-drafts" -Recurse -Force }
+    if (Test-Path $outputRoot) { Remove-Item $outputRoot -Recurse -Force }
     Write-Host "✅ Cleanup completed" -ForegroundColor Green
 }
 
 # Create output directories
-New-Item -ItemType Directory -Path ".\data" -Force | Out-Null
-New-Item -ItemType Directory -Path ".\issue-drafts" -Force | Out-Null
-New-Item -ItemType Directory -Path ".\comment-drafts" -Force | Out-Null
+New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
+New-Item -ItemType Directory -Path $issueDraftsDir -Force | Out-Null
+New-Item -ItemType Directory -Path $commentDraftsDir -Force | Out-Null
 
 # Validate parameters
 if (-not $PrNumber -and -not $Query) {
@@ -183,8 +187,8 @@ if (($CreateIssues -and $Comment) -or ($CollectOnly -and ($CreateIssues -or $Com
     exit 1
 }
 
-$actionMode = if ($CollectOnly) { "Collect Only" } 
-              elseif ($CreateIssues) { "Create Issues" } 
+$actionMode = if ($CollectOnly) { "Collect Only" }
+              elseif ($CreateIssues) { "Create Issues" }
               elseif ($Comment) { "Add Comments" }
               else { "Analysis Only" }
 
@@ -196,27 +200,27 @@ if (-not $executeActions -and -not $CollectOnly) {
 # Function to safely truncate text
 function Limit-Text {
     param([string]$text, [int]$maxLength = 2000)
-    
+
     if (-not $text -or $text.Length -le $maxLength) {
         return $text
     }
-    
+
     $truncated = $text.Substring(0, $maxLength)
     $lastPeriod = $truncated.LastIndexOf('.')
     $lastNewline = $truncated.LastIndexOf("`n")
-    
+
     $cutPoint = [Math]::Max($lastPeriod, $lastNewline)
     if ($cutPoint -gt ($maxLength * 0.8)) {
         $truncated = $truncated.Substring(0, $cutPoint + 1)
     }
-    
+
     return $truncated + "`n`n[Content truncated for length]"
 }
 
 # Function to URL encode text for GitHub issue URLs
 function Get-UrlEncodedText {
     param([string]$text)
-    
+
     # Basic URL encoding for GitHub issue URLs
     $encoded = $text -replace '\r\n', '%0A' -replace '\n', '%0A' -replace '\r', '%0A'
     $encoded = $encoded -replace ' ', '%20' -replace '#', '%23' -replace '&', '%26'
@@ -224,7 +228,7 @@ function Get-UrlEncodedText {
     $encoded = $encoded -replace ':', '%3A' -replace ';', '%3B' -replace '\?', '%3F' -replace '=', '%3D'
     $encoded = $encoded -replace '@', '%40' -replace '\+', '%2B' -replace '\$', '%24'
     $encoded = $encoded -replace '"', '%22' -replace "'", '%27' -replace '<', '%3C' -replace '>', '%3E'
-    
+
     return $encoded
 }
 
@@ -248,13 +252,13 @@ function Get-ExampleBreakingChangeIssues {
         Write-Host "     📚 Fetching example breaking change issues..." -ForegroundColor DarkGray
         $exampleIssuesJson = gh issue list --repo $Config.DocsRepo --label "breaking-change" --limit 3 --json number,title,body,url
         $exampleIssues = $exampleIssuesJson | ConvertFrom-Json
-        
+
         if ($exampleIssues.Count -eq 0) {
             Write-Error "❌ No example breaking change issues found in $($Config.DocsRepo) with label 'breaking-change'"
             Write-Error "   Examples are required for high-quality documentation generation. Please check repository and label."
             exit 1
         }
-        
+
         $examples = @()
         foreach ($issue in $exampleIssues) {
             $examples += @"
@@ -275,11 +279,11 @@ Body: $(Limit-Text -text $issue.body -maxLength 800)
 # Function to find the closest tag by commit distance
 function Find-ClosestTagByDistance {
     param([string]$targetCommit, [int]$maxTags = 10)
-    
+
     $recentTags = git tag --sort=-version:refname 2>$null | Select-Object -First $maxTags
     $closestTag = $null
     $minDistance = [int]::MaxValue
-    
+
     foreach ($tag in $recentTags) {
         # Check if this tag contains the target commit (skip if it does for merged PRs)
         if ($targetCommit -match '^[a-f0-9]{40}$') {
@@ -290,7 +294,7 @@ function Find-ClosestTagByDistance {
                 continue
             }
         }
-        
+
         # Calculate commit distance between tag and target
         $distance = git rev-list --count "$tag..$targetCommit" 2>$null
         if ($LASTEXITCODE -eq 0 -and $distance -match '^\d+$') {
@@ -301,41 +305,32 @@ function Find-ClosestTagByDistance {
             }
         }
     }
-    
+
     return $closestTag
 }
 
 # Function to get version information using local git repository
 function Get-VersionInfo {
     param([string]$prNumber, [string]$mergedAt, [string]$baseRef = "main")
-    
+
     try {
-        if (-not (Test-Path $Config.LocalRepoPath)) {
-            Write-Warning "Local repository path not found: $($Config.LocalRepoPath)"
-            return @{
-                LastTagBeforeMerge = "Unknown - no local repo"
-                FirstTagWithChange = "Not yet released"
-                EstimatedVersion = "Next release"
-            }
-        }
-        
-        # Change to the repository directory
-        Push-Location $Config.LocalRepoPath
-        
+        # Change to the repository directory (we're already in the repo)
+        Push-Location $repoRoot
+
         try {
             # Ensure we have latest info
             git fetch --tags 2>$null | Out-Null
-            
+
             # For merged PRs, try to find the merge commit and get version info
             if ($prNumber -and $mergedAt) {
                 # Get the merge commit for this PR
                 $mergeCommit = gh pr view $prNumber --repo $Config.SourceRepo --json mergeCommit --jq '.mergeCommit.oid' 2>$null
-                
+
                 if ($mergeCommit) {
                     # Find the closest tag by commit distance (not time)
                     $closestTag = Find-ClosestTagByDistance -targetCommit $mergeCommit
                     $lastTagBefore = if ($closestTag) { $closestTag } else { "Unknown" }
-                    
+
                     # Get the first tag that includes this commit
                     $firstTagWith = git describe --tags --contains $mergeCommit 2>$null
                     if ($firstTagWith -and $firstTagWith -match '^([^~^]+)') {
@@ -362,10 +357,10 @@ function Get-VersionInfo {
                 if ($baseRef -eq "main") {
                     # Get the HEAD of main branch and find closest tag
                     $mainHead = git rev-parse "origin/$baseRef" 2>$null
-                    
+
                     if ($mainHead) {
                         $closestTag = Find-ClosestTagByDistance -targetCommit $mainHead
-                        $lastTagBefore = if ($closestTag) { $closestTag } else { 
+                        $lastTagBefore = if ($closestTag) { $closestTag } else {
                             # Fallback to the most recent tag overall
                             git tag --sort=-version:refname | Select-Object -First 1 2>$null
                         }
@@ -378,11 +373,11 @@ function Get-VersionInfo {
                 }
                 $firstTagWith = "Not yet released"
             }
-            
+
             # Clean up tag names and estimate version
             $lastTagBefore = if ($lastTagBefore) { $lastTagBefore.Trim() } else { "Unknown" }
             $firstTagWith = if ($firstTagWith -and $firstTagWith -ne "Not yet released") { $firstTagWith.Trim() } else { "Not yet released" }
-            
+
             # Estimate version from the most recent tag
             $estimatedVersion = "Next release"
             if ($firstTagWith -ne "Not yet released") {
@@ -419,7 +414,7 @@ function Get-VersionInfo {
                     }
                 }
             }
-            
+
             return @{
                 LastTagBeforeMerge = $lastTagBefore
                 FirstTagWithChange = $firstTagWith
@@ -443,23 +438,23 @@ function Get-VersionInfo {
 # Function to call LLM API
 function Invoke-LlmApi {
     param([string]$Prompt, [string]$SystemPrompt = "", [int]$MaxTokens = 3000)
-    
+
     switch ($Config.LlmProvider) {
         "github-models" {
             # Use GitHub CLI with models extension
             try {
                 $ghArgs = @(
-                    "models", "run", 
-                    $Config.LlmModel, 
+                    "models", "run",
+                    $Config.LlmModel,
                     $Prompt,
                     "--max-tokens", $MaxTokens.ToString(),
                     "--temperature", "0.1"
                 )
-                
+
                 if ($SystemPrompt) {
                     $ghArgs += @("--system-prompt", $SystemPrompt)
                 }
-                
+
                 $response = & gh @ghArgs
                 return $response -join "`n"
             }
@@ -473,16 +468,16 @@ function Invoke-LlmApi {
             $headers = @{ 'Content-Type' = 'application/json' }
             $body = @{}
             $endpoint = ""
-            
+
             switch ($Config.LlmProvider) {
                 "openai" {
                     $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/chat/completions" } else { "https://api.openai.com/v1/chat/completions" }
                     $headers['Authorization'] = "Bearer $apiKey"
-                    
+
                     $messages = @()
                     if ($SystemPrompt) { $messages += @{ role = "system"; content = $SystemPrompt } }
                     $messages += @{ role = "user"; content = $Prompt }
-                    
+
                     $body = @{
                         model = $Config.LlmModel
                         messages = $messages
@@ -494,9 +489,9 @@ function Invoke-LlmApi {
                     $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/messages" } else { "https://api.anthropic.com/v1/messages" }
                     $headers['x-api-key'] = $apiKey
                     $headers['anthropic-version'] = "2023-06-01"
-                    
+
                     $fullPrompt = if ($SystemPrompt) { "$SystemPrompt`n`nHuman: $Prompt`n`nAssistant:" } else { "Human: $Prompt`n`nAssistant:" }
-                    
+
                     $body = @{
                         model = $Config.LlmModel
                         max_tokens = $MaxTokens
@@ -505,11 +500,11 @@ function Invoke-LlmApi {
                     }
                 }
             }
-            
+
             try {
                 $requestJson = $body | ConvertTo-Json -Depth 10
                 $response = Invoke-RestMethod -Uri $endpoint -Method POST -Headers $headers -Body $requestJson
-                
+
                 switch ($Config.LlmProvider) {
                     "openai" { return $response.choices[0].message.content }
                     "anthropic" { return $response.content[0].text }
@@ -532,14 +527,14 @@ if ($PrNumber) {
     try {
         $prJson = gh pr view $PrNumber --repo $Config.SourceRepo --json number,title,url,baseRefName,closedAt,mergeCommit,labels,files,state
         $prData = $prJson | ConvertFrom-Json
-        
+
         # Verify PR has the target label
         $hasTargetLabel = $prData.labels | Where-Object { $_.name -eq $Config.TargetLabel }
         if (-not $hasTargetLabel) {
             Write-Error "PR #$PrNumber does not have the '$($Config.TargetLabel)' label"
             exit 1
         }
-        
+
         $prs = @($prData)
         Write-Host "   Found PR #$($prs[0].number): $($prs[0].title)"
     } catch {
@@ -549,7 +544,7 @@ if ($PrNumber) {
 } else {
     # Query mode - fetch all PRs matching criteria
     Write-Host "   Mode: Query - $Query"
-    
+
     try {
         $prsJson = gh pr list --repo $Config.SourceRepo --search $Query --limit $Config.MaxPRs --json number,title,url,baseRefName,closedAt,mergeCommit,labels,files
         $prs = $prsJson | ConvertFrom-Json
@@ -557,7 +552,7 @@ if ($PrNumber) {
         Write-Error "Failed to fetch PRs: $($_.Exception.Message)"
         exit 1
     }
-    
+
     Write-Host "   Found $($prs.Count) PRs to collect data for"
 }
 
@@ -565,7 +560,7 @@ if ($PrNumber) {
 $analysisData = @()
 foreach ($pr in $prs) {
     Write-Host "   Collecting data for PR #$($pr.number): $($pr.title)" -ForegroundColor Gray
-    
+
     # Get comprehensive PR details including comments and reviews
     try {
         $prDetails = gh pr view $pr.number --repo $Config.SourceRepo --json body,title,comments,reviews,closingIssuesReferences
@@ -574,7 +569,7 @@ foreach ($pr in $prs) {
         Write-Warning "Could not fetch detailed PR data for #$($pr.number)"
         continue
     }
-    
+
     # Get closing issues with full details and comments
     $closingIssues = @()
     foreach ($issueRef in $prDetailData.closingIssuesReferences) {
@@ -600,18 +595,18 @@ foreach ($pr in $prs) {
             }
         }
     }
-    
+
     # Create merge commit URL
     $mergeCommitUrl = if ($pr.mergeCommit.oid) {
         "https://github.com/$($Config.SourceRepo)/commit/$($pr.mergeCommit.oid)"
     } else {
         $null
     }
-    
+
     # Get version information using local git repository
     Write-Host "     🏷️ Getting version info..." -ForegroundColor DarkGray
     $versionInfo = Get-VersionInfo -prNumber $pr.number -mergedAt $pr.closedAt -baseRef $pr.baseRefName
-    
+
     # Check for existing docs issues
     $hasDocsIssue = $false
     try {
@@ -621,17 +616,17 @@ foreach ($pr in $prs) {
     } catch {
         Write-Warning "Could not check for existing docs issues for PR #$($pr.number)"
     }
-    
+
     # Get feature areas from area- labels first, then fall back to file paths
     $featureAreas = @()
-    
+
     # First try to get feature areas from area- labels
     foreach ($label in $pr.labels) {
         if ($label.name -match "^area-(.+)$") {
             $featureAreas += $matches[1]
         }
     }
-    
+
     # If no area labels found, fall back to file path analysis
     if ($featureAreas.Count -eq 0) {
         foreach ($file in $pr.files) {
@@ -642,10 +637,10 @@ foreach ($pr in $prs) {
             }
         }
     }
-    
+
     $featureAreas = $featureAreas | Select-Object -Unique
     if ($featureAreas.Count -eq 0) { $featureAreas = @("Runtime") }
-    
+
     $analysisData += @{
         Number = $pr.number
         Title = $pr.title
@@ -669,17 +664,17 @@ foreach ($pr in $prs) {
         Labels = $pr.labels | ForEach-Object { $_.name }
         VersionInfo = $versionInfo
     }
-    
+
     # Save individual PR data file
-    $prFileName = ".\data\pr_$($pr.number).json"
+    $prFileName = Join-Path $dataDir "pr_$($pr.number).json"
     $analysisData[-1] | ConvertTo-Json -Depth 10 | Out-File $prFileName -Encoding UTF8
     Write-Host "     💾 Saved: $prFileName" -ForegroundColor DarkGray
-    
+
     Start-Sleep -Seconds $Config.RateLimiting.DelayBetweenCalls
 }
 
 # Save combined data with comprehensive details (for overview)
-$analysisData | ConvertTo-Json -Depth 10 | Out-File ".\data\combined.json" -Encoding UTF8
+$analysisData | ConvertTo-Json -Depth 10 | Out-File (Join-Path $dataDir "combined.json") -Encoding UTF8
 
 # Create summary report
 $queryInfo = if ($PrNumber) {
@@ -713,12 +708,12 @@ $($analysisData | Where-Object HasDocsIssue | ForEach-Object {
 } | Out-String)
 "@
 
-$summaryReport | Out-File ".\data\summary_report.md" -Encoding UTF8
+$summaryReport | Out-File (Join-Path $dataDir "summary_report.md") -Encoding UTF8
 
 Write-Host "✅ Data collection completed completed" -ForegroundColor Green
-Write-Host "   📊 Summary: .\data\summary_report.md"
-Write-Host "   📋 Combined: .\data\combined.json"
-Write-Host "   📄 Individual: .\data\pr_*.json ($($analysisData.Count) files)"
+Write-Host "   📊 Summary: $(Join-Path $dataDir "summary_report.md")"
+Write-Host "   📋 Combined: $(Join-Path $dataDir "combined.json")"
+Write-Host "   📄 Individual: $(Join-Path $dataDir "pr_*.json") ($($analysisData.Count) files)"
 
 if ($CollectOnly) {
     exit 0
@@ -746,7 +741,7 @@ if ($PrNumber) {
 
 foreach ($pr in $prsNeedingDocs) {
     Write-Host "   🔍 Processing PR #$($pr.Number): $($pr.Title)" -ForegroundColor Cyan
-    
+
     # Get detailed PR data
     try {
         $prDetails = gh pr view $pr.Number --repo $Config.SourceRepo --json body,title,comments,reviews,closingIssuesReferences,files
@@ -755,16 +750,16 @@ foreach ($pr in $prsNeedingDocs) {
         Write-Error "Failed to get PR details for #$($pr.Number)"
         continue
     }
-    
+
     # Prepare data for LLM
     $comments = if ($pr.Comments -and $pr.Comments.Count -gt 0) {
         ($pr.Comments | ForEach-Object { "**@$($_.author.login)**: $(Limit-Text -text $_.body -maxLength 300)" }) -join "`n`n"
     } else { "No comments" }
-    
+
     $reviews = if ($pr.Reviews -and $pr.Reviews.Count -gt 0) {
         ($pr.Reviews | ForEach-Object { "**@$($_.author.login)** ($($_.state)): $(Limit-Text -text $_.body -maxLength 200)" }) -join "`n`n"
     } else { "No reviews" }
-    
+
     $closingIssuesInfo = if ($pr.ClosingIssues -and $pr.ClosingIssues.Count -gt 0) {
         $issuesList = $pr.ClosingIssues | ForEach-Object {
             $issueComments = if ($_.Comments -and $_.Comments.Count -gt 0) {
@@ -781,17 +776,17 @@ $issueComments
         }
         "`n## Related Issues`n" + ($issuesList -join "`n`n")
     } else { "" }
-    
+
     # Fetch issue template and examples (required for quality)
     $issueTemplate = Get-IssueTemplate
     $exampleIssues = Get-ExampleBreakingChangeIssues
-    
+
     # Use version information collected in Step 1
     $versionInfo = $pr.VersionInfo
-    
+
     # Create LLM prompt
     $systemPrompt = @"
-You are an expert .NET developer and technical writer. Create high-quality breaking change documentation for Microsoft .NET. 
+You are an expert .NET developer and technical writer. Create high-quality breaking change documentation for Microsoft .NET.
 
 **CRITICAL: Generate clean markdown content following the structure shown in the examples. Do NOT output YAML or fill in template forms. The template is provided only as a reference for sections and values.**
 
@@ -808,7 +803,7 @@ Pay special attention to the version information provided to ensure accuracy.
 
     $templateSection = @"
 ## Issue Template Structure Reference
-The following GitHub issue template shows the required sections and possible values for breaking change documentation. 
+The following GitHub issue template shows the required sections and possible values for breaking change documentation.
 **IMPORTANT: This is NOT the expected output format. Use this only as a reference for what sections to include and what values are available. Generate clean markdown content, not YAML.**
 
 ```yaml
@@ -873,12 +868,12 @@ Generate the complete issue following the template structure and using the examp
     # Call LLM API
     Write-Host "     🤖 Generating content..." -ForegroundColor Gray
     $llmResponse = Invoke-LlmApi -SystemPrompt $systemPrompt -Prompt $userPrompt
-    
+
     if (-not $llmResponse) {
         Write-Error "Failed to get LLM response for PR #$($pr.Number)"
         continue
     }
-    
+
     # Parse response
     if ($llmResponse -match '(?s)\*\*Issue Title\*\*:\s*(.+?)\s*\*\*Issue Body\*\*:\s*(.+)$') {
         $issueTitle = $matches[1].Trim()
@@ -887,9 +882,9 @@ Generate the complete issue following the template structure and using the examp
         $issueTitle = "[Breaking change]: $($prData.title -replace '^\[.*?\]\s*', '')"
         $issueBody = $llmResponse
     }
-    
+
     # Save issue draft
-    $issueFile = ".\issue-drafts\issue_pr_$($pr.Number).md"
+    $issueFile = Join-Path $issueDraftsDir "issue_pr_$($pr.Number).md"
     @"
 # $issueTitle
 
@@ -902,18 +897,18 @@ $issueBody
 "@ | Out-File $issueFile -Encoding UTF8
 
     Write-Host "     📄 Draft saved: $issueFile" -ForegroundColor Gray
-    
+
      # Add comment with link to create issue using GitHub's issue creation URL
-    $commentFile = ".\comment-drafts\comment_pr_$($pr.Number).md"
-    
+    $commentFile = Join-Path $commentDraftsDir "comment_pr_$($pr.Number).md"
+
     # URL encode the title and full issue body
     $encodedTitle = Get-UrlEncodedText -text $issueTitle
     $encodedBody = Get-UrlEncodedText -text $issueBody
     $encodedLabels = Get-UrlEncodedText -text ($Config.IssueTemplate.Labels -join ",")
-    
+
     # Create GitHub issue creation URL with full content and labels
     $createIssueUrl = "https://github.com/$($Config.DocsRepo)/issues/new?title=$encodedTitle&body=$encodedBody&labels=$encodedLabels"
-    
+
     $commentBody = @"
 ## 📋 Breaking Change Documentation Required
 
@@ -939,12 +934,12 @@ $issueBody
         # Create GitHub issue directly
         try {
             Write-Host "     🚀 Creating GitHub issue..." -ForegroundColor Gray
-            
+
             $result = gh issue create --repo $Config.DocsRepo --title $issueTitle --body $issueBody --label ($Config.IssueTemplate.Labels -join ",") --assignee $Config.IssueTemplate.Assignee
-            
+
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "     ✅ Issue created: $result" -ForegroundColor Green
-                
+
                 # Add comment to original PR
                 $prComment = "Breaking change documentation issue created: $result"
                 gh pr comment $pr.Number --repo $Config.SourceRepo --body $prComment | Out-Null
@@ -959,9 +954,9 @@ $issueBody
        # Add a comment to the PR to allow the author to create the issue
         try {
             Write-Host "     💬 Adding comment to PR..." -ForegroundColor Gray
-            
+
             $result = gh pr comment $pr.Number --repo $Config.SourceRepo --body-file $commentFile
-            
+
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "     ✅ Comment added to PR #$($pr.Number)" -ForegroundColor Green
             } else {
@@ -972,7 +967,7 @@ $issueBody
             Write-Error "Error adding comment to PR #$($pr.Number): $($_.Exception.Message)"
         }
     }
-    
+
     Start-Sleep -Seconds $Config.RateLimiting.DelayBetweenIssues
 }
 
@@ -987,14 +982,14 @@ if (-not $executeActions -and -not $CollectOnly) {
     Write-Host "   📧 Email issue links to: $($Config.IssueTemplate.NotificationEmail)" -ForegroundColor Yellow
 } elseif ($Comment) {
     Write-Host "   💬 Comments added to PRs with create issue links" -ForegroundColor Green
-    Write-Host "   📝 Issue drafts saved in: .\issue-drafts\"
+    Write-Host "   📝 Issue drafts saved in: $issueDraftsDir"
     Write-Host "   🔗 Click the links in PR comments to create issues when ready"
 } else {
-    Write-Host "   📝 Issue drafts saved in: .\issue-drafts\"
+    Write-Host "   📝 Issue drafts saved in: $issueDraftsDir"
 }
 
 Write-Host "`n📁 Output files:"
-Write-Host "   📊 Summary: .\data\summary_report.md"
-Write-Host "   📋 Combined: .\data\combined_analysis.json"
-Write-Host "   📄 Individual: .\data\pr_*.json"
-Write-Host "   📝 Drafts: .\issue-drafts\*.md"
+Write-Host "   📊 Summary: $(Join-Path $dataDir "summary_report.md")"
+Write-Host "   📋 Combined: $(Join-Path $dataDir "combined.json")"
+Write-Host "   📄 Individual: $(Join-Path $dataDir "pr_*.json")"
+Write-Host "   📝 Drafts: $(Join-Path $issueDraftsDir "*.md")"
