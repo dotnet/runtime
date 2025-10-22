@@ -4658,6 +4658,7 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     SOSDacEnter();
 
     *pRejitId = -1;
+    hr = S_FALSE;
 #ifdef FEATURE_CODE_VERSIONING
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
@@ -4671,13 +4672,8 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     else if (ilVersion.GetRejitState() == RejitFlags::kStateRequested)
     {
         *pRejitId = (int)ilVersion.GetVersionId();
+        hr = S_OK;
     }
-    else
-    {
-        hr = S_FALSE;
-    }
-#else
-    hr = S_FALSE;
 #endif // FEATURE_CODE_VERSIONING
     SOSDacLeave();
 
