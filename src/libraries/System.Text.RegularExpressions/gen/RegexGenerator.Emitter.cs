@@ -957,12 +957,10 @@ namespace System.Text.RegularExpressions.Generator
                         // If we also have a trailing End anchor with fixed length, we can check for exact length match.
                         // Compute this lazily to avoid overhead in the interpreter.
                         {
-                            RegexNodeKind trailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(regexTree.Root);
-                            int minRequiredLength = regexTree.FindOptimizations.MinRequiredLength;
-                            if (trailingAnchor == RegexNodeKind.End &&
-                                regexTree.Root.ComputeMaxLength() is int maxLength &&
-                                minRequiredLength == maxLength)
+                            if (RegexPrefixAnalyzer.FindTrailingAnchor(regexTree.Root) == RegexNodeKind.End &&
+                                regexTree.Root.ComputeMaxLength() == regexTree.FindOptimizations.MinRequiredLength)
                             {
+                                int minRequiredLength = regexTree.FindOptimizations.MinRequiredLength;
                                 writer.WriteLine($"// The pattern has both a leading beginning (\\A) and a trailing end (\\z) anchor, and any possible match is exactly {minRequiredLength} characters.");
                                 using (EmitBlock(writer, $"if (pos == 0 && inputSpan.Length == {minRequiredLength})"))
                                 {

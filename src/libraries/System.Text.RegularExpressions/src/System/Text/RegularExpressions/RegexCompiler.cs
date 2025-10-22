@@ -510,24 +510,19 @@ namespace System.Text.RegularExpressions
                         // If we also have a trailing End anchor with fixed length, we can check for exact length match.
                         // Compute this lazily to avoid overhead in the interpreter.
                         {
-                            RegexNodeKind trailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(_regexTree.Root);
-                            int minRequiredLength = _regexTree.FindOptimizations.MinRequiredLength;
-                            if (trailingAnchor == RegexNodeKind.End &&
-                                _regexTree.Root.ComputeMaxLength() is int maxLength &&
-                                minRequiredLength == maxLength)
+                            if (RegexPrefixAnalyzer.FindTrailingAnchor(_regexTree.Root) == RegexNodeKind.End &&
+                                _regexTree.Root.ComputeMaxLength() == _regexTree.FindOptimizations.MinRequiredLength)
                             {
                                 // if (pos != 0 || inputSpan.Length != exactLength) goto returnFalse;
                                 // return true;
-                                Label success = DefineLabel();
+                                int minRequiredLength = _regexTree.FindOptimizations.MinRequiredLength;
                                 Ldloc(pos);
                                 Ldc(0);
                                 Bne(returnFalse);
                                 Ldloca(inputSpan);
                                 Call(SpanGetLengthMethod);
                                 Ldc(minRequiredLength);
-                                Beq(success);
-                                Br(returnFalse);
-                                MarkLabel(success);
+                                Bne(returnFalse);
                                 Ldc(1);
                                 Ret();
                                 return true;
