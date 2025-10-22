@@ -4971,6 +4971,15 @@ HRESULT CordbValueEnum::Init()
             }
 #else
             m_iMax = 0;
+                m_iMax = 0;
+#ifdef FEATURE_CODE_VERSIONING
+                CordbReJitILCode* pCode = jil->GetReJitILCode();
+                if (pCode != NULL)
+                {
+                    IfFailRet(pCode->GetLocalVarSig(NULL, &localsCount));
+
+                    // Grab the number of locals for the size of the enumeration.
+                    m_iMax = localsCount;
 #endif // FEATURE_CODE_VERSIONING
             break;
         }
