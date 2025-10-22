@@ -8,9 +8,6 @@
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
-.assembly 'mcc_i76' {}
-
-
 .namespace mcc_i76
 {
   .class public MyClass
@@ -124,7 +121,6 @@
       .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.PlatformSpecificAttribute::.ctor(valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestPlatforms) = {
             int32 (1) // TestPlatforms.Windows
         }
-      .entrypoint
       .maxstack  1
 
     DoTest:
@@ -161,4 +157,6 @@
   } // end of class MyClass
 
 } // end of namespace mcc_i76
+
+
 

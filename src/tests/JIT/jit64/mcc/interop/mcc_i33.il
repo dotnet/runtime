@@ -8,9 +8,6 @@
 .assembly extern mscorlib { auto }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 
-.assembly 'mcc_i33' {}
-
-
 .namespace mcc_i33
 {
   .class public MyClass
@@ -117,7 +114,6 @@
             type([TestLibrary]TestLibrary.PlatformDetection)
             string[1] ('IsVarArgsSupported')
         }
-      .entrypoint
       .maxstack  1
 
 
@@ -155,6 +151,8 @@
   } // end of class MyClass
 
 } // end of namespace mcc_i33
+
+
 
 
 

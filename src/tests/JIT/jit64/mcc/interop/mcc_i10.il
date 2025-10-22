@@ -6,9 +6,6 @@
 .assembly extern xunit.core {}
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
-.assembly 'mcc_i10' {}
-
-
 .namespace mcc_i10
 {
   .class public MyClass
@@ -23,7 +20,6 @@
             type([TestLibrary]TestLibrary.PlatformDetection)
             string[1] ('IsVarArgsSupported')
         }
-      .entrypoint
       .maxstack  1
 
 
@@ -83,6 +79,8 @@
   } // end of class MyClass
 
 } // end of namespace mcc_i10
+
+
 
 
 
