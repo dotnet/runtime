@@ -2950,11 +2950,16 @@ public:
 
             for (BasicBlock* pred : block->PredBlocks())
             {
-                if (!BitVecOps::IsMember(&m_traits, m_blocks, pred->bbPostorderNum))
+                if (BitVecOps::IsMember(&m_traits, m_blocks, pred->bbPostorderNum))
+                {
+                    // Pred is in the scc, so not an entry edge
+                    continue;
+                }
+
+                if (BitVecOps::TryAddElemD(&m_traits, m_entries, block->bbPostorderNum))
                 {
                     JITDUMP(FMT_BB " is scc entry\n", block->bbNum);
 
-                    BitVecOps::AddElemD(&m_traits, m_entries, block->bbPostorderNum);
                     m_entryWeight += block->bbWeight;
 
                     if (isFirstEntry)
@@ -3172,13 +3177,13 @@ public:
             JITDUMP("Transforming SCC via switch dispatch: ");
             JITDUMPEXEC(Dump());
 
-            if (HasOSREntryHeaderInTry())
-            {
-                JITDUMP("  cannot transform: header " FMT_BB " is OSR entry in a try region\n",
-                        m_comp->fgOSREntryBB->bbNum);
-                failedToModify = true;
-                return false;
-            }
+//            if (HasOSREntryHeaderInTry())
+//            {
+//                JITDUMP("  cannot transform: header " FMT_BB " is OSR entry in a try region\n",
+//                        m_comp->fgOSREntryBB->bbNum);
+//                failedToModify = true;
+//                return false;
+//            }
 
             modified                       = true;
             const unsigned   controlVarNum = m_comp->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("SCC control var"));
@@ -3246,11 +3251,11 @@ public:
                 // and then branch to the outermost enclosing try's header.
                 //
                 FlowEdge* dispatchToHeaderEdge = nullptr;
-                if ((header == m_comp->fgOSREntryBB) && (header->bbTryIndex != dispatcher->bbTryIndex))
-                {
-                    assert(!"Transforming SCC with OSR entry in try region not implemented");
-                }
-                else
+//                if ((header == m_comp->fgOSREntryBB) && (header->bbTryIndex != dispatcher->bbTryIndex))
+//                {
+//                    assert(!"Transforming SCC with OSR entry in try region not implemented");
+//                }
+//                else
                 {
                     dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
                 }
@@ -3260,7 +3265,7 @@ public:
                 //
                 if ((headerNumber + 1) == numHeaders)
                 {
-                    dispatchToHeaderEdge->setLikelihood(1.0 - netLikelihood);
+                    dispatchToHeaderEdge->setLikelihood(max(0.0, (1.0 - netLikelihood)));
                 }
                 else if (TotalEntryWeight() > 0)
                 {
