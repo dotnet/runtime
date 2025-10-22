@@ -11,4 +11,7 @@
   <ItemGroup>
     <Compile Include="arglist.il" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
 </Project>
