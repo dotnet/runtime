@@ -3,5 +3,4 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="main.js" />
   </ItemGroup>
-  </ItemGroup>
 </Project>
