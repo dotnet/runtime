@@ -1245,7 +1245,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
             TADDR pNativeCode = PCODEToPINSTR((*iter).GetNativeCode());
             nativeCodeAddrs[count].NativeCodeAddr = pNativeCode;
             PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
-            nativeCodeAddrs[count].NativeCodeVersionNodePtr = TO_CDADDR(PTR_TO_TADDR(pNode));
+            nativeCodeAddrs[count].NativeCodeVersionNodePtr = PTR_CDADDR(pNode);
 
             if (r2rImageBase <= pNativeCode && pNativeCode < r2rImageEnd)
             {
@@ -4718,14 +4718,14 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
             break;
         }
 
-        pReJitData->il = TO_CDADDR(PTR_TO_TADDR(ilVersion.GetIL()));
+        pReJitData->il = PTR_CDADDR(ilVersion.GetIL());
         PTR_ILCodeVersionNode nodePtr = ilVersion.IsDefaultVersion() ? NULL : ilVersion.AsNode();
-        pReJitData->ilCodeVersionNodePtr = TO_CDADDR(PTR_TO_TADDR(nodePtr));
+        pReJitData->ilCodeVersionNodePtr = PTR_CDADDR(nodePtr);
     }
 #else
     pReJitData->rejitID = rejitId;
     pReJitData->flags = DacpReJitData2::kActive;
-    pReJitData->il = (CLRDATA_ADDRESS)pMD->GetILHeader();
+    pReJitData->il = PTR_CDADDR(pMD->GetILHeader());
     pReJitData->ilCodeVersionNodePtr = 0;
 #endif // FEATURE_CODE_VERSIONING
 
