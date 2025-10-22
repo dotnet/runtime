@@ -1175,12 +1175,16 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRetVector64);
         case ReturnType2Vector64:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet2Vector64);
+        case ReturnType3Vector64:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet3Vector64);
         case ReturnType4Vector64:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet4Vector64);
         case ReturnTypeVector128:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetVector128);
         case ReturnType2Vector128:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet2Vector128);
+        case ReturnType3Vector128:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet3Vector128);
         case ReturnType4Vector128:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet4Vector128);
 #endif // TARGET_ARM64

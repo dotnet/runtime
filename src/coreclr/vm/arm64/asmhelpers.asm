@@ -2336,7 +2336,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     NESTED_ENTRY CallJittedMethodRet2Vector128
-        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         str x2, [fp, #16]
         sub sp, sp, x3
         mov x10, x0
@@ -2347,7 +2347,7 @@ CopyLoop
         str q0, [x2], #16
         str q1, [x2]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet2Vector128
 
@@ -2356,7 +2356,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     NESTED_ENTRY CallJittedMethodRet3Vector128
-        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         str x2, [fp, #16]
         sub sp, sp, x3
         mov x10, x0
@@ -2368,7 +2368,7 @@ CopyLoop
         str q1, [x2], #16
         str q2, [x2]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet3Vector128
 
@@ -2377,7 +2377,7 @@ CopyLoop
     ; X2 - interpreter stack return value location
     ; X3 - stack arguments size (properly aligned)
     NESTED_ENTRY CallJittedMethodRet4Vector128
-        PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
+        PROLOG_SAVE_REG_PAIR fp, lr, #-32!
         str x2, [fp, #16]
         sub sp, sp, x3
         mov x10, x0
@@ -2390,7 +2390,7 @@ CopyLoop
         str q2, [x2], #16
         str q3, [x2]
         EPILOG_STACK_RESTORE
-        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
+        EPILOG_RESTORE_REG_PAIR fp, lr, #32!
         EPILOG_RETURN
     NESTED_END CallJittedMethodRet4Vector128
 
