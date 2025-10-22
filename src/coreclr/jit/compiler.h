@@ -6241,6 +6241,9 @@ public:
     template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile = false>
     unsigned fgRunDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge);
 
+    template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile = false>
+    unsigned fgRunSubgraphDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge, BitVec& subgraph, BitVecTraits& subgraphTraits);
+
     template <const bool useProfile = false>
     FlowGraphDfsTree* fgComputeDfs();
     void fgInvalidateDfsTree();
@@ -7026,8 +7029,8 @@ public:
     void optFindLoops();
     bool optCanonicalizeLoops();
 
-    bool optFindSCCs();
-    void optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*>& sccs);
+    bool optFindSCCs(bool& failedToModify);
+    void optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*>& sccs, BasicBlock** postorder, unsigned postorderCount);
 
     void optCompactLoops();
     void optCompactLoop(FlowGraphNaturalLoop* loop);

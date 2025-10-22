@@ -2350,16 +2350,17 @@ void Compiler::optFindLoops()
     if (m_loops->ImproperLoopHeaders() > 0)
     {
         JITDUMP("Improper headers detected, finding SCCs\n");
-        if (optFindSCCs())
+        bool failedToModifyAll = false;
+        if (optFindSCCs(failedToModifyAll))
         {
-            fgInvalidateDfsTree();
-            m_dfsTree = fgComputeDfs();
-            m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-
-            // not guaranteed as this counts "non canonical loops" too
-            //
-            assert(m_loops->ImproperLoopHeaders() == 0);
+            JITDUMP("SCC modification %ssucceeded, finding natural loops\n", failedToModifyAll ? "partially " : "");
         }
+
+        fgInvalidateDfsTree();
+        m_dfsTree = fgComputeDfs();
+        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
+
+        assert(failedToModifyAll || (m_loops->ImproperLoopHeaders() == 0));
     }
 
     optCompactLoops();
@@ -2890,8 +2891,11 @@ private:
     unsigned m_enclosingTryIndex;
     // lowest common ancestor handler index + 1, or 0 if method region
     unsigned m_enclosingHndIndex;
-
+    // total weight of all entry blocks
     weight_t m_entryWeight;
+    // true if one of the SCC entries is the OSR entry block, and it's within a try region
+    // transforming these is more complex and is only needed when jitting.
+    bool m_hasOSREntryHeaderInTry;
 
 public:
 
@@ -2907,6 +2911,7 @@ public:
         , m_enclosingTryIndex(0)
         , m_enclosingHndIndex(0)
         , m_entryWeight(0)
+        , m_hasOSREntryHeaderInTry(false)
     {
         m_blocks  = BitVecOps::MakeEmpty(&m_traits);
         m_entries = BitVecOps::MakeEmpty(&m_traits);
@@ -2926,6 +2931,8 @@ public:
 
     void ComputeEntries()
     {
+        JITDUMP("SCC has %u blocks\n", BitVecOps::Count(&m_traits, m_blocks));
+
         BitVecOps::Iter iterator(&m_traits, m_blocks);
         unsigned int    poNum;
         bool            isFirstEntry = true;
@@ -2945,6 +2952,8 @@ public:
             {
                 if (!BitVecOps::IsMember(&m_traits, m_blocks, pred->bbPostorderNum))
                 {
+                    JITDUMP(FMT_BB " is scc entry\n", block->bbNum);
+
                     BitVecOps::AddElemD(&m_traits, m_entries, block->bbPostorderNum);
                     m_entryWeight += block->bbWeight;
 
@@ -2961,6 +2970,11 @@ public:
 
                         // But possibly different try regions
                         m_enclosingTryIndex = m_comp->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
+                    }
+
+                    if ((block == m_comp->fgOSREntryBB) && block->hasTryIndex())
+                    {
+                        m_hasOSREntryHeaderInTry = true;
                     }
                 }
             }
@@ -2985,6 +2999,11 @@ public:
     bool IsIrr()
     {
         return NumEntries() > 1;
+    }
+
+    bool HasOSREntryHeaderInTry()
+    {
+        return m_hasOSREntryHeaderInTry;
     }
 
     unsigned NumIrr()
@@ -3053,7 +3072,48 @@ public:
     {
         ArrayStack<SCC*> nestedSccs(m_comp->getAllocator(CMK_DepthFirstSearch));
         BitVec           nestedBlocks = InternalBlocks();
-        m_comp->optFindSCCs(nestedBlocks, m_traits, nestedSccs);
+        unsigned         nestedCount  = BitVecOps::Count(&m_traits, nestedBlocks);
+
+        if (nestedCount == 0) // < 2...?
+        {
+            return;
+        }
+
+        JITDUMP("\n --> nested %u blocks... \n", BitVecOps::Count(&m_traits, nestedBlocks));
+
+        // Build a new postorder for the nested blocks
+        //
+        BasicBlock** postOrder = new (m_comp, CMK_DepthFirstSearch) BasicBlock*[nestedCount];
+
+        auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {};
+
+        auto visitPostorder = [&postOrder](BasicBlock* block, unsigned postorderNum) {
+            postOrder[postorderNum] = block;
+        };
+
+        auto visitEdge = [](BasicBlock* block, BasicBlock* succ) {};
+
+        unsigned numBlocks =
+            m_comp->fgRunSubgraphDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                                     /* useProfile */ false>(visitPreorder, visitPostorder, visitEdge, nestedBlocks,
+                                                             m_traits);
+
+        if (numBlocks != nestedCount)
+        {
+            JITDUMP("Eh? numBlocks %u nestedCount %u\n", numBlocks, nestedCount);
+        }
+        // assert(numBlocks == nestedCount);
+
+        JITDUMP("[dfs done, postorder is]\n");
+        for (unsigned i = 0; i < nestedCount; i++)
+        {
+            JITDUMP(FMT_BB " ", postOrder[i]->bbNum);
+        }
+        JITDUMP("\n");
+
+        // Use that to find the nested SCCs
+        //
+        m_comp->optFindSCCs(nestedBlocks, m_traits, nestedSccs, postOrder, nestedCount);
 
         const int nNested = nestedSccs.Height();
 
@@ -3067,6 +3127,8 @@ public:
             SCC* const nestedScc = nestedSccs.Bottom(i);
             m_nested.push_back(nestedScc);
         }
+
+        JITDUMP("\n <-- nested ... \n");
     }
 
     unsigned EnclosingTryIndex()
@@ -3082,6 +3144,8 @@ public:
     //-----------------------------------------------------------------------------
     // TransformViaSwichDispatch: modify SCC into a reducible loop
     //
+    // Arguments:
+    //   failedToModify - set to true if the transformation could not be completed
     // Notes:
     //
     //   A multi-entry SCC is modified as follows:
@@ -3098,7 +3162,7 @@ public:
     //
     //   (validate: all headers in same EH region, none can be a region entry)
     //
-    bool TransformViaSwitchDispatch()
+    bool TransformViaSwitchDispatch(bool& failedToModify)
     {
         bool           modified   = false;
         const unsigned numHeaders = NumEntries();
@@ -3107,6 +3171,14 @@ public:
         {
             JITDUMP("Transforming SCC via switch dispatch: ");
             JITDUMPEXEC(Dump());
+
+            if (HasOSREntryHeaderInTry())
+            {
+                JITDUMP("  cannot transform: header " FMT_BB " is OSR entry in a try region\n",
+                        m_comp->fgOSREntryBB->bbNum);
+                failedToModify = true;
+                return false;
+            }
 
             modified                       = true;
             const unsigned   controlVarNum = m_comp->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("SCC control var"));
@@ -3173,9 +3245,15 @@ public:
                 // control vars for each enclosing try that is an SCC header (already handled)
                 // and then branch to the outermost enclosing try's header.
                 //
-                assert(!header->hasTryIndex() || (header != m_comp->fgOSREntryBB));
-
-                FlowEdge* const dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
+                FlowEdge* dispatchToHeaderEdge = nullptr;
+                if ((header == m_comp->fgOSREntryBB) && (header->bbTryIndex != dispatcher->bbTryIndex))
+                {
+                    assert(!"Transforming SCC with OSR entry in try region not implemented");
+                }
+                else
+                {
+                    dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
+                }
 
                 // Since all flow to header now goes through dispatch, we know the likelihood
                 // of the dispatch targets. If all profile data is zero just divide evenly.
@@ -3218,7 +3296,7 @@ public:
         //
         for (SCC* const nested : m_nested)
         {
-            modified |= nested->TransformViaSwitchDispatch();
+            modified |= nested->TransformViaSwitchDispatch(failedToModify);
         }
 
         return modified;
@@ -3230,16 +3308,19 @@ typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, SCC*> SCCMap;
 //-----------------------------------------------------------------------------
 // optFindSCCs: find strongly connected components in the flow graph
 //
+// Arguments:
+//   failedToModify - [out] set to true if we failed to modify any irreducible SCCs
+//
 // Returns:
 //   true if the flow graph was modified
 //
-bool Compiler::optFindSCCs()
+bool Compiler::optFindSCCs(bool& failedToModify)
 {
     BitVecTraits traits(m_dfsTree->GetPostOrderCount(), this);
     BitVec       allBlocks = BitVecOps::MakeFull(&traits);
 
     ArrayStack<SCC*> sccs(getAllocator(CMK_DepthFirstSearch));
-    optFindSCCs(allBlocks, traits, sccs);
+    optFindSCCs(allBlocks, traits, sccs, m_dfsTree->GetPostOrder(), m_dfsTree->GetPostOrderCount());
 
     unsigned numIrreducible       = 0;
     unsigned numNestedIrreducible = 0;
@@ -3277,7 +3358,7 @@ bool Compiler::optFindSCCs()
         for (int i = 0; i < sccs.Height(); i++)
         {
             SCC* const scc = sccs.Bottom(i);
-            modified |= scc->TransformViaSwitchDispatch();
+            modified |= scc->TransformViaSwitchDispatch(failedToModify);
         }
     }
 
@@ -3291,8 +3372,11 @@ bool Compiler::optFindSCCs()
 //   subset - bv describing the subgraph
 //   traits - bv traits
 //   sccs   - [out] collection of SCCs found in this subgraph
+//   postorder - array of BasicBlock* in postorder
+//   postorderCount - size of hte array
 //
-void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*>& sccs)
+void Compiler::optFindSCCs(
+    BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*>& sccs, BasicBlock** postorder, unsigned postorderCount)
 {
     // Initially we map a block to a null entry in the map.
     // If we then get a second block in that SCC, we allocate an SCC instance.
@@ -3349,6 +3433,7 @@ void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*
                 sccs.Push(scc);
             }
 
+            // JITDUMP("Adding " FMT_BB " to scc with root " FMT_BB "\n", u->bbNum, root->bbNum);
             scc->Add(u);
         }
 
@@ -3362,7 +3447,7 @@ void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*
         //
         if (bbIsHandlerBeg(u))
         {
-            JITDUMP("hdlr " FMT_BB ", skipping all preds\n");
+            // JITDUMP("hdlr " FMT_BB ", skipping all preds\n");
             return;
         }
 
@@ -3384,7 +3469,7 @@ void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*
             //
             if (p->KindIs(BBJ_EHCATCHRET))
             {
-                JITDUMP("c-cont " FMT_BB ", skipping " FMT_BB "\n", u->bbNum, u->Prev()->bbNum);
+                // JITDUMP("c-cont " FMT_BB ", skipping " FMT_BB "\n", u->bbNum, u->Prev()->bbNum);
                 continue;
             }
 
@@ -3392,12 +3477,19 @@ void Compiler::optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*
         }
     };
 
-    // proper rdfs here? Seems like recursion might be bad
+    // proper rdfs? bv iter...?
     //
-    for (unsigned i = 0; i < m_dfsTree->GetPostOrderCount(); i++)
+    for (unsigned i = 0; i < postorderCount; i++)
     {
-        unsigned          rpoNum = m_dfsTree->GetPostOrderCount() - i - 1;
-        BasicBlock* const block  = m_dfsTree->GetPostOrder(rpoNum);
+        unsigned const    rpoNum = postorderCount - i - 1;
+        BasicBlock* const block  = postorder[rpoNum];
+
+        if (!BitVecOps::IsMember(&traits, subset, block->bbPostorderNum))
+        {
+            continue;
+        }
+
+        // JITDUMP("Top-level assign: " FMT_BB "\n", block->bbNum);
         assign(assign, block, block, subset);
     }
 
