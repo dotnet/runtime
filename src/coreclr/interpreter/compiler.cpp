@@ -5870,7 +5870,7 @@ retry_emit:
                         }
                         else if (retStackType == StackTypeI && (stackType == StackTypeO || stackType == StackTypeByRef))
                         {
-                            // Allow implicit conversion from nint to ref or byref
+                            // Allow implicit conversion from ref or byref to nint
                         }
                         else
                         {
