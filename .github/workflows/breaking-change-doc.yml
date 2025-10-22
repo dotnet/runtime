@@ -1,0 +1,74 @@
+name: Breaking Change Documentation
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  generate-breaking-change-doc:
+    if: contains(github.event.label.name, 'needs-breaking-change-doc-created')
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Need full history for version detection
+
+    - name: Verify PowerShell
+      run: |
+        pwsh --version
+
+    - name: Install GitHub CLI
+      run: |
+        # GitHub CLI is pre-installed on ubuntu-latest, but ensure it's latest
+        gh --version
+
+    - name: Install GitHub Models extension
+      run: |
+        gh extension install github/gh-models --force
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Fetch latest tags
+      run: |
+        git fetch --tags --force
+
+    - name: Run breaking change documentation script
+      shell: pwsh
+      working-directory: eng/breakingChanges
+      run: |
+        try {
+          # Authenticate GitHub CLI with the workflow token
+          echo "${{ github.token }}" | gh auth login --with-token
+
+          # Verify authentication
+          gh auth status
+
+          Write-Host "Starting breaking change documentation for PR #${{ github.event.pull_request.number }}"
+          Write-Host "Triggered by label: ${{ github.event.label.name }}"
+
+          # Run the script with the PR number, Comment flag, and skip label validation
+          ./breaking-change-doc.ps1 -PrNumber ${{ github.event.pull_request.number }} -Comment
+
+          Write-Host "Breaking change documentation workflow completed successfully"
+        }
+        catch {
+          Write-Error "Breaking change documentation workflow failed: $($_.Exception.Message)"
+          Write-Host "Error details: $($_.Exception)"
+          exit 1
+        }
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: breaking-change-doc-artifacts-${{ github.event.pull_request.number }}
+        path: artifacts/docs/breakingChanges/
+        retention-days: 7
