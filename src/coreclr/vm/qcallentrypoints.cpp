@@ -77,7 +77,7 @@
 
 #ifdef TARGET_BROWSER
 #include "wasm/wasm-entrypoints.h"
-#endif
+#endif // TARGET_BROWSER
 
 static const Entry s_QCall[] =
 {
