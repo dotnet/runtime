@@ -11,7 +11,7 @@ public class ReflectionTest
     const int Pass = 100;
     const int Fail = -1;
 
-    public static int Main()
+    public static int Main(string[] args)
     {
         if (TestStaticBases() == Fail)
             return Fail;

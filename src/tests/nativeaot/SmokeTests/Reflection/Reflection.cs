@@ -19,7 +19,7 @@ using System.Reflection;
 
 internal static class ReflectionTest
 {
-    private static int Main()
+    public static int Main(string[] args)
     {
         // Things I would like to test, but we don't fully support yet:
         // * Interface method is reflectable if we statically called it through a constrained call

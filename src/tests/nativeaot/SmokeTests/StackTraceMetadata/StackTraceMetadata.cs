@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 class Program
 {
-    static int Main()
+    public static int Main(string[] args)
     {
         BodyFoldingTest.Run();
         DiagnosticMethodInfoTests.Run();

@@ -315,7 +315,7 @@ namespace PInvokeTests
             MagicResult = 42,
         }
 
-        public static int Main()
+        public static int Main(string[] args)
         {
             TestBlittableType();
             TestBoolean();

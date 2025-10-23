@@ -456,7 +456,7 @@
 
 
   <PropertyGroup>
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <DisableImplicitFrameworkReferences Condition="'$(DisableImplicitFrameworkReferences)' == ''">true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -508,6 +508,7 @@
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
   <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(TargetsAndroid)' == 'true'" />
 
   <Target Name="GetBinPlaceTargetFramework" />
 

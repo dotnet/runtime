@@ -12,7 +12,7 @@ using BindingFlags = System.Reflection.BindingFlags;
 
 internal class Program
 {
-    private static int Main()
+    public static int Main(string[] args)
     {
 #if !MULTIMODULE_BUILD
         TestHardwareIntrinsics.Run();

@@ -9,7 +9,7 @@ using System.Reflection;
 class Program
 {
     [Method]
-    static int Main()
+    public static int Main(string[] args)
     {
         // Sanity check: we don't currently expect attributes on types to be optimized away
         if (GetTypeSecretly(nameof(TypeAttribute)) == null)

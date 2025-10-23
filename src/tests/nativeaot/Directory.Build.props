@@ -5,5 +5,7 @@
   <PropertyGroup>
     <!-- We expect trimming to be fully enabled in these tests -->
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <!-- We need the library import generator when running android tests. -->
+    <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 </Project>

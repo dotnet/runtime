@@ -24,7 +24,7 @@ public class BringUpTest
 
     static int finallyCounter = 0;
 
-    public static int Main()
+    public static int Main(string[] args)
     {
         // This test also doubles as server GC test
         if (!System.Runtime.GCSettings.IsServerGC)
