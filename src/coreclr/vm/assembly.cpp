@@ -1311,7 +1311,7 @@ static void RunMainInternal(Param* pParam)
             MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__MAIN_WRAPPER);
             mainWrapper.Call(stackVarWrapper);
         }
-        else if(pParam->EntryType == EntryManagedMainAsyncVoid)
+        else if (pParam->EntryType == EntryManagedMainAsyncVoid)
         {
             *pParam->piRetVal = 0;
             OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
