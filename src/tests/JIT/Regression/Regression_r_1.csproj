@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\V2.0-Beta2\b268908\b268908.csproj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\V2.0-Beta2\b338014\b338014.csproj" />
+    <MergedWrapperProjectReference Include="Dev11\dev11_76013\Dev11_76013.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

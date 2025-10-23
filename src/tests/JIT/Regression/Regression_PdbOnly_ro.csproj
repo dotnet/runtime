@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="clr-x64-JIT\v4.0\DevDiv34372\overRepLocalOpt.csproj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\V1.1-M1-Beta1\b140711\b140711.csproj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\V1.2-Beta1\b102879\b102879.csproj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\V1.2-M01\b08046cs\b08046cs.csproj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\V2.0-Beta2\b448208\Desktop\b448208.csproj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\V2.0-Beta2\b449827\b449827.csproj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\v2.1\b569942\b569942.csproj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\v2.1\b609280\b609280.csproj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\v2.1\DDB\b151497\b151497.csproj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\v2.1\DDB\b158861\b158861.csproj" />
+    <MergedWrapperProjectReference Include="CLR-x86-JIT\v2.1\DDB\b188478\b188478.csproj" />
+    <MergedWrapperProjectReference Include="Dev11\dev10_94677\loopvt.csproj" />
+    <MergedWrapperProjectReference Include="Dev11\dev11_4421\Dev11_4421.csproj" />
+    <MergedWrapperProjectReference Include="Dev11\Dev11_457559\Dev11_457559.csproj" />
+    <MergedWrapperProjectReference Include="Dev11\Dev11_5437\Dev11_5437.csproj" />
+    <MergedWrapperProjectReference Include="Dev11\Dev11_617302\Dev11_617302.csproj" />
+    <MergedWrapperProjectReference Include="Dev11\Dev11_646049\Dev11_646049.csproj" />
+    <MergedWrapperProjectReference Include="Dev11\DevDiv2_10623\DevDiv2_10623.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\GitHub_69659\GitHub_69659_1.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\GitHub_69659\GitHub_69659_2.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\GitHub_7907\GitHub_7907.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\GitHub_8231\GitHub_8231.csproj" />
+    <MergedWrapperProjectReference Include="VS-ia64-JIT\V1.2-Beta1\b302509\b302509.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="JitBlue\GitHub_13486\GitHub_13486.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\GitHub_16443\GitHub_16443.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\GitHub_6238\GitHub_6238.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\Runtime_105621\Runtime_105621.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\Runtime_105821\Runtime_105821.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\Runtime_106020\Runtime_106020.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\Runtime_112871\Runtime_112871.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\Runtime_113829\Runtime_113829.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\Runtime_62692\Runtime_62692_r.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\Runtime_67331\Runtime_67331.csproj" />
+    <MergedWrapperProjectReference Include="JitBlue\Runtime_81356\Runtime_81356.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>
