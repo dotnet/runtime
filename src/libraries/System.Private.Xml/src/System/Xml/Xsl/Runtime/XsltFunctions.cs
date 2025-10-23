@@ -380,6 +380,7 @@ namespace System.Xml.Xsl.Runtime
                 {
                     format = isDate ? "d" : "T";
                 }
+
                 return dt.ToString(format, new CultureInfo(locale));
             }
             catch (ArgumentException)
