@@ -13,6 +13,7 @@ using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.NET.HostModel.MachO;
 using Microsoft.NET.HostModel.MachO.CodeSign.Tests;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.NET.HostModel.Tests;
 
@@ -149,8 +150,8 @@ public class MachObjectTests
 
     // test all the binaries compared to codesinginfo from codesign output
     [Theory]
-    [PlatformSpecific(TestPlatforms.OSX)]
     [MemberData(nameof(GetTestFilePaths), nameof(EmbeddedSignatureBlobMatchesCodesignInfo))]
+    [PlatformSpecific(TestPlatforms.OSX)]
     public void EmbeddedSignatureBlobMatchesCodesignInfo(string filePath, TestArtifact _)
     {
         if (!SigningTests.IsSigned(filePath))

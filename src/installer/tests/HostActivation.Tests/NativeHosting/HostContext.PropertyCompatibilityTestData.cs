@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Xunit;
-using Xunit.Sdk;
+using Xunit.Abstractions;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {

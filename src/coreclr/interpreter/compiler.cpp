@@ -8785,6 +8785,10 @@ extern "C" void assertAbort(const char* why, const char* file, unsigned line)
 #ifdef _MSC_VER
     __debugbreak();
 #else // _MSC_VER
+#ifdef TARGET_APPLE
+    __builtin_debugtrap();
+#else // TARGET_APPLE
     __builtin_trap();
+#endif // TARGET_APPLE
 #endif // _MSC_VER
 }

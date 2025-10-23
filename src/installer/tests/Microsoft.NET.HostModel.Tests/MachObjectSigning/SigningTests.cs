@@ -78,9 +78,9 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.OSX)]
         [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
-        public void MatchesCodesignOutput(string filePath, TestArtifact _)
+        [PlatformSpecific(TestPlatforms.OSX)]
+        void MatchesCodesignOutput(string filePath, TestArtifact _)
         {
             string fileName = Path.GetFileName(filePath);
             string originalFilePath = filePath;

@@ -1892,6 +1892,61 @@ namespace System.Text.RegularExpressions.Tests
                         }
                     };
                 }
+
+                // Lookbehind assertions with captures - regression test for https://github.com/dotnet/runtime/issues/117605
+                // Verify that captures in positive lookbehind assertions are preserved correctly in compiled mode
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(abc)+?123)a", "abcabc123a", RegexOptions.None, 0, 10,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 9, 1),
+                            new CaptureData("abc", 3, 3, new CaptureData[] { new CaptureData("abc", 3, 3) })
+                        }
+                    };
+
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(abc){2,}?123)a", "abcabc123a", RegexOptions.None, 0, 10,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 9, 1),
+                            new CaptureData("abc", 0, 3, new CaptureData[]
+                            {
+                                new CaptureData("abc", 3, 3),
+                                new CaptureData("abc", 0, 3)
+                            })
+                        }
+                    };
+
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(abc)+?)a", "abca", RegexOptions.None, 0, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 3, 1),
+                            new CaptureData("abc", 0, 3, new CaptureData[] { new CaptureData("abc", 0, 3) })
+                        }
+                    };
+
+                    // Multiple groups in lookbehind
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(?'1'abc)+?(?'2')123)a", "abcabc123a", RegexOptions.None, 0, 10,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 9, 1),
+                            new CaptureData("abc", 3, 3, new CaptureData[] { new CaptureData("abc", 3, 3) }),
+                            new CaptureData(string.Empty, 6, 0, new CaptureData[] { new CaptureData(string.Empty, 6, 0) })
+                        }
+                    };
+                }
             }
         }
 

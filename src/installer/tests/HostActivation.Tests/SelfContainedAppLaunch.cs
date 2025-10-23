@@ -37,23 +37,21 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
 
             if (OperatingSystem.IsWindows())
             {
                 // App sets FileVersion to NETCoreApp version. On Windows, this should be copied to app resources.
-                string expectedVersion = HostTestContext.MicrosoftNETCoreAppVersion.Contains('-')
-                    ? HostTestContext.MicrosoftNETCoreAppVersion[..HostTestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
-                    : HostTestContext.MicrosoftNETCoreAppVersion;
+                string expectedVersion = TestContext.MicrosoftNETCoreAppVersion.Contains('-')
+                    ? TestContext.MicrosoftNETCoreAppVersion[..TestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
+                    : TestContext.MicrosoftNETCoreAppVersion;
                 Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(appExe).FileVersion);
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
         public void AppHost_DisableCetCompat()
         {
-            Assert.SkipUnless(Binaries.CetCompat.IsSupported, "CET not supported on this platform");
-
             TestApp app = sharedTestState.App.Copy();
             app.CreateAppHost(disableCetCompat: true);
             Assert.False(Binaries.CetCompat.IsMarkedCompatible(app.AppExe));
@@ -64,7 +62,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -82,7 +80,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 // Note that this is an exact match - we don't expect any output from the host itself
-                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {HostTestContext.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
+                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {TestContext.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
                 .And.NotHaveStdErr();
 
             // Make sure tracing indicates there is no runtime config and no deps json
@@ -90,7 +88,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {HostTestContext.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
+                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {TestContext.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
                 .And.HaveStdErrContaining($"Runtime config does not exist at [{app.RuntimeConfigJson}]")
                 .And.HaveStdErrContaining($"Dependencies manifest does not exist at [{app.DepsJson}]");
         }
@@ -109,7 +107,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -136,7 +134,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -158,13 +156,13 @@ namespace HostActivation.Tests
                 .DotNetRoot(app.Location)
                 .Execute()
                 .Should().Fail()
-                .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(app.Location), HostTestContext.BuildRID)
+                .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(app.Location), TestContext.BuildRID)
                 .And.HaveStdErrContaining($"The required library {Binaries.HostFxr.FileName} could not be found.");
         }
 
-                [Fact]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void Exe_activation_of_GUI_App()
+        public void DevicePath()
         {
             string appExe = $@"\\?\{sharedTestState.App.AppExe}";
             Command.Create(appExe)
@@ -173,7 +171,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
 
             appExe = $@"\\.\{sharedTestState.App.AppExe}";
             Command.Create(appExe)
@@ -182,7 +180,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
         }
 
         [Fact]
@@ -193,7 +191,7 @@ namespace HostActivation.Tests
             {
                 // Find the NETCoreApp runtime pack
                 RuntimeLibraryBuilder netCoreApp = b.RuntimeLibraries.First(
-                    r => r.Type == RuntimeLibraryType.runtimepack.ToString() && r.Name == $"runtimepack.{Constants.MicrosoftNETCoreApp}.Runtime.{HostTestContext.BuildRID}");
+                    r => r.Type == RuntimeLibraryType.runtimepack.ToString() && r.Name == $"runtimepack.{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.BuildRID}");
 
                 // Update all NETCoreApp asset paths to point to the subdirectory
                 RuntimeAssetGroupBuilder[] groups = [.. netCoreApp.AssemblyGroups, .. netCoreApp.NativeLibraryGroups];
@@ -226,7 +224,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(HostTestContext.MicrosoftNETCoreAppVersion)
+                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion)
                 .And.HaveStdErrContaining($"CoreCLR path = '{Path.Join(app.Location, subdirectory, Binaries.CoreClr.FileName)}'");
         }
 

@@ -69,8 +69,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                DotNetRoot = HostTestContext.BuiltDotNet.BinPath;
-                HostFxrPath = HostTestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
+                DotNetRoot = TestContext.BuiltDotNet.BinPath;
+                HostFxrPath = TestContext.BuiltDotNet.GreatestVersionHostFxrFilePath;
 
                 App = TestApp.CreateFromBuiltAssets("HelloWorld");
             }
