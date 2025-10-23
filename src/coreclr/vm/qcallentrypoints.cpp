@@ -553,7 +553,7 @@ static const Entry s_QCall[] =
     DllImportEntry(SystemJS_RejectMainPromise)
     DllImportEntry(SystemJS_ScheduleTimer)
     DllImportEntry(SystemJS_ScheduleBackgroundJob)
-#endif
+#endif // TARGET_BROWSER
 };
 
 const void* QCallResolveDllImport(const char* name)
