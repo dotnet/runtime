@@ -1358,12 +1358,10 @@ partial class Program
 
                 static partial class Class
                 {
-                    private static Regex r = MyRegex();
-
                     [GeneratedRegex(@"a
                              b
                              c", RegexOptions.IgnorePatternWhitespace)]
-                    private static partial Regex MyRegex();
+                    private static partial Regex r { get; }
                 }
                 """;
 
@@ -1391,12 +1389,11 @@ partial class Program
                 static partial class Class
                 {
                     private const string foo = "bar";
-                    private static Regex r1 = MyRegex();
 
                     [GeneratedRegex(@"a        bar
                                                         b
                                                         c", RegexOptions.IgnorePatternWhitespace)]
-                    private static partial Regex MyRegex();
+                    private static partial Regex r1 { get; }
                 }
                 """;
 
