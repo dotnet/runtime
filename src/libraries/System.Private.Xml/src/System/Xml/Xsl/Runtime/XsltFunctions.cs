@@ -375,8 +375,12 @@ namespace System.Xml.Xsl.Runtime
                 }
                 DateTime dt = xdt.ToZulu();
 
-                // If format is the empty string or not specified, use the default format for the given locale
-                return dt.ToString(format.Length != 0 ? format : null, new CultureInfo(locale));
+                // If format is the empty string or not specified, use the default date or time format for the given locale
+                if (format.Length == 0)
+                {
+                    format = isDate ? "d" : "T";
+                }
+                return dt.ToString(format, new CultureInfo(locale));
             }
             catch (ArgumentException)
             { // Operations with DateTime can throw this exception eventualy
