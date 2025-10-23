@@ -37,7 +37,7 @@ namespace System.Data.Odbc
 
         public static implicit operator int(SQLLEN value)
         {
-            return value._value.ToInt32();
+            return (int)value.ToInt64();
         }
 
         public static explicit operator long(SQLLEN value)
