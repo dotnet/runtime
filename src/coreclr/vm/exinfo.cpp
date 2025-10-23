@@ -463,7 +463,7 @@ void ExInfo::MakeCallbacksRelatedToHandler(
         }
         m_EHClauseInfo.SetInfo(COR_PRF_CLAUSE_NONE, (UINT_PTR)dwHandlerStartPC, sfToStore);
 
-        if (pMD->IsDiagnosticsILStub())
+        if (pMD->IsDiagnosticsHidden())
         {
             return;
         }
@@ -498,7 +498,7 @@ void ExInfo::MakeCallbacksRelatedToHandler(
     }
     else
     {
-        if (pMD->IsDiagnosticsILStub())
+        if (pMD->IsDiagnosticsHidden())
         {
             return;
         }

@@ -127,7 +127,7 @@ inline bool MethodDesc::IsILStub()
     return ((mcDynamic == GetClassification()) && dac_cast<PTR_DynamicMethodDesc>(this)->IsILStub());
 }
 
-inline bool MethodDesc::IsDiagnosticsILStub()
+inline bool MethodDesc::IsDiagnosticsHidden()
 {
     WRAPPER_NO_CONTRACT;
     return IsILStub() || IsAsyncThunkMethod();

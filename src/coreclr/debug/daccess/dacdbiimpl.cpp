@@ -5270,7 +5270,7 @@ IDacDbiInterface::DynamicMethodType DacDbiInterfaceImpl::IsILStubOrLCGMethod(VMP
 
     MethodDesc * pMD = vmMethodDesc.GetDacPtr();
 
-    if (pMD->IsDiagnosticsILStub())
+    if (pMD->IsDiagnosticsHidden())
     {
         return kILStub;
     }
