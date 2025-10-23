@@ -1092,7 +1092,13 @@ extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*
 extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetVector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet2Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet3Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet4Vector64(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetVector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet2Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet3Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet4Vector128(PCODE *routines, int8_t *pArgs, int8_t *pRet, int totalStackSize);
 extern "C" void InterpreterStubRet2I8();
 extern "C" void InterpreterStubRet2Double();
 extern "C" void InterpreterStubRet3Double();
@@ -1102,7 +1108,13 @@ extern "C" void InterpreterStubRet2Float();
 extern "C" void InterpreterStubRet3Float();
 extern "C" void InterpreterStubRet4Float();
 extern "C" void InterpreterStubRetVector64();
+extern "C" void InterpreterStubRet2Vector64();
+extern "C" void InterpreterStubRet3Vector64();
+extern "C" void InterpreterStubRet4Vector64();
 extern "C" void InterpreterStubRetVector128();
+extern "C" void InterpreterStubRet2Vector128();
+extern "C" void InterpreterStubRet3Vector128();
+extern "C" void InterpreterStubRet4Vector128();
 #endif // TARGET_ARM64
 
 #if LOG_COMPUTE_CALL_STUB
@@ -1161,8 +1173,20 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
             INVOKE_FUNCTION_PTR(CallJittedMethodRet4Float);
         case ReturnTypeVector64:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetVector64);
+        case ReturnType2Vector64:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2Vector64);
+        case ReturnType3Vector64:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet3Vector64);
+        case ReturnType4Vector64:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet4Vector64);
         case ReturnTypeVector128:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetVector128);
+        case ReturnType2Vector128:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2Vector128);
+        case ReturnType3Vector128:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet3Vector128);
+        case ReturnType4Vector128:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet4Vector128);
 #endif // TARGET_ARM64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
@@ -1226,8 +1250,20 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
             RETURN_TYPE_HANDLER(InterpreterStubRet4Float);
         case ReturnTypeVector64:
             RETURN_TYPE_HANDLER(InterpreterStubRetVector64);
+        case ReturnType2Vector64:
+            RETURN_TYPE_HANDLER(InterpreterStubRet2Vector64);
+        case ReturnType3Vector64:
+            RETURN_TYPE_HANDLER(InterpreterStubRet3Vector64);
+        case ReturnType4Vector64:
+            RETURN_TYPE_HANDLER(InterpreterStubRet4Vector64);
         case ReturnTypeVector128:
             RETURN_TYPE_HANDLER(InterpreterStubRetVector128);
+        case ReturnType2Vector128:
+            RETURN_TYPE_HANDLER(InterpreterStubRet2Vector128);
+        case ReturnType3Vector128:
+            RETURN_TYPE_HANDLER(InterpreterStubRet3Vector128);
+        case ReturnType4Vector128:
+            RETURN_TYPE_HANDLER(InterpreterStubRet4Vector128);
 #endif // TARGET_ARM64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
@@ -1883,6 +1919,12 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                                 {
                                     case 8:
                                         return ReturnTypeVector64;
+                                    case 16:
+                                        return ReturnType2Vector64;
+                                    case 24:
+                                        return ReturnType3Vector64;
+                                    case 32:
+                                        return ReturnType4Vector64;
                                     default:
                                         _ASSERTE(!"Unsupported Vector64 HFA size");
                                         break;
@@ -1893,6 +1935,12 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                                 {
                                     case 16:
                                         return ReturnTypeVector128;
+                                    case 32:
+                                        return ReturnType2Vector128;
+                                    case 48:
+                                        return ReturnType3Vector128;
+                                    case 64:
+                                        return ReturnType4Vector128;
                                     default:
                                         _ASSERTE(!"Unsupported Vector128 HFA size");
                                         break;
