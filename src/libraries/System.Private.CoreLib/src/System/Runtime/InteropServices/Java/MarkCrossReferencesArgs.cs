@@ -6,7 +6,7 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices.Java
 {
     /// <summary>
-    /// Data for the callback supplied to <see cref="JavaMarshal.Initialize(delegate* unmanaged{MarkCrossReferencesArgs*, void})"/>
+    /// Data for the callback supplied to <code>JavaMarshal.Initialize(delegate* unmanaged&lt;MarkCrossReferencesArgs*, void&gt;))</code>
     /// for marking managed objects referenced from Java during cross-reference processing.
     /// </summary>
     [CLSCompliant(false)]
