@@ -32,9 +32,8 @@ namespace System.IO.Enumeration
         {
             ArgumentNullException.ThrowIfNull(directory);
 
-            _originalRootDirectory = directory;
-
             string path = isNormalized ? directory : Path.GetFullPath(directory);
+            _originalRootDirectory = path;
             _rootDirectory = Path.TrimEndingDirectorySeparator(path);
             _options = options ?? EnumerationOptions.Default;
             _remainingRecursionDepth = _options.MaxRecursionDepth;
