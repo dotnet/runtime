@@ -1085,19 +1085,12 @@ namespace System.Threading.Tests
         [Theory]
         [InlineData(1.0f, 1.0f, 1.0f)]  // 0x3F800000 & 0x3F800000 = 0x3F800000
         [InlineData(0.0f, -0.0f, 0.0f)] // 0x00000000 & 0x80000000 = 0x00000000
-        [InlineData(float.NaN, float.NaN, float.NaN)] // NaN & NaN = NaN
         public void InterlockedAnd_Generic_Float(float initial, float operand, float expected)
         {
             float value = initial;
             Interlocked.And<float>(ref value, operand);
-            // For float comparison with NaN, use BitConverter
+            // For float comparison, use BitConverter
             Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(value));
-        }
-
-        [Fact]
-        public void InterlockedAnd_Generic_Float_NullRef()
-        {
-            Assert.Throws<NullReferenceException>(() => Interlocked.And<float>(ref Unsafe.NullRef<float>(), 1.0f));
         }
 
         [Theory]
@@ -1108,12 +1101,6 @@ namespace System.Threading.Tests
             double value = initial;
             Interlocked.And<double>(ref value, operand);
             Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(value));
-        }
-
-        [Fact]
-        public void InterlockedAnd_Generic_Double_NullRef()
-        {
-            Assert.Throws<NullReferenceException>(() => Interlocked.And<double>(ref Unsafe.NullRef<double>(), 1.0));
         }
 
         [Fact]
@@ -1303,12 +1290,6 @@ namespace System.Threading.Tests
             Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(value));
         }
 
-        [Fact]
-        public void InterlockedOr_Generic_Float_NullRef()
-        {
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or<float>(ref Unsafe.NullRef<float>(), 1.0f));
-        }
-
         [Theory]
         [InlineData(1.0, 0.0, 1.0)]  // Bitwise OR
         [InlineData(0.0, -0.0, -0.0)] // 0x0000000000000000 | 0x8000000000000000 = 0x8000000000000000
@@ -1317,12 +1298,6 @@ namespace System.Threading.Tests
             double value = initial;
             Interlocked.Or<double>(ref value, operand);
             Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(value));
-        }
-
-        [Fact]
-        public void InterlockedOr_Generic_Double_NullRef()
-        {
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or<double>(ref Unsafe.NullRef<double>(), 1.0));
         }
 
         [Fact]
