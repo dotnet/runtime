@@ -1082,25 +1082,25 @@ namespace System.Threading.Tests
             Assert.Throws<NullReferenceException>(() => Interlocked.And<DayOfWeek>(ref Unsafe.NullRef<DayOfWeek>(), DayOfWeek.Monday));
         }
 
-        [Theory]
-        [InlineData(1.0f, 1.0f, 1.0f)]  // 0x3F800000 & 0x3F800000 = 0x3F800000
-        [InlineData(0.0f, -0.0f, 0.0f)] // 0x00000000 & 0x80000000 = 0x00000000
-        public void InterlockedAnd_Generic_Float(float initial, float operand, float expected)
+        [Fact]
+        public void InterlockedAnd_Generic_Float_ThrowsNotSupported()
         {
-            float value = initial;
-            Interlocked.And<float>(ref value, operand);
-            // For float comparison, use BitConverter
-            Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(value));
+            float value = 1.0f;
+            Assert.Throws<NotSupportedException>(() => Interlocked.And<float>(ref value, 1.0f));
         }
 
-        [Theory]
-        [InlineData(1.0, 1.0, 1.0)]  // Bitwise AND of same value
-        [InlineData(0.0, -0.0, 0.0)] // 0x0000000000000000 & 0x8000000000000000 = 0x0000000000000000
-        public void InterlockedAnd_Generic_Double(double initial, double operand, double expected)
+        [Fact]
+        public void InterlockedAnd_Generic_Double_ThrowsNotSupported()
         {
-            double value = initial;
-            Interlocked.And<double>(ref value, operand);
-            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(value));
+            double value = 1.0;
+            Assert.Throws<NotSupportedException>(() => Interlocked.And<double>(ref value, 1.0));
+        }
+
+        [Fact]
+        public void InterlockedAnd_Generic_Half_ThrowsNotSupported()
+        {
+            Half value = (Half)1.0;
+            Assert.Throws<NotSupportedException>(() => Interlocked.And<Half>(ref value, (Half)1.0));
         }
 
         [Fact]
@@ -1280,24 +1280,25 @@ namespace System.Threading.Tests
             Assert.Throws<NullReferenceException>(() => Interlocked.Or<DayOfWeek>(ref Unsafe.NullRef<DayOfWeek>(), DayOfWeek.Monday));
         }
 
-        [Theory]
-        [InlineData(1.0f, 0.0f, 1.0f)]  // 0x3F800000 | 0x00000000 = 0x3F800000
-        [InlineData(0.0f, -0.0f, -0.0f)] // 0x00000000 | 0x80000000 = 0x80000000
-        public void InterlockedOr_Generic_Float(float initial, float operand, float expected)
+        [Fact]
+        public void InterlockedOr_Generic_Float_ThrowsNotSupported()
         {
-            float value = initial;
-            Interlocked.Or<float>(ref value, operand);
-            Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(value));
+            float value = 1.0f;
+            Assert.Throws<NotSupportedException>(() => Interlocked.Or<float>(ref value, 1.0f));
         }
 
-        [Theory]
-        [InlineData(1.0, 0.0, 1.0)]  // Bitwise OR
-        [InlineData(0.0, -0.0, -0.0)] // 0x0000000000000000 | 0x8000000000000000 = 0x8000000000000000
-        public void InterlockedOr_Generic_Double(double initial, double operand, double expected)
+        [Fact]
+        public void InterlockedOr_Generic_Double_ThrowsNotSupported()
         {
-            double value = initial;
-            Interlocked.Or<double>(ref value, operand);
-            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(value));
+            double value = 1.0;
+            Assert.Throws<NotSupportedException>(() => Interlocked.Or<double>(ref value, 1.0));
+        }
+
+        [Fact]
+        public void InterlockedOr_Generic_Half_ThrowsNotSupported()
+        {
+            Half value = (Half)1.0;
+            Assert.Throws<NotSupportedException>(() => Interlocked.Or<Half>(ref value, (Half)1.0));
         }
 
         [Fact]

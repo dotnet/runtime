@@ -650,7 +650,8 @@ namespace System.Threading
         public static unsafe T And<T>(ref T location1, T value) where T : struct
         {
             // Only primitive types and enum types (which are backed by primitive types) are supported.
-            if (!typeof(T).IsPrimitive && !typeof(T).IsEnum)
+            // Floating-point types are not supported.
+            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || typeof(T) == typeof(float) || typeof(T) == typeof(double) || typeof(T) == typeof(Half))
             {
                 throw new NotSupportedException(SR.NotSupported_EnumOrPrimitiveTypeRequired);
             }
@@ -789,7 +790,8 @@ namespace System.Threading
         public static unsafe T Or<T>(ref T location1, T value) where T : struct
         {
             // Only primitive types and enum types (which are backed by primitive types) are supported.
-            if (!typeof(T).IsPrimitive && !typeof(T).IsEnum)
+            // Floating-point types are not supported.
+            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || typeof(T) == typeof(float) || typeof(T) == typeof(double) || typeof(T) == typeof(Half))
             {
                 throw new NotSupportedException(SR.NotSupported_EnumOrPrimitiveTypeRequired);
             }
