@@ -1643,7 +1643,8 @@ MethodDesc* Assembly::GetEntryPoint()
     }
 #if defined(TARGET_BROWSER)
     // if this is async method we need to find the original method, instead of the roslyn generated wrapper
-    if (m_pEntryPoint) {
+    if (m_pEntryPoint)
+    {
         LPCUTF8 szName = m_pEntryPoint->GetName();
         size_t nameLength = strlen(szName);
         LPCUTF8 szEnd = szName + nameLength - 1;
