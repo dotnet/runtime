@@ -345,6 +345,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       AssetTraitName="WasmResource"
       AssetTraitValue="vfs:%(WasmFilesToIncludeInFileSystem.TargetPath)"
       RelativePathFilter="@(WasmFilesToIncludeInFileSystem)"
+      Condition="'@(WasmFilesToIncludeInFileSystem)' != ''"
     >
       <Output TaskParameter="Assets" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAsset" />
     </DefineStaticWebAssets>
