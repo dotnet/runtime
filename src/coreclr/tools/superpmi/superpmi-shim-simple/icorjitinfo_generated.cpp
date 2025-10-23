@@ -1111,6 +1111,14 @@ bool interceptor_ICJI::getTailCallHelpers(
     return original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize)
+{
+    return original_ICorJitInfo->getContinuationType(dataSize, objRefs, objRefsSize);
+}
+
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
 {
     return original_ICorJitInfo->getAsyncResumptionStub();

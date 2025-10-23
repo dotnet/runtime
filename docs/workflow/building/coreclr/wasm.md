@@ -90,7 +90,7 @@ Note that paths to assemblies are in the `src/native/corehost/browserhost/sample
 For debugging CoreCLR WebAssembly code, the recommended approach is using Chrome browser with the **C/C++ DevTools Support (DWARF)** extension:
 
 1. **Install the Chrome extension:**
-   - [C/C++ DevTools Support (DWARF)](https://chrome.google.com/webstore/detail/cc-devtools-support-dwar/odljcjlcidgdhcjhoijagojpnjcgocgd)
+   - [C/C++ DevTools Support (DWARF)](https://goo.gle/wasm-debugging-extension)
 
 2. **Open Chrome DevTools** (F12) while running your WebAssembly application
 
