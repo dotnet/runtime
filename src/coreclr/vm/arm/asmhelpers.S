@@ -1162,8 +1162,10 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     ldr r5, [r6, #OFFSETOF__Thread__m_pInterpThreadContext]
     cbnz r5, LOCAL_LABEL(HaveInterpThreadContext)
 
-    mov r0, r6
-    bl C_FUNC(_ZN6Thread22GetInterpThreadContextEv) // Thread::GetInterpThreadContext
+LOCAL_LABEL(NoManagedThreadOrCallStub):
+    add r0, sp, #__PWTB_TransitionBlock + 20
+    mov r1, r4
+    bl C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub);
     mov r5, r0
 
 LOCAL_LABEL(HaveInterpThreadContext):
@@ -1174,6 +1176,8 @@ LOCAL_LABEL(HaveInterpThreadContext):
 
     ldr r7, [r4] // InterpMethod*
     ldr r7, [r7, #OFFSETOF__InterpMethod__pCallStub]
+    cmp r7, #0
+    beq LOCAL_LABEL(NoManagedThreadOrCallStub)
     add r6, r7, #OFFSETOF__CallStubHeader__Routines
     ldr r7, [r5, #OFFSETOF__InterpThreadContext__pStackPointer] // HERE
     ldr r5, [r6], 4 // InterpThreadContext
