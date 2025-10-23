@@ -75,6 +75,7 @@ extends:
           - windows_arm64
           - osx_x64
           - osx_arm64
+          - browser_wasm
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
