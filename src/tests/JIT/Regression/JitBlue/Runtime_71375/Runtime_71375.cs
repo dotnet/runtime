@@ -7,7 +7,7 @@ using Xunit;
 
 public class Runtime_71375
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
     public static void TestEntryPoint()
     {
         // At the time of writing this test, the calling convention for incoming vector parameters on
