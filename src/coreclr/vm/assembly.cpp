@@ -1638,8 +1638,9 @@ MethodDesc* Assembly::GetEntryPoint()
 #if defined(TARGET_BROWSER)
         // we only support IL entrypoints in browser
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-#endif // TARGET_BROWSER
+#else // !TARGET_BROWSER
         m_pEntryPoint = pModule->FindMethod(mdEntry);
+#endif // TARGET_BROWSER
     }
 #if defined(TARGET_BROWSER)
     // if this is async method we need to find the original method, instead of the roslyn generated wrapper
