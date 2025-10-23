@@ -8,6 +8,9 @@
 // Hits JIT assert in Release:
 // Assertion failed 'use != nullptr' in 'Program:Main(Fuzzlyn.ExecutionServer.IRuntime)' during 'Clone blocks with range checks' (IL size 62; hash 0xade6b36b; FullOpts)
 
+
+namespace Runtime_113334;
+
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;

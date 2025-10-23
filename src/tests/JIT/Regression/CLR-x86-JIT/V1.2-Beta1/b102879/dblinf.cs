@@ -3,6 +3,9 @@
 //
 
 // compile with csc /o+
+
+namespace b102879;
+
 using System;
 using Xunit;
 public class MyClass

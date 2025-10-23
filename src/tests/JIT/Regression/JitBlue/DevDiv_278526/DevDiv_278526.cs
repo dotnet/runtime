@@ -7,6 +7,9 @@
 // It causes assert when cse processes the child with the clean vn state.
 
 
+
+namespace DevDiv_278526;
+
 using System;
 using Xunit;
 

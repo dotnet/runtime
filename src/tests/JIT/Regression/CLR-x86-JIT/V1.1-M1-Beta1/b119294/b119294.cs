@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b119294;
+
 using System;
 using System.Collections;
 //using System.Windows.Forms;

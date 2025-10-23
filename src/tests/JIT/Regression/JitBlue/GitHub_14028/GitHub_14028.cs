@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+
+namespace GitHub_14028;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;

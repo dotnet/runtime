@@ -8,6 +8,9 @@
 // Debug: Outputs 1
 // Release: Outputs 0
 
+
+namespace Runtime_105683;
+
 using System;
 using System.Runtime.Intrinsics.X86;
 using Xunit;

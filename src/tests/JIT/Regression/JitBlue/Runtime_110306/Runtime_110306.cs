@@ -10,6 +10,9 @@
 // 
 //     File: /__w/1/s/src/coreclr/jit/valuenum.cpp Line: 6138
 // 
+
+namespace Runtime_110306;
+
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;

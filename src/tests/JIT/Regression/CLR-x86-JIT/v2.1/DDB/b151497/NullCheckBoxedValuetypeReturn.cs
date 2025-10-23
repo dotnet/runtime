@@ -10,6 +10,9 @@
 // Correct Expected output: 
 //     It should print out "Pass".
 
+
+namespace b151497;
+
 using System;
 using Xunit;
 

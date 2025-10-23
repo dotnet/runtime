@@ -5,6 +5,9 @@
 //
 // Test ARM64 read-modify-write (RMW) intrinsics with identical target/accumulator local to arguments
 
+
+namespace Runtime_91209;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;

@@ -5,6 +5,9 @@
 // Debug: Outputs <0, 0, 0, 0, 0, 0, 0, 0>
 // Release: Outputs <0, 0, 0, 0, -1, -1, -1, -1>
 
+
+namespace Runtime_114921;
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;

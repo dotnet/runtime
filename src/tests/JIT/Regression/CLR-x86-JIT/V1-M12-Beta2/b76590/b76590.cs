@@ -12,6 +12,9 @@
 //</Expects>
 
 
+
+namespace b76590;
+
 using System;
 using System.IO;
 using Xunit;

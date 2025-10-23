@@ -4,6 +4,9 @@
 // Repro case for a bug involving failure to rewrite all references
 // to a promoted implicit byref struct parameter.
 
+
+namespace GitHub_11814;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

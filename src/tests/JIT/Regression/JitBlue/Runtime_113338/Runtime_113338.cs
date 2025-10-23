@@ -10,6 +10,9 @@
 // 
 //     File: D:\a\_work\1\s\src\coreclr\jit\lir.cpp Line: 1706
 // 
+
+namespace Runtime_113338;
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;

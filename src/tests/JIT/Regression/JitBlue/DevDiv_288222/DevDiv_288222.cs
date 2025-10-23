@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+
+namespace DevDiv_288222;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;

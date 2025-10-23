@@ -7,6 +7,9 @@
 //
 //     File: C:\dev\dotnet\runtime\src\coreclr\jit\gentree.cpp Line: 18154
 //
+
+namespace Runtime_105484;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;

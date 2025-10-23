@@ -15,6 +15,9 @@
  * these routines.  I believe the fix is to add the call to OsrGroupIVsByStride so the loops match. 
  */
 
+
+namespace loopvt;
+
 using System;
 using Xunit;
 

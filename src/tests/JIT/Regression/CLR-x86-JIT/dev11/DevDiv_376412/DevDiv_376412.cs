@@ -13,6 +13,9 @@
 // <Expects Status=success></Expects>
 
 // <Code> 
+
+namespace DevDiv_376412;
+
 using System;
 using Xunit;
 

@@ -3,6 +3,9 @@
 //
 
 // Compute distance light travels using long variables.
+
+namespace b15797;
+
 using System;
 using Xunit;
 public class Light

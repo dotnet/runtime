@@ -11,6 +11,9 @@
 //     File: D:\a\_work\1\s\src\coreclr\jit\gentree.cpp Line: 20819
 //
 
+
+namespace Runtime_117605;
+
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;

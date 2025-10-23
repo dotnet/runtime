@@ -3,6 +3,9 @@
 
 // Found by Antigen
 
+
+namespace Runtime_91335;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;

@@ -5,6 +5,9 @@
    IndexOutOfRange Exception When Using UShort or Short as an Input Array Type
 */
 
+
+namespace b402658;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

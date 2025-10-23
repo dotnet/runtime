@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace DevDiv2_10623;
+
 using System;
 using Xunit;
 public class Program

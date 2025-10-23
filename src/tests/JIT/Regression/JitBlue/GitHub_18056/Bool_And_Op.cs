@@ -12,6 +12,9 @@
 
 #pragma warning disable
 
+
+namespace Bool_And_Op_cs_do;
+
 using System;
 using Xunit;
 public class testout1

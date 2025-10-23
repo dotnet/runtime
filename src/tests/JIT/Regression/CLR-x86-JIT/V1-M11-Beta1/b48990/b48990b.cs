@@ -13,6 +13,9 @@
 // <Expects Status=success></Expects>
 
 // <Code> 
+
+namespace b48990b;
+
 using System;
 using Xunit;
 

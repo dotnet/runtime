@@ -14,6 +14,9 @@
 // Reduced from 151.7 KiB to 0.8 KiB in 00:02:43
 // Problem2() Hits JIT assert in Release:
 // Assertion failed 'hwintrinsicChild->isContained()' in 'Program:Main(Fuzzlyn.ExecutionServer.IRuntime)' during 'Generate code' (IL size 94; hash 0xade6b36b; FullOpts)
+
+namespace Runtime_113832;
+
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;

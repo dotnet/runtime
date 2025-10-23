@@ -7,6 +7,9 @@
 // Reduced from 270.2 KiB to 0.4 KiB in 00:01:48
 // Debug: Outputs 0
 // Release: Outputs 1
+
+namespace Runtime_105817;
+
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;

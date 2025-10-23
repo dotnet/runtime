@@ -21,6 +21,9 @@
 // <Code>
 
 #pragma warning disable 458, 169
+
+namespace b311420;
+
 using System;
 using Xunit;
 

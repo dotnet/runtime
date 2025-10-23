@@ -3,6 +3,9 @@
 
 // Factorial
 
+
+namespace b08172;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

@@ -10,6 +10,9 @@
 // 
 //     File: D:\a\_work\1\s\src\coreclr\jit\optcse.cpp Line: 5295
 // 
+
+namespace Runtime_106609;
+
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;

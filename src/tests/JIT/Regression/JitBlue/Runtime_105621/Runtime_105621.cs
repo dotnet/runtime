@@ -7,6 +7,9 @@
 // Reduced from 12.6 KiB to 0.4 KiB in 00:00:17
 // Debug: Throws 'System.ArgumentOutOfRangeException'
 // Release: Runs successfully
+
+namespace Runtime_105621;
+
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;

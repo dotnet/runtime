@@ -18,6 +18,9 @@
 // Debug: Outputs <9007199254740992, 1, 1, 1>
 // Release: Outputs <0, 1, 1, 1>
 
+
+namespace Runtime_106142;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;

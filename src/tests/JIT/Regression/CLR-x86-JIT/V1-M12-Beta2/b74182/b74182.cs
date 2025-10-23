@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b74182;
+
 using System;
 using Xunit;
 public class bug1

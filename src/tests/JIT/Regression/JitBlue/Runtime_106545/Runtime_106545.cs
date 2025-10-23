@@ -8,6 +8,9 @@ Assertion failed '(emitThisGCrefRegs & regMask) == 0' in 'TestClass:Method4(shor
 
     File: D:\a\_work\1\s\src\coreclr\jit\emitxarch.cpp Line: 1498
 */
+
+namespace Runtime_106545;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;

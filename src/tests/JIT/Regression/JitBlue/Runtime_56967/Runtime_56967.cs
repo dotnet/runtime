@@ -3,6 +3,9 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
 
+
+namespace Runtime_56967;
+
 public class Program
 {
     // 'vlu1' is source as well as destination and want to make sure that

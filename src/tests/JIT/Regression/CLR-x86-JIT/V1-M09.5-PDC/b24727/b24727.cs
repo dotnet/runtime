@@ -9,6 +9,9 @@
 
 //<Expects Status=success> </Expects>
 
+
+namespace b24727;
+
 using System;
 using Xunit;
 

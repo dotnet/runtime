@@ -8,6 +8,9 @@
 //     File: D:\a\_work\1\s\src\coreclr\jit\codegenarm64.cpp Line: 4543
 //
 
+
+namespace Runtime_76273;
+
 using Xunit;
 public class C0
 {

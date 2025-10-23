@@ -9,6 +9,9 @@
 //    File: /Users/runner/work/1/s/src/coreclr/jit/morphblock.cpp Line: 665
 
 
+
+namespace Runtime_108612;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

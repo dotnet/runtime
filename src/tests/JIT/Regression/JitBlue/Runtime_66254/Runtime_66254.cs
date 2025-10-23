@@ -4,6 +4,9 @@
 // Test that loop cloning won't consider a[i].struct_field[j] to be
 // a jagged array a[i][j].
 
+
+namespace Runtime_66254;
+
 using System;
 using Xunit;
 

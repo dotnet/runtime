@@ -10,6 +10,9 @@
 // 
 //     File: D:\a\_work\1\s\src\coreclr\jit\flowgraph.cpp Line: 3655
 // 
+
+namespace Runtime_108851;
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;

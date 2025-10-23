@@ -8,6 +8,9 @@
 // the changes done by brian to the product code. 
 // Well, and it runs fast. 
 
+
+namespace b610750;
+
 using System;
 using Xunit;
 

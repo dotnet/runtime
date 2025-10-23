@@ -21,6 +21,9 @@
 // This requires decomposition of GT_STORE_LCL_VAR to properly detect the insertion point
 // for a statement it creates.
 
+
+namespace GitHub_5696;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

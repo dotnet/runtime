@@ -6,6 +6,9 @@
 
 // The JIT32 only supports up to 32767 variables
 
+
+namespace b602004;
+
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;

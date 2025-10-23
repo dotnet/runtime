@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace Dev11_457559;
+
 using System;
 using Xunit;
 

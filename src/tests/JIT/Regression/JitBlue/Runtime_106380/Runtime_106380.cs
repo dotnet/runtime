@@ -3,6 +3,9 @@
 
 // Found by Antigen
 // Reduced from 24.98 KB to 779 B.
+
+namespace Runtime_106380;
+
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using Xunit;

@@ -7,6 +7,9 @@
 // Reduced from 130.6 KiB to 0.9 KiB in 00:04:12
 // Hits JIT assert in Release:
 // Assertion failed 'isContainable || supportsRegOptional' in 'Program:M8():System.Runtime.Intrinsics.Vector128`1[ulong]' during 'Generate code' (IL size 39; hash 0x72979674; FullOpts)
+
+namespace Runtime_114570;
+
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;

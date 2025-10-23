@@ -16,6 +16,9 @@
 
 // <Code> 
 
+
+namespace b24728;
+
 using System;
 using Xunit;
 

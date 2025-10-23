@@ -8,6 +8,9 @@
 
     // File: D:\a\_work\1\s\src\coreclr\jit\lowerxarch.cpp Line: 11752
 
+
+namespace Runtime_107587;
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

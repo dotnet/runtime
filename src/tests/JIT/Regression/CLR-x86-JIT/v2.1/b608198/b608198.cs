@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b608198;
+
 using Xunit;
 /*
  QFE regression TC for AV while optimizing away basic blocks that 

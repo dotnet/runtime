@@ -4,6 +4,9 @@
 // There was an issue with Sse41.BlendVariable where we might reuse XMM0
 // for targetReg.
 
+
+namespace Runtime_91798;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;

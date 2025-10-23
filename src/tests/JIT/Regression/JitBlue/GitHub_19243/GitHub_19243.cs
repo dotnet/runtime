@@ -3,6 +3,9 @@
 //
 // This test exposed a bug with the ordering of evaluation of a cpblk.
 
+
+namespace GitHub_19243_ro;
+
 using Xunit;
 struct S0
 {

@@ -10,6 +10,9 @@
 // 
 //     File: D:\a\_work\1\s\src\coreclr\jit\lir.cpp Line: 1397
 // 
+
+namespace Runtime_64883;
+
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;

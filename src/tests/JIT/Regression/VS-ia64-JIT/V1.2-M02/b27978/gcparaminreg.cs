@@ -7,6 +7,9 @@
 // Note that this probably needs to be modifies in msil to 
 // actually process the address of the local, rather than the local.
 
+
+namespace b27978;
+
 using System;
 using Xunit;
 
