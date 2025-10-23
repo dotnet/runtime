@@ -1260,7 +1260,7 @@ HaveInterpThreadContext
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
         mov x2, xzr
-        bl C_FUNC(ExecuteInterpretedMethod)
+        bl ExecuteInterpretedMethod
         ldr d0, [x0], #8
         ldr d1, [x0]
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
@@ -1273,7 +1273,7 @@ HaveInterpThreadContext
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
         mov x2, xzr
-        bl C_FUNC(ExecuteInterpretedMethod)
+        bl ExecuteInterpretedMethod
         ldr d0, [x0], #8
         ldr d1, [x0], #8
         ldr d2, [x0]
@@ -1287,7 +1287,7 @@ HaveInterpThreadContext
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
         mov x2, xzr
-        bl C_FUNC(ExecuteInterpretedMethod)
+        bl ExecuteInterpretedMethod
         ldr d0, [x0], #8
         ldr d1, [x0], #8
         ldr d2, [x0], #8
@@ -1314,7 +1314,7 @@ HaveInterpThreadContext
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
         mov x2, xzr
-        bl C_FUNC(ExecuteInterpretedMethod)
+        bl ExecuteInterpretedMethod
         ldr q0, [x0], #16
         ldr q1, [x0]
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
@@ -1327,7 +1327,7 @@ HaveInterpThreadContext
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
         mov x2, xzr
-        bl C_FUNC(ExecuteInterpretedMethod)
+        bl ExecuteInterpretedMethod
         ldr q0, [x0], #16
         ldr q1, [x0], #16
         ldr q2, [x0]
@@ -1341,7 +1341,7 @@ HaveInterpThreadContext
         add x0, sp, #__PWTB_TransitionBlock + 16
         mov x1, x19 ; the IR bytecode pointer
         mov x2, xzr
-        bl C_FUNC(ExecuteInterpretedMethod)
+        bl ExecuteInterpretedMethod
         ldr q0, [x0], #16
         ldr q1, [x0], #16
         ldr q2, [x0], #16
