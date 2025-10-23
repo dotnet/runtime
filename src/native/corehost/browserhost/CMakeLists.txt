@@ -108,6 +108,7 @@ target_link_options(browserhost PRIVATE
     -sMAXIMUM_MEMORY=2147483648
     -sALLOW_MEMORY_GROWTH=1
     -sSTACK_SIZE=5MB
+    -sWASM_BIGINT=1
     -sMODULARIZE=1
     -sEXPORT_ES6=1
     -sEXIT_RUNTIME=0
