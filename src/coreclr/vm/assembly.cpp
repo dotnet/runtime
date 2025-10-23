@@ -1138,7 +1138,7 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
         *pType = EntryCrtMain;
         return;
     }
-#else
+#else // TARGET_BROWSER
     // validate that the return type is Task or Task<int>
     if (nReturnType == ELEMENT_TYPE_VOID || nReturnType == ELEMENT_TYPE_I4 || nReturnType == ELEMENT_TYPE_U4)
     {
