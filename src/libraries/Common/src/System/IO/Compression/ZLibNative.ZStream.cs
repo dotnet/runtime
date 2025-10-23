@@ -10,7 +10,7 @@ namespace System.IO.Compression
         /// <summary>
         /// ZLib stream descriptor data structure
         /// Do not construct instances of <see cref="ZStream" /> explicitly.
-        /// Always use <see cref="ZLibNative.CreateZLibStreamForDeflate" /> or <see cref="ZLibNative.CreateZLibStreamForInflate" /> instead.
+        /// Always use <see cref="ZLibNative.ZLibStreamHandle.CreateForDeflate" /> or <see cref="ZLibNative.ZLibStreamHandle.CreateForInflate" /> instead.
         /// Those methods will wrap this structure into a <see cref="ZLibStreamHandle" /> and thus make sure that it is always disposed correctly.
         /// </summary>
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
