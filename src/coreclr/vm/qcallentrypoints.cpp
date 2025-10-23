@@ -79,7 +79,6 @@
 #include "wasm/wasm-entrypoints.h"
 #endif
 
-
 static const Entry s_QCall[] =
 {
     DllImportEntry(ArgIterator_Init)
