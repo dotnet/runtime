@@ -4173,8 +4173,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 }
 #endif
                 // TODO: Implement support for XAND/XORR with small integer types (byte/short)
-                // Currently only TYP_INT and TYP_LONG are expanded as intrinsics; other types
-                // fall back to managed CompareExchange-based implementations
                 if ((callType != TYP_INT) && (callType != TYP_LONG))
                 {
                     break;
