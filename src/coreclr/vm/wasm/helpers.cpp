@@ -659,7 +659,7 @@ extern "C" void SystemJS_ExecuteTimerCallback()
 }
 
 // WASM-TODO: use [UnmanagedCallersOnly] once is supported in wasm
-extern "C" void SystemJS_ExecuteBackgroundJobCallback (void)
+extern "C" void SystemJS_ExecuteBackgroundJobCallback()
 {
     ARG_SLOT stackVarWrapper[] = { };
     MethodDescCallSite backgroundJobHandler(METHOD__THREAD_POOL__BACKGROUND_JOB_HANDLER);
