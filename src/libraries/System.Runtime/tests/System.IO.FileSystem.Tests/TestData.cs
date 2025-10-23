@@ -129,6 +129,13 @@ internal static class TestData
                 data.Add("file\rname");      // carriage return
                 data.Add("file\vname");      // vertical tab
                 data.Add("file\fname");      // form feed
+                // Trailing spaces and periods are also valid on Unix (but problematic on Windows)
+                data.Add("trailing ");
+                data.Add("trailing  ");
+                data.Add("trailing.");
+                data.Add("trailing..");
+                data.Add("trailing .");
+                data.Add("trailing. ");
             }
 
             return data;
