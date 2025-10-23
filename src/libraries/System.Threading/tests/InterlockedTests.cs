@@ -912,94 +912,208 @@ namespace System.Threading.Tests
             Assert.Equal(0x17755771u, value);
         }
 
-        [Fact]
-        public void InterlockedAnd_Generic_Byte()
+        [Theory]
+        [InlineData((byte)0xF0, (byte)0x3C, (byte)0x30)]
+        [InlineData((byte)0xFF, (byte)0x00, (byte)0x00)]
+        [InlineData((byte)0xAA, (byte)0x55, (byte)0x00)]
+        [InlineData((byte)0xFF, (byte)0xFF, (byte)0xFF)]
+        [InlineData((byte)0x00, (byte)0xFF, (byte)0x00)]
+        public void InterlockedAnd_Generic_Byte(byte initial, byte operand, byte expected)
         {
-            byte value = 0xF0;
-            Assert.Equal((byte)0xF0, Interlocked.And<byte>(ref value, (byte)0x3C));
-            Assert.Equal((byte)0x30, value);
+            byte value = initial;
+            Assert.Equal(initial, Interlocked.And<byte>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedAnd_Generic_Byte_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.And<byte>(ref Unsafe.NullRef<byte>(), (byte)0x3C));
         }
 
-        [Fact]
-        public void InterlockedAnd_Generic_SByte()
+        [Theory]
+        [InlineData((sbyte)0x70, (sbyte)0x21, (sbyte)0x20)]
+        [InlineData((sbyte)-1, (sbyte)0x7F, (sbyte)0x7F)]
+        [InlineData((sbyte)-128, (sbyte)127, (sbyte)0)]
+        [InlineData((sbyte)-1, (sbyte)-1, (sbyte)-1)]
+        [InlineData((sbyte)0, (sbyte)-1, (sbyte)0)]
+        public void InterlockedAnd_Generic_SByte(sbyte initial, sbyte operand, sbyte expected)
         {
-            sbyte value = 0x70;
-            Assert.Equal((sbyte)0x70, Interlocked.And<sbyte>(ref value, (sbyte)0x21));
-            Assert.Equal((sbyte)0x20, value);
+            sbyte value = initial;
+            Assert.Equal(initial, Interlocked.And<sbyte>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedAnd_Generic_SByte_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.And<sbyte>(ref Unsafe.NullRef<sbyte>(), (sbyte)0x21));
         }
 
-        [Fact]
-        public void InterlockedAnd_Generic_UInt16()
+        [Theory]
+        [InlineData((ushort)0x1234, (ushort)0x5678, (ushort)0x1230)]
+        [InlineData((ushort)0xFFFF, (ushort)0x0000, (ushort)0x0000)]
+        [InlineData((ushort)0xAAAA, (ushort)0x5555, (ushort)0x0000)]
+        [InlineData((ushort)0xFFFF, (ushort)0xFFFF, (ushort)0xFFFF)]
+        [InlineData((ushort)0x0000, (ushort)0xFFFF, (ushort)0x0000)]
+        public void InterlockedAnd_Generic_UInt16(ushort initial, ushort operand, ushort expected)
         {
-            ushort value = 0x1234;
-            Assert.Equal((ushort)0x1234, Interlocked.And<ushort>(ref value, (ushort)0x5678));
-            Assert.Equal((ushort)0x1230, value);
+            ushort value = initial;
+            Assert.Equal(initial, Interlocked.And<ushort>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedAnd_Generic_UInt16_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.And<ushort>(ref Unsafe.NullRef<ushort>(), (ushort)0x5678));
         }
 
-        [Fact]
-        public void InterlockedAnd_Generic_Int16()
+        [Theory]
+        [InlineData((short)0x1234, (short)0x5678, (short)0x1230)]
+        [InlineData((short)-1, (short)0x7FFF, (short)0x7FFF)]
+        [InlineData((short)-32768, (short)32767, (short)0)]
+        [InlineData((short)-1, (short)-1, (short)-1)]
+        [InlineData((short)0, (short)-1, (short)0)]
+        public void InterlockedAnd_Generic_Int16(short initial, short operand, short expected)
         {
-            short value = 0x1234;
-            Assert.Equal((short)0x1234, Interlocked.And<short>(ref value, (short)0x5678));
-            Assert.Equal((short)0x1230, value);
+            short value = initial;
+            Assert.Equal(initial, Interlocked.And<short>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedAnd_Generic_Int16_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.And<short>(ref Unsafe.NullRef<short>(), (short)0x5678));
         }
 
-        [Fact]
-        public void InterlockedAnd_Generic_Int32()
+        [Theory]
+        [InlineData(0x12345670, 0x07654321, 0x02244220)]
+        [InlineData(-1, 0x7FFFFFFF, 0x7FFFFFFF)]
+        [InlineData(int.MinValue, int.MaxValue, 0)]
+        [InlineData(-1, -1, -1)]
+        [InlineData(0, -1, 0)]
+        public void InterlockedAnd_Generic_Int32(int initial, int operand, int expected)
         {
-            int value = 0x12345670;
-            Assert.Equal(0x12345670, Interlocked.And<int>(ref value, 0x7654321));
-            Assert.Equal(0x02244220, value);
+            int value = initial;
+            Assert.Equal(initial, Interlocked.And<int>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedAnd_Generic_Int32_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.And<int>(ref Unsafe.NullRef<int>(), 0x7654321));
         }
 
-        [Fact]
-        public void InterlockedAnd_Generic_UInt32()
+        [Theory]
+        [InlineData(0x12345670u, 0x07654321u, 0x02244220u)]
+        [InlineData(0xFFFFFFFFu, 0x00000000u, 0x00000000u)]
+        [InlineData(0xAAAAAAAAu, 0x55555555u, 0x00000000u)]
+        [InlineData(0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu)]
+        [InlineData(0x00000000u, 0xFFFFFFFFu, 0x00000000u)]
+        public void InterlockedAnd_Generic_UInt32(uint initial, uint operand, uint expected)
         {
-            uint value = 0x12345670u;
-            Assert.Equal(0x12345670u, Interlocked.And<uint>(ref value, 0x7654321));
-            Assert.Equal(0x02244220u, value);
+            uint value = initial;
+            Assert.Equal(initial, Interlocked.And<uint>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedAnd_Generic_UInt32_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.And<uint>(ref Unsafe.NullRef<uint>(), 0x7654321u));
         }
 
-        [Fact]
-        public void InterlockedAnd_Generic_Int64()
+        [Theory]
+        [InlineData(0x12345670L, 0x07654321L, 0x02244220L)]
+        [InlineData(-1L, 0x7FFFFFFFFFFFFFFFL, 0x7FFFFFFFFFFFFFFFL)]
+        [InlineData(long.MinValue, long.MaxValue, 0L)]
+        [InlineData(-1L, -1L, -1L)]
+        [InlineData(0L, -1L, 0L)]
+        public void InterlockedAnd_Generic_Int64(long initial, long operand, long expected)
         {
-            long value = 0x12345670;
-            Assert.Equal(0x12345670, Interlocked.And<long>(ref value, 0x7654321));
-            Assert.Equal(0x02244220, value);
+            long value = initial;
+            Assert.Equal(initial, Interlocked.And<long>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedAnd_Generic_Int64_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.And<long>(ref Unsafe.NullRef<long>(), 0x7654321L));
         }
 
-        [Fact]
-        public void InterlockedAnd_Generic_UInt64()
+        [Theory]
+        [InlineData(0x12345670UL, 0x07654321UL, 0x02244220UL)]
+        [InlineData(0xFFFFFFFFFFFFFFFFUL, 0x0000000000000000UL, 0x0000000000000000UL)]
+        [InlineData(0xAAAAAAAAAAAAAAAAUL, 0x5555555555555555UL, 0x0000000000000000UL)]
+        [InlineData(0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL)]
+        [InlineData(0x0000000000000000UL, 0xFFFFFFFFFFFFFFFFUL, 0x0000000000000000UL)]
+        public void InterlockedAnd_Generic_UInt64(ulong initial, ulong operand, ulong expected)
         {
-            ulong value = 0x12345670u;
-            Assert.Equal(0x12345670u, Interlocked.And<ulong>(ref value, 0x7654321));
-            Assert.Equal(0x02244220u, value);
-
-            Assert.Throws<NullReferenceException>(() => Interlocked.And<ulong>(ref Unsafe.NullRef<ulong>(), 0x7654321UL));
+            ulong value = initial;
+            Assert.Equal(initial, Interlocked.And<ulong>(ref value, operand));
+            Assert.Equal(expected, value);
         }
 
         [Fact]
-        public void InterlockedAnd_Generic_Enum()
+        public void InterlockedAnd_Generic_UInt64_NullRef()
         {
-            DayOfWeek value = (DayOfWeek)0x7;
-            Assert.Equal((DayOfWeek)0x7, Interlocked.And<DayOfWeek>(ref value, (DayOfWeek)0x3));
-            Assert.Equal((DayOfWeek)0x3, value);
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<ulong>(ref Unsafe.NullRef<ulong>(), 0x7654321UL));
+        }
 
+        [Theory]
+        [InlineData(DayOfWeek.Sunday | DayOfWeek.Monday | DayOfWeek.Tuesday, DayOfWeek.Sunday | DayOfWeek.Monday, DayOfWeek.Sunday | DayOfWeek.Monday)]
+        [InlineData((DayOfWeek)0x7, (DayOfWeek)0x3, (DayOfWeek)0x3)]
+        [InlineData((DayOfWeek)0xFF, (DayOfWeek)0x00, (DayOfWeek)0x00)]
+        [InlineData((DayOfWeek)0xFF, (DayOfWeek)0xFF, (DayOfWeek)0xFF)]
+        public void InterlockedAnd_Generic_Enum(DayOfWeek initial, DayOfWeek operand, DayOfWeek expected)
+        {
+            DayOfWeek value = initial;
+            Assert.Equal(initial, Interlocked.And<DayOfWeek>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
+
+        [Fact]
+        public void InterlockedAnd_Generic_Enum_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.And<DayOfWeek>(ref Unsafe.NullRef<DayOfWeek>(), DayOfWeek.Monday));
+        }
+
+        [Theory]
+        [InlineData(1.0f, 1.0f, 1.0f)]  // 0x3F800000 & 0x3F800000 = 0x3F800000
+        [InlineData(0.0f, -0.0f, 0.0f)] // 0x00000000 & 0x80000000 = 0x00000000
+        [InlineData(float.NaN, float.NaN, float.NaN)] // NaN & NaN = NaN
+        public void InterlockedAnd_Generic_Float(float initial, float operand, float expected)
+        {
+            float value = initial;
+            Interlocked.And<float>(ref value, operand);
+            // For float comparison with NaN, use BitConverter
+            Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(value));
+        }
+
+        [Fact]
+        public void InterlockedAnd_Generic_Float_NullRef()
+        {
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<float>(ref Unsafe.NullRef<float>(), 1.0f));
+        }
+
+        [Theory]
+        [InlineData(1.0, 1.0, 1.0)]  // Bitwise AND of same value
+        [InlineData(0.0, -0.0, 0.0)] // 0x0000000000000000 & 0x8000000000000000 = 0x0000000000000000
+        public void InterlockedAnd_Generic_Double(double initial, double operand, double expected)
+        {
+            double value = initial;
+            Interlocked.And<double>(ref value, operand);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(value));
+        }
+
+        [Fact]
+        public void InterlockedAnd_Generic_Double_NullRef()
+        {
+            Assert.Throws<NullReferenceException>(() => Interlocked.And<double>(ref Unsafe.NullRef<double>(), 1.0));
         }
 
         [Fact]
@@ -1009,94 +1123,206 @@ namespace System.Threading.Tests
             Assert.Throws<NotSupportedException>(() => Interlocked.And<DateTime>(ref value, default));
         }
 
-        [Fact]
-        public void InterlockedOr_Generic_Byte()
+        [Theory]
+        [InlineData((byte)0xF0, (byte)0x0C, (byte)0xFC)]
+        [InlineData((byte)0x00, (byte)0xFF, (byte)0xFF)]
+        [InlineData((byte)0xAA, (byte)0x55, (byte)0xFF)]
+        [InlineData((byte)0xFF, (byte)0x00, (byte)0xFF)]
+        [InlineData((byte)0x00, (byte)0x00, (byte)0x00)]
+        public void InterlockedOr_Generic_Byte(byte initial, byte operand, byte expected)
         {
-            byte value = 0xF0;
-            Assert.Equal((byte)0xF0, Interlocked.Or<byte>(ref value, (byte)0x0C));
-            Assert.Equal((byte)0xFC, value);
+            byte value = initial;
+            Assert.Equal(initial, Interlocked.Or<byte>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedOr_Generic_Byte_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.Or<byte>(ref Unsafe.NullRef<byte>(), (byte)0x0C));
         }
 
-        [Fact]
-        public void InterlockedOr_Generic_SByte()
+        [Theory]
+        [InlineData((sbyte)0x50, (sbyte)0x21, (sbyte)0x71)]
+        [InlineData((sbyte)-128, (sbyte)127, (sbyte)-1)]
+        [InlineData((sbyte)0, (sbyte)-1, (sbyte)-1)]
+        [InlineData((sbyte)-1, (sbyte)0, (sbyte)-1)]
+        [InlineData((sbyte)0, (sbyte)0, (sbyte)0)]
+        public void InterlockedOr_Generic_SByte(sbyte initial, sbyte operand, sbyte expected)
         {
-            sbyte value = 0x50;
-            Assert.Equal((sbyte)0x50, Interlocked.Or<sbyte>(ref value, (sbyte)0x21));
-            Assert.Equal((sbyte)0x71, value);
+            sbyte value = initial;
+            Assert.Equal(initial, Interlocked.Or<sbyte>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedOr_Generic_SByte_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.Or<sbyte>(ref Unsafe.NullRef<sbyte>(), (sbyte)0x21));
         }
 
-        [Fact]
-        public void InterlockedOr_Generic_UInt16()
+        [Theory]
+        [InlineData((ushort)0x1234, (ushort)0x5008, (ushort)0x523C)]
+        [InlineData((ushort)0x0000, (ushort)0xFFFF, (ushort)0xFFFF)]
+        [InlineData((ushort)0xAAAA, (ushort)0x5555, (ushort)0xFFFF)]
+        [InlineData((ushort)0xFFFF, (ushort)0x0000, (ushort)0xFFFF)]
+        [InlineData((ushort)0x0000, (ushort)0x0000, (ushort)0x0000)]
+        public void InterlockedOr_Generic_UInt16(ushort initial, ushort operand, ushort expected)
         {
-            ushort value = 0x1234;
-            Assert.Equal((ushort)0x1234, Interlocked.Or<ushort>(ref value, (ushort)0x5008));
-            Assert.Equal((ushort)0x523C, value);
+            ushort value = initial;
+            Assert.Equal(initial, Interlocked.Or<ushort>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedOr_Generic_UInt16_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.Or<ushort>(ref Unsafe.NullRef<ushort>(), (ushort)0x5008));
         }
 
-        [Fact]
-        public void InterlockedOr_Generic_Int16()
+        [Theory]
+        [InlineData((short)0x1234, (short)0x5008, (short)0x523C)]
+        [InlineData((short)-32768, (short)32767, (short)-1)]
+        [InlineData((short)0, (short)-1, (short)-1)]
+        [InlineData((short)-1, (short)0, (short)-1)]
+        [InlineData((short)0, (short)0, (short)0)]
+        public void InterlockedOr_Generic_Int16(short initial, short operand, short expected)
         {
-            short value = 0x1234;
-            Assert.Equal((short)0x1234, Interlocked.Or<short>(ref value, (short)0x5008));
-            Assert.Equal((short)0x523C, value);
+            short value = initial;
+            Assert.Equal(initial, Interlocked.Or<short>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedOr_Generic_Int16_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.Or<short>(ref Unsafe.NullRef<short>(), (short)0x5008));
         }
 
-        [Fact]
-        public void InterlockedOr_Generic_Int32()
+        [Theory]
+        [InlineData(0x12345670, 0x07654321, 0x17755771)]
+        [InlineData(int.MinValue, int.MaxValue, -1)]
+        [InlineData(0, -1, -1)]
+        [InlineData(-1, 0, -1)]
+        [InlineData(0, 0, 0)]
+        public void InterlockedOr_Generic_Int32(int initial, int operand, int expected)
         {
-            int value = 0x12345670;
-            Assert.Equal(0x12345670, Interlocked.Or<int>(ref value, 0x7654321));
-            Assert.Equal(0x17755771, value);
+            int value = initial;
+            Assert.Equal(initial, Interlocked.Or<int>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedOr_Generic_Int32_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.Or<int>(ref Unsafe.NullRef<int>(), 0x7654321));
         }
 
-        [Fact]
-        public void InterlockedOr_Generic_UInt32()
+        [Theory]
+        [InlineData(0x12345670u, 0x07654321u, 0x17755771u)]
+        [InlineData(0x00000000u, 0xFFFFFFFFu, 0xFFFFFFFFu)]
+        [InlineData(0xAAAAAAAAu, 0x55555555u, 0xFFFFFFFFu)]
+        [InlineData(0xFFFFFFFFu, 0x00000000u, 0xFFFFFFFFu)]
+        [InlineData(0x00000000u, 0x00000000u, 0x00000000u)]
+        public void InterlockedOr_Generic_UInt32(uint initial, uint operand, uint expected)
         {
-            uint value = 0x12345670u;
-            Assert.Equal(0x12345670u, Interlocked.Or<uint>(ref value, 0x7654321));
-            Assert.Equal(0x17755771u, value);
+            uint value = initial;
+            Assert.Equal(initial, Interlocked.Or<uint>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedOr_Generic_UInt32_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.Or<uint>(ref Unsafe.NullRef<uint>(), 0x7654321u));
         }
 
-        [Fact]
-        public void InterlockedOr_Generic_Int64()
+        [Theory]
+        [InlineData(0x12345670L, 0x07654321L, 0x17755771L)]
+        [InlineData(long.MinValue, long.MaxValue, -1L)]
+        [InlineData(0L, -1L, -1L)]
+        [InlineData(-1L, 0L, -1L)]
+        [InlineData(0L, 0L, 0L)]
+        public void InterlockedOr_Generic_Int64(long initial, long operand, long expected)
         {
-            long value = 0x12345670;
-            Assert.Equal(0x12345670, Interlocked.Or<long>(ref value, 0x7654321));
-            Assert.Equal(0x17755771, value);
+            long value = initial;
+            Assert.Equal(initial, Interlocked.Or<long>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
 
+        [Fact]
+        public void InterlockedOr_Generic_Int64_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.Or<long>(ref Unsafe.NullRef<long>(), 0x7654321L));
         }
 
-        [Fact]
-        public void InterlockedOr_Generic_UInt64()
+        [Theory]
+        [InlineData(0x12345670UL, 0x07654321UL, 0x17755771UL)]
+        [InlineData(0x0000000000000000UL, 0xFFFFFFFFFFFFFFFFUL, 0xFFFFFFFFFFFFFFFFUL)]
+        [InlineData(0xAAAAAAAAAAAAAAAAUL, 0x5555555555555555UL, 0xFFFFFFFFFFFFFFFFUL)]
+        [InlineData(0xFFFFFFFFFFFFFFFFUL, 0x0000000000000000UL, 0xFFFFFFFFFFFFFFFFUL)]
+        [InlineData(0x0000000000000000UL, 0x0000000000000000UL, 0x0000000000000000UL)]
+        public void InterlockedOr_Generic_UInt64(ulong initial, ulong operand, ulong expected)
         {
-            ulong value = 0x12345670u;
-            Assert.Equal(0x12345670u, Interlocked.Or<ulong>(ref value, 0x7654321));
-            Assert.Equal(0x17755771u, value);
-
-            Assert.Throws<NullReferenceException>(() => Interlocked.Or<ulong>(ref Unsafe.NullRef<ulong>(), 0x7654321UL));
+            ulong value = initial;
+            Assert.Equal(initial, Interlocked.Or<ulong>(ref value, operand));
+            Assert.Equal(expected, value);
         }
 
         [Fact]
-        public void InterlockedOr_Generic_Enum()
+        public void InterlockedOr_Generic_UInt64_NullRef()
         {
-            DayOfWeek value = (DayOfWeek)0x1;
-            Assert.Equal((DayOfWeek)0x1, Interlocked.Or<DayOfWeek>(ref value, (DayOfWeek)0x2));
-            Assert.Equal((DayOfWeek)0x3, value);
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<ulong>(ref Unsafe.NullRef<ulong>(), 0x7654321UL));
+        }
 
+        [Theory]
+        [InlineData(DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Sunday | DayOfWeek.Monday)]
+        [InlineData((DayOfWeek)0x1, (DayOfWeek)0x2, (DayOfWeek)0x3)]
+        [InlineData((DayOfWeek)0x00, (DayOfWeek)0xFF, (DayOfWeek)0xFF)]
+        [InlineData((DayOfWeek)0xFF, (DayOfWeek)0x00, (DayOfWeek)0xFF)]
+        public void InterlockedOr_Generic_Enum(DayOfWeek initial, DayOfWeek operand, DayOfWeek expected)
+        {
+            DayOfWeek value = initial;
+            Assert.Equal(initial, Interlocked.Or<DayOfWeek>(ref value, operand));
+            Assert.Equal(expected, value);
+        }
+
+        [Fact]
+        public void InterlockedOr_Generic_Enum_NullRef()
+        {
             Assert.Throws<NullReferenceException>(() => Interlocked.Or<DayOfWeek>(ref Unsafe.NullRef<DayOfWeek>(), DayOfWeek.Monday));
+        }
+
+        [Theory]
+        [InlineData(1.0f, 0.0f, 1.0f)]  // 0x3F800000 | 0x00000000 = 0x3F800000
+        [InlineData(0.0f, -0.0f, -0.0f)] // 0x00000000 | 0x80000000 = 0x80000000
+        public void InterlockedOr_Generic_Float(float initial, float operand, float expected)
+        {
+            float value = initial;
+            Interlocked.Or<float>(ref value, operand);
+            Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(value));
+        }
+
+        [Fact]
+        public void InterlockedOr_Generic_Float_NullRef()
+        {
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<float>(ref Unsafe.NullRef<float>(), 1.0f));
+        }
+
+        [Theory]
+        [InlineData(1.0, 0.0, 1.0)]  // Bitwise OR
+        [InlineData(0.0, -0.0, -0.0)] // 0x0000000000000000 | 0x8000000000000000 = 0x8000000000000000
+        public void InterlockedOr_Generic_Double(double initial, double operand, double expected)
+        {
+            double value = initial;
+            Interlocked.Or<double>(ref value, operand);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(value));
+        }
+
+        [Fact]
+        public void InterlockedOr_Generic_Double_NullRef()
+        {
+            Assert.Throws<NullReferenceException>(() => Interlocked.Or<double>(ref Unsafe.NullRef<double>(), 1.0));
         }
 
         [Fact]

@@ -4165,10 +4165,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
-                var_types actualType = genActualType(callType);
 #if defined(TARGET_X86)
                 // On x86, TYP_LONG is not supported as an intrinsic
-                if (actualType == TYP_LONG)
+                if (genActualType(callType) == TYP_LONG)
                 {
                     break;
                 }
@@ -4187,7 +4186,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
                     genTreeOps op  = (ni == NI_System_Threading_Interlocked_Or) ? GT_XORR : GT_XAND;
-                    retNode        = gtNewAtomicNode(op, actualType, op1, op2);
+                    retNode        = gtNewAtomicNode(op, genActualType(callType), op1, op2);
                 }
                 break;
             }
