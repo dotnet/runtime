@@ -6,7 +6,7 @@
 .assembly extern xunit.core {}
 .assembly 'b409748' { }
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
-.assembly extern TestLibrary {}
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 
 .method public static vararg void Foo(int32)
 {

@@ -19,7 +19,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
-.assembly extern TestLibrary {}
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 // MVID: {BCA6096F-DF11-4FA3-BF16-EEDA01729535}
 .namespace AvgTest_sizeof_Target_64BIT
 {

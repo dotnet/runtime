@@ -14,7 +14,7 @@
 { }
 .assembly extern xunit.core {}
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
-.assembly extern TestLibrary {}
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .class public auto ansi Test_i_array_merge_Target_32BIT extends [mscorlib]System.Object
 {
 .method public hidebysig static int32 Main() il managed

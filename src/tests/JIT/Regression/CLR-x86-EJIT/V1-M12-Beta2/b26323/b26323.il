@@ -11,7 +11,7 @@
 .assembly b26323 { }
 .assembly extern xunit.core {}
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
-.assembly extern TestLibrary {}
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace Test
 {
   .class public auto ansi App extends [mscorlib]System.Object
