@@ -2769,6 +2769,7 @@ namespace System.Tests
         [ConditionalFact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.Linux)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117731", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.OSX)]
         public static void NoBackwardTimeZones()
         {
             if (OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(26))
