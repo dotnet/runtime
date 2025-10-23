@@ -6729,6 +6729,11 @@ void CodeGen::genAddRichIPMappingHere(const DebugInfo& di)
 //
 void CodeGen::genReportAsyncDebugInfo()
 {
+    if (!compiler->opts.compDbgInfo)
+    {
+        return;
+    }
+
     jitstd::vector<ICorDebugInfo::AsyncSuspensionPoint>* suspPoints = compiler->compSuspensionPoints;
     if (suspPoints == nullptr)
     {
