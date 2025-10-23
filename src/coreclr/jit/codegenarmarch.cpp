@@ -557,8 +557,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // TARGET_ARM
 
         case GT_IL_OFFSET:
+            // Do nothing; this node is a marker for debug info.
+            break;
+
         case GT_RECORD_ASYNC_RESUME:
-            // Do nothing; these nodes are simply markers for debug info.
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         default:

@@ -2233,6 +2233,13 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     genProduceReg(treeNode);
 }
 
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    GetEmitter()->emitIns_R_C(INS_addi, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+                              genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1));
+    genProduceReg(treeNode);
+}
+
 //------------------------------------------------------------------------
 // genLockedInstructions: Generate code for a GT_XADD, GT_XAND, GT_XORR or GT_XCHG node.
 //
@@ -4368,6 +4375,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -4381,8 +4392,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_IL_OFFSET:
-        case GT_RECORD_ASYNC_JOIN:
-            // Do nothing; these nodes are simply markers for debug info.
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         case GT_SH1ADD:
@@ -6989,58 +7003,5 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
     genEmitHelperCall(helper, 0, EA_UNKNOWN);
 }
 #endif // PROFILING_SUPPORTED
-
-//-----------------------------------------------------------------------------------
-// genCodeForAsyncresumeTrampolineJump:
-//   Generate code to jump to an async resumption stub.
-//
-// Arguments:
-//   methHnd - Handle of resumption stub
-//   lookup  - Lookup for the address of the resumption stub
-//
-// Remarks:
-//   The codegen for these jumps must handle a non-standard environment. No
-//   prolog has been run when these are invoked, so they cannot use locals,
-//   they cannot use non-volatile registers, and they cannot trash the argument
-//   registers that resumption stubs use (see BuildResumptionStubSignature in
-//   the VM).
-//
-void CodeGen::genCodeForAsyncResumeTrampolineJump(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
-{
-    switch (lookup.accessType)
-    {
-        case IAT_VALUE:
-        case IAT_PVALUE:
-        {
-            EmitCallParams call;
-            call.ptrVars   = VarSetOps::MakeEmpty(compiler);
-            call.gcrefRegs = RBM_NONE;
-            call.byrefRegs = RBM_NONE;
-            call.isJump    = true;
-            call.methHnd   = methHnd;
-
-            instGen_Set_Reg_To_Imm(EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), REG_T0, (ssize_t)lookup.addr,
-                                   INS_FLAGS_DONT_CARE DEBUGARG((size_t)methHnd) DEBUGARG(GTF_ICON_FTN_ADDR));
-
-            if (lookup.accessType == IAT_PVALUE)
-            {
-                GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_T0, REG_T0);
-            }
-            call.callType = EC_INDIR_R;
-            call.ireg     = REG_T0;
-            GetEmitter()->emitIns_Call(call);
-            break;
-        }
-        case IAT_PPVALUE:
-            noway_assert(!"Cannot handle PPVALUE access type");
-            break;
-        case IAT_RELPVALUE:
-            noway_assert(!"Cannot handle RELPVALUE access type");
-            break;
-        default:
-            noway_assert(!"Cannot handle access type");
-            break;
-    }
-}
 
 #endif // TARGET_RISCV64
