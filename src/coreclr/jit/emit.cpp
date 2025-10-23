@@ -7965,6 +7965,15 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
     return secOffs;
 }
 
+//---------------------------------------------------------------------------
+// emitAsyncResumeTable:
+//   Allocate space for an async resumption info table in the data sections.
+//
+// Arguments:
+//    numEntries    - Number of entries in the table
+//    dataSecOffset - [out] Offset of the data section that was allocated
+//    dataSec       - [out] Information about the data section that was allocated
+//
 void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecOffs, emitter::dataSection** dataSec)
 {
     UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;

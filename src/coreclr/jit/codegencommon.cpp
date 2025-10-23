@@ -5643,6 +5643,17 @@ unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
     return jmpTabBase;
 }
 
+//----------------------------------------------------------------------------------
+// genEmitAsyncResumeInfoTable:
+//   Register the singleton async resumption info table if not registered
+//   before. Return information about it.
+//
+// Arguments:
+//    dataSection - [out] The information about the registered data section
+//
+// Return Value:
+//    Base offset of the async resumption info table
+//
 UNATIVE_OFFSET CodeGen::genEmitAsyncResumeInfoTable(emitter::dataSection** dataSection)
 {
     assert(compiler->compSuspensionPoints != nullptr);
@@ -5657,6 +5668,18 @@ UNATIVE_OFFSET CodeGen::genEmitAsyncResumeInfoTable(emitter::dataSection** dataS
     return genAsyncResumeInfoTableOffset;
 }
 
+//----------------------------------------------------------------------------------
+// genEmitAsyncResumeInfo:
+//   Obtain a pseudo-CORINFO_FIELD_HANDLE describing how to access the async
+//   resume information for a specific state number.
+//
+// Arguments:
+//    stateNum - The state
+//
+// Return Value:
+//    CORINFO_FIELD_HANDLE encoding access of read-only data at a specific
+//    offset.
+//
 CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
 {
     assert(compiler->compSuspensionPoints != nullptr);

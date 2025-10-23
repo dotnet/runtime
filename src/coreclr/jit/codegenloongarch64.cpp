@@ -2278,6 +2278,12 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     genProduceReg(treeNode);
 }
 
+//------------------------------------------------------------------------
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
+//
 void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {
     GetEmitter()->emitIns_R_C(INS_bl, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,

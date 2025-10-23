@@ -654,7 +654,10 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genAsyncResumeInfo: emits offset of async resume info
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
 //
 void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
 {

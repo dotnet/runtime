@@ -7749,6 +7749,17 @@ GenTreeIntCon* Compiler::gtNewFalse()
     return gtNewIconNode(0, TYP_INT);
 }
 
+//-----------------------------------------------------------------------------------------
+// gtNewILOffsetNode:
+//   Create a GT_IL_OFFSET node with the specified debug information.
+//
+// Arguments:
+//    di         - The debug information
+//    lastOffset - Offset corresponding to the IL instruction after this one
+//
+// Return Value:
+//    New node.
+//
 GenTreeILOffset* Compiler::gtNewILOffsetNode(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset))
 {
     return new (this, GT_IL_OFFSET) GenTreeILOffset(di DEBUGARG(lastOffset));
