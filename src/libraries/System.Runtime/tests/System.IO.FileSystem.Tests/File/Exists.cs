@@ -243,7 +243,7 @@ namespace System.IO.Tests
         [Theory]
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsExistsTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
+        public void WindowsExistsWithTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
         {
             // Files with trailing spaces/periods require \\?\ syntax on Windows
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

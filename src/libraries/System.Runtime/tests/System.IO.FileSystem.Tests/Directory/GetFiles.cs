@@ -225,7 +225,7 @@ namespace System.IO.Tests
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/113120")]
-        public void WindowsEnumerateDirectoryWithTrailingSpace(string dirName)
+        public void WindowsEnumerateDirectoryWithTrailingSpacePeriod(string dirName)
         {
             DirectoryInfo parentDir = Directory.CreateDirectory(GetTestFilePath());
             string problematicDirPath = Path.Combine(parentDir.FullName, dirName);
