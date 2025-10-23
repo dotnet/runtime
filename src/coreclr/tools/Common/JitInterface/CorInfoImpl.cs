@@ -1827,6 +1827,10 @@ namespace Internal.JitInterface
 
             if (result is MethodDesc method)
             {
+                if (method.IsAsync)
+                {
+                    throw new RequiresRuntimeJitException("RuntimeAsync methods will be jitted at runtime");
+                }
                 pResolvedToken.hMethod = ObjectToHandle(method);
 
                 TypeDesc owningClass = method.OwningType;
