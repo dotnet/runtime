@@ -637,4 +637,27 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     public partial class TimeSpanRangeAttributeValidator : IValidateOptions<OptionsWithTimeSpanRangeAttribute>
     {
     }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void TestNamedOptionsUseTypeNameNotOptionName()
+        {
+            // Test that when using named options (e.g., "MySettings"), the error message
+            // uses the type name (MyOptions) instead of the option name (MySettings)
+            MyOptions options = new();
+
+            MySourceGenOptionsValidator sourceGenOptionsValidator = new();
+
+            // Validate with a different name than the type name
+            ValidateOptionsResult result = sourceGenOptionsValidator.Validate("MySettings", options);
+            Assert.True(result.Failed);
+
+            // The error messages should use the type name "MyOptions", not the option name "MySettings"
+            Assert.Equal(new List<string>
+                        {
+                            "Age: The field MyOptions.Age must be between 0 and 100.",
+                            "Name: The MyOptions.Name field is required.",
+                            "Phone: The MyOptions.Phone field is required."
+                        },
+                        result.Failures);
+        }
 }
