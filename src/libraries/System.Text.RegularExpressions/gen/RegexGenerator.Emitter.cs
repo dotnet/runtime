@@ -960,7 +960,7 @@ namespace System.Text.RegularExpressions.Generator
                             regexTree.Root.ComputeMaxLength() == regexTree.FindOptimizations.MinRequiredLength)
                         {
                             int minRequiredLength = regexTree.FindOptimizations.MinRequiredLength;
-                            writer.WriteLine($"// The pattern has both a leading beginning (^/\\A) and a trailing end (\\z) anchor, and any possible match is exactly {minRequiredLength} characters.");
+                            writer.WriteLine($"// The pattern leads with a beginning (\\A) anchor and has a trailing end (\\z) anchor, and any possible match is exactly {minRequiredLength} characters.");
                             using (EmitBlock(writer, $"if (pos == 0 && inputSpan.Length == {minRequiredLength})"))
                             {
                                 writer.WriteLine("return true;");

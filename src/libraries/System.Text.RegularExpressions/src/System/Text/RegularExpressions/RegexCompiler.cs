@@ -514,13 +514,12 @@ namespace System.Text.RegularExpressions
                         {
                             // if (pos != 0 || inputSpan.Length != minRequiredLength) goto returnFalse;
                             // return true;
-                            int minRequiredLength = _regexTree.FindOptimizations.MinRequiredLength;
                             Ldloc(pos);
                             Ldc(0);
                             Bne(returnFalse);
                             Ldloca(inputSpan);
                             Call(SpanGetLengthMethod);
-                            Ldc(minRequiredLength);
+                            Ldc(_regexTree.FindOptimizations.MinRequiredLength);
                             Bne(returnFalse);
                             Ldc(1);
                             Ret();
