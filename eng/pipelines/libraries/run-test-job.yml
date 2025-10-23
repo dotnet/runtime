@@ -3,7 +3,6 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
-  hostedOs: ''
   targetRid: ''
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
@@ -57,10 +56,8 @@ jobs:
       dependsOn:
       - ${{ if ne(parameters.dependsOn[0], '') }}:
         - ${{ parameters.dependsOn }}
-      - ${{ elseif ne(parameters.hostedOs, '') }}:
-        - 'yybuild_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
       - ${{ else }}:
-        - 'zzbuild_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
+        - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ coalesce(parameters.unifiedBuildConfigOverride, parameters.buildConfig) }}_${{ parameters.unifiedBuildNameSuffix }}'
 
       workspace:
         clean: all
