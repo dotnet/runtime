@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Logging
             {
                 if (index < 0 || index >= Count)
                 {
-                    throw new IndexOutOfRangeException(nameof(index));
+                    throw new IndexOutOfRangeException();
                 }
 
                 if (index == Count - 1)

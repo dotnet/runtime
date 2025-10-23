@@ -655,6 +655,11 @@ bool getTailCallHelpers(
           CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
           CORINFO_TAILCALL_HELPERS* pResult) override;
 
+CORINFO_CLASS_HANDLE getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize) override;
+
 CORINFO_METHOD_HANDLE getAsyncResumptionStub() override;
 
 bool convertPInvokeCalliToCall(
