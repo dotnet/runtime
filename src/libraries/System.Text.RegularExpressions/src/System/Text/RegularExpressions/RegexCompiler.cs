@@ -2244,16 +2244,9 @@ namespace System.Text.RegularExpressions
 
                 // Emit the condition. The condition expression is a zero-width assertion, which is atomic,
                 // so prevent backtracking into it.
-                if (analysis.MayBacktrack(condition))
-                {
-                    // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
-                    // so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(condition);
-                }
+                // Condition expressions are treated like positive lookarounds and thus are implicitly atomic,
+                // so we always emit them via EmitAtomic to ensure proper isolation of backtracking state (e.g., doneLabel).
+                EmitAtomic(node, null);
                 doneLabel = originalDoneLabel;
 
                 // After the condition completes successfully, reset the text positions.
@@ -2536,16 +2529,9 @@ namespace System.Text.RegularExpressions
                 EmitTimeoutCheckIfNeeded();
 
                 // Emit the child.
-                RegexNode child = node.Child(0);
-                if (analysis.MayBacktrack(child))
-                {
-                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(child);
-                }
+                // Lookarounds are implicitly atomic, so we always emit them via EmitAtomic to ensure
+                // proper isolation of backtracking state (e.g., doneLabel) from subsequent code.
+                EmitAtomic(node, null);
 
                 // After the child completes successfully, reset the text positions.
                 // Do not reset captures, which persist beyond the lookaround.
@@ -2626,15 +2612,9 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Emit the child.
-                if (analysis.MayBacktrack(child))
-                {
-                    // Lookarounds are implicitly atomic, so we need to emit the node as atomic if it might backtrack.
-                    EmitAtomic(node, null);
-                }
-                else
-                {
-                    EmitNode(child);
-                }
+                // Lookarounds are implicitly atomic, so we always emit them via EmitAtomic to ensure
+                // proper isolation of backtracking state (e.g., doneLabel) from subsequent code.
+                EmitAtomic(node, null);
 
                 // If the generated code ends up here, it matched the lookaround, which actually
                 // means failure for a _negative_ lookaround, so we need to jump to the original done.
@@ -2831,7 +2811,9 @@ namespace System.Text.RegularExpressions
 
                 RegexNode child = node.Child(0);
 
-                if (!analysis.MayBacktrack(child))
+                // Lookarounds and conditional expressions always need atomic isolation even if their child doesn't backtrack,
+                // because descendants might still manipulate doneLabel internally.
+                if (node.Kind is RegexNodeKind.Atomic && !analysis.MayBacktrack(child))
                 {
                     // If the child has no backtracking, the atomic is a nop and we can just skip it.
                     // Note that the source generator equivalent for this is in the top-level EmitNode, in order to avoid

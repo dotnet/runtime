@@ -506,13 +506,18 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
 
     LclVarDsc* dsc = m_comp->lvaGetDesc(lclNum);
 
-    if ((dsc->TypeIs(TYP_BYREF) && !dsc->IsImplicitByRef()) ||
-        (dsc->TypeIs(TYP_STRUCT) && dsc->GetLayout()->HasGCByRef()))
+    if (dsc->TypeIs(TYP_BYREF) && !dsc->IsImplicitByRef())
     {
         // Even if these are address exposed we expect them to be dead at
         // suspension points. TODO: It would be good to somehow verify these
         // aren't obviously live, if the JIT creates live ranges that span a
         // suspension point then this makes it quite hard to diagnose that.
+        return false;
+    }
+
+    if ((dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef()) && dsc->GetLayout()->HasGCByRef())
+    {
+        // Same as above
         return false;
     }
 
