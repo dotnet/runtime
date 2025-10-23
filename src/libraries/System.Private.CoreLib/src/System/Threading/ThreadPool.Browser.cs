@@ -127,7 +127,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe void MainThreadScheduleBackgroundJob(void* callback);
 #else
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SystemJS_ScheduleBackgroundJob")]
+        [LibraryImport(RuntimeHelpers.QCall)]
         private static unsafe partial void SystemJS_ScheduleBackgroundJob();
 #endif
 

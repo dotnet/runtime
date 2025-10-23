@@ -36,7 +36,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void MainThreadScheduleTimer(void* callback, int shortestDueTimeMs);
 #else
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SystemJS_ScheduleTimer")]
+        [LibraryImport(RuntimeHelpers.QCall)]
         private static unsafe partial void SystemJS_ScheduleTimer(int shortestDueTimeMs);
 #endif
 

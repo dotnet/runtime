@@ -651,6 +651,7 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
 }
 
 // WASM-TODO: use [UnmanagedCallersOnly] once is supported in wasm
+// https://github.com/dotnet/runtime/issues/121006
 extern "C" void SystemJS_ExecuteTimerCallback()
 {
     ARG_SLOT stackVarWrapper[] = { };
@@ -659,6 +660,7 @@ extern "C" void SystemJS_ExecuteTimerCallback()
 }
 
 // WASM-TODO: use [UnmanagedCallersOnly] once is supported in wasm
+// https://github.com/dotnet/runtime/issues/121006
 extern "C" void SystemJS_ExecuteBackgroundJobCallback()
 {
     ARG_SLOT stackVarWrapper[] = { };

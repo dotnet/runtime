@@ -48,10 +48,10 @@ namespace System.Runtime.CompilerServices
             }, TaskScheduler.Default);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SystemJS_RejectMainPromise")]
+        [LibraryImport(RuntimeHelpers.QCall)]
         private static unsafe partial void SystemJS_RejectMainPromise([MarshalAs(UnmanagedType.LPWStr)] string pMessage);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "SystemJS_ResolveMainPromise")]
+        [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void SystemJS_ResolveMainPromise(int exitCode);
     }
 }

@@ -76,7 +76,7 @@
 #include "versionresilienthashcode.h"
 
 #ifdef TARGET_BROWSER
-#include "wasm/wasm-entrypoints.h"
+#include "entrypoints.h"
 #endif // TARGET_BROWSER
 
 static const Entry s_QCall[] =
