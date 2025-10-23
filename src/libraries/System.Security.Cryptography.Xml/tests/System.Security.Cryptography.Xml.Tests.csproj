@@ -17,6 +17,7 @@
     <Compile Include="Cycle1CoverageTests.cs" />
     <Compile Include="Cycle2CoverageTests.cs" />
     <Compile Include="Cycle3CoverageTests.cs" />
+    <Compile Include="Cycle4CoverageTests.cs" />
     <Compile Include="DataObjectTest.cs" />
     <Compile Include="DataObjectTests.cs" />
     <Compile Include="DataReferenceTest.cs" />
