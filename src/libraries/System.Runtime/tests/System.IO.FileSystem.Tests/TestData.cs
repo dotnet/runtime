@@ -122,9 +122,9 @@ internal static class TestData
                 "name with spaces.txt"
             };
 
-            // On Unix, control characters are also valid in filenames
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                // On Unix, control characters are also valid in filenames
                 data.Add("file\tname");      // tab
                 data.Add("file\rname");      // carriage return
                 data.Add("file\vname");      // vertical tab
