@@ -10,6 +10,7 @@
     <WasmEnableHotReload>false</WasmEnableHotReload>
     <CompressionEnabled>false</CompressionEnabled>
     <DisableBuildCompression>true</DisableBuildCompression>
+    <PublishTrimmed>false</PublishTrimmed>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
 
     <!-- set this when provisioning emsdk on CI -->
