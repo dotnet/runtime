@@ -53,7 +53,7 @@ else()
         target_link_libraries(corerun PRIVATE
             coreclr_static
             System.Native-Static
-            System.Native.TimeZoneData)
+            System.Native.TimeZoneData.Invariant)
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
             target_compile_options(corerun PRIVATE
@@ -63,9 +63,9 @@ else()
             target_link_libraries(corerun PRIVATE
                 System.Native.Browser-Static)
             set(JS_SYSTEM_NATIVE_BROWSER
-                "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
+                "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
             set(JS_SYSTEM_BROWSER_UTILS
-                "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Browser.Utils.js")
+                "${STATIC_LIB_DESTINATION}/libSystem.Browser.Utils.js")
             set(JS_CORE_RUN_PRE
                 "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.pre.js")
             set_target_properties(corerun PROPERTIES
@@ -76,7 +76,10 @@ else()
                 -fwasm-exceptions
                 -sEXIT_RUNTIME=1
                 -sINITIAL_MEMORY=134217728
+                -sMAXIMUM_MEMORY=2147483648
+                -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
+                -sEXPORTED_FUNCTIONS=_main,_GetDotNetRuntimeContractDescriptor
                 -sENVIRONMENT=node,shell,web
                 -Wl,-error-limit=0)
 

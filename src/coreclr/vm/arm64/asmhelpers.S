@@ -698,14 +698,14 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     mov x21, x0
 #endif
     INLINE_GETTHREAD x20 // thrashes x0 on Apple OSes (and possibly other arg registers on other Unixes)
-    cbz x20, LOCAL_LABEL(NoManagedThread)
+    cbz x20, LOCAL_LABEL(NoManagedThreadOrCallStub)
 
     ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
     cbnz x11, LOCAL_LABEL(HaveInterpThreadContext)
 
-LOCAL_LABEL(NoManagedThread):
+LOCAL_LABEL(NoManagedThreadOrCallStub):
 #ifdef TARGET_APPLE
-    // GetInterpThreadContextWithPossiblyMissingThread can destroy all argument registers, so we
+    // GetInterpThreadContextWithPossiblyMissingThreadOrCallStub can destroy all argument registers, so we
     // need to save them. For non-Apple, they have been already saved in the PROLOG_WITH_TRANSITION_BLOCK
     // Restore x0 thrashed by the INLINE_GETTHREAD
     mov x0, x21
@@ -713,8 +713,9 @@ LOCAL_LABEL(NoManagedThread):
     SAVE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
 #endif
 
-    mov x0, x20
-    bl C_FUNC(GetInterpThreadContextWithPossiblyMissingThread)
+    add x0, sp, #__PWTB_TransitionBlock + 16
+    mov x1, x19
+    bl C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub)
     mov x11, x0
 
 #ifndef TARGET_APPLE
@@ -733,6 +734,7 @@ LOCAL_LABEL(HaveInterpThreadContext):
 
     ldr x9, [x19] // InterpMethod*
     ldr x9, [x9, #OFFSETOF__InterpMethod__pCallStub]
+    cbz x9, LOCAL_LABEL(NoManagedThreadOrCallStub)
     add x10, x9, #OFFSETOF__CallStubHeader__Routines
     ldr x9, [x11, #OFFSETOF__InterpThreadContext__pStackPointer]
     // x19 contains IR bytecode address
@@ -785,8 +787,7 @@ NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
     add x0, sp, #__PWTB_TransitionBlock + 16
     mov x1, x19 // the IR bytecode pointer
     // Load the return buffer address
-    // 16 is the size of the pushed registers above
-    ldr x2, [sp, #__PWTB_ArgumentRegisters + 16]
+    mov x2, x8
     bl C_FUNC(ExecuteInterpretedMethod)
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr,   16
     EPILOG_RETURN
@@ -949,25 +950,22 @@ LEAF_END Load_Stack_Ref, _TEXT
 
 
 .macro Copy_Ref argReg
-    cmp x11, #16
+    subs x11, x11, #16
     blt LOCAL_LABEL(CopyBy8\argReg)
 LOCAL_LABEL(RefCopyLoop16\argReg):
     ldp x13, x14, [\argReg], #16
     stp x13, x14, [x9], #16
     subs x11, x11, #16
-    bgt LOCAL_LABEL(RefCopyLoop16\argReg)
-    beq LOCAL_LABEL(RefCopyDone\argReg)
-    add x11, x11, #16
+    bge LOCAL_LABEL(RefCopyLoop16\argReg)
 LOCAL_LABEL(CopyBy8\argReg):
+    add x11, x11, #16
     cmp x11, #8
-    blt LOCAL_LABEL(RefCopyLoop1\argReg)
-LOCAL_LABEL(RefCopyLoop8\argReg):
+    blt LOCAL_LABEL(CopyBy1\argReg)
     ldr x13, [\argReg], #8
     str x13, [x9], #8
     subs x11, x11, #8
-    bgt LOCAL_LABEL(RefCopyLoop8\argReg)
-    beq LOCAL_LABEL(RefCopyDone\argReg)
-    add x11, x11, #8
+LOCAL_LABEL(CopyBy1\argReg):
+    cbz x11, LOCAL_LABEL(RefCopyDone\argReg)
 LOCAL_LABEL(RefCopyLoop1\argReg):
     ldrb w13, [\argReg], #1
     strb w13, [x9], #1
@@ -1324,11 +1322,26 @@ LEAF_ENTRY Load_Stack
     ldr w14, [x10], #4 // SP offset
     ldr w12, [x10], #4 // number of stack slots
     add x14, sp, x14
+    subs x12, x12, #8
+    blt LOCAL_LABEL(CopyBy1)
 LOCAL_LABEL(CopyLoop):
     ldr x13, [x9], #8
     str x13, [x14], #8
     subs x12, x12, #8
-    bne LOCAL_LABEL(CopyLoop)
+    bge LOCAL_LABEL(CopyLoop)
+LOCAL_LABEL(CopyBy1):
+    add x12, x12, #8
+    subs x12, x12, #1
+    blt LOCAL_LABEL(Done)
+LOCAL_LABEL(CopyLoop1):
+    ldrb w13, [x9], #1
+    strb w13, [x14], #1
+    subs x12, x12, #1
+    bge LOCAL_LABEL(CopyLoop1)
+LOCAL_LABEL(Done):
+    // Align x9 to the stack slot size
+    add x9, x9, 7
+    and x9, x9, 0xfffffffffffffff8
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Load_Stack
@@ -1682,13 +1695,13 @@ NESTED_END CallJittedMethodRetBuff, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     str x0, [x2]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
@@ -1701,13 +1714,13 @@ NESTED_END CallJittedMethodRetI8, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     stp x0, x1, [x2]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
@@ -1720,13 +1733,13 @@ NESTED_END CallJittedMethodRet2I8, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     str d0, [x2]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
@@ -1739,13 +1752,13 @@ NESTED_END CallJittedMethodRetDouble, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     stp d0, d1, [x2]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
@@ -1758,13 +1771,13 @@ NESTED_END CallJittedMethodRet2Double, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRet3Double, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     stp d0, d1, [x2], #16
     str d2, [x2]
     EPILOG_STACK_RESTORE
@@ -1778,13 +1791,13 @@ NESTED_END CallJittedMethodRet3Double, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRet4Double, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     stp d0, d1, [x2], #16
     stp d2, d3, [x2]
     EPILOG_STACK_RESTORE
@@ -1798,13 +1811,13 @@ NESTED_END CallJittedMethodRet4Double, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     str s0, [x2]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
@@ -1817,13 +1830,13 @@ NESTED_END CallJittedMethodRetFloat, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     stp s0, s1, [x2]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
@@ -1836,13 +1849,13 @@ NESTED_END CallJittedMethodRet2Float, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRet3Float, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     stp s0, s1, [x2], #8
     str s2, [x2]
     EPILOG_STACK_RESTORE
@@ -1856,13 +1869,13 @@ NESTED_END CallJittedMethodRet3Float, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRet4Float, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     stp s0, s1, [x2], #8
     stp s2, s3, [x2]
     EPILOG_STACK_RESTORE
@@ -1876,13 +1889,13 @@ NESTED_END CallJittedMethodRet4Float, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRetVector64, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     str d0, [x2]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
@@ -1895,13 +1908,13 @@ NESTED_END CallJittedMethodRetVector64, _TEXT
 // X3 - stack arguments size (properly aligned)
 NESTED_ENTRY CallJittedMethodRetVector128, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, lr, -32
-    str x2, [sp, #16]
+    str x2, [fp, #16]
     sub sp, sp, x3
     mov x10, x0
     mov x9, x1
     ldr x11, [x10], #8
     blr x11
-    ldr x2, [sp, #16]
+    ldr x2, [fp, #16]
     str q0, [x2]
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32

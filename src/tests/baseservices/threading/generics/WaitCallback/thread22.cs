@@ -222,6 +222,7 @@ public class Test_thread22
 	}
 	
 	[Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
 	public static int TestEntryPoint()
 	{
 	

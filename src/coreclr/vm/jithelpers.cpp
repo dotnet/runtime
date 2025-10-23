@@ -991,6 +991,20 @@ HCIMPL0(void, JIT_FailFast)
 }
 HCIMPLEND
 
+// FailFast if a method marked UnmanagedCallersOnlyAttribute is
+// invoked directly from managed code. UMThunkStub.asm check the
+// mode and call this function to failfast.
+void ReversePInvokeBadTransition()
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    // Fail
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+                                             COR_E_EXECUTIONENGINE,
+                                             W("Invalid Program: attempted to call a UnmanagedCallersOnly method from managed code.")
+                                            );
+}
+
 //========================================================================
 //
 //      DEBUGGER/PROFILER HELPERS
@@ -2251,15 +2265,35 @@ Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
-// Forward declaration
-EXTERN_C void STDCALL ReversePInvokeBadTransition();
-
 #ifndef FEATURE_EH_FUNCLETS
 EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
 #endif
 
+#ifdef DEBUGGING_SUPPORTED
+static void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
+{
+    _ASSERTE(CORDebuggerTraceCall());
+    _ASSERTE(returnAddr != NULL);
+
+    const BYTE* addr;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    addr = (const BYTE*)returnAddr;
+    _ASSERTE(thunkDataMaybe == NULL); // Should not be used with portable entrypoints
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+    addr = (thunkDataMaybe != NULL) ? (const BYTE*)((UMEntryThunkData*)thunkDataMaybe)->GetManagedTarget() : (const BYTE*)returnAddr;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+    // If the debugger is attached, we use this opportunity to see if
+    // we're disabling preemptive GC on the way into the runtime from
+    // unmanaged code. We end up here because
+    // Increment/DecrementTraceCallCount() will bump
+    // g_TrapReturningThreads for us.
+    g_pDebugInterface->TraceCall(addr);
+}
+#endif // DEBUGGING_SUPPORTED
+
 // This is a slower version of the reverse PInvoke enter function.
-NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunkData* pUMEntryThunkData = NULL)
+NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, void* returnAddr, void* thunkDataMaybe = NULL)
 {
     _ASSERTE(frame != NULL);
 
@@ -2282,27 +2316,17 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, voi
 
     thread->DisablePreemptiveGC();
 #ifdef DEBUGGING_SUPPORTED
-    // If the debugger is attached, we use this opportunity to see if
-    // we're disabling preemptive GC on the way into the runtime from
-    // unmanaged code. We end up here because
-    // Increment/DecrementTraceCallCount() will bump
-    // g_TrapReturningThreads for us.
     if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall(pUMEntryThunkData ? (const BYTE*)pUMEntryThunkData->GetManagedTarget() : (const BYTE*)returnAddr);
+        DebuggerTraceCall(returnAddr, thunkDataMaybe);
 #endif // DEBUGGING_SUPPORTED
 }
 
-NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, void* returnAddr, UMEntryThunkData* pUMEntryThunkData = NULL)
+NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, void* returnAddr, void* thunkDataMaybe = NULL)
 {
     frame->currentThread->RareDisablePreemptiveGC();
 #ifdef DEBUGGING_SUPPORTED
-    // If the debugger is attached, we use this opportunity to see if
-    // we're disabling preemptive GC on the way into the runtime from
-    // unmanaged code. We end up here because
-    // Increment/DecrementTraceCallCount() will bump
-    // g_TrapReturningThreads for us.
     if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall(pUMEntryThunkData ? (const BYTE*)pUMEntryThunkData->GetManagedTarget() : (const BYTE*)returnAddr);
+        DebuggerTraceCall(returnAddr, thunkDataMaybe);
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -2311,15 +2335,14 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 // We may not have a managed thread set up in JIT_ReversePInvokeEnter, and the GC mode may be incorrect.
 // On x86, SEH handlers are set up and torn down explicitly, so we avoid using dynamic contracts.
 // This method uses the correct calling convention and argument layout manually, without relying on standard macros or contracts.
-HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, MethodDesc* pMD, UMEntryThunkData* pUMEntryThunkData)
+HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, MethodDesc* pMD, void* thunkDataMaybe)
 {
     _ASSERTE(frame != NULL && pMD != NULL);
-    _ASSERTE(!pMD->IsILStub() || pUMEntryThunkData != NULL);
+    _ASSERTE(!pMD->IsILStub() || thunkDataMaybe != NULL);
 
-    if (pUMEntryThunkData != NULL)
-    {
-        pMD = pUMEntryThunkData->GetMethod();
-    }
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    pMD = (thunkDataMaybe != NULL) ? ((UMEntryThunkData*)thunkDataMaybe)->GetMethod() : pMD;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     frame->pMD = pMD;
 
     Thread* thread = GetThreadNULLOk();
@@ -2344,14 +2367,14 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), pUMEntryThunkData);
+            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), thunkDataMaybe);
         }
     }
     else
     {
         // If we're in an IL stub, we want to trace the address of the target method,
         // not the next instruction in the stub.
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), pUMEntryThunkData);
+        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), thunkDataMaybe);
     }
 
 #if defined(TARGET_X86) && defined(TARGET_WINDOWS)

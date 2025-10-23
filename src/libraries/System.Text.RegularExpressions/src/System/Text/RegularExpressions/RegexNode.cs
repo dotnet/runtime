@@ -2096,8 +2096,10 @@ namespace System.Text.RegularExpressions
             Debug.Assert(ChildCount() == 1);
 
             // Captures inside of negative lookarounds are undone after the lookaround. Thus, if there's nothing
-            // inside of the negative lookaround that needs that capture group (namely a backreference), we can
-            // remove the capture.
+            // inside of the negative lookaround that relies on or impacts persisted state, we can remove the capture.
+            // This includes backreferences (because backreferences within the lookaround still need to refer to that
+            // capture group) and balancing groups (because they can impact and are impacted by capture stacks from
+            // captures outside of the lookaround).
             if (Kind is RegexNodeKind.NegativeLookaround && ContainsKind(Child(0), [RegexNodeKind.Backreference, RegexNodeKind.BackreferenceConditional]) is false)
             {
                 if (RemoveCaptures(this, 0))
@@ -2111,7 +2113,9 @@ namespace System.Text.RegularExpressions
                 {
                     RegexNode node = parent.Child(nodeIndex);
 
-                    if (node.Kind is RegexNodeKind.Capture)
+                    // Only remove captures that don't rely on or impact persisted state.
+                    // Balancing groups (N != -1) impact capture stacks and must be preserved.
+                    if (node is { Kind: RegexNodeKind.Capture, N: -1 })
                     {
                         parent.ReplaceChild(nodeIndex, node.Child(0));
                         RemoveCaptures(parent, nodeIndex);
