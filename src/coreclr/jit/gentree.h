@@ -4364,6 +4364,9 @@ enum class ContinuationContextHandling
 // Additional async call info.
 struct AsyncCallInfo
 {
+    // DebugInfo with SOURCE_TYPE_ASYNC pointing at the call IL instruction
+    DebugInfo CallAsyncDebugInfo;
+
     // The following information is used to implement the proper observable handling of `ExecutionContext`,
     // `SynchronizationContext` and `TaskScheduler` in async methods.
     //

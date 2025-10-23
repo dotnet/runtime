@@ -16,9 +16,9 @@ public:
     {
     }
 
-    ILLocation(IL_OFFSET offset, ICorDebugInfo::SourceTypes sourceType)
+    ILLocation(IL_OFFSET offset, ICorDebugInfo::SourceTypes sourceTypes)
         : m_offset(offset)
-        , m_sourceType(sourceType)
+        , m_sourceTypes(sourceTypes)
     {
     }
 
@@ -27,14 +27,14 @@ public:
         return m_offset;
     }
 
-    ICorDebugInfo::SourceTypes GetSourceType() const
+    ICorDebugInfo::SourceTypes GetSourceTypes() const
     {
-        return m_sourceType;
+        return m_sourceTypes;
     }
 
     bool IsCallInstruction() const
     {
-        return (m_sourceType & ICorDebugInfo::CALL_INSTRUCTION) != 0;
+        return (m_sourceTypes & ICorDebugInfo::CALL_INSTRUCTION) != 0;
     }
 
     bool IsValid() const
@@ -44,7 +44,7 @@ public:
 
     inline bool operator==(const ILLocation& other) const
     {
-        return (m_offset == other.m_offset) && (m_sourceType == other.m_sourceType);
+        return (m_offset == other.m_offset) && (m_sourceTypes == other.m_sourceTypes);
     }
 
     inline bool operator!=(const ILLocation& other) const
@@ -58,8 +58,8 @@ public:
 #endif
 
 private:
-    IL_OFFSET                  m_offset     = BAD_IL_OFFSET;
-    ICorDebugInfo::SourceTypes m_sourceType = ICorDebugInfo::SOURCE_TYPE_INVALID;
+    IL_OFFSET                  m_offset      = BAD_IL_OFFSET;
+    ICorDebugInfo::SourceTypes m_sourceTypes = ICorDebugInfo::SOURCE_TYPE_INVALID;
 };
 
 // Represents debug information about a statement.

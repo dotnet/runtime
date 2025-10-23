@@ -6164,17 +6164,17 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, const IPmappingDsc* ipMappin
         case IPmappingDscKind::Normal:
             const ILLocation& loc = ipMapping->ipmdLoc;
             Compiler::eeDispILOffs(loc.GetOffset());
-            if ((loc.GetSourceType() & ICorDebugInfo::STACK_EMPTY) != 0)
+            if ((loc.GetSourceTypes() & ICorDebugInfo::STACK_EMPTY) != 0)
             {
                 printf(" STACK_EMPTY");
             }
 
-            if ((loc.GetSourceType() & ICorDebugInfo::CALL_INSTRUCTION) != 0)
+            if ((loc.GetSourceTypes() & ICorDebugInfo::CALL_INSTRUCTION) != 0)
             {
                 printf(" CALL_INSTRUCTION");
             }
 
-            if ((loc.GetSourceType() & ICorDebugInfo::ASYNC) != 0)
+            if ((loc.GetSourceTypes() & ICorDebugInfo::ASYNC) != 0)
             {
                 printf(" ASYNC");
             }
@@ -6512,7 +6512,7 @@ void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* 
         fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
         fprintf(file, "\"MethodID\":%lld,", (int64_t)context->GetCallee());
         fprintf(file, "\"ILOffset\":%u,", context->GetLocation().GetOffset());
-        fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().GetSourceType());
+        fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().GetSourceTypes());
         fprintf(file, "\"ExactILOffset\":%u,", context->GetActualCallOffset());
         auto append = [&]() {
             char        buffer[256];
@@ -6677,7 +6677,7 @@ void CodeGen::genReportRichDebugInfo()
         mapping->NativeOffset = richMapping.nativeLoc.CodeOffset(GetEmitter());
         mapping->Inlinee      = richMapping.debugInfo.GetInlineContext()->GetOrdinal();
         mapping->ILOffset     = richMapping.debugInfo.GetLocation().GetOffset();
-        mapping->Source       = richMapping.debugInfo.GetLocation().GetSourceType();
+        mapping->Source       = richMapping.debugInfo.GetLocation().GetSourceTypes();
 
         mappingIndex++;
     }

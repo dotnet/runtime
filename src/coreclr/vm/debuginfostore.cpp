@@ -491,6 +491,8 @@ static void DoAsyncVars(
     }
 }
 
+static constexpr int BITS_FOR_SOURCE_TYPE = 3;
+
 #ifndef DACCESS_COMPILE
 
 BYTE* DecompressNew(void*, size_t cBytes)
@@ -562,7 +564,7 @@ void CompressDebugInfo::CompressBoundaries(
         pWriter->WriteEncodedU32(nativeOffsetBits - 1);
         pWriter->WriteEncodedU32(ilOffsetBits - 1);
 
-        uint32_t bitWidth = 2 + nativeOffsetBits + ilOffsetBits;
+        uint32_t bitWidth = BITS_FOR_SOURCE_TYPE + nativeOffsetBits + ilOffsetBits;
 
         uint8_t bitsInProgress = 0;
         uint8_t bitsInProgressCount = 0;
@@ -578,31 +580,23 @@ void CompressDebugInfo::CompressBoundaries(
 
             ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
 
-            uint32_t sourceBits = 0;
-            switch ((int)pBound->source)
-            {
-                case (int)ICorDebugInfo::SOURCE_TYPE_INVALID:
-                    sourceBits = 0;
-                    break;
-                case (int)ICorDebugInfo::CALL_INSTRUCTION:
-                    sourceBits = 1;
-                    break;
-                case (int)ICorDebugInfo::STACK_EMPTY:
-                    sourceBits = 2;
-                    break;
-                case (int)(ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::STACK_EMPTY):
-                    sourceBits = 3;
-                    break;
-                default:
-                    _ASSERTE(!"Unknown source type in CompressDebugInfo::CompressBoundaries");
-                    sourceBits = 0; // default to invalid
-                    break;
-            }
+            // We only expect to see some source types
+            _ASSERTE((pBound->source & ~(ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::ASYNC)) == 0);
 
+            uint32_t sourceBits = 0;
+            if ((pBound->source & ICorDebugInfo::CALL_INSTRUCTION) != 0)
+                sourceBits |= 1;
+            if ((pBound->source & ICorDebugInfo::STACK_EMPTY) != 0)
+                sourceBits |= 2;
+            if ((pBound->source & ICorDebugInfo::ASYNC) != 0)
+                sourceBits |= 4;
+
+            // Should be encodable in BITS_FOR_SOURCE_TYPE bits
+            _ASSERTE((sourceBits & ~((1u << BITS_FOR_SOURCE_TYPE) - 1)) == 0);
 
             uint64_t mappingDataEncoded = sourceBits | 
-                ((uint64_t)nativeOffsetDelta << 2) | 
-                ((uint64_t)((int32_t)pBound->ilOffset - (int32_t)ICorDebugInfo::MAX_MAPPING_VALUE) << (2 + nativeOffsetBits));
+                ((uint64_t)nativeOffsetDelta << BITS_FOR_SOURCE_TYPE) | 
+                ((uint64_t)((int32_t)pBound->ilOffset - (int32_t)ICorDebugInfo::MAX_MAPPING_VALUE) << (BITS_FOR_SOURCE_TYPE + nativeOffsetBits));
 
             for (uint8_t bitsToWrite = (uint8_t)bitWidth; bitsToWrite > 0;)
             {
@@ -1090,7 +1084,7 @@ static void DoBounds(PTR_BYTE addrBounds, uint32_t cbBounds, TNumBounds countHan
     uint32_t bitsForNativeDelta = r.ReadEncodedU32_NoThrow() + 1; // Number of bits needed for native deltas
     uint32_t bitsForILOffsets = r.ReadEncodedU32_NoThrow() + 1; // How many bits needed for IL offsets
 
-    uint32_t bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + 2; // 2 bits for source type
+    uint32_t bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + BITS_FOR_SOURCE_TYPE;
     TADDR addrBoundsArray = dac_cast<TADDR>(addrBounds) + r.GetNextByteIndex();
     TADDR addrBoundsArrayForReads = AlignDown(addrBoundsArray, sizeof(uint64_t));
     uint32_t bitOffsetForReads = (uint32_t)((addrBoundsArray - addrBoundsArrayForReads) * 8); // We want to read using aligned 64bit reads, but we want to start at the right bit offset.
@@ -1104,23 +1098,17 @@ static void DoBounds(PTR_BYTE addrBounds, uint32_t cbBounds, TNumBounds countHan
         for (uint32_t iEntry = 0; iEntry < cNumEntries; iEntry++, bitOffsetForReads += bitsPerEntry)
         {
             uint64_t mappingDataEncoded = ReadFromBitOffsets(dac_cast<PTR_UINT64>(addrBoundsArrayForReads), bitOffsetForReads, bitsPerEntry);
-            switch (mappingDataEncoded & 0x3) // Last 2 bits are source type
-            {
-                case 0:
-                    bound.source = ICorDebugInfo::SOURCE_TYPE_INVALID;
-                    break;
-                case 1:
-                    bound.source = ICorDebugInfo::CALL_INSTRUCTION;
-                    break;
-                case 2:
-                    bound.source = ICorDebugInfo::STACK_EMPTY;
-                    break;
-                case 3:
-                    bound.source = (ICorDebugInfo::SourceTypes)(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION);
-                    break;
-            }
+            uint32_t sourceTypes = 0;
+            if ((mappingDataEncoded & 1) != 0)
+                sourceTypes |= ICorDebugInfo::CALL_INSTRUCTION;
+            if ((mappingDataEncoded & 2) != 0)
+                sourceTypes |= ICorDebugInfo::STACK_EMPTY;
+            if ((mappingDataEncoded & 4) != 0)
+                sourceTypes |= ICorDebugInfo::ASYNC;
 
-            mappingDataEncoded = mappingDataEncoded >> 2; // Remove source type bits
+            bound.source = (ICorDebugInfo::SourceTypes)sourceTypes;
+
+            mappingDataEncoded = mappingDataEncoded >> BITS_FOR_SOURCE_TYPE; // Remove source type bits
             uint32_t nativeOffsetDelta = (uint32_t)(mappingDataEncoded & ((1ULL << bitsForNativeDelta) - 1));
             currentNativeOffset += nativeOffsetDelta;
             bound.nativeOffset = currentNativeOffset;

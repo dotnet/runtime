@@ -7749,6 +7749,11 @@ GenTreeIntCon* Compiler::gtNewFalse()
     return gtNewIconNode(0, TYP_INT);
 }
 
+GenTreeILOffset* Compiler::gtNewILOffsetNode(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset))
+{
+    return new (this, GT_IL_OFFSET) GenTreeILOffset(di DEBUGARG(lastOffset));
+}
+
 // return a new node representing the value in a physical register
 GenTree* Compiler::gtNewPhysRegNode(regNumber reg, var_types type)
 {

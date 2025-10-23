@@ -1411,6 +1411,11 @@ BasicBlock* AsyncTransformation::CreateSuspension(
 
     JITDUMP("  Creating suspension " FMT_BB " for state %u\n", suspendBB->bbNum, stateNum);
 
+    GenTreeILOffset* ilOffsetNode =
+        m_comp->gtNewILOffsetNode(call->GetAsyncInfo().CallAsyncDebugInfo DEBUGARG(BAD_IL_OFFSET));
+
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, ilOffsetNode));
+
     // Allocate continuation
     GenTree* returnedContinuation = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
 
@@ -1747,6 +1752,11 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
     m_lastResumptionBB = resumeBB;
 
     JITDUMP("  Creating resumption " FMT_BB " for state %u\n", resumeBB->bbNum, stateNum);
+
+    GenTreeILOffset* ilOffsetNode =
+        m_comp->gtNewILOffsetNode(call->GetAsyncInfo().CallAsyncDebugInfo DEBUGARG(BAD_IL_OFFSET));
+
+    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, ilOffsetNode));
 
     SetSuspendedIndicator(resumeBB, block, call);
 

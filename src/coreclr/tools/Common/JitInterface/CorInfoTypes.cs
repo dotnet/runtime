@@ -1262,7 +1262,8 @@ namespace Internal.JitInterface
         STACK_EMPTY = 0x02, // The stack is empty here
         CALL_SITE = 0x04, // This is a call site.
         NATIVE_END_OFFSET_UNKNOWN = 0x08, // Indicates a epilog endpoint
-        CALL_INSTRUCTION = 0x10  // The actual instruction of a call.
+        CALL_INSTRUCTION = 0x10, // The actual instruction of a call.
+        ASYNC = 0x20, // async suspension/resumption code for a specific async call
     };
 
     public struct OffsetMapping

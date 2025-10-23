@@ -167,9 +167,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             writer2.WriteUInt((uint)offsetMapping.Length); // We need the total count
             writer2.WriteUInt((uint)bitWidthReportForNativeDelta); // Number of bits needed for native deltas
             writer2.WriteUInt((uint)bitWidthReportForILOffset); // How many bits needed for IL offsets
+            const int BitsForSourceType = 3;
             int bitWidth = bitWidthForNativeDelta +
                           bitWidthForILOffset +
-                          2; // for the source data
+                          BitsForSourceType;
             int totalBits = bitWidth * offsetMapping.Length;
             int bytesNeededForArray = (totalBits + 7) / 8;
 
@@ -190,28 +191,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 uint nativeOffsetDelta = bound.nativeOffset - prevNativeOffset;
 
                 uint sourceBits = 0;
-                switch ((int)bound.source)
-                {
-                    case (int)Internal.JitInterface.SourceTypes.SOURCE_TYPE_INVALID:
-                        sourceBits = 0;
-                        break;
-                    case (int)Internal.JitInterface.SourceTypes.CALL_INSTRUCTION:
-                        sourceBits = 1;
-                        break;
-                    case (int)Internal.JitInterface.SourceTypes.STACK_EMPTY:
-                        sourceBits = 2;
-                        break;
-                    case (int)(Internal.JitInterface.SourceTypes.CALL_INSTRUCTION | Internal.JitInterface.SourceTypes.STACK_EMPTY):
-                        sourceBits = 3;
-                        break;
-                    default:
-                        throw new InternalCompilerErrorException("Unknown source type");
-                }
+                if ((bound.source & SourceTypes.CALL_INSTRUCTION) != 0)
+                    sourceBits |= 1;
+                if ((bound.source & SourceTypes.STACK_EMPTY) != 0)
+                    sourceBits |= 2;
+                if ((bound.source & SourceTypes.ASYNC) != 0)
+                    sourceBits |= 4;
 
+                if ((bound.source & ~(SourceTypes.CALL_INSTRUCTION | SourceTypes.STACK_EMPTY | SourceTypes.ASYNC)) != 0)
+                    throw new InternalCompilerErrorException("Unknown source type " + (uint)bound.source);
+
+                if ((sourceBits & ~((1u << BitsForSourceType) - 1)) != 0)
+                    throw new InternalCompilerErrorException("Unencodable source type " + sourceBits + " (for " + (uint)bound.source + ")");
 
                 ulong mappingDataEncoded = (ulong)sourceBits |
-                    ((ulong)nativeOffsetDelta << 2) |
-                    ((ulong)((int)bound.ilOffset - (int)MappingTypes.EPILOG) << (2 + bitWidthForNativeDelta));
+                    ((ulong)nativeOffsetDelta << BitsForSourceType) |
+                    ((ulong)((int)bound.ilOffset - (int)MappingTypes.EPILOG) << (BitsForSourceType + bitWidthForNativeDelta));
 
                 for (byte bitsToWrite = (byte)bitWidth; bitsToWrite > 0;)
                 {
