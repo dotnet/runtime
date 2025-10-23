@@ -2154,7 +2154,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             ip++;
             if (opcode == CEE_RET)
             {
-                if (m_isSynchronized && m_currentILOffset < m_ILCodeSizeFromILHeader)
+                if (m_isSynchronized && insOffset < m_ILCodeSizeFromILHeader)
                 {
                     // This is a ret instruction coming from the initial IL of a synchronized method.
                     CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedPostFinallyOffset));
