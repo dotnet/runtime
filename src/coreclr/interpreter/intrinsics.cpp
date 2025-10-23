@@ -39,6 +39,25 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
             else if (!strcmp(methodName, "Sqrt"))
                 return NI_System_Math_Sqrt;
         }
+        else if (!strcmp(className, "Type"))
+        {
+            if (!strcmp(methodName, "GetTypeFromHandle"))
+            {
+                return NI_System_Type_GetTypeFromHandle;
+            }
+            else if (!strcmp(methodName, "op_Equality"))
+            {
+                return NI_System_Type_op_Equality;
+            }
+            else if (!strcmp(methodName, "op_Inequality"))
+            {
+                return NI_System_Type_op_Inequality;
+            }
+            else if (!strcmp(methodName, "get_IsValueType"))
+            {
+                return NI_System_Type_get_IsValueType;
+            }
+        }
     }
     else if (!strcmp(namespaceName, "System.StubHelpers"))
     {

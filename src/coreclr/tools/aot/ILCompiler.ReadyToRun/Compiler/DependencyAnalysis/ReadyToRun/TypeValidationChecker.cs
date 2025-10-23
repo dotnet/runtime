@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -57,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (type is EcmaType ecmaType)
                     _tasksThatMustFinish.Enqueue(ValidateType(this, ecmaType));
             }
-            _tasksThatMustFinish.Enqueue(ValidateType(this, (EcmaType)module.GetGlobalModuleType()));
+            _tasksThatMustFinish.Enqueue(ValidateType(this, module.GetGlobalModuleType()));
 
             bool failAtEnd = false;
             while (_tasksThatMustFinish.TryDequeue(out var taskToComplete))
@@ -133,6 +134,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         AddTypeValidationError(type, $"Interface type {interfaceType} failed validation");
                         return false;
                     }
+
+                    if (!interfaceType.IsInterface)
+                    {
+                        AddTypeValidationError(type, $"Runtime interface {interfaceType} is not an interface");
+                        return false;
+                    }
+
+                    if (interfaceType.HasInstantiation)
+                    {
+                        // Interfaces behave covariantly
+                        ValidateVarianceInType(type.Instantiation, interfaceType, Internal.TypeSystem.GenericVariance.Covariant);
+                    }
                 }
 
                 // Validate that each interface type explicitly implemented on this type is accessible to this type -- UNIMPLEMENTED
@@ -151,7 +164,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Per method rules
                 foreach (var methodDesc in type.GetMethods())
                 {
-                    var method = (EcmaMethod)methodDesc;
+                    var method = methodDesc;
                     var methodDef = method.MetadataReader.GetMethodDefinition(method.Handle);
                     // Validate that the validateTokenSig algorithm on all methods defined on the type
                     // The validateTokenSig algorithm simply validates the phyical structure of the signature. Getting a MethodSignature object is a more complete check
@@ -253,7 +266,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
                     }
                     // validate that the global class cannot have instance methods
-                    if (type.EcmaModule.GetGlobalModuleType() == type && !methodDef.Attributes.HasFlag(MethodAttributes.Static))
+                    if (type.Module.GetGlobalModuleType() == type && !methodDef.Attributes.HasFlag(MethodAttributes.Static))
                     {
                         AddTypeValidationError(type, $"'{method}' is an instance method defined on the global <module> type");
                         return false;
@@ -293,14 +306,76 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         AddTypeValidationError(type, $"'{method}' is an runtime-impl generic method");
                         return false;
                     }
-                    // Validate that generic variance is properly respected in method signatures -- UNIMPLEMENTED
-                    // Validate that there are no cyclical method constraints -- UNIMPLEMENTED
+
+
+                    // Validate that generic variance is properly respected in method signatures
+                    if (type.IsInterface && method.IsVirtual && !method.Signature.IsStatic && type.HasInstantiation)
+                    {
+                        if (!ValidateVarianceInSignature(type.Instantiation, method.Signature, Internal.TypeSystem.GenericVariance.Covariant, Internal.TypeSystem.GenericVariance.Contravariant))
+                        {
+                            AddTypeValidationError(type, $"'{method}' has invalid variance in signature");
+                            return false;
+                        }
+                    }
+
+                    foreach (var genericParameterType in method.Instantiation)
+                    {
+                        foreach (var constraint in ((GenericParameterDesc)genericParameterType).TypeConstraints)
+                        {
+                            if (!ValidateVarianceInType(type.Instantiation, constraint, Internal.TypeSystem.GenericVariance.Contravariant))
+                            {
+                                AddTypeValidationError(type, $"'{method}' has invalid variance in generic parameter constraint {constraint} on type {genericParameterType}");
+                                return false;
+                            }
+                        }
+                    }
+
+                    if (!BoundedCheckForInstantiation(method.Instantiation))
+                    {
+                        AddTypeValidationError(type, $"'{method}' has cyclical generic parameter constraints");
+                        return false;
+                    }
                     // Validate that constraints are all acccessible to the method using them -- UNIMPLEMENTED
                 }
 
                 // Generic class special rules
                 // Validate that a generic class cannot be a ComImport class, or a ComEventInterface class -- UNIMPLEMENTED
-                // Validate that there are no cyclical class or method constraints, and that constraints are all acccessible to the type using them -- UNIMPLEMENTED
+
+                foreach (var genericParameterType in type.Instantiation)
+                {
+                    foreach (var constraint in ((GenericParameterDesc)genericParameterType).TypeConstraints)
+                    {
+                        if (!ValidateVarianceInType(type.Instantiation, constraint, Internal.TypeSystem.GenericVariance.Contravariant))
+                        {
+                            AddTypeValidationError(type, $"'{genericParameterType}' has invalid variance in generic parameter constraint {constraint}");
+                            return false;
+                        }
+                    }
+                }
+
+                // Validate that generic variance is properly respected in interface signatures
+                if (type.HasInstantiation && type.IsInterface)
+                {
+                    foreach (var interfaceType in type.ExplicitlyImplementedInterfaces)
+                    {
+                        if (interfaceType.HasInstantiation)
+                        {
+                            // Interfaces behave covariantly
+                            if (!ValidateVarianceInType(type.Instantiation, interfaceType, Internal.TypeSystem.GenericVariance.Covariant))
+                            {
+                                AddTypeValidationError(type, $"'{type}' has invalid variance in in interface impl of {interfaceType}");
+                                return false;
+                            }
+                        }
+                    }
+                }
+
+                // Validate that there are no cyclical class or method constraints, and that constraints are all acccessible to the type using them
+                if (!BoundedCheckForInstantiation(type.Instantiation))
+                {
+                    AddTypeValidationError(type, $"'{type}' has cyclical generic parameter constraints");
+                    return false;
+                }
 
                 // Override rules
                 // Validate that each override results does not violate accessibility rules -- UNIMPLEMENTED
@@ -310,8 +385,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 foreach (var methodImplHandle in typeDef.GetMethodImplementations())
                 {
                     var methodImpl = type.MetadataReader.GetMethodImplementation(methodImplHandle);
-                    var methodBody = type.EcmaModule.GetMethod(methodImpl.MethodBody);
-                    var methodDecl = type.EcmaModule.GetMethod(methodImpl.MethodDeclaration);
+                    var methodBody = type.Module.GetMethod(methodImpl.MethodBody);
+                    var methodDecl = type.Module.GetMethod(methodImpl.MethodDeclaration);
 
                     // Validate that all MethodImpls actually match signatures closely enough
                     if (!methodBody.Signature.ApplySubstitution(type.Instantiation).EquivalentWithCovariantReturnType(methodDecl.Signature.ApplySubstitution(type.Instantiation)))
@@ -577,6 +652,114 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (!await ValidateTypeHelper(type))
                         return false;
                 }
+                return true;
+            }
+
+            static bool BoundedCheckForInstantiation(Instantiation instantiation)
+            {
+                foreach (var type in instantiation)
+                {
+                    Debug.Assert(type.IsGenericParameter);
+                    GenericParameterDesc genericParameter = (GenericParameterDesc)type;
+
+                    if (!BoundedCheckForType(genericParameter, instantiation.Length))
+                        return false;
+                }
+                return true;
+            }
+
+            static bool BoundedCheckForType(GenericParameterDesc genericParameter, int maxDepth)
+            {
+                if (maxDepth <= 0)
+                    return false;
+                foreach (var type in genericParameter.TypeConstraints)
+                {
+                    if (type is GenericParameterDesc possiblyCircularGenericParameter)
+                    {
+                        if (possiblyCircularGenericParameter.Kind == genericParameter.Kind)
+                        {
+                            if (!BoundedCheckForType(possiblyCircularGenericParameter, maxDepth - 1))
+                                return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            static bool ValidateVarianceInSignature(Instantiation associatedTypeInstantiation, MethodSignature signature, Internal.TypeSystem.GenericVariance returnTypePosition, Internal.TypeSystem.GenericVariance argTypePosition)
+            {
+                for (int i = 0; i < signature.Length; i++)
+                {
+                    if (!ValidateVarianceInType(associatedTypeInstantiation, signature[i], argTypePosition))
+                        return false;
+                }
+
+                if (!ValidateVarianceInType(associatedTypeInstantiation, signature.ReturnType, returnTypePosition))
+                    return false;
+
+                return true;
+            }
+
+            static bool ValidateVarianceInType(Instantiation associatedTypeInstantiation, TypeDesc type, Internal.TypeSystem.GenericVariance position)
+            {
+                if (type is SignatureTypeVariable signatureTypeVar)
+                {
+                    GenericParameterDesc gp = (GenericParameterDesc)associatedTypeInstantiation[signatureTypeVar.Index];
+                    if (gp.Variance != Internal.TypeSystem.GenericVariance.None)
+                    {
+                        if (position != gp.Variance)
+                        {
+                            // Covariant and contravariant parameters can *only* appear in resp. covariant and contravariant positions
+                            return false;
+                        }
+                    }
+                }
+                else if (type is InstantiatedType instantiatedType)
+                {
+                    var typeDef = instantiatedType.GetTypeDefinition();
+                    if (typeDef.IsValueType || position == Internal.TypeSystem.GenericVariance.None)
+                    {
+                        // Value types and non-variant positions require all parameters to be non-variant
+                        foreach (TypeDesc instType in instantiatedType.Instantiation)
+                        {
+                            if (!ValidateVarianceInType(associatedTypeInstantiation, instType, Internal.TypeSystem.GenericVariance.None))
+                                return false;
+                        }
+                    }
+                    else
+                    {
+                        int index = 0;
+                        for (index = 0; index < typeDef.Instantiation.Length; index++)
+                        {
+                            Internal.TypeSystem.GenericVariance positionForParameter = ((GenericParameterDesc)typeDef.Instantiation[index]).Variance;
+                            // If the surrounding context is contravariant then we need to flip the variance of this parameter
+                            if (position == Internal.TypeSystem.GenericVariance.Contravariant)
+                            {
+                                if (positionForParameter == Internal.TypeSystem.GenericVariance.Covariant)
+                                    positionForParameter = Internal.TypeSystem.GenericVariance.Contravariant;
+                                else if (positionForParameter == Internal.TypeSystem.GenericVariance.Contravariant)
+                                    positionForParameter = Internal.TypeSystem.GenericVariance.Covariant;
+                                else
+                                    positionForParameter = Internal.TypeSystem.GenericVariance.None;
+                            }
+
+                            if (!ValidateVarianceInType(associatedTypeInstantiation, instantiatedType.Instantiation[index], positionForParameter))
+                                return false;
+                        }
+                    }
+                }
+                else if (type is ParameterizedType parameterizedType)
+                {
+                    // Arrays behave as covariant, byref and pointer types are non-variant
+                    if (!ValidateVarianceInType(associatedTypeInstantiation, parameterizedType.ParameterType, (parameterizedType.IsByRef || parameterizedType.IsPointer) ? Internal.TypeSystem.GenericVariance.None : position))
+                        return false;
+                }
+                else if (type is FunctionPointerType functionPointerType)
+                {
+                    if (!ValidateVarianceInSignature(associatedTypeInstantiation, functionPointerType.Signature, Internal.TypeSystem.GenericVariance.None, Internal.TypeSystem.GenericVariance.None))
+                        return false;
+                }
+
                 return true;
             }
         }

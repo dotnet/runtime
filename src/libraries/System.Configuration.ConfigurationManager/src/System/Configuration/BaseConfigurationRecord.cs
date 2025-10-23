@@ -19,11 +19,7 @@ namespace System.Configuration
     [DebuggerDisplay("ConfigPath = {ConfigPath}")]
     internal abstract class BaseConfigurationRecord : IInternalConfigRecord
     {
-#if NET
         private static readonly SearchValues<char> s_invalidSubPathChars = SearchValues.Create(InvalidSubPathCharactersString);
-#else
-        private static ReadOnlySpan<char> s_invalidSubPathChars => InvalidSubPathCharactersString.AsSpan();
-#endif
 
         protected const string NewLine = "\r\n";
 
@@ -3096,7 +3092,7 @@ namespace System.Configuration
                 throw new ConfigurationErrorsException(SR.Config_location_path_invalid_last_character, errorInfo);
 
             // combination of URI reserved characters and OS invalid filename characters, minus / (allowed reserved character)
-            if (subPath.AsSpan().IndexOfAny(s_invalidSubPathChars) >= 0)
+            if (subPath.AsSpan().ContainsAny(s_invalidSubPathChars))
                 throw new ConfigurationErrorsException(SR.Config_location_path_invalid_character, errorInfo);
 
             return subPath;

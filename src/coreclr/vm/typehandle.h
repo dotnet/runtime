@@ -440,6 +440,9 @@ public:
     // String
     BOOL IsString() const;
 
+    // Continuation sub types
+    BOOL IsContinuation() const;
+
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;
 
