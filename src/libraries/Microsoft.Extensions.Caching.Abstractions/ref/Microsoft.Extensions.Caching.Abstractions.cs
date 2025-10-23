@@ -104,6 +104,7 @@ namespace Microsoft.Extensions.Caching.Memory
         System.Collections.Generic.IList<Microsoft.Extensions.Caching.Memory.PostEvictionCallbackRegistration> PostEvictionCallbacks { get; }
         Microsoft.Extensions.Caching.Memory.CacheItemPriority Priority { get; set; }
         long? Size { get; set; }
+        bool ShouldNotStore { get; set; }
         System.TimeSpan? SlidingExpiration { get; set; }
         object? Value { get; set; }
     }
