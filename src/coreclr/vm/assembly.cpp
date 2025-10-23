@@ -1299,7 +1299,7 @@ static void RunMainInternal(Param* pParam)
     else
     {
 #if !defined(TARGET_BROWSER)
-        if(pParam->EntryType == EntryManagedMainAsync)
+        if (pParam->EntryType == EntryManagedMainAsync)
         {
             *pParam->piRetVal = 0;
             OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
