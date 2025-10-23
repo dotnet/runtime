@@ -30,6 +30,7 @@
 NativeCodeVersion::NativeCodeVersion(PTR_MethodDesc pMethod) : m_pMethodDesc(pMethod) {}
 BOOL NativeCodeVersion::IsDefaultVersion() const { return TRUE; }
 PCODE NativeCodeVersion::GetNativeCode() const { return m_pMethodDesc->GetNativeCode(); }
+ReJITID NativeCodeVersion::GetILCodeVersionId() const { return 0; }
 
 #ifndef DACCESS_COMPILE
 BOOL NativeCodeVersion::SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected) { return m_pMethodDesc->SetNativeCodeInterlocked(pCode, pExpected); }

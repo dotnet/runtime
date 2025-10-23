@@ -114,10 +114,10 @@
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
     <DNNEVersion>2.0.5</DNNEVersion>
-    <MicrosoftBuildVersion>17.8.3</MicrosoftBuildVersion>
-    <MicrosoftBuildTasksCoreVersion>17.8.3</MicrosoftBuildTasksCoreVersion>
-    <MicrosoftBuildFrameworkVersion>17.8.3</MicrosoftBuildFrameworkVersion>
-    <MicrosoftBuildUtilitiesCoreVersion>17.8.3</MicrosoftBuildUtilitiesCoreVersion>
+    <MicrosoftBuildVersion>17.11.48</MicrosoftBuildVersion>
+    <MicrosoftBuildTasksCoreVersion>17.11.48</MicrosoftBuildTasksCoreVersion>
+    <MicrosoftBuildFrameworkVersion>17.11.48</MicrosoftBuildFrameworkVersion>
+    <MicrosoftBuildUtilitiesCoreVersion>17.11.48</MicrosoftBuildUtilitiesCoreVersion>
     <DotnetSosVersion>7.0.412701</DotnetSosVersion>
     <DotnetSosTargetFrameworkVersion>6.0</DotnetSosTargetFrameworkVersion>
     <!-- Testing -->

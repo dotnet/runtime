@@ -7701,21 +7701,136 @@ InterpThreadContext* Thread::GetInterpThreadContext()
     return m_pInterpThreadContext;
 }
 
-extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissingThread(Thread *pThread)
+InterpThreadContext* GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Worker(Thread* currentThread, InterpByteCodeStart* pByteCodeStart)
 {
     CONTRACTL
     {
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
-    if (pThread == nullptr)
+    InterpThreadContext *pThreadContext = currentThread->GetInterpThreadContext();
+    if (pThreadContext == NULL)
+        COMPlusThrowOM();
+    CreateNativeToInterpreterCallStub(pByteCodeStart->Method);
+
+    return pThreadContext;
+}
+
+//=============================================================================
+// This function is used when starting from Preemptive mode.
+// It is specifically designed to work with the UnmanagedCallersOnlyAttribute.
+//=============================================================================
+static InterpThreadContext* GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Preemptive(
+    _In_ TransitionBlock* pTransitionBlock,
+    Thread* currentThread,
+    InterpByteCodeStart* pByteCodeStart)
+{
+    _ASSERTE(pByteCodeStart->Method->methodDesc->HasUnmanagedCallersOnlyAttribute());
+
+    InterpThreadContext *pThreadContext = NULL;
+
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_PREEMPTIVE;
+
+    // Starting from preemptive mode means the possibility exists
+    // that the thread is new to the runtime so we might have to
+    // create one.
+    if (currentThread == NULL)
     {
-        pThread = SetupThread();
+        // If our attempt to create a thread fails, there is nothing
+        // more we can do except fail fast. The reverse P/Invoke isn't
+        // going to work.
+        CREATETHREAD_IF_NULL_FAILFAST(currentThread, W("Failed to setup new thread during reverse P/Invoke"));
     }
 
-    return pThread->GetInterpThreadContext();
+    MAKE_CURRENT_THREAD_AVAILABLE_EX(currentThread);
+
+    // No GC frame is needed here since there should be no OBJECTREFs involved
+    // in this call due to UnmanagedCallersOnlyAttribute semantics.
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    pThreadContext = GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Worker(currentThread, pByteCodeStart);
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    return pThreadContext;
 }
+
+//=============================================================================
+// This function ensures that the interpreter thread context is initialized, and
+// the CallStub for calling from jit calling convention to interpreter convention
+// is in place. Usually ***BUT NOT ALWAYS***, this function runs only once
+// per methoddesc. In addition to installing the new code, this function
+// returns a pointer to the interpreter thread context.
+//=============================================================================
+extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissingThreadOrCallStub(TransitionBlock* pTransitionBlock, InterpByteCodeStart* pByteCodeStart)
+{
+    InterpThreadContext *pThreadContext = NULL;
+
+    PreserveLastErrorHolder preserveLastError;
+
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+    STATIC_CONTRACT_ENTRY_POINT;
+
+    MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());
+
+    // Attempt to check what GC mode we are running under.
+    if (CURRENT_THREAD == NULL
+        || !CURRENT_THREAD->PreemptiveGCDisabled())
+    {
+        pThreadContext = GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Preemptive(pTransitionBlock, CURRENT_THREAD, pByteCodeStart);
+    }
+    else
+    {
+        // This is the typical case (i.e. COOP mode).
+
+#ifdef _DEBUG
+        Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+        PrestubMethodFrame frame(pTransitionBlock, pByteCodeStart->Method->methodDesc);
+        PrestubMethodFrame* pPFrame = &frame;
+
+        pPFrame->Push(CURRENT_THREAD);
+
+        EX_TRY
+        {
+            bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
+
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+
+            pThreadContext = GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Worker(CURRENT_THREAD, pByteCodeStart);
+
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        }
+        EX_CATCH
+        {
+            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            _ASSERTE(ohThrowable);
+            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodDesc, NULL);
+            EX_RETHROW;
+        }
+        EX_END_CATCH
+
+        pPFrame->Pop(CURRENT_THREAD);
+    }
+
+    _ASSERTE(pThreadContext != NULL);
+
+    return pThreadContext;
+}
+
 #endif // FEATURE_INTERPRETER
 
 /* static */
