@@ -1234,7 +1234,9 @@ PCODE CallStubGenerator::GetGPRegRangeRoutine(int r1, int r2)
 #endif
 
     int index = r1 * NUM_ARGUMENT_REGISTERS + r2;
-    return m_interpreterToNative ? GPRegsRoutines[index] : GPRegsStoreRoutines[index];
+    PCODE routine = m_interpreterToNative ? GPRegsRoutines[index] : GPRegsStoreRoutines[index];
+    _ASSERTE(routine != 0);
+    return routine;
 }
 
 #ifndef UNIX_AMD64_ABI
@@ -1262,7 +1264,9 @@ PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
     printf("GetFPRegRangeRoutine %d %d\n", x1, x2);
 #endif
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
-    return m_interpreterToNative ? FPRegsRoutines[index] : FPRegsStoreRoutines[index];
+    PCODE routine = m_interpreterToNative ? FPRegsRoutines[index] : FPRegsStoreRoutines[index];
+    _ASSERTE(routine != 0);
+    return routine;
 }
 
 #ifdef TARGET_ARM64
@@ -1272,7 +1276,9 @@ PCODE CallStubGenerator::GetFPReg128RangeRoutine(int x1, int x2)
     printf("GetFPReg128RangeRoutine %d %d\n", x1, x2);
 #endif
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
-    return m_interpreterToNative ? FPRegs128LoadRoutines[index] : FPRegs128StoreRoutines[index];
+    PCODE routine = m_interpreterToNative ? FPRegs128LoadRoutines[index] : FPRegs128StoreRoutines[index];
+    _ASSERTE(routine != 0);
+    return routine;
 }
 #endif // TARGET_ARM64
 
@@ -1870,13 +1876,13 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         argType = RoutineType::GPReg;
     else if (argLocDesc.m_cFloatReg != 0)
     {
-#ifdef TARGET_ARM64        
+#ifdef TARGET_ARM64
         if (argLocDesc.m_hfaFieldSize == 16)
         {
             argType = RoutineType::FPReg128;
         }
         else
-#endif // TARGET_ARM64        
+#endif // TARGET_ARM64
         {
             argType = RoutineType::FPReg;
         }

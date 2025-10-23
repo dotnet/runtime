@@ -107,7 +107,7 @@ class CallStubGenerator
         None,
         GPReg,
         FPReg,
-#ifdef TARGET_ARM64        
+#ifdef TARGET_ARM64
         FPReg128,
 #endif
         Stack
@@ -148,7 +148,7 @@ class CallStubGenerator
     PCODE GetFPRegRangeRoutine(int x1, int x2);
 #ifdef TARGET_ARM64
     PCODE GetFPReg128RangeRoutine(int x1, int x2);
-#endif    
+#endif
     PCODE GetGPRegRangeRoutine(int r1, int r2);
     ReturnType GetReturnType(ArgIterator *pArgIt);
     CallStubHeader::InvokeFunctionPtr GetInvokeFunctionPtr(ReturnType returnType);
