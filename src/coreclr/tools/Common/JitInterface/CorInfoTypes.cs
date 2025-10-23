@@ -1322,23 +1322,16 @@ namespace Internal.JitInterface
 
     public struct AsyncContinuationVarInfo
     {
-        // IL number of variable (or one of the special IL numbers, like UNKNOWN_ILNUM)
+        // IL number of variable (or one of the special IL numbers, like TYPECTXT_ILNUM)
         public uint VarNumber;
-        // Offset in continuation's data where this variable is stored
+        // Offset in continuation object where this variable is stored
         public uint Offset;
-        public uint GCIndex;
     }
 
     public struct AsyncSuspensionPoint
     {
-        // IL offset in the root method that resulted in the creation of this suspension point.
-        public uint RootILOffset;
-        // Index of inline tree node containing the IL offset (0 for root)
-        public uint Inlinee;
-        // IL offset that resulted in the creation of the suspension point.
-        public uint ILOffset;
-        public uint NumVars;
-        // Count of AsyncContinuationVarInfo
+        // Count of AsyncContinuationVarInfo in array of locals starting where
+        // the previous suspension point's locals end.
         public uint NumContinuationVars;
     }
 
