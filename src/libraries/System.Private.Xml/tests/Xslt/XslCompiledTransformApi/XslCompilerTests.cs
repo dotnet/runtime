@@ -181,7 +181,8 @@ namespace System.Xml.XslCompiledTransformApiTests
                 }
 
                 string result = outWriter.ToString();
-                Assert.Contains("01:02:03", result);
+                Assert.DoesNotContain("2001", result);
+                Assert.Matches(@"0?1:02:03", result);
             }
         }
     }
