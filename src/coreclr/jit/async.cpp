@@ -643,7 +643,7 @@ PhaseStatus AsyncTransformation::Run()
     }
 
     m_comp->compSuspensionPoints =
-        new (m_comp, CMK_Async) jitstd::vector<AsyncSuspensionPoint>(m_comp->getAllocator(CMK_Async));
+        new (m_comp, CMK_Async) jitstd::vector<ICorDebugInfo::AsyncSuspensionPoint>(m_comp->getAllocator(CMK_Async));
     m_comp->compAsyncVars = new (m_comp, CMK_Async)
         jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>(m_comp->getAllocator(CMK_Async));
 
@@ -2112,8 +2112,8 @@ void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall*        
         numLocals++;
     }
 
-    AsyncSuspensionPoint suspensionPoint;
-    suspensionPoint.numContinuationVars = numLocals;
+    ICorDebugInfo::AsyncSuspensionPoint suspensionPoint;
+    suspensionPoint.NumContinuationVars = numLocals;
     m_comp->compSuspensionPoints->push_back(suspensionPoint);
 
     GenTree* recordOffset = new (m_comp, GT_RECORD_ASYNC_RESUME)

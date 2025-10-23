@@ -2397,11 +2397,6 @@ struct RichIPMapping
     DebugInfo    debugInfo;
 };
 
-struct AsyncSuspensionPoint
-{
-    unsigned numContinuationVars = 0;
-};
-
 // Current kind of node threading stored in GenTree::gtPrev and GenTree::gtNext.
 // See fgNodeThreading for more information.
 enum class NodeThreading
@@ -8636,7 +8631,7 @@ public:
     jitstd::list<IPmappingDsc>  genIPmappings;
     jitstd::list<RichIPMapping> genRichIPmappings;
 
-    jitstd::vector<AsyncSuspensionPoint>*                    compSuspensionPoints = nullptr;
+    jitstd::vector<ICorDebugInfo::AsyncSuspensionPoint>*     compSuspensionPoints = nullptr;
     jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>* compAsyncVars        = nullptr;
 
     // Managed RetVal - A side hash table meant to record the mapping from a

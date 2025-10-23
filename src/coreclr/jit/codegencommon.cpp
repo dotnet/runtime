@@ -6729,7 +6729,7 @@ void CodeGen::genAddRichIPMappingHere(const DebugInfo& di)
 //
 void CodeGen::genReportAsyncDebugInfo()
 {
-    jitstd::vector<AsyncSuspensionPoint>* suspPoints = compiler->compSuspensionPoints;
+    jitstd::vector<ICorDebugInfo::AsyncSuspensionPoint>* suspPoints = compiler->compSuspensionPoints;
     if (suspPoints == nullptr)
     {
         return;
@@ -6741,10 +6741,7 @@ void CodeGen::genReportAsyncDebugInfo()
     ICorDebugInfo::AsyncSuspensionPoint* hostSuspensionPoints = static_cast<ICorDebugInfo::AsyncSuspensionPoint*>(
         compiler->info.compCompHnd->allocateArray(suspPoints->size() * sizeof(ICorDebugInfo::AsyncSuspensionPoint)));
     for (size_t i = 0; i < suspPoints->size(); i++)
-    {
-        AsyncSuspensionPoint& suspPoint             = (*suspPoints)[i];
-        hostSuspensionPoints[i].NumContinuationVars = suspPoint.numContinuationVars;
-    }
+        hostSuspensionPoints[i] = (*suspPoints)[i];
 
     jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>* asyncVars = compiler->compAsyncVars;
     ICorDebugInfo::AsyncContinuationVarInfo* hostVars = static_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(
