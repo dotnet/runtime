@@ -2519,17 +2519,17 @@ CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInf
 //
 regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
 {
-#ifdef TARGET_XARCH
+#ifdef TARGET_AMD64
     if (tailCall)
     {
-        // If we are tailcalling then return registers are available for use
-        return RBM_RAX;
+        // If we are tailcalling then arg regs cannot be used. For both SysV and winx64 that
+        // leaves rax, r10, r11. rax and r11 are used for indirection cells, so we pick r10.
+        return RBM_R10;
     }
-
-#ifdef TARGET_AMD64
     // Otherwise on x64 (win-x64 and SysV) r8 is never used for return values
     return RBM_R8;
-#else
+#elif TARGET_X86
+    assert(!tailCall);
     // On x86 it's more difficult: we have only eax, ecx and edx available as volatile
     // registers, and all of them may be used for return values (longs + async continuation).
     if (compiler->compIsAsync())
@@ -2540,7 +2540,6 @@ regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
 
     // Outside async ecx is not used for returns.
     return RBM_ECX;
-#endif
 #else
     return RBM_GSCOOKIE_TMP;
 #endif
