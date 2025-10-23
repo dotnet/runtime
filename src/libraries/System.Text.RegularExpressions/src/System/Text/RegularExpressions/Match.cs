@@ -233,40 +233,10 @@ namespace System.Text.RegularExpressions
         internal bool IsMatched(int cap)
         {
             int[] matchcount = _matchcount;
-            if ((uint)cap >= (uint)matchcount.Length || matchcount[cap] == 0)
-            {
-                return false;
-            }
-
-            // If not balancing, the simple check suffices
-            if (!_balancing)
-            {
-                return _matches[cap][matchcount[cap] * 2 - 1] != (-3 + 1);
-            }
-
-            // When balancing is involved, we need to check if there are any real (non-negative) captures
-            // that would remain after TidyBalancing compacts the captures.
-            // TidyBalancing removes negative (balanced) captures, so we need to count positive ones.
-            int[] matcharray = _matches[cap];
-            int limit = matchcount[cap] * 2;
-            int realCaptureCount = 0;
-
-            for (int i = 0; i < limit; i += 2)
-            {
-                // Check if this is a real capture (start index is non-negative)
-                if (matcharray[i] >= 0)
-                {
-                    realCaptureCount++;
-                }
-                else
-                {
-                    // This is a balancing marker (negative index)
-                    // Balancing markers effectively "remove" a previous capture
-                    realCaptureCount--;
-                }
-            }
-
-            return realCaptureCount > 0;
+            return
+                (uint)cap < (uint)matchcount.Length &&
+                matchcount[cap] > 0 &&
+                _matches[cap][matchcount[cap] * 2 - 1] != (-3 + 1);
         }
 
         /// <summary>
