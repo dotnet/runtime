@@ -4174,7 +4174,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 }
 #endif
                 // Only expand intrinsic for TYP_INT and TYP_LONG; fallback to managed for other types
-                if ((actualType != TYP_INT) && (actualType != TYP_LONG))
+                if ((callType != TYP_INT) && (callType != TYP_LONG))
                 {
                     break;
                 }
