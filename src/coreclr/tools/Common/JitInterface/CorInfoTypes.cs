@@ -878,8 +878,8 @@ namespace Internal.JitInterface
         public CORINFO_CLASS_STRUCT_* continuationClsHnd;
         // 'Next' field
         public CORINFO_FIELD_STRUCT_* continuationNextFldHnd;
-        // 'Resume' field
-        public CORINFO_FIELD_STRUCT_* continuationResumeFldHnd;
+        // 'ResumeInfo' field
+        public CORINFO_FIELD_STRUCT_* continuationResumeInfoFldHnd;
         // 'State' field
         public CORINFO_FIELD_STRUCT_* continuationStateFldHnd;
         // 'Flags' field

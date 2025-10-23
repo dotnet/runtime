@@ -3369,7 +3369,7 @@ namespace Internal.JitInterface
             DefType continuation = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
             pAsyncInfoOut.continuationClsHnd = ObjectToHandle(continuation);
             pAsyncInfoOut.continuationNextFldHnd = ObjectToHandle(continuation.GetKnownField("Next"u8));
-            pAsyncInfoOut.continuationResumeFldHnd = ObjectToHandle(continuation.GetKnownField("Resume"u8));
+            pAsyncInfoOut.continuationResumeInfoFldHnd = ObjectToHandle(continuation.GetKnownField("ResumeInfo"u8));
             pAsyncInfoOut.continuationStateFldHnd = ObjectToHandle(continuation.GetKnownField("State"u8));
             pAsyncInfoOut.continuationFlagsFldHnd = ObjectToHandle(continuation.GetKnownField("Flags"u8));
             DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
