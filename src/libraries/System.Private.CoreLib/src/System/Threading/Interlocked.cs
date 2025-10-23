@@ -651,10 +651,9 @@ namespace System.Threading
         {
             // Only integer primitive types and enum types backed by integer types are supported.
             // Floating-point types and floating-point backed enums are not supported.
-            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || 
-                typeof(T) == typeof(float) || 
-                typeof(T) == typeof(double) ||
-                (typeof(T).IsEnum && (Type.GetEnumUnderlyingType(typeof(T)) == typeof(float) || Type.GetEnumUnderlyingType(typeof(T)) == typeof(double))))
+            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) ||
+                (Type.GetTypeCode(typeof(T)) == TypeCode.Single) ||
+                (Type.GetTypeCode(typeof(T)) == TypeCode.Double))
             {
                 throw new NotSupportedException(SR.NotSupported_IntegerEnumOrPrimitiveTypeRequired);
             }
@@ -794,10 +793,9 @@ namespace System.Threading
         {
             // Only integer primitive types and enum types backed by integer types are supported.
             // Floating-point types and floating-point backed enums are not supported.
-            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || 
-                typeof(T) == typeof(float) || 
-                typeof(T) == typeof(double) ||
-                (typeof(T).IsEnum && (Type.GetEnumUnderlyingType(typeof(T)) == typeof(float) || Type.GetEnumUnderlyingType(typeof(T)) == typeof(double))))
+            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) ||
+                (Type.GetTypeCode(typeof(T)) == TypeCode.Single) ||
+                (Type.GetTypeCode(typeof(T)) == TypeCode.Double))
             {
                 throw new NotSupportedException(SR.NotSupported_IntegerEnumOrPrimitiveTypeRequired);
             }
