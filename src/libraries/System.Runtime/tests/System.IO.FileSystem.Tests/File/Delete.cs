@@ -201,7 +201,8 @@ namespace System.IO.Tests
             Assert.True(testFile.Exists);
         }
 
-        [Theory, MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        [Theory]
+        [MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
         public void DeleteWithProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

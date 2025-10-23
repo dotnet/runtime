@@ -395,7 +395,8 @@ namespace System.IO.Tests
             Assert.Equal(destContents, File.ReadAllBytes(destPath));
         }
 
-        [Theory, MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        [Theory]
+        [MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
         public void MoveWithProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -409,7 +410,8 @@ namespace System.IO.Tests
             Assert.True(File.Exists(destPath));
         }
 
-        [Theory, MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
+        [Theory]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsMoveWithTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
         {

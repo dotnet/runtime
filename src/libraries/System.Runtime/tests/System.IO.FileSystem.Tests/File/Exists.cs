@@ -230,7 +230,8 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
-        [Theory, MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        [Theory]
+        [MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
         public void ExistsWithProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
