@@ -1324,7 +1324,7 @@ static void RunMainInternal(Param* pParam)
             mainWrapper.Call(stackVarWrapper);
         }
         else
-#endif // !TARGET_BROWSER
+#endif // TARGET_BROWSER
         {
             // Call the main method
             *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
