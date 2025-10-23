@@ -649,11 +649,14 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe T And<T>(ref T location1, T value) where T : struct
         {
-            // Only primitive types and enum types (which are backed by primitive types) are supported.
-            // Floating-point types are not supported.
-            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            // Only integer primitive types and enum types backed by integer types are supported.
+            // Floating-point types and floating-point backed enums are not supported.
+            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || 
+                typeof(T) == typeof(float) || 
+                typeof(T) == typeof(double) ||
+                (typeof(T).IsEnum && (Type.GetEnumUnderlyingType(typeof(T)) == typeof(float) || Type.GetEnumUnderlyingType(typeof(T)) == typeof(double))))
             {
-                throw new NotSupportedException(SR.NotSupported_EnumOrPrimitiveTypeRequired);
+                throw new NotSupportedException(SR.NotSupported_IntegerEnumOrPrimitiveTypeRequired);
             }
 
             // For 1-byte and 2-byte types, we need to use CompareExchange-based implementations
@@ -789,11 +792,14 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe T Or<T>(ref T location1, T value) where T : struct
         {
-            // Only primitive types and enum types (which are backed by primitive types) are supported.
-            // Floating-point types are not supported.
-            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || typeof(T) == typeof(float) || typeof(T) == typeof(double))
+            // Only integer primitive types and enum types backed by integer types are supported.
+            // Floating-point types and floating-point backed enums are not supported.
+            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || 
+                typeof(T) == typeof(float) || 
+                typeof(T) == typeof(double) ||
+                (typeof(T).IsEnum && (Type.GetEnumUnderlyingType(typeof(T)) == typeof(float) || Type.GetEnumUnderlyingType(typeof(T)) == typeof(double))))
             {
-                throw new NotSupportedException(SR.NotSupported_EnumOrPrimitiveTypeRequired);
+                throw new NotSupportedException(SR.NotSupported_IntegerEnumOrPrimitiveTypeRequired);
             }
 
             // For 1-byte and 2-byte types, we need to use CompareExchange-based implementations
