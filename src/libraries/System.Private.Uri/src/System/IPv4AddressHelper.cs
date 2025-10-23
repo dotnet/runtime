@@ -15,15 +15,7 @@ namespace System.Net
         {
             // end includes ports, so changedEnd may be different from end
             int changedEnd = end;
-            long result;
-
-            unsafe
-            {
-                fixed (char* ipString = str)
-                {
-                    result = ParseNonCanonical(ipString, start, ref changedEnd, true);
-                }
-            }
+            long result = ParseNonCanonical<char>(str.AsSpan(start), ref changedEnd, true);
 
             Debug.Assert(result != Invalid, $"Failed to parse after already validated: {str}");
 
