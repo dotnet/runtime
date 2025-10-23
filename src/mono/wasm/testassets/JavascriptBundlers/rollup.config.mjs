@@ -20,6 +20,10 @@ export default {
         output: 'public',
         extensions: /\.(json)$/,
       }),
+      files({
+        output: 'public',
+        extensions: /\.(txt)$/,
+      }),
       nodeResolve({
          extensions: ['.js']
       }),
