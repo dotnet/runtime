@@ -651,7 +651,7 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
 }
 
 // WASM-TODO: use [UnmanagedCallersOnly] once is supported in wasm
-extern "C" void SystemJS_ExecuteTimerCallback (void)
+extern "C" void SystemJS_ExecuteTimerCallback()
 {
     ARG_SLOT stackVarWrapper[] = { };
     MethodDescCallSite timerHandler(METHOD__TIMER_QUEUE__TIMER_HANDLER);
