@@ -102,6 +102,7 @@ public:
     void Append(WCHAR c) { WRAPPER_NO_CONTRACT; m_pStr->Append(c); }
     void Append(LPCUTF8 pStr) { WRAPPER_NO_CONTRACT; m_pStr->AppendUTF8(pStr); }
     void Append(UTF8 c) { WRAPPER_NO_CONTRACT; m_pStr->AppendUTF8(c); }
+    void AppendNum(unsigned num) { WRAPPER_NO_CONTRACT; m_pStr->AppendPrintf("%u", num); }
     SString* GetString() { WRAPPER_NO_CONTRACT; return m_pStr; }
 
 private:
