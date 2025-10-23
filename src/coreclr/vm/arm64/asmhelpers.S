@@ -1394,6 +1394,140 @@ ALTERNATE_ENTRY Store_D7
     EPILOG_BRANCH_REG x11
 LEAF_END Store_D1_D2_D3_D4_D5_D6_D7
 
+// Floating point stores for Q registers using stp wherever possible
+
+LEAF_ENTRY Store_Q0
+    str q0, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q0
+
+LEAF_ENTRY Store_Q1
+    str q1, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q1
+
+LEAF_ENTRY Store_Q0_Q1
+    stp q0, q1, [x9], #32
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q0_Q1
+
+LEAF_ENTRY Store_Q0_Q1_Q2
+    stp q0, q1, [x9], #32
+ALTERNATE_ENTRY Store_Q2
+    str q2, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q0_Q1_Q2
+
+LEAF_ENTRY Store_Q0_Q1_Q2_Q3
+    stp q0, q1, [x9], #32
+ALTERNATE_ENTRY Store_Q2_Q3
+    stp q2, q3, [x9], #32
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q0_Q1_Q2_Q3
+
+LEAF_ENTRY Store_Q0_Q1_Q2_Q3_Q4
+    stp q0, q1, [x9], #32
+ALTERNATE_ENTRY Store_Q2_Q3_Q4
+    stp q2, q3, [x9], #32
+ALTERNATE_ENTRY Store_Q4
+    str q4, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q0_Q1_Q2_Q3_Q4
+
+LEAF_ENTRY Store_Q0_Q1_Q2_Q3_Q4_Q5
+    stp q0, q1, [x9], #32
+ALTERNATE_ENTRY Store_Q2_Q3_Q4_Q5
+    stp q2, q3, [x9], #32
+ALTERNATE_ENTRY Store_Q4_Q5
+    stp q4, q5, [x9], #32
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q0_Q1_Q2_Q3_Q4_Q5
+
+LEAF_ENTRY Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6
+    stp q0, q1, [x9], #32
+ALTERNATE_ENTRY Store_Q2_Q3_Q4_Q5_Q6
+    stp q2, q3, [x9], #32
+ALTERNATE_ENTRY Store_Q4_Q5_Q6
+    stp q4, q5, [x9], #32
+ALTERNATE_ENTRY Store_Q6
+    str q6, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6
+
+LEAF_ENTRY Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7
+    stp q0, q1, [x9], #32
+ALTERNATE_ENTRY Store_Q2_Q3_Q4_Q5_Q6_Q7
+    stp q2, q3, [x9], #32
+ALTERNATE_ENTRY Store_Q4_Q5_Q6_Q7
+    stp q4, q5, [x9], #32
+ALTERNATE_ENTRY Store_Q6_Q7
+    stp q6, q7, [x9], #32
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7
+
+LEAF_ENTRY Store_Q1_Q2
+    stp q1, q2, [x9], #32
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q1_Q2
+
+LEAF_ENTRY Store_Q1_Q2_Q3
+    stp q1, q2, [x9], #32
+ALTERNATE_ENTRY Store_Q3
+    str q3, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q1_Q2_Q3
+
+LEAF_ENTRY Store_Q1_Q2_Q3_Q4
+    stp q1, q2, [x9], #32
+ALTERNATE_ENTRY Store_Q3_Q4
+    stp q3, q4, [x9], #32
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q1_Q2_Q3_Q4
+
+LEAF_ENTRY Store_Q1_Q2_Q3_Q4_Q5
+    stp q1, q2, [x9], #32
+ALTERNATE_ENTRY Store_Q3_Q4_Q5
+    stp q3, q4, [x9], #32
+ALTERNATE_ENTRY Store_Q5
+    str q5, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q1_Q2_Q3_Q4_Q5
+
+LEAF_ENTRY Store_Q1_Q2_Q3_Q4_Q5_Q6
+    stp q1, q2, [x9], #32
+ALTERNATE_ENTRY Store_Q3_Q4_Q5_Q6
+    stp q3, q4, [x9], #32
+ALTERNATE_ENTRY Store_Q5_Q6
+    stp q5, q6, [x9], #32
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q1_Q2_Q3_Q4_Q5_Q6
+
+LEAF_ENTRY Store_Q1_Q2_Q3_Q4_Q5_Q6_Q7
+    stp q1, q2, [x9], #32
+ALTERNATE_ENTRY Store_Q3_Q4_Q5_Q6_Q7
+    stp q3, q4, [x9], #32
+ALTERNATE_ENTRY Store_Q5_Q6_Q7
+    stp q5, q6, [x9], #32
+ALTERNATE_ENTRY Store_Q7
+    str q7, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Store_Q1_Q2_Q3_Q4_Q5_Q6_Q7
+
 LEAF_ENTRY InjectInterpStackAlign
     add x9, x9, #8
     ldr x11, [x10], #8
@@ -1735,6 +1869,120 @@ ALTERNATE_ENTRY Load_D7
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Load_D1_D2_D3_D4_D5_D6_D7
+
+// Routines for passing arguments in floating point registers Q0..Q7
+
+LEAF_ENTRY Load_Q0
+    ldr q0, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Q0
+
+LEAF_ENTRY Load_Q1
+    ldr q1, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Q1
+
+LEAF_ENTRY Load_Q0_Q1
+    ldp q0, q1, [x9], #32
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Q0_Q1
+
+LEAF_ENTRY Load_Q0_Q1_Q2
+    ldr q0, [x9], #16
+ALTERNATE_ENTRY Load_Q1_Q2
+    ldr q1, [x9], #16
+ALTERNATE_ENTRY Load_Q2
+    ldr q2, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Q0_Q1_Q2
+
+LEAF_ENTRY Load_Q0_Q1_Q2_Q3
+    ldr q0, [x9], #16
+ALTERNATE_ENTRY Load_Q1_Q2_Q3
+    ldr q1, [x9], #16
+ALTERNATE_ENTRY Load_Q2_Q3
+    ldr q2, [x9], #16
+ALTERNATE_ENTRY Load_Q3
+    ldr q3, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Q0_Q1_Q2_Q3
+
+LEAF_ENTRY Load_Q0_Q1_Q2_Q3_Q4
+    ldr q0, [x9], #16
+ALTERNATE_ENTRY Load_Q1_Q2_Q3_Q4
+    ldr q1, [x9], #16
+ALTERNATE_ENTRY Load_Q2_Q3_Q4
+    ldr q2, [x9], #16
+ALTERNATE_ENTRY Load_Q3_Q4
+    ldr q3, [x9], #16
+ALTERNATE_ENTRY Load_Q4
+    ldr q4, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Q0_Q1_Q2_Q3_Q4
+
+LEAF_ENTRY Load_Q0_Q1_Q2_Q3_Q4_Q5
+    ldr q0, [x9], #16
+ALTERNATE_ENTRY Load_Q1_Q2_Q3_Q4_Q5
+    ldr q1, [x9], #16
+ALTERNATE_ENTRY Load_Q2_Q3_Q4_Q5
+    ldr q2, [x9], #16
+ALTERNATE_ENTRY Load_Q3_Q4_Q5
+    ldr q3, [x9], #16
+ALTERNATE_ENTRY Load_Q4_Q5
+    ldr q4, [x9], #16
+ALTERNATE_ENTRY Load_Q5
+    ldr q5, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Q0_Q1_Q2_Q3_Q4_Q5
+
+LEAF_ENTRY Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6
+    ldr q0, [x9], #16
+ALTERNATE_ENTRY Load_Q1_Q2_Q3_Q4_Q5_Q6
+    ldr q1, [x9], #16
+ALTERNATE_ENTRY Load_Q2_Q3_Q4_Q5_Q6
+    ldr q2, [x9], #16
+ALTERNATE_ENTRY Load_Q3_Q4_Q5_Q6
+    ldr q3, [x9], #16
+ALTERNATE_ENTRY Load_Q4_Q5_Q6
+    ldr q4, [x9], #16
+ALTERNATE_ENTRY Load_Q5_Q6
+    ldr q5, [x9], #16
+ALTERNATE_ENTRY Load_Q6
+    ldr q6, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6
+
+LEAF_ENTRY Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7
+    ldp q0, q1, [x9], #32
+ALTERNATE_ENTRY Load_Q2_Q3_Q4_Q5_Q6_Q7
+    ldp q2, q3, [x9], #32
+ALTERNATE_ENTRY Load_Q4_Q5_Q6_Q7
+    ldp q4, q5, [x9], #32
+ALTERNATE_ENTRY Load_Q6_Q7
+    ldp q6, q7, [x9], #32
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7
+
+LEAF_ENTRY Load_Q1_Q2_Q3_Q4_Q5_Q6_Q7
+    ldp q1, q2, [x9], #32
+ALTERNATE_ENTRY Load_Q3_Q4_Q5_Q6_Q7
+    ldp q3, q4, [x9], #32
+ALTERNATE_ENTRY Load_Q5_Q6_Q7
+    ldp q5, q6, [x9], #32
+ALTERNATE_ENTRY Load_Q7
+    ldr q7, [x9], #16
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Q1_Q2_Q3_Q4_Q5_Q6_Q7
 
 // Functions to invoke a sequence of routines to:
 // 1. load arguments from the interpreter stack to registers / stack based on the calling convention

@@ -842,6 +842,81 @@ extern "C" void Store_D6();
 extern "C" void Store_D6_D7();
 extern "C" void Store_D7();
 
+// Q register function prototypes
+extern "C" void Load_Q0();
+extern "C" void Load_Q0_Q1();
+extern "C" void Load_Q0_Q1_Q2();
+extern "C" void Load_Q0_Q1_Q2_Q3();
+extern "C" void Load_Q0_Q1_Q2_Q3_Q4();
+extern "C" void Load_Q0_Q1_Q2_Q3_Q4_Q5();
+extern "C" void Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6();
+extern "C" void Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7();
+extern "C" void Load_Q1();
+extern "C" void Load_Q1_Q2();
+extern "C" void Load_Q1_Q2_Q3();
+extern "C" void Load_Q1_Q2_Q3_Q4();
+extern "C" void Load_Q1_Q2_Q3_Q4_Q5();
+extern "C" void Load_Q1_Q2_Q3_Q4_Q5_Q6();
+extern "C" void Load_Q1_Q2_Q3_Q4_Q5_Q6_Q7();
+extern "C" void Load_Q2();
+extern "C" void Load_Q2_Q3();
+extern "C" void Load_Q2_Q3_Q4();
+extern "C" void Load_Q2_Q3_Q4_Q5();
+extern "C" void Load_Q2_Q3_Q4_Q5_Q6();
+extern "C" void Load_Q2_Q3_Q4_Q5_Q6_Q7();
+extern "C" void Load_Q3();
+extern "C" void Load_Q3_Q4();
+extern "C" void Load_Q3_Q4_Q5();
+extern "C" void Load_Q3_Q4_Q5_Q6();
+extern "C" void Load_Q3_Q4_Q5_Q6_Q7();
+extern "C" void Load_Q4();
+extern "C" void Load_Q4_Q5();
+extern "C" void Load_Q4_Q5_Q6();
+extern "C" void Load_Q4_Q5_Q6_Q7();
+extern "C" void Load_Q5();
+extern "C" void Load_Q5_Q6();
+extern "C" void Load_Q5_Q6_Q7();
+extern "C" void Load_Q6();
+extern "C" void Load_Q6_Q7();
+extern "C" void Load_Q7();
+
+extern "C" void Store_Q0();
+extern "C" void Store_Q0_Q1();
+extern "C" void Store_Q0_Q1_Q2();
+extern "C" void Store_Q0_Q1_Q2_Q3();
+extern "C" void Store_Q0_Q1_Q2_Q3_Q4();
+extern "C" void Store_Q0_Q1_Q2_Q3_Q4_Q5();
+extern "C" void Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6();
+extern "C" void Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7();
+extern "C" void Store_Q1();
+extern "C" void Store_Q1_Q2();
+extern "C" void Store_Q1_Q2_Q3();
+extern "C" void Store_Q1_Q2_Q3_Q4();
+extern "C" void Store_Q1_Q2_Q3_Q4_Q5();
+extern "C" void Store_Q1_Q2_Q3_Q4_Q5_Q6();
+extern "C" void Store_Q1_Q2_Q3_Q4_Q5_Q6_Q7();
+extern "C" void Store_Q2();
+extern "C" void Store_Q2_Q3();
+extern "C" void Store_Q2_Q3_Q4();
+extern "C" void Store_Q2_Q3_Q4_Q5();
+extern "C" void Store_Q2_Q3_Q4_Q5_Q6();
+extern "C" void Store_Q2_Q3_Q4_Q5_Q6_Q7();
+extern "C" void Store_Q3();
+extern "C" void Store_Q3_Q4();
+extern "C" void Store_Q3_Q4_Q5();
+extern "C" void Store_Q3_Q4_Q5_Q6();
+extern "C" void Store_Q3_Q4_Q5_Q6_Q7();
+extern "C" void Store_Q4();
+extern "C" void Store_Q4_Q5();
+extern "C" void Store_Q4_Q5_Q6();
+extern "C" void Store_Q4_Q5_Q6_Q7();
+extern "C" void Store_Q5();
+extern "C" void Store_Q5_Q6();
+extern "C" void Store_Q5_Q6_Q7();
+extern "C" void Store_Q6();
+extern "C" void Store_Q6_Q7();
+extern "C" void Store_Q7();
+
 PCODE FPRegsStoreRoutines[] =
 {
     (PCODE)Store_D0,                         // 00
@@ -978,6 +1053,142 @@ PCODE FPRegsRoutines[] =
     (PCODE)Load_D7                          // 77
 };
 
+PCODE FPRegs128StoreRoutines[] =
+{
+    (PCODE)Store_Q0,                         // 00
+    (PCODE)Store_Q0_Q1,                      // 01
+    (PCODE)Store_Q0_Q1_Q2,                   // 02
+    (PCODE)Store_Q0_Q1_Q2_Q3,                // 03
+    (PCODE)Store_Q0_Q1_Q2_Q3_Q4,             // 04
+    (PCODE)Store_Q0_Q1_Q2_Q3_Q4_Q5,          // 05
+    (PCODE)Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6,       // 06
+    (PCODE)Store_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7,    // 07
+    (PCODE)0,                                // 10
+    (PCODE)Store_Q1,                         // 11
+    (PCODE)Store_Q1_Q2,                      // 12
+    (PCODE)Store_Q1_Q2_Q3,                   // 13
+    (PCODE)Store_Q1_Q2_Q3_Q4,                // 14
+    (PCODE)Store_Q1_Q2_Q3_Q4_Q5,             // 15
+    (PCODE)Store_Q1_Q2_Q3_Q4_Q5_Q6,          // 16
+    (PCODE)Store_Q1_Q2_Q3_Q4_Q5_Q6_Q7,       // 17
+    (PCODE)0,                                // 20
+    (PCODE)0,                                // 21
+    (PCODE)Store_Q2,                         // 22
+    (PCODE)Store_Q2_Q3,                      // 23
+    (PCODE)Store_Q2_Q3_Q4,                   // 24
+    (PCODE)Store_Q2_Q3_Q4_Q5,                // 25
+    (PCODE)Store_Q2_Q3_Q4_Q5_Q6,             // 26
+    (PCODE)Store_Q2_Q3_Q4_Q5_Q6_Q7,          // 27
+    (PCODE)0,                                // 30
+    (PCODE)0,                                // 31
+    (PCODE)0,                                // 32
+    (PCODE)Store_Q3,                         // 33
+    (PCODE)Store_Q3_Q4,                      // 34
+    (PCODE)Store_Q3_Q4_Q5,                   // 35
+    (PCODE)Store_Q3_Q4_Q5_Q6,                // 36
+    (PCODE)Store_Q3_Q4_Q5_Q6_Q7,             // 37
+    (PCODE)0,                                // 40
+    (PCODE)0,                                // 41
+    (PCODE)0,                                // 42
+    (PCODE)0,                                // 43
+    (PCODE)Store_Q4,                         // 44
+    (PCODE)Store_Q4_Q5,                      // 45
+    (PCODE)Store_Q4_Q5_Q6,                   // 46
+    (PCODE)Store_Q4_Q5_Q6_Q7,                // 47
+    (PCODE)0,                                // 50
+    (PCODE)0,                                // 51
+    (PCODE)0,                                // 52
+    (PCODE)0,                                // 53
+    (PCODE)0,                                // 54
+    (PCODE)Store_Q5,                         // 55
+    (PCODE)Store_Q5_Q6,                      // 56
+    (PCODE)Store_Q5_Q6_Q7,                   // 57
+    (PCODE)0,                                // 60
+    (PCODE)0,                                // 61
+    (PCODE)0,                                // 62
+    (PCODE)0,                                // 63
+    (PCODE)0,                                // 64
+    (PCODE)0,                                // 65
+    (PCODE)Store_Q6,                         // 66
+    (PCODE)Store_Q6_Q7,                      // 67
+    (PCODE)0,                                // 70
+    (PCODE)0,                                // 71
+    (PCODE)0,                                // 72
+    (PCODE)0,                                // 73
+    (PCODE)0,                                // 74
+    (PCODE)0,                                // 75
+    (PCODE)0,                                // 76
+    (PCODE)Store_Q7                          // 77
+};
+
+PCODE FPRegs128LoadRoutines[] =
+{
+    (PCODE)Load_Q0,                         // 00
+    (PCODE)Load_Q0_Q1,                      // 01
+    (PCODE)Load_Q0_Q1_Q2,                   // 02
+    (PCODE)Load_Q0_Q1_Q2_Q3,                // 03
+    (PCODE)Load_Q0_Q1_Q2_Q3_Q4,             // 04
+    (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5,          // 05
+    (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6,       // 06
+    (PCODE)Load_Q0_Q1_Q2_Q3_Q4_Q5_Q6_Q7,    // 07
+    (PCODE)0,                               // 10
+    (PCODE)Load_Q1,                         // 11
+    (PCODE)Load_Q1_Q2,                      // 12
+    (PCODE)Load_Q1_Q2_Q3,                   // 13
+    (PCODE)Load_Q1_Q2_Q3_Q4,                // 14
+    (PCODE)Load_Q1_Q2_Q3_Q4_Q5,             // 15
+    (PCODE)Load_Q1_Q2_Q3_Q4_Q5_Q6,          // 16
+    (PCODE)Load_Q1_Q2_Q3_Q4_Q5_Q6_Q7,       // 17
+    (PCODE)0,                               // 20
+    (PCODE)0,                               // 21
+    (PCODE)Load_Q2,                         // 22
+    (PCODE)Load_Q2_Q3,                      // 23
+    (PCODE)Load_Q2_Q3_Q4,                   // 24
+    (PCODE)Load_Q2_Q3_Q4_Q5,                // 25
+    (PCODE)Load_Q2_Q3_Q4_Q5_Q6,             // 26
+    (PCODE)Load_Q2_Q3_Q4_Q5_Q6_Q7,          // 27
+    (PCODE)0,                               // 30
+    (PCODE)0,                               // 31
+    (PCODE)0,                               // 32
+    (PCODE)Load_Q3,                         // 33
+    (PCODE)Load_Q3_Q4,                      // 34
+    (PCODE)Load_Q3_Q4_Q5,                   // 35
+    (PCODE)Load_Q3_Q4_Q5_Q6,                // 36
+    (PCODE)Load_Q3_Q4_Q5_Q6_Q7,             // 37
+    (PCODE)0,                               // 40
+    (PCODE)0,                               // 41
+    (PCODE)0,                               // 42
+    (PCODE)0,                               // 43
+    (PCODE)Load_Q4,                         // 44
+    (PCODE)Load_Q4_Q5,                      // 45
+    (PCODE)Load_Q4_Q5_Q6,                   // 46
+    (PCODE)Load_Q4_Q5_Q6_Q7,                // 47
+    (PCODE)0,                               // 50
+    (PCODE)0,                               // 51
+    (PCODE)0,                               // 52
+    (PCODE)0,                               // 53
+    (PCODE)0,                               // 54
+    (PCODE)Load_Q5,                         // 55
+    (PCODE)Load_Q5_Q6,                      // 56
+    (PCODE)Load_Q5_Q6_Q7,                   // 57
+    (PCODE)0,                               // 60
+    (PCODE)0,                               // 61
+    (PCODE)0,                               // 62
+    (PCODE)0,                               // 63
+    (PCODE)0,                               // 64
+    (PCODE)0,                               // 65
+    (PCODE)Load_Q6,                         // 66
+    (PCODE)Load_Q6_Q7,                      // 67
+    (PCODE)0,                               // 70
+    (PCODE)0,                               // 71
+    (PCODE)0,                               // 72
+    (PCODE)0,                               // 73
+    (PCODE)0,                               // 74
+    (PCODE)0,                               // 75
+    (PCODE)0,                               // 76
+    (PCODE)Load_Q7                          // 77
+};
+
 #endif // TARGET_ARM64
 
 #define LOG_COMPUTE_CALL_STUB 0
@@ -1053,6 +1264,17 @@ PCODE CallStubGenerator::GetFPRegRangeRoutine(int x1, int x2)
     int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
     return m_interpreterToNative ? FPRegsRoutines[index] : FPRegsStoreRoutines[index];
 }
+
+#ifdef TARGET_ARM64
+PCODE CallStubGenerator::GetFPReg128RangeRoutine(int x1, int x2)
+{
+#if LOG_COMPUTE_CALL_STUB
+    printf("GetFPReg128RangeRoutine %d %d\n", x1, x2);
+#endif
+    int index = x1 * NUM_FLOAT_ARGUMENT_REGISTERS + x2;
+    return m_interpreterToNative ? FPRegs128LoadRoutines[index] : FPRegs128StoreRoutines[index];
+}
+#endif // TARGET_ARM64
 
 extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
@@ -1443,21 +1665,30 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
 
 void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, PCODE *pRoutines)
 {
-    if ((m_r1 != NoRange) && (type != RoutineType::GPReg))
+    if ((m_currentRoutineType == RoutineType::GPReg) && (type != RoutineType::GPReg))
     {
         pRoutines[m_routineIndex++] = GetGPRegRangeRoutine(m_r1, m_r2);
         m_r1 = NoRange;
+        m_currentRoutineType = RoutineType::None;
     }
-    else if (m_x1 != NoRange && type != RoutineType::FPReg)
+    else if ((m_currentRoutineType == RoutineType::FPReg) && (type != RoutineType::FPReg))
     {
         pRoutines[m_routineIndex++] = GetFPRegRangeRoutine(m_x1, m_x2);
         m_x1 = NoRange;
+        m_currentRoutineType = RoutineType::None;
     }
-    else if (m_s1 != NoRange && type != RoutineType::Stack)
+    else if ((m_currentRoutineType == RoutineType::FPReg128) && (type != RoutineType::FPReg128))
+    {
+        pRoutines[m_routineIndex++] = GetFPReg128RangeRoutine(m_x1, m_x2);
+        m_x1 = NoRange;
+        m_currentRoutineType = RoutineType::None;
+    }
+    else if ((m_currentRoutineType == RoutineType::Stack) && (type != RoutineType::Stack))
     {
         pRoutines[m_routineIndex++] = GetStackRoutine();
         pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
         m_s1 = NoRange;
+        m_currentRoutineType = RoutineType::None;
     }
 
     return;
@@ -1490,6 +1721,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
         // we need to "inject" it here.
         // CLR ABI specifies that unlike the native Windows x64 calling convention, it is passed in the first argument register.
         m_r1 = 0;
+        m_currentRoutineType = RoutineType::GPReg;
         interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 
@@ -1637,7 +1869,18 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
     if (argLocDesc.m_cGenReg != 0)
         argType = RoutineType::GPReg;
     else if (argLocDesc.m_cFloatReg != 0)
-        argType = RoutineType::FPReg;
+    {
+#ifdef TARGET_ARM64        
+        if (argLocDesc.m_hfaFieldSize == 16)
+        {
+            argType = RoutineType::FPReg128;
+        }
+        else
+#endif // TARGET_ARM64        
+        {
+            argType = RoutineType::FPReg;
+        }
+    }
     else if (argLocDesc.m_byteStackSize != 0)
         argType = RoutineType::Stack;
     
@@ -1680,7 +1923,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             m_x1 = argLocDesc.m_idxFloatReg;
             m_x2 = m_x1 + argLocDesc.m_cFloatReg - 1;
         }
-        else if (argLocDesc.m_idxFloatReg == m_x2 + 1)
+        else if ((argLocDesc.m_idxFloatReg == m_x2 + 1) && (m_currentRoutineType == argType))
         {
             // Extend an existing range
             m_x2 += argLocDesc.m_cFloatReg;
@@ -1688,7 +1931,15 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         else
         {
             // Discontinuous range - store a routine for the current and start a new one
-            pRoutines[m_routineIndex++] = GetFPRegRangeRoutine(m_x1, m_x2);
+            if (m_currentRoutineType == RoutineType::FPReg)
+            {
+                pRoutines[m_routineIndex++] = GetFPRegRangeRoutine(m_x1, m_x2);
+            }
+            else
+            {
+                pRoutines[m_routineIndex++] = GetFPReg128RangeRoutine(m_x1, m_x2);
+            }
+
             m_x1 = argLocDesc.m_idxFloatReg;
             m_x2 = m_x1 + argLocDesc.m_cFloatReg - 1;
         }
@@ -1743,6 +1994,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             }
             pRoutines[m_routineIndex++] = m_s1;
             m_s1 = NoRange;
+            argType = RoutineType::None;
         }
 #endif // TARGET_APPLE && TARGET_ARM64
     }
@@ -1769,6 +2021,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             pRoutines[m_routineIndex++] = GetGPRegRefRoutine(argLocDesc.m_idxGenReg);
             pRoutines[m_routineIndex++] = alignedArgSize;
             m_r1 = NoRange;
+            argType = RoutineType::None;
         }
         else
         {
@@ -1776,9 +2029,12 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
             pRoutines[m_routineIndex++] = GetStackRefRoutine();
             pRoutines[m_routineIndex++] = ((int64_t)alignedArgSize << 32) | argLocDesc.m_byteStackIndex;
             m_s1 = NoRange;
+            argType = RoutineType::None;
         }
     }
 #endif // UNIX_AMD64_ABI
+
+    m_currentRoutineType = argType;
 }
 
 CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArgIt)
