@@ -241,6 +241,22 @@ namespace HostActivation.Tests
                 .And.HaveStdOut(expectedOutput);
         }
 
+        [Fact]
+        public void ListRuntimes_DisabledVersions()
+        {
+            // Verify exact match of command output. The output of --list-runtimes is intended to be machine-readable
+            // and must not change in a way that breaks existing parsing.
+            string disabledVersion = SharedState.InstalledVersions[0];
+            string[] expectedVersions = SharedState.InstalledVersions[1..];
+            string expectedOutput = GetListRuntimesOutput(SharedState.DotNet.BinPath, expectedVersions);
+            SharedState.DotNet.Exec("--list-runtimes")
+                .CaptureStdOut()
+                .EnvironmentVariable(Constants.DisableRuntimeVersions.EnvironmentVariable, disabledVersion)
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOut(expectedOutput);
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

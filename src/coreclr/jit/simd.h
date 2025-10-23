@@ -76,7 +76,7 @@ struct simd8_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd8_t) == 8);
+static_assert(sizeof(simd8_t) == 8);
 
 #include <pshpack4.h>
 struct simd12_t
@@ -136,7 +136,7 @@ struct simd12_t
     }
 };
 #include <poppack.h>
-static_assert_no_msg(sizeof(simd12_t) == 12);
+static_assert(sizeof(simd12_t) == 12);
 
 struct simd16_t
 {
@@ -190,7 +190,7 @@ struct simd16_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd16_t) == 16);
+static_assert(sizeof(simd16_t) == 16);
 
 #if defined(TARGET_XARCH)
 struct simd32_t
@@ -246,7 +246,7 @@ struct simd32_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd32_t) == 32);
+static_assert(sizeof(simd32_t) == 32);
 
 struct simd64_t
 {
@@ -302,7 +302,7 @@ struct simd64_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd64_t) == 64);
+static_assert(sizeof(simd64_t) == 64);
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -375,7 +375,7 @@ struct simdmask_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simdmask_t) == 8);
+static_assert(sizeof(simdmask_t) == 8);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
 #if defined(TARGET_XARCH)

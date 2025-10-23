@@ -695,18 +695,17 @@ namespace System.Net.Sockets
                     {
                         if (spe?.FilePath != null)
                         {
-                            // Create a FileStream to open the file.
+                            // Open the file and get its handle.
                             _sendPacketsFileHandles[index] =
                                 File.OpenHandle(spe.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
-                            // Get the file handle from the stream.
                             index++;
                         }
                     }
                 }
                 catch
                 {
-                    // Got an exception opening a file - close any open streams, then throw.
+                    // Got an exception opening a file - close any open files, then throw.
                     for (int i = index - 1; i >= 0; i--)
                         _sendPacketsFileHandles[i].Dispose();
                     _sendPacketsFileHandles = null;

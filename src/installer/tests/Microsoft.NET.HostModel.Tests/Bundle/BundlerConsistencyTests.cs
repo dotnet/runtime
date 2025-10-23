@@ -99,6 +99,24 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         [Fact]
+        public void ResolveLinkTargets()
+        {
+            string appPath = Path.Combine(
+                Path.GetDirectoryName(sharedTestState.App.AppDll),
+                Path.GetFileNameWithoutExtension(sharedTestState.App.AppDll)
+                    + ".link" + Path.GetExtension(sharedTestState.App.AppDll));
+            File.CreateSymbolicLink(appPath, sharedTestState.App.AppDll);
+            // File specification with duplicate entries with matching source paths
+            var fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(appPath, "rel/app.repeat.dll")
+            };
+            Bundler bundler = CreateBundlerInstance();
+            bundler.GenerateBundle(fileSpecs);
+        }
+
+        [Fact]
         public void DuplicateBundleRelativePath_Fails()
         {
             // File specification with duplicate entries with different source paths

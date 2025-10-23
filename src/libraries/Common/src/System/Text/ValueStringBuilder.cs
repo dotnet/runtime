@@ -54,6 +54,16 @@ namespace System.Text
         }
 
         /// <summary>
+        /// Ensures that the builder is terminated with a NUL character.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void NullTerminate()
+        {
+            EnsureCapacity(_pos + 1);
+            _chars[_pos] = '\0';
+        }
+
+        /// <summary>
         /// Get a pinnable reference to the builder.
         /// Does not ensure there is a null char after <see cref="Length"/>
         /// This overload is pattern matched in the C# 7.3+ compiler so you can omit
@@ -61,20 +71,6 @@ namespace System.Text
         /// </summary>
         public ref char GetPinnableReference()
         {
-            return ref MemoryMarshal.GetReference(_chars);
-        }
-
-        /// <summary>
-        /// Get a pinnable reference to the builder.
-        /// </summary>
-        /// <param name="terminate">Ensures that the builder has a null char after <see cref="Length"/></param>
-        public ref char GetPinnableReference(bool terminate)
-        {
-            if (terminate)
-            {
-                EnsureCapacity(Length + 1);
-                _chars[Length] = '\0';
-            }
             return ref MemoryMarshal.GetReference(_chars);
         }
 
@@ -97,39 +93,9 @@ namespace System.Text
         /// <summary>Returns the underlying storage of the builder.</summary>
         public Span<char> RawChars => _chars;
 
-        /// <summary>
-        /// Returns a span around the contents of the builder.
-        /// </summary>
-        /// <param name="terminate">Ensures that the builder has a null char after <see cref="Length"/></param>
-        public ReadOnlySpan<char> AsSpan(bool terminate)
-        {
-            if (terminate)
-            {
-                EnsureCapacity(Length + 1);
-                _chars[Length] = '\0';
-            }
-            return _chars.Slice(0, _pos);
-        }
-
         public ReadOnlySpan<char> AsSpan() => _chars.Slice(0, _pos);
         public ReadOnlySpan<char> AsSpan(int start) => _chars.Slice(start, _pos - start);
         public ReadOnlySpan<char> AsSpan(int start, int length) => _chars.Slice(start, length);
-
-        public bool TryCopyTo(Span<char> destination, out int charsWritten)
-        {
-            if (_chars.Slice(0, _pos).TryCopyTo(destination))
-            {
-                charsWritten = _pos;
-                Dispose();
-                return true;
-            }
-            else
-            {
-                charsWritten = 0;
-                Dispose();
-                return false;
-            }
-        }
 
         public void Insert(int index, char value, int count)
         {

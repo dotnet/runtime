@@ -349,7 +349,7 @@ namespace System
             {
                 int count = pEEType->NumInterfaces;
                 if (count == 0)
-                    return EmptyTypes;
+                    return [];
 
                 Type[] result = new Type[count];
                 for (int i = 0; i < result.Length; i++)
@@ -426,7 +426,7 @@ namespace System
                 if (pEEType != null)
                 {
                     if (!pEEType->IsGeneric)
-                        return EmptyTypes;
+                        return [];
 
                     MethodTableList genericArguments = pEEType->GenericArguments;
 
@@ -448,7 +448,7 @@ namespace System
                 return GenericTypeArguments;
             if (IsGenericTypeDefinition)
                 return GenericTypeParameters;
-            return EmptyTypes;
+            return [];
         }
 
         public override bool IsGenericParameter
@@ -565,7 +565,7 @@ namespace System
 
                 uint count = pEEType->NumFunctionPointerParameters;
                 if (count == 0)
-                    return EmptyTypes;
+                    return [];
 
                 MethodTableList parameterTypes = pEEType->FunctionPointerParameters;
 
@@ -690,7 +690,7 @@ namespace System
                 throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
 
             // Requires a modified type to return the modifiers.
-            return EmptyTypes;
+            return [];
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]

@@ -71,11 +71,13 @@
 #define STRESS_LOG_WRITE(facility, level, msg, ...) do {                                      \
             if (StressLog::StressLogOn(facility, level))                                      \
                 StressLog::LogMsgOL(facility, level, msg, __VA_ARGS__);                       \
+            LOG((facility, level, msg, __VA_ARGS__));                                         \
             } while(0)
 
 #define STRESS_LOG0(facility, level, msg) do {                                      \
             if (StressLog::StressLogOn(facility, level))                            \
                 StressLog::LogMsg(level, facility, 0, msg);                         \
+            LOG((facility, level, msg));                                            \
             } while(0)
 
 #define STRESS_LOG1(facility, level, msg, data1) \
@@ -225,7 +227,7 @@ public:
     CRITSEC_COOKIE lock;                    // lock
     uint64_t tickFrequency;         // number of ticks per second
     uint64_t startTimeStamp;        // start time from when tick counter started
-    FILETIME startTime;                     // time the application started
+    uint64_t startTime;                     // time the application started in Windows FILETIME precision (100ns since 01 Jan 1601)
     SIZE_T   moduleOffset;                  // Used to compute format strings.
     struct ModuleDesc
     {
@@ -298,7 +300,7 @@ public:
     template<typename T>
     static void* ConvertArgument(T arg)
     {
-        static_assert_no_msg(sizeof(T) <= sizeof(void*));
+        static_assert(sizeof(T) <= sizeof(void*));
         return (void*)(size_t)arg;
     }
 
@@ -890,7 +892,7 @@ struct StressLogMsg
         , m_format(format)
         , m_args{ StressLog::ConvertArgument(args)... }
     {
-        static_assert_no_msg(sizeof...(args) <= ARRAY_SIZE(m_args));
+        static_assert(sizeof...(args) <= ARRAY_SIZE(m_args));
     }
 };
 

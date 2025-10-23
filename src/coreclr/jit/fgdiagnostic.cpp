@@ -2916,14 +2916,14 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         return;
     }
 
-    fgDebugCheckBlockLinks();
-
-    if (fgBBcount > 10000 && expensiveDebugCheckLevel < 1)
+    if ((fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
     {
         // The basic block checks are too expensive if there are too many blocks,
         // so give up unless we've been told to try hard.
         return;
     }
+
+    fgDebugCheckBlockLinks();
 
     bool reachedFirstFunclet = false;
     if (fgFuncletsCreated)
@@ -3796,13 +3796,10 @@ void Compiler::fgDebugCheckLinkedLocals()
 
 void Compiler::fgDebugCheckLinks(bool morphTrees)
 {
-    // This used to be only on for stress, and there was a comment stating that
-    // it was "quite an expensive operation" but I did not find that to be true.
-    // Set DO_SANITY_DEBUG_CHECKS to false to revert to that behavior.
-    const bool DO_SANITY_DEBUG_CHECKS = true;
-
-    if (!DO_SANITY_DEBUG_CHECKS && !compStressCompile(STRESS_CHK_FLOW_UPDATE, 30))
+    if ((fgBBcount > 10000) && (expensiveDebugCheckLevel < 1))
     {
+        // The basic block checks are too expensive if there are too many blocks,
+        // so give up unless we've been told to try hard.
         return;
     }
 

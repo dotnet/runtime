@@ -973,7 +973,7 @@ void OleVariant::MarshalBoolArrayOleToCom(void *oleArray, BASEARRAYREF *pComArra
 
     while (pOle < pOleEnd)
     {
-        static_assert_no_msg(sizeof(VARIANT_BOOL) == sizeof(UINT16));
+        static_assert(sizeof(VARIANT_BOOL) == sizeof(UINT16));
         (*(pCom++)) = MAYBE_UNALIGNED_READ(pOle, 16) ? 1 : 0;
         pOle++;
     }
@@ -1004,7 +1004,7 @@ void OleVariant::MarshalBoolArrayComToOle(BASEARRAYREF *pComArray, void *oleArra
 
     while (pOle < pOleEnd)
     {
-        static_assert_no_msg(sizeof(VARIANT_BOOL) == sizeof(UINT16));
+        static_assert(sizeof(VARIANT_BOOL) == sizeof(UINT16));
         MAYBE_UNALIGNED_WRITE(pOle, 16, *pCom ? VARIANT_TRUE : VARIANT_FALSE);
         pOle++; pCom++;
     }
@@ -1038,7 +1038,7 @@ void OleVariant::MarshalWinBoolArrayOleToCom(void *oleArray, BASEARRAYREF *pComA
 
     while (pOle < pOleEnd)
     {
-        static_assert_no_msg(sizeof(BOOL) == sizeof(UINT32));
+        static_assert(sizeof(BOOL) == sizeof(UINT32));
         (*(pCom++)) = MAYBE_UNALIGNED_READ(pOle, 32) ? 1 : 0;
         pOle++;
     }
@@ -1069,7 +1069,7 @@ void OleVariant::MarshalWinBoolArrayComToOle(BASEARRAYREF *pComArray, void *oleA
 
     while (pOle < pOleEnd)
     {
-        static_assert_no_msg(sizeof(BOOL) == sizeof(UINT32));
+        static_assert(sizeof(BOOL) == sizeof(UINT32));
         MAYBE_UNALIGNED_WRITE(pOle, 32, *pCom ? 1 : 0);
         pOle++; pCom++;
     }

@@ -294,7 +294,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                             return false;
                     }
 
-                    if (metadataType.Namespace.StartsWith("Internal"))
+                    if (metadataType.Namespace.StartsWith("Internal"u8))
                         return false;
 
                     if (metadataType.Module.Assembly is EcmaAssembly asm && asm.Assembly.GetName().Name == "System.Private.CoreLib")
@@ -780,7 +780,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 yield break;
             }
 
-            foreach (var err in VerifyFieldKept(srcField, linkedType?.GetFields()?.FirstOrDefault(l => srcField.Name == l.Name), skipKeptItemsValidation: true))
+            foreach (var err in VerifyFieldKept(srcField, linkedType?.GetFields()?.FirstOrDefault(l => srcField.Name == l.GetName()), skipKeptItemsValidation: true))
                 yield return err;
             verifiedGeneratedFields.Add(srcField.FullName);
             linkedMembers.Remove(new AssemblyQualifiedToken(srcField));

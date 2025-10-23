@@ -57,7 +57,7 @@
   #define REG_MASK_FIRST           REG_PREDICATE_FIRST
   #define REG_MASK_LAST            REG_PREDICATE_LAST
 
-  static_assert_no_msg(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
+  static_assert(REG_PREDICATE_HIGH_LAST == REG_PREDICATE_LAST);
 
   #define REGNUM_BITS              7       // number of bits in a REG_*
   #define REGSIZE_BYTES            8       // number of bytes in one general purpose register
@@ -130,8 +130,7 @@
   #define RBM_ENC_CALLEE_SAVED     0
 
   // Temporary registers used for the GS cookie check.
-  #define REG_GSCOOKIE_TMP_0       REG_IP0
-  #define REG_GSCOOKIE_TMP_1       REG_IP1
+  #define RBM_GSCOOKIE_TMP         (RBM_IP0 | RBM_IP1)
 
   // register to hold shift amount; no special register is required on ARM64.
   #define REG_SHIFT                REG_NA

@@ -79,7 +79,7 @@ namespace ILCompiler
 
         private bool RequiresValueTypeGetFieldHelperMethod(MetadataType valueType)
         {
-            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null);
 
             // If the classlib doesn't have Object.Equals, we don't need this.
             if (_objectEqualsMethod == null)
@@ -103,7 +103,7 @@ namespace ILCompiler
                 return false;
 
             // ValueTuples override Equals/GetHashCode and don't have a `base.GetHashCode` call. So avoid the infrastructure.
-            if (valueType.Module == SystemModule && valueType.Name.StartsWith("ValueTuple`", StringComparison.Ordinal) && valueType.Namespace == "System")
+            if (valueType.Module == SystemModule && valueType.Name.StartsWith("ValueTuple`"u8) && valueType.Namespace.SequenceEqual("System"u8))
                 return false;
 
             return !_typeStateHashtable.GetOrCreateValue(valueType).CanCompareValueTypeBits;
@@ -112,14 +112,14 @@ namespace ILCompiler
         public bool IsAsyncStateMachineType(MetadataType type)
         {
             Debug.Assert(type.IsValueType);
-            _iAsyncStateMachineType ??= SystemModule.GetType("System.Runtime.CompilerServices", "IAsyncStateMachine", throwIfNotFound: false);
+            _iAsyncStateMachineType ??= SystemModule.GetType("System.Runtime.CompilerServices"u8, "IAsyncStateMachine"u8, throwIfNotFound: false);
             return type.HasCustomAttribute("System.Runtime.CompilerServices", "CompilerGeneratedAttribute")
                 && Array.IndexOf(type.RuntimeInterfaces, _iAsyncStateMachineType) >= 0;
         }
 
         private bool RequiresAttributeGetFieldHelperMethod(TypeDesc attributeTypeDef)
         {
-            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals"u8, null);
 
             // If the classlib doesn't have Object.Equals, we don't need this.
             if (_objectEqualsMethod == null)

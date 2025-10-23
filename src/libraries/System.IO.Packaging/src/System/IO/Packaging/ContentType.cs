@@ -497,7 +497,7 @@ namespace System.IO.Packaging
         /// <param name="ch">input character</param>
         /// <returns></returns>
         private static bool IsLinearWhiteSpaceChar(char ch) =>
-            ch <= ' ' && Array.IndexOf(s_linearWhiteSpaceChars, ch) != -1;
+            ch <= ' ' && Array.IndexOf(s_linearWhiteSpaceChars, ch) >= 0;
 
         #endregion Private Methods
 

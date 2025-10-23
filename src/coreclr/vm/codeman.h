@@ -2675,7 +2675,7 @@ public:
 
     virtual PCODE GetCodeAddressForRelOffset(const METHODTOKEN& MethodToken, DWORD relOffset);
 
-    static ReadyToRunInfo * JitTokenToReadyToRunInfo(const METHODTOKEN& MethodToken);
+    static PTR_ReadyToRunInfo JitTokenToReadyToRunInfo(const METHODTOKEN& MethodToken);
     static UINT32 JitTokenToGCInfoVersion(const METHODTOKEN& MethodToken);
 
     static PTR_RUNTIME_FUNCTION JitTokenToRuntimeFunction(const METHODTOKEN& MethodToken);
@@ -2794,6 +2794,11 @@ public:
         OUT ULONG32* pNumInlineTree,
         OUT ICorDebugInfo::RichOffsetMapping** ppRichMappings,
         OUT ULONG32* pNumRichMappings);
+
+#ifndef DACCESS_COMPILE
+    virtual TypeHandle  ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
+                                        CrawlFrame *pCf);
+#endif // #ifndef DACCESS_COMPILE
 
 #if defined(FEATURE_EH_FUNCLETS)
     virtual PTR_RUNTIME_FUNCTION LazyGetFunctionEntry(EECodeInfo * pCodeInfo)
@@ -3058,5 +3063,7 @@ inline TADDR InterpreterJitManager::JitTokenToStartAddress(const METHODTOKEN& Me
 #include "codeman.inl"
 
 void ThrowOutOfMemoryWithinRange();
+
+bool SafeToReportGenericParamContext(CrawlFrame* pCF);
 
 #endif // !__CODEMAN_HPP__

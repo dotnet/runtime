@@ -142,13 +142,6 @@ typedef LPSTR   LPUTF8;
 #include "stdmacros.h"
 
 //********** Macros. **********************************************************
-#ifndef FORCEINLINE
- #if _MSC_VER < 1200
-   #define FORCEINLINE inline
- #else
-   #define FORCEINLINE __forceinline
- #endif
-#endif
 
 #ifndef DEBUG_NOINLINE
 #if defined(_DEBUG)
@@ -3768,7 +3761,7 @@ namespace UtilCode
             T volatile * target,
             T            value)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONG));
+            static_assert(sizeof(T) == sizeof(LONG));
             LONG res = ::InterlockedExchange(
                 reinterpret_cast<LONG volatile *>(target),
                 *reinterpret_cast<LONG *>(/*::operator*/&(value)));
@@ -3780,7 +3773,7 @@ namespace UtilCode
             T            exchange,
             T            comparand)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONG));
+            static_assert(sizeof(T) == sizeof(LONG));
             LONG res = ::InterlockedCompareExchange(
                 reinterpret_cast<LONG volatile *>(destination),
                 *reinterpret_cast<LONG*>(/*::operator*/&(exchange)),
@@ -3796,7 +3789,7 @@ namespace UtilCode
             T volatile * target,
             T            value)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONGLONG));
+            static_assert(sizeof(T) == sizeof(LONGLONG));
             LONGLONG res = ::InterlockedExchange64(
                 reinterpret_cast<LONGLONG volatile *>(target),
                 *reinterpret_cast<LONGLONG *>(/*::operator*/&(value)));
@@ -3808,7 +3801,7 @@ namespace UtilCode
             T            exchange,
             T            comparand)
         {
-            static_assert_no_msg(sizeof(T) == sizeof(LONGLONG));
+            static_assert(sizeof(T) == sizeof(LONGLONG));
             LONGLONG res = ::InterlockedCompareExchange64(
                 reinterpret_cast<LONGLONG volatile *>(destination),
                 *reinterpret_cast<LONGLONG*>(/*::operator*/&(exchange)),

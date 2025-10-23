@@ -11,7 +11,9 @@
 
 #include "common.h"
 #include "dllimportcallback.h"
-#include "../interpreter/interpretershared.h"
+#ifdef FEATURE_INTERPRETER
+#include <interpretershared.h>
+#endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -213,6 +215,12 @@ BOOL Precode::IsPointingToPrestub(PCODE target)
     return FALSE;
 }
 
+BOOL Precode::IsPointingToPrestub()
+{
+    WRAPPER_NO_CONTRACT;
+    return IsPointingToPrestub(GetTarget());
+}
+
 #ifndef DACCESS_COMPILE
 
 void FlushCacheForDynamicMappedStub(void* code, SIZE_T size)
@@ -378,12 +386,11 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!IsPointingToPrestub(target));
 
-    PCODE expected = GetTarget();
     BOOL ret = FALSE;
-
-    if (fOnlyRedirectFromPrestub && !IsPointingToPrestub(expected))
+    if (fOnlyRedirectFromPrestub && !IsPointingToPrestub())
         return FALSE;
 
+    PCODE expected = GetTarget();
     PrecodeType precodeType = GetType();
     switch (precodeType)
     {

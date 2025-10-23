@@ -109,8 +109,8 @@ if [[ "$host_arch" == "wasm" ]]; then
         cmake_command="emcmake $cmake_command"
     elif [[ "$target_os" == "wasi" ]]; then
         if [[ -z "$WASI_SDK_PATH" ]]; then
-            if [[ -d "$reporoot"/src/mono/wasi/wasi-sdk ]]; then
-                export WASI_SDK_PATH="$reporoot"/src/mono/wasi/wasi-sdk
+            if [[ -d "$reporoot"/artifacts/wasi-sdk ]]; then
+                export WASI_SDK_PATH="$reporoot"/artifacts/wasi-sdk
             else
                 echo "Error: You need to set the WASI_SDK_PATH environment variable pointing to the WASI SDK root."
                 exit 1

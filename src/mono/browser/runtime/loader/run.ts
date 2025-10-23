@@ -483,9 +483,8 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
     await configureRuntimeStartup(emscriptenModule);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 
-    const result = emscriptenFactory((originalModule: EmscriptenModuleInternal) => {
+    const result = emscriptenFactory((/*originalModule: EmscriptenModuleInternal*/) => {
         Object.assign(emscriptenModule, {
-            ready: originalModule.ready,
             __dotnet_runtime: {
                 initializeReplacements, configureEmscriptenStartup, configureWorkerStartup, passEmscriptenInternals
             }

@@ -1876,7 +1876,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
     // We care about the following cases:
     // Call from any site -> collectible target
-    if (objectType->GetLoaderAllocator()->IsCollectible())
+    if (objectType->Collectible())
     {
         // The callee's manager
         pCalleeMgr = objectType->GetLoaderAllocator()->GetVirtualCallStubManager();
@@ -2318,7 +2318,7 @@ VirtualCallStubManager::Resolver(
             }
         }
 #endif // defined(LOGGING) || defined(_DEBUG)
-
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         BOOL fSlotCallsPrestub = DoesSlotCallPrestub(implSlot.GetTarget());
         if (!fSlotCallsPrestub)
         {
@@ -2361,6 +2361,9 @@ VirtualCallStubManager::Resolver(
                 }
             }
         }
+#else
+        fShouldPatch = TRUE;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     }
 #ifdef FEATURE_COMINTEROP
     else if (pMT->IsComObjectType()
@@ -3962,7 +3965,7 @@ static const UINT16 tokenHashBits[32] =
     // Note if you change the number of bits in CALL_STUB_CACHE_NUM_BITS
     // then we have to recompute the hash function
     // Though making the number of bits smaller should still be OK
-    static_assert_no_msg(CALL_STUB_CACHE_NUM_BITS <= 12);
+    static_assert(CALL_STUB_CACHE_NUM_BITS <= 12);
 
     while (token)
     {

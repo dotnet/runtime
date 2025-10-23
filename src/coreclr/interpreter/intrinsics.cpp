@@ -36,6 +36,27 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 return NI_System_Math_ReciprocalEstimate;
             else if (!strcmp(methodName, "ReciprocalSqrtEstimate"))
                 return NI_System_Math_ReciprocalSqrtEstimate;
+            else if (!strcmp(methodName, "Sqrt"))
+                return NI_System_Math_Sqrt;
+        }
+        else if (!strcmp(className, "Type"))
+        {
+            if (!strcmp(methodName, "GetTypeFromHandle"))
+            {
+                return NI_System_Type_GetTypeFromHandle;
+            }
+            else if (!strcmp(methodName, "op_Equality"))
+            {
+                return NI_System_Type_op_Equality;
+            }
+            else if (!strcmp(methodName, "op_Inequality"))
+            {
+                return NI_System_Type_op_Inequality;
+            }
+            else if (!strcmp(methodName, "get_IsValueType"))
+            {
+                return NI_System_Type_get_IsValueType;
+            }
         }
     }
     else if (!strcmp(namespaceName, "System.StubHelpers"))
@@ -44,6 +65,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         {
             if (!strcmp(methodName, "NextCallReturnAddress"))
                 return NI_System_StubHelpers_NextCallReturnAddress;
+            else if (!strcmp(methodName, "GetStubContext"))
+                return NI_System_StubHelpers_GetStubContext;
         }
     }
     else if (!strcmp(namespaceName, "System.Numerics"))
@@ -106,6 +129,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 return NI_System_Threading_Interlocked_CompareExchange;
             else if (!strcmp(methodName, "Exchange"))
                 return NI_System_Threading_Interlocked_Exchange;
+            else if (!strcmp(methodName, "ExchangeAdd"))
+                return NI_System_Threading_Interlocked_ExchangeAdd;
             else if (!strcmp(methodName, "MemoryBarrier"))
                 return NI_System_Threading_Interlocked_MemoryBarrier;
         }

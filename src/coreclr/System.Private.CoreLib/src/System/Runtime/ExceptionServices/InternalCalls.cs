@@ -20,16 +20,6 @@ namespace System.Runtime.ExceptionServices
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ResumeAtInterceptionLocation")]
-        internal static unsafe partial void ResumeAtInterceptionLocation(void* pvRegDisplay);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallCatchFunclet")]
-        internal static unsafe partial IntPtr RhpCallCatchFunclet(
-            ObjectHandleOnStack exceptionObj, byte* pHandlerIP, void* pvRegDisplay, EH.ExInfo* exInfo);
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallFinallyFunclet")]
-        internal static unsafe partial void RhpCallFinallyFunclet(byte* pHandlerIP, void* pvRegDisplay, EH.ExInfo* exInfo);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CallFilterFunclet")]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static unsafe partial bool RhpCallFilterFunclet(

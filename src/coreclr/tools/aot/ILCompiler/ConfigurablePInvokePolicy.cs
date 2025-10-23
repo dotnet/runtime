@@ -147,7 +147,7 @@ namespace ILCompiler
             {
                 if (_directPInvokes.TryGetValue(moduleName, out HashSet<string> entrypoints))
                 {
-                    string entryPointMetadataName = pInvokeMetadata.Name ?? method.Name;
+                    string entryPointMetadataName = pInvokeMetadata.Name ?? method.GetName();
 
                     if (entrypoints == null)
                     {

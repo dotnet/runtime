@@ -10,10 +10,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "static_assert.h"
-
 #include <sospriv.h>
 #include "cdacplatformmetadata.hpp"
+#include "interoplibinterface_comwrappers.h"
 #include "methodtable.h"
 #include "threads.h"
 #include "vars.hpp"

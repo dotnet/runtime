@@ -24,8 +24,7 @@
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
 #ifdef FEATURE_INTERPRETER
-    SETALIAS Thread_GetInterpThreadContext, ?GetInterpThreadContext@Thread@@QEAAPEAUInterpThreadContext@@XZ
-    IMPORT $Thread_GetInterpThreadContext
+    IMPORT GetInterpThreadContextWithPossiblyMissingThread
     IMPORT ExecuteInterpretedMethod
 #endif
 
@@ -1065,12 +1064,14 @@ JIT_PollGCRarePath
         PROLOG_WITH_TRANSITION_BLOCK
 
         INLINE_GETTHREAD x20, x19
+        cbz x20, NoManagedThread
 
         ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
         cbnz x11, HaveInterpThreadContext
 
+NoManagedThread
         mov x0, x20
-        bl $Thread_GetInterpThreadContext
+        bl GetInterpThreadContextWithPossiblyMissingThread
         mov x11, x0
         RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
         RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
@@ -1625,6 +1626,12 @@ RefCopyDone$argReg
         ldr x11, [x10], #8
         EPILOG_BRANCH_REG x11
     LEAF_END Store_D1_D2_D3_D4_D5_D6_D7
+
+    LEAF_ENTRY InjectInterpStackAlign
+        add x9, x9, #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END InjectInterpStackAlign
 
     ; Routines for passing value type arguments by reference in general purpose registers X0..X7
     ; from the interpreter to native code
