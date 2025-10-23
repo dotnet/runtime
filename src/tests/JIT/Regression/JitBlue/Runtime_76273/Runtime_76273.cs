@@ -24,6 +24,7 @@ public class Program
     public static ulong s_3;
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();

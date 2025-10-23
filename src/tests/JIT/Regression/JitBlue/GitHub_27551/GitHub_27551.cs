@@ -93,6 +93,7 @@ public class GitHub_27551
     }
 
     [Fact]
+    [SkipOnMono("needs triage")]
     public static int TestEntryPoint()
     {
         Vector256<Byte> value = Vector256.Create((byte)GetByte());

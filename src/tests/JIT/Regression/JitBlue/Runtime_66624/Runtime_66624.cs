@@ -61,6 +61,7 @@ public class Runtime_66624
     public static C1[][] s_3 = new C1[][] { new C1[] { new C1(new C0(0, 0, 0)) } };
     [OuterLoop]
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();

@@ -80,6 +80,7 @@ internal struct StructNonAlignedField
 public class Test_Runtime_34170
 {
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/46622", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoInterpreter)), ActiveIssue("https://github.com/dotnet/runtime/issues/46622", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsAppleMobile))]
     public static unsafe void TestEntryPoint()
     {
         

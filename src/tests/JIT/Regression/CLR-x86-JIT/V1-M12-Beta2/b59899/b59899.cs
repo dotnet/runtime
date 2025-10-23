@@ -10,6 +10,7 @@ public class SamplesArray
 {
     [OuterLoop]
     [Fact]
+    [ActiveIssue("(No issue specified)", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void TestEntryPoint()
     {
         int[] myLens = new int[1] { 5 };

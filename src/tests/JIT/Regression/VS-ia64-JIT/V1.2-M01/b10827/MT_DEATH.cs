@@ -20829,6 +20829,7 @@ public class testout1
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", TestPlatforms.Brwowser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     public static int TestEntryPoint()
     {
         int Sum = 0;

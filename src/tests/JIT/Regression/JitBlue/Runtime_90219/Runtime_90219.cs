@@ -36,6 +36,7 @@ public class Runtime_90219
     public static byte Result;
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static int TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();

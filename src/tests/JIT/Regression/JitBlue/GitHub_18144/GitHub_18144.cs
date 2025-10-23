@@ -56,6 +56,7 @@ public class GitHub_18144
     }
 
     [Fact]
+    [SkipOnMono("needs triage")]
     public static int TestEntryPoint()
     {
         int returnVal = 100;

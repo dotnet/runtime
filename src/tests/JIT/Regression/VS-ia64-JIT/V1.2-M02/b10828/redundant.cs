@@ -24,6 +24,7 @@ public class otherClass
 public class MyApp
 {
     [Fact]
+    [SkipOnMono("needs triage")]
     public static int TestEntryPoint()
     {
         int i = 2, j = 3, w;

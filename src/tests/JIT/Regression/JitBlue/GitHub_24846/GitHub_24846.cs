@@ -21,6 +21,7 @@ unsafe public class GitHub_24846
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/54392", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoInterpreter)), ActiveIssue("https://github.com/dotnet/runtime/issues/54392", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsAppleMobile))]
     public static int TestEntryPoint()
     {
         int returnVal = 100;

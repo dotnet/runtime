@@ -11,6 +11,7 @@ using Xunit;
 public unsafe class Runtime_72265
 {
     [Fact]
+    [SkipOnMono("https://github.com/dotnet/runtime/issues/72016")]
     public static int TestEntryPoint()
     {
         var unmanaged = ((delegate* unmanaged<StructWithIndex>)&GetStructUnmanaged)();
