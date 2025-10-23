@@ -70,6 +70,7 @@ else()
 
     add_compile_options(
       -fwasm-exceptions 
+      -mbulk-memory
       -msimd128)
     add_link_options(
       -fwasm-exceptions 

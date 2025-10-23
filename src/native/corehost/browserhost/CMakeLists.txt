@@ -26,6 +26,7 @@ set_target_properties(BrowserHost-Static PROPERTIES OUTPUT_NAME BrowserHost CLEA
 
 target_compile_options(BrowserHost-Static PRIVATE
         -fwasm-exceptions
+        -mbulk-memory
         -msimd128
     )
 target_link_libraries(BrowserHost-Static PRIVATE
@@ -87,6 +88,7 @@ set_target_properties(browserhost PROPERTIES
 
 target_compile_options(browserhost PRIVATE
         -fwasm-exceptions
+        -mbulk-memory
         -msimd128
     )
 

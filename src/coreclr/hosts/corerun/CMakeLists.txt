@@ -58,6 +58,7 @@ else()
         if (CLR_CMAKE_TARGET_BROWSER)
             target_compile_options(corerun PRIVATE
                 -fwasm-exceptions
+                -mbulk-memory
                 -msimd128
                 )
             target_link_libraries(corerun PRIVATE

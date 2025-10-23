@@ -11,6 +11,7 @@ if (NOT CLR_CMAKE_TARGET_BROWSER)
 else()
     add_compile_options(
         -fwasm-exceptions
+        -mbulk-memory
         -msimd128
         )
     add_link_options(
