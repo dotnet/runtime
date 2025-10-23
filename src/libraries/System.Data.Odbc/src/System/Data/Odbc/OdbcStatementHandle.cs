@@ -37,7 +37,30 @@ namespace System.Data.Odbc
 
         public static implicit operator int(SQLLEN value)
         {
-            return (int)value.ToInt64();
+            long longValue = value.ToInt64();
+
+            // Handle cases where ODBC drivers incorrectly represent 32-bit -1 as 0x00000000FFFFFFFF
+            // instead of properly sign-extending to 0xFFFFFFFFFFFFFFFF on 64-bit platforms.
+            // This is a known issue with some drivers (e.g., Filemaker Pro).
+            // We check for common ODBC sentinel values that may have this issue.
+            if (longValue == 0x00000000FFFFFFFF)
+            {
+                // This is likely -1 (SQL_NULL_DATA) improperly represented
+                return -1;
+            }
+            if (longValue == 0x00000000FFFFFFFD)
+            {
+                // This is likely -3 (SQL_NTS) improperly represented
+                return -3;
+            }
+            if (longValue == 0x00000000FFFFFFFC)
+            {
+                // This is likely -4 (SQL_NO_TOTAL) improperly represented
+                return -4;
+            }
+
+            // For all other values, validate they fit in Int32 range
+            return checked((int)longValue);
         }
 
         public static explicit operator long(SQLLEN value)

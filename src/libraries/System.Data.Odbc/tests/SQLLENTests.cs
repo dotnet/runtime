@@ -13,8 +13,8 @@ namespace System.Data.Odbc.Tests
         {
             // This test verifies that SQLLEN can properly handle the value 0x00000000FFFFFFFF
             // which represents -1 in 32-bit but 4294967295 in 64-bit representation.
-            // This scenario occurs with some ODBC drivers (e.g., Filemaker Pro) that return
-            // -1 as a 32-bit value in a 64-bit SQLLEN field.
+            // This scenario occurs with some ODBC drivers (e.g., Filemaker Pro) that incorrectly
+            // return -1 as a 32-bit value in a 64-bit SQLLEN field without proper sign extension.
 
             // Skip this test on 32-bit platforms as the issue only occurs on 64-bit
             if (IntPtr.Size != 8)
@@ -135,6 +135,111 @@ namespace System.Data.Odbc.Tests
 
             int result = (int)implicitToInt.Invoke(null, new[] { sqllenInstance });
             Assert.Equal(-42, result);
+        }
+
+        [Fact]
+        public void SQLLEN_ImplicitConversion_HandlesSQLNTS_64Bit()
+        {
+            // Test handling of SQL_NTS (-3) when improperly represented as 0x00000000FFFFFFFD
+            if (IntPtr.Size != 8)
+            {
+                return;
+            }
+
+            Type sqllenType = typeof(OdbcConnection).Assembly.GetType("System.Data.Odbc.SQLLEN");
+            Assert.NotNull(sqllenType);
+
+            ConstructorInfo intPtrConstructor = sqllenType.GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                null,
+                new[] { typeof(IntPtr) },
+                null);
+            Assert.NotNull(intPtrConstructor);
+
+            IntPtr problematicValue = new IntPtr(0x00000000FFFFFFFD);
+            object sqllenInstance = intPtrConstructor.Invoke(new object[] { problematicValue });
+
+            MethodInfo implicitToInt = sqllenType.GetMethod(
+                "op_Implicit",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[] { sqllenType },
+                null);
+            Assert.NotNull(implicitToInt);
+
+            int result = (int)implicitToInt.Invoke(null, new[] { sqllenInstance });
+            Assert.Equal(-3, result);
+        }
+
+        [Fact]
+        public void SQLLEN_ImplicitConversion_HandlesSQLNO_TOTAL_64Bit()
+        {
+            // Test handling of SQL_NO_TOTAL (-4) when improperly represented as 0x00000000FFFFFFFC
+            if (IntPtr.Size != 8)
+            {
+                return;
+            }
+
+            Type sqllenType = typeof(OdbcConnection).Assembly.GetType("System.Data.Odbc.SQLLEN");
+            Assert.NotNull(sqllenType);
+
+            ConstructorInfo intPtrConstructor = sqllenType.GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                null,
+                new[] { typeof(IntPtr) },
+                null);
+            Assert.NotNull(intPtrConstructor);
+
+            IntPtr problematicValue = new IntPtr(0x00000000FFFFFFFC);
+            object sqllenInstance = intPtrConstructor.Invoke(new object[] { problematicValue });
+
+            MethodInfo implicitToInt = sqllenType.GetMethod(
+                "op_Implicit",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[] { sqllenType },
+                null);
+            Assert.NotNull(implicitToInt);
+
+            int result = (int)implicitToInt.Invoke(null, new[] { sqllenInstance });
+            Assert.Equal(-4, result);
+        }
+
+        [Fact]
+        public void SQLLEN_ImplicitConversion_ThrowsForOutOfRangeValues_64Bit()
+        {
+            // Test that truly out-of-range values still throw OverflowException
+            if (IntPtr.Size != 8)
+            {
+                return;
+            }
+
+            Type sqllenType = typeof(OdbcConnection).Assembly.GetType("System.Data.Odbc.SQLLEN");
+            Assert.NotNull(sqllenType);
+
+            ConstructorInfo intPtrConstructor = sqllenType.GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                null,
+                new[] { typeof(IntPtr) },
+                null);
+            Assert.NotNull(intPtrConstructor);
+
+            // Test a value that's clearly too large: 0x0000000100000000 (4294967296)
+            IntPtr tooLargeValue = new IntPtr(0x0000000100000000);
+            object sqllenInstance = intPtrConstructor.Invoke(new object[] { tooLargeValue });
+
+            MethodInfo implicitToInt = sqllenType.GetMethod(
+                "op_Implicit",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[] { sqllenType },
+                null);
+            Assert.NotNull(implicitToInt);
+
+            // This should throw OverflowException
+            var ex = Assert.Throws<TargetInvocationException>(() =>
+                implicitToInt.Invoke(null, new[] { sqllenInstance }));
+            Assert.IsType<OverflowException>(ex.InnerException);
         }
     }
 }
