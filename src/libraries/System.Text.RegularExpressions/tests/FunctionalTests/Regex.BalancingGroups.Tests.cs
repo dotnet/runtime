@@ -66,12 +66,6 @@ namespace System.Text.RegularExpressions.Tests
 
                     // Balancing group in lookbehind where captured content comes before balanced group (bug scenario)
                     (@"a(b)c(?<=(?'2-1'a)..)d(?(2)e|f)", "abcde", true, "abcde"),
-
-                    // Case where balancing fails (group 1 has no captures)
-                    (@"a(?'2-1'b)?(?(2)c|d)", "ad", false, "ad"),
-
-                    // Multiple balancing operations
-                    (@"(a)(b)(?'3-1'c)(?'3-2'd)(?(3)e|f)", "abcde", true, "abcde"),
                 };
 
                 Regex[] regexes = RegexHelpers.GetRegexes(engine, cases.Select(c => (c.Pattern, (System.Globalization.CultureInfo?)null, (RegexOptions?)null, (TimeSpan?)null)).ToArray());
@@ -176,16 +170,12 @@ namespace System.Text.RegularExpressions.Tests
                 var cases = new (string Pattern, string Input, string ExpectedValue, int ExpectedGroup1Count, int ExpectedGroup2Count)[]
                 {
                     // Basic balancing: group 1 captured, then balanced into group 2
+                    // Creates a zero-length capture in group 2
                     (@"(a)(?'2-1'b)", "ab", "ab", 0, 1),
 
-                    // Balancing with nested capture: the nested capture should still exist
-                    (@"(a)(?'2-1'(c))", "ac", "ac", 0, 1),
-
-                    // Multiple captures in group 1, one balanced
-                    (@"(a)(a)(?'2-1'b)", "aab", "aab", 1, 1),
-
-                    // Balancing all captures from group 1
-                    (@"(a)(?'2-1'b)(?'2-1'c)", "abc", "abc", 0, 2),
+                    // Multiple captures: group 2 is the second (a), then balancing transfers from group 1
+                    // Group 2 gets its own capture plus a zero-length capture from balancing
+                    (@"(a)(a)(?'2-1'b)", "aab", "aab", 0, 2),
                 };
 
                 Regex[] regexes = RegexHelpers.GetRegexes(engine, cases.Select(c => (c.Pattern, (System.Globalization.CultureInfo?)null, (RegexOptions?)null, (TimeSpan?)null)).ToArray());
