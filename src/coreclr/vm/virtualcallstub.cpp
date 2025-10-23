@@ -1645,7 +1645,6 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     return target;
 }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
-bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
 /* Resolve to a method and return its address or NULL if there is none.
    Our return value is the target address that control should continue to.  Our caller will

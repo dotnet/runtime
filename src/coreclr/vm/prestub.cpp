@@ -2433,14 +2433,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     pCode = DoBackpatch(pMT, pDispatchingMT, false /* doFullBackpatch */);
 
 Return:
-// Interpreter-FIXME: Call stubs are not yet supported on WASM
-#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
-    InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
-    if (pInterpreterCode != NULL)
-    {
-        CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
-    }
-#endif // FEATURE_INTERPRETER && !TARGET_WASM
 
     RETURN pCode;
 }
