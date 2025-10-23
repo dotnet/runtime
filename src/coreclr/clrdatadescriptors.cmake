@@ -28,7 +28,6 @@ function(generate_data_descriptors)
     # if CDAC_BUILD_TOOL_BINARY_PATH is unspecified (for example for a build without a .NET SDK or msbuild),
     # link a stub contract descriptor into the runtime
     add_library_clr(${LIBRARY} OBJECT "${DATA_DESCRIPTOR_SHARED_SOURCE_DIR}/contractdescriptorstub.c")
-    target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
     message(STATUS "Using a stub cDAC contract descriptor")
   else()
     # generate a contract descriptor using cdac-build-tool from a data descriptor and contract json file
@@ -74,9 +73,6 @@ function(generate_data_descriptors)
     )
     add_dependencies(${LIBRARY} ${INTERMEDIARY_LIBRARY})
 
-    target_include_directories(${LIBRARY} PUBLIC ${DATA_DESCRIPTOR_SHARED_INCLUDE_DIR})
-    target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
-
     # inherit definitions, include directories, and dependencies from the INTERFACE target
     target_link_libraries(${LIBRARY} PRIVATE ${DATA_DESCRIPTORS_INTERFACE_TARGET})
 
@@ -88,4 +84,8 @@ function(generate_data_descriptors)
       target_compile_options(${LIBRARY} PRIVATE /Zc:externConstexpr)
     endif(MSVC)
   endif()
+
+  # Set include directories for the data descriptor targets, now that they are created.
+  target_include_directories(${LIBRARY} PUBLIC ${DATA_DESCRIPTOR_SHARED_INCLUDE_DIR})
+  target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
 endfunction(generate_data_descriptors)
