@@ -36,7 +36,7 @@ namespace System.Text.Json.Nodes
         public JsonObject(IEnumerable<KeyValuePair<string, JsonNode?>> properties, JsonNodeOptions? options = null) : this(options)
         {
             int capacity = properties is ICollection<KeyValuePair<string, JsonNode?>> propertiesCollection ? propertiesCollection.Count : 0;
-            OrderedDictionary<string, JsonNode?> dictionary = CreateDictionary(Options, capacity);
+            OrderedDictionary<string, JsonNode?> dictionary = CreateDictionary(options, capacity);
 
             foreach (KeyValuePair<string, JsonNode?> node in properties)
             {
