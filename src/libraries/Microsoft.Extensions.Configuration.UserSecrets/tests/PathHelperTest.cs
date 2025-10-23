@@ -36,5 +36,34 @@ namespace Microsoft.Extensions.Configuration.UserSecrets.Test
                 Assert.Throws<InvalidOperationException>(() => PathHelper.GetSecretsPathFromSecretsId(id));
             }
         }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
+        public void Secret_Path_On_Non_Windows_Uses_LocalApplicationData()
+        {
+            var userSecretsId = "test-secrets-id";
+            var secretPath = PathHelper.GetSecretsPathFromSecretsId(userSecretsId);
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+            Assert.Contains(localAppData, secretPath);
+            Assert.Contains("Microsoft", secretPath);
+            Assert.Contains("User-secrets", secretPath);
+            Assert.EndsWith(Path.Combine(userSecretsId, "secrets.json"), secretPath);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        public void Secret_Path_On_Windows_Uses_AppData()
+        {
+            var userSecretsId = "test-secrets-id";
+            var secretPath = PathHelper.GetSecretsPathFromSecretsId(userSecretsId);
+            var appData = Environment.GetEnvironmentVariable("APPDATA");
+
+            if (!string.IsNullOrEmpty(appData))
+            {
+                Assert.Contains(appData, secretPath);
+                Assert.Contains("Microsoft", secretPath);
+                Assert.Contains("UserSecrets", secretPath);
+                Assert.EndsWith(Path.Combine(userSecretsId, "secrets.json"), secretPath);
+            }
+        }
     }
 }
