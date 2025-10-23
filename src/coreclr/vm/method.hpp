@@ -723,9 +723,10 @@ public:
     inline PTR_DynamicMethodDesc AsDynamicMethodDesc();
     inline bool IsDynamicMethod();
     inline bool IsILStub();
-    inline bool IsDiagnosticsHidden();
     inline bool IsLCGMethod();
 
+    inline bool IsDiagnosticsHidden();
+    
     inline DWORD IsPInvoke()
     {
         LIMITED_METHOD_DAC_CONTRACT;
