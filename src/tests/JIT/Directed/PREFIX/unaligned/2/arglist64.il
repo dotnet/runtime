@@ -95,7 +95,7 @@ REALLYDONE:
 .method public static int32 main() {
 .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
     type([TestLibrary]TestLibrary.PlatformDetection)
-    string[1] ('IsVarArgSupported')
+    string[2] ('IsVarArgSupported' 'Is64BitProcess')
 }
 .entrypoint
 .locals	()
