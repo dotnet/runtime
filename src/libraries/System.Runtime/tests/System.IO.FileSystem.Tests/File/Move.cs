@@ -409,28 +409,24 @@ namespace System.IO.Tests
             Assert.True(File.Exists(destPath));
         }
 
-        [Theory]
-        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNamePairs), MemberType = typeof(TestData))]
+        [Theory, MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsMoveWithTrailingSpacePeriod_ViaExtendedSyntax(string sourceFileName, string destFileName)
+        public void WindowsMoveWithTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
         {
-            // Files with trailing spaces/periods require \\?\ syntax on Windows
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            string srcPath = Path.Combine(testDir.FullName, sourceFileName);
-            string destPath = Path.Combine(testDir.FullName, destFileName);
+            // Windows path normalization strips trailing spaces/periods unless using \\?\ extended syntax.
+            DirectoryInfo sourceDir = Directory.CreateDirectory(GetTestFilePath());
+            DirectoryInfo destDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(sourceDir.FullName, fileName);
+            string destPath = Path.Combine(destDir.FullName, fileName);
             
-            // Create source with extended syntax if needed
-            string sourceToCreate = sourceFileName.TrimEnd(' ', '.') != sourceFileName ? @"\\?\" + srcPath : srcPath;
-            File.Create(sourceToCreate).Dispose();
+            // Create source with extended syntax (required for trailing spaces/periods)
+            File.Create(@"\\?\" + sourcePath).Dispose();
             
-            // Move with extended syntax if needed
-            string sourceToMove = sourceFileName.TrimEnd(' ', '.') != sourceFileName ? @"\\?\" + srcPath : srcPath;
-            string destToMove = destFileName.TrimEnd(' ', '.') != destFileName ? @"\\?\" + destPath : destPath;
+            // Move to destination with extended syntax (required for trailing spaces/periods)
+            Move(@"\\?\" + sourcePath, @"\\?\" + destPath);
             
-            Move(sourceToMove, destToMove);
-            
-            Assert.False(File.Exists(sourceToMove));
-            Assert.True(File.Exists(destToMove));
+            Assert.False(File.Exists(@"\\?\" + sourcePath));
+            Assert.True(File.Exists(@"\\?\" + destPath));
         }
     }
 }
