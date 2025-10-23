@@ -10881,6 +10881,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
             if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive()
                 && g_pConfig->JitEnableOptionalRelocs())
             {
+#ifdef FEATURE_CODE_VERSIONING
                 CodeVersionManager* manager = helperMD->GetCodeVersionManager();
 
                 NativeCodeVersion activeCodeVersion;
@@ -10904,6 +10905,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
                         goto exit;
                     }
                 }
+#endif // FEATURE_CODE_VERSIONING
             }
 
             if (IndirectionAllowedForJitHelper(ftnNum))
