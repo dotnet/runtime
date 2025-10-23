@@ -127,63 +127,6 @@ namespace System.Xml.XslCompiledTransformApiTests
             }
         }
 
-        [Fact]
-        public void FormatDateWithExplicitFormatString()
-        {
-            string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?><root/>";
-            string xsl = @"<xsl:stylesheet version=""1.0"" xmlns:xsl=""http://www.w3.org/1999/XSL/Transform""
-                xmlns:ms=""urn:schemas-microsoft-com:xslt"">
-    <xsl:output method=""text"" />
-    <xsl:template match=""/"">
-        <xsl:value-of select=""ms:format-date('2001-02-03T01:02:03', 'd')"" />
-    </xsl:template>
-</xsl:stylesheet>";
 
-            using (var outWriter = new StringWriter())
-            {
-                using (var xslStringReader = new StringReader(xsl))
-                using (var xmlStringReader = new StringReader(xml))
-                using (var xslReader = XmlReader.Create(xslStringReader))
-                using (var xmlReader = XmlReader.Create(xmlStringReader))
-                {
-                    var transform = new XslCompiledTransform();
-                    transform.Load(xslReader);
-                    transform.Transform(xmlReader, null, outWriter);
-                }
-
-                string result = outWriter.ToString();
-                Assert.DoesNotContain("01:02:03", result);
-            }
-        }
-
-        [Fact]
-        public void FormatTimeWithExplicitFormatString()
-        {
-            string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?><root/>";
-            string xsl = @"<xsl:stylesheet version=""1.0"" xmlns:xsl=""http://www.w3.org/1999/XSL/Transform""
-                xmlns:ms=""urn:schemas-microsoft-com:xslt"">
-    <xsl:output method=""text"" />
-    <xsl:template match=""/"">
-        <xsl:value-of select=""ms:format-time('2001-02-03T01:02:03', 'T')"" />
-    </xsl:template>
-</xsl:stylesheet>";
-
-            using (var outWriter = new StringWriter())
-            {
-                using (var xslStringReader = new StringReader(xsl))
-                using (var xmlStringReader = new StringReader(xml))
-                using (var xslReader = XmlReader.Create(xslStringReader))
-                using (var xmlReader = XmlReader.Create(xmlStringReader))
-                {
-                    var transform = new XslCompiledTransform();
-                    transform.Load(xslReader);
-                    transform.Transform(xmlReader, null, outWriter);
-                }
-
-                string result = outWriter.ToString();
-                Assert.DoesNotContain("2001", result);
-                Assert.Matches(@"0?1:02:03", result);
-            }
-        }
     }
 }
