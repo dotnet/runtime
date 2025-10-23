@@ -8,7 +8,6 @@
     <Compile Include="CLR-x86-JIT\V1-M09.5-PDC\b28787\b28787.cs" />
     <Compile Include="CLR-x86-JIT\V1-M12-Beta2\b50145\b50145.cs" />
     <Compile Include="CLR-x86-JIT\V1.2-M02\b30251\b578931.cs" />
-    <Compile Include="CLR-x86-JIT\V2.0-Beta2\b423721\c1.cs" />
     <Compile Include="CLR-x86-JIT\v2.1\b610562\b610562.cs" />
     <Compile Include="CLR-x86-JIT\v2.1\b611219\b611219.cs" />
     <Compile Include="CLR-x86-JIT\v2.1\b72218\b72218.cs" />
