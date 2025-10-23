@@ -2265,9 +2265,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genPendingCallLabel, treeNode->GetRegNum());
             break;
 
-        case GT_ASYNC_RESUME_TRAMPOLINE:
-            emit->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, genCreateAsyncResumptionTrampolineLabel(treeNode->AsVal()),
-                              treeNode->GetRegNum());
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
             break;
 
         case GT_STORE_BLK:
@@ -2290,8 +2289,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif
 
         case GT_IL_OFFSET:
-        case GT_RECORD_ASYNC_JOIN:
-            // Do nothing; these nodes are simply markers for debug info.
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
 #if defined(TARGET_AMD64)
@@ -4418,6 +4420,13 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     // to constant data, not a real static field.
     GetEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), treeNode->GetRegNum(),
                               compiler->eeFindJitDataOffs(jmpTabBase), 0);
+    genProduceReg(treeNode);
+}
+
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    GetEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), treeNode->GetRegNum(),
+                              genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1), 0);
     genProduceReg(treeNode);
 }
 
@@ -11694,71 +11703,6 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     {
         instGen(INS_lock);
         GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0, INS_OPTS_EVEX_NoApxPromotion);
-    }
-}
-
-//-----------------------------------------------------------------------------------
-// genCodeForAsyncresumeTrampolineJump:
-//   Generate code to jump to an async resumption stub.
-//
-// Arguments:
-//   methHnd - Handle of resumption stub
-//   lookup  - Lookup for the address of the resumption stub
-//
-// Remarks:
-//   The codegen for these jumps must handle a non-standard environment. No
-//   prolog has been run when these are invoked, so they cannot use locals,
-//   they cannot use non-volatile registers, and they cannot trash the argument
-//   registers that resumption stubs use (see BuildResumptionStubSignature in
-//   the VM).
-//
-void CodeGen::genCodeForAsyncResumeTrampolineJump(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup)
-{
-    switch (lookup.accessType)
-    {
-        case IAT_VALUE:
-        case IAT_PVALUE:
-        {
-            EmitCallParams call;
-            call.ptrVars   = VarSetOps::MakeEmpty(compiler);
-            call.gcrefRegs = RBM_NONE;
-            call.byrefRegs = RBM_NONE;
-            call.isJump    = true;
-            call.methHnd   = methHnd;
-
-            bool containedImmInd = true;
-
-#ifdef DEBUG
-            containedImmInd &= compiler->opts.compEnablePCRelAddr;
-#endif
-            containedImmInd &= (lookup.accessType == IAT_PVALUE) &&
-                               (compiler->eeGetRelocTypeHint(lookup.addr) == IMAGE_REL_BASED_REL32);
-
-            if ((lookup.accessType == IAT_PVALUE) && !containedImmInd)
-            {
-                instGen_Set_Reg_To_Imm(EA_SET_FLG(EA_PTRSIZE, EA_CNS_RELOC_FLG), REG_EAX, (ssize_t)lookup.addr,
-                                       INS_FLAGS_DONT_CARE DEBUGARG((size_t)methHnd) DEBUGARG(GTF_ICON_METHOD_HDL));
-                call.callType = EC_INDIR_ARD;
-                call.ireg     = REG_EAX;
-            }
-            else
-            {
-                call.callType = lookup.accessType == IAT_VALUE ? EC_FUNC_TOKEN : EC_FUNC_TOKEN_INDIR;
-                call.addr     = (void*)lookup.addr;
-            }
-
-            GetEmitter()->emitIns_Call(call);
-            break;
-        }
-        case IAT_PPVALUE:
-            noway_assert(!"Cannot handle PPVALUE access type");
-            break;
-        case IAT_RELPVALUE:
-            noway_assert(!"Cannot handle RELPVALUE access type");
-            break;
-        default:
-            noway_assert(!"Cannot handle access type");
-            break;
     }
 }
 

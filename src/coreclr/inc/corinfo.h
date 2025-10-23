@@ -1734,8 +1734,8 @@ struct CORINFO_ASYNC_INFO
     CORINFO_CLASS_HANDLE continuationClsHnd;
     // 'Next' field
     CORINFO_FIELD_HANDLE continuationNextFldHnd;
-    // 'Resume' field
-    CORINFO_FIELD_HANDLE continuationResumeFldHnd;
+    // 'ResumeInfo' field
+    CORINFO_FIELD_HANDLE continuationResumeInfoFldHnd;
     // 'State' field
     CORINFO_FIELD_HANDLE continuationStateFldHnd;
     // 'Flags' field
@@ -3350,7 +3350,7 @@ public:
             CORINFO_TAILCALL_HELPERS* pResult
             ) = 0;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() = 0;
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) = 0;
 
     virtual CORINFO_CLASS_HANDLE getContinuationType(
         size_t dataSize,

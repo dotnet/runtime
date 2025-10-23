@@ -10261,7 +10261,7 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
 
     pAsyncInfoOut->continuationClsHnd = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__CONTINUATION));
     pAsyncInfoOut->continuationNextFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__NEXT));
-    pAsyncInfoOut->continuationResumeFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__RESUME));
+    pAsyncInfoOut->continuationResumeInfoFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__RESUME_INFO));
     pAsyncInfoOut->continuationStateFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__STATE));
     pAsyncInfoOut->continuationFlagsFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__FLAGS));
     pAsyncInfoOut->captureExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_EXECUTION_CONTEXT));
@@ -11825,10 +11825,17 @@ void CEEJitInfo::recordRelocation(void * location,
 
     switch (fRelocType)
     {
+#ifdef TARGET_64BIT
     case IMAGE_REL_BASED_DIR64:
         // Write 64-bits into location
         *((UINT64 *) locationRW) = (UINT64) target;
         break;
+#else
+    case IMAGE_REL_BASED_HIGHLOW:
+        // Write 32-bits into location
+        *((UINT32 *) locationRW) = (UINT32) target;
+        break;
+#endif
 
 #ifdef TARGET_AMD64
     case IMAGE_REL_BASED_REL32:
@@ -14640,7 +14647,7 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     return AllocateSignature(alloc, sigBuilder, pamTracker);
 }
 
-CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 {
     CONTRACTL{
         THROWS;
@@ -14825,6 +14832,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     sl.LogILStub(CORJIT_FLAGS());
 #endif
 
+    *entryPoint = (void*)result->GetMultiCallableAddrOfCode();
     return CORINFO_METHOD_HANDLE(result);
 }
 
@@ -15024,7 +15032,7 @@ PatchpointInfo* CEEInfo::getOSRInfo(unsigned* ilOffset)
     UNREACHABLE();      // only called on derived class.
 }
 
-CORINFO_METHOD_HANDLE CEEInfo::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE CEEInfo::getAsyncResumptionStub(void** entryPoint)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

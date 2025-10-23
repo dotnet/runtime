@@ -1514,10 +1514,10 @@ bool MyICJI::getTailCallHelpers(
     return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
 }
 
-CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub(void** entryPoint)
 {
     jitInstance->mc->cr->AddCall("getAsyncResumptionStub");
-    return jitInstance->mc->repGetAsyncResumptionStub();;
+    return jitInstance->mc->repGetAsyncResumptionStub(entryPoint);
 }
 
 CORINFO_CLASS_HANDLE MyICJI::getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize)

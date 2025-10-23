@@ -471,13 +471,6 @@ static void DoAsyncSuspensionPoints(
     for (uint32_t i = 0; i < cSuspensionPoints; i++)
     {
         ICorDebugInfo::AsyncSuspensionPoint* sp = &suspensionPoints[i];
-
-        trans.DoEncodedDeltaU32(sp->NativeResumeOffset, lastNativeResumeOffset);
-        lastNativeResumeOffset = sp->NativeResumeOffset;
-
-        trans.DoEncodedDeltaU32NonMonotonic(sp->NativeJoinOffset, lastNativeJoinOffset);
-        lastNativeJoinOffset = sp->NativeJoinOffset;
-
         trans.DoEncodedU32(sp->NumContinuationVars);
     }
 }

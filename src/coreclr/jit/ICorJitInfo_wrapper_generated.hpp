@@ -1558,10 +1558,11 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getContinuationType(
     return temp;
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncResumptionStub(
+          void** entryPoint)
 {
     API_ENTER(getAsyncResumptionStub);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getAsyncResumptionStub();
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAsyncResumptionStub(entryPoint);
     API_LEAVE(getAsyncResumptionStub);
     return temp;
 }

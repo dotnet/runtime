@@ -905,7 +905,7 @@ public:
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() override final;
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
 
 protected :
 

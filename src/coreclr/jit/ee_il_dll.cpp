@@ -1003,7 +1003,7 @@ void Compiler::eeSetLIinfo(unsigned which, UNATIVE_OFFSET nativeOffset, IPmappin
     {
         case IPmappingDscKind::Normal:
             eeBoundaries[which].ilOffset = loc.GetOffset();
-            eeBoundaries[which].source   = loc.EncodeSourceTypes();
+            eeBoundaries[which].source   = loc.GetSourceType();
             break;
         case IPmappingDscKind::Prolog:
             eeBoundaries[which].ilOffset = ICorDebugInfo::PROLOG;

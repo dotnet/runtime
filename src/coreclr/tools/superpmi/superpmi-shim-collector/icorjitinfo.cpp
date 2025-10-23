@@ -1784,11 +1784,11 @@ bool interceptor_ICJI::getTailCallHelpers(
     return result;
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub(void** entryPoint)
 {
     mc->cr->AddCall("getAsyncResumptionStub");
-    CORINFO_METHOD_HANDLE stub = original_ICorJitInfo->getAsyncResumptionStub();
-    mc->recGetAsyncResumptionStub(stub);
+    CORINFO_METHOD_HANDLE stub = original_ICorJitInfo->getAsyncResumptionStub(entryPoint);
+    mc->recGetAsyncResumptionStub(stub, *entryPoint);
     return stub;
 }
 

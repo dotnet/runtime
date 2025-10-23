@@ -45,7 +45,8 @@ public:
         STACK_EMPTY                = 0x02, // The stack is empty here
         CALL_SITE                  = 0x04, // This is a call site.
         NATIVE_END_OFFSET_UNKNOWN  = 0x08, // Indicates a epilog endpoint
-        CALL_INSTRUCTION           = 0x10  // The actual instruction of a call.
+        CALL_INSTRUCTION           = 0x10, // The actual instruction of a call.
+        ASYNC                      = 0x20, // Indicates suspension/resumption for an async call
 
     };
 
@@ -442,10 +443,6 @@ public:
 
     struct AsyncSuspensionPoint
     {
-        // Offset of this suspension point's resumption point.
-        uint32_t NativeResumeOffset;
-        // Logical return address of the async call (join point of synchronous and resuming paths)
-        uint32_t NativeJoinOffset;
         // Count of AsyncContinuationVarInfo in array of locals starting where
         // the previous suspension point's locals end.
         uint32_t NumContinuationVars;

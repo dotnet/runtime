@@ -3304,6 +3304,9 @@ private:
 
     int emitSyncThisObjOffs; // what is the offset of "this" for synchronized methods?
 
+    CORINFO_METHOD_HANDLE emitAsyncResumeStub           = NO_METHOD_HANDLE;
+    void*                 emitAsyncResumeStubEntryPoint = nullptr;
+
 public:
     void emitSetFrameRangeGCRs(int offsLo, int offsHi);
     void emitSetFrameRangeLcls(int offsLo, int offsHi);
@@ -3465,6 +3468,15 @@ public:
     /*      The following logic keeps track of initialized data sections    */
     /************************************************************************/
 
+    // Note: Keep synchronized with AsyncHelpers.ResumeInfo
+    struct dataAsyncResumeInfo
+    {
+        // delegate*<Continuation, ref byte, Continuation>
+        void* Resume;
+        // Pointer in main code where resumption eventually ends up
+        void* FinalResumeIP;
+    };
+
     /* One of these is allocated for every blob of initialized data */
 
     struct dataSection
@@ -3479,7 +3491,8 @@ public:
         {
             data,
             blockAbsoluteAddr,
-            blockRelative32
+            blockRelative32,
+            asyncResumeInfo,
         };
 
         dataSection*   dsNext;
@@ -3516,6 +3529,7 @@ public:
 
     void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
     void emitDispDataSec(dataSecDsc* section, BYTE* dst);
+    void emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataOffset, dataSection** dataSection);
 
     /************************************************************************/
     /*              Handles to the current class and method.                */

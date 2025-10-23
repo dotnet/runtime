@@ -988,28 +988,6 @@ BasicBlock* CodeGen::genCreateTempLabel()
     return block;
 }
 
-BasicBlock* CodeGen::genCreateAsyncResumptionTrampolineLabel(GenTreeVal* node)
-{
-    assert(node->OperIs(GT_ASYNC_RESUME_TRAMPOLINE));
-
-    if (genAsyncResumptionTrampolineLabels == nullptr)
-    {
-        genAsyncResumptionTrampolineLabels =
-            new (compiler, CMK_Codegen) jitstd::vector<BasicBlock*>(compiler->compSuspensionPoints->size(), nullptr,
-                                                                    compiler->getAllocator(CMK_Codegen));
-    }
-
-    assert(genAsyncResumptionTrampolineLabels->size() > node->gtVal1);
-
-    BasicBlock*& label = (*genAsyncResumptionTrampolineLabels)[node->gtVal1];
-    if (label == nullptr)
-    {
-        label = genCreateTempLabel();
-    }
-
-    return label;
-}
-
 void CodeGen::genLogLabel(BasicBlock* bb)
 {
 #ifdef DEBUG
@@ -4463,15 +4441,8 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
 
     JITDUMP("Reserving epilog IG for block " FMT_BB "\n", block->bbNum);
 
-    bool isLast = block->IsLast();
-    if ((genAsyncResumptionTrampolineLabels != nullptr) && (genAsyncResumptionTrampolineLabels->size() != 0) &&
-        (block == compiler->fgLastBBInMainFunction()))
-    {
-        isLast = false;
-    }
-
     GetEmitter()->emitCreatePlaceholderIG(IGPT_EPILOG, block, VarSetOps::MakeEmpty(compiler), gcInfo.gcRegGCrefSetCur,
-                                          gcInfo.gcRegByrefSetCur, isLast);
+                                          gcInfo.gcRegByrefSetCur, block->IsLast());
 }
 
 /*****************************************************************************
@@ -5673,6 +5644,30 @@ unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
     return jmpTabBase;
 }
 
+UNATIVE_OFFSET CodeGen::genEmitAsyncResumeInfoTable(emitter::dataSection** dataSection)
+{
+    assert(compiler->compSuspensionPoints != nullptr);
+
+    if (genAsyncResumeInfoTable == nullptr)
+    {
+        GetEmitter()->emitAsyncResumeTable((unsigned)compiler->compSuspensionPoints->size(),
+                                           &genAsyncResumeInfoTableOffset, &genAsyncResumeInfoTable);
+    }
+
+    *dataSection = genAsyncResumeInfoTable;
+    return genAsyncResumeInfoTableOffset;
+}
+
+CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
+{
+    assert(compiler->compSuspensionPoints != nullptr);
+    assert(stateNum < compiler->compSuspensionPoints->size());
+
+    emitter::dataSection* dataSection;
+    UNATIVE_OFFSET        baseOffs = genEmitAsyncResumeInfoTable(&dataSection);
+    return compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(emitter::dataAsyncResumeInfo));
+}
+
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
 //
@@ -6169,14 +6164,19 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, const IPmappingDsc* ipMappin
         case IPmappingDscKind::Normal:
             const ILLocation& loc = ipMapping->ipmdLoc;
             Compiler::eeDispILOffs(loc.GetOffset());
-            if (loc.IsStackEmpty())
+            if ((loc.GetSourceType() & ICorDebugInfo::STACK_EMPTY) != 0)
             {
                 printf(" STACK_EMPTY");
             }
 
-            if (loc.IsCall())
+            if ((loc.GetSourceType() & ICorDebugInfo::CALL_INSTRUCTION) != 0)
             {
                 printf(" CALL_INSTRUCTION");
+            }
+
+            if ((loc.GetSourceType() & ICorDebugInfo::ASYNC) != 0)
+            {
+                printf(" ASYNC");
             }
 
             break;
@@ -6411,8 +6411,8 @@ void CodeGen::genIPmappingGen()
 
         // For managed return values we store all calls. Keep both in this case
         // too.
-        if (((prev->ipmdKind == IPmappingDscKind::Normal) && (prev->ipmdLoc.IsCall())) ||
-            ((it->ipmdKind == IPmappingDscKind::Normal) && (it->ipmdLoc.IsCall())))
+        if (((prev->ipmdKind == IPmappingDscKind::Normal) && prev->ipmdLoc.IsCallInstruction()) ||
+            ((it->ipmdKind == IPmappingDscKind::Normal) && it->ipmdLoc.IsCallInstruction()))
         {
             ++it;
             continue;
@@ -6512,7 +6512,7 @@ void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* 
         fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
         fprintf(file, "\"MethodID\":%lld,", (int64_t)context->GetCallee());
         fprintf(file, "\"ILOffset\":%u,", context->GetLocation().GetOffset());
-        fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().EncodeSourceTypes());
+        fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().GetSourceType());
         fprintf(file, "\"ExactILOffset\":%u,", context->GetActualCallOffset());
         auto append = [&]() {
             char        buffer[256];
@@ -6677,7 +6677,7 @@ void CodeGen::genReportRichDebugInfo()
         mapping->NativeOffset = richMapping.nativeLoc.CodeOffset(GetEmitter());
         mapping->Inlinee      = richMapping.debugInfo.GetInlineContext()->GetOrdinal();
         mapping->ILOffset     = richMapping.debugInfo.GetLocation().GetOffset();
-        mapping->Source       = richMapping.debugInfo.GetLocation().EncodeSourceTypes();
+        mapping->Source       = richMapping.debugInfo.GetLocation().GetSourceType();
 
         mappingIndex++;
     }
@@ -6742,17 +6742,7 @@ void CodeGen::genReportAsyncDebugInfo()
         compiler->info.compCompHnd->allocateArray(suspPoints->size() * sizeof(ICorDebugInfo::AsyncSuspensionPoint)));
     for (size_t i = 0; i < suspPoints->size(); i++)
     {
-        AsyncSuspensionPoint& suspPoint = (*suspPoints)[i];
-        if (suspPoint.nativeResumeLoc.Valid())
-        {
-            hostSuspensionPoints[i].NativeResumeOffset = suspPoint.nativeResumeLoc.CodeOffset(GetEmitter());
-        }
-
-        if (suspPoint.nativeJoinLoc.Valid())
-        {
-            hostSuspensionPoints[i].NativeJoinOffset = suspPoint.nativeJoinLoc.CodeOffset(GetEmitter());
-        }
-
+        AsyncSuspensionPoint& suspPoint             = (*suspPoints)[i];
         hostSuspensionPoints[i].NumContinuationVars = suspPoint.numContinuationVars;
     }
 
@@ -6771,9 +6761,7 @@ void CodeGen::genReportAsyncDebugInfo()
         printf("Reported async suspension points:\n");
         for (size_t i = 0; i < suspPoints->size(); i++)
         {
-            printf("  [%zu] ResumeOffset = %x, JoinOffset = %x, NumAsyncVars = %u\n", i,
-                   hostSuspensionPoints[i].NativeResumeOffset, hostSuspensionPoints[i].NativeJoinOffset,
-                   hostSuspensionPoints[i].NumContinuationVars);
+            printf("  [%zu] NumAsyncVars = %u\n", i, hostSuspensionPoints[i].NumContinuationVars);
         }
 
         printf("Reported async vars:\n");

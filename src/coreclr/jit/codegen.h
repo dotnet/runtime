@@ -186,8 +186,8 @@ protected:
     // the current (pending) label ref, a label which has been referenced but not yet seen
     BasicBlock* genPendingCallLabel;
 
-    // labels for trampolines to resumption stub
-    jitstd::vector<BasicBlock*>* genAsyncResumptionTrampolineLabels = nullptr;
+    emitter::dataSection* genAsyncResumeInfoTable       = nullptr;
+    UNATIVE_OFFSET        genAsyncResumeInfoTableOffset = UINT_MAX;
 
     void**    codePtr;
     void*     codePtrRW;
@@ -211,8 +211,6 @@ protected:
     void genInitializeRegisterState();
 
     void genCodeForBBlist();
-    void genCodeForAsyncResumeTrampolines();
-    void genCodeForAsyncResumeTrampolineJump(CORINFO_METHOD_HANDLE resumeMethod, const CORINFO_CONST_LOOKUP& lookup);
 
 public:
     void genSpillVar(GenTree* tree);
@@ -225,7 +223,8 @@ protected:
     void genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
-    BasicBlock* genCreateAsyncResumptionTrampolineLabel(GenTreeVal* node);
+
+    void genRecordAsyncResume(GenTreeVal* asyncResume);
 
 private:
     void genLogLabel(BasicBlock* bb);
@@ -1205,13 +1204,16 @@ protected:
     void genStructPutArgPartialRepMovs(GenTreePutArgStk* putArgStkNode);
 #endif
 
-    void     genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
-    void     genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
-    void     genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
-    void     genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
-    unsigned genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
-    void     genJumpTable(GenTree* tree);
-    void     genTableBasedSwitch(GenTree* tree);
+    void                 genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
+    void                 genCodeForInitBlkLoop(GenTreeBlk* initBlkNode);
+    void                 genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
+    void                 genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
+    unsigned             genEmitJumpTable(GenTree* treeNode, bool relativeAddr);
+    void                 genJumpTable(GenTree* tree);
+    void                 genTableBasedSwitch(GenTree* tree);
+    void                 genAsyncResumeInfo(GenTreeVal* tree);
+    UNATIVE_OFFSET       genEmitAsyncResumeInfoTable(emitter::dataSection** dataSec);
+    CORINFO_FIELD_HANDLE genEmitAsyncResumeInfo(unsigned stateNum);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     instruction genGetInsForOper(GenTree* treeNode);
 #else

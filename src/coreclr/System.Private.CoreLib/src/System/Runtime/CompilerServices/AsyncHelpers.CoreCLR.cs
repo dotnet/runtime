@@ -78,11 +78,19 @@ namespace System.Runtime.CompilerServices
         ContinueOnCapturedTaskScheduler = 64,
     }
 
+    // Keep in sync with dataAsyncResumeInfo in the JIT
+    internal unsafe struct ResumeInfo
+    {
+        public delegate*<Continuation, ref byte, Continuation?> Resume;
+        // IP in final code
+        public void* FinalResumeIP;
+    }
+
 #pragma warning disable CA1852 // "Type can be sealed" -- no it cannot because the runtime constructs subtypes dynamically
     internal unsafe class Continuation
     {
         public Continuation? Next;
-        public delegate*<Continuation, ref byte, Continuation?> Resume;
+        public ResumeInfo* ResumeInfo;
         public ContinuationFlags Flags;
         public int State;
 
@@ -360,7 +368,7 @@ namespace System.Runtime.CompilerServices
                         continuation = nextContinuation;
 
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref TOps.GetResultStorage(task);
-                        Continuation? newContinuation = curContinuation.Resume(curContinuation, ref resultLoc);
+                        Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
 
                         if (newContinuation != null)
                         {

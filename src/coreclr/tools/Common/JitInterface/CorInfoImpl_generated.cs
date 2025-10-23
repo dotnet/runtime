@@ -2327,12 +2327,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static CORINFO_METHOD_STRUCT_* _getAsyncResumptionStub(IntPtr thisHandle, IntPtr* ppException)
+        private static CORINFO_METHOD_STRUCT_* _getAsyncResumptionStub(IntPtr thisHandle, IntPtr* ppException, void** entryPoint)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getAsyncResumptionStub();
+                return _this.getAsyncResumptionStub(ref *entryPoint);
             }
             catch (Exception ex)
             {
@@ -2794,7 +2794,7 @@ namespace Internal.JitInterface
             callbacks[154] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, void>)&_MethodCompileComplete;
             callbacks[155] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, CORINFO_SIG_INFO*, CORINFO_GET_TAILCALL_HELPERS_FLAGS, CORINFO_TAILCALL_HELPERS*, byte>)&_getTailCallHelpers;
             callbacks[156] = (delegate* unmanaged<IntPtr, IntPtr*, nuint, bool*, nuint, CORINFO_CLASS_STRUCT_*>)&_getContinuationType;
-            callbacks[157] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*>)&_getAsyncResumptionStub;
+            callbacks[157] = (delegate* unmanaged<IntPtr, IntPtr*, void**, CORINFO_METHOD_STRUCT_*>)&_getAsyncResumptionStub;
             callbacks[158] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_RESOLVED_TOKEN*, byte, byte>)&_convertPInvokeCalliToCall;
             callbacks[159] = (delegate* unmanaged<IntPtr, IntPtr*, InstructionSet, byte, byte>)&_notifyInstructionSetUsage;
             callbacks[160] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CONST_LOOKUP*, void>)&_updateEntryPointForTailCall;

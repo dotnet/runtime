@@ -462,13 +462,8 @@ void CodeGen::genCodeForBBlist()
 
 #endif // DEBUG
             }
-            else if (node->OperIs(GT_RECORD_ASYNC_JOIN))
+            else if (node->OperIs(GT_RECORD_ASYNC_RESUME))
             {
-                size_t index = node->AsVal()->gtVal1;
-                assert(compiler->compSuspensionPoints != nullptr);
-                assert(index < compiler->compSuspensionPoints->size());
-
-                (*compiler->compSuspensionPoints)[index].nativeJoinLoc.CaptureLocation(GetEmitter());
             }
 
             genCodeForTreeNode(node);
@@ -864,16 +859,7 @@ void CodeGen::genCodeForBBlist()
         }
         compiler->compCurBB = nullptr;
 #endif // DEBUG
-
-        // We may need to generate jump trampolines for async resumption
-        // outside the main method. This ensures we have unique IPs inside our
-        // main method that Coroutine.Resume points at for each state, for
-        // diagnostic purposes.
-        if ((genAsyncResumptionTrampolineLabels != nullptr) && (block == compiler->fgLastBBInMainFunction()))
-        {
-            genCodeForAsyncResumeTrampolines();
-        }
-    } //------------------ END-FOR each block of the method -------------------
+    }  //------------------ END-FOR each block of the method -------------------
 
 #if defined(FEATURE_EH_WINDOWS_X86)
     // If this is a synchronized method on x86, and we generated all the code without
@@ -918,47 +904,17 @@ void CodeGen::genCodeForBBlist()
 #endif
 }
 
-//------------------------------------------------------------------------
-// genCodeForAsyncResumeTrampolines:
-//   Generate jumps to the async resumption stub and bind them to each label
-//   that was referenced from suspension code.
-//
-// Arguments:
-//    None
-//
-void CodeGen::genCodeForAsyncResumeTrampolines()
+void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
 {
-    if (genAsyncResumptionTrampolineLabels->size() == 0)
-    {
-        return;
-    }
+    size_t index = asyncResume->gtVal1;
+    assert(compiler->compSuspensionPoints != nullptr);
+    assert(index < compiler->compSuspensionPoints->size());
 
-    GetEmitter()->emitThisGCrefVars = VarSetOps::MakeEmpty(compiler);
-    GetEmitter()->emitThisGCrefRegs = RBM_NONE;
-    GetEmitter()->emitThisByrefRegs = RBM_NONE;
-    GetEmitter()->emitNxtIG();
-    GetEmitter()->emitDisableGC();
-    // emitDisableGC still allows GC at the current IP, so we need to insert a nop.
-    instGen(INS_nop);
+    emitter::dataSection* asyncResumeInfo;
+    genEmitAsyncResumeInfoTable(&asyncResumeInfo);
 
-    CORINFO_METHOD_HANDLE resumeStub = compiler->info.compCompHnd->getAsyncResumptionStub();
-    CORINFO_CONST_LOOKUP  resumeStubLookup;
-    compiler->info.compCompHnd->getFunctionEntryPoint(resumeStub, &resumeStubLookup);
-
-    for (size_t i = 0; i < genAsyncResumptionTrampolineLabels->size(); i++)
-    {
-        BasicBlock* label = (*genAsyncResumptionTrampolineLabels)[i];
-        if (label == nullptr)
-            continue;
-
-        genLogLabel(label);
-        label->bbEmitCookie = GetEmitter()->emitAddInlineLabel();
-
-        (*compiler->compSuspensionPoints)[i].nativeResumeLoc.CaptureLocation(GetEmitter());
-        genCodeForAsyncResumeTrampolineJump(resumeStub, resumeStubLookup);
-    }
-
-    GetEmitter()->emitEnableGC();
+    BYTE* addr = asyncResumeInfo->dsCont + index * sizeof(emitLocation);
+    new (addr, jitstd::placement_t()) emitLocation(GetEmitter());
 }
 
 /*

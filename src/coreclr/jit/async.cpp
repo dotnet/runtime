@@ -1424,12 +1424,12 @@ BasicBlock* AsyncTransformation::CreateSuspension(
     GenTree* storeNewContinuation = m_comp->gtNewStoreLclVarNode(m_newContinuationVar, allocContinuation);
     LIR::AsRange(suspendBB).InsertAtEnd(storeNewContinuation);
 
-    // Fill in 'Resume'
-    GenTree* newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-    unsigned resumeOffset    = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeFldHnd);
-    GenTree* resumeAddr =
-        new (m_comp, GT_ASYNC_RESUME_TRAMPOLINE) GenTreeVal(GT_ASYNC_RESUME_TRAMPOLINE, TYP_I_IMPL, (ssize_t)stateNum);
-    GenTree* storeResume = StoreAtOffset(newContinuation, resumeOffset, resumeAddr, TYP_I_IMPL);
+    // Fill in 'ResumeInfo'
+    GenTree* newContinuation  = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+    unsigned resumeInfoOffset = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeInfoFldHnd);
+    GenTree* resumeInfoAddr =
+        new (m_comp, GT_ASYNC_RESUME_INFO) GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, (ssize_t)stateNum);
+    GenTree* storeResume = StoreAtOffset(newContinuation, resumeInfoOffset, resumeInfoAddr, TYP_I_IMPL);
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResume));
 
     // Fill in 'state'
@@ -2116,8 +2116,8 @@ void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall*        
     suspensionPoint.numContinuationVars = numLocals;
     m_comp->compSuspensionPoints->push_back(suspensionPoint);
 
-    GenTree* recordOffset = new (m_comp, GT_RECORD_ASYNC_JOIN)
-        GenTreeVal(GT_RECORD_ASYNC_JOIN, TYP_VOID, (int)(m_comp->compSuspensionPoints->size() - 1));
+    GenTree* recordOffset = new (m_comp, GT_RECORD_ASYNC_RESUME)
+        GenTreeVal(GT_RECORD_ASYNC_RESUME, TYP_VOID, (int)(m_comp->compSuspensionPoints->size() - 1));
     LIR::AsRange(joinBB).InsertAtBeginning(recordOffset);
 }
 

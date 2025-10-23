@@ -2734,7 +2734,7 @@ AGAIN:
 
             case GT_NOP:
             case GT_LABEL:
-            case GT_ASYNC_RESUME_TRAMPOLINE:
+            case GT_ASYNC_RESUME_INFO:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
                 return true;
@@ -6694,7 +6694,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
-        case GT_ASYNC_RESUME_TRAMPOLINE:
+        case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -6726,7 +6726,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
-        case GT_RECORD_ASYNC_JOIN:
+        case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -9571,7 +9571,6 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 
             case GT_CATCH_ARG:
             case GT_ASYNC_CONTINUATION:
-            case GT_ASYNC_RESUME_TRAMPOLINE:
             case GT_NO_OP:
             case GT_NOP:
             case GT_LABEL:
@@ -9584,6 +9583,8 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_END_LFIN:
 #endif // FEATURE_EH_WINDOWS_X86
             case GT_JMP:
+            case GT_RECORD_ASYNC_RESUME:
+            case GT_ASYNC_RESUME_INFO:
                 copy = new (this, oper) GenTreeVal(oper, tree->gtType, tree->AsVal()->gtVal1);
                 goto DONE;
 
@@ -10330,7 +10331,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
-        case GT_ASYNC_RESUME_TRAMPOLINE:
+        case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -10362,7 +10363,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
-        case GT_RECORD_ASYNC_JOIN:
+        case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -12449,8 +12450,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             tree->AsILOffset()->gtStmtDI.Dump(true);
             break;
 
-        case GT_RECORD_ASYNC_JOIN:
-        case GT_ASYNC_RESUME_TRAMPOLINE:
+        case GT_RECORD_ASYNC_RESUME:
+        case GT_ASYNC_RESUME_INFO:
             printf(" state=%zu", tree->AsVal()->gtVal1);
             break;
 

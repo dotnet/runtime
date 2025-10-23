@@ -3724,7 +3724,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
 #pragma warning restore CA1822 // Mark members as static
         {
             throw new NotImplementedException("Crossgen2 does not support runtime-async yet");

@@ -1128,9 +1128,10 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(
     return original_ICorJitInfo->getContinuationType(dataSize, objRefs, objRefsSize);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub(
+          void** entryPoint)
 {
-    return original_ICorJitInfo->getAsyncResumptionStub();
+    return original_ICorJitInfo->getAsyncResumptionStub(entryPoint);
 }
 
 bool interceptor_ICJI::convertPInvokeCalliToCall(

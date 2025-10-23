@@ -666,7 +666,8 @@ CORINFO_CLASS_HANDLE getContinuationType(
           bool* objRefs,
           size_t objRefsSize) override;
 
-CORINFO_METHOD_HANDLE getAsyncResumptionStub() override;
+CORINFO_METHOD_HANDLE getAsyncResumptionStub(
+          void** entryPoint) override;
 
 bool convertPInvokeCalliToCall(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
