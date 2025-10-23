@@ -345,38 +345,15 @@ namespace System
                 if (TChar.CastToUInt32(*str) != '\0')
                 {
                     // We only hurt the failure case
-                    // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 or 0x202F as a
+                    // This fix is for French, Kazakh, and Ukrainian cultures. Since a user cannot type 0xA0 or 0x202F as a
                     // space character we use 0x20 space character instead to mean the same.
-
-                    // For UTF-8 (byte), check upfront if the entire expected string is a UTF-8 encoded space-replacing character
-                    // and if the input starts with 0x20 (regular space), allow them to match
-                    if (typeof(TChar) == typeof(byte) && p < pEnd && TChar.CastToUInt32(*p) == 0x20)
-                    {
-                        TChar* strTemp = str;
-                        uint val = TChar.CastToUInt32(*strTemp);
-
-                        // U+00A0 (non-breaking space) is encoded as: 0xC2 0xA0
-                        if (val == 0xC2 && TChar.CastToUInt32(*(strTemp + 1)) == 0xA0 && TChar.CastToUInt32(*(strTemp + 2)) == '\0')
-                        {
-                            // Input has 0x20, expected is UTF-8 sequence 0xC2 0xA0 (U+00A0)
-                            return p + 1;
-                        }
-
-                        // U+202F (narrow no-break space) is encoded as: 0xE2 0x80 0xAF
-                        if (val == 0xE2 && TChar.CastToUInt32(*(strTemp + 1)) == 0x80 &&
-                            TChar.CastToUInt32(*(strTemp + 2)) == 0xAF && TChar.CastToUInt32(*(strTemp + 3)) == '\0')
-                        {
-                            // Input has 0x20, expected is UTF-8 sequence 0xE2 0x80 0xAF (U+202F)
-                            return p + 1;
-                        }
-                    }
-
+                    // We also need to handle the reverse case where the input has 0xA0 or 0x202F and the format string has 0x20.
                     while (true)
                     {
                         uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
                         uint val = TChar.CastToUInt32(*str);
 
-                        if ((cp != val) && !(IsSpaceReplacingChar(val) && (cp == '\u0020')))
+                        if ((cp != val) && !((IsSpaceReplacingChar(val) && (cp == '\u0020')) || (IsSpaceReplacingChar(cp) && (val == '\u0020'))))
                         {
                             break;
                         }
