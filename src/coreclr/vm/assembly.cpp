@@ -1642,6 +1642,7 @@ MethodDesc* Assembly::GetEntryPoint()
         m_pEntryPoint = pModule->FindMethod(mdEntry);
 #endif // TARGET_BROWSER
     }
+    _ASSERTE(m_pEntryPoint != NULL);
 #if defined(TARGET_BROWSER)
     // if this is async method we need to find the original method, instead of the roslyn generated wrapper
     if (m_pEntryPoint)
