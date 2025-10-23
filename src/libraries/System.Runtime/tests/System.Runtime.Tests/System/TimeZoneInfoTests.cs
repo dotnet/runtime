@@ -2769,7 +2769,6 @@ namespace System.Tests
         [ConditionalFact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.Linux)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117731", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", TestPlatforms.OSX)]
         public static void NoBackwardTimeZones()
         {
             if (OperatingSystem.IsAndroid() && !OperatingSystem.IsAndroidVersionAtLeast(26))
@@ -2778,13 +2777,27 @@ namespace System.Tests
             }
 
             ReadOnlyCollection<TimeZoneInfo> tzCollection = TimeZoneInfo.GetSystemTimeZones();
-            HashSet<String> tzDisplayNames = new HashSet<String>();
+            Dictionary<String, List<String>> displayNameToIds = new Dictionary<String, List<String>>();
 
             foreach (TimeZoneInfo timezone in tzCollection)
             {
-                tzDisplayNames.Add(timezone.DisplayName);
+                if (!displayNameToIds.ContainsKey(timezone.DisplayName))
+                {
+                    displayNameToIds[timezone.DisplayName] = new List<String>();
+                }
+                displayNameToIds[timezone.DisplayName].Add(timezone.Id);
             }
-            Assert.Equal(tzCollection.Count, tzDisplayNames.Count);
+
+            // Find duplicates
+            var duplicates = displayNameToIds.Where(kvp => kvp.Value.Count > 1).ToList();
+            if (duplicates.Count > 0)
+            {
+                var duplicateInfo = string.Join(", ", duplicates.Select(kvp =>
+                    $"'{kvp.Key}' -> [{string.Join(", ", kvp.Value)}]"));
+                Assert.Fail($"Found {duplicates.Count} duplicate display name(s): {duplicateInfo}");
+            }
+
+            Assert.Equal(tzCollection.Count, displayNameToIds.Count);
         }
 
         [Fact]
