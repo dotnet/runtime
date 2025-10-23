@@ -193,7 +193,8 @@ namespace System.IO.Tests
             FSAssert.EqualWhenOrdered(new string[] { rootFile, nestedFile }, files);
         }
 
-        [Theory, MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        [Theory]
+        [MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
         public void EnumerateFilesWithProblematicNames(string fileName)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
