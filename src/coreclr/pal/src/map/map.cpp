@@ -35,6 +35,7 @@ Abstract:
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <algorithm>
 
 #include "rt/ntimage.h"
 #include <pal_endian.h>
@@ -195,7 +196,7 @@ FileMappingCleanupRoutine(
 
     if (pImmutableData->bPALCreatedTempFile)
     {
-        unlink(pImmutableData->lpFileName);
+        while (-1 == unlink(pImmutableData->lpFileName) && errno == EINTR);
     }
 
     if (FALSE == fShutdown)
@@ -467,7 +468,7 @@ CorUnix::InternalCreateFileMapping(
             // information, though...
             //
 
-            UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
+            while (-1 == (UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0)) && errno == EINTR); // dup, but with CLOEXEC
             if (-1 == UnixFd)
             {
                 ERROR( "Unable to duplicate the Unix file descriptor!\n" );
@@ -519,7 +520,9 @@ CorUnix::InternalCreateFileMapping(
 #endif // !CORECLR
         }
 
-        if (-1 == fstat(UnixFd, &UnixFileInformation))
+        int fstat_result;
+        while (-1 == (fstat_result = fstat(UnixFd, &UnixFileInformation)) && errno == EINTR);
+        if (-1 == fstat_result)
         {
             ASSERT("fstat() failed for this reason %s.\n", strerror(errno));
             palError = ERROR_INTERNAL_ERROR;
@@ -598,7 +601,9 @@ CorUnix::InternalCreateFileMapping(
     {
         struct stat st;
 
-        if (0 == fstat(UnixFd, &st))
+        int fstat_result;
+        while (-1 == (fstat_result = fstat(UnixFd, &st)) && errno == EINTR);
+        if (0 == fstat_result)
         {
             pLocalData->MappedFileDevNum = st.st_dev;
             pLocalData->MappedFileInodeNum = st.st_ino;
@@ -651,7 +656,7 @@ ExitInternalCreateFileMapping:
 
         if (bPALCreatedTempFile)
         {
-            unlink(pImmutableData->lpFileName);
+            while (-1 == unlink(pImmutableData->lpFileName) && errno == EINTR);
         }
 
         if (-1 != UnixFd)
@@ -1489,8 +1494,8 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
     /* ftruncate is a standard function, but the behavior of enlarging files is
     non-standard.  So I will try to enlarge a file, and if that fails try the
     less efficient way.*/
-    TruncateRetVal = ftruncate( UnixFD, NewSize );
-    fstat( UnixFD, &FileInfo );
+    while (-1 == (TruncateRetVal = ftruncate( UnixFD, NewSize )) && errno == EINTR);
+    while (-1 == fstat( UnixFD, &FileInfo ) && errno == EINTR);
 
     if ( TruncateRetVal != 0 || FileInfo.st_size != NewSize )
     {
@@ -1502,8 +1507,11 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
 
         TRACE( "Trying the less efficient way.\n" );
 
-        CurrentPosition = lseek( UnixFD, 0, SEEK_CUR );
-        OrigSize = lseek( UnixFD, 0, SEEK_END );
+        off_t lseek_result;
+        while (-1 == (lseek_result = lseek( UnixFD, 0, SEEK_CUR )) && errno == EINTR);
+        CurrentPosition = lseek_result;
+        while (-1 == (lseek_result = lseek( UnixFD, 0, SEEK_END )) && errno == EINTR);
+        OrigSize = lseek_result;
         if ( OrigSize == -1 )
         {
             ERROR( "Unable to locate the EOF marker. Reason=%s\n",
@@ -1518,35 +1526,12 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
         }
 
         memset( buf, 0, BUFFER_SIZE );
-        if (NewSize - OrigSize - BUFFER_SIZE >= 0 && BUFFER_SIZE > 0)
+        size_t toWrite = NewSize - (UINT)OrigSize;
+        while (toWrite > 0)
         {
-            for ( x = 0; x < NewSize - OrigSize - BUFFER_SIZE; x += BUFFER_SIZE )
-            {
-                if ( write( UnixFD, (LPVOID)buf, BUFFER_SIZE ) == -1 )
-                {
-                    ERROR( "Unable to grow the file. Reason=%s\n", strerror( errno ) );
-                    if((errno == ENOSPC) || (errno == EDQUOT))
-                    {
-                        palError = ERROR_DISK_FULL;
-                    }
-                    else
-                    {
-                        palError = ERROR_INTERNAL_ERROR;
-                    }
-                    goto done;
-                }
-            }
-        }
-        else
-        {
-            //This will be an infinite loop because it did not pass the check.
-            palError = ERROR_INTERNAL_ERROR;
-            goto done;
-        }
-        /* Catch any left overs. */
-        if ( x != NewSize )
-        {
-            if ( write( UnixFD, (LPVOID)buf, NewSize - OrigSize - x) == -1 )
+            ssize_t writeResult;
+            while (-1 == (writeResult = write( UnixFD, (LPVOID)buf, std::min(toWrite, (size_t)BUFFER_SIZE) )) && errno == EINTR);
+            if (writeResult == -1)
             {
                 ERROR( "Unable to grow the file. Reason=%s\n", strerror( errno ) );
                 if((errno == ENOSPC) || (errno == EDQUOT))
@@ -1559,10 +1544,24 @@ static PAL_ERROR MAPGrowLocalFile( INT UnixFD, off_t NewSize )
                 }
                 goto done;
             }
+            else if (writeResult == 0)
+            {
+                break;
+            }
+            else
+            {
+                toWrite -= (size_t)writeResult;
+            }
+        }
+        if (toWrite > 0)
+        {
+            palError = ERROR_INTERNAL_ERROR;
+            ERROR( "Unable to grow the file. Reason=%s\n", "write returned 0 earlier than expected." );
+            goto done;
         }
 
         /* restore the file pointer position */
-        lseek( UnixFD, CurrentPosition, SEEK_SET );
+        while (-1 == lseek( UnixFD, CurrentPosition, SEEK_SET ) && errno == EINTR);
     }
 
 done:
@@ -1970,9 +1969,36 @@ MAPmmapAndRecord(
         // Set the requested mapping with forced PROT_WRITE to ensure data from the file can be read there,
         // read the data in and finally remove the forced PROT_WRITE. On Intel we can still switch the
         // protection later with mprotect.
-        if ((mprotect(pvBaseAddress, len + adjust, PROT_WRITE) == -1) ||
-            (pread(fd, pvBaseAddress, len + adjust, offset - adjust) == -1) ||
-            (mprotect(pvBaseAddress, len + adjust, prot) == -1))
+        bool failCondition = mprotect(pvBaseAddress, len + adjust, PROT_WRITE) == -1;
+        if (!failCondition)
+        {
+            unsigned char *buf = (unsigned char*)pvBaseAddress;
+            size_t nbyte = len + adjust;
+            size_t offset2 = offset - adjust;
+            while (nbyte > 0)
+            {
+                ssize_t result;
+                while (-1 == (result = pread(fd, buf, nbyte, offset2)) && errno == EINTR);
+                if (result == -1)
+                {
+                    failCondition = true;
+                    break;
+                }
+                buf += result;
+                nbyte -= result;
+                offset2 += result;
+                if (result == 0)
+                {
+                    if (nbyte > 0)
+                    {
+                        failCondition = true;
+                        errno = EIO; // set to a generic IO error, to indicate that we couldn't read the whole requested region
+                    }
+                    break;
+                }
+            }
+        }
+        if (failCondition || (mprotect(pvBaseAddress, len + adjust, prot) == -1))
         {
             palError = FILEGetLastErrorFromErrno();
         }
@@ -2082,16 +2108,57 @@ void * MAPMapPEFile(HANDLE hFile, off_t offset)
     //Step 1: Read the PE headers and reserve enough space for the whole image somewhere.
     IMAGE_DOS_HEADER dosHeader;
     IMAGE_NT_HEADERS ntHeader;
-    if (sizeof(dosHeader) != pread(fd, &dosHeader, sizeof(dosHeader), offset))
+    unsigned char *preadBuf;
+    preadBuf = (unsigned char*)&dosHeader;
+    size_t nbyte;
+    nbyte = sizeof(dosHeader);
+    size_t preadOffset;
+    preadOffset = offset;
+    while (nbyte > 0)
     {
-        palError = FILEGetLastErrorFromErrno();
-        ERROR_(LOADER)( "reading dos header failed\n" );
-        goto done;
+        ssize_t result;
+        while (-1 == (result = pread(fd, preadBuf, nbyte, preadOffset)) && errno == EINTR);
+        if (result == 0)
+        {
+            if (nbyte > 0)
+            {
+                errno = EIO; // set to a generic IO error, to indicate that we couldn't read the whole requested region
+                result = -1;
+            }
+        }
+        if (result == -1)
+        {
+            palError = FILEGetLastErrorFromErrno();
+            ERROR_(LOADER)( "reading dos header failed\n" );
+            goto done;
+        }
+        preadBuf += result;
+        nbyte -= result;
+        preadOffset += result;
     }
-    if (sizeof(ntHeader) != pread(fd, &ntHeader, sizeof(ntHeader), offset + dosHeader.e_lfanew))
+    preadBuf = (unsigned char*)&ntHeader;
+    nbyte = sizeof(ntHeader);
+    preadOffset = offset + dosHeader.e_lfanew;
+    while (nbyte > 0)
     {
-        palError = FILEGetLastErrorFromErrno();
-        goto done;
+        ssize_t result;
+        while (-1 == (result = pread(fd, preadBuf, nbyte, preadOffset)) && errno == EINTR);
+        if (result == 0)
+        {
+            if (nbyte > 0)
+            {
+                errno = EIO; // set to a generic IO error, to indicate that we couldn't read the whole requested region
+                result = -1;
+            }
+        }
+        if (result == -1)
+        {
+            palError = FILEGetLastErrorFromErrno();
+            goto done;
+        }
+        preadBuf += result;
+        nbyte -= result;
+        preadOffset += result;
     }
 
     if ((VAL16(IMAGE_DOS_SIGNATURE) != VAL16(dosHeader.e_magic))

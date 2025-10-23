@@ -5,6 +5,7 @@
 
 #include "../Common/pal_safecrt.h"
 #include <assert.h>
+#include <errno.h>
 #include <dirent.h>
 #include <stdbool.h>
 #include <string.h>
@@ -436,7 +437,8 @@ X509* CryptoNative_X509UpRef(X509* x509)
 
 static DIR* OpenUserStore(const char* storePath, char** pathTmp, size_t* pathTmpSize, char** nextFileWrite)
 {
-    DIR* trustDir = opendir(storePath);
+    DIR* trustDir;
+    while ((trustDir = opendir(storePath)) == NULL && errno == EINTR);
 
     if (trustDir == NULL)
     {
@@ -477,8 +479,16 @@ static X509* ReadNextPublicCert(DIR* dir, X509Stack* tmpStack, char* pathTmp, si
     assert((size_t)offset < pathTmpSize);
     size_t remaining = pathTmpSize - (size_t)offset;
 
-    while ((next = readdir(dir)) != NULL)
+    while (true)
     {
+        do
+        {
+            errno = 0;
+            next = readdir(dir);
+        }
+        while (next == NULL && errno == EINTR);
+        if (next == NULL) break;
+
         size_t len = strnlen(next->d_name, sizeof(next->d_name));
 
         if (len > 4 && 0 == strncasecmp(".pfx", next->d_name + len - 4, 4))
@@ -1148,7 +1158,7 @@ int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char
     // may have been reported while determining we want to delete it and ask again fresh.
     if (ret == PAL_X509_V_ERR_UNABLE_TO_GET_CRL)
     {
-        unlink(fullPath);
+        while (-1 == unlink(fullPath) && errno == EINTR);
         ERR_clear_error();
     }
 
@@ -1262,7 +1272,7 @@ static int32_t X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, X509* subject, X509
             if (clearErr)
             {
                 ERR_clear_error();
-                unlink(fullPath);
+                while (-1 == unlink(fullPath) && errno == EINTR);
             }
 
             free(fullPath);

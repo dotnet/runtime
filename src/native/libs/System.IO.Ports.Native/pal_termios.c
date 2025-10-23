@@ -56,7 +56,9 @@ static int32_t TermiosGetStatus(intptr_t handle)
 {
     int fd = ToFileDescriptor(handle);
     int status = 0;
-    if (ioctl(fd, TIOCMGET, &status) < 0)
+    int ioctl_result;
+    while (-1 == (ioctl_result = ioctl(fd, TIOCMGET, &status)) && errno == EINTR);
+    if (ioctl_result < 0)
     {
         return -1;
     }
@@ -143,7 +145,9 @@ int32_t SystemIoPortsNative_TermiosSetSignal(intptr_t handle, int32_t signal, in
         {
             status &= ~bit;
         }
-        return ioctl(fd, TIOCMSET, &status);
+        int ioctl_result;
+        while (-1 == (ioctl_result = ioctl(fd, TIOCMSET, &status)) && errno == EINTR);
+        return ioctl_result;
     }
 
     return -1;
@@ -358,7 +362,9 @@ int32_t SystemIoPortsNative_TermiosSetSpeed(intptr_t handle, int32_t speed)
         // Looks like custom speed out of POSIX. Let see if we can set it via specialized call.
 #if HAVE_IOSS_H
         brate = speed;
-        if (ioctl(fd, IOSSIOSPEED, &brate) != -1)
+        int ioctl_result;
+        while (-1 == (ioctl_result = ioctl(fd, IOSSIOSPEED, &brate)) && errno == EINTR);
+        if (ioctl_result != -1)
         {
             return speed;
         }
@@ -394,7 +400,9 @@ int32_t SystemIoPortsNative_TermiosAvailableBytes(intptr_t handle, int32_t readB
 {
     int fd = ToFileDescriptor(handle);
     int32_t bytes;
-    if (ioctl (fd, readBuffer ? FIONREAD : TIOCOUTQ, &bytes) == -1)
+    int ioctl_result;
+    while (-1 == (ioctl_result = ioctl (fd, readBuffer ? FIONREAD : TIOCOUTQ, &bytes)) && errno == EINTR);
+    if (ioctl_result == -1)
     {
         return -1;
     }
@@ -546,7 +554,9 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
 #if HAVE_IOSS_H
         // We have deferred non-standard speed.
         brate = speed;
-        if (ioctl(fd, IOSSIOSPEED, &brate) == -1)
+        int ioctl_result;
+        while (-1 == (ioctl_result = ioctl(fd, IOSSIOSPEED, &brate)) && errno == EINTR);
+        if (ioctl_result == -1)
         {
             return -1;
         }

@@ -280,8 +280,8 @@ MONO_RESTORE_WARNING
 #endif /* HAVE_SYSTEM */
 
 #ifndef HOST_WIN32
-	unlink (o_file);
-	unlink (as_file);
+	while (-1 == unlink (o_file) && errno == EINTR);
+	while (-1 == unlink (as_file) && errno == EINTR);
 #endif
 	g_free (o_file);
 	g_free (as_file);

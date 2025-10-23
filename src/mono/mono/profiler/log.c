@@ -11,6 +11,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
+#include <errno.h>
 #include <config.h>
 #include <gmodule.h>
 #include <mono/metadata/assembly.h>
@@ -2498,7 +2499,9 @@ static void
 signal_helper_thread (char c)
 {
 #ifdef HAVE_COMMAND_PIPES
-	if (write (log_profiler.pipes [1], &c, 1) != 1) {
+	ssize_t result;
+	while (-1 == (result = write (log_profiler.pipes [1], &c, 1)) && errno == EINTR);
+	if (result != 1) {
 		mono_profiler_printf_err ("Could not write to log profiler pipe: %s", g_strerror (errno));
 		exit (1);
 	}
@@ -2522,7 +2525,9 @@ signal_helper_thread (char c)
 
 		gulong non_blocking = 1;
 		ioctlsocket (client_socket, FIONBIO, &non_blocking);
-		if (connect (client_socket, (SOCKADDR *)&client_addr, sizeof (client_addr)) == SOCKET_ERROR) {
+		int connect_result;
+		while (-1 == (connect_result = connect (client_socket, (SOCKADDR *)&client_addr, sizeof (client_addr))) && errno == EINTR);
+		if (connect_result == SOCKET_ERROR) {
 			if (WSAGetLastError () == WSAEWOULDBLOCK) {
 				fd_set wfds;
 				int max_fd = -1;
@@ -2868,7 +2873,8 @@ helper_thread (void *arg)
 		}
 
 		if (FD_ISSET (log_profiler.server_socket, &rfds)) {
-			int fd = accept (log_profiler.server_socket, NULL, NULL);
+			int fd;
+			while (-1 == (fd = accept (log_profiler.server_socket, NULL, NULL)) && errno == EINTR);
 
 			if (fd != -1) {
 #ifndef HOST_WIN32
@@ -2897,7 +2903,9 @@ static void
 start_helper_thread (void)
 {
 #ifdef HAVE_COMMAND_PIPES
-	if (pipe (log_profiler.pipes) == -1) {
+	int pipe_result;
+	while (-1 == (pipe_result = pipe (log_profiler.pipes)) && errno == EINTR);
+	if (pipe_result == -1) {
 		mono_profiler_printf_err ("Could not create log profiler pipe: %s", g_strerror (errno));
 		exit (1);
 	}

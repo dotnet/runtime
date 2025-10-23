@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <errno.h>
 #include <pal.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -22,19 +23,22 @@ bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
     PAL_GetTransportPipeName(m_inPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "in");
     PAL_GetTransportPipeName(m_outPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "out");
 
-    unlink(m_inPipeName);
+    while (-1 == unlink(m_inPipeName) && errno == EINTR);
 
-    if (mkfifo(m_inPipeName, S_IRWXU) == -1)
+    int mkfifo_result;
+    while (-1 == (mkfifo_result = mkfifo(m_inPipeName, S_IRWXU)) && errno == EINTR);
+    if (mkfifo_result == -1)
     {
         return false;
     }
 
 
-    unlink(m_outPipeName);
+    while (-1 == unlink(m_outPipeName) && errno == EINTR);
 
-    if (mkfifo(m_outPipeName, S_IRWXU) == -1)
+    while (-1 == (mkfifo_result = mkfifo(m_outPipeName, S_IRWXU)) && errno == EINTR);
+    if (mkfifo_result == -1)
     {
-        unlink(m_inPipeName);
+        while (-1 == unlink(m_inPipeName) && errno == EINTR);
         return false;
     }
 
@@ -57,13 +61,13 @@ bool TwoWayPipe::Connect(const ProcessDescriptor& pd)
 
     // Pipe opening order is reversed compared to WaitForConnection()
     // in order to avoid deadlock.
-    m_outboundPipe = open(m_outPipeName, O_WRONLY);
+    while (-1 == (m_outboundPipe = open(m_outPipeName, O_WRONLY)) && errno == EINTR);
     if (m_outboundPipe == INVALID_PIPE)
     {
         return false;
     }
 
-    m_inboundPipe = open(m_inPipeName, O_RDONLY);
+    while (-1 == (m_inboundPipe = open(m_inPipeName, O_RDONLY)) && errno == EINTR);
     if (m_inboundPipe == INVALID_PIPE)
     {
         close(m_outboundPipe);
@@ -84,13 +88,13 @@ bool TwoWayPipe::WaitForConnection()
     if (m_state != Created)
         return false;
 
-    m_inboundPipe = open(m_inPipeName, O_RDONLY);
+    while (-1 == (m_inboundPipe = open(m_inPipeName, O_RDONLY)) && errno == EINTR);
     if (m_inboundPipe == INVALID_PIPE)
     {
         return false;
     }
 
-    m_outboundPipe = open(m_outPipeName, O_WRONLY);
+    while (-1 == (m_outboundPipe = open(m_outPipeName, O_WRONLY)) && errno == EINTR);
     if (m_outboundPipe == INVALID_PIPE)
     {
         close(m_inboundPipe);
@@ -113,8 +117,10 @@ int TwoWayPipe::Read(void *buffer, DWORD bufferSize)
     int bytesRead;
     int cb = bufferSize;
 
-    while ((bytesRead = (int)read(m_inboundPipe, buffer, cb)) > 0)
+    while (true)
     {
+        while (-1 == (bytesRead = (int)read(m_inboundPipe, buffer, cb)) && errno == EINTR);
+        if (bytesRead <= 0) break;
         totalBytesRead += bytesRead;
         _ASSERTE(totalBytesRead <= (int)bufferSize);
         if (totalBytesRead >= (int)bufferSize)
@@ -140,8 +146,10 @@ int TwoWayPipe::Write(const void *data, DWORD dataSize)
     int bytesWritten;
     int cb = dataSize;
 
-    while ((bytesWritten = (int)write(m_outboundPipe, data, cb)) > 0)
+    while (true)
     {
+        while (-1 == (bytesWritten = (int)write(m_outboundPipe, data, cb)) && errno == EINTR);
+        if (bytesWritten <= 0) break;
         totalBytesWritten += bytesWritten;
         _ASSERTE(totalBytesWritten <= (int)dataSize);
         if (totalBytesWritten >= (int)dataSize)
@@ -166,8 +174,8 @@ bool TwoWayPipe::Disconnect()
 
     if (m_state == ServerConnected || m_state == Created)
     {
-        unlink(m_inPipeName);
-        unlink(m_outPipeName);
+        while (-1 == unlink(m_inPipeName) && errno == EINTR);
+        while (-1 == unlink(m_outPipeName) && errno == EINTR);
     }
 
     m_state = NotInitialized;
@@ -178,6 +186,6 @@ bool TwoWayPipe::Disconnect()
 // and semaphores when the debugger detects the debuggee process  exited.
 void TwoWayPipe::CleanupTargetProcess()
 {
-    unlink(m_inPipeName);
-    unlink(m_outPipeName);
+    while (-1 == unlink(m_inPipeName) && errno == EINTR);
+    while (-1 == unlink(m_outPipeName) && errno == EINTR);
 }

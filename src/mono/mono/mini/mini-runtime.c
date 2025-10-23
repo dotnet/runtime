@@ -1986,7 +1986,7 @@ mono_enable_jit_map (void)
 	if (!perf_map_file) {
 		char name [64];
 		g_snprintf (name, sizeof (name), "/tmp/perf-%d.map", getpid ());
-		unlink (name);
+		while (-1 == unlink (name) && errno == EINTR);
 		perf_map_file = fopen (name, "w");
 	}
 }
@@ -2111,7 +2111,7 @@ mono_enable_jit_dump (void)
 		mono_os_mutex_lock (&perf_dump_mutex);
 
 		g_snprintf (name, sizeof (name), "/tmp/jit-%d.dump", perf_dump_pid);
-		unlink (name);
+		while (-1 == unlink (name) && errno == EINTR);
 		perf_dump_file = fopen (name, "w+");
 
 		add_file_header_info (&header);
