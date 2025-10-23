@@ -32,6 +32,7 @@ extends:
           - windows_arm64
           - osx_x64
           - osx_arm64
+          - browser_wasm
           jobParameters:
             buildArgs: -s clr+libs -c $(_BuildConfig) -lc Release
             postBuildSteps:
