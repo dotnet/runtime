@@ -12,14 +12,13 @@
     <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
 
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
-    <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
 
     <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>
   </PropertyGroup>
 
   <Import Project="$(_PropsFile)" />
 
-  <Target Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
+  <Target Name="BundleTestWasmApp" DependsOnTargets="PrepareForWasmBuildApp;Build" />
 
   <!-- This is fake target, we assume that runtimeconfig.json was already generated on CI agent before during build -->
   <Target Name="GenerateBuildRuntimeConfigurationFiles" >
