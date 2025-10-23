@@ -1,4 +1,4 @@
-<Project DefaultTargets="BundleTestWasmApp">
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly" DefaultTargets="BundleTestWasmApp">
   <Import Project="Directory.Build.props" />
   <PropertyGroup>
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$([MSBuild]::NormalizeDirectory($(HELIX_WORKITEM_ROOT), 'wasm_build'))</TestRootDir>
