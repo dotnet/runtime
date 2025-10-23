@@ -1139,7 +1139,7 @@ void ValidateMainMethod(MethodDesc * pFD, CorEntryPointType *pType)
         return;
     }
 #else // TARGET_BROWSER
-    // validate that the return type is Task or Task<int>
+    // Early check for the common main return types.
     if (nReturnType == ELEMENT_TYPE_VOID || nReturnType == ELEMENT_TYPE_I4 || nReturnType == ELEMENT_TYPE_U4)
     {
         ThrowMainMethodException(pFD, IDS_EE_MAIN_METHOD_HAS_INVALID_RTN);
