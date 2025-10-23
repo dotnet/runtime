@@ -1272,8 +1272,8 @@ static void RunMainInternal(Param* pParam)
     // Build the parameter array and invoke the method.
     if (pParam->EntryType == EntryManagedMain
         || pParam->EntryType == EntryManagedMainAsync
-        || pParam->EntryType == EntryManagedMainAsyncVoid
-        ) {
+        || pParam->EntryType == EntryManagedMainAsyncVoid)
+    {
         if (pParam->stringArgs == NULL) {
             // Allocate a COM Array object with enough slots for cCommandArgs - 1
             StrArgArray = (PTRARRAYREF) AllocateObjectArray((pParam->cCommandArgs - pParam->numSkipArgs), g_pStringClass);
