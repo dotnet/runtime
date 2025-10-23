@@ -960,6 +960,46 @@ namespace System.Text.Json.Nodes.Tests
         }
 
         [Fact]
+        public static void PropertyNameCaseInsensitiveWithPropertiesConstructor()
+        {
+            // Test that the constructor taking IEnumerable<KeyValuePair> and JsonNodeOptions
+            // correctly creates a case-insensitive dictionary when PropertyNameCaseInsensitive is true
+            var options = new JsonNodeOptions { PropertyNameCaseInsensitive = true };
+            var properties = new List<KeyValuePair<string, JsonNode?>>
+            {
+                new KeyValuePair<string, JsonNode?>("FirstName", JsonValue.Create("John")),
+                new KeyValuePair<string, JsonNode?>("LastName", JsonValue.Create("Doe")),
+                new KeyValuePair<string, JsonNode?>("Age", JsonValue.Create(30))
+            };
+
+            var jsonObject = new JsonObject(properties, options);
+
+            // Verify options are set correctly
+            Assert.NotNull(jsonObject.Options);
+            Assert.True(jsonObject.Options.Value.PropertyNameCaseInsensitive);
+
+            // Verify case-insensitive lookups work for properties added via constructor
+            Assert.Equal("John", (string)jsonObject["FirstName"]);
+            Assert.Equal("John", (string)jsonObject["firstname"]);
+            Assert.Equal("John", (string)jsonObject["FIRSTNAME"]);
+            
+            Assert.Equal("Doe", (string)jsonObject["LastName"]);
+            Assert.Equal("Doe", (string)jsonObject["lastname"]);
+            
+            Assert.Equal(30, (int)jsonObject["Age"]);
+            Assert.Equal(30, (int)jsonObject["age"]);
+
+            // Verify adding new properties also works with case insensitivity
+            jsonObject["Email"] = JsonValue.Create("john@example.com");
+            Assert.Equal("john@example.com", (string)jsonObject["email"]);
+            Assert.Equal("john@example.com", (string)jsonObject["EMAIL"]);
+
+            // Verify TryGetPropertyValue works case-insensitively
+            Assert.True(jsonObject.TryGetPropertyValue("firstname", out JsonNode? value));
+            Assert.Equal("John", (string)value);
+        }
+
+        [Fact]
         public static void LazyInitializationIsThreadSafe()
         {
             string arrayText = "{\"prop0\":0,\"prop1\":1}";
