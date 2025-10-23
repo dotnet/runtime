@@ -13,6 +13,8 @@ using static Microsoft.DotNet.CoreSetup.Test.Constants;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
+    // Multi-level lookup was only supported on Windows.
+    [PlatformSpecific(TestPlatforms.Windows)]
     public class MultilevelLookup :
         FrameworkResolutionBase,
         IClassFixture<MultilevelLookup.SharedTestState>
@@ -21,8 +23,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         public MultilevelLookup(SharedTestState sharedState)
         {
-            Assert.SkipUnless(OperatingSystem.IsWindows(), "Multi-level lookup is only supported on Windows");
-
             SharedState = sharedState;
         }
 

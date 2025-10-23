@@ -111,24 +111,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             public SharedTestState()
             {
                 DotNetWithNetCoreApp = DotNet("WithNetCoreApp")
-                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(HostTestContext.MicrosoftNETCoreAppVersion)
+                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr(TestContext.MicrosoftNETCoreAppVersion)
                     .Build();
 
-                string nativeDependencyRelPath = $"{HostTestContext.BuildRID}/{Binaries.GetSharedLibraryFileNameForCurrentPlatform("native")}";
-                FrameworkReferenceApp = CreateFrameworkReferenceApp(Constants.MicrosoftNETCoreApp, HostTestContext.MicrosoftNETCoreAppVersion, b => b
+                string nativeDependencyRelPath = $"{TestContext.BuildRID}/{Binaries.GetSharedLibraryFileNameForCurrentPlatform("native")}";
+                FrameworkReferenceApp = CreateFrameworkReferenceApp(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion, b => b
                     .WithProject(DependencyName, DependencyVersion, p => p
                         .WithAssemblyGroup(null, g => g
                             .WithAsset($"{DependencyName}.dll", f => f.NotOnDisk()))
-                        .WithNativeLibraryGroup(HostTestContext.BuildRID, g => g
+                        .WithNativeLibraryGroup(TestContext.BuildRID, g => g
                             .WithAsset(nativeDependencyRelPath, f => f.NotOnDisk()))));
                 RuntimeConfig.FromFile(FrameworkReferenceApp.RuntimeConfigJson)
-                    .WithTfm(HostTestContext.Tfm)
+                    .WithTfm(TestContext.Tfm)
                     .Save();
 
                 AdditionalProbingPath = Path.Combine(Location, "probe");
                 (DependencyPath, NativeDependencyDirectory) = AddDependencies(AdditionalProbingPath);
 
-                AdditionalProbingPath_ArchTfm = Path.Combine(AdditionalProbingPath, HostTestContext.BuildArchitecture, HostTestContext.Tfm);
+                AdditionalProbingPath_ArchTfm = Path.Combine(AdditionalProbingPath, TestContext.BuildArchitecture, TestContext.Tfm);
                 (DependencyPath_ArchTfm, NativeDependencyDirectory_ArchTfm) = AddDependencies(AdditionalProbingPath_ArchTfm);
 
                 (string, string) AddDependencies(string probeDir)
