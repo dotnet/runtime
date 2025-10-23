@@ -449,8 +449,7 @@ namespace System.Runtime.InteropServices
 
             private void ResetFlag(CreateComInterfaceFlagsEx flag)
             {
-                CreateComInterfaceFlagsEx resetMask = (CreateComInterfaceFlagsEx)(~(int)flag);
-                Interlocked.And(ref Flags, resetMask);
+                Interlocked.And(ref Flags, ~flag);
             }
 
             private static uint GetTrackerCount(ulong c)

@@ -651,7 +651,7 @@ namespace System.Threading
         {
             // Only primitive types and enum types (which are backed by primitive types) are supported.
             // Floating-point types are not supported.
-            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || typeof(T) == typeof(float) || typeof(T) == typeof(double) || typeof(T) == typeof(Half))
+            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
                 throw new NotSupportedException(SR.NotSupported_EnumOrPrimitiveTypeRequired);
             }
@@ -791,7 +791,7 @@ namespace System.Threading
         {
             // Only primitive types and enum types (which are backed by primitive types) are supported.
             // Floating-point types are not supported.
-            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || typeof(T) == typeof(float) || typeof(T) == typeof(double) || typeof(T) == typeof(Half))
+            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) || typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
                 throw new NotSupportedException(SR.NotSupported_EnumOrPrimitiveTypeRequired);
             }

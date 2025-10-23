@@ -74,7 +74,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                Interlocked.And(ref _flags, (Flags)(~(int)flag));
+                Interlocked.And(ref _flags, ~flag);
             }
         }
 
