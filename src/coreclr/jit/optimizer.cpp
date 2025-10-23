@@ -3230,7 +3230,7 @@ public:
                 {
                     if ((EnclosingTryIndex() > 0) || (EnclosingHndIndex() > 0))
                     {
-                        const bool inTry = (EnclosingTryIndex() != 0) && (EnclosingHndIndex() == 0) ||
+                        const bool inTry = ((EnclosingTryIndex() != 0) && (EnclosingHndIndex() == 0)) ||
                                            (EnclosingTryIndex() < EnclosingHndIndex());
                         if (inTry)
                         {
