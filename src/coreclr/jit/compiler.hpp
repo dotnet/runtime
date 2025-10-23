@@ -5245,8 +5245,8 @@ unsigned Compiler::fgRunSubgraphDfs(VisitPreorder  visitPreorder,
 
         while (!blocks.Empty())
         {
-            BasicBlock* block = blocks.TopRef().Block();
-            BasicBlock* succ  = blocks.TopRef().NextSuccessor();
+            BasicBlock* const block = blocks.TopRef().Block();
+            BasicBlock* const succ  = blocks.TopRef().NextSuccessor();
 
             if (succ != nullptr)
             {
@@ -5254,19 +5254,40 @@ unsigned Compiler::fgRunSubgraphDfs(VisitPreorder  visitPreorder,
                 {
                     if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
                     {
-                        JITDUMP(" visiting " FMT_BB "\n", succ->bbNum);
                         blocks.Emplace(this, succ, useProfile);
                         visitPreorder(succ, preOrderIndex++);
                     }
 
                     visitEdge(block, succ);
                 }
+
+                // If this is a callfinally but the finally itself is not
+                // in the subset, summarize the flow to the pair tail.
+                //
+                // Note a callfinally will only have one successor, so
+                // we don't need extra conditions here.
+                //
+                else if (block->isBBCallFinallyPair())
+                {
+                    BasicBlock* const callFinallyRet = block->Next();
+
+                    if (BitVecOps::IsMember(&subgraphTraits, subgraph, callFinallyRet->bbPostorderNum))
+                    {
+                        if (BitVecOps::TryAddElemD(&traits, visited, callFinallyRet->bbNum))
+                        {
+                            blocks.Emplace(this, callFinallyRet, useProfile);
+                            visitPreorder(callFinallyRet, preOrderIndex++);
+                        }
+
+                        visitEdge(block, callFinallyRet);
+                    }
+                }
+
+                continue;
             }
-            else
-            {
-                blocks.Pop();
-                visitPostorder(block, postOrderIndex++);
-            }
+
+            blocks.Pop();
+            visitPostorder(block, postOrderIndex++);
         }
     };
 

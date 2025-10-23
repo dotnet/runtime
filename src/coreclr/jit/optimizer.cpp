@@ -2970,8 +2970,16 @@ public:
                 continue;
             }
 
+            bool isEntry = false;
+
             for (BasicBlock* pred : block->PredBlocks())
             {
+                if (pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET))
+                {
+                    // Ignore EHCATCHRET preds (requires exceptional flow)
+                    continue;
+                }
+
                 if (BitVecOps::IsMember(&m_traits, m_blocks, pred->bbPostorderNum))
                 {
                     // Pred is in the scc, so not an entry edge
@@ -2981,6 +2989,7 @@ public:
                 if (BitVecOps::TryAddElemD(&m_traits, m_entries, block->bbPostorderNum))
                 {
                     JITDUMP(FMT_BB " is scc entry\n", block->bbNum);
+                    isEntry = true;
 
                     m_entryWeight += block->bbWeight;
 
@@ -3065,11 +3074,11 @@ public:
 
                 if (NumEntries() > 1)
                 {
-                    JITDUMP("[irrd] ");
+                    JITDUMP("[irrd (%u)] ", NumBlocks());
                 }
                 else
                 {
-                    JITDUMP("[loop] ");
+                    JITDUMP("[loop (%u)] ", NumBlocks());
                 }
             }
             else
@@ -3097,16 +3106,21 @@ public:
 
     void FindNested()
     {
-        ArrayStack<SCC*> nestedSccs(m_comp->getAllocator(CMK_DepthFirstSearch));
-        BitVec           nestedBlocks = InternalBlocks();
-        unsigned         nestedCount  = BitVecOps::Count(&m_traits, nestedBlocks);
+        unsigned entryCount = BitVecOps::Count(&m_traits, m_entries);
+        assert(entryCount > 0);
 
+        BitVec   nestedBlocks = InternalBlocks();
+        unsigned nestedCount  = BitVecOps::Count(&m_traits, nestedBlocks);
+
+        // Only entries
         if (nestedCount == 0) // < 2...?
         {
             return;
         }
 
         JITDUMP("\n --> nested %u blocks... \n", BitVecOps::Count(&m_traits, nestedBlocks));
+
+        ArrayStack<SCC*> nestedSccs(m_comp->getAllocator(CMK_DepthFirstSearch));
 
         // Build a new postorder for the nested blocks
         //
@@ -3129,14 +3143,7 @@ public:
         {
             JITDUMP("Eh? numBlocks %u nestedCount %u\n", numBlocks, nestedCount);
         }
-        // assert(numBlocks == nestedCount);
-
-        JITDUMP("[dfs done, postorder is]\n");
-        for (unsigned i = 0; i < nestedCount; i++)
-        {
-            JITDUMP(FMT_BB " ", postOrder[i]->bbNum);
-        }
-        JITDUMP("\n");
+        assert(numBlocks == nestedCount);
 
         // Use that to find the nested SCCs
         //
@@ -3199,28 +3206,22 @@ public:
             JITDUMP("Transforming SCC via switch dispatch: ");
             JITDUMPEXEC(Dump());
 
-            //            if (HasOSREntryHeaderInTry())
-            //            {
-            //                JITDUMP("  cannot transform: header " FMT_BB " is OSR entry in a try region\n",
-            //                        m_comp->fgOSREntryBB->bbNum);
-            //                failedToModify = true;
-            //                return false;
-            //            }
+            // We're making changes
+            //
+            modified = true;
 
-            modified                       = true;
+            // Split edges, rewire flow, and add control var assignments
+            //
             const unsigned   controlVarNum = m_comp->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("SCC control var"));
             LclVarDsc* const controlVarDsc = m_comp->lvaGetDesc(controlVarNum);
             controlVarDsc->lvType          = TYP_INT;
             BasicBlock*      dispatcher    = nullptr;
             FlowEdge** const succs         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
             FlowEdge** const cases         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
-
-            // Split edges, rewire flow, and add control var assignments
-            //
-            unsigned        headerNumber = 0;
-            BitVecOps::Iter iterator(&m_traits, m_entries);
-            unsigned int    poHeaderNumber = 0;
-            weight_t        netLikelihood  = 0.0;
+            unsigned         headerNumber  = 0;
+            BitVecOps::Iter  iterator(&m_traits, m_entries);
+            unsigned int     poHeaderNumber = 0;
+            weight_t         netLikelihood  = 0.0;
 
             while (iterator.NextElem(&poHeaderNumber))
             {
@@ -3254,8 +3255,7 @@ public:
                 for (FlowEdge* const f : header->PredEdgesEditing())
                 {
                     assert(f->getDestinationBlock() == header);
-                    BasicBlock* const pred = f->getSourceBlock();
-                    JITDUMP("  Splitting edge " FMT_BB " -> " FMT_BB "\n", pred->bbNum, header->bbNum);
+                    BasicBlock* const pred            = f->getSourceBlock();
                     BasicBlock* const transferBlock   = m_comp->fgSplitEdge(pred, header);
                     GenTree* const    targetIndex     = m_comp->gtNewIconNode(headerNumber);
                     GenTree* const    storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
@@ -3264,24 +3264,7 @@ public:
                     m_comp->fgReplaceJumpTarget(transferBlock, header, dispatcher);
                 }
 
-                // If the header is the OSR entry, and the dispatcher is in an enclosing
-                // try, we must branch there in a more complicated way...
-                //
-                // something like: create a new block in the same region as the dispatcher.
-                // In that block set the OSR control var for the OSR entry (0), and set the
-                // control vars for each enclosing try that is an SCC header (already handled)
-                // and then branch to the outermost enclosing try's header.
-                //
-                FlowEdge* dispatchToHeaderEdge = nullptr;
-                //                if ((header == m_comp->fgOSREntryBB) && (header->bbTryIndex !=
-                //                dispatcher->bbTryIndex))
-                //                {
-                //                    assert(!"Transforming SCC with OSR entry in try region not implemented");
-                //                }
-                //                else
-                {
-                    dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
-                }
+                FlowEdge* const dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
 
                 // Since all flow to header now goes through dispatch, we know the likelihood
                 // of the dispatch targets. If all profile data is zero just divide evenly.
@@ -3461,7 +3444,6 @@ void Compiler::optFindSCCs(
                 sccs.Push(scc);
             }
 
-            // JITDUMP("Adding " FMT_BB " to scc with root " FMT_BB "\n", u->bbNum, root->bbNum);
             scc->Add(u);
         }
 
@@ -3475,7 +3457,6 @@ void Compiler::optFindSCCs(
         //
         if (bbIsHandlerBeg(u))
         {
-            // JITDUMP("hdlr " FMT_BB ", skipping all preds\n");
             return;
         }
 
@@ -3484,7 +3465,6 @@ void Compiler::optFindSCCs(
         //
         if (u->isBBCallFinallyPairTail())
         {
-            JITDUMP("cfpt " FMT_BB ", advancing to " FMT_BB "\n", u->bbNum, u->Prev()->bbNum);
             self(self, u->Prev(), root, subset);
             return;
         }
@@ -3495,9 +3475,8 @@ void Compiler::optFindSCCs(
         {
             // Do not walk back into a catch or filter.
             //
-            if (p->KindIs(BBJ_EHCATCHRET))
+            if (p->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET))
             {
-                // JITDUMP("c-cont " FMT_BB ", skipping " FMT_BB "\n", u->bbNum, u->Prev()->bbNum);
                 continue;
             }
 
@@ -3517,7 +3496,6 @@ void Compiler::optFindSCCs(
             continue;
         }
 
-        // JITDUMP("Top-level assign: " FMT_BB "\n", block->bbNum);
         assign(assign, block, block, subset);
     }
 
