@@ -136,6 +136,14 @@
   <Target Name="UpdateLocalAppHostPack"
           Condition="'$(UseLocalAppHostPack)' == 'true'"
           AfterTargets="ResolveFrameworkReferences">
+    <PropertyGroup Condition="'$(UseBootstrapLayout)' != 'true'">
+      <LocalRefPackDir>$(MicrosoftNetCoreAppRefPackDir)</LocalRefPackDir>
+      <LocalRuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</LocalRuntimePackDir>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(UseBootstrapLayout)' == 'true'">
+      <LocalRefPackDir>$(BootstrapRefPackDir)</LocalRefPackDir>
+      <LocalRuntimePackDir>$(BootstrapRuntimePackDir)</LocalRuntimePackDir>
+    </PropertyGroup>
     <PropertyGroup>
       <AppHostSourcePath>$(LocalAppHostPath)</AppHostSourcePath>
       <SingleFileHostSourcePath>$(LocalSingleFileHostPath)</SingleFileHostSourcePath>
