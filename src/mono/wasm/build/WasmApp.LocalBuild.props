@@ -64,9 +64,9 @@
     
     <_WasmSdkTargets>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmSdkTargets'))</_WasmSdkTargets>
     <_WasmSdkTools>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'WasmSdkTools'))</_WasmSdkTools>
-    <_WebAssemblyPropsFile>$(_WasmSdkTargets)\build\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
-    <_WebAssemblyTargetsFile>$(_WasmSdkTargets)\build\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
-    <_WebAssemblySdkToolsDirectory>$(_WasmSdkTools)\tools</_WebAssemblySdkToolsDirectory>
+    <_WebAssemblyPropsFile>$(_WasmSdkTargets)\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
+    <_WebAssemblyTargetsFile>$(_WasmSdkTargets)\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
+    <_WebAssemblySdkToolsDirectory>$(_WasmSdkTools)</_WebAssemblySdkToolsDirectory>
   </PropertyGroup>
 
   <ItemGroup>
