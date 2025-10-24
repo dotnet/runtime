@@ -57,6 +57,7 @@ SETUP:
     1. Install GitHub CLI and authenticate: gh auth login
     2. Choose LLM provider:
        - For GitHub Models: gh extension install github/gh-models
+       - For GitHub Copilot: Install GitHub Copilot CLI from https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli
        - For OpenAI: `$env:OPENAI_API_KEY = "your-key"
        - For others: Set appropriate API key
     3. Edit config.ps1 to customize settings
@@ -96,21 +97,22 @@ try {
     exit 1
 }
 
-# Check LLM API key or GitHub CLI for GitHub Models
+# Check LLM API key or GitHub CLI for GitHub Models/Copilot
 $llmProvider = $Config.LlmProvider
 $apiKey = switch ($llmProvider) {
     "openai" { $env:OPENAI_API_KEY }
     "anthropic" { $env:ANTHROPIC_API_KEY }
     "azure-openai" { $env:AZURE_OPENAI_API_KEY }
     "github-models" { $null }  # No API key needed for GitHub Models
+    "github-copilot" { $null }  # No API key needed for GitHub Copilot CLI
     default { $env:OPENAI_API_KEY }
 }
 
 if ($llmProvider -eq "github-models") {
     # Check if gh-models extension is installed
     try {
-        $extensions = gh extension list 2>$null
-        if ($extensions -notmatch "github/gh-models") {
+        $modelsExtension = gh extension list 2>$null | Select-String "gh models"
+        if (-not $modelsExtension) {
             Write-Error "❌ GitHub Models extension not found. Install with: gh extension install github/gh-models"
             exit 1
         }
@@ -119,12 +121,27 @@ if ($llmProvider -eq "github-models") {
         Write-Error "❌ Could not check GitHub Models extension: $($_.Exception.Message)"
         exit 1
     }
+} elseif ($llmProvider -eq "github-copilot") {
+    # Check if standalone GitHub Copilot CLI is installed
+    try {
+        $copilotVersion = copilot --version 2>$null
+        if (-not $copilotVersion -or $LASTEXITCODE -ne 0) {
+            Write-Error "❌ GitHub Copilot CLI not found. Install from: https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli"
+            exit 1
+        }
+        Write-Host "✅ GitHub Copilot CLI found (version: $($copilotVersion.Split("`n")[0]))" -ForegroundColor Green
+    } catch {
+        Write-Error "❌ Could not check GitHub Copilot CLI: $($_.Exception.Message)"
+        Write-Error "   Install from: https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli"
+        exit 1
+    }
 } elseif (-not $apiKey) {
     Write-Error "❌ No LLM API key found. Set environment variable:"
     Write-Host "   For OpenAI: `$env:OPENAI_API_KEY = 'your-key'"
     Write-Host "   For Anthropic: `$env:ANTHROPIC_API_KEY = 'your-key'"
     Write-Host "   For Azure OpenAI: `$env:AZURE_OPENAI_API_KEY = 'your-key'"
     Write-Host "   For GitHub Models: Use 'github-models' provider (no key needed)"
+    Write-Host "   For GitHub Copilot: Install GitHub Copilot CLI from https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli (no key needed)"
     exit 1
 } else {
     Write-Host "✅ LLM API key found ($llmProvider)" -ForegroundColor Green
@@ -457,6 +474,44 @@ function Invoke-LlmApi {
             }
             catch {
                 Write-Error "GitHub Models API call failed: $($_.Exception.Message)"
+                return $null
+            }
+        }
+        "github-copilot" {
+            # Use GitHub Copilot CLI in programmatic mode
+            try {
+                # Combine system prompt and user prompt, emphasizing text-only response
+                $fullPrompt = if ($SystemPrompt) {
+                    "$SystemPrompt`n`nIMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
+                } else {
+                    "IMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
+                }
+
+                # Use copilot with -p flag for programmatic mode and suppress logs
+                $rawResponse = copilot -p $fullPrompt --log-level none --allow-all-tools
+
+                # Parse the response to extract just the content, removing usage statistics
+                # The response format typically includes usage stats at the end starting with "Total usage est:"
+                $lines = $rawResponse -split "`n"
+                $contentLines = @()
+                $foundUsageStats = $false
+
+                foreach ($line in $lines) {
+                    if ($line -match "^Total usage est:" -or $line -match "^Total duration") {
+                        $foundUsageStats = $true
+                        break
+                    }
+                    if (-not $foundUsageStats) {
+                        $contentLines += $line
+                    }
+                }
+
+                # Join the content lines and trim whitespace
+                $response = ($contentLines -join "`n").Trim()
+                return $response
+            }
+            catch {
+                Write-Error "GitHub Copilot CLI call failed: $($_.Exception.Message)"
                 return $null
             }
         }

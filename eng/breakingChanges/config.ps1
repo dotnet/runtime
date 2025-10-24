@@ -2,9 +2,9 @@
 
 $Config = @{
     # LLM Settings
-    LlmProvider = "github-models"       # openai, anthropic, azure-openai, github-models
+    LlmProvider = "github-copilot"      # openai, anthropic, azure-openai, github-models, github-copilot
     LlmModel = "openai/gpt-4o"          # For GitHub Models: openai/gpt-4o, openai/gpt-4o-mini, microsoft/phi-4, etc.
-    LlmApiKey = $null                   # Uses environment variables by default (not needed for github-models)
+    LlmApiKey = $null                   # Uses environment variables by default (not needed for github-models or github-copilot)
     LlmBaseUrl = $null                  # For Azure OpenAI: https://your-resource.openai.azure.com
 
     # GitHub Settings

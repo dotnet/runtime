@@ -34,6 +34,11 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
 
+   - name: Install GitHub Copilot CLI
+     run: |
+       npm install -g @github/copilot
+       copilot --version
+
     - name: Fetch latest tags
       run: |
         git fetch --tags --force
