@@ -243,11 +243,11 @@ function Invoke-WithGitHubToken {
     }
 
     # Store original token
-    $originalGitHubToken = $env:GITHUB_TOKEN
+    $originalGitHubToken = $env:GH_TOKEN
 
     try {
         # Set temporary token
-        $env:GITHUB_TOKEN = $ApiKey
+        $env:GH_TOKEN = $ApiKey
 
         # Execute the script block
         return & $ScriptBlock
@@ -255,9 +255,9 @@ function Invoke-WithGitHubToken {
     finally {
         # Restore original token
         if ($originalGitHubToken) {
-            $env:GITHUB_TOKEN = $originalGitHubToken
+            $env:GH_TOKEN = $originalGitHubToken
         } else {
-            Remove-Item env:GITHUB_TOKEN -ErrorAction SilentlyContinue
+            Remove-Item env:GH_TOKEN -ErrorAction SilentlyContinue
         }
     }
 }
