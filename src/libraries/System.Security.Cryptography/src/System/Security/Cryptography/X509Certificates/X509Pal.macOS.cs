@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.X509Certificates
                     if (oid.Value == Oids.Rsa)
                     {
                         Debug.Assert(!key.IsInvalid);
-                        return new RSAImplementation.RSASecurityTransforms(key);
+                        return new RSAImplementation.RSAAppleCrypto(key);
                     }
 
                     key.Dispose();

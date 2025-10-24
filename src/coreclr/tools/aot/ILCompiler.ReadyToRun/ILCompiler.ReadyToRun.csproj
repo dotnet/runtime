@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
@@ -257,6 +257,7 @@
     <Compile Include="Compiler\ProfileDataManager.cs" />
     <Compile Include="Compiler\VersionResilientHashCode.ReadyToRun.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs" />
+    <Compile Include="..\..\Common\TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs" />
     <Compile Include="Compiler\ReadyToRunLibraryRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
@@ -283,7 +284,6 @@
     <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
-    <Compile Include="JitInterface\UnboxingMethodDescFactory.cs" />
     <Compile Include="ObjectWriter\SectionBuilder.cs" />
     <Compile Include="ObjectWriter\R2RPEBuilder.cs" />
     <Compile Include="ObjectWriter\RelocationHelper.cs" />
@@ -335,6 +335,15 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\UnboxingMethodDesc.cs">
       <Link>JitInterface\UnboxingMethodDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\UnboxingMethodDescFactory.cs">
+      <Link>JitInterface\UnboxingMethodDescFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\AsyncMethodDesc.cs">
+      <Link>JitInterface\AsyncMethodDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\AsyncMethodDescFactory.cs">
+      <Link>JitInterface\AsyncMethodDesc.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

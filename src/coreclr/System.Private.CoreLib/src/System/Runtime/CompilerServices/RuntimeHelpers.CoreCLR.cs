@@ -781,6 +781,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
 #endif // FEATURE_TYPEEQUIVALENCE
         private const uint enum_flag_HasFinalizer = 0x00100000;
+        private const uint enum_flag_Collectible = 0x00200000;
         private const uint enum_flag_Category_Mask = 0x000F0000;
         private const uint enum_flag_Category_ValueType = 0x00040000;
         private const uint enum_flag_Category_Nullable = 0x00050000;
@@ -840,6 +841,8 @@ namespace System.Runtime.CompilerServices
 #endif // FEATURE_TYPEEQUIVALENCE
 
         public bool HasFinalizer => (Flags & enum_flag_HasFinalizer) != 0;
+
+        public bool IsCollectible => (Flags & enum_flag_Collectible) != 0;
 
         internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => mt1 == mt2;
 
@@ -978,11 +981,21 @@ namespace System.Runtime.CompilerServices
         private uint _typeAndFlags;
         private nint _exposedClassObject;
 
+        private const uint enum_flag_IsCollectible = 0x00000100;
+
         public RuntimeType? ExposedClassObject
         {
             get
             {
                 return *(RuntimeType*)Unsafe.AsPointer(ref _exposedClassObject);
+            }
+        }
+
+        public bool IsCollectible
+        {
+            get
+            {
+                return (_typeAndFlags & enum_flag_IsCollectible) != 0;
             }
         }
     }

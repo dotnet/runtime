@@ -89,11 +89,11 @@ namespace Internal.TypeSystem.NoMetadata
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return NameAndSignature.GetName();
+                return NameAndSignature.Name;
             }
         }
 
@@ -163,7 +163,7 @@ namespace Internal.TypeSystem.NoMetadata
 
         public override string ToString()
         {
-            string result = OwningType.ToString() + ".Method(" + Name + ")";
+            string result = OwningType.ToString() + ".Method(" + GetName() + ")";
             return result;
         }
 #endif

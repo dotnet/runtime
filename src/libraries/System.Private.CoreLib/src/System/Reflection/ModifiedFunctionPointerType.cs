@@ -79,7 +79,7 @@ namespace System.Reflection
                     break;
             }
 
-            return builder.Count == 0 ? EmptyTypes : builder.ToArray();
+            return builder.ToArray();
         }
     }
 }

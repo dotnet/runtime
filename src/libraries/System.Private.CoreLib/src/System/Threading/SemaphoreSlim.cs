@@ -756,8 +756,8 @@ namespace System.Threading
             bool wasInList = m_asyncHead == task || task.Prev is not null;
 
             // Remove it from the linked list
-            if (task.Next is not null) task.Next.Prev = task.Prev;
-            if (task.Prev is not null) task.Prev.Next = task.Next;
+            task.Next?.Prev = task.Prev;
+            task.Prev?.Next = task.Next;
             if (m_asyncHead == task) m_asyncHead = task.Next;
             if (m_asyncTail == task) m_asyncTail = task.Prev;
             Debug.Assert((m_asyncHead is null) == (m_asyncTail is null), "Head is null iff tail is null");

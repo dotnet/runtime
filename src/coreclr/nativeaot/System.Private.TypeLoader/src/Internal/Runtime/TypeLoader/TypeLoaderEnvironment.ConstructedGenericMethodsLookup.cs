@@ -28,7 +28,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (!_hashCode.HasValue)
                 {
-                    _hashCode = _declaringTypeHandle.GetHashCode() ^ TypeHashingAlgorithms.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(_methodNameAndSignature.GetName()), _genericMethodArgumentHandles);
+                    _hashCode = _declaringTypeHandle.GetHashCode() ^ VersionResilientHashCode.GenericInstanceHashCode(VersionResilientHashCode.NameHashCode(_methodNameAndSignature.Name), _genericMethodArgumentHandles);
                 }
                 return _hashCode.Value;
             }

@@ -5,13 +5,17 @@
 
 // Include System.IO.Compression.Native headers
 #include "pal_zlib.h"
+
+#if !defined(TARGET_WASM)
 #include <brotli/decode.h>
 #include <brotli/encode.h>
 #include <brotli/port.h>
 #include <brotli/types.h>
+#endif // !TARGET_WASM
 
 static const Entry s_compressionNative[] =
 {
+#if !defined(TARGET_WASM)
     DllImportEntry(BrotliDecoderCreateInstance)
     DllImportEntry(BrotliDecoderDecompress)
     DllImportEntry(BrotliDecoderDecompressStream)
@@ -24,6 +28,7 @@ static const Entry s_compressionNative[] =
     DllImportEntry(BrotliEncoderHasMoreOutput)
     DllImportEntry(BrotliEncoderMaxCompressedSize)
     DllImportEntry(BrotliEncoderSetParameter)
+#endif // !TARGET_WASM
     DllImportEntry(CompressionNative_Crc32)
     DllImportEntry(CompressionNative_Deflate)
     DllImportEntry(CompressionNative_DeflateEnd)

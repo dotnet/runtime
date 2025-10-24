@@ -966,23 +966,19 @@ IniKey1=IniValue2");
 
                 _ = Task.Run(ReloadLoop);
 
-                MyOptions options = null;
+                MyOptions options;
 
-                bool optionsInitialized = false;
-                while (!cts.IsCancellationRequested)
+                do
                 {
                     options = config.Get<MyOptions>();
-                    optionsInitialized = true;
                 }
+                while (!cts.IsCancellationRequested);
 
-                if (optionsInitialized)
-                {
-                    Assert.Equal("CmdValue1", options.CmdKey1);
-                    Assert.Equal("IniValue1", options.IniKey1);
-                    Assert.Equal("JsonValue1", options.JsonKey1);
-                    Assert.Equal("MemValue1", options.MemKey1);
-                    Assert.Equal("XmlValue1", options.XmlKey1);
-                }
+                Assert.Equal("CmdValue1", options.CmdKey1);
+                Assert.Equal("IniValue1", options.IniKey1);
+                Assert.Equal("JsonValue1", options.JsonKey1);
+                Assert.Equal("MemValue1", options.MemKey1);
+                Assert.Equal("XmlValue1", options.XmlKey1);
             }
         }
 

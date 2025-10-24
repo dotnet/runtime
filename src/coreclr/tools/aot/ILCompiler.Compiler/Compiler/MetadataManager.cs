@@ -890,7 +890,7 @@ namespace ILCompiler
             // In the metadata, we only represent the generic definition
             MethodDesc methodToGenerateMetadataFor = method.GetTypicalMethodDefinition();
 
-            ConstantStringValue name = (ConstantStringValue)methodToGenerateMetadataFor.Name;
+            ConstantStringValue name = (ConstantStringValue)methodToGenerateMetadataFor.GetName();
             MetadataRecord signature = transform.HandleMethodSignature(methodToGenerateMetadataFor.Signature);
             MetadataRecord owningType = transform.HandleType(methodToGenerateMetadataFor.OwningType);
 

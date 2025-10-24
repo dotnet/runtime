@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+#include <interpretershared.h>
+#include "callhelpers.hpp"
+#include "shash.h"
+
 extern "C" void STDCALL CallCountingStubCode()
 {
     PORTABILITY_ASSERT("CallCountingStubCode is not implemented on wasm");
@@ -83,16 +87,6 @@ extern "C" void STDCALL FixupPrecodeCode_End()
     PORTABILITY_ASSERT("FixupPrecodeCode_End is not implemented on wasm");
 }
 
-extern "C" void STDCALL JIT_PatchedCodeLast()
-{
-    PORTABILITY_ASSERT("JIT_PatchedCodeLast is not implemented on wasm");
-}
-
-extern "C" void STDCALL JIT_PatchedCodeStart()
-{
-    PORTABILITY_ASSERT("JIT_PatchedCodeStart is not implemented on wasm");
-}
-
 extern "C" void RhpInitialInterfaceDispatch()
 {
     PORTABILITY_ASSERT("RhpInitialInterfaceDispatch is not implemented on wasm");
@@ -117,7 +111,47 @@ void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    PORTABILITY_ASSERT("InlinedCallFrame::UpdateRegDisplay_Impl is not implemented on wasm");
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+#ifdef PROFILING_SUPPORTED
+        PRECONDITION(CORProfilerStackSnapshotEnabled() || InlinedCallFrame::FrameHasActiveCall(this));
+#endif
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    if (!InlinedCallFrame::FrameHasActiveCall(this))
+    {
+        LOG((LF_CORDB, LL_ERROR, "WARNING: InlinedCallFrame::UpdateRegDisplay called on inactive frame %p\n", this));
+        return;
+    }
+
+    pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
+    pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
+
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = NULL;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+#ifdef FEATURE_INTERPRETER
+    if ((m_Next != FRAME_TOP) && (m_Next->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame))
+    {
+        // If the next frame is an interpreter frame, we also need to set the first argument register to point to the interpreter frame.
+        SetFirstArgReg(pRD->pCurrentContext, dac_cast<TADDR>(m_Next));
+    }
+#endif // FEATURE_INTERPRETER
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    InlinedCallFrame::UpdateRegDisplay_Impl(rip:%p, rsp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
@@ -213,21 +247,6 @@ EXTERN_C FCDECL0(void, JIT_PollGC)
     PORTABILITY_ASSERT("JIT_PollGC is not implemented on wasm");
 }
 
-extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("JIT_WriteBarrier is not implemented on wasm");
-}
-
-extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("JIT_CheckedWriteBarrier is not implemented on wasm");
-}
-
-extern "C" void STDCALL JIT_ByRefWriteBarrier()
-{
-    PORTABILITY_ASSERT("JIT_ByRefWriteBarrier is not implemented on wasm");
-}
-
 void InitJITHelpers1()
 {
     /* no-op WASM-TODO do we need to do anything for the interpreter? */
@@ -290,21 +309,6 @@ extern "C" void ThisPtrRetBufPrecodeWorker()
     PORTABILITY_ASSERT("ThisPtrRetBufPrecodeWorker is not implemented on wasm");
 }
 
-extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("RhpAssignRef is not implemented on wasm");
-}
-
-extern "C" FCDECL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("RhpCheckedAssignRef is not implemented on wasm");
-}
-
-extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref)
-{
-    PORTABILITY_ASSERT("RhpByRefAssignRef is not implemented on wasm");
-}
-
 extern "C" void RhpInterfaceDispatchAVLocation1()
 {
     PORTABILITY_ASSERT("RhpInterfaceDispatchAVLocation1 is not implemented on wasm");
@@ -343,72 +347,6 @@ extern "C" void RhpInterfaceDispatchAVLocation64()
 extern "C" void RhpVTableOffsetDispatchAVLocation()
 {
     PORTABILITY_ASSERT("RhpVTableOffsetDispatchAVLocation is not implemented on wasm");
-}
-
-EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
-{
-    PORTABILITY_ASSERT("RhpNewVariableSizeObject is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    PORTABILITY_ASSERT("RhpNewMaybeFrozen is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
-{
-    PORTABILITY_ASSERT("RhpNewArrayFast is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL2(Object*, RhpNewPtrArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
-{
-    PORTABILITY_ASSERT("RhpNewPtrArrayFast is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
-{
-    PORTABILITY_ASSERT("RhpNewArrayFastAlign8 is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    PORTABILITY_ASSERT("RhpNewFastAlign8 is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    PORTABILITY_ASSERT("RhpNewFastMisalign is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL1(Object*, RhpNewFast, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    PORTABILITY_ASSERT("RhpNewFast is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_)
-{
-    PORTABILITY_ASSERT("RhpNew is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size)
-{
-    PORTABILITY_ASSERT("RhpNewArrayMaybeFrozen is not implemented on wasm");
-    return nullptr;
-}
-
-EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR stringLength)
-{
-    PORTABILITY_ASSERT("RhNewString is not implemented on wasm");
-    return nullptr;
 }
 
 extern "C" void STDCALL ThePreStubPatchLabel(void)
@@ -470,25 +408,244 @@ void _DacGlobals::Initialize()
     /* no-op on wasm */
 }
 
+// Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
-extern "C" int32_t mono_wasm_browser_entropy(uint8_t* buffer, int32_t bufferLength)
+void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet)
 {
-    PORTABILITY_ASSERT("mono_wasm_browser_entropy is not implemented");
-    return -1;
+    _ASSERTE(ftn != (PCODE)NULL);
+    _ASSERTE(cookie != NULL);
+
+    PCODE actualFtn = (PCODE)PortableEntryPoint::GetActualCode(ftn);
+    ((void(*)(PCODE, int8_t*, int8_t*))cookie)(actualFtn, pArgs, pRet);
 }
 
-void InvokeCalliStub(PCODE ftn, CallStubHeader *stubHeaderTemplate, int8_t *pArgs, int8_t *pRet)
+void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
 {
-    PORTABILITY_ASSERT("InvokeCalliStub is not implemented on wasm");
-}
+    _ASSERTE(ftn != (PCODE)NULL);
+    _ASSERTE(cookie != NULL);
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
-{
-    PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
+    // WASM-TODO: Reconcile calling conventions.
+    ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
 }
 
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target)
 {
     PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
+}
+
+namespace
+{
+    enum class ConvertType
+    {
+        NotConvertible,
+        ToI32,
+        ToI64,
+        ToI32Indirect,
+        ToF32,
+        ToF64
+    };
+
+    ConvertType ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
+    {
+        // See https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
+        switch (argType)
+        {
+            case ELEMENT_TYPE_BOOLEAN:
+            case ELEMENT_TYPE_CHAR:
+            case ELEMENT_TYPE_I1:
+            case ELEMENT_TYPE_U1:
+            case ELEMENT_TYPE_I2:
+            case ELEMENT_TYPE_U2:
+            case ELEMENT_TYPE_I4:
+            case ELEMENT_TYPE_U4:
+            case ELEMENT_TYPE_STRING:
+            case ELEMENT_TYPE_PTR:
+            case ELEMENT_TYPE_BYREF:
+            case ELEMENT_TYPE_CLASS:
+            case ELEMENT_TYPE_ARRAY:
+            case ELEMENT_TYPE_I:
+            case ELEMENT_TYPE_U:
+            case ELEMENT_TYPE_FNPTR:
+            case ELEMENT_TYPE_SZARRAY:
+                return ConvertType::ToI32;
+            case ELEMENT_TYPE_I8:
+            case ELEMENT_TYPE_U8:
+                return ConvertType::ToI64;
+            case ELEMENT_TYPE_R4:
+                return ConvertType::ToF32;
+            case ELEMENT_TYPE_R8:
+                return ConvertType::ToF64;
+            case ELEMENT_TYPE_TYPEDBYREF:
+                // Typed references are passed indirectly in WASM since they are larger than pointer size.
+                return ConvertType::ToI32Indirect;
+            case ELEMENT_TYPE_VALUETYPE:
+            {
+                // In WASM, values types that are larger than pointer size or have multiple fields are passed indirectly.
+                // WASM-TODO: Single fields may not always be passed as i32. Floats and doubles are passed as f32 and f64 respectively.
+                TypeHandle vt = isReturn
+                    ? sig.GetRetTypeHandleThrowing()
+                    : sig.GetLastTypeHandleThrowing();
+
+                if (!vt.IsTypeDesc()
+                    && vt.AsMethodTable()->GetNumInstanceFields() >= 2)
+                {
+                    return ConvertType::ToI32Indirect;
+                }
+
+                return vt.GetSize() <= sizeof(uint32_t)
+                    ? ConvertType::ToI32
+                    : ConvertType::ToI32Indirect;
+            }
+            default:
+                return ConvertType::NotConvertible;
+        }
+    }
+
+    char GetTypeCode(ConvertType type)
+    {
+        switch (type)
+        {
+            case ConvertType::ToI32:
+                return 'i';
+            case ConvertType::ToI64:
+                return 'l';
+            case ConvertType::ToF32:
+                return 'f';
+            case ConvertType::ToF64:
+                return 'd';
+            case ConvertType::ToI32Indirect:
+                return 'n';
+            default:
+                PORTABILITY_ASSERT("Unknown type");
+                return '?';
+        }
+    }
+
+    bool GetSignatureKey(MetaSig& sig, char* keyBuffer, uint32_t maxSize)
+    {
+        STANDARD_VM_CONTRACT;
+
+        uint32_t pos = 0;
+
+        if (sig.IsReturnTypeVoid())
+        {
+            keyBuffer[pos++] = 'v';
+        }
+        else
+        {
+            keyBuffer[pos++] = GetTypeCode(ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */));
+        }
+
+        if (sig.HasThis())
+            keyBuffer[pos++] = 'i';
+
+        for (CorElementType argType = sig.NextArg();
+            argType != ELEMENT_TYPE_END;
+            argType = sig.NextArg())
+        {
+            if (pos >= maxSize)
+                return false;
+
+            keyBuffer[pos++] = GetTypeCode(ConvertibleTo(argType, sig, false /* isReturn */));
+        }
+
+        if (pos >= maxSize)
+            return false;
+
+        keyBuffer[pos] = 0;
+
+        return true;
+    }
+
+    class StringWasmThunkSHashTraits : public MapSHashTraits<const char*, void*>
+    {
+    public:
+        static BOOL Equals(const char* s1, const char* s2) { return strcmp(s1, s2) == 0; }
+        static count_t Hash(const char* key) { return HashStringA(key); }
+    };
+
+    typedef MapSHash<const char*, void*, NoRemoveSHashTraits<StringWasmThunkSHashTraits>> StringToWasmSigThunkHash;
+    static StringToWasmSigThunkHash* thunkCache = nullptr;
+
+    void* LookupThunk(const char* key)
+    {
+        StringToWasmSigThunkHash* table = VolatileLoad(&thunkCache);
+        if (table == nullptr)
+        {
+            StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
+            newTable->Reallocate(g_wasmThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
+            for (size_t i = 0; i < g_wasmThunksCount; i++)
+            {
+                newTable->Add(g_wasmThunks[i].key, g_wasmThunks[i].value);
+            }
+
+            if (InterlockedCompareExchangeT(&thunkCache, newTable, nullptr) != nullptr)
+            {
+                // Another thread won the race, discard ours
+                delete newTable;
+            }
+            table = thunkCache;
+        }
+
+        void* thunk;
+        bool success = table->Lookup(key, &thunk);
+        return success ? thunk : nullptr;
+    }
+
+    // This is a simple signature computation routine for signatures currently supported in the wasm environment.
+    void* ComputeCalliSigThunk(MetaSig& sig)
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(sizeof(int32_t) == sizeof(void*));
+
+        // Ensure an unmanaged calling convention.
+        BYTE callConv = sig.GetCallingConvention();
+        switch (callConv)
+        {
+            case IMAGE_CEE_CS_CALLCONV_DEFAULT:
+            case IMAGE_CEE_CS_CALLCONV_C:
+            case IMAGE_CEE_CS_CALLCONV_STDCALL:
+            case IMAGE_CEE_CS_CALLCONV_FASTCALL:
+            case IMAGE_CEE_CS_CALLCONV_UNMANAGED:
+                break;
+            default:
+                return NULL;
+        }
+
+        uint32_t keyBufferLen = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0) + 2;
+        char* keyBuffer = (char*)alloca(keyBufferLen);
+        if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
+            return NULL;
+
+        return LookupThunk(keyBuffer);
+    }
+}
+
+LPVOID GetCookieForCalliSig(MetaSig metaSig)
+{
+    STANDARD_VM_CONTRACT;
+
+    void* thunk = ComputeCalliSigThunk(metaSig);
+    if (thunk == NULL)
+    {
+        PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
+    }
+
+    return thunk;
+}
+
+void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
+{
+    MetaSig sig(pMD);
+    void* cookie = GetCookieForCalliSig(sig);
+
+    _ASSERTE(cookie != NULL);
+
+    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet);
+}
+
+void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+{
+    PORTABILITY_ASSERT("Attempted to execute unmanaged code from interpreter on wasm, this is not yet implemented");
 }

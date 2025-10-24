@@ -118,7 +118,7 @@ public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
         cipherText: cipherText,
         tag: tag,
         aad: aad)
- }
+}
 
 @_silgen_name("AppleCryptoNative_ChaCha20Poly1305Decrypt")
 @available(iOS 13, tvOS 13, *)
@@ -158,7 +158,7 @@ public func AppleCryptoNative_AesGcmEncrypt(
         cipherText: cipherText,
         tag: tag,
         aad: aad)
- }
+}
 
 @_silgen_name("AppleCryptoNative_AesGcmDecrypt")
 @available(iOS 13, tvOS 13, *)
@@ -192,4 +192,161 @@ public func AppleCryptoNative_IsAuthenticationFailure(error: Error) -> Bool {
         }
     }
     return false
+}
+
+// Must remain in sync with PAL_HashAlgorithm from managed side.
+enum PAL_HashAlgorithm: Int32 {
+    case unknown = 0
+    case md5 = 1
+    case sha1 = 2
+    case sha256 = 3
+    case sha384 = 4
+    case sha512 = 5
+}
+
+enum HKDFError: Error {
+    case unknownHashAlgorithm
+}
+
+@_silgen_name("AppleCryptoNative_HKDFExpand")
+@available(iOS 14, tvOS 14, *)
+public func AppleCryptoNative_HKDFExpand(
+    hashAlgorithm: Int32,
+    prkPtr: UnsafeMutableRawPointer,
+    prkLength: Int32,
+    infoPtr: UnsafeMutableRawPointer,
+    infoLength: Int32,
+    destinationPtr: UnsafeMutablePointer<UInt8>,
+    destinationLength: Int32) -> Int32 {
+
+    let prk = Data(bytesNoCopy: prkPtr, count: Int(prkLength), deallocator: Data.Deallocator.none)
+    let info = Data(bytesNoCopy: infoPtr, count: Int(infoLength), deallocator: Data.Deallocator.none)
+    let destinationLengthInt = Int(destinationLength)
+
+    guard let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) else {
+        return -2
+    }
+
+    let keyFactory : () throws -> ContiguousBytes = {
+        switch algorithm {
+            case .unknown:
+                throw HKDFError.unknownHashAlgorithm
+            case .md5:
+                return HKDF<Insecure.MD5>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+            case .sha1:
+                return HKDF<Insecure.SHA1>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+            case .sha256:
+                return HKDF<SHA256>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+            case .sha384:
+                return HKDF<SHA384>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+            case .sha512:
+                return HKDF<SHA512>.expand(pseudoRandomKey: prk, info: info, outputByteCount: destinationLengthInt)
+        }
+    }
+
+    guard let key = try? keyFactory() else {
+        return -1
+    }
+
+    return key.withUnsafeBytes { keyBytes in
+        let destination = UnsafeMutableRawBufferPointer(start: destinationPtr, count: destinationLengthInt)
+        return Int32(keyBytes.copyBytes(to: destination))
+    }
+}
+
+@_silgen_name("AppleCryptoNative_HKDFExtract")
+@available(iOS 14, tvOS 14, *)
+public func AppleCryptoNative_HKDFExtract(
+    hashAlgorithm: Int32,
+    ikmPtr: UnsafeMutableRawPointer,
+    ikmLength: Int32,
+    saltPtr: UnsafeMutableRawPointer,
+    saltLength: Int32,
+    destinationPtr: UnsafeMutablePointer<UInt8>,
+    destinationLength: Int32) -> Int32 {
+
+    let ikm = Data(bytesNoCopy: ikmPtr, count: Int(ikmLength), deallocator: Data.Deallocator.none)
+    let salt = Data(bytesNoCopy: saltPtr, count: Int(saltLength), deallocator: Data.Deallocator.none)
+    let destinationLengthInt = Int(destinationLength)
+    let key = SymmetricKey(data: ikm)
+
+    guard let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) else {
+        return -2
+    }
+
+    let prkFactory : () throws -> ContiguousBytes  = {
+        switch algorithm {
+            case .unknown:
+                throw HKDFError.unknownHashAlgorithm
+            case .md5:
+                return HKDF<Insecure.MD5>.extract(inputKeyMaterial: key, salt: salt)
+            case .sha1:
+                return HKDF<Insecure.SHA1>.extract(inputKeyMaterial: key, salt: salt)
+            case .sha256:
+                return HKDF<SHA256>.extract(inputKeyMaterial: key, salt: salt)
+            case .sha384:
+                return HKDF<SHA384>.extract(inputKeyMaterial: key, salt: salt)
+            case .sha512:
+                return HKDF<SHA512>.extract(inputKeyMaterial: key, salt: salt)
+        }
+    }
+
+    guard let prk = try? prkFactory() else {
+        return -1
+    }
+
+    return prk.withUnsafeBytes { prkBytes in
+        let destination = UnsafeMutableRawBufferPointer(start: destinationPtr, count: destinationLengthInt)
+        return Int32(prkBytes.copyBytes(to: destination))
+    }
+}
+
+@_silgen_name("AppleCryptoNative_HKDFDeriveKey")
+@available(iOS 14, tvOS 14, *)
+public func AppleCryptoNative_HKDFDeriveKey(
+    hashAlgorithm: Int32,
+    ikmPtr: UnsafeMutableRawPointer,
+    ikmLength: Int32,
+    saltPtr: UnsafeMutableRawPointer,
+    saltLength: Int32,
+    infoPtr: UnsafeMutableRawPointer,
+    infoLength: Int32,
+    destinationPtr: UnsafeMutablePointer<UInt8>,
+    destinationLength: Int32) -> Int32 {
+
+    let ikm = Data(bytesNoCopy: ikmPtr, count: Int(ikmLength), deallocator: Data.Deallocator.none)
+    let salt = Data(bytesNoCopy: saltPtr, count: Int(saltLength), deallocator: Data.Deallocator.none)
+    let info = Data(bytesNoCopy: infoPtr, count: Int(infoLength), deallocator: Data.Deallocator.none)
+    let destinationLengthInt = Int(destinationLength)
+    let key = SymmetricKey(data: ikm)
+
+    guard let algorithm = PAL_HashAlgorithm(rawValue: hashAlgorithm) else {
+        return -2
+    }
+
+    let derivedKeyFactory : () throws -> ContiguousBytes = {
+        switch algorithm {
+            case .unknown:
+                throw HKDFError.unknownHashAlgorithm
+            case .md5:
+                return HKDF<Insecure.MD5>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+            case .sha1:
+                return HKDF<Insecure.SHA1>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+            case .sha256:
+                return HKDF<SHA256>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+            case .sha384:
+                return HKDF<SHA384>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+            case .sha512:
+                return HKDF<SHA512>.deriveKey(inputKeyMaterial: key, salt: salt, info: info, outputByteCount: destinationLengthInt)
+        }
+    }
+
+    guard let derivedKey = try? derivedKeyFactory() else {
+        return -1
+    }
+
+    return derivedKey.withUnsafeBytes { keyBytes in
+        let destination = UnsafeMutableRawBufferPointer(start: destinationPtr, count: destinationLengthInt)
+        return Int32(keyBytes.copyBytes(to: destination))
+    }
 }

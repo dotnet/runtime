@@ -294,6 +294,13 @@ namespace System.Text
 
         public int CompareTo(Rune other) => this.Value - other.Value; // values don't span entire 32-bit domain; won't integer overflow
 
+        internal ReadOnlySpan<char> AsSpan(Span<char> buffer)
+        {
+            Debug.Assert(buffer.Length >= MaxUtf16CharsPerRune);
+            int charsWritten = EncodeToUtf16(buffer);
+            return buffer.Slice(0, charsWritten);
+        }
+
         /// <summary>
         /// Decodes the <see cref="Rune"/> at the beginning of the provided UTF-16 source buffer.
         /// </summary>
@@ -779,6 +786,29 @@ namespace System.Text
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Rune other) && Equals(other);
 
         public bool Equals(Rune other) => this == other;
+
+        /// <summary>
+        /// Returns a value that indicates whether the current instance and a specified rune are equal using the specified comparison option.
+        /// </summary>
+        /// <param name="other">The rune to compare with the current instance.</param>
+        /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
+        /// <returns><see langword="true"/> if the current instance and <paramref name="other"/> are equal; otherwise, <see langword="false"/>.</returns>
+        public bool Equals(Rune other, StringComparison comparisonType)
+        {
+            if (comparisonType is StringComparison.Ordinal)
+            {
+                return this == other;
+            }
+
+            // Convert this to span
+            ReadOnlySpan<char> thisChars = AsSpan(stackalloc char[MaxUtf16CharsPerRune]);
+
+            // Convert other to span
+            ReadOnlySpan<char> otherChars = other.AsSpan(stackalloc char[MaxUtf16CharsPerRune]);
+
+            // Compare span equality
+            return thisChars.Equals(otherChars, comparisonType);
+        }
 
         public override int GetHashCode() => Value;
 

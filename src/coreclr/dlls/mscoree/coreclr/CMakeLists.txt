@@ -72,9 +72,6 @@ if (NOT CLR_CMAKE_HOST_ARCH_WASM)
     set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
     set(LIB_CORDBEE cordbee_wks)
     set(LIB_INTEROP interop)
-    set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
-    set(LIB_CDAC_GC_WKS_DESCRIPTOR gc_wks_descriptor)
-    set(LIB_CDAC_GC_SVR_DESCRIPTOR gc_svr_descriptor)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
@@ -105,21 +102,21 @@ set(CORECLR_LIBRARIES
     ${LIB_INTEROP}
     coreclrminipal
     gc_pal
-    ${LIB_CDAC_CONTRACT_DESCRIPTOR}
-    ${LIB_CDAC_GC_WKS_DESCRIPTOR}
+    cdac_contract_descriptor
+    gc_wks_descriptor
 )
 
 if (FEATURE_SVR_GC)
     list(APPEND CORECLR_LIBRARIES
-        ${LIB_CDAC_GC_SVR_DESCRIPTOR}
+        gc_svr_descriptor
     )
 endif(FEATURE_SVR_GC)
 
-if(CLR_CMAKE_TARGET_ARCH_AMD64)
+if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
     list(APPEND CORECLR_LIBRARIES
         gc_vxsort
     )
-endif(CLR_CMAKE_TARGET_ARCH_AMD64)
+endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
@@ -174,20 +171,12 @@ if(FEATURE_EVENT_TRACE)
     endif(CLR_CMAKE_HOST_UNIX)
 endif(FEATURE_EVENT_TRACE)
 
-if(FEATURE_PERFTRACING)
-    if(CLR_CMAKE_TARGET_LINUX)
-        list(APPEND CORECLR_LIBRARIES
-            usereventsprovider
-        )
-    endif(CLR_CMAKE_TARGET_LINUX)
-endif(FEATURE_PERFTRACING)
-
 if (FEATURE_STATICALLY_LINKED)
     if (FEATURE_JIT)
         set(CLRJIT_STATIC clrjit_static gcinfo)
     endif(FEATURE_JIT)
     if (FEATURE_INTERPRETER)
-        set(CLRINTERPRETER_STATIC clrinterpreter)
+        set(CLRINTERPRETER_STATIC clrinterpreter_objects dn-containers gcinfo)
     endif(FEATURE_INTERPRETER)
 endif(FEATURE_STATICALLY_LINKED)
 
@@ -195,11 +184,11 @@ if(FEATURE_JIT)
     set(CORECLR_STATIC_CLRJIT_STATIC clrjit_static)
 endif(FEATURE_JIT)
 
-if(NOT CLR_CMAKE_HOST_ARCH_WASM)
-    set(CEE_WKS_STATIC cee_wks_mergeable)
-else()
+if(CLR_CMAKE_HOST_ARCH_WASM)
     set(CEE_WKS_STATIC cee_wks)
-endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
+else()
+    set(CEE_WKS_STATIC cee_wks_mergeable)
+endif()
 
 if (CLR_CMAKE_TARGET_OSX)
     find_library(FOUNDATION Foundation REQUIRED)
@@ -209,7 +198,7 @@ if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core cee_wks ${FOUNDATION})
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core ${CORECLR_STATIC_CLRJIT_STATIC} ${CEE_WKS_STATIC} ${FOUNDATION})
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if (CLR_CMAKE_HOST_ANDROID)
@@ -264,6 +253,8 @@ endif(CLR_CMAKE_TARGET_WIN32)
 # add the install targets
 if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
+else()
+    install_clr(TARGETS coreclr_static DESTINATIONS . sharedFramework COMPONENT runtime)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_ARCH_WASM)

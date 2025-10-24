@@ -36,10 +36,6 @@
 #undef min
 #undef max
 
-#ifndef __has_cpp_attribute
-#define __has_cpp_attribute(x) (0)
-#endif
-
 #include <algorithm>
 
 #if HAVE_SYS_TIME_H

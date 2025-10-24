@@ -1645,7 +1645,6 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     return target;
 }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
-bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
 
 /* Resolve to a method and return its address or NULL if there is none.
    Our return value is the target address that control should continue to.  Our caller will
@@ -1876,7 +1875,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
     // We care about the following cases:
     // Call from any site -> collectible target
-    if (objectType->GetLoaderAllocator()->IsCollectible())
+    if (objectType->Collectible())
     {
         // The callee's manager
         pCalleeMgr = objectType->GetLoaderAllocator()->GetVirtualCallStubManager();
@@ -2318,7 +2317,7 @@ VirtualCallStubManager::Resolver(
             }
         }
 #endif // defined(LOGGING) || defined(_DEBUG)
-
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         BOOL fSlotCallsPrestub = DoesSlotCallPrestub(implSlot.GetTarget());
         if (!fSlotCallsPrestub)
         {
@@ -2361,6 +2360,9 @@ VirtualCallStubManager::Resolver(
                 }
             }
         }
+#else
+        fShouldPatch = TRUE;
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
     }
 #ifdef FEATURE_COMINTEROP
     else if (pMT->IsComObjectType()

@@ -177,8 +177,8 @@ namespace System
                         Debug.Assert(offset.Path >= offset.Host);
                     }
 
-                    Debug.Assert(offset.Query == 0);
-                    Debug.Assert(offset.Fragment == 0);
+                    // We can't check that Query and Fragment offsets are 0 here as a different thread may have called
+                    // ParseRemaining after we've checked InFact(Flags.AllUriInfoSet).
                 }
             }
             else
@@ -3424,7 +3424,7 @@ namespace System
                     origIdx = index == -1 ? _originalUnicodeString.Length : (index + origIdx);
                 }
 
-                _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Path);
+                _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, isQuery: false);
 
                 length = _string.Length;
                 // We need to be sure that there isn't a '?' separated from the path by spaces.
@@ -3554,7 +3554,7 @@ namespace System
                         origIdx = _originalUnicodeString.Length;
                     }
 
-                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Query);
+                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, isQuery: true);
 
                     length = _string.Length;
                     // We need to be sure that there isn't a '#' separated from the query by spaces.
@@ -3605,7 +3605,7 @@ namespace System
                 {
                     origIdx = _originalUnicodeString.Length;
 
-                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, UriComponents.Fragment);
+                    _string += EscapeUnescapeIri(_originalUnicodeString, offset, origIdx, isQuery: false);
 
                     length = _string.Length;
                     // we don't need to check _originalUnicodeString == _string because # is last part
@@ -3876,7 +3876,7 @@ namespace System
                         if (hasUnicode)
                         {
                             // Normalize user info
-                            newHost += IriHelper.EscapeUnescapeIri(pString, startInput, start + 1, UriComponents.UserInfo);
+                            newHost += IriHelper.EscapeUnescapeIri(pString, startInput, start + 1, isQuery: false);
                         }
                         ++start;
                         ch = pString[start];
@@ -3888,6 +3888,14 @@ namespace System
             if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host) &&
                 IPv6AddressHelper.IsValid(pString, start + 1, ref end))
             {
+                if (end < length && pString[end] is not (':' or '/' or '?' or '#'))
+                {
+                    // A valid IPv6 address wasn't followed by a valid delimiter (e.g. http://[::]extra).
+                    flags |= Flags.UnknownHostType;
+                    err = ParsingError.BadHostName;
+                    return idx;
+                }
+
                 flags |= Flags.IPv6HostType;
 
                 if (hasUnicode)

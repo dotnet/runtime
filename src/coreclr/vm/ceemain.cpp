@@ -196,10 +196,6 @@
 #include "diagnosticserveradapter.h"
 #include "eventpipeadapter.h"
 
-#if defined(FEATURE_PERFTRACING) && defined(TARGET_LINUX)
-#include "user_events.h"
-#endif // defined(FEATURE_PERFTRACING) && defined(TARGET_LINUX)
-
 #ifndef TARGET_UNIX
 // Included for referencing __security_cookie
 #include "process.h"
@@ -669,11 +665,16 @@ void EEStartupHelper()
 
         JITInlineTrackingMap::StaticInitialize();
         MethodDescBackpatchInfoTracker::StaticInitialize();
+
+#ifdef FEATURE_CODE_VERSIONING
         CodeVersionManager::StaticInitialize();
+#endif // FEATURE_CODE_VERSIONING
+
 #ifdef FEATURE_TIERED_COMPILATION
         TieredCompilationManager::StaticInitialize();
         CallCountingManager::StaticInitialize();
 #endif // FEATURE_TIERED_COMPILATION
+
         OnStackReplacementManager::StaticInitialize();
         MethodTable::InitMethodDataCache();
 
@@ -696,9 +697,6 @@ void EEStartupHelper()
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
         EventPipeAdapter::Initialize();
-#if defined(TARGET_LINUX)
-        InitUserEvents();
-#endif // TARGET_LINUX
 #endif // FEATURE_PERFTRACING
 
 #ifdef TARGET_UNIX
@@ -865,7 +863,7 @@ void EEStartupHelper()
         // the completion of its initialization part that initializes COM as that has to be done
         // before the first Thread is attached. Thus we want to give the thread a bit more time.
         FinalizerThread::FinalizerThreadCreate();
-#endif
+#endif // TARGET_WINDOWS
 
         InitPreStubManager();
 
@@ -926,17 +924,18 @@ void EEStartupHelper()
         }
 #endif
 
-        // on wasm we need to run finalizers on main thread as we are single threaded
-        // active issue: https://github.com/dotnet/runtime/issues/114096
-#if !defined(TARGET_WINDOWS) && !defined(TARGET_WASM)
-        // This isn't done as part of InitializeGarbageCollector() above because
-        // debugger must be initialized before creating EE thread objects
-        FinalizerThread::FinalizerThreadCreate();
-#else
+#ifdef TARGET_WINDOWS
         // On windows the finalizer thread is already partially created and is waiting
         // right before doing HasStarted(). We will release it now.
         FinalizerThread::EnableFinalization();
-#endif
+#elif defined(TARGET_WASM)
+        // on wasm we need to run finalizers on main thread as we are single threaded
+        // active issue: https://github.com/dotnet/runtime/issues/114096
+#else
+        // This isn't done as part of InitializeGarbageCollector() above because
+        // debugger must be initialized before creating EE thread objects
+        FinalizerThread::FinalizerThreadCreate();
+#endif // TARGET_WINDOWS
 
 #ifdef FEATURE_PERFTRACING
         // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.

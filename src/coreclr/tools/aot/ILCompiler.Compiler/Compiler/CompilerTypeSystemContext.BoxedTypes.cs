@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 
+using Internal;
 using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
@@ -255,29 +256,23 @@ namespace ILCompiler
 
             public override ModuleDesc Module { get; }
 
-            public override string Name => "Boxed_" + ValueTypeRepresented.Name;
-
-            public override string Namespace => ValueTypeRepresented.Namespace;
+            public override ReadOnlySpan<byte> Name => "Boxed_"u8.Append(ValueTypeRepresented.Name);
+            public override ReadOnlySpan<byte> Namespace => ValueTypeRepresented.Namespace;
             public override string DiagnosticName => "Boxed_" + ValueTypeRepresented.DiagnosticName;
             public override string DiagnosticNamespace => ValueTypeRepresented.DiagnosticNamespace;
             public override Instantiation Instantiation => ValueTypeRepresented.Instantiation;
             public override PInvokeStringFormat PInvokeStringFormat => PInvokeStringFormat.AutoClass;
             public override bool IsExplicitLayout => false;
             public override bool IsSequentialLayout => true;
+            public override bool IsExtendedLayout => true;
+            public override bool IsAutoLayout => false;
             public override bool IsBeforeFieldInit => false;
-            public override MetadataType MetadataBaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
-            public override DefType BaseType => MetadataBaseType;
+            public override MetadataType BaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
             public override bool IsSealed => true;
             public override bool IsAbstract => false;
-            public override DefType ContainingType => null;
+            public override MetadataType ContainingType => null;
             public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
             public override TypeSystemContext Context => ValueTypeRepresented.Context;
-
-            public override int GetInlineArrayLength()
-            {
-                Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-                throw new InvalidOperationException();
-            }
 
             public BoxedValueType(ModuleDesc owningModule, MetadataType valuetype)
             {
@@ -305,17 +300,9 @@ namespace ILCompiler
             public override IEnumerable<MetadataType> GetNestedTypes() => Array.Empty<MetadataType>();
             public override MetadataType GetNestedType(string name) => null;
             protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
-            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name) => Array.Empty<MethodImplRecord>();
+            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => Array.Empty<MethodImplRecord>();
 
-            public override int GetHashCode()
-            {
-                string ns = Namespace;
-                var hashCodeBuilder = new Internal.NativeFormat.TypeHashingAlgorithms.HashCodeBuilder(ns);
-                if (ns.Length > 0)
-                    hashCodeBuilder.Append(".");
-                hashCodeBuilder.Append(Name);
-                return hashCodeBuilder.ToHashCode();
-            }
+            public override int GetHashCode() => VersionResilientHashCode.NameHashCode(Namespace, Name);
 
             protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
             {
@@ -337,7 +324,7 @@ namespace ILCompiler
                 return flags;
             }
 
-            public override FieldDesc GetField(string name)
+            public override FieldDesc GetField(ReadOnlySpan<byte> name)
             {
                 return null;
             }
@@ -409,11 +396,11 @@ namespace ILCompiler
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override string Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {
-                    return _targetMethod.Name + "_Unbox";
+                    return _targetMethod.Name.Append("_Unbox"u8);
                 }
             }
 
@@ -444,11 +431,11 @@ namespace ILCompiler
 
                 bool isX86 = Context.Target.Architecture == TargetArchitecture.X86;
 
-                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType");
+                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8);
 
                 // Load ByRef to the field with the value of the boxed valuetype
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetField("Data")));
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8).GetField("Data"u8)));
 
                 if (isX86)
                 {
@@ -506,11 +493,11 @@ namespace ILCompiler
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override string Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {
-                    return _targetMethod.Name + "_Unbox";
+                    return _targetMethod.Name.Append("_Unbox"u8);
                 }
             }
 
@@ -541,7 +528,7 @@ namespace ILCompiler
 
                 // unbox to get a pointer to the value type
                 codeStream.EmitLdArg(0);
-                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetField("Data")));
+                codeStream.Emit(ILOpcode.ldflda, emit.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RawData"u8).GetField("Data"u8)));
 
                 // Load rest of the arguments
                 for (int i = 0; i < _targetMethod.Signature.Length; i++)
@@ -608,7 +595,7 @@ namespace ILCompiler
             public override TypeSystemContext Context => _methodRepresented.Context;
             public override TypeDesc OwningType => _methodRepresented.OwningType;
 
-            public override string Name => _methodRepresented.Name;
+            public override ReadOnlySpan<byte> Name => _methodRepresented.Name;
             public override string DiagnosticName => _methodRepresented.DiagnosticName;
 
             public override MethodSignature Signature

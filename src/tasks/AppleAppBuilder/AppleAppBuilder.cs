@@ -342,7 +342,7 @@ public class AppleAppBuilderTask : Task
             {
                 extraLinkerArgs.Add("-rpath @executable_path");
             }
-            shouldStaticLink = false;
+            shouldStaticLink = true;
         }
 
         var generator = new Xcode(Log, TargetOS, Arch);

@@ -156,7 +156,7 @@ namespace System.Runtime.InteropServices
 
             foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
             {
-                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero)
                 {
@@ -183,7 +183,7 @@ namespace System.Runtime.InteropServices
         {
             foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
             {
-                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero &&
                     !RuntimeImports.RhIsPromoted(nativeObjectWrapper.ProxyHandle.Target))

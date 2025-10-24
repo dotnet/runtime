@@ -3943,7 +3943,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         // See if (X + CNS) is known to be non-negative
         if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
         {
-            Range    rng = Range(Limit(Limit::keDependent));
+            Range    rng = Range(Limit(Limit::keUnknown));
             ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
             if (!RangeCheck::TryGetRangeFromAssertions(this, vn, assertions, &rng))
             {
@@ -3951,7 +3951,6 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
             }
 
             int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-            rng.LowerLimit().AddConstant(cns);
 
             if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
                 (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
@@ -4416,13 +4415,10 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
     // See if we can fold "X relop CNS" using TryGetRangeFromAssertions.
     int op2cns;
-    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) &&
-        vnStore->IsVNIntegralConstant(op2VN, &op2cns)
-        // "op2cns != 0" is purely a TP quirk (such relops are handled by the code above):
-        && (op2cns != 0))
+    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) && vnStore->IsVNIntegralConstant(op2VN, &op2cns))
     {
         // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
-        Range rng1 = Range(Limit(Limit::keUndef));
+        Range rng1 = Range(Limit(Limit::keUnknown));
         Range rng2 = Range(Limit(Limit::keConstant, op2cns));
 
         if (RangeCheck::TryGetRangeFromAssertions(this, op1VN, assertions, &rng1))
@@ -4702,6 +4698,13 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 
     // Find an equal or not equal assertion about op1 var.
     unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
+
+    // Make sure the local is not truncated.
+    if (!op1->TypeIs(lvaGetRealType(lclNum)))
+    {
+        return nullptr;
+    }
+
     noway_assert(lclNum < lvaCount);
     AssertionIndex index = optLocalAssertionIsEqualOrNotEqual(op1Kind, lclNum, op2Kind, cnsVal, assertions);
 
@@ -5773,6 +5776,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 
 void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
 {
+    assert(!optLocalAssertionProp);
+
     if (BitVecOps::IsEmpty(apTraits, activeAssertions))
     {
         return;
@@ -5801,31 +5806,25 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
         {
             AssertionDsc* impAssertion = optGetAssertion(impIndex);
 
-            //  The impAssertion must be different from the chkAssertion
+            // The impAssertion must be different from the chkAssertion
             if (impIndex == chkAssertionIndex)
             {
                 continue;
             }
 
-            // impAssertion must be a Non Null assertion on lclNum
-            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || (impAssertion->op1.kind != O1K_LCLVAR) ||
-                (impAssertion->op2.kind != O2K_CONST_INT) || (impAssertion->op1.vn != chkAssertion->op1.vn))
+            // impAssertion must be a Non Null assertion on op1.vn
+            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || !impAssertion->CanPropNonNull() ||
+                (impAssertion->op1.vn != chkAssertion->op1.vn))
             {
                 continue;
             }
 
             // The bit may already be in the result set
-            if (!BitVecOps::IsMember(apTraits, activeAssertions, impIndex - 1))
+            if (BitVecOps::TryAddElemD(apTraits, activeAssertions, impIndex - 1))
             {
-                BitVecOps::AddElemD(apTraits, activeAssertions, impIndex - 1);
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
-                           (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
-                           impIndex);
-                }
-#endif
+                JITDUMP("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
+                        (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
+                        impIndex);
             }
 
             // There is at most one non-null assertion that is implied by the current chkIndex assertion

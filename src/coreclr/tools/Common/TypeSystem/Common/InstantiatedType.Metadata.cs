@@ -8,16 +8,6 @@ namespace Internal.TypeSystem
 {
     public sealed partial class InstantiatedType : MetadataType
     {
-        public override MetadataType MetadataBaseType
-        {
-            get
-            {
-                if (_baseType == this)
-                    return InitializeBaseType();
-                return _baseType;
-            }
-        }
-
         // Properties that are passed through from the type definition
         public override ClassLayoutMetadata GetClassLayout()
         {
@@ -37,6 +27,22 @@ namespace Internal.TypeSystem
             get
             {
                 return _typeDef.IsSequentialLayout;
+            }
+        }
+
+        public override bool IsExtendedLayout
+        {
+            get
+            {
+                return _typeDef.IsExtendedLayout;
+            }
+        }
+
+        public override bool IsAutoLayout
+        {
+            get
+            {
+                return _typeDef.IsAutoLayout;
             }
         }
 
@@ -84,11 +90,6 @@ namespace Internal.TypeSystem
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _typeDef.HasCustomAttribute(attributeNamespace, attributeName);
-        }
-
-        public override int GetInlineArrayLength()
-        {
-            return _typeDef.GetInlineArrayLength();
         }
 
         public override MetadataType GetNestedType(string name)

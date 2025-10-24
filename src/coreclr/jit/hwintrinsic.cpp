@@ -1932,7 +1932,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                                    : NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4;
                         break;
                     default:
-                        assert("unsupported");
+                        assert(!"unsupported");
                 }
             }
             else
