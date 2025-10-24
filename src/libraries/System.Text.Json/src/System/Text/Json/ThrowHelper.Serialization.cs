@@ -344,7 +344,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_DuplicatePropertyNotAllowed(ReadOnlySpan<byte> nameBytes)
         {
-            string name = JsonHelpers.Utf8GetString(nameBytes);
+            string name = Encoding.UTF8.GetString(nameBytes);
             throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_NameSpan, Truncate(name)));
         }
 
@@ -781,7 +781,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowJsonException_DuplicateMetadataProperty(ReadOnlySpan<byte> utf8PropertyName)
         {
-            ThrowJsonException(SR.Format(SR.DuplicateMetadataProperty, JsonHelpers.Utf8GetString(utf8PropertyName)));
+            ThrowJsonException(SR.Format(SR.DuplicateMetadataProperty, Encoding.UTF8.GetString(utf8PropertyName)));
         }
 
         [DoesNotReturn]

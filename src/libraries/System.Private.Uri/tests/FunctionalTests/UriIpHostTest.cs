@@ -369,18 +369,37 @@ namespace System.PrivateUri.Tests
 
             // TryCreate
             Assert.True(Uri.TryCreate($"http://[{ipv6String}]", UriKind.Absolute, out Uri testUri), ipv6String);
-            Assert.Equal(UriHostNameType.IPv6, testUri.HostNameType);
-            Assert.Equal(expectedResultWithBrackets, testUri.Host);
-            Assert.Equal(expected, testUri.DnsSafeHost);
+            CheckProperties(testUri);
 
             // Constructor
             testUri = new Uri($"http://[{ipv6String}]");
-            Assert.Equal(UriHostNameType.IPv6, testUri.HostNameType);
-            Assert.Equal(expectedResultWithBrackets, testUri.Host);
-            Assert.Equal(expected, testUri.DnsSafeHost);
+            CheckProperties(testUri);
 
             // CheckHostName
             Assert.Equal(UriHostNameType.IPv6, Uri.CheckHostName(ipv6String));
+
+            // IP followed by extra chars without a valid delimiter is invalid
+            Assert.False(Uri.TryCreate($"http://[{ipv6String}]extra", UriKind.Absolute, out _));
+            Assert.False(Uri.TryCreate($"http://[{ipv6String}] extra", UriKind.Absolute, out _));
+            Assert.False(Uri.TryCreate($"http://[{ipv6String}]\\extra", UriKind.Absolute, out _));
+
+            CheckProperties(new Uri($"http://[{ipv6String}] "));
+            CheckProperties(new Uri($"http://[{ipv6String}]/extra"), path: "/extra");
+            CheckProperties(new Uri($"http://[{ipv6String}]:"));
+            CheckProperties(new Uri($"http://[{ipv6String}]:123"), 123);
+            CheckProperties(new Uri($"http://[{ipv6String}]?extra"), query: "?extra");
+            CheckProperties(new Uri($"http://[{ipv6String}]#extra"), fragment: "#extra");
+
+            void CheckProperties(Uri uri, int port = 80, string path = "/", string query = "", string fragment = "")
+            {
+                Assert.Equal(UriHostNameType.IPv6, uri.HostNameType);
+                Assert.Equal(expectedResultWithBrackets, uri.Host);
+                Assert.Equal(expected, uri.DnsSafeHost);
+                Assert.Equal(port, uri.Port);
+                Assert.Equal(path, uri.AbsolutePath);
+                Assert.Equal(query, uri.Query);
+                Assert.Equal(fragment, uri.Fragment);
+            }
         }
 
         private void ParseBadIPv6Address(string badIpv6String)

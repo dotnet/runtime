@@ -40,8 +40,6 @@ endif(FEATURE_GDBJIT)
 if(FEATURE_PERFTRACING)
     set(CORECLR_EVENTPIPE_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/eventpipe)
     include_directories(${CORECLR_EVENTPIPE_SHIM_DIR})
-    set(CORECLR_USEREVENTS_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/userevents)
-    include_directories(${CORECLR_USEREVENTS_SHIM_DIR})
 endif(FEATURE_PERFTRACING)
 
 add_compile_definitions($<${FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH}:FEATURE_CACHED_INTERFACE_DISPATCH>)
@@ -52,6 +50,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     array.cpp
     assembly.cpp
     assemblybinder.cpp
+    asynccontinuations.cpp
     binder.cpp
     castcache.cpp
     callcounting.cpp
@@ -149,6 +148,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     array.h
     assembly.hpp
     assemblybinder.h
+    asynccontinuations.h
     binder.h
     castcache.h
     callcounting.h
@@ -925,6 +925,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         ${ARCH_SOURCES_DIR}/helpers.cpp
+        ${ARCH_SOURCES_DIR}/callhelpers.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
