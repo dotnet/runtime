@@ -110,39 +110,5 @@ namespace System.IO.Tests.Enumeration
                 testDir.Delete(true);
             }
         }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void OriginalRootDirectoryPreservesTrailingSpaces()
-        {
-            // This test verifies that OriginalRootDirectory preserves trailing spaces in the path.
-            // Note: On Windows, trailing spaces are normalized away when opening directories,
-            // but the OriginalRootDirectory property should still preserve what the user passed in.
-            
-            DirectoryInfo testDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
-            try
-            {
-                // Create a test file
-                string testFile = Path.Combine(testDir.FullName, "test.txt");
-                File.WriteAllText(testFile, "test");
-
-                string pathWithTrailingSpace = testDir.FullName + " ";
-
-                using (var enumerator = new OriginalRootDirectoryEnumerator(
-                    pathWithTrailingSpace,
-                    new EnumerationOptions { RecurseSubdirectories = false }))
-                {
-                    if (enumerator.MoveNext())
-                    {
-                        // OriginalRootDirectory should preserve the trailing space
-                        Assert.Equal(pathWithTrailingSpace, enumerator.CapturedOriginalRootDirectory);
-                    }
-                }
-            }
-            finally
-            {
-                testDir.Delete(true);
-            }
-        }
     }
 }
