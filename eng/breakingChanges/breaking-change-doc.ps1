@@ -57,7 +57,9 @@ SETUP:
     1. Install GitHub CLI and authenticate: gh auth login
     2. Choose LLM provider:
        - For GitHub Models: gh extension install github/gh-models
+       - For GitHub Copilot: Install GitHub Copilot CLI from https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli
        - For OpenAI: `$env:OPENAI_API_KEY = "your-key"
+       - For Azure OpenAI: `$env:AZURE_OPENAI_API_KEY = "your-key" and set LlmBaseUrl in config.ps1
        - For others: Set appropriate API key
     3. Edit config.ps1 to customize settings
 "@
@@ -96,21 +98,22 @@ try {
     exit 1
 }
 
-# Check LLM API key or GitHub CLI for GitHub Models
+# Check LLM API key or GitHub CLI for GitHub Models/Copilot
 $llmProvider = $Config.LlmProvider
 $apiKey = switch ($llmProvider) {
     "openai" { $env:OPENAI_API_KEY }
     "anthropic" { $env:ANTHROPIC_API_KEY }
     "azure-openai" { $env:AZURE_OPENAI_API_KEY }
     "github-models" { $null }  # No API key needed for GitHub Models
+    "github-copilot" { $null }  # No API key needed for GitHub Copilot CLI
     default { $env:OPENAI_API_KEY }
 }
 
 if ($llmProvider -eq "github-models") {
     # Check if gh-models extension is installed
     try {
-        $extensions = gh extension list 2>$null
-        if ($extensions -notmatch "github/gh-models") {
+        $modelsExtension = gh extension list 2>$null | Select-String "gh models"
+        if (-not $modelsExtension) {
             Write-Error "❌ GitHub Models extension not found. Install with: gh extension install github/gh-models"
             exit 1
         }
@@ -119,12 +122,27 @@ if ($llmProvider -eq "github-models") {
         Write-Error "❌ Could not check GitHub Models extension: $($_.Exception.Message)"
         exit 1
     }
+} elseif ($llmProvider -eq "github-copilot") {
+    # Check if standalone GitHub Copilot CLI is installed
+    try {
+        $copilotVersion = copilot --version 2>$null
+        if (-not $copilotVersion -or $LASTEXITCODE -ne 0) {
+            Write-Error "❌ GitHub Copilot CLI not found. Install from: https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli"
+            exit 1
+        }
+        Write-Host "✅ GitHub Copilot CLI found (version: $($copilotVersion.Split("`n")[0]))" -ForegroundColor Green
+    } catch {
+        Write-Error "❌ Could not check GitHub Copilot CLI: $($_.Exception.Message)"
+        Write-Error "   Install from: https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli"
+        exit 1
+    }
 } elseif (-not $apiKey) {
     Write-Error "❌ No LLM API key found. Set environment variable:"
     Write-Host "   For OpenAI: `$env:OPENAI_API_KEY = 'your-key'"
     Write-Host "   For Anthropic: `$env:ANTHROPIC_API_KEY = 'your-key'"
     Write-Host "   For Azure OpenAI: `$env:AZURE_OPENAI_API_KEY = 'your-key'"
     Write-Host "   For GitHub Models: Use 'github-models' provider (no key needed)"
+    Write-Host "   For GitHub Copilot: Install GitHub Copilot CLI from https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli (no key needed)"
     exit 1
 } else {
     Write-Host "✅ LLM API key found ($llmProvider)" -ForegroundColor Green
@@ -216,15 +234,7 @@ function Limit-Text {
 function Get-UrlEncodedText {
     param([string]$text)
 
-    # Basic URL encoding for GitHub issue URLs
-    $encoded = $text -replace '\r\n', '%0A' -replace '\n', '%0A' -replace '\r', '%0A'
-    $encoded = $encoded -replace ' ', '%20' -replace '#', '%23' -replace '&', '%26'
-    $encoded = $encoded -replace '\[', '%5B' -replace '\]', '%5D' -replace '\(', '%28' -replace '\)', '%29'
-    $encoded = $encoded -replace ':', '%3A' -replace ';', '%3B' -replace '\?', '%3F' -replace '=', '%3D'
-    $encoded = $encoded -replace '@', '%40' -replace '\+', '%2B' -replace '\$', '%24'
-    $encoded = $encoded -replace '"', '%22' -replace "'", '%27' -replace '<', '%3C' -replace '>', '%3E'
-
-    return $encoded
+    return [System.Web.HttpUtility]::UrlEncode($text)
 }
 
 # Function to fetch issue template from GitHub
@@ -452,7 +462,7 @@ function Invoke-LlmApi {
                     $ghArgs += @("--system-prompt", $SystemPrompt)
                 }
 
-                $response = & gh @ghArgs
+                $response = gh @ghArgs
                 return $response -join "`n"
             }
             catch {
@@ -460,57 +470,140 @@ function Invoke-LlmApi {
                 return $null
             }
         }
-        default {
-            # Existing API-based providers
-            $headers = @{ 'Content-Type' = 'application/json' }
-            $body = @{}
-            $endpoint = ""
+        "github-copilot" {
+            # Use GitHub Copilot CLI in programmatic mode
+            try {
+                # Combine system prompt and user prompt, emphasizing text-only response
+                $fullPrompt = if ($SystemPrompt) {
+                    "$SystemPrompt`n`nIMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
+                } else {
+                    "IMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
+                }
 
-            switch ($Config.LlmProvider) {
-                "openai" {
-                    $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/chat/completions" } else { "https://api.openai.com/v1/chat/completions" }
-                    $headers['Authorization'] = "Bearer $apiKey"
+                # Use copilot with -p flag for programmatic mode and suppress logs
+                $rawResponse = copilot -p $fullPrompt --log-level none --allow-all-tools
 
-                    $messages = @()
-                    if ($SystemPrompt) { $messages += @{ role = "system"; content = $SystemPrompt } }
-                    $messages += @{ role = "user"; content = $Prompt }
+                # Parse the response to extract just the content, removing usage statistics
+                # The response format typically includes usage stats at the end starting with "Total usage est:"
+                $lines = $rawResponse -split "`n"
+                $contentLines = @()
+                $foundUsageStats = $false
 
-                    $body = @{
-                        model = $Config.LlmModel
-                        messages = $messages
-                        max_tokens = $MaxTokens
-                        temperature = 0.1
+                foreach ($line in $lines) {
+                    if ($line -match "^Total usage est:" -or $line -match "^Total duration") {
+                        $foundUsageStats = $true
+                        break
+                    }
+                    if (-not $foundUsageStats) {
+                        $contentLines += $line
                     }
                 }
-                "anthropic" {
-                    $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/messages" } else { "https://api.anthropic.com/v1/messages" }
-                    $headers['x-api-key'] = $apiKey
-                    $headers['anthropic-version'] = "2023-06-01"
 
-                    $fullPrompt = if ($SystemPrompt) { "$SystemPrompt`n`nHuman: $Prompt`n`nAssistant:" } else { "Human: $Prompt`n`nAssistant:" }
+                # Join the content lines and trim whitespace
+                $response = ($contentLines -join "`n").Trim()
+                return $response
+            }
+            catch {
+                Write-Error "GitHub Copilot CLI call failed: $($_.Exception.Message)"
+                return $null
+            }
+        }
+        "openai" {
+            # OpenAI API
+            $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/chat/completions" } else { "https://api.openai.com/v1/chat/completions" }
+            $headers = @{ 
+                'Content-Type' = 'application/json'
+                'Authorization' = "Bearer $apiKey"
+            }
 
-                    $body = @{
-                        model = $Config.LlmModel
-                        max_tokens = $MaxTokens
-                        messages = @(@{ role = "user"; content = $fullPrompt })
-                        temperature = 0.1
-                    }
-                }
+            $messages = @()
+            if ($SystemPrompt) { $messages += @{ role = "system"; content = $SystemPrompt } }
+            $messages += @{ role = "user"; content = $Prompt }
+
+            $body = @{
+                model = $Config.LlmModel
+                messages = $messages
+                max_tokens = $MaxTokens
+                temperature = 0.1
             }
 
             try {
                 $requestJson = $body | ConvertTo-Json -Depth 10
                 $response = Invoke-RestMethod -Uri $endpoint -Method POST -Headers $headers -Body $requestJson
-
-                switch ($Config.LlmProvider) {
-                    "openai" { return $response.choices[0].message.content }
-                    "anthropic" { return $response.content[0].text }
-                }
+                return $response.choices[0].message.content
             }
             catch {
-                Write-Error "LLM API call failed: $($_.Exception.Message)"
+                Write-Error "OpenAI API call failed: $($_.Exception.Message)"
                 return $null
             }
+        }
+        "anthropic" {
+            # Anthropic API
+            $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/messages" } else { "https://api.anthropic.com/v1/messages" }
+            $headers = @{ 
+                'Content-Type' = 'application/json'
+                'x-api-key' = $apiKey
+                'anthropic-version' = "2023-06-01"
+            }
+
+            $fullPrompt = if ($SystemPrompt) { "$SystemPrompt`n`nHuman: $Prompt`n`nAssistant:" } else { "Human: $Prompt`n`nAssistant:" }
+
+            $body = @{
+                model = $Config.LlmModel
+                max_tokens = $MaxTokens
+                messages = @(@{ role = "user"; content = $fullPrompt })
+                temperature = 0.1
+            }
+
+            try {
+                $requestJson = $body | ConvertTo-Json -Depth 10
+                $response = Invoke-RestMethod -Uri $endpoint -Method POST -Headers $headers -Body $requestJson
+                return $response.content[0].text
+            }
+            catch {
+                Write-Error "Anthropic API call failed: $($_.Exception.Message)"
+                return $null
+            }
+        }
+        "azure-openai" {
+            # Azure OpenAI API
+            # Endpoint format: https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version={api-version}
+            if (-not $Config.LlmBaseUrl) {
+                Write-Error "Azure OpenAI requires LlmBaseUrl to be set in config (e.g., 'https://your-resource.openai.azure.com')"
+                return $null
+            }
+            
+            $apiVersion = if ($Config.AzureApiVersion) { $Config.AzureApiVersion } else { "2024-02-15-preview" }
+            $endpoint = "$($Config.LlmBaseUrl)/openai/deployments/$($Config.LlmModel)/chat/completions?api-version=$apiVersion"
+            
+            $headers = @{ 
+                'Content-Type' = 'application/json'
+                'api-key' = $apiKey
+            }
+
+            $messages = @()
+            if ($SystemPrompt) { $messages += @{ role = "system"; content = $SystemPrompt } }
+            $messages += @{ role = "user"; content = $Prompt }
+
+            $body = @{
+                messages = $messages
+                max_tokens = $MaxTokens
+                temperature = 0.1
+            }
+
+            try {
+                $requestJson = $body | ConvertTo-Json -Depth 10
+                $response = Invoke-RestMethod -Uri $endpoint -Method POST -Headers $headers -Body $requestJson
+                return $response.choices[0].message.content
+            }
+            catch {
+                Write-Error "Azure OpenAI API call failed: $($_.Exception.Message)"
+                return $null
+            }
+        }
+        default {
+            Write-Error "Unknown LLM provider: $($Config.LlmProvider)"
+            return $null
         }
     }
 }
