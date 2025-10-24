@@ -4865,15 +4865,7 @@ namespace System
     }
     public partial class Object
     {
-        public Object() { }
-        public virtual bool Equals(object? obj) { throw null; }
-        public static bool Equals(object? objA, object? objB) { throw null; }
-        ~Object() { }
-        public virtual int GetHashCode() { throw null; }
-        public System.Type GetType() { throw null; }
-        protected object MemberwiseClone() { throw null; }
-        public static bool ReferenceEquals(object? objA, object? objB) { throw null; }
-        public virtual string? ToString() { throw null; }
+        internal Object() { }
     }
     public partial class ObjectDisposedException : System.InvalidOperationException
     {
