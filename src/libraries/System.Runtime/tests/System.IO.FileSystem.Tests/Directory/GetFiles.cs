@@ -223,7 +223,6 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsEnumerateDirectoryWithTrailingSpacePeriod(string dirName)
         {
             DirectoryInfo parentDir = Directory.CreateDirectory(GetTestFilePath());
