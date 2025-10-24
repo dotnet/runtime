@@ -28,7 +28,6 @@ namespace System.Net.Http
         public const int DefaultHttpPort = 80;
         public const int DefaultHttpsPort = 443;
 
-        private static readonly bool s_isWindows7Or2008R2 = GetIsWindows7Or2008R2();
         private static readonly List<SslApplicationProtocol> s_http3ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http3 };
         private static readonly List<SslApplicationProtocol> s_http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
         private static readonly List<SslApplicationProtocol> s_http2OnlyApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
@@ -36,6 +35,7 @@ namespace System.Net.Http
         private readonly HttpConnectionPoolManager _poolManager;
         private readonly HttpConnectionKind _kind;
         private readonly Uri? _proxyUri;
+        private readonly string? _telemetryServerAddress;
 
         /// <summary>The origin authority used to construct the <see cref="HttpConnectionPool"/>.</summary>
         private readonly HttpAuthority _originAuthority;
@@ -73,12 +73,14 @@ namespace System.Net.Http
         /// <param name="port">The port with which this pool is associated.</param>
         /// <param name="sslHostName">The SSL host with which this pool is associated.</param>
         /// <param name="proxyUri">The proxy this pool targets (optional).</param>
-        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri)
+        /// <param name="telemetryServerAddress">The value of the 'server.address' tag to be emitted by Metrics and Distributed Tracing.</param>
+        public HttpConnectionPool(HttpConnectionPoolManager poolManager, HttpConnectionKind kind, string? host, int port, string? sslHostName, Uri? proxyUri, string? telemetryServerAddress)
         {
             _poolManager = poolManager;
             _kind = kind;
             _proxyUri = proxyUri;
             _maxHttp11Connections = Settings._maxConnectionsPerServer;
+            _telemetryServerAddress = telemetryServerAddress;
 
             // The only case where 'host' will not be set is if this is a Proxy connection pool.
             Debug.Assert(host is not null || (kind == HttpConnectionKind.Proxy && proxyUri is not null));
@@ -86,7 +88,7 @@ namespace System.Net.Http
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
 
-            if (IsHttp3Supported())
+            if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3)
             {
                 _http3Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version30;
             }
@@ -228,7 +230,7 @@ namespace System.Net.Http
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
                 }
 
-                if (IsHttp3Supported() && _http3Enabled)
+                if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _http3Enabled)
                 {
                     _http3EncodedAuthorityHostHeader = QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.Authority, hostHeader);
                 }
@@ -245,7 +247,7 @@ namespace System.Net.Http
             {
                 _http2RequestQueue = new RequestQueue<Http2Connection?>();
             }
-            if (IsHttp3Supported() && _http3Enabled)
+            if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _http3Enabled)
             {
                 _http3RequestQueue = new RequestQueue<Http3Connection?>();
             }
@@ -277,23 +279,10 @@ namespace System.Net.Http
             // Set TargetHost for SNI
             sslOptions.TargetHost = sslHostName;
 
-            // Windows 7 and Windows 2008 R2 support TLS 1.1 and 1.2, but for legacy reasons by default those protocols
-            // are not enabled when a developer elects to use the system default.  However, in .NET Core 2.0 and earlier,
-            // HttpClientHandler would enable them, due to being a wrapper for WinHTTP, which enabled them.  Both for
-            // compatibility and because we prefer those higher protocols whenever possible, SocketsHttpHandler also
-            // pretends they're part of the default when running on Win7/2008R2.
-            if (s_isWindows7Or2008R2 && sslOptions.EnabledSslProtocols == SslProtocols.None)
-            {
-                if (NetEventSource.Log.IsEnabled())
-                {
-                    NetEventSource.Info(poolManager, $"Win7OrWin2K8R2 platform, Changing default TLS protocols to {SecurityProtocol.DefaultSecurityProtocols}");
-                }
-                sslOptions.EnabledSslProtocols = SecurityProtocol.DefaultSecurityProtocols;
-            }
-
             return sslOptions;
         }
 
+        public string? TelemetryServerAddress => _telemetryServerAddress;
         public HttpAuthority OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
@@ -415,7 +404,7 @@ namespace System.Net.Http
                     HttpResponseMessage? response = null;
 
                     // Use HTTP/3 if possible.
-                    if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
+                    if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
                         (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
                         !request.IsExtendedConnectRequest)
@@ -572,7 +561,7 @@ namespace System.Net.Http
             Exception? exception = null;
             TransportContext? transportContext = null;
 
-            Activity? activity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, OriginAuthority);
+            Activity? activity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(IsSecure, _telemetryServerAddress, OriginAuthority.Port);
 
             try
             {
@@ -928,7 +917,7 @@ namespace System.Net.Http
                     _availableHttp2Connections.Clear();
                 }
 
-                if (IsHttp3Supported() && _availableHttp3Connections is not null)
+                if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _availableHttp3Connections is not null)
                 {
                     toDispose ??= new();
                     toDispose.AddRange(_availableHttp3Connections);
@@ -1004,7 +993,7 @@ namespace System.Net.Http
                     // Note: Http11 connections will decrement the _associatedHttp11ConnectionCount when disposed.
                     // Http2 connections will not, hence the difference in handing _associatedHttp2ConnectionCount.
                 }
-                if (IsHttp3Supported() && _availableHttp3Connections is not null)
+                if (GlobalHttpSettings.SocketsHttpHandler.AllowHttp3 && _availableHttp3Connections is not null)
                 {
                     int removed = ScavengeHttp3ConnectionList(_availableHttp3Connections, ref toDispose, nowTicks, pooledConnectionLifetime, pooledConnectionIdleTimeout);
                     _associatedHttp3ConnectionCount -= removed;
@@ -1023,19 +1012,6 @@ namespace System.Net.Http
             }
 
             // Pool is active.  Should not be removed.
-            return false;
-        }
-
-        /// <summary>Gets whether we're running on Windows 7 or Windows 2008 R2.</summary>
-        private static bool GetIsWindows7Or2008R2()
-        {
-            OperatingSystem os = Environment.OSVersion;
-            if (os.Platform == PlatformID.Win32NT)
-            {
-                // Both Windows 7 and Windows 2008 R2 report version 6.1.
-                Version v = os.Version;
-                return v.Major == 6 && v.Minor == 1;
-            }
             return false;
         }
 

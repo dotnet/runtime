@@ -1123,7 +1123,7 @@ namespace Internal.IL
 
         bool IsDelegateAssignable(MethodDesc targetMethod, TypeDesc delegateType, TypeDesc firstArg)
         {
-            var invokeMethod = delegateType.GetMethod("Invoke", null);
+            var invokeMethod = delegateType.GetMethod("Invoke"u8, null);
             if (invokeMethod == null)
                 return false;
 
@@ -2730,7 +2730,7 @@ namespace Internal.IL
             {
                 foreach (var data in signature.GetEmbeddedSignatureData())
                 {
-                    if (data.type is MetadataType mdType && mdType.Namespace == "System.Runtime.CompilerServices" && mdType.Name == "IsExternalInit" &&
+                    if (data.type is MetadataType mdType && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8) && mdType.Name.SequenceEqual("IsExternalInit"u8) &&
                         data.index == MethodSignature.IndexOfCustomModifiersOnReturnType)
                         return true;
                 }

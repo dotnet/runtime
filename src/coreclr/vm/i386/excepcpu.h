@@ -20,9 +20,7 @@
 
 #define STATUS_CLR_GCCOVER_CODE         STATUS_PRIVILEGED_INSTRUCTION
 
-#ifndef FEATURE_EH_FUNCLETS
-class Thread;
-
+#ifdef TARGET_WINDOWS
 #define INSTALL_SEH_RECORD(record)                                        \
     {                                                                     \
        (record)->Next = (PEXCEPTION_REGISTRATION_RECORD)__readfsdword(0); \
@@ -33,6 +31,10 @@ class Thread;
     {                                                                     \
         __writefsdword(0, (DWORD) ((record)->Next));                      \
     }
+#endif // TARGET_WINDOWS
+
+#ifndef FEATURE_EH_FUNCLETS
+class Thread;
 
 #define INSTALL_EXCEPTION_HANDLING_RECORD(record)               \
     {                                                           \
@@ -89,9 +91,6 @@ EXTERN_C LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD 
 // RedirectedHandledJITCaseForXXX_Stub's.
 //
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext);
-#ifdef FEATURE_EH_FUNCLETS
-PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext);
-#endif // FEATURE_EH_FUNCLETS
 
 // Determine the address of the instruction that made the current call.
 inline

@@ -512,8 +512,8 @@ public class XUnitLogChecker
                 WriteLineTimestamp($"Reading crash dump '{dumpPath}'...");
                 WriteLineTimestamp("Stack Trace Found:\n");
 
-                CoreclrTestWrapperLib.TryPrintStackTraceFromDmp(dumpPath,
-                                                                Console.Out);
+                CoreclrTestWrapperLib.TryPrintStackTraceFromWindowsDmp(dumpPath,
+                                                                       Console.Out);
             }
             else
             {

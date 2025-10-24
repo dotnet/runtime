@@ -149,25 +149,18 @@ namespace System.IO.Compression
 
             lock (SyncLock)
             {
-                IntPtr nextInPtr = _zlibStream.NextIn;
-                byte* nextInPointer = (byte*)nextInPtr.ToPointer();
+                byte* nextInPointer = (byte*)_zlibStream.NextIn;
                 uint nextAvailIn = _zlibStream.AvailIn;
 
-                // Check the leftover bytes to see if they start with he gzip header ID bytes
+                // Check the leftover bytes to see if they start with the gzip header ID bytes
                 if (*nextInPointer != ZLibNative.GZip_Header_ID1 || (nextAvailIn > 1 && *(nextInPointer + 1) != ZLibNative.GZip_Header_ID2))
                 {
                     return true;
                 }
 
-                // Trash our existing zstream.
-                _zlibStream.Dispose();
+                // Reset our existing zstream.
+                _zlibStream.InflateReset2_(_windowBits);
 
-                // Create a new zstream
-                InflateInit(_windowBits);
-
-                // SetInput on the new stream to the bits remaining from the last stream
-                _zlibStream.NextIn = nextInPtr;
-                _zlibStream.AvailIn = nextAvailIn;
                 _finished = false;
             }
 

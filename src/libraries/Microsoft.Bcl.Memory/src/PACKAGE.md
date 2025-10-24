@@ -1,7 +1,8 @@
 ## About
 
 Provides `Index` and `Range` types to simplify slicing operations on collections for .NET Framework and .NET Standard 2.0.
-Provides `Base64Url` for encoding data in a URL-safe manner on .NET Framework and .NET Standard.
+Provides `Base64Url` for encoding data in a URL-safe manner on older .NET platforms.
+Provides `Utf8` for converting chunked data between UTF-8 and UTF-16 encodings on .NET Framework and .NET Standard 2.0.
 
 This library is not necessary nor recommended when targeting versions of .NET that include the relevant support.
 
@@ -9,8 +10,9 @@ This library is not necessary nor recommended when targeting versions of .NET th
 
 <!-- The key features of this package -->
 
-* Enables the use of `Index` and `Range` types on older .NET platforms.
+* Enables the use of `Index` and `Range` types on .NET Framework and .NET Standard 2.0.
 * Provides `Base64Url` encoding, decoding, and validation for URL-safe data processing on older .NET platforms.
+* Provides `Utf8` encoding, decoding, and validation for chunked data between UTF-8 and UTF-16 on .NET Framework and .NET Standard 2.0.
 
 ## How to Use
 
@@ -64,6 +66,7 @@ The main types provided by this library are:
 * `System.Index`
 * `System.Range`
 * `System.Buffers.Text.Base64Url`
+* `System.Text.Unicode.Utf8`
 
 ## Additional Documentation
 
@@ -74,6 +77,7 @@ API documentation
 * [System.Index](https://learn.microsoft.com/dotnet/api/system.index)
 * [System.Range](https://learn.microsoft.com/dotnet/api/system.range)
 * [System.Buffers.Text.Base64Url](https://learn.microsoft.com/dotnet/api/system.buffers.text.base64url)
+* [System.Text.Unicode.Utf8](https://learn.microsoft.com/dotnet/api/system.text.unicode.utf8)
 
 ## Feedback & Contributing
 

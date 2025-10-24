@@ -316,24 +316,24 @@ dump_processor_state (SgenBridgeProcessor *p)
 {
 	int i;
 
-	printf ("------\n");
-	printf ("SCCS %d\n", p->num_sccs);
+	g_message ("------\n");
+	g_message ("SCCS %d\n", p->num_sccs);
 	for (i = 0; i < p->num_sccs; ++i) {
 		int j;
 		MonoGCBridgeSCC *scc = p->api_sccs [i];
-		printf ("\tSCC %d:", i);
+		g_message ("\tSCC %d:", i);
 		for (j = 0; j < scc->num_objs; ++j) {
 			MonoObject *obj = scc->objs [j];
-			printf (" %p(%s)", obj, SGEN_LOAD_VTABLE (obj)->klass->name);
+			g_message (" %p(%s)", obj, m_class_get_name (SGEN_LOAD_VTABLE (obj)->klass));
 		}
-		printf ("\n");
+		g_message ("\n");
 	}
 
-	printf ("XREFS %d\n", p->num_xrefs);
+	g_message ("XREFS %d\n", p->num_xrefs);
 	for (i = 0; i < p->num_xrefs; ++i)
-		printf ("\t%d -> %d\n", p->api_xrefs [i].src_scc_index, p->api_xrefs [i].dst_scc_index);
+		g_message ("\t%d -> %d\n", p->api_xrefs [i].src_scc_index, p->api_xrefs [i].dst_scc_index);
 
-	printf ("-------\n");
+	g_message ("-------\n");
 }
 */
 
@@ -352,7 +352,7 @@ sgen_compare_bridge_processor_results (SgenBridgeProcessor *a, SgenBridgeProcess
 	if (a->num_sccs != b->num_sccs)
 		g_error ("SCCS count expected %d but got %d", a->num_sccs, b->num_sccs);
 	if (a->num_xrefs != b->num_xrefs)
-		g_error ("SCCS count expected %d but got %d", a->num_xrefs, b->num_xrefs);
+		g_error ("XREFS count expected %d but got %d", a->num_xrefs, b->num_xrefs);
 
 	/*
 	 * First we build a hash of each object in `a` to its respective SCC index within
@@ -486,10 +486,36 @@ sgen_bridge_processing_finish (int generation)
 	mono_bridge_processing_in_progress = FALSE;
 }
 
+// Is this class bridged or not, and should its dependencies be scanned or not?
+// The result of this callback will be cached for use by is_opaque_object later.
 MonoGCBridgeObjectKind
 sgen_bridge_class_kind (MonoClass *klass)
 {
-	return bridge_processor.class_kind (klass);
+	MonoGCBridgeObjectKind res = mono_bridge_callbacks.bridge_class_kind (klass);
+
+	/* If it's a bridge, nothing we can do about it. */
+	if (res == GC_BRIDGE_TRANSPARENT_BRIDGE_CLASS || res == GC_BRIDGE_OPAQUE_BRIDGE_CLASS)
+		return res;
+
+	/* Non bridge classes with no pointers will never point to a bridge, so we can savely ignore them. */
+	if (!m_class_has_references (klass)) {
+		SGEN_LOG (6, "class %s is opaque\n", m_class_get_name (klass));
+		return GC_BRIDGE_OPAQUE_CLASS;
+	}
+
+	/* Some arrays can be ignored */
+	if (m_class_get_rank (klass) == 1) {
+		MonoClass *elem_class = m_class_get_element_class (klass);
+
+		/* FIXME the bridge check can be quite expensive, cache it at the class level. */
+		/* An array of a sealed type that is not a bridge will never get to a bridge */
+		if ((mono_class_get_flags (elem_class) & TYPE_ATTRIBUTE_SEALED) && !m_class_has_references (elem_class) && !mono_bridge_callbacks.bridge_class_kind (elem_class)) {
+			SGEN_LOG (6, "class %s is opaque\n", m_class_get_name (klass));
+			return GC_BRIDGE_OPAQUE_CLASS;
+		}
+	}
+
+	return GC_BRIDGE_TRANSPARENT_CLASS;
 }
 
 void

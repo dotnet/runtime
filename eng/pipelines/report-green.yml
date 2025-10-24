@@ -1,0 +1,41 @@
+# This CI job only runs on PRs where all other jobs are skipped.
+# This allows Build Analysis to report green. Without this, no jobs would run,
+# causing Build Analysis to hang indefinitely (or until someone commented "ba-g {justification}" on the PR).
+
+# Only run this on PRs
+trigger: none
+# Run for all branches, only on paths that no-op other jobs
+pr:
+  autoCancel: true
+  branches:
+    include:
+    - '*'
+  paths:
+    include:
+    - docs/*
+    - '**/*.md'
+    - '**/*.txt'
+    - LICENSE.TXT
+    - THIRD-PARTY-NOTICES.TXT
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - README.md
+    - SECURITY.md
+    - PATENTS.TXT
+
+# ABG - Always Be Green
+jobs:
+- template: /eng/common/templates/jobs/jobs.yml
+  parameters:
+    enableTelemetry: true
+    helixRepo: dotnet/runtime
+    jobs:
+    - job: Report_Green
+      enableSBOM: false
+      pool:
+        vmImage: ubuntu-22.04
+      steps:
+      - powershell: |
+          Write-Host "This is a documentation-only change. Exiting successfully."
+          exit 0
+        displayName: Exit 0 for doc-only changes

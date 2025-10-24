@@ -50,12 +50,28 @@ namespace Microsoft.DotNet.Build.Tasks
                 ".xml"
             };
 
-            var isAssemblyTofileNames = Directory.EnumerateFiles(SharedFrameworkDirectory)
-                .Where(file => !ignoredExtensions.Contains(Path.GetExtension(file)))
-                .ToLookup(file => IsManagedAssembly(file), file => Path.GetFileName(file));
+            List<RuntimeFile> runtimeFiles = [];
+            List<RuntimeFile> nativeFiles = [];
 
-            var managedFileNames = isAssemblyTofileNames[true];
-            var nativeFileNames = isAssemblyTofileNames[false];
+            foreach (string filePath in Directory.EnumerateFiles(SharedFrameworkDirectory))
+            {
+                if (ignoredExtensions.Contains(Path.GetExtension(filePath)))
+                    continue;
+
+                string fileName = Path.GetFileName(filePath);
+                string fileVersion = FileUtilities.GetFileVersion(filePath)?.ToString() ?? string.Empty;
+                Version assemblyVersion = FileUtilities.GetAssemblyName(filePath)?.Version;
+                if (assemblyVersion is null)
+                {
+                    RuntimeFile nativeFile = new RuntimeFile(fileName, null, fileVersion);
+                    nativeFiles.Add(nativeFile);
+                }
+                else
+                {
+                    RuntimeFile runtimeFile = new RuntimeFile(fileName, assemblyVersion.ToString(), fileVersion);
+                    runtimeFiles.Add(runtimeFile);
+                }
+            }
 
             var runtimeLibraries = new[]
             {
@@ -64,8 +80,8 @@ namespace Microsoft.DotNet.Build.Tasks
                     name: sharedFxName,
                     version: sharedFxVersion,
                     hash: "hash",
-                    runtimeAssemblyGroups: new[] { new RuntimeAssetGroup(string.Empty, managedFileNames.Select(f => $"runtimes/{rid}/lib/{tfm}/{f}")) },
-                    nativeLibraryGroups: new[] { new RuntimeAssetGroup(string.Empty, nativeFileNames.Select(f => $"runtimes/{rid}/native/{f}")) },
+                    runtimeAssemblyGroups: new[] { new RuntimeAssetGroup(string.Empty, runtimeFiles) },
+                    nativeLibraryGroups: new[] { new RuntimeAssetGroup(string.Empty, nativeFiles) },
                     resourceAssemblies: Enumerable.Empty<ResourceAssembly>(),
                     dependencies: Enumerable.Empty<Dependency>(),
                     serviceable: true)
@@ -88,22 +104,6 @@ namespace Microsoft.DotNet.Build.Tasks
             }
 
             return !Log.HasLoggedErrors;
-        }
-
-        private static bool IsManagedAssembly(string file)
-        {
-            bool result = false;
-            try
-            {
-                using (var peReader = new PEReader(File.OpenRead(file)))
-                {
-                    result = peReader.HasMetadata && peReader.GetMetadataReader().IsAssembly;
-                }
-            }
-            catch (BadImageFormatException)
-            { }
-
-            return result;
         }
 
         private static IEnumerable<RuntimeFallbacks> GetRuntimeFallbacks(string[] runtimeGraphFiles, string runtime)

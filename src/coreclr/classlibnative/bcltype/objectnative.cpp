@@ -45,24 +45,7 @@ FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
         return 0;
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
-    DWORD bits = objRef->GetHeader()->GetBits();
-    if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
-    {
-        if (bits & BIT_SBLK_IS_HASHCODE)
-        {
-            // Common case: the object already has a hash code
-            return bits & MASK_HASHCODE;
-        }
-        else
-        {
-            // We have a sync block index. This means if we already have a hash code,
-            // it is in the sync block, otherwise we will return 0, which means "not set".
-            SyncBlock *psb = objRef->PassiveGetSyncBlock();
-            if (psb != NULL)
-                return psb->GetHashCode();
-        }
-    }
-    return 0;
+    return objRef->TryGetHashCode();
 }
 FCIMPLEND
 
@@ -82,8 +65,6 @@ FCIMPL2(FC_BOOL_RET, ObjectNative::ContentEquals, Object *pThisRef, Object *pCom
         pThisRef->GetData(),
         pCompareRef->GetData(),
         pThisMT->GetNumInstanceFieldBytes()) == 0;
-
-    FC_GC_POLL_RET();
 
     FC_RETURN_BOOL(ret);
 }
@@ -199,3 +180,117 @@ extern "C" INT64 QCALLTYPE Monitor_GetLockContentionCount()
     END_QCALL;
     return result;
 }
+
+//========================================================================
+//
+//      MONITOR HELPERS
+//
+//========================================================================
+
+/*********************************************************************/
+extern "C" void QCALLTYPE Monitor_Enter_Slowpath(QCall::ObjectHandleOnStack objHandle)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    objHandle.Get()->EnterObjMonitor();
+    END_QCALL;
+}
+
+/*********************************************************************/
+#include <optsmallperfcritical.h>
+
+FCIMPL1(FC_BOOL_RET, ObjectNative::Monitor_TryEnter_FastPath, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    FC_RETURN_BOOL(obj->TryEnterObjMonitorSpinHelper());
+}
+FCIMPLEND
+
+FCIMPL2(AwareLock::EnterHelperResult, ObjectNative::Monitor_TryEnter_FastPath_WithTimeout, Object* obj, INT32 timeOut)
+{
+    FCALL_CONTRACT;
+
+    Thread* pCurThread = GetThread();
+
+    if (pCurThread->CatchAtSafePoint())
+    {
+        return AwareLock::EnterHelperResult::UseSlowPath;
+    }
+
+    AwareLock::EnterHelperResult result = obj->EnterObjMonitorHelper(pCurThread);
+    if (result == AwareLock::EnterHelperResult::Contention)
+    {
+        if (timeOut == 0)
+        {
+            return AwareLock::EnterHelperResult::Contention;
+        }
+
+        result = obj->EnterObjMonitorHelperSpin(pCurThread);
+    }
+
+    return result;
+}
+FCIMPLEND
+
+#include <optdefault.h>
+
+/*********************************************************************/
+extern "C" INT32 QCALLTYPE Monitor_TryEnter_Slowpath(QCall::ObjectHandleOnStack objHandle, INT32 timeOut)
+{
+    QCALL_CONTRACT;
+
+    BOOL result = FALSE;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    _ASSERTE(timeOut >= -1); // This should be checked in managed code.
+
+    result = objHandle.Get()->TryEnterObjMonitor(timeOut);
+
+    END_QCALL;
+
+    return result;
+}
+
+/*********************************************************************/
+extern "C" void QCALLTYPE Monitor_Exit_Slowpath(QCall::ObjectHandleOnStack objHandle, AwareLock::LeaveHelperAction exitBehavior)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    if (exitBehavior != AwareLock::LeaveHelperAction::Signal)
+    {
+        if (!objHandle.Get()->LeaveObjMonitor())
+            COMPlusThrow(kSynchronizationLockException);
+    }
+    else
+    {
+        // Signal the event
+        SyncBlock *psb = objHandle.Get()->PassiveGetSyncBlock();
+        if (psb != NULL)
+            psb->QuickGetMonitor()->Signal();
+    }
+    END_QCALL;
+}
+
+#include <optsmallperfcritical.h>
+FCIMPL1(AwareLock::LeaveHelperAction, ObjectNative::Monitor_Exit_FastPath, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    // Handle the simple case without erecting helper frame
+    return obj->LeaveObjMonitorHelper(GetThread());
+}
+FCIMPLEND
+#include <optdefault.h>
+

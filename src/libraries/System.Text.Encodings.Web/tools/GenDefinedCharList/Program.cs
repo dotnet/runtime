@@ -113,8 +113,8 @@ namespace GenDefinedCharList
             builder.AppendLine("{");
             builder.AppendLine("    internal static partial class UnicodeHelpers");
             builder.AppendLine("    {");
-            builder.AppendLine("        private static ReadOnlySpan<byte> DefinedCharsBitmapSpan => new byte[0x2000]");
-            builder.AppendLine("        {");
+            builder.AppendLine("        private static ReadOnlySpan<byte> DefinedCharsBitmapSpan => // 0x2000");
+            builder.AppendLine("        [");
 
             for (int i = 0; i < 0x10000; i += 8)
             {
@@ -144,7 +144,7 @@ namespace GenDefinedCharList
                 }
             }
 
-            builder.AppendLine("        };");
+            builder.AppendLine("        ];");
             builder.AppendLine("    }");
             builder.AppendLine("}");
 

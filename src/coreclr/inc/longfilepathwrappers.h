@@ -25,18 +25,6 @@ CreateFileWrapper(
     _In_opt_ HANDLE hTemplateFile
     );
 
-DWORD
-GetFileAttributesWrapper(
-    _In_ LPCWSTR lpFileName
-    );
-
-BOOL
-GetFileAttributesExWrapper(
-    _In_ LPCWSTR lpFileName,
-    _In_ GET_FILEEX_INFO_LEVELS fInfoLevelId,
-    _Out_writes_bytes_(sizeof(WIN32_FILE_ATTRIBUTE_DATA)) LPVOID lpFileInformation
-    );
-
 BOOL
 CopyFileExWrapper(
     _In_        LPCWSTR lpExistingFileName,

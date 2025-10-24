@@ -28,7 +28,7 @@ PAGE_SIZE = 16384
 .endm
 
 LEAF_ENTRY StubPrecodeCode
-        mov     eax, dword ptr [DATA_SLOT(StubPrecode, MethodDesc)]
+        mov     eax, dword ptr [DATA_SLOT(StubPrecode, SecretParam)]
 SLOT_ADDRESS_PATCH_LABEL StubPrecode, MethodDesc
         INDJMP DATA_SLOT(StubPrecode, Target)
 SLOT_ADDRESS_PATCH_LABEL StubPrecode, Target
@@ -44,6 +44,7 @@ SLOT_ADDRESS_PATCH_LABEL FixupPrecode, MethodDesc
 SLOT_ADDRESS_PATCH_LABEL FixupPrecode, PrecodeFixupThunk
 LEAF_END_MARKED FixupPrecodeCode
 
+#ifdef FEATURE_TIERED_COMPILATION
 LEAF_ENTRY CallCountingStubCode
         mov    eax, dword ptr [DATA_SLOT(CallCountingStub, RemainingCallCountCell)]
 SLOT_ADDRESS_PATCH_LABEL CallCountingStub, RemainingCallCountCell
@@ -55,3 +56,4 @@ LOCAL_LABEL(CountReachedZero):
         INDJMP DATA_SLOT(CallCountingStub, TargetForThresholdReached)
 SLOT_ADDRESS_PATCH_LABEL CallCountingStub, TargetForThresholdReached
 LEAF_END_MARKED CallCountingStubCode
+#endif // FEATURE_TIERED_COMPILATION

@@ -67,10 +67,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ValidateConfigurationKeys(typeof(global::TypeWithNoMembers_Wrapper), s_configKeys_TypeWithNoMembers_Wrapper, configuration, binderOptions);
 
-            if (AsConfigWithChildren(configuration.GetSection("Member")) is IConfigurationSection section0)
+            var value0 = configuration.GetSection("Member");
+            if (AsConfigWithChildren(value0) is IConfigurationSection section1)
             {
                 instance.Member ??= new global::TypeWithNoMembers();
             }
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                return section.TryGetValue(key, out value);
+            }
+        
+            value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
+            return value != null;
         }
 
 

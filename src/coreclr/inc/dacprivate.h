@@ -623,7 +623,7 @@ struct MSLAYOUT DacpTieredVersionData
 };
 
 // for JITType
-enum JITTypes {TYPE_UNKNOWN=0,TYPE_JIT,TYPE_PJIT};
+enum JITTypes {TYPE_UNKNOWN=0,TYPE_JIT,TYPE_PJIT,TYPE_INTERPRETER};
 
 struct MSLAYOUT DacpCodeHeaderData
 {
@@ -967,7 +967,7 @@ struct MSLAYOUT DACEHInfo
     CLRDATA_ADDRESS tryEndOffset = 0;
     CLRDATA_ADDRESS handlerStartOffset = 0;
     CLRDATA_ADDRESS handlerEndOffset = 0;
-    BOOL isDuplicateClause = FALSE;
+    BOOL isDuplicateClause = FALSE;     // unused
     CLRDATA_ADDRESS filterOffset = 0;   // valid when clauseType is EHFilter
     BOOL isCatchAllHandler = FALSE;     // valid when clauseType is EHTyped
     CLRDATA_ADDRESS moduleAddr = 0;     // when == 0 mtCatch contains a MethodTable, when != 0 tokCatch contains a type token
@@ -1039,8 +1039,6 @@ struct MSLAYOUT DacpJitCodeHeapInfo
 
     DacpJitCodeHeapInfo() : codeHeapType(0), LoaderHeap(0) {}
 };
-
-#include "static_assert.h"
 
 /* DAC datastructures are frozen as of dev11 shipping.  Do NOT add fields, remove fields, or change the fields of
  * these structs in any way.  The correct way to get new data out of the runtime is to create a new struct and

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
@@ -229,13 +230,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
         }
 
-        private CommandResult RunTestWithOneFramework(Func<RuntimeConfig, RuntimeConfig> runtimeConfig)
+        private CommandResult RunTestWithOneFramework(Func<RuntimeConfig, RuntimeConfig> runtimeConfig, [CallerMemberName] string caller = "")
         {
             return RunTest(
                 SharedState.DotNetWithOneFramework,
                 SharedState.FrameworkReferenceApp,
                 new TestSettings()
-                    .WithRuntimeConfigCustomizer(runtimeConfig));
+                    .WithRuntimeConfigCustomizer(runtimeConfig),
+                caller: caller);
         }
         #endregion
 
@@ -387,13 +389,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .ShouldFailToFindCompatibleFrameworkVersion(MicrosoftNETCoreApp, requestedVersion);
         }
 
-        private CommandResult RunTestWithPreReleaseFramework(Func<RuntimeConfig, RuntimeConfig> runtimeConfig)
+        private CommandResult RunTestWithPreReleaseFramework(Func<RuntimeConfig, RuntimeConfig> runtimeConfig, [CallerMemberName] string caller = "")
         {
             return RunTest(
                 SharedState.DotNetWithPreReleaseFramework,
                 SharedState.FrameworkReferenceApp,
                 new TestSettings()
-                    .WithRuntimeConfigCustomizer(runtimeConfig));
+                    .WithRuntimeConfigCustomizer(runtimeConfig),
+                caller: caller);
         }
         #endregion
 
@@ -728,13 +731,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "6.1.1");
         }
 
-        private CommandResult RunTestWithManyVersions(Func<RuntimeConfig, RuntimeConfig> runtimeConfig)
+        private CommandResult RunTestWithManyVersions(Func<RuntimeConfig, RuntimeConfig> runtimeConfig, [CallerMemberName] string caller = "")
         {
             return RunTest(
                 SharedState.DotNetWithManyVersions,
                 SharedState.FrameworkReferenceApp,
                 new TestSettings()
-                    .WithRuntimeConfigCustomizer(runtimeConfig));
+                    .WithRuntimeConfigCustomizer(runtimeConfig),
+                caller: caller);
         }
         #endregion
     }

@@ -74,8 +74,28 @@ You can use this feature by adding the `StaticICULinking` property to your proje
 ```xml
 <PropertyGroup>
   <StaticICULinking>true</StaticICULinking>
+
+  <!-- Optional: Embeds ICU data into the binary, making it fully standalone when system ICU
+       libraries are not installed on the target machine.
+       Update path to match your ICU version and variant: l(arge), b(ig endian), s(mall) or full. -->
+  <EmbedIcuDataPath>/usr/share/icu/74.2/icudt74l.dat</EmbedIcuDataPath>
 </PropertyGroup>
 ```
+
+> [!NOTE]
+> Some distros, such as Alpine and Gentoo, currently package ICU data as a `icudt*.dat` archive,
+> while others, like Ubuntu, do not.
+> To use `EmbedIcuDataPath` on a distro that does not provide the `.dat` file,
+> you may need to build ICU with `--with-data-packaging=archive` to generate it.
+> See https://unicode-org.github.io/icu/userguide/icu_data#building-and-linking-against-icu-data.
+> ```sh
+> # e.g. to obtain icudt*.dat on Ubuntu
+> $ curl -sSL https://github.com/unicode-org/icu/releases/download/release-74-2/icu4c-74_2-src.tgz | tar xzf -
+> $ cd icu/source
+> $ ./configure --with-data-packaging=archive --enable-static --disable-shared --disable-samples
+> $ make -j
+> $ find . -path *out/* -name icudt*.dat -exec echo $(pwd)/{} \;
+> ```
 
 This feature is only supported on Linux. This feature is not supported when crosscompiling.
 

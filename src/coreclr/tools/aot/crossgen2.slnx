@@ -1,0 +1,48 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Checked" />
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="crossgen2/crossgen2.csproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="ILCompiler.DependencyAnalysisFramework/ILCompiler.DependencyAnalysisFramework.csproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="ILCompiler.Diagnostics/ILCompiler.Diagnostics.csproj">
+    <BuildType Solution="Checked|*" Project="Debug" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="Checked|Any CPU" Project="x86" />
+    <Platform Solution="Checked|x86" Project="x86" />
+    <Platform Solution="Release|x86" Project="x86" />
+    <Build Solution="Checked|Any CPU" Project="false" />
+  </Project>
+  <Project Path="ILCompiler.ReadyToRun/ILCompiler.ReadyToRun.csproj">
+    <Platform Solution="*|Any CPU" Project="x86" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Build Solution="*|Any CPU" Project="false" />
+  </Project>
+  <Project Path="ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj">
+    <BuildType Solution="Checked|*" Project="Debug" />
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+  <Project Path="ILCompiler.TypeSystem.Tests/ILCompiler.TypeSystem.Tests.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+  <Project Path="ILCompiler.TypeSystem/ILCompiler.TypeSystem.csproj">
+    <Platform Solution="*|Any CPU" Project="x64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+</Solution>

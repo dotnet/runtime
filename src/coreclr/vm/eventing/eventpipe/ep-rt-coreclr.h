@@ -19,6 +19,11 @@
 #include "hostinformation.h"
 #include <minipal/guid.h>
 #include <minipal/strings.h>
+#include <minipal/time.h>
+
+#ifdef TARGET_UNIX
+#include <sys/time.h>
+#endif
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
@@ -230,6 +235,15 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 
 static
 inline
+int64_t
+ep_rt_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return static_cast<int64_t>(InterlockedCompareExchangeT<int64_t> (target, value, expected));
+}
+
+static
+inline
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
@@ -260,7 +274,7 @@ ep_rt_init (void)
 	extern CrstStatic _ep_rt_coreclr_config_lock;
 
 	_ep_rt_coreclr_config_lock_handle.lock = &_ep_rt_coreclr_config_lock;
-	_ep_rt_coreclr_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
+	_ep_rt_coreclr_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
 
 	if (CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeProcNumbers) != 0) {
 #ifndef TARGET_UNIX
@@ -400,7 +414,7 @@ ep_rt_method_get_full_name (
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
 }
@@ -437,7 +451,7 @@ ep_rt_init_providers_and_events (void)
 		InitProvidersAndEvents ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 }
 
 static
@@ -487,7 +501,7 @@ ep_rt_provider_invoke_callback (
 			callback_data);
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 }
 
 /*
@@ -570,6 +584,33 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (
 static
 inline
 void
+ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_session_enabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_disabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
 	STATIC_CONTRACT_NOTHROW;
@@ -632,7 +673,7 @@ ep_rt_wait_event_alloc (
 				wait_event->event->CreateAutoEvent (initial);
 		}
 		EX_CATCH {}
-		EX_END_CATCH(SwallowAllExceptions);
+		EX_END_CATCH
 	}
 }
 
@@ -680,7 +721,7 @@ ep_rt_wait_event_wait (
 	{
 		result = -1;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 	return result;
 }
 
@@ -866,9 +907,18 @@ ep_rt_thread_create (
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
+}
+
+static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params)
+{
+    EP_UNREACHABLE ("Not implemented in CoreCLR");
 }
 
 static
@@ -954,11 +1004,7 @@ ep_rt_perf_counter_query (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	LARGE_INTEGER value;
-	if (QueryPerformanceCounter (&value))
-		return static_cast<int64_t>(value.QuadPart);
-	else
-		return 0;
+	return minipal_hires_ticks();
 }
 
 static
@@ -968,11 +1014,7 @@ ep_rt_perf_frequency_query (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	LARGE_INTEGER value;
-	if (QueryPerformanceFrequency (&value))
-		return static_cast<int64_t>(value.QuadPart);
-	else
-		return 0;
+	return minipal_hires_tick_frequency();
 }
 
 static
@@ -981,21 +1023,63 @@ void
 ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
 	STATIC_CONTRACT_NOTHROW;
+    
+#ifdef HOST_WINDOWS
+    SYSTEMTIME value;
+    GetSystemTime (&value);
 
-	SYSTEMTIME value;
-	GetSystemTime (&value);
+    EP_ASSERT(system_time != NULL);
+    ep_system_time_set (
+        system_time,
+        value.wYear,
+        value.wMonth,
+        value.wDayOfWeek,
+        value.wDay,
+        value.wHour,
+        value.wMinute,
+        value.wSecond,
+        value.wMilliseconds);
+#else
+    time_t tt;
+    struct tm *ut_ptr;
+    struct timeval time_val;
+    int timeofday_retval;
 
-	EP_ASSERT(system_time != NULL);
-	ep_system_time_set (
-		system_time,
-		value.wYear,
-		value.wMonth,
-		value.wDayOfWeek,
-		value.wDay,
-		value.wHour,
-		value.wMinute,
-		value.wSecond,
-		value.wMilliseconds);
+    EP_ASSERT (system_time != NULL);
+
+    tt = time (NULL);
+
+    timeofday_retval = gettimeofday (&time_val, NULL);
+
+    ut_ptr = gmtime (&tt);
+
+    uint16_t milliseconds = 0;
+    if (timeofday_retval != -1) {
+        int old_seconds;
+        int new_seconds;
+
+        milliseconds = (uint16_t)(time_val.tv_usec / 1000);
+
+        old_seconds = ut_ptr->tm_sec;
+        new_seconds = time_val.tv_sec % 60;
+
+        /* just in case we reached the next second in the interval between time () and gettimeofday () */
+        if (old_seconds != new_seconds)
+            milliseconds = 999;
+    }
+
+    ep_system_time_set (
+        system_time,
+        (uint16_t)(1900 + ut_ptr->tm_year),
+        (uint16_t)ut_ptr->tm_mon + 1,
+        (uint16_t)ut_ptr->tm_wday,
+        (uint16_t)ut_ptr->tm_mday,
+        (uint16_t)ut_ptr->tm_hour,
+        (uint16_t)ut_ptr->tm_min,
+        (uint16_t)ut_ptr->tm_sec,
+        milliseconds);
+#endif
+
 }
 
 static
@@ -1004,10 +1088,7 @@ int64_t
 ep_rt_system_timestamp_get (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-	FILETIME value;
-	GetSystemTimeAsFileTime (&value);
-	return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+	return minipal_get_system_time();
 }
 
 static
@@ -1157,7 +1238,7 @@ ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
 }
@@ -1180,7 +1261,7 @@ ep_rt_lock_release (ep_rt_lock_handle_t *lock)
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
 }
@@ -1221,7 +1302,7 @@ ep_rt_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
 		spin_lock->lock->Init (LOCK_TYPE_DEFAULT);
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 }
 
 static

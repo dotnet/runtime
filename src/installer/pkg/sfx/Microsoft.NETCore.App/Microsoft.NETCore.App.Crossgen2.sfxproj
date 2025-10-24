@@ -2,48 +2,14 @@
   <Sdk Name="Microsoft.DotNet.SharedFramework.Sdk" />
 
   <PropertyGroup>
-    <!-- Crossgen is not used for Mono -->
-    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</SkipBuild>
-    <PlatformPackageType>ToolPack</PlatformPackageType>
-    <SharedFrameworkName>$(SharedFrameworkName).Crossgen2</SharedFrameworkName>
-    <OverridePackageId>$(SharedFrameworkName).$(RuntimeIdentifier)</OverridePackageId>
-    <ArchiveName>dotnet-crossgen2</ArchiveName>
-    <SharedFrameworkHostFileNameOverride>crossgen2</SharedFrameworkHostFileNameOverride>
-    <GenerateInstallers>false</GenerateInstallers>
-    <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
-    <!-- Publishing as single-file or NativeAOT means we can't examine the interior DLLs -->
-    <ShouldVerifyClosure>false</ShouldVerifyClosure>
+    <CrossgenPublishProject>$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_publish.csproj</CrossgenPublishProject>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference
-      Include="$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_publish.csproj"
-      OutputItemType="_RawCrossgenPublishFiles"
-      ReferenceOutputAssembly="false" />
-  </ItemGroup>
-
-  <Target Name="PublishCrossgen"
-          BeforeTargets="GetFilesToPackage">
-    <ItemGroup>
-      <_CrossgenPublishFiles Include="@(_RawCrossgenPublishFiles->'%(OutputPath)')"
-                             KeepMetadata="REMOVE_ALL" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(NativeAotSupported)' != 'true'">
-      <FilesToPackage Include="@(_CrossgenPublishFiles)"
-                      Exclude="*.pdb;*.h;*.lib"
-                      TargetPath="tools/" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
-      <!-- Treat all native aot assets as native runtime assets -->
-      <FilesToPackage Include="@(_CrossgenPublishFiles->Distinct())"
-                          Condition="'%(Extension)' != '.pdb'"
-                          TargetPath="tools/" />
-    </ItemGroup>
-  </Target>
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.Crossgen2.props" />
 
   <Target Name="RunPublishedCrossgen" AfterTargets="PublishCrossgen"
           Condition="'$(TargetOS)' == '$(HostOS)' and '$(TargetArchitecture)' == '$(BuildArchitecture)' and '$(CrossBuild)' != 'true'">
@@ -51,23 +17,5 @@
     <Exec Command="@(FilesToPackage) $(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll --out $(IntermediateOutputPath)S.P.C.tmp" Condition="'%(FileName)%(Extension)' == 'crossgen2$(ExeSuffix)'">
       <Output TaskParameter="ExitCode" PropertyName="CrossgenExitCode" />
     </Exec>
-  </Target>
-
-  <PropertyGroup>
-    <TargetOSComponent>unix</TargetOSComponent>
-    <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
-    <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
-  </PropertyGroup>
-
-  <Target Name="AddCrossgen2SymbolFilesToPackage" BeforeTargets="GetFilesToPackage" DependsOnTargets="PublishCrossgen">
-    <ItemGroup>
-      <_Crossgen2SymbolFilesToPackage Include="@(_CrossgenPublishFiles)" Condition="'%(Extension)' == '.pdb'" />
-      <!-- Symbol files for JIT libraries are placed in a different location for Windows builds -->
-      <_Crossgen2SymbolFilesToPackage Include="@(NativeRuntimeAsset->'$(CoreCLRArtifactsPdbDir)%(FileName).pdb')" Condition="'$(TargetOS)' == 'windows' and '%(FileName)' != 'crossgen2'" />
-      <_Crossgen2SymbolFilesToPackage Include="@(NativeRuntimeAsset->'$(CoreCLRArtifactsPath)%(FileName)%(Extension)$(SymbolsSuffix)')" Condition="'$(TargetOS)' != 'windows' and '%(FileName)' != 'crossgen2'" />
-      <_Crossgen2SymbolFilesToPackage Remove="@(_Crossgen2SymbolFilesToPackage)" Condition="!Exists('%(Identity)')" />
-
-      <_SymbolFilesToPackage Include="@(_Crossgen2SymbolFilesToPackage)" TargetPath="tools/" />
-    </ItemGroup>
   </Target>
 </Project>

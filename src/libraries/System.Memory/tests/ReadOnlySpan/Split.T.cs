@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.SpanTests
@@ -10,7 +12,7 @@ namespace System.SpanTests
     public static partial class ReadOnlySpanTests
     {
         [Fact]
-        public static void DefaultSpanSplitEnumeratorBehaviour()
+        public static void SpanSplitEnumerator_Default()
         {
             var charSpanEnumerator = new MemoryExtensions.SpanSplitEnumerator<char>();
             Assert.Equal(new Range(0, 0), charSpanEnumerator.Current);
@@ -19,10 +21,34 @@ namespace System.SpanTests
             // Implicit DoesNotThrow assertion
             charSpanEnumerator.GetEnumerator();
 
+            TestGI(charSpanEnumerator);
+            TestI(charSpanEnumerator);
+
             var stringSpanEnumerator = new MemoryExtensions.SpanSplitEnumerator<string>();
             Assert.Equal(new Range(0, 0), stringSpanEnumerator.Current);
             Assert.False(stringSpanEnumerator.MoveNext());
             stringSpanEnumerator.GetEnumerator();
+            TestGI(stringSpanEnumerator);
+            TestI(stringSpanEnumerator);
+
+            static void TestGI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator<Range>, allows ref struct
+            {
+                Assert.Equal(new Range(0, 0), enumerator.Current);
+                Assert.False(enumerator.MoveNext());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+                Assert.Equal(new Range(0, 0), enumerator.Current);
+                Assert.False(enumerator.MoveNext());
+            }
+
+            static void TestI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator, allows ref struct
+            {
+                Assert.Equal(new Range(0, 0), enumerator.Current);
+                Assert.False(enumerator.MoveNext());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                Assert.Equal(new Range(0, 0), enumerator.Current);
+                Assert.False(enumerator.MoveNext());
+            }
         }
 
         [Fact]
@@ -132,7 +158,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        public static void SplitAnySeparatorData()
+        public static void SplitAny_SeparatorData()
         {
             // Split no separators
             Test((char[])['a', ' ', 'b'], (char[])[],      (Range[])[0..1, 2..3]); // an empty span of separators for char is handled as all whitespace being separators
@@ -196,6 +222,9 @@ namespace System.SpanTests
 
         private static void AssertEnsureCorrectEnumeration<T>(MemoryExtensions.SpanSplitEnumerator<T> enumerator, Range[] result) where T : IEquatable<T>
         {
+            AssertEnsureCorrectEnumerationGI<T, MemoryExtensions.SpanSplitEnumerator<T>>(enumerator, result);
+            AssertEnsureCorrectEnumerationI<T, MemoryExtensions.SpanSplitEnumerator<T>>(enumerator, result);
+
             Assert.Equal(new Range(0, 0), enumerator.Current);
 
             for (int i = 0; i < result.Length; i++)
@@ -204,6 +233,50 @@ namespace System.SpanTests
                 Assert.Equal(result[i], enumerator.Current);
             }
 
+            Assert.False(enumerator.MoveNext());
+        }
+
+        private static void AssertEnsureCorrectEnumerationGI<T, TEnumerator>(TEnumerator enumerator, Range[] result)
+            where T : IEquatable<T>
+            where TEnumerator : IEnumerator<Range>, allows ref struct
+        {
+            Assert.Equal(new Range(0, 0), enumerator.Current);
+            try { enumerator.Reset(); } catch (NotSupportedException) { }
+            enumerator.Dispose();
+            Assert.Equal(new Range(0, 0), enumerator.Current);
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                enumerator.Dispose();
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(result[i], enumerator.Current);
+            }
+
+            Assert.False(enumerator.MoveNext());
+            try { enumerator.Reset(); } catch (NotSupportedException) { }
+            enumerator.Dispose();
+            Assert.False(enumerator.MoveNext());
+        }
+
+        private static void AssertEnsureCorrectEnumerationI<T, TEnumerator>(TEnumerator enumerator, Range[] result)
+            where T : IEquatable<T>
+            where TEnumerator : IEnumerator, allows ref struct
+        {
+            Assert.Equal(new Range(0, 0), enumerator.Current);
+
+            try { enumerator.Reset(); } catch (NotSupportedException) { }
+            Assert.Equal(new Range(0, 0), enumerator.Current);
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                Assert.True(enumerator.MoveNext());
+                Assert.Equal(result[i], enumerator.Current);
+            }
+
+            Assert.False(enumerator.MoveNext());
+            try { enumerator.Reset(); } catch (NotSupportedException) { }
             Assert.False(enumerator.MoveNext());
         }
 

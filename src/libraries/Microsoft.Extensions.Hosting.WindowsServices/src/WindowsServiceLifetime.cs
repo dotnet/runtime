@@ -45,11 +45,11 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// <param name="windowsServiceOptionsAccessor">The Windows service options used to find the service name.</param>
         public WindowsServiceLifetime(IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, ILoggerFactory loggerFactory, IOptions<HostOptions> optionsAccessor, IOptions<WindowsServiceLifetimeOptions> windowsServiceOptionsAccessor)
         {
-            ThrowHelper.ThrowIfNull(environment);
-            ThrowHelper.ThrowIfNull(applicationLifetime);
-            ThrowHelper.ThrowIfNull(loggerFactory);
-            ThrowHelper.ThrowIfNull(optionsAccessor);
-            ThrowHelper.ThrowIfNull(windowsServiceOptionsAccessor);
+            ArgumentNullException.ThrowIfNull(environment);
+            ArgumentNullException.ThrowIfNull(applicationLifetime);
+            ArgumentNullException.ThrowIfNull(loggerFactory);
+            ArgumentNullException.ThrowIfNull(optionsAccessor);
+            ArgumentNullException.ThrowIfNull(windowsServiceOptionsAccessor);
 
             Environment = environment;
             ApplicationLifetime = applicationLifetime;
@@ -77,8 +77,11 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             cancellationToken.Register(() => _delayStart.TrySetCanceled());
             ApplicationLifetime.ApplicationStarted.Register(() =>
             {
-                Logger.LogInformation("Application started. Hosting environment: {EnvName}; Content root path: {ContentRoot}",
+                if (Logger.IsEnabled(LogLevel.Information))
+                {
+                    Logger.LogInformation("Application started. Hosting environment: {EnvName}; Content root path: {ContentRoot}",
                     Environment.EnvironmentName, Environment.ContentRootPath);
+                }
             });
             ApplicationLifetime.ApplicationStopping.Register(() =>
             {

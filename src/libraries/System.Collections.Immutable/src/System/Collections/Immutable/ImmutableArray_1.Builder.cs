@@ -1095,6 +1095,9 @@ namespace System.Collections.Immutable
 
                 _count -= indicesToRemove.Count;
             }
+
+            /// <summary>Gets a <see cref="Memory{T}"/> for the filled portion of the backing array.</summary>
+            internal Memory<T> AsMemory() => new(_elements, 0, _count);
         }
     }
 }

@@ -16,6 +16,46 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
     {
         private const string CertParam = "issuerCertificate";
 
+        public enum CertKind
+        {
+            ECDsa,
+            MLDsa,
+            RsaPkcs1,
+            RsaPss,
+            SlhDsa,
+        }
+
+        public static IEnumerable<object[]> SupportedCertKinds()
+        {
+            yield return new object[] { CertKind.ECDsa };
+
+            if (MLDsa.IsSupported)
+            {
+                yield return new object[] { CertKind.MLDsa };
+            }
+
+            yield return new object[] { CertKind.RsaPkcs1 };
+            yield return new object[] { CertKind.RsaPss };
+
+            if (SlhDsa.IsSupported)
+            {
+                yield return new object[] { CertKind.SlhDsa };
+            }
+        }
+
+        public static IEnumerable<object[]> NoHashAlgorithmCertKinds()
+        {
+            if (MLDsa.IsSupported)
+            {
+                yield return new object[] { CertKind.MLDsa };
+            }
+
+            if (SlhDsa.IsSupported)
+            {
+                yield return new object[] { CertKind.SlhDsa };
+            }
+        }
+
         [Fact]
         public static void AddEntryArgumentValidation()
         {
@@ -153,63 +193,136 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 });
         }
 
-        [Fact]
-        public static void BuildWithNoHashAlgorithm()
+        [Theory]
+        [MemberData(nameof(SupportedCertKinds))]
+        public static void BuildWithNoHashAlgorithm(CertKind certKind)
         {
             BuildCertificateAndRun(
+                certKind,
                 new X509Extension[]
                 {
                     X509BasicConstraintsExtension.CreateForCertificateAuthority(),
                 },
-                static (cert, now) =>
+                static (certKind, cert, now) =>
                 {
                     HashAlgorithmName hashAlg = default;
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
-                    Assert.Throws<ArgumentNullException>(
-                        "hashAlgorithm",
-                        () => builder.Build(cert, 0, now.AddMinutes(5), hashAlg, null, now));
+                    Action certBuild = () => builder.Build(cert, 0, now.AddMinutes(5), hashAlg, null, now);
 
-                    using (ECDsa key = cert.GetECDsaPrivateKey())
+                    if (RequiresHashAlgorithm(certKind))
                     {
-                        X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
-                        X500DistinguishedName dn = cert.SubjectName;
+                        Assert.Throws<ArgumentNullException>("hashAlgorithm", certBuild);
+                    }
+                    else
+                    {
+                        // Assert.NoThrow
+                        certBuild();
+                    }
 
-                        Assert.Throws<ArgumentNullException>(
-                            "hashAlgorithm",
-                            () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, null, now));
+                    X509SignatureGenerator gen = GetSignatureGenerator(certKind, cert, out IDisposable key);
+
+                    using (key)
+                    {
+                        X500DistinguishedName dn = cert.SubjectName;
+                        X509AuthorityKeyIdentifierExtension akid =
+                            X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, true, false);
+
+                        Action genBuild = () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, akid, now);
+
+                        if (RequiresHashAlgorithm(certKind))
+                        {
+                            Assert.Throws<ArgumentNullException>("hashAlgorithm", genBuild);
+                        }
+                        else
+                        {
+                            // Assert.NoThrow
+                            genBuild();
+                        }
                     }
                 });
         }
 
-        [Fact]
-        public static void BuildWithEmptyHashAlgorithm()
+        [Theory]
+        [MemberData(nameof(SupportedCertKinds))]
+        public static void BuildWithEmptyHashAlgorithm(CertKind certKind)
         {
             BuildCertificateAndRun(
+                certKind,
                 new X509Extension[]
                 {
                     X509BasicConstraintsExtension.CreateForCertificateAuthority(),
                 },
-                static (cert, now) =>
+                static (certKind, cert, now) =>
                 {
                     HashAlgorithmName hashAlg = new HashAlgorithmName("");
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
-                    ArgumentException e = Assert.Throws<ArgumentException>(
-                        "hashAlgorithm",
-                        () => builder.Build(cert, 0, now.AddMinutes(5), hashAlg, null, now));
 
-                    Assert.Contains("empty", e.Message);
+                    Action certAction = () => builder.Build(cert, 0, now.AddMinutes(5), hashAlg, null, now);
 
-                    using (ECDsa key = cert.GetECDsaPrivateKey())
+                    if (RequiresHashAlgorithm(certKind))
                     {
-                        X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
-                        X500DistinguishedName dn = cert.SubjectName;
-
-                        e = Assert.Throws<ArgumentException>(
-                            "hashAlgorithm",
-                            () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, null, now));
+                        Exception e = AssertExtensions.Throws<ArgumentException>("hashAlgorithm", certAction);
 
                         Assert.Contains("empty", e.Message);
+                    }
+                    else
+                    {
+                        // Assert.NoThrow
+                        certAction();
+                    }
+
+                    X509SignatureGenerator gen = GetSignatureGenerator(certKind, cert, out IDisposable key);
+
+                    using (key)
+                    {
+                        X500DistinguishedName dn = cert.SubjectName;
+                        X509AuthorityKeyIdentifierExtension akid =
+                            X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, true, false);
+
+                        Action genAction = () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, akid, now);
+
+                        if (RequiresHashAlgorithm(certKind))
+                        {
+                            Assert.Throws<ArgumentException>("hashAlgorithm", genAction);
+                        }
+                        else
+                        {
+                            // Assert.NoThrow
+                            genAction();
+                        }
+                    }
+                });
+        }
+
+        [Theory]
+        [MemberData(nameof(NoHashAlgorithmCertKinds))]
+        [SkipOnPlatform(TestPlatforms.Android, "No algorithms are supported")]
+        public static void BuildPqcWithHashAlgorithm(CertKind certKind)
+        {
+            BuildCertificateAndRun(
+                certKind,
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (certKind, cert, now) =>
+                {
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                    // Assert.NoThrow
+                    builder.Build(cert, 0, now.AddMinutes(5), HashAlgorithmName.SHA256);
+
+                    X509SignatureGenerator gen = GetSignatureGenerator(certKind, cert, out IDisposable key);
+
+                    using (key)
+                    {
+                        X500DistinguishedName dn = cert.SubjectName;
+                        X509AuthorityKeyIdentifierExtension akid =
+                            X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, true, false);
+
+                        // Assert.NoThrow
+                        builder.Build(dn, gen, 0, now.AddMinutes(5), HashAlgorithmName.SHA256, akid);
                     }
                 });
         }
@@ -349,7 +462,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
-        public static void BuildEmpty()
+        public static void BuildEmptyRsaPkcs1()
         {
             BuildRsaCertificateAndRun(
                 new X509Extension[]
@@ -371,7 +484,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     // In fact, because RSASSA-PKCS1 is a deterministic algorithm, we can check it for a fixed output.
 
                     AssertExtensions.SequenceEqual(BuildEmptyExpectedCrl, built);
-                });
+                },
+                callerName: "BuildEmpty");
         }
 
         [Theory]
@@ -421,20 +535,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 });
         }
 
-        [Fact]
-        public static void BuildEmptyEcdsa()
+        [Theory]
+        [MemberData(nameof(SupportedCertKinds))]
+        public static void BuildEmpty(CertKind certKind)
         {
             BuildCertificateAndRun(
+                certKind,
                 new X509Extension[]
                 {
                     X509BasicConstraintsExtension.CreateForCertificateAuthority(),
                 },
-                (cert, now) =>
+                (certKind, cert, now) =>
                 {
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
                     DateTimeOffset nextUpdate = now.AddHours(1);
-                    byte[] crl = builder.Build(cert, 2, nextUpdate, HashAlgorithmName.SHA256);
+                    HashAlgorithmName hashAlg = RequiresHashAlgorithm(certKind) ? HashAlgorithmName.SHA256 : default;
+
+                    byte[] crl = builder.Build(cert, 2, nextUpdate, hashAlg, GetRsaPadding(certKind));
 
                     AsnReader reader = new AsnReader(crl, AsnEncodingRules.DER);
                     reader = reader.ReadSequence();
@@ -444,16 +562,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     byte[] signature = reader.ReadBitString(out _);
                     reader.ThrowIfNotEmpty();
 
-                    using (ECDsa pubKey = cert.GetECDsaPublicKey())
-                    {
-                        Assert.True(
-                            pubKey.VerifyData(
-                                tbs.Span,
-                                signature,
-                                HashAlgorithmName.SHA256,
-                                DSASignatureFormat.Rfc3279DerSequence),
-                            "Certificate public key verifies CRL");
-                    }
+                    VerifySignature(certKind, cert, tbs.Span, signature, hashAlg);
 
                     VerifyCrlFields(
                         crl,
@@ -465,26 +574,30 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 });
         }
 
-        [Fact]
-        public static void BuildEmptyEcdsa_NoSubjectKeyIdentifier()
+        [Theory]
+        [MemberData(nameof(SupportedCertKinds))]
+        public static void BuildEmpty_NoSubjectKeyIdentifier(CertKind certKind)
         {
             BuildCertificateAndRun(
+                certKind,
                 new X509Extension[]
                 {
                     X509BasicConstraintsExtension.CreateForCertificateAuthority(),
                 },
-                (cert, now) =>
+                (certKind, cert, now) =>
                 {
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
                     DateTimeOffset nextUpdate = now.AddHours(1);
                     DateTimeOffset thisUpdate = now;
+                    HashAlgorithmName hashAlg = RequiresHashAlgorithm(certKind) ? HashAlgorithmName.SHA256 : default;
 
                     byte[] crl = builder.Build(
                         cert,
                         2,
                         nextUpdate,
-                        HashAlgorithmName.SHA256,
-                        thisUpdate: thisUpdate);
+                        hashAlg,
+                        GetRsaPadding(certKind),
+                        thisUpdate);
 
                     AsnReader reader = new AsnReader(crl, AsnEncodingRules.DER);
                     reader = reader.ReadSequence();
@@ -494,16 +607,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     byte[] signature = reader.ReadBitString(out _);
                     reader.ThrowIfNotEmpty();
 
-                    using (ECDsa pubKey = cert.GetECDsaPublicKey())
-                    {
-                        Assert.True(
-                            pubKey.VerifyData(
-                                tbs.Span,
-                                signature,
-                                HashAlgorithmName.SHA256,
-                                DSASignatureFormat.Rfc3279DerSequence),
-                            "Certificate public key verifies CRL");
-                    }
+                    VerifySignature(certKind, cert, tbs.Span, signature, hashAlg);
 
                     VerifyCrlFields(
                         crl,
@@ -574,21 +678,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     // In fact, because RSASSA-PKCS1 is a deterministic algorithm, we can check it for a fixed output.
 
                     byte[] expected = (
-                        "308201CA3081B3020101300D06092A864886F70D01010B050030253123302106" +
-                        "03550403131A4275696C6453696E676C65456E74727957697468526561736F6E" +
-                        "170D3133303430363037353830395A170D3133303430363038303330395A3029" +
-                        "302702080101020305080C15170D3133303430363037323735375A300C300A06" +
-                        "03551D1504030A0101A02F302D301F0603551D2304183016801478A5C75D5166" +
-                        "7331D5A96924114C9B5FA00D7BCB300A0603551D14040302017B300D06092A86" +
-                        "4886F70D01010B0500038201010055283C97666765D19AABFFDAA36112781957" +
-                        "1FCA3CE68AA00DAFDFF784F8F34D0EFF4EC8659A26A254DDDC9BBD7D664E0160" +
-                        "4D3696209B5A4B0FFF57102BC8AA17FED0D33AD3452BE5E22269E78BB4084698" +
-                        "28E2814EA8E6B8003EBB7AC727DAD912580F941C6D2616195C083218F997D682" +
-                        "966CC6EEB810B815ABA991135469E2CD2915EE7C0FCB387C0B6169E0F1F2CFD8" +
-                        "2274D134DB2C27826E04138FF8C7AB4B8678AF53C3904C09F1F9589D5325E5D4" +
-                        "3F2A7F2EF81BD19DE5362181B9E0603DE98F664F98A6599A3BFB9AAFA2DC3491" +
-                        "9305B8812BC11BFA06C6550A257396766B750D10B6C6BEA7A193E4D3F4C2FEFD" +
-                        "FC2B875D1A2BFDB849EBBCFC767B").HexToByteArray();
+                        "308201CA3081B3020101300D06092A864886F70D01010B05003025312330210603550403131A427" +
+                        "5696C6453696E676C65456E74727957697468526561736F6E170D3133303430363037353830395A" +
+                        "170D3133303430363038303330395A3029302702080101020305080C15170D31333034303630373" +
+                        "23735375A300C300A0603551D1504030A0101A02F302D301F0603551D230418301680144498BCC0" +
+                        "CAA53DF3BC936988508E72EA5D7BA9FE300A0603551D14040302017B300D06092A864886F70D010" +
+                        "10B05000382010100A87085F14CB17262DB4DF19F4E2F4577B692287F6FA8DD2A63761EBE045058" +
+                        "4FF47C462ADEC002921B55CF89114438698AF7B611AB5E6FE30357DBD60F5ED2538FDBDE11A12B3" +
+                        "C3C79F267C6F7AFC5A9048E5B6CEA9A191A52CF2AE1641EE2E4A5A5FB89254B5809575E03C3EEBE" +
+                        "6018F4DB416F1264BFC84452034A097F3F600F22BB666B7F6C77ABA71ECCEF02529155B84441AF4" +
+                        "AE17AEEC8765AF2AEEC50D6EF6CFC1E5B0C5188ADD9442E034819734A80A6607FBF4D8A31C49688" +
+                        "E909A053279C5A9B0228E6630D46F0C608C929C706CBBD0B208C2C434E4292084D88D1ECA440C3E" +
+                        "B7F5B36A60B79FCA2059E4BFA79385F5A88B56669F7F9238EEFA22C").HexToByteArray();
 
                     AssertExtensions.SequenceEqual(expected, explicitUpdateTime);
                 });
@@ -627,20 +728,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     // In fact, because RSASSA-PKCS1 is a deterministic algorithm, we can check it for a fixed output.
 
                     byte[] expected = (
-                        "308201B430819D020101300D06092A864886F70D01010B0500301D311B301906" +
-                        "035504031312416464547769636552656D6F76654F6E6365170D313330343036" +
-                        "3037353830395A170D3133303430363038303330395A301B3019020801010203" +
-                        "05080C15170D3133303430363037323735375AA02F302D301F0603551D230418" +
-                        "3016801478A5C75D51667331D5A96924114C9B5FA00D7BCB300A0603551D1404" +
-                        "0302017B300D06092A864886F70D01010B050003820101005B959102271A96F4" +
-                        "4EF37B6C7D1BC566875C6CB2B45B5F32CE474155890047EAD9CF74A97E89CA4B" +
-                        "2139417167B0EDC537300A5271F399820E1D2B326DF85FD4F3249B4D0AE0B067" +
-                        "5662986E44E2041E1DADC4A3F557FFE6E50DB12E12BE5A6734BD3EBD537D348D" +
-                        "DD454C2310AEFC586722730252AA63F20CCF8E5127E5A2E5FDD0F16E1296E831" +
-                        "03730D6ACA32584D33DC51B6075000507A808EDC012C982BF9969970C115D0BB" +
-                        "BEDB56089C5E3A51FD1E6180088BDEC343976E42BE4F04798E19B043D5295E1D" +
-                        "A9C0371F6E62CED8626E65804E13A9D28D5A9458AAE6DEC3E06B43E236EDEA55" +
-                        "6AAA7E7A32930C2E8289D62E1CBF7AFAB632FF260B1B49F9").HexToByteArray();
+                        "308201B430819D020101300D06092A864886F70D01010B0500301D311B301906035504031312416" +
+                        "464547769636552656D6F76654F6E6365170D3133303430363037353830395A170D313330343036" +
+                        "3038303330395A301B301902080101020305080C15170D3133303430363037323735375AA02F302" +
+                        "D301F0603551D230418301680144498BCC0CAA53DF3BC936988508E72EA5D7BA9FE300A0603551D" +
+                        "14040302017B300D06092A864886F70D01010B05000382010100920A460578DE4F6675B96BB4E20" +
+                        "E6379E8C0B6C306886FA1BB90D30C2F3BF1CFDB2BCD7A8AD398D933E939C7CDB3ABCDE00241E17A" +
+                        "E46D137DB1F9BF64EEDC004E98A5987E74B7A3A090E0B0AC74F837DA12165CA9AD94BC0A07CEE26" +
+                        "F247E9369AF3EE547AB67F19CBD387608236BED2D07E0716718A31780F1AEA1FBAB60324FDBDED1" +
+                        "35F92BC208E33529A0C0680B06EBDCD8D55DD9DCD28B00A0F89A1C6B1A0D081AD009E0AC8D9A57E" +
+                        "BFC62D2C428B6E22E65A0457D669C3527E816485152F5B2EACF182FEC081006050E0AF544D14FCE" +
+                        "06DB5BA065E38553DC0F49C25EDEC9F8F1A9A5D59AAB2E2FD1CE4619D24B3C83AF9C7227EB55362" +
+                        "401D94F14A3").HexToByteArray();
 
                     AssertExtensions.SequenceEqual(expected, explicitUpdateTime);
                 });
@@ -678,8 +777,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 () => builder.AddEntry(serial, reason: X509RevocationReason.RemoveFromCrl));
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void DsaNotDirectlySupported()
         {
             CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
@@ -823,20 +921,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     // RSASSA-PKCS1, so we can check for exact bytes.
 
                     byte[] expected = (
-                        "308201A330818C020101300D06092A864886F70D01010B050030273125302306" +
-                        "03550403131C54686973557064617465323034394E6578745570646174653230" +
-                        "3530170D3439313233313233353935395A180F32303530303130313030303435" +
-                        "395AA02F302D301F0603551D2304183016801478A5C75D51667331D5A9692411" +
-                        "4C9B5FA00D7BCB300A0603551D14040302017B300D06092A864886F70D01010B" +
-                        "0500038201010030CAB8946944FFD3958A42AA94851D3EEDB533516926A0661B" +
-                        "91D41F6526876A345021377F9FFC0372EC744C85CF2FD51458D898EC8D26A0C5" +
-                        "C3FE0C616AB1EC1E8E90A45BA7543D9009B21AE2EC98DF55497DB299B6DD2363" +
-                        "2619C1E0FB29AA0F85C9DB59901D2A995C6B56D6CAD74E7840EDC3F09A3D6FD9" +
-                        "455569F554CF4CDB04BDC3775C9E7C48EBC85B818D00DB55B6FDF62CC22427A5" +
-                        "DE1BF178C18FE28726A853D89B4299FA241328F8CDD801843B8F24128217020E" +
-                        "2F7D2E2B5F4993F82E6B33B5C515D576BE78F55847A544FC8869B4FB9DF2E66D" +
-                        "3D222B9A3BA511E6AF3CBDBC54F5B44C49571F2432E5C6CA4F11510C822BA808" +
-                        "0C87EBEAD6728B").HexToByteArray();
+                        "308201A330818C020101300D06092A864886F70D01010B05003027312530230603550403131C546" +
+                        "86973557064617465323034394E65787455706461746532303530170D3439313233313233353935" +
+                        "395A180F32303530303130313030303435395AA02F302D301F0603551D230418301680144498BCC" +
+                        "0CAA53DF3BC936988508E72EA5D7BA9FE300A0603551D14040302017B300D06092A864886F70D01" +
+                        "010B05000382010100A38CB2CA867B087990B63F3C5B190BF627B7C90A75CB951EB691BECAF307F" +
+                        "102A1B941744FEEBDA1B349A153F7D56C2AB48F0263D90CD615D52F4E913F4C17AD1C407545345A" +
+                        "A4176920B1E1F5DFDA2E9F9F0065B12EA396C1EEFAFE29730F0D71EBB96D0FC77C00DAB4C18F18C" +
+                        "408ACB3BC1468C7350D2B1F31BF3206215F5C38E40EB2AAE1116E6B35B4AD588AAF272A60C055F7" +
+                        "F76B77B857E2B54591D607E539AC28A134F82A30D7ABDC5D5FA27FF3F39D88FFCDA259D97688CC0" +
+                        "F28F1DC5E83DB9D58F35615A5C93E5506677BE4F710103BDB81F2CABFA5D81F8F9B1D5B78F2916C" +
+                        "B1CBC0F38C31AE1D5B2BC6412F5F5C28C2DD87C8345E1EB84EC8484E").HexToByteArray();
 
                     Assert.Equal(expected, built);
                 });
@@ -862,19 +957,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     // RSASSA-PKCS1, so we can check for exact bytes.
 
                     byte[] expected = (
-                        "30820197308180020101300D06092A864886F70D01010B050030193117301506" +
-                        "03550403130E5468697355706461746532303530180F32303530303130313030" +
-                        "303030305A180F32303530303130313030303530305AA02F302D301F0603551D" +
-                        "2304183016801478A5C75D51667331D5A96924114C9B5FA00D7BCB300A060355" +
-                        "1D14040302017B300D06092A864886F70D01010B05000382010100ACB629E3A6" +
-                        "CCF5B32204E149FD5A193657EB687942B93153275BC32D8E92C318BE5484EA53" +
-                        "609BEC03F6BE62CF06BE11EF203A3A8F296D635D265202AD285EDFDB286DD814" +
-                        "33ED645D1093CE70AB77F840658C6A219ACF35E394A1A4E05334E6B27FAC8288" +
-                        "D37EB75F31540CB7C3AD05178C4F7552AAA59472C9D457C26B2D4D37A3E394AF" +
-                        "00577D174B6015C2673E951B34720E6D1CCB97D1B4A70B88C0B89CDC27B56D9D" +
-                        "A3D8974B1B4B37CFC4EBFAA9DC9466ACE56D0835CD848DB112918523A74AD398" +
-                        "0CEE5F70C8C5C2610111C6EC72A68CAC314C4F516D697C3B52F16A109CFC526A" +
-                        "2F26EDF7B69DD7D630266BC82B5A5AB265E06847280B5A2C658F3E").HexToByteArray();
+                        "30820197308180020101300D06092A864886F70D01010B05003019311730150603550403130E546" +
+                        "8697355706461746532303530180F32303530303130313030303030305A180F3230353030313031" +
+                        "3030303530305AA02F302D301F0603551D230418301680144498BCC0CAA53DF3BC936988508E72E" +
+                        "A5D7BA9FE300A0603551D14040302017B300D06092A864886F70D01010B05000382010100990FD5" +
+                        "25C8EE57209F56F7050E8EB98E90C05BEF5C352DFD0C71C63BA41A79BDFEAAB295175997A733990" +
+                        "DB888BBDDC7B12B2A1A9527EDE3DF3F2FE069A56BEC850599EE1B1FF4093C76293787A29A18BBC2" +
+                        "7B9F6D3EE95DD67F2C32E64201D21840FA828BAC09757727B8766E77F89F7D4250CDDCEC78D300E" +
+                        "20789830364ED68863D6B5A099FA427C2E92B706C0DC09E26D1124134B33495790D3D75271DE0D8" +
+                        "8EBF151CDCF0C0BFA0DEB160B950CB03AE62ED9FEB5385456DBECD7D2215C62D1B2B18FA35C6548" +
+                        "ACCC35782D108E550FA6F6A81F9CA750B65D84315B516B13F34771143331DCAF1194B7290B91E03" +
+                        "ACFF1C89498706DE2B6BE05BCEFFB768").HexToByteArray();
 
                     Assert.Equal(expected, built);
                 });
@@ -938,21 +1031,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                     // RSASSA-PKCS1, so we can check for exact bytes.
                     byte[] expected = (
-                        "308201D23081BB020101300D06092A864886F70D01010C0500302C312A302806" +
-                        "035504031321416464456E74727957697468526561736F6E46726F6D43657274" +
-                        "69666963617465170D3133303430363037353830395A170D3133303430363038" +
-                        "303330395A302A3028020900AB740A714AA83C92170D31333034303630373430" +
-                        "32335A300C300A0603551D1504030A0109A02F302D301F0603551D2304183016" +
-                        "801478A5C75D51667331D5A96924114C9B5FA00D7BCB300A0603551D14040302" +
-                        "017B300D06092A864886F70D01010C050003820101005E3A2471601767B6C257" +
-                        "D1AEE84ABAE16FD40EF129F3F0CD5F4B1B42B152FB21E750032AF87C415E738C" +
-                        "C0757FA3A4CEE841955EF863EDE8B84E5429950D612E5AF53D5113EE5F96FB14" +
-                        "28768C71B43ED143CAAD5F21DA554E589F73D94F236F3DC51A562CE5897745E4" +
-                        "1C99537352D3442F120D7BFA45C35DCE5872E4E35EFA31D1B31BC17426312D52" +
-                        "1FF4AA79FC6E0BE28B840F736DDBD9171733667554F473B37C092B1BECC21256" +
-                        "78943A94C254CD539146F01449772EEBD9FC8FCDE9CE0E8305532E193A2FF761" +
-                        "73B030AC291AE0B9471A3A2A4E15299AEF9CD89D20F802444DAC6BD277C3D45C" +
-                        "F7AF4A60117A20431AF0ABCBAFA0A52E6EF5E47793CD").HexToByteArray();
+                        "308201D23081BB020101300D06092A864886F70D01010C0500302C312A302806035504031321416" +
+                        "464456E74727957697468526561736F6E46726F6D4365727469666963617465170D313330343036" +
+                        "3037353830395A170D3133303430363038303330395A302A3028020900AB740A714AA83C92170D3" +
+                        "133303430363037343032335A300C300A0603551D1504030A0109A02F302D301F0603551D230418" +
+                        "301680144498BCC0CAA53DF3BC936988508E72EA5D7BA9FE300A0603551D14040302017B300D060" +
+                        "92A864886F70D01010C0500038201010089CFB618655460C4C7FDC4A5CBBC8E84E0CE16603BC367" +
+                        "0E4DCCFDCBBDD1022144C921F11147CE5D0252E92A81FD2BB41BA0A312DA55732C71EAFDF215E36" +
+                        "EFA1F77A1586859D2ECCC7608598DEDB20A7B57275687327D4DC6E1E64C66D8C7B91CA77480EDDC" +
+                        "91F870955994065AD6C97657630B7385CE0C147542FC4D58494B975B0C081972B7BE41A09FB08C7" +
+                        "D12B36C62610F4814FB74911BE39B4855BDE1DE3067F8A18721CAA223021BB314C7A5D418AF3EF9" +
+                        "8CFB4DBD3A627B0C4071BCBC3A57B16382BCD48CB6C7A3564D621D8D8D55314B3AC2E6EA2A6BE22" +
+                        "BAE3FF476E5F1B5BC82CB6230200C8EE480FE365289EBC520DEDE28BB2B5459F2ADB365").HexToByteArray();
 
                     AssertExtensions.SequenceEqual(expected, crl);
                 });
@@ -1054,22 +1144,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                     // RSASSA-PKCS1, so we can check for exact bytes.
                     byte[] expected = (
-                        "308201F83081E1020101300D06092A864886F70D01010B0500301A3118301606" +
-                        "03550403130F4C6F6164416464416E644275696C64180F323035333039303830" +
-                        "37353634315A180F32303533303930393037353634315A30503028020900AB74" +
-                        "0A714AA83C92170D3133303430363037343032335A300C300A0603551D150403" +
-                        "0A0109302402030A0304180F32303533303930383037353633395A300C300A06" +
-                        "03551D1504030A0101A03D303B301F0603551D2304183016801478A5C75D5166" +
-                        "7331D5A96924114C9B5FA00D7BCB30180603551D140411020F03F4407DDE4753" +
-                        "F848A9D7F9A00001300D06092A864886F70D01010B05000382010100041092BF" +
-                        "3931B87B3756111412763E0612BC3DBE52366904F4558C316901A724790BF5D6" +
-                        "201AC99E79ABDE56AEAF019E78398B230D669F6DA3A3E8607971729D85E83EDE" +
-                        "9F7626333032E4785377C0C04C2E5F5B25D0D79B7A0F1AA34DA23AEAAFB578E2" +
-                        "AB41CD1DFAB4AD19CA049851FF941DA37173BA974B68A9469D7CF7987C97BB29" +
-                        "D16889749177D284ADB629BEBC5C7AC872E63F7D4A02A6E8B9BA05B1476C5711" +
-                        "263A124BAF87B84F3A4B064929A2679E5C8D41B6C39DDDAFEB2E9092A3CAF13B" +
-                        "31D6CD8C4EF88E09BE44EE8EA896315A0C6E8A79DD13ACD78B92E349514866C7" +
-                        "69A28F554C7BE6FDEC59ADD39D607F548E2F05C086FEDF9439862720").HexToByteArray();
+                        "308201F83081E1020101300D06092A864886F70D01010B0500301A311830160603550403130F4C6" +
+                        "F6164416464416E644275696C64180F32303533303930383037353634315A180F32303533303930" +
+                        "393037353634315A30503028020900AB740A714AA83C92170D3133303430363037343032335A300" +
+                        "C300A0603551D1504030A0109302402030A0304180F32303533303930383037353633395A300C30" +
+                        "0A0603551D1504030A0101A03D303B301F0603551D230418301680144498BCC0CAA53DF3BC93698" +
+                        "8508E72EA5D7BA9FE30180603551D140411020F03F4407DDE4753F848A9D7F9A00001300D06092A" +
+                        "864886F70D01010B05000382010100AFB81D5A3C422121D768D8FFBB74E536496FC01068B447B68" +
+                        "B67BBF71B2ED666D216DC45620FB0038693EFD7C36695D08485E444E44E9AFD28AFE6EC02A084F7" +
+                        "623C3CD0AA20799760887D2999A312B9C08ABF42BD9DFEA7B1B6A2B49FD02CBC1A25515B1820216" +
+                        "A343C831C0174318E345600B8D82BDA21D26E366955DF1D1B0628BF25950670637EF5A110C61DD3" +
+                        "92CF4AFA4D5D0C222867EC5EA47BBDA78B4D99657AB714142AEC0C0EA34F9BF34C8BFBDC1185A20" +
+                        "922EBB7B524A605A8AB40B5C5A4DCB09383D3793CBAB3AE2522120CF3AC27E79AF312319BD58A35" +
+                        "EF82E17425D1BA98E0AF62457C7D5935E6A823ED0BEF33E26E8EEE31E544F10A48BF").HexToByteArray();
 
                     AssertExtensions.SequenceEqual(expected, built);
                 });
@@ -1126,25 +1213,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                     // RSASSA-PKCS1, so we can check for exact bytes.
                     byte[] expected = (
-                        "308202273082010F020101300D06092A864886F70D01010B0500302931273025" +
-                        "0603550403131E4C6F6164507265736572766573556E6B6E6F776E457874656E" +
-                        "73696F6E73180F31393439303930383037353634315A170D3530303930383037" +
-                        "353634315A3071301A020900AB740A714AA83C92170D31333034303630373430" +
-                        "32335A303A02030A0304180F32303533303930383037353633395A3022300A06" +
-                        "03551D1504030A0101301406092A864886F70D01010B04073005040002010330" +
-                        "1702041584571B180F31393439303930383037353633395AA03D303B301F0603" +
-                        "551D2304183016801478A5C75D51667331D5A96924114C9B5FA00D7BCB301806" +
-                        "03551D140411020F03F4407DDE4753F848A9D7F9A0000D300D06092A864886F7" +
-                        "0D01010B05000382010100359B39840DF4516EEC6F02757B0B9A4638AA6B59A6" +
-                        "B159785EB3ABC03AB1F71807657C6AEC488C0E7103D5D7C936B704B727F8DCF1" +
-                        "C1E88920C200A9EE36522ED50AF0E1D9C404101007E65D52359AA46A52044195" +
-                        "4BE506C2217810888865BD8EBED1F87144EC5364E082EDAC23F197EAD135225C" +
-                        "343483FE671B2849A9D4F83B75B6A70D7DA8DD12CC7561D1FA059A636D5F1272" +
-                        "9C18D3FFED99F0E3D9A2EBADBE452A4D127777D52538BAFDDD9F828CC3060A30" +
-                        "366831CD9D8E92DECA397527CAEE1133FFF6F9F0648E6D86AE86FC19B1CB551B" +
-                        "3CFA0F490B7AFDD6286C3C99B83C4BD1D1B8509E332C2212CB22D5BCD2532741" +
-                        "34875DDE2FE7062BA2F2B6"
-                    ).HexToByteArray();
+                        "308202273082010F020101300D06092A864886F70D01010B05003029312730250603550403131E4" +
+                        "C6F6164507265736572766573556E6B6E6F776E457874656E73696F6E73180F3139343930393038" +
+                        "3037353634315A170D3530303930383037353634315A3071301A020900AB740A714AA83C92170D3" +
+                        "133303430363037343032335A303A02030A0304180F32303533303930383037353633395A302230" +
+                        "0A0603551D1504030A0101301406092A864886F70D01010B0407300504000201033017020415845" +
+                        "71B180F31393439303930383037353633395AA03D303B301F0603551D230418301680144498BCC0" +
+                        "CAA53DF3BC936988508E72EA5D7BA9FE30180603551D140411020F03F4407DDE4753F848A9D7F9A" +
+                        "0000D300D06092A864886F70D01010B05000382010100B923EB74EB2A888EF645FE903D2A4A0E1A" +
+                        "4AC634A27AF5CAACC342F2498435F6C7B7C7811D3747AA6AD41202CAA067DBD262E0E9727BBA68E" +
+                        "B3F203921E842E78D6A8718BA3D32AEE1C54E5652961DE301F86D36B35533CDDCABAABBE60EA39F" +
+                        "113DFC6AF6B6FD7D31D00C7D75A727791EC4645724DCC4E1F5D30A20B618EE557C2F2B6FC64CDD9" +
+                        "54B158CD75CE4C02F6C1482F53DBDF11B7C1FAC782A533FFCC9E578E644877EB8584A276AB0F927" +
+                        "D3B4D33C97A4BA7CBB2E8C9825A6762B7783DF532884DB61A4F77D5319C1D5992D628A9B85ACCE8" +
+                        "D27F1EFF1DC975A31F8492EC07DE4B45B08076ACDC3B5E7671E9C7CCA1F0DC9E0F04FE2898BF52A" +
+                        "C24F").HexToByteArray();
 
                     AssertExtensions.SequenceEqual(expected, built);
                 });
@@ -1430,17 +1513,47 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
         }
 
         private static void BuildCertificateAndRun(
+            CertKind certKind,
             IEnumerable<X509Extension> extensions,
-            Action<X509Certificate2, DateTimeOffset> action,
+            Action<CertKind, X509Certificate2, DateTimeOffset> action,
             bool addSubjectKeyIdentifier = true,
             [CallerMemberName] string callerName = null)
         {
-            using (ECDsa key = ECDsa.Create())
+            string subjectName = $"CN=\"{callerName}\"";
+            CertificateRequest req;
+            IDisposable key = null;
+
+            try
             {
-                CertificateRequest req = new CertificateRequest(
-                    $"CN=\"{callerName}\"",
-                    key,
-                    HashAlgorithmName.SHA384);
+                if (certKind == CertKind.ECDsa)
+                {
+                    ECDsa ecdsa = ECDsa.Create();
+                    key = ecdsa;
+                    req = new CertificateRequest(subjectName, ecdsa, HashAlgorithmName.SHA384);
+                }
+                else if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss)
+                {
+                    RSA rsa = RSA.Create();
+                    rsa.ImportFromPem(TestData.RsaPkcs8Key);
+                    key = rsa;
+                    req = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA384, GetRsaPadding(certKind));
+                }
+                else if (certKind == CertKind.MLDsa)
+                {
+                    MLDsa mldsa = MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa44);
+                    key = mldsa;
+                    req = new CertificateRequest(subjectName, mldsa);
+                }
+                else if (certKind == CertKind.SlhDsa)
+                {
+                    SlhDsa slhDsa = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f);
+                    key = slhDsa;
+                    req = new CertificateRequest(subjectName, slhDsa);
+                }
+                else
+                {
+                    throw new NotSupportedException($"Unsupported CertKind: {certKind}");
+                }
 
                 if (addSubjectKeyIdentifier)
                 {
@@ -1456,9 +1569,27 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
 
                 using (X509Certificate2 cert = req.CreateSelfSigned(now.AddMonths(-1), now.AddMonths(1)))
                 {
-                    action(cert, now);
+                    action(certKind, cert, now);
                 }
             }
+            finally
+            {
+                key?.Dispose();
+            }
+        }
+
+        private static void BuildCertificateAndRun(
+            IEnumerable<X509Extension> extensions,
+            Action<X509Certificate2, DateTimeOffset> action,
+            bool addSubjectKeyIdentifier = true,
+            [CallerMemberName] string callerName = null)
+        {
+            BuildCertificateAndRun(
+                CertKind.ECDsa,
+                extensions,
+                (certKind, cert, now) => action(cert, now),
+                addSubjectKeyIdentifier,
+                callerName);
         }
 
         private static void BuildRsaCertificateAndRun(
@@ -1467,31 +1598,12 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             bool addSubjectKeyIdentifier = true,
             [CallerMemberName] string callerName = null)
         {
-            using (RSA key = RSA.Create(TestData.RsaBigExponentParams))
-            {
-                CertificateRequest req = new CertificateRequest(
-                    $"CN=\"{callerName}\"",
-                    key,
-                    HashAlgorithmName.SHA384,
-                    RSASignaturePadding.Pkcs1);
-
-                if (addSubjectKeyIdentifier)
-                {
-                    req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
-                }
-
-                foreach (X509Extension ext in extensions)
-                {
-                    req.CertificateExtensions.Add(ext);
-                }
-
-                DateTimeOffset now = DateTimeOffset.UtcNow;
-
-                using (X509Certificate2 cert = req.CreateSelfSigned(now.AddMonths(-1), now.AddMonths(1)))
-                {
-                    action(cert, now);
-                }
-            }
+            BuildCertificateAndRun(
+                CertKind.RsaPkcs1,
+                extensions,
+                (certKind, cert, now) => action(cert, now),
+                addSubjectKeyIdentifier,
+                callerName);
         }
 
         private static void VerifyCrlFields(
@@ -1579,6 +1691,101 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             return reader.ReadGeneralizedTime();
         }
 
+        private static X509SignatureGenerator GetSignatureGenerator(
+            CertKind certKind,
+            X509Certificate2 cert,
+            out IDisposable key)
+        {
+            if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss)
+            {
+                RSA rsa = cert.GetRSAPrivateKey();
+                key = rsa;
+                return X509SignatureGenerator.CreateForRSA(rsa, GetRsaPadding(certKind));
+            }
+            else if (certKind == CertKind.ECDsa)
+            {
+                ECDsa ecdsa = cert.GetECDsaPrivateKey();
+                key = ecdsa;
+                return X509SignatureGenerator.CreateForECDsa(ecdsa);
+            }
+            else if (certKind == CertKind.MLDsa)
+            {
+                MLDsa mldsa = cert.GetMLDsaPrivateKey();
+                key = mldsa;
+                return X509SignatureGenerator.CreateForMLDsa(mldsa);
+            }
+            else if (certKind == CertKind.SlhDsa)
+            {
+                SlhDsa slhDsa = cert.GetSlhDsaPrivateKey();
+                key = slhDsa;
+                return X509SignatureGenerator.CreateForSlhDsa(slhDsa);
+            }
+            else
+            {
+                throw new NotSupportedException($"Unsupported CertKind: {certKind}");
+            }
+        }
+
+        private static void VerifySignature(
+            CertKind certKind,
+            X509Certificate2 cert,
+            ReadOnlySpan<byte> data,
+            ReadOnlySpan<byte> signature,
+            HashAlgorithmName hashAlgorithm)
+        {
+            bool signatureValid;
+
+            if (certKind == CertKind.RsaPkcs1 || certKind == CertKind.RsaPss)
+            {
+                using RSA rsa = cert.GetRSAPublicKey();
+                signatureValid = rsa.VerifyData(data, signature, hashAlgorithm, GetRsaPadding(certKind));
+            }
+            else if (certKind == CertKind.ECDsa)
+            {
+                using ECDsa ecdsa = cert.GetECDsaPublicKey();
+                signatureValid = ecdsa.VerifyData(data, signature, hashAlgorithm, DSASignatureFormat.Rfc3279DerSequence);
+            }
+            else if (certKind == CertKind.MLDsa)
+            {
+                using MLDsa mldsa = cert.GetMLDsaPublicKey();
+                signatureValid = mldsa.VerifyData(data, signature);
+            }
+            else if (certKind == CertKind.SlhDsa)
+            {
+                using SlhDsa slhDsa = cert.GetSlhDsaPublicKey();
+                signatureValid = slhDsa.VerifyData(data, signature);
+            }
+            else
+            {
+                throw new NotSupportedException($"Unsupported CertKind: {certKind}");
+            }
+
+            if (!signatureValid)
+            {
+                Assert.Fail($"{certKind} signature validation failed when it should have succeeded.");
+            }
+        }
+
+        private static bool RequiresHashAlgorithm(CertKind certKind)
+        {
+            return certKind switch
+            {
+                CertKind.ECDsa or CertKind.RsaPkcs1 or CertKind.RsaPss => true,
+                CertKind.MLDsa or CertKind.SlhDsa => false,
+                _ => throw new NotSupportedException(certKind.ToString())
+            };
+        }
+
+        private static RSASignaturePadding GetRsaPadding(CertKind certKind)
+        {
+            return certKind switch
+            {
+                CertKind.RsaPkcs1 => RSASignaturePadding.Pkcs1,
+                CertKind.RsaPss => RSASignaturePadding.Pss,
+                _ => null,
+            };
+        }
+
         private static ReadOnlySpan<byte> BuildEmptyExpectedCrl => new byte[]
         {
             0x30, 0x82, 0x01, 0x8E, 0x30, 0x78, 0x02, 0x01, 0x01, 0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86,
@@ -1586,25 +1793,25 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             0x03, 0x13, 0x0A, 0x42, 0x75, 0x69, 0x6C, 0x64, 0x45, 0x6D, 0x70, 0x74, 0x79, 0x17, 0x0D, 0x31, 0x33,
             0x30, 0x34, 0x30, 0x36, 0x30, 0x37, 0x35, 0x38, 0x30, 0x39, 0x5A, 0x17, 0x0D, 0x31, 0x33, 0x30, 0x34,
             0x30, 0x36, 0x30, 0x38, 0x30, 0x33, 0x30, 0x39, 0x5A, 0xA0, 0x2F, 0x30, 0x2D, 0x30, 0x1F, 0x06, 0x03,
-            0x55, 0x1D, 0x23, 0x04, 0x18, 0x30, 0x16, 0x80, 0x14, 0x78, 0xA5, 0xC7, 0x5D, 0x51, 0x66, 0x73, 0x31,
-            0xD5, 0xA9, 0x69, 0x24, 0x11, 0x4C, 0x9B, 0x5F, 0xA0, 0x0D, 0x7B, 0xCB, 0x30, 0x0A, 0x06, 0x03, 0x55,
+            0x55, 0x1D, 0x23, 0x04, 0x18, 0x30, 0x16, 0x80, 0x14, 0x44, 0x98, 0xBC, 0xC0, 0xCA, 0xA5, 0x3D, 0xF3,
+            0xBC, 0x93, 0x69, 0x88, 0x50, 0x8E, 0x72, 0xEA, 0x5D, 0x7B, 0xA9, 0xFE, 0x30, 0x0A, 0x06, 0x03, 0x55,
             0x1D, 0x14, 0x04, 0x03, 0x02, 0x01, 0x7B, 0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D,
-            0x01, 0x01, 0x0B, 0x05, 0x00, 0x03, 0x82, 0x01, 0x01, 0x00, 0x05, 0xA2, 0x49, 0x67, 0x1E, 0x2E, 0xE8,
-            0x78, 0x0C, 0xBE, 0x17, 0x18, 0x04, 0x93, 0x09, 0x4A, 0x5E, 0xB5, 0x76, 0x46, 0x5A, 0x9B, 0x26, 0x74,
-            0x66, 0x6B, 0x76, 0x21, 0x84, 0xAD, 0x99, 0x28, 0x32, 0x55, 0x6B, 0x36, 0xCC, 0x83, 0x20, 0x26, 0x4F,
-            0xE4, 0x5A, 0x6B, 0x49, 0x81, 0x43, 0x9E, 0xD9, 0xCF, 0xB8, 0x7E, 0xAD, 0x10, 0xD4, 0xA9, 0x57, 0x69,
-            0x71, 0x3A, 0x04, 0x42, 0xB2, 0xD3, 0xA5, 0xFD, 0x20, 0x48, 0x7D, 0xA5, 0xB3, 0x3B, 0xCF, 0xBE, 0x10,
-            0xED, 0x92, 0x1C, 0x8B, 0x98, 0x96, 0xB6, 0x9E, 0xA4, 0x43, 0xD8, 0xD9, 0xF0, 0xAF, 0x5E, 0x0E, 0xB7,
-            0x89, 0x36, 0x16, 0x55, 0xC8, 0x0E, 0xC3, 0xC7, 0xC7, 0xC8, 0x4F, 0x51, 0x27, 0xC6, 0xA2, 0x9C, 0x27,
-            0xBE, 0x84, 0x37, 0xCE, 0x01, 0x82, 0xBD, 0x16, 0xCF, 0x69, 0x71, 0x69, 0x12, 0x1C, 0x2B, 0xBF, 0xAA,
-            0xDC, 0x4E, 0xDE, 0x17, 0xC8, 0xBB, 0x76, 0x94, 0x9D, 0x25, 0x37, 0x6F, 0x27, 0x39, 0xE0, 0x3C, 0xDA,
-            0x06, 0x09, 0xD0, 0x3C, 0x02, 0x4C, 0xD5, 0xA9, 0x11, 0xB3, 0x42, 0x57, 0x1F, 0x38, 0x5B, 0x3B, 0x8A,
-            0x78, 0x2B, 0x62, 0xC5, 0x37, 0x5E, 0x1D, 0x67, 0x4E, 0x43, 0x44, 0x7F, 0xE2, 0xEB, 0x9E, 0xFF, 0xCA,
-            0xF7, 0x1C, 0xCC, 0xEC, 0xBA, 0xE6, 0x00, 0xC7, 0x4F, 0x6F, 0xD6, 0xCB, 0x36, 0xA8, 0x7C, 0x57, 0x86,
-            0x60, 0x35, 0x01, 0xEA, 0x43, 0x79, 0x41, 0x44, 0x14, 0x2E, 0x85, 0x57, 0xEC, 0x2E, 0xBC, 0x2F, 0x73,
-            0x57, 0xDB, 0x05, 0x04, 0x40, 0xFD, 0x97, 0xF2, 0x33, 0x44, 0x1E, 0x2B, 0xE9, 0x81, 0xED, 0x63, 0x09,
-            0xCE, 0x7C, 0x8B, 0x1C, 0x97, 0xBC, 0xE6, 0x58, 0xFC, 0xEC, 0x6B, 0xD6, 0x30, 0x04, 0xA1, 0xD3, 0xD4,
-            0xEA, 0x00, 0x43, 0x78, 0x3E, 0x55, 0xE7, 0xEC, 0xBC, 0xF6, 0xE6,
+            0x01, 0x01, 0x0B, 0x05, 0x00, 0x03, 0x82, 0x01, 0x01, 0x00, 0x21, 0x59, 0x7F, 0x0F, 0xC6, 0xE2, 0x3D,
+            0xE6, 0xDF, 0xF4, 0xFF, 0x80, 0x09, 0xCE, 0xE8, 0xD5, 0xBF, 0x58, 0x3B, 0x8C, 0x81, 0xEE, 0x80, 0x24,
+            0x07, 0x5E, 0x74, 0x2E, 0x39, 0xA2, 0x33, 0xF7, 0x68, 0xD7, 0x10, 0x06, 0x90, 0x25, 0x22, 0x4D, 0xA6,
+            0xC6, 0x0D, 0x41, 0x00, 0xC3, 0x2D, 0x87, 0x33, 0xBF, 0x5E, 0x48, 0xE0, 0xEC, 0x3F, 0x2F, 0xE2, 0xD6,
+            0x77, 0xC4, 0xD2, 0x2E, 0xAE, 0xCE, 0x2F, 0x14, 0x82, 0xEB, 0xCC, 0xDD, 0xB2, 0xF0, 0xE3, 0x43, 0x10,
+            0xC7, 0xA0, 0x98, 0x3B, 0x28, 0x2D, 0xA6, 0xFD, 0x75, 0x1B, 0xEE, 0x8D, 0x23, 0x3E, 0x58, 0xE7, 0x46,
+            0x2C, 0x92, 0xC0, 0x81, 0xEF, 0xF4, 0x94, 0x40, 0x13, 0x1F, 0x95, 0x31, 0x06, 0xF0, 0x3E, 0x1E, 0x23,
+            0x0F, 0xC8, 0x45, 0x63, 0x9C, 0xC0, 0x56, 0x85, 0x6C, 0x1B, 0x9C, 0x38, 0x88, 0x53, 0xD9, 0x1C, 0xDB,
+            0x89, 0xF8, 0xE8, 0xF3, 0x97, 0x7C, 0x2D, 0x3E, 0x56, 0x03, 0xBE, 0xA9, 0xF7, 0x91, 0x31, 0xFE, 0x75,
+            0x5D, 0xE2, 0x68, 0x65, 0xE3, 0x32, 0xBB, 0x6D, 0x61, 0xB5, 0xE8, 0xB7, 0x28, 0x84, 0xE7, 0x13, 0x5D,
+            0xE8, 0x4A, 0x11, 0x7E, 0xDA, 0xBC, 0x7A, 0x71, 0x55, 0xBB, 0x4E, 0x91, 0x49, 0xFA, 0x11, 0x32, 0x8B,
+            0xCA, 0x02, 0x09, 0x1F, 0x08, 0xC4, 0x84, 0xC4, 0xBA, 0x2F, 0xF2, 0x20, 0x79, 0x7E, 0x13, 0xB3, 0xB4,
+            0x52, 0xD8, 0xBC, 0xAF, 0x96, 0x79, 0x5A, 0xE5, 0xC9, 0xE7, 0x2C, 0xF8, 0x10, 0x5E, 0x40, 0x91, 0xD8,
+            0x36, 0x0B, 0xC8, 0x85, 0x5C, 0x2F, 0x67, 0x9A, 0x92, 0xE7, 0xF8, 0xE4, 0xE9, 0x85, 0xD8, 0xBA, 0x65,
+            0x05, 0xBC, 0x70, 0x6F, 0x9E, 0xCB, 0x1D, 0x6D, 0x39, 0xA0, 0xEF, 0x24, 0x08, 0x02, 0x85, 0x06, 0xB0,
+            0xEA, 0xAC, 0x89, 0xF2, 0x3C, 0x2A, 0xA4, 0x7B, 0x2B, 0xBE, 0x79,
         };
 
         // See AddEntryFromCertificate for the characteristics of this CRL.
@@ -1618,25 +1825,25 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             0x35, 0x30, 0x34, 0x30, 0x37, 0x5A, 0x30, 0x1C, 0x30, 0x1A, 0x02, 0x09, 0x00, 0xAB, 0x74, 0x0A, 0x71,
             0x4A, 0xA8, 0x3C, 0x92, 0x17, 0x0D, 0x31, 0x36, 0x30, 0x33, 0x30, 0x38, 0x30, 0x34, 0x34, 0x31, 0x32,
             0x31, 0x5A, 0xA0, 0x2F, 0x30, 0x2D, 0x30, 0x1F, 0x06, 0x03, 0x55, 0x1D, 0x23, 0x04, 0x18, 0x30, 0x16,
-            0x80, 0x14, 0x78, 0xA5, 0xC7, 0x5D, 0x51, 0x66, 0x73, 0x31, 0xD5, 0xA9, 0x69, 0x24, 0x11, 0x4C, 0x9B,
-            0x5F, 0xA0, 0x0D, 0x7B, 0xCB, 0x30, 0x0A, 0x06, 0x03, 0x55, 0x1D, 0x14, 0x04, 0x03, 0x02, 0x01, 0x7A,
+            0x80, 0x14, 0x44, 0x98, 0xBC, 0xC0, 0xCA, 0xA5, 0x3D, 0xF3, 0xBC, 0x93, 0x69, 0x88, 0x50, 0x8E, 0x72,
+            0xEA, 0x5D, 0x7B, 0xA9, 0xFE, 0x30, 0x0A, 0x06, 0x03, 0x55, 0x1D, 0x14, 0x04, 0x03, 0x02, 0x01, 0x7A,
             0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0D, 0x05, 0x00, 0x03, 0x82,
-            0x01, 0x01, 0x00, 0xA1, 0xD2, 0xEC, 0xA5, 0x52, 0x8F, 0x04, 0x34, 0x4D, 0x05, 0x0E, 0xCD, 0x2E, 0xF8,
-            0xF1, 0x83, 0x0C, 0xC5, 0x48, 0x78, 0xC5, 0x97, 0xE1, 0x42, 0x5A, 0xDB, 0x87, 0x19, 0x7D, 0x33, 0xBE,
-            0x2B, 0x96, 0xFF, 0xAF, 0x25, 0xA8, 0x6E, 0xDA, 0x19, 0x71, 0x1C, 0xA7, 0x04, 0x36, 0xF6, 0x0D, 0xF1,
-            0x73, 0x71, 0xA0, 0xF6, 0xFA, 0x81, 0xE4, 0xF2, 0xDC, 0x1E, 0xB7, 0x0D, 0x96, 0x78, 0x8B, 0x9F, 0xE0,
-            0x2B, 0xDC, 0xD1, 0xD8, 0x25, 0xB4, 0xF9, 0x92, 0xA8, 0x84, 0x4A, 0x9E, 0x68, 0x2A, 0x92, 0x32, 0x10,
-            0x73, 0x10, 0x60, 0x9A, 0x9C, 0xF6, 0xCA, 0xE7, 0x14, 0x00, 0x66, 0x20, 0x5C, 0xE8, 0xB1, 0x77, 0xE1,
-            0x74, 0x53, 0x6B, 0x50, 0x48, 0xED, 0x64, 0xDE, 0xDC, 0x9F, 0x1A, 0x85, 0x2C, 0x48, 0xB5, 0x82, 0xFA,
-            0x10, 0xAE, 0xC9, 0x48, 0xEE, 0xDA, 0x7A, 0x48, 0xA8, 0x8E, 0xEF, 0x3E, 0x31, 0x3E, 0x6C, 0x61, 0xC1,
-            0x0A, 0x19, 0x5B, 0xD6, 0xB6, 0xF1, 0x37, 0xF8, 0x81, 0xA7, 0x2D, 0x7D, 0x93, 0x9B, 0xD6, 0x43, 0x46,
-            0xBC, 0x60, 0x9B, 0xD0, 0xFB, 0xF2, 0xF6, 0xC5, 0x09, 0x60, 0x63, 0x36, 0x16, 0xEB, 0xCC, 0xCD, 0x35,
-            0xEB, 0x6F, 0xD4, 0x00, 0xAF, 0xD9, 0xD2, 0xFE, 0x5B, 0x19, 0x0A, 0x22, 0x28, 0x17, 0xDA, 0x0C, 0xB7,
-            0xFD, 0xEB, 0x99, 0x8B, 0x76, 0xDD, 0x63, 0x34, 0xC4, 0x0A, 0x61, 0x5A, 0xE0, 0xB6, 0x7E, 0x9D, 0x3C,
-            0xD0, 0x4E, 0xAB, 0x68, 0xD8, 0x1B, 0x2E, 0x95, 0x43, 0xFD, 0x5E, 0x58, 0x04, 0x29, 0x78, 0x7C, 0x39,
-            0xC7, 0x21, 0xE5, 0xE0, 0x7D, 0x28, 0xCE, 0xAF, 0x32, 0x1A, 0x90, 0x72, 0x94, 0x77, 0xED, 0xAF, 0xCD,
-            0x22, 0x3A, 0xC8, 0x2A, 0x68, 0xAC, 0xB1, 0x08, 0x26, 0x97, 0xA2, 0xD0, 0xC0, 0x98, 0x56, 0x31, 0x7D,
-            0x5C, 0x3E, 0xD3, 0x09,
+            0x01, 0x01, 0x00, 0x52, 0xF6, 0xD1, 0x1B, 0x96, 0xBF, 0x94, 0x5D, 0xB0, 0x1C, 0x45, 0x85, 0x72, 0xDC,
+            0x82, 0xE2, 0x4F, 0x58, 0xCF, 0x10, 0xBD, 0x4D, 0x43, 0x6C, 0xFC, 0x1E, 0x77, 0xEA, 0x0A, 0x7A, 0x58,
+            0xE5, 0x5D, 0x72, 0x07, 0x32, 0x44, 0x72, 0x8C, 0xEE, 0xAF, 0x76, 0x38, 0xD4, 0x11, 0xCB, 0x2E, 0x81,
+            0x9D, 0x6B, 0x69, 0x24, 0xB1, 0x8F, 0xC6, 0x58, 0xF5, 0x46, 0x1D, 0x69, 0x6D, 0x67, 0x22, 0x87, 0xB4,
+            0x41, 0xBB, 0x4D, 0x7F, 0x71, 0x15, 0x22, 0x17, 0x0D, 0x75, 0x2C, 0xFC, 0x9B, 0xF7, 0xAE, 0xC0, 0x87,
+            0x6C, 0xD3, 0xF6, 0x90, 0x47, 0x44, 0x5E, 0x9C, 0x2B, 0x41, 0x71, 0x2D, 0xB5, 0x39, 0xC1, 0x31, 0xE7,
+            0x1A, 0xF8, 0x7A, 0x48, 0x14, 0xE6, 0xBF, 0x7B, 0xF4, 0xB9, 0x07, 0x2B, 0x63, 0xEA, 0xB0, 0x37, 0xF1,
+            0xD9, 0xC5, 0xEB, 0xF9, 0xD3, 0x61, 0x1B, 0x90, 0x87, 0x45, 0x96, 0xC7, 0x03, 0x44, 0x12, 0x12, 0x12,
+            0x47, 0xD0, 0x0E, 0xCE, 0x15, 0xBE, 0x37, 0x97, 0xEF, 0x96, 0xE0, 0x4C, 0xAB, 0x93, 0x3E, 0x82, 0xB2,
+            0x29, 0x90, 0xE9, 0xEF, 0xB8, 0x55, 0x7E, 0x99, 0xE1, 0x43, 0x21, 0x56, 0x63, 0x5C, 0x24, 0xED, 0xC0,
+            0x93, 0xC6, 0x8E, 0x5F, 0x62, 0x96, 0x01, 0x10, 0x6A, 0x15, 0xEE, 0x3F, 0xDB, 0xA6, 0x23, 0xE2, 0xEB,
+            0xFE, 0x18, 0xEF, 0x90, 0xAA, 0xCE, 0xAF, 0x3E, 0x48, 0x84, 0x95, 0xB8, 0x8F, 0x24, 0x18, 0xDB, 0xC7,
+            0x03, 0x9B, 0xBF, 0xB0, 0xD3, 0xFE, 0x47, 0xFA, 0x31, 0x15, 0x2D, 0xD7, 0x21, 0xE9, 0x65, 0xBB, 0xA7,
+            0x2C, 0x46, 0x1C, 0x33, 0x90, 0xD2, 0xF0, 0x3E, 0x8D, 0x96, 0x03, 0x49, 0x66, 0x83, 0x28, 0xDA, 0x67,
+            0x1C, 0x9E, 0x08, 0x94, 0x7F, 0xC0, 0x19, 0x90, 0xDA, 0xE4, 0xB2, 0x60, 0x32, 0xC9, 0xC6, 0xE9, 0xD0,
+            0xBB, 0x0C, 0xEA, 0x21,
         };
 
         private static ReadOnlySpan<byte> BuildSingleEntryExpectedCrl => new byte[]
@@ -1648,25 +1855,25 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             0x5A, 0x17, 0x0D, 0x31, 0x33, 0x30, 0x34, 0x30, 0x36, 0x30, 0x38, 0x30, 0x33, 0x30, 0x39, 0x5A, 0x30,
             0x1B, 0x30, 0x19, 0x02, 0x08, 0x01, 0x01, 0x02, 0x03, 0x05, 0x08, 0x0C, 0x15, 0x17, 0x0D, 0x31, 0x33,
             0x30, 0x34, 0x30, 0x36, 0x30, 0x37, 0x32, 0x37, 0x35, 0x37, 0x5A, 0xA0, 0x2F, 0x30, 0x2D, 0x30, 0x1F,
-            0x06, 0x03, 0x55, 0x1D, 0x23, 0x04, 0x18, 0x30, 0x16, 0x80, 0x14, 0x78, 0xA5, 0xC7, 0x5D, 0x51, 0x66,
-            0x73, 0x31, 0xD5, 0xA9, 0x69, 0x24, 0x11, 0x4C, 0x9B, 0x5F, 0xA0, 0x0D, 0x7B, 0xCB, 0x30, 0x0A, 0x06,
+            0x06, 0x03, 0x55, 0x1D, 0x23, 0x04, 0x18, 0x30, 0x16, 0x80, 0x14, 0x44, 0x98, 0xBC, 0xC0, 0xCA, 0xA5,
+            0x3D, 0xF3, 0xBC, 0x93, 0x69, 0x88, 0x50, 0x8E, 0x72, 0xEA, 0x5D, 0x7B, 0xA9, 0xFE, 0x30, 0x0A, 0x06,
             0x03, 0x55, 0x1D, 0x14, 0x04, 0x03, 0x02, 0x01, 0x7B, 0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86,
-            0xF7, 0x0D, 0x01, 0x01, 0x0B, 0x05, 0x00, 0x03, 0x82, 0x01, 0x01, 0x00, 0xA9, 0xE1, 0xD0, 0x35, 0x71,
-            0xB1, 0xE4, 0xBF, 0x76, 0x70, 0xEC, 0x32, 0x45, 0x9A, 0x74, 0xB1, 0x14, 0x82, 0x74, 0x1F, 0xD9, 0x73,
-            0xFF, 0x50, 0x40, 0xD5, 0x7B, 0x13, 0x3B, 0x5B, 0x6C, 0x78, 0x3D, 0xC9, 0xED, 0x10, 0x5C, 0x4C, 0xF5,
-            0xDD, 0xE8, 0xFC, 0x8B, 0x76, 0x7C, 0x60, 0x34, 0x25, 0x3D, 0x74, 0x9A, 0x83, 0x46, 0x22, 0x03, 0x4A,
-            0x66, 0x9A, 0xA4, 0xC6, 0xEF, 0xDB, 0x93, 0xC8, 0x2E, 0xB1, 0x5B, 0x69, 0xE6, 0xDC, 0x43, 0xF0, 0x5B,
-            0xAE, 0x7E, 0x9E, 0x21, 0xB0, 0x35, 0x1A, 0x72, 0x0C, 0x5E, 0x79, 0xF3, 0xBE, 0x65, 0x30, 0x46, 0x58,
-            0xEB, 0xDF, 0xE1, 0x96, 0x26, 0x9B, 0xC2, 0x85, 0xD6, 0x53, 0xE7, 0xAC, 0xD9, 0x78, 0x11, 0xD6, 0x4E,
-            0x08, 0x79, 0x20, 0x34, 0xB4, 0x7D, 0x83, 0xBF, 0x9D, 0x37, 0x85, 0x11, 0x16, 0x02, 0x3B, 0xDF, 0x74,
-            0x60, 0xC5, 0xBF, 0x14, 0x92, 0xCF, 0xA4, 0x86, 0xAD, 0x7B, 0x2F, 0x27, 0x78, 0x70, 0x82, 0xE6, 0xA3,
-            0xC0, 0x5C, 0x0E, 0x43, 0xBB, 0x7D, 0x62, 0xB2, 0x34, 0xC0, 0xE6, 0xC5, 0xBA, 0x2E, 0x01, 0x03, 0xE1,
-            0xCC, 0xBD, 0xAE, 0x15, 0xF9, 0xCD, 0x6D, 0xB9, 0x89, 0xDE, 0xD6, 0x87, 0x09, 0x15, 0xAB, 0x16, 0x4E,
-            0xB2, 0xFC, 0x2A, 0xDA, 0x00, 0xD4, 0x98, 0x05, 0x74, 0xFC, 0x2C, 0x3C, 0x09, 0x05, 0xC1, 0xBF, 0xC9,
-            0xF4, 0x2D, 0xBF, 0x0F, 0x80, 0x0F, 0xF7, 0xF9, 0xD9, 0x2C, 0x1F, 0x99, 0xC4, 0x43, 0xEF, 0xC3, 0x25,
-            0x93, 0xC7, 0x49, 0xE1, 0x8C, 0x41, 0x28, 0x2E, 0x0E, 0xF2, 0x32, 0x64, 0x38, 0x46, 0xD2, 0x04, 0xA6,
-            0xBC, 0x23, 0xC5, 0x56, 0x05, 0x29, 0x92, 0x25, 0x63, 0x23, 0xF7, 0xBD, 0x75, 0xDE, 0xE7, 0x33, 0xC9,
-            0xFD, 0x01, 0x1B, 0x6D, 0x3B, 0x85, 0x39, 0x54, 0x22, 0x04, 0x6B, 0x55, 0x73,
+            0xF7, 0x0D, 0x01, 0x01, 0x0B, 0x05, 0x00, 0x03, 0x82, 0x01, 0x01, 0x00, 0x65, 0x30, 0x14, 0xF1, 0x65,
+            0x11, 0xEB, 0x52, 0x6B, 0xDB, 0xC3, 0xFD, 0xE3, 0x8A, 0x6B, 0xCA, 0x65, 0x38, 0x0B, 0x27, 0x4A, 0x45,
+            0xE6, 0x54, 0xB6, 0xE9, 0xC6, 0x5E, 0xE0, 0x87, 0x39, 0x31, 0x43, 0xD9, 0x44, 0xC9, 0x0E, 0xB6, 0x8C,
+            0x94, 0x6A, 0xB0, 0xE6, 0x90, 0xF0, 0xAC, 0x55, 0x27, 0x3F, 0x53, 0x90, 0x52, 0x2F, 0x7C, 0x24, 0x93,
+            0x82, 0x95, 0x70, 0x8D, 0x03, 0x81, 0x46, 0x71, 0xEB, 0x0A, 0xB7, 0x9E, 0x7E, 0xC9, 0x0D, 0x52, 0x80,
+            0x71, 0xBA, 0x8C, 0xB7, 0xC5, 0x43, 0x98, 0xC1, 0xC3, 0x37, 0xC1, 0x3A, 0xB3, 0xA7, 0xD8, 0xB3, 0x3A,
+            0xB9, 0x3D, 0x1C, 0x7A, 0xF4, 0x1C, 0x8C, 0xDF, 0x56, 0x93, 0x3E, 0x18, 0xC8, 0x28, 0xE3, 0xFD, 0x00,
+            0x3B, 0x32, 0x7B, 0xDF, 0x6E, 0xC7, 0xD3, 0x70, 0xA1, 0x20, 0x43, 0xA1, 0xD1, 0x48, 0x11, 0xEE, 0x6A,
+            0xA1, 0x59, 0xFD, 0x0D, 0xA4, 0x5D, 0x83, 0x53, 0x0E, 0x78, 0xBA, 0x44, 0xB9, 0x54, 0xEC, 0x4E, 0x1D,
+            0x5F, 0xEF, 0xDD, 0x6E, 0x6B, 0xF4, 0xC1, 0xE2, 0x01, 0x09, 0xAC, 0x33, 0x5C, 0x96, 0x60, 0x10, 0xCA,
+            0xFA, 0x44, 0x16, 0xEC, 0xD9, 0x38, 0x83, 0x24, 0xF1, 0x2C, 0x60, 0x88, 0x3B, 0x33, 0x45, 0xEF, 0x93,
+            0x23, 0xBF, 0x85, 0xED, 0x56, 0x49, 0x43, 0xC7, 0xE6, 0xCB, 0x8F, 0x74, 0xF6, 0x43, 0xCD, 0xD6, 0x80,
+            0x6C, 0x80, 0xC1, 0xF2, 0x80, 0x8D, 0xF1, 0xD0, 0xAE, 0xD4, 0xF4, 0x0B, 0xD9, 0x21, 0xB1, 0x9D, 0xBB,
+            0x4C, 0xF5, 0xCB, 0x9F, 0xE5, 0xB0, 0xD4, 0x6A, 0x79, 0x55, 0xBC, 0x5C, 0xAA, 0x03, 0x69, 0xB2, 0x70,
+            0xAC, 0x55, 0x9A, 0x68, 0x41, 0x5C, 0x16, 0x8E, 0x76, 0x7E, 0x1A, 0x28, 0xDD, 0x48, 0xC4, 0x5E, 0xDA,
+            0x7A, 0x4B, 0xEC, 0x4F, 0xC3, 0x56, 0x90, 0x80, 0x68, 0x37, 0xF0, 0xEB, 0xFD,
         };
     }
 }

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="CertificateChoiceAsn"
+  namespace="System.Security.Cryptography.Asn1.Pkcs7">
+
+  <!--
+    https://tools.ietf.org/html/rfc5652#section-10.2.2
+
+    CertificateChoices ::= CHOICE {
+        certificate Certificate,
+        extendedCertificate[0] IMPLICIT ExtendedCertificate, - Obsolete
+        v1AttrCert[1] IMPLICIT AttributeCertificateV1,       - Obsolete
+        v2AttrCert[2] IMPLICIT AttributeCertificateV2,
+        other[3] IMPLICIT OtherCertificateFormat
+    }
+
+  -->
+  <asn:AnyValue name="Certificate" universalTagNumber="16" />
+  <asn:AnyValue name="ExtendedCertificate" implicitTag="0" />
+  <asn:AnyValue name="AttributeCertificateV1" implicitTag="1" />
+  <asn:AnyValue name="AttributeCertificateV2" implicitTag="2" />
+  <asn:AsnType name="OtherCertificateFormat" typeName="System.Security.Cryptography.Asn1.Pkcs7.OtherCertificateFormat" implicitTag="3" />
+</asn:Choice>

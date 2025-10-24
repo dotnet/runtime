@@ -27,8 +27,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void Abs<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : INumberBase<T> =>
+            where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, AbsoluteOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, AbsoluteOperator<T>>(x, destination);
+        }
 
         /// <summary>T.Abs(x)</summary>
         internal readonly struct AbsoluteOperator<T> : IUnaryOperator<T, T> where T : INumberBase<T>

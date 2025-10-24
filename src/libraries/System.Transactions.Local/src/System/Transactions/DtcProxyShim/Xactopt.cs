@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
@@ -24,14 +25,20 @@ internal struct Xactopt
     [CustomMarshaller(typeof(Xactopt), MarshalMode.UnmanagedToManagedIn, typeof(Marshaller))]
     internal static class Marshaller
     {
-        internal unsafe struct XactoptNative
+        internal struct XactoptNative
         {
             public uint UlTimeout;
 
-            public fixed byte SzDescription[40];
+            public SzDescription SzDescription;
         }
 
-        public static unsafe XactoptNative ConvertToUnmanaged(Xactopt managed)
+        [InlineArray(40)]
+        internal struct SzDescription
+        {
+            private byte _element0;
+        }
+
+        public static XactoptNative ConvertToUnmanaged(Xactopt managed)
         {
             XactoptNative native = new()
             {
@@ -39,12 +46,12 @@ internal struct Xactopt
             };
 
             // Usage of Xactopt never passes non-ASCII chars, so we can ignore them.
-            Encoding.ASCII.TryGetBytes(managed.SzDescription, new Span<byte>(native.SzDescription, 40), out _);
+            Encoding.ASCII.TryGetBytes(managed.SzDescription, native.SzDescription, out _);
 
             return native;
         }
 
-        public static unsafe Xactopt ConvertToManaged(XactoptNative unmanaged)
-        => new(unmanaged.UlTimeout, Encoding.ASCII.GetString(unmanaged.SzDescription, 40));
+        public static Xactopt ConvertToManaged(XactoptNative unmanaged)
+        => new(unmanaged.UlTimeout, Encoding.ASCII.GetString(unmanaged.SzDescription));
     }
 }

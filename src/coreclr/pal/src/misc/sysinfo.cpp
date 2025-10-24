@@ -58,12 +58,12 @@ Revision History:
 #include <machine/vmparam.h>
 #endif  // HAVE_MACHINE_VMPARAM_H
 
-#if defined(TARGET_OSX)
+#if defined(__APPLE__)
 #include <mach/vm_statistics.h>
 #include <mach/mach_types.h>
 #include <mach/mach_init.h>
 #include <mach/mach_host.h>
-#endif // defined(TARGET_OSX)
+#endif // defined(__APPLE__)
 
 #ifdef __HAIKU__
 #include <OS.h>
@@ -217,8 +217,12 @@ GetSystemInfo(
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) (1ull << 47);
 #elif defined(__sun)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) 0xfffffd7fffe00000ul;
+#elif defined(VM_MAX_PAGE_ADDRESS)
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) VM_MAX_PAGE_ADDRESS;
 #elif defined(__HAIKU__)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) 0x7fffffe00000ul;
+#elif defined(__wasm__)
+    lpSystemInfo->lpMaximumApplicationAddress = (PVOID) (1ul << 31);
 #elif defined(USERLIMIT)
     lpSystemInfo->lpMaximumApplicationAddress = (PVOID) USERLIMIT;
 #elif defined(HOST_64BIT)

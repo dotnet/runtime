@@ -72,7 +72,6 @@ class   EnCFieldDesc;
 class   FieldDesc;
 class   NativeFieldDescriptor;
 class   EEClassNativeLayoutInfo;
-struct  LayoutRawFieldInfo;
 class   MetaSig;
 class   MethodDesc;
 class   MethodDescChunk;
@@ -126,7 +125,7 @@ class ExplicitFieldTrust
 };
 
 //----------------------------------------------------------------------------------------------
-// This class is a helper for HandleExplicitLayout. To make it harder to introduce security holes
+// This class is a helper for ValidateExplicitLayout. To make it harder to introduce security holes
 // into this function, we will manage all updates to the class's trust level through the ExplicitClassTrust
 // class. This abstraction enforces the rule that the overall class is only as trustworthy as
 // the least trustworthy field.
@@ -175,7 +174,7 @@ class ExplicitClassTrust : private ExplicitFieldTrust
 };
 
 //----------------------------------------------------------------------------------------------
-// This class is a helper for HandleExplicitLayout. To make it harder to introduce security holes
+// This class is a helper for ValidateExplicitLayout. To make it harder to introduce security holes
 // into this function, this class will collect trust information about individual fields to be later
 // aggregated into the overall class level.
 //
@@ -334,30 +333,14 @@ private:
 //=======================================================================
 class EEClassLayoutInfo
 {
-    static VOID CollectLayoutFieldMetadataThrowing(
-       mdTypeDef cl,                // cl of the NStruct being loaded
-       BYTE packingSize,            // packing size (from @dll.struct)
-       BYTE nlType,                 // nltype (from @dll.struct)
-       BOOL fExplicitOffsets,       // explicit offsets?
-       MethodTable *pParentMT,       // the loaded superclass
-       ULONG cTotalFields,              // total number of fields (instance and static)
-       HENUMInternal *phEnumField,  // enumerator for fields
-       Module* pModule,             // Module that defines the scope, loader and heap (for allocate FieldMarshalers)
-       const SigTypeContext *pTypeContext,          // Type parameters for NStruct being loaded
-       EEClassLayoutInfo *pEEClassLayoutInfoOut,  // caller-allocated structure to fill in.
-       LayoutRawFieldInfo *pInfoArrayOut, // caller-allocated array to fill in.  Needs room for cTotalFields+1 elements
-       LoaderAllocator * pAllocator,
-       AllocMemTracker    *pamTracker
-    );
-
-    friend class ClassLoader;
-    friend class EEClass;
-    friend class MethodTableBuilder;
-        UINT32      m_cbManagedSize;
-
     public:
-        BYTE        m_ManagedLargestAlignmentRequirementOfAllMembers;
-
+        enum class LayoutType : BYTE
+        {
+            Auto = 0, // Make sure Auto is the default value as the default-constructed value represents the "auto layout" case
+            Sequential,
+            Explicit,
+            CStruct
+        };
     private:
         enum {
             // TRUE if the GC layout of the class is bit-for-bit identical
@@ -365,8 +348,8 @@ class EEClassLayoutInfo
             // (i.e. no internal reference fields, no ansi-unicode char conversions required, etc.)
             // Used to optimize marshaling.
             e_BLITTABLE                       = 0x01,
-            // Is this type also sequential in managed memory?
-            e_MANAGED_SEQUENTIAL              = 0x02,
+            // unused                         = 0x02,
+
             // When a sequential/explicit type has no fields, it is conceptually
             // zero-sized, but actually is 1 byte in length. This holds onto this
             // fact and allows us to revert the 1 byte of padding when another
@@ -380,17 +363,16 @@ class EEClassLayoutInfo
             e_IS_OR_HAS_INT128_FIELD          = 0x20,
         };
 
-        BYTE        m_bFlags;
+        LayoutType m_LayoutType;
+
+        BYTE       m_ManagedLargestAlignmentRequirementOfAllMembers;
+
+        BYTE       m_bFlags;
 
         // Packing size in bytes (1, 2, 4, 8 etc.)
-        BYTE        m_cbPackingSize;
+        BYTE       m_cbPackingSize;
 
     public:
-        UINT32 GetManagedSize() const
-        {
-            LIMITED_METHOD_CONTRACT;
-            return m_cbManagedSize;
-        }
 
         BOOL IsBlittable() const
         {
@@ -398,10 +380,10 @@ class EEClassLayoutInfo
             return (m_bFlags & e_BLITTABLE) == e_BLITTABLE;
         }
 
-        BOOL IsManagedSequential() const
+        LayoutType GetLayoutType() const
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_bFlags & e_MANAGED_SEQUENTIAL) == e_MANAGED_SEQUENTIAL;
+            return m_LayoutType;
         }
 
         // If true, this says that the type was originally zero-sized
@@ -433,39 +415,23 @@ class EEClassLayoutInfo
             return (m_bFlags & e_IS_OR_HAS_INT128_FIELD) == e_IS_OR_HAS_INT128_FIELD;
         }
 
+        BYTE GetAlignmentRequirement() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return m_ManagedLargestAlignmentRequirementOfAllMembers;
+        }
+
         BYTE GetPackingSize() const
         {
             LIMITED_METHOD_CONTRACT;
             return m_cbPackingSize;
         }
 
-    private:
         void SetIsBlittable(BOOL isBlittable)
         {
             LIMITED_METHOD_CONTRACT;
             m_bFlags = isBlittable ? (m_bFlags | e_BLITTABLE)
                                    : (m_bFlags & ~e_BLITTABLE);
-        }
-
-        void SetIsManagedSequential(BOOL isManagedSequential)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_bFlags = isManagedSequential ? (m_bFlags | e_MANAGED_SEQUENTIAL)
-                                           : (m_bFlags & ~e_MANAGED_SEQUENTIAL);
-        }
-
-        void SetIsZeroSized(BOOL isZeroSized)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_bFlags = isZeroSized ? (m_bFlags | e_ZERO_SIZED)
-                                   : (m_bFlags & ~e_ZERO_SIZED);
-        }
-
-        void SetHasExplicitSize(BOOL hasExplicitSize)
-        {
-            LIMITED_METHOD_CONTRACT;
-            m_bFlags = hasExplicitSize ? (m_bFlags | e_HAS_EXPLICIT_SIZE)
-                                       : (m_bFlags & ~e_HAS_EXPLICIT_SIZE);
         }
 
         void SetHasAutoLayoutField(BOOL hasAutoLayoutField)
@@ -481,6 +447,86 @@ class EEClassLayoutInfo
             m_bFlags = hasInt128Field ? (m_bFlags | e_IS_OR_HAS_INT128_FIELD)
                                        : (m_bFlags & ~e_IS_OR_HAS_INT128_FIELD);
         }
+
+        void SetHasExplicitSize(BOOL hasExplicitSize)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasExplicitSize ? (m_bFlags | e_HAS_EXPLICIT_SIZE)
+                                    : (m_bFlags & ~e_HAS_EXPLICIT_SIZE);
+        }
+
+        void SetAlignmentRequirement(BYTE alignment)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_ManagedLargestAlignmentRequirementOfAllMembers = alignment;
+        }
+
+        void SetPackingSize(BYTE cbPackingSize)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_cbPackingSize = cbPackingSize;
+        }
+
+        ULONG InitializeSequentialFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields,
+            BYTE packingSize,
+            ULONG classSizeInMetadata,
+            MethodTable* pParentMT
+        );
+
+        ULONG InitializeExplicitFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields,
+            BYTE packingSize,
+            ULONG classSizeInMetadata,
+            MethodTable* pParentMT,
+            Module* pModule,
+            mdTypeDef cl
+        );
+
+        ULONG InitializeCStructFieldLayout(
+            FieldDesc* pFields,
+            MethodTable** pByValueClassCache,
+            ULONG cFields
+        );
+
+    private:
+        void SetIsZeroSized(BOOL isZeroSized)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = isZeroSized ? (m_bFlags | e_ZERO_SIZED)
+                                : (m_bFlags & ~e_ZERO_SIZED);
+        }
+
+        UINT32 SetInstanceBytesSize(UINT32 size)
+        {
+            LIMITED_METHOD_CONTRACT;
+            // Bump the managed size of the structure up to 1.
+            SetIsZeroSized(size == 0 ? TRUE : FALSE);
+            return size == 0 ? 1 : size;
+        }
+
+        void SetLayoutType(LayoutType layoutType)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_LayoutType = layoutType;
+        }
+    public:
+        enum class NestedFieldFlags
+        {
+            support_use_as_flags = -1,
+            None = 0x0,
+            NonBlittable = 0x1,
+            GCPointer = 0x2,
+            Align8 = 0x4,
+            AutoLayout = 0x8,
+            Int128 = 0x10,
+        };
+
+        static NestedFieldFlags GetNestedFieldFlags(Module* pModule, FieldDesc *pFD, ULONG cFields, CorNativeLinkType nlType, MethodTable** pByValueClassCache);
 };
 
 //
@@ -726,7 +772,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     void *operator new(size_t size, LoaderHeap* pHeap, AllocMemTracker *pamTracker);
-    void Destruct(MethodTable * pMT);
+    void Destruct();
 
     static EEClass * CreateMinimalClass(LoaderHeap *pHeap, AllocMemTracker *pamTracker);
 #endif // !DACCESS_COMPILE
@@ -1278,15 +1324,15 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD)VMFLAG_INLINE_ARRAY;
     }
-    DWORD HasNonPublicFields()
+    DWORD HasRVAStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_VMFlags & VMFLAG_HASNONPUBLICFIELDS);
+        return (m_VMFlags & VMFLAG_HASRVASTATICFIELDS);
     }
-    void SetHasNonPublicFields()
+    void SetHasRVAStaticFields()
     {
         LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= (DWORD)VMFLAG_HASNONPUBLICFIELDS;
+        m_VMFlags |= (DWORD)VMFLAG_HASRVASTATICFIELDS;
     }
     DWORD IsNotTightlyPacked()
     {
@@ -1608,7 +1654,7 @@ public:
 
         VMFLAG_INLINE_ARRAY                    = 0x00010000,
         VMFLAG_NO_GUID                         = 0x00020000,
-        VMFLAG_HASNONPUBLICFIELDS              = 0x00040000,
+        VMFLAG_HASRVASTATICFIELDS              = 0x00040000,
         VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT      = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
         VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment
@@ -1760,8 +1806,13 @@ template<> struct cdac_data<EEClass>
 {
     static constexpr size_t InternalCorElementType = offsetof(EEClass, m_NormType);
     static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
+    static constexpr size_t FieldDescList = offsetof(EEClass, m_pFieldDescList);
+    static constexpr size_t MethodDescChunk = offsetof(EEClass, m_pChunks);
     static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
     static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
+    static constexpr size_t NumInstanceFields = offsetof(EEClass, m_NumInstanceFields);
+    static constexpr size_t NumStaticFields = offsetof(EEClass, m_NumStaticFields);
+    static constexpr size_t NumThreadStaticFields = offsetof(EEClass, m_NumThreadStaticFields);
     static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
 };
 
@@ -1964,7 +2015,7 @@ inline BOOL EEClass::IsBlittable()
 inline BOOL EEClass::IsManagedSequential()
 {
     LIMITED_METHOD_CONTRACT;
-    return HasLayout() && GetLayoutInfo()->IsManagedSequential();
+    return HasLayout() && GetLayoutInfo()->GetLayoutType() == EEClassLayoutInfo::LayoutType::Sequential;
 }
 
 inline BOOL EEClass::HasExplicitSize()
@@ -2004,7 +2055,7 @@ inline PCODE GetPreStubEntryPoint()
 
 PCODE TheUMThunkPreStub();
 
-PCODE TheVarargNDirectStub(BOOL hasRetBuffArg);
+PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg);
 
 
 

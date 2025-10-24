@@ -22,24 +22,26 @@ using std::nothrow;
 #include "staticcontract.h"
 #include "predeftlsslot.h"
 #include "safemath.h"
-#include "debugreturn.h"
 #include "yieldprocessornormalized.h"
 
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
 #define _DEBUG_IMPL 1
 #endif
 
-#define BEGIN_PRESERVE_LAST_ERROR \
-    { \
-        DWORD __dwLastError = ::GetLastError(); \
-        DEBUG_ASSURE_NO_RETURN_BEGIN(PRESERVE_LAST_ERROR); \
-            {
-
-#define END_PRESERVE_LAST_ERROR \
-            } \
-        DEBUG_ASSURE_NO_RETURN_END(PRESERVE_LAST_ERROR); \
-        ::SetLastError(__dwLastError); \
+struct PreserveLastErrorHolder
+{
+    PreserveLastErrorHolder()
+    {
+        m_dwLastError = ::GetLastError();
     }
+
+    ~PreserveLastErrorHolder()
+    {
+        ::SetLastError(m_dwLastError);
+    }
+private:
+    DWORD m_dwLastError;
+};
 
 //
 // TRASH_LASTERROR macro sets bogus last error in debug builds to help find places that fail to save it

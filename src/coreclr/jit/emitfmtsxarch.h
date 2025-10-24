@@ -140,6 +140,7 @@ IF_DEF(RRW_RRW,         IS_R1_RW|IS_R2_RW,                   NONE)      // r/w  
 IF_DEF(RRD_RRD_CNS,     IS_R1_RD|IS_R2_RD,                   SCNS)      // read  reg1,  read  reg2,  const
 IF_DEF(RWR_RRD_CNS,     IS_R1_WR|IS_R2_RD,                   SCNS)      // write reg1,  read  reg2,  const
 IF_DEF(RRW_RRD_CNS,     IS_R1_RW|IS_R2_RD,                   SCNS)      // r/w   reg1,  read  reg2,  const
+IF_DEF(RWR_RRD_SHF,     IS_R1_WR|IS_R2_RD,                   SCNS)      // write reg1,  read  reg2,  shift
 
 IF_DEF(RRD_RRD_RRD,     IS_R1_RD|IS_R2_RD|IS_R3_RD,          NONE)      // read  reg1,  read  reg2,  read  reg3
 IF_DEF(RWR_RRD_RRD,     IS_R1_WR|IS_R2_RD|IS_R3_RD,          NONE)      // write reg1,  read  reg2,  read  reg3

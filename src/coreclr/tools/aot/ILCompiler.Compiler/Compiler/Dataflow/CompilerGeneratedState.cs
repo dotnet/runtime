@@ -24,22 +24,27 @@ namespace ILCompiler.Dataflow
         private readonly record struct TypeArgumentInfo(
             /// <summary>The method which calls the ctor for the given type</summary>
             MethodDesc CreatingMethod,
-            /// <summary>Attributes for the type, pulled from the creators type arguments</summary>
+            /// <summary>Generic parameters of the creator used as type arguments for the type</summary>
             IReadOnlyList<GenericParameterDesc?>? OriginalAttributes);
 
         private readonly TypeCacheHashtable _typeCacheHashtable;
 
-        public CompilerGeneratedState(ILProvider ilProvider, Logger logger)
+        private readonly Logger _logger;
+
+        private readonly bool _disableGeneratedCodeHeuristics;
+
+        public CompilerGeneratedState(ILProvider ilProvider, Logger logger, bool disableGeneratedCodeHeuristics)
         {
-            _typeCacheHashtable = new TypeCacheHashtable(ilProvider, logger);
+            _typeCacheHashtable = new TypeCacheHashtable(ilProvider);
+            _logger = logger;
+            _disableGeneratedCodeHeuristics = disableGeneratedCodeHeuristics;
         }
 
         private sealed class TypeCacheHashtable : LockFreeReaderHashtable<MetadataType, TypeCache>
         {
             private ILProvider _ilProvider;
-            private Logger? _logger;
 
-            public TypeCacheHashtable(ILProvider ilProvider, Logger logger) => (_ilProvider, _logger) = (ilProvider, logger);
+            public TypeCacheHashtable(ILProvider ilProvider) => _ilProvider = ilProvider;
 
             protected override bool CompareKeyToValue(MetadataType key, TypeCache value) => key == value.Type;
             protected override bool CompareValueToValue(TypeCache value1, TypeCache value2) => value1.Type == value2.Type;
@@ -47,7 +52,27 @@ namespace ILCompiler.Dataflow
             protected override int GetValueHashCode(TypeCache value) => value.Type.GetHashCode();
 
             protected override TypeCache CreateValueFromKey(MetadataType key)
-                => new TypeCache(key, _logger, _ilProvider);
+                => new TypeCache(key, _ilProvider);
+
+            public TypeCache GetOrCreateValue(MetadataType key, out bool created)
+            {
+                TypeCache existingValue;
+                created = false;
+                if (TryGetValue(key, out existingValue))
+                    return existingValue;
+
+                var newValue = CreateValueFromKey(key);
+                if (TryAdd(newValue))
+                {
+                    created = true;
+                    return newValue;
+                }
+
+                if (!TryGetValue(key, out existingValue))
+                    throw new InvalidOperationException();
+
+                return existingValue;
+            }
         }
 
         private sealed class TypeCache
@@ -64,6 +89,18 @@ namespace ILCompiler.Dataflow
             // or null if the type has no methods with compiler-generated members.
             private Dictionary<MethodDesc, List<TypeSystemEntity>>? _compilerGeneratedMembers;
 
+            // Stores a list of warnings to be emitted at the end of the cache construction
+            private List<(MessageOrigin, DiagnosticId, string[])>? _warnings;
+
+            internal void LogWarnings(Logger? logger)
+            {
+                if (_warnings == null || logger == null)
+                    return;
+
+                foreach (var (origin, id, messageArgs) in _warnings)
+                    logger.LogWarning(origin, id, messageArgs);
+            }
+
             /// <summary>
             /// Walks the type and its descendents to find Roslyn-compiler generated
             /// code and gather information to map it back to original user code. If
@@ -71,7 +108,7 @@ namespace ILCompiler.Dataflow
             /// up and find the nearest containing user type. Returns the nearest user type,
             /// or null if none was found.
             /// </summary>
-            internal TypeCache(MetadataType type, Logger? logger, ILProvider ilProvider)
+            internal TypeCache(MetadataType type, ILProvider ilProvider)
             {
                 Debug.Assert(type == type.GetTypeDefinition());
                 Debug.Assert(!CompilerGeneratedNames.IsStateMachineOrDisplayClass(type.Name));
@@ -81,6 +118,15 @@ namespace ILCompiler.Dataflow
                 var callGraph = new CompilerGeneratedCallGraph();
                 var userDefinedMethods = new HashSet<MethodDesc>();
                 var generatedTypeToTypeArgs = new Dictionary<MetadataType, TypeArgumentInfo>();
+
+                // We delay actually logging the warnings until the compiler-generated type info is
+                // populated for this type, because the type info is needed to determine whether a warning
+                // is suppressed.
+                void AddWarning(MessageOrigin origin, DiagnosticId id, params string[] messageArgs)
+                {
+                    _warnings ??= new List<(MessageOrigin, DiagnosticId, string[])>();
+                    _warnings.Add((origin, id, messageArgs));
+                }
 
                 void ProcessMethod(MethodDesc method)
                 {
@@ -129,8 +175,8 @@ namespace ILCompiler.Dataflow
                                         // Find calls to state machine constructors that occur outside the type
                                         if (referencedMethod.IsConstructor &&
                                             referencedMethod.OwningType is MetadataType generatedType &&
-                                            // Don't consider calls in the same type, like inside a static constructor
-                                            method.OwningType != generatedType &&
+                                            // Don't consider calls in the same/nested type, like inside a static constructor
+                                            !IsSameOrNestedType(method.OwningType, generatedType) &&
                                             CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
                                         {
                                             Debug.Assert(generatedType.IsTypeDefinition);
@@ -139,7 +185,7 @@ namespace ILCompiler.Dataflow
                                             if (!generatedTypeToTypeArgs.TryAdd(generatedType, new TypeArgumentInfo(method, null)))
                                             {
                                                 var alreadyAssociatedMethod = generatedTypeToTypeArgs[generatedType].CreatingMethod;
-                                                logger?.LogWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
+                                                AddWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
                                             }
                                             continue;
                                         }
@@ -170,8 +216,8 @@ namespace ILCompiler.Dataflow
                                         field = field.GetTypicalFieldDefinition();
 
                                         if (field.OwningType is MetadataType generatedType &&
-                                            // Don't consider field accesses in the same type, like inside a static constructor
-                                            method.OwningType != generatedType &&
+                                            // Don't consider field accesses in the same/nested type, like inside a static constructor
+                                            !IsSameOrNestedType(method.OwningType, generatedType) &&
                                             CompilerGeneratedNames.IsLambdaDisplayClass(generatedType.Name))
                                         {
                                             Debug.Assert(generatedType.IsTypeDefinition);
@@ -207,11 +253,27 @@ namespace ILCompiler.Dataflow
                         if (!_compilerGeneratedTypeToUserCodeMethod.TryAdd(stateMachineType, method))
                         {
                             var alreadyAssociatedMethod = _compilerGeneratedTypeToUserCodeMethod[stateMachineType];
-                            logger?.LogWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithStateMachine, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), stateMachineType.GetDisplayName());
+                            AddWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithStateMachine, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), stateMachineType.GetDisplayName());
                         }
                         // Already warned above if multiple methods map to the same type
                         // Fill in null for argument providers now, the real providers will be filled in later
                         generatedTypeToTypeArgs[stateMachineType] = new TypeArgumentInfo(method, null);
+                    }
+
+                    static bool IsSameOrNestedType(TypeDesc type, TypeDesc potentialOuterType)
+                    {
+                        do
+                        {
+                            if (type == potentialOuterType)
+                                return true;
+
+                            if (type is not EcmaType ecmaType)
+                                return false;
+
+                            type = ecmaType.ContainingType;
+                        } while (type != null);
+
+                        return false;
                     }
                 }
 
@@ -263,7 +325,7 @@ namespace ILCompiler.Dataflow
                                 if (!_compilerGeneratedMethodToUserCodeMethod.TryAdd(nestedFunction, userDefinedMethod))
                                 {
                                     var alreadyAssociatedMethod = _compilerGeneratedMethodToUserCodeMethod[nestedFunction];
-                                    logger?.LogWarning(new MessageOrigin(userDefinedMethod), DiagnosticId.MethodsAreAssociatedWithUserMethod, userDefinedMethod.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), nestedFunction.GetDisplayName());
+                                    AddWarning(new MessageOrigin(userDefinedMethod), DiagnosticId.MethodsAreAssociatedWithUserMethod, userDefinedMethod.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), nestedFunction.GetDisplayName());
                                 }
                                 break;
                             case MetadataType stateMachineType:
@@ -295,7 +357,7 @@ namespace ILCompiler.Dataflow
                         {
                             var method = info.CreatingMethod;
                             var alreadyAssociatedMethod = _generatedTypeToTypeArgumentInfo[generatedType].CreatingMethod;
-                            logger?.LogWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
+                            AddWarning(new MessageOrigin(method), DiagnosticId.MethodsAreAssociatedWithUserMethod, method.GetDisplayName(), alreadyAssociatedMethod.GetDisplayName(), generatedType.GetDisplayName());
                         }
                     }
                 }
@@ -303,15 +365,15 @@ namespace ILCompiler.Dataflow
                 /// Attempts to reverse the process of the compiler's alpha renaming. So if the original code was
                 /// something like this:
                 /// <code>
-                /// void M&lt;T&gt; () {
-                ///     Action a = () => { Console.WriteLine (typeof (T)); };
+                /// void M&lt;T&gt;() {
+                ///     Action a = () => { Console.WriteLine(typeof(T)); };
                 /// }
                 /// </code>
                 /// The compiler will generate a nested class like this:
                 /// <code>
                 /// class &lt;&gt;c__DisplayClass0&lt;T&gt; {
-                ///     public void &lt;M&gt;b__0 () {
-                ///         Console.WriteLine (typeof (T));
+                ///     public void &lt;M&gt;b__0() {
+                ///         Console.WriteLine(typeof(T));
                 ///     }
                 /// }
                 /// </code>
@@ -575,7 +637,10 @@ namespace ILCompiler.Dataflow
             if (userType is null)
                 return null;
 
-            return _typeCacheHashtable.GetOrCreateValue(userType);
+            var typeCache = _typeCacheHashtable.GetOrCreateValue(userType, out bool created);
+            if (created)
+                typeCache.LogWarnings(_logger);
+            return typeCache;
         }
 
         private static TypeDesc? GetFirstConstructorArgumentAsType(CustomAttributeValue<TypeDesc> attribute)
@@ -612,6 +677,16 @@ namespace ILCompiler.Dataflow
         {
             MetadataType generatedType = (MetadataType)type.GetTypeDefinition();
             Debug.Assert(CompilerGeneratedNames.IsStateMachineOrDisplayClass(generatedType.Name));
+
+            // Avoid the heuristics for .NET10+, where DynamicallyAccessedMembers flows to generated code
+            // because it is annotated with CompilerLoweringPreserveAttribute.
+            if (_disableGeneratedCodeHeuristics &&
+                generatedType.Module.Assembly is EcmaAssembly asm && asm.GetTargetFrameworkVersion() >= new Version(10, 0))
+            {
+                // Still run the logic for coverage to help us find bugs, but don't use the result.
+                GetCompilerGeneratedStateForType(generatedType);
+                return null;
+            }
 
             var typeCache = GetCompilerGeneratedStateForType(generatedType);
             if (typeCache is null)

@@ -39,6 +39,7 @@ parser.add_argument("-benchmark_path", help="Benchmark's csproj path in dotnet/p
 parser.add_argument("-benchmark_binary", help="Benchmark binary to execute")
 parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
 parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
+parser.add_argument("--jitoptrepeat_all", action="store_true", help="Sets DOTNET_JitOptRepeat=*.")
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -112,6 +113,11 @@ def setup_args(args):
                         "tiered_pgo",
                         lambda unused: True,
                         "Unable to set tiered_pgo")
+
+    coreclr_args.verify(args,
+                        "jitoptrepeat_all",
+                        lambda unused: True,
+                        "Unable to set jitoptrepeat_all")
 
     return coreclr_args
 
@@ -287,6 +293,9 @@ def build_and_run(coreclr_args, output_mch_name):
         collection_command += "DOTNET_TieredCompilation:1 DOTNET_TieredPGO:0"
     else:
         collection_command += "DOTNET_TieredCompilation:0"
+
+    if coreclr_args.jitoptrepeat_all:
+        collection_command += " DOTNET_JitOptRepeat:\"*\""
 
     # Generate the execution script in Temp location
     with TempDir() as temp_location:

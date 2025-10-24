@@ -6,20 +6,20 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public sealed partial class UnreachableBlockTests : LinkerTestBase
-	{
-		protected override string TestSuiteName => "UnreachableBlock";
+    public sealed partial class UnreachableBlockTests : LinkerTestBase
+    {
+        protected override string TestSuiteName => "UnreachableBlock";
 
-		[Fact (Skip = "ILLink analyzers don't support constant propagation https://github.com/dotnet/linker/issues/2715")]
-		public Task CompilerGeneratedCodeSubstitutions ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact(Skip = "ILLink analyzers don't support constant propagation https://github.com/dotnet/linker/issues/2715")]
+        public Task CompilerGeneratedCodeSubstitutions()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-		[Fact]
-		public Task TryFilterBlocks ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-	}
+        [Fact]
+        public Task TryFilterBlocks()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+    }
 }

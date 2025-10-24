@@ -64,7 +64,7 @@ namespace System.Runtime.Loader.Tests
             catch { }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31804", TestRuntimes.Mono)]
         public static void LoadRefEmitAssembly()
         {

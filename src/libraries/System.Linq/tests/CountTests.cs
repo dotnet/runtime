@@ -3,10 +3,11 @@
 
 using System.Collections.Generic;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Linq.Tests
 {
-    public class CountTests : EnumerableTests
+    public class CountTests(ITestOutputHelper output) : EnumerableTests
     {
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
@@ -99,9 +100,9 @@ namespace System.Linq.Tests
 
         private static IEnumerable<object[]> EnumerateCollectionTypesAndCounts<T>(int count, IEnumerable<T> enumerable)
         {
-            foreach (var transform in IdentityTransforms<T>())
+            foreach (IEnumerable<T> source in CreateSources(enumerable))
             {
-                yield return [count, transform(enumerable)];
+                yield return [count, source];
             }
         }
 
@@ -151,6 +152,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(NonEnumeratedCount_UnsupportedEnumerables))]
         public void NonEnumeratedCount_UnsupportedEnumerables_ShouldReturnFalse<T>(IEnumerable<T> source)
         {
+            output.WriteLine(source.GetType().FullName);
             Assert.False(source.TryGetNonEnumeratedCount(out int actualCount));
             Assert.Equal(0, actualCount);
         }
@@ -178,16 +180,17 @@ namespace System.Linq.Tests
 
             yield return WrapArgs(0, Enumerable.Empty<string>());
 
-            if (PlatformDetection.IsSpeedOptimized)
+            yield return WrapArgs(100, Enumerable.Range(1, 100));
+            yield return WrapArgs(80, Enumerable.Repeat(1, 80));
+            yield return WrapArgs(20, Enumerable.Range(1, 20).Reverse());
+            yield return WrapArgs(20, Enumerable.Range(1, 20).OrderBy(x => -x));
+            yield return WrapArgs(20, Enumerable.Range(1, 10).Concat(Enumerable.Range(11, 10)));
+
+            if (PlatformDetection.IsLinqSpeedOptimized)
             {
-                yield return WrapArgs(100, Enumerable.Range(1, 100));
-                yield return WrapArgs(80, Enumerable.Repeat(1, 80));
                 yield return WrapArgs(50, Enumerable.Range(1, 50).Select(x => x + 1));
                 yield return WrapArgs(4, new int[] { 1, 2, 3, 4 }.Select(x => x + 1));
                 yield return WrapArgs(50, Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));
-                yield return WrapArgs(20, Enumerable.Range(1, 20).Reverse());
-                yield return WrapArgs(20, Enumerable.Range(1, 20).OrderBy(x => -x));
-                yield return WrapArgs(20, Enumerable.Range(1, 10).Concat(Enumerable.Range(11, 10)));
             }
 
             static object[] WrapArgs<T>(int expectedCount, IEnumerable<T> source) => [expectedCount, source];
@@ -200,16 +203,11 @@ namespace System.Linq.Tests
             yield return WrapArgs(new Stack<int>([1, 2, 3, 4]).Select(x => x + 1));
             yield return WrapArgs(Enumerable.Range(1, 100).Distinct());
 
-            if (!PlatformDetection.IsSpeedOptimized)
+            if (!PlatformDetection.IsLinqSpeedOptimized)
             {
-                yield return WrapArgs(Enumerable.Range(1, 100));
-                yield return WrapArgs(Enumerable.Repeat(1, 80));
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1));
-                yield return WrapArgs(new int[] { 1, 2, 3, 4 }.Select(x => x + 1));            
+                yield return WrapArgs(new int[] { 1, 2, 3, 4 }.Select(x => x + 1));
                 yield return WrapArgs(Enumerable.Range(1, 50).Select(x => x + 1).Select(x => x - 1));
-                yield return WrapArgs(Enumerable.Range(1, 20).Reverse());
-                yield return WrapArgs(Enumerable.Range(1, 20).OrderBy(x => -x));
-                yield return WrapArgs(Enumerable.Range(1, 10).Concat(Enumerable.Range(11, 10)));
             }
 
             static object[] WrapArgs<T>(IEnumerable<T> source) => [source];

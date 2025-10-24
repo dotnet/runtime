@@ -25,14 +25,14 @@ namespace System.Threading
         #region Object->Lock/Condition mapping
 
         private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = new ConditionalWeakTable<object, Condition>();
-        private static readonly ConditionalWeakTable<object, Condition>.CreateValueCallback s_createCondition = (o) => new Condition(ObjectHeader.GetLockObject(o));
+        private static readonly Func<object, Condition> s_createCondition = (o) => new Condition(ObjectHeader.GetLockObject(o));
 
         private static Condition GetCondition(object obj)
         {
             Debug.Assert(
                 !(obj is Condition),
                 "Do not use Monitor.Pulse or Wait on a Condition instance; use the methods on Condition instead.");
-            return s_conditionTable.GetValue(obj, s_createCondition);
+            return s_conditionTable.GetOrAdd(obj, s_createCondition);
         }
         #endregion
 

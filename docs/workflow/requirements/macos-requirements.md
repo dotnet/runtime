@@ -18,13 +18,12 @@ To build the runtime repo, you will also need to install the following dependenc
 
 - `CMake` 3.20 or newer
 - `icu4c`
-- `openssl@1.1` or `openssl@3`
 - `pkg-config`
 - `python3`
 - `ninja` (This one is optional. It is an alternative tool to `make` for building native code)
 
-You can install them separately, or you can alternatively opt to install *[Homebrew](https://brew.sh/)* and use the `Brewfile` provided by the repo, which takes care of everything for you. If you go by this route, once you have *Homebrew* up and running on your machine, run the following command from the root of the repo to download and install all the necessary dependencies at once:
+You can install them separately, or you can alternatively opt to install *[Homebrew](https://brew.sh/)* and use the `install-dependencies.sh` script provided by the repo, which takes care of everything for you. If you go by this route, once you have *Homebrew* up and running on your machine, run the following command from the root of the repo to download and install all the necessary dependencies at once:
 
 ```bash
-brew bundle --no-lock --file eng/Brewfile
+./eng/common/native/install-dependencies.sh
 ```

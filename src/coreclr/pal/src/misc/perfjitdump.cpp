@@ -14,6 +14,7 @@
 #ifdef JITDUMP_SUPPORTED
 
 #include <fcntl.h>
+#include <errno.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -26,8 +27,13 @@
 #include <time.h>
 #include <unistd.h>
 #include <limits.h>
+#include "minipal/time.h"
 
 #include "../inc/llvm/ELF.h"
+
+#if defined(HOST_AMD64)
+#include <x86intrin.h>
+#endif
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
@@ -37,6 +43,7 @@ namespace
     {
         JIT_DUMP_MAGIC = 0x4A695444,
         JIT_DUMP_VERSION = 1,
+        JITDUMP_FLAGS_ARCH_TIMESTAMP = 1 << 0,
 
 #if defined(HOST_X86)
         ELF_MACHINE = EM_386,
@@ -61,12 +68,33 @@ namespace
         JIT_CODE_LOAD = 0,
     };
 
+    static bool UseArchTimeStamp()
+    {
+        static bool initialized = false;
+        static bool useArchTimestamp = false;
+
+        if (!initialized)
+        {
+#if defined(HOST_AMD64)
+            const char* archTimestamp = getenv("JITDUMP_USE_ARCH_TIMESTAMP");
+            useArchTimestamp = (archTimestamp != nullptr && strcmp(archTimestamp, "1") == 0);
+#endif
+            initialized = true;
+        }
+
+        return useArchTimestamp;
+    }
+
     static uint64_t GetTimeStampNS()
     {
-        LARGE_INTEGER result;
-        QueryPerformanceCounter(&result);
-        return result.QuadPart;
+#if defined(HOST_AMD64)
+        if (UseArchTimeStamp()) {
+            return static_cast<uint64_t>(__rdtsc());
+        }
+#endif
+        return (uint64_t)minipal_hires_ticks();
     }
+
 
     struct FileHeader
     {
@@ -78,7 +106,7 @@ namespace
             pad1(0),
             pid(getpid()),
             timestamp(GetTimeStampNS()),
-            flags(0)
+            flags(UseArchTimeStamp() ? JITDUMP_FLAGS_ARCH_TIMESTAMP : 0)
         {}
 
         uint32_t magic;
@@ -157,16 +185,13 @@ struct PerfJitDumpState
     {
         int result = 0;
 
-        // On platforms where JITDUMP is used, the PAL QueryPerformanceFrequency
-        // returns tccSecondsToNanoSeconds, meaning QueryPerformanceCounter
-        // will return a direct nanosecond value. If this isn't true,
+        // On platforms where JITDUMP is used, minipal_hires_tick_frequency()
+        // returns tccSecondsToNanoSeconds. If this isn't true,
         // then some other method will need to be used to implement GetTimeStampNS.
         // Validate this is true once in Start here.
-        LARGE_INTEGER freq;
-        QueryPerformanceFrequency(&freq);
-        if (freq.QuadPart != tccSecondsToNanoSeconds)
+        if (minipal_hires_tick_frequency() != tccSecondsToNanoSeconds)
         {
-            _ASSERTE(!"QueryPerformanceFrequency does not return tccSecondsToNanoSeconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
+            _ASSERTE(!"minipal_hires_tick_frequency() does not return tccSecondsToNanoSeconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
             FatalError();
         }
 
@@ -331,7 +356,7 @@ exit:
 
             result = close(fd);
 
-            if (result == -1)
+            if (result == -1 && errno != EINTR)
                 return FatalError();
 
             fd = -1;

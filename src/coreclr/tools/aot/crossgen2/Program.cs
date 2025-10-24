@@ -86,7 +86,9 @@ namespace ILCompiler
             TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
             TargetOS targetOS = Get(_command.TargetOS);
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
-                SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger);
+                SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger,
+                optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize,
+                isReadyToRun: true);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
@@ -159,7 +161,7 @@ namespace ILCompiler
                     {
                         var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
                         if ((module.PEReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == (CorFlags)0
-                            && module.PEReader.TryGetReadyToRunHeader(out int _))
+                            && module.PEReader.TryGetCompositeReadyToRunHeader(out int _))
                         {
                             Console.WriteLine(SR.IgnoringCompositeImage, inputFile.Value);
                             continue;
@@ -595,6 +597,7 @@ namespace ILCompiler
                     nodeFactoryFlags.TypeValidation = Get(_command.TypeValidation);
                     nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
+                    nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport);
 
                     builder
                         .UseMapFile(Get(_command.Map))
@@ -690,7 +693,7 @@ namespace ILCompiler
             int curIndex = 0;
             foreach (var searchMethod in owningType.GetMethods())
             {
-                if (searchMethod.Name != singleMethodName)
+                if (searchMethod.GetName() != singleMethodName)
                     continue;
 
                 curIndex++;
@@ -720,7 +723,7 @@ namespace ILCompiler
                 curIndex = 0;
                 foreach (var searchMethod in owningType.GetMethods())
                 {
-                    if (searchMethod.Name != singleMethodName)
+                    if (searchMethod.GetName() != singleMethodName)
                         continue;
 
                     curIndex++;
@@ -756,12 +759,12 @@ namespace ILCompiler
             var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)method.Context.SystemModule);
 
             sb.Append($"--singlemethodtypename \"{formatter.FormatName(method.OwningType, true)}\"");
-            sb.Append($" --singlemethodname \"{method.Name}\"");
+            sb.Append($" --singlemethodname \"{method.GetName()}\"");
             {
                 int curIndex = 0;
                 foreach (var searchMethod in method.OwningType.GetMethods())
                 {
-                    if (searchMethod.Name != method.Name)
+                    if (!searchMethod.Name.SequenceEqual(method.Name))
                         continue;
 
                     curIndex++;
@@ -908,15 +911,19 @@ namespace ILCompiler
             return true;
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new Crossgen2RootCommand(args)
+            new Crossgen2RootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(Crossgen2RootCommand.GetExtendedHelp))
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
-                EnableDefaultExceptionHandler = false,
-            }.Invoke(args);
+                .UseExtendedHelp(Crossgen2RootCommand.PrintExtendedHelp)
+                .Parse(args, new()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                })
+                .Invoke(new()
+                {
+                    EnableDefaultExceptionHandler = false
+                });
     }
 }

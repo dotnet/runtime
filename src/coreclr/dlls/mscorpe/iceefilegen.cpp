@@ -150,14 +150,7 @@ HRESULT ICeeFileGen::AddSectionReloc (HCEESECTION section, ULONG offset, HCEESEC
     CeeSection *sec = reinterpret_cast<CeeSection*>(section);
     CeeSection *relSec = reinterpret_cast<CeeSection*>(relativeTo);
 
-    if (relSec)
-    {
-        return(sec->addSectReloc(offset, *relSec, relocType));
-    }
-    else
-    {
-        return(sec->addBaseReloc(offset, relocType));
-    }
+    return(sec->addSectReloc(offset, *relSec, relocType));
 }
 
 HRESULT ICeeFileGen::SetOutputFileName (HCEEFILE ceeFile, _In_ LPWSTR outputFileName)

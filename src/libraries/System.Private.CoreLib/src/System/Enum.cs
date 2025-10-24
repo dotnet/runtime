@@ -1002,7 +1002,7 @@ namespace System
 
                 try
                 {
-                    result = (TUnderlying)ToObject(enumType, Convert.ChangeType(value.ToString(), underlyingType, CultureInfo.InvariantCulture)!);
+                    result = (TUnderlying)ToObject(enumType, Convert.ChangeType(value.ToString(), underlyingType, CultureInfo.InvariantCulture));
                     return true;
                 }
                 catch (FormatException)

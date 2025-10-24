@@ -81,10 +81,10 @@ namespace System.Globalization
         private static bool EqualsIgnoreCase_Vector<TVector>(ref char charA, ref char charB, int length)
             where TVector : struct, ISimdVector<TVector, ushort>
         {
-            Debug.Assert(length >= TVector.Count);
+            Debug.Assert(length >= TVector.ElementCount);
 
             nuint lengthU = (nuint)length;
-            nuint lengthToExamine = lengthU - (nuint)TVector.Count;
+            nuint lengthToExamine = lengthU - (nuint)TVector.ElementCount;
             nuint i = 0;
             TVector vec1;
             TVector vec2;
@@ -113,13 +113,13 @@ namespace System.Globalization
                         return false; // first input isn't in [A-Za-z], and not exact match of lowered
                     }
                 }
-                i += (nuint)TVector.Count;
+                i += (nuint)TVector.ElementCount;
             } while (i <= lengthToExamine);
 
             // Handle trailing elements
             if (i != lengthU)
             {
-                i = lengthU - (nuint)TVector.Count;
+                i = lengthU - (nuint)TVector.ElementCount;
                 vec1 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charA), i);
                 vec2 = TVector.LoadUnsafe(ref Unsafe.As<char, ushort>(ref charB), i);
 

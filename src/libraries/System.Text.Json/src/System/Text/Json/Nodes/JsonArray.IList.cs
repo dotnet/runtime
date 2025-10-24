@@ -124,10 +124,7 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public int RemoveAll(Func<JsonNode?, bool> match)
         {
-            if (match == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
 
             return List.RemoveAll(node =>
             {
@@ -233,10 +230,7 @@ namespace System.Text.Json.Nodes
 
         private static void DetachParent(JsonNode? item)
         {
-            if (item != null)
-            {
-                item.Parent = null;
-            }
+            item?.Parent = null;
         }
     }
 }

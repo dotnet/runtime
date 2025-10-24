@@ -24,7 +24,6 @@ LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT
     .cfi_rel_offset 22, 0
     .cfi_rel_offset 1, 8
 
-    ld.d  $tp, $a0, CONTEXT_Tp
     ld.d  $s0, $a0, CONTEXT_S0
     ld.d  $s1, $a0, CONTEXT_S1
     ld.d  $s2, $a0, CONTEXT_S2

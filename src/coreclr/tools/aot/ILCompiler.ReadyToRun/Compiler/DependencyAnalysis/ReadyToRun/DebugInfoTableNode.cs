@@ -132,20 +132,103 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (offsetMapping == null || offsetMapping.Length == 0)
                 return null;
 
-            NibbleWriter writer = new NibbleWriter();
-            writer.WriteUInt((uint)offsetMapping.Length);
-
             uint previousNativeOffset = 0;
+            uint maxNativeDelta = 0;
+            uint maxILValue = 0;
             foreach (var locInfo in offsetMapping)
             {
-                writer.WriteUInt(locInfo.nativeOffset - previousNativeOffset);
-                writer.WriteUInt(locInfo.ilOffset + 3); // Count of items in Internal.JitInterface.MappingTypes to adjust the IL offset by
-                writer.WriteUInt((uint)locInfo.source);
-
+                maxNativeDelta = Math.Max(maxNativeDelta, locInfo.nativeOffset - previousNativeOffset);
+                maxILValue = Math.Max(maxILValue, locInfo.ilOffset + 3);
                 previousNativeOffset = locInfo.nativeOffset;
             }
 
-            return writer.ToArray();
+            int bitWidthForNativeDelta = Math.Max(1, 32 - System.Numerics.BitOperations.LeadingZeroCount(maxNativeDelta));
+            int bitWidthForILOffset = Math.Max(1, 32 - System.Numerics.BitOperations.LeadingZeroCount(maxILValue));
+
+            int bitWidthReportForNativeDelta = bitWidthForNativeDelta - 1;
+            int bitWidthReportForILOffset = bitWidthForILOffset - 1;
+            NibbleWriter writer2 = new NibbleWriter();
+            writer2.WriteUInt((uint)offsetMapping.Length); // We need the total count
+            writer2.WriteUInt((uint)bitWidthReportForNativeDelta); // Number of bits needed for native deltas
+            writer2.WriteUInt((uint)bitWidthReportForILOffset); // How many bits needed for IL offsets
+            int bitWidth = bitWidthForNativeDelta +
+                          bitWidthForILOffset +
+                          2; // for the source data
+            int totalBits = bitWidth * offsetMapping.Length;
+            int bytesNeededForArray = (totalBits + 7) / 8;
+
+            byte bitsInProgress = 0;
+            byte bitsInProgressCount = 0;
+
+            List<byte> boundsBlob = new List<byte>(writer2.ToArray());
+
+            for (uint i = 0; i < offsetMapping.Length; i++)
+            {
+                var bound = offsetMapping[i];
+
+                uint prevNativeOffset = 0;
+                if (i > 0)
+                {
+                    prevNativeOffset = offsetMapping[i - 1].nativeOffset;
+                }
+                uint nativeOffsetDelta = bound.nativeOffset - prevNativeOffset;
+
+                uint sourceBits = 0;
+                switch ((int)bound.source)
+                {
+                    case (int)Internal.JitInterface.SourceTypes.SOURCE_TYPE_INVALID:
+                        sourceBits = 0;
+                        break;
+                    case (int)Internal.JitInterface.SourceTypes.CALL_INSTRUCTION:
+                        sourceBits = 1;
+                        break;
+                    case (int)Internal.JitInterface.SourceTypes.STACK_EMPTY:
+                        sourceBits = 2;
+                        break;
+                    case (int)(Internal.JitInterface.SourceTypes.CALL_INSTRUCTION | Internal.JitInterface.SourceTypes.STACK_EMPTY):
+                        sourceBits = 3;
+                        break;
+                    default:
+                        throw new InternalCompilerErrorException("Unknown source type");
+                }
+
+
+                ulong mappingDataEncoded = (ulong)sourceBits |
+                    ((ulong)nativeOffsetDelta << 2) |
+                    ((ulong)((int)bound.ilOffset - (int)MappingTypes.EPILOG) << (2 + bitWidthForNativeDelta));
+
+                for (byte bitsToWrite = (byte)bitWidth; bitsToWrite > 0;)
+                {
+                    // Figure out next bits to write if we need to combine with a previous byte.
+                    if (bitsInProgressCount > 0)
+                    {
+                        byte bitsToAddFromNewEncoding = (byte)(8 - bitsInProgressCount);
+                        byte bitsToAddOnToInProgress = (byte)((mappingDataEncoded & ((((uint)1) << bitsToAddFromNewEncoding) - 1)) << bitsInProgressCount);
+                        boundsBlob.Add((byte)(bitsToAddOnToInProgress | bitsInProgress));
+                        mappingDataEncoded >>= bitsToAddFromNewEncoding;
+                        bitsToWrite -= bitsToAddFromNewEncoding;
+                        bitsInProgressCount = 0;
+                    }
+                    else if (bitsToWrite >= 8)
+                    {
+                        boundsBlob.Add((byte)mappingDataEncoded);
+                        mappingDataEncoded >>= 8;
+                        bitsToWrite -= 8;
+                    }
+                    else
+                    {
+                        bitsInProgress = (byte)mappingDataEncoded;
+                        bitsInProgressCount = bitsToWrite;
+                        bitsToWrite = 0;
+                    }
+                }
+            }
+            if (bitsInProgressCount > 0)
+            {
+                Debug.Assert(bitsInProgressCount < 8);
+                boundsBlob.Add(bitsInProgress);
+            }
+            return boundsBlob.ToArray();
         }
 
         public static byte[] CreateVarBlobForMethod(NativeVarInfo[] varInfos, TargetDetails target)

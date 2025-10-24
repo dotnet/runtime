@@ -12,7 +12,7 @@ git pull upstream main & git push origin main
 build.cmd clr+libs -rc Release
 :: Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
-:: If you use Visual Studio, you might open System.Collections.Concurrent.sln here.
+:: If you use Visual Studio, you might open System.Collections.Concurrent.slnx here.
 build.cmd -vs System.Collections.Concurrent
 
 :: Switch to working on a given library (System.Collections.Concurrent in this case)
@@ -76,7 +76,7 @@ The libraries build has two logical components, the native build which produces 
 
 The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture) are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
-- `-framework|-f` identifies the target framework for the build. Possible values include `net10.0` (currently the latest .NET version) or `net48` (the latest .NET Framework version). (msbuild property `BuildTargetFramework`)
+- `-framework|-f` identifies the target framework for the build. Possible values include `net10.0` (currently the latest .NET version) or `net481` (the latest .NET Framework version). (msbuild property `BuildTargetFramework`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `windows`, `unix`, `linux`, or `osx`. (msbuild property `TargetOS`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
@@ -128,7 +128,7 @@ The libraries build contains some native code. This includes shims over libc, op
 
 - Building and updating the binplace (for e.g. the testhost), which is needed when iterating on native components
 ```bash
-dotnet.sh build src/native/libraries/build-native.proj
+dotnet.sh build src/native/libs/build-native.proj
 ```
 
 - The following example shows how you would do an arm cross-compile build
@@ -147,7 +147,7 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 - Build all projects for a given library (e.g.: System.Collections) including running the tests
 
 ```bash
- ./build.sh -projects src/libraries/*/System.Collections.sln
+ ./build.sh -projects src/libraries/*/System.Collections.slnx
 ```
 
 - Build just the tests for a library project
@@ -157,7 +157,7 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 
 - All the options listed above like framework and configuration are also supported (note they must be after the directory)
 ```bash
- ./build.sh -projects src/libraries/*/System.Collections.sln -f net472 -c Release
+ ./build.sh -projects src/libraries/*/System.Collections.slnx -f net472 -c Release
 ```
 
 As `dotnet build` works on both Unix and Windows and calls the restore target implicitly, we will use it throughout this guide.
@@ -256,3 +256,13 @@ Same as for `dotnet build` or `dotnet publish`, you can specify the desired conf
 ```cmd
 dotnet.cmd pack src\libraries\System.Text.Json\src\ -c Release
 ```
+
+## APICompat
+
+If changes to the library include any API incompatibilities, calling `dotnet build` or `dotnet pack` may result in API compatibility errors.
+
+In rare cases where these are expected (e.g. updating APIs previously shipped only in preview or as experimental), the errors may be suppressed. This can be done by following the directions in the error to invoke `dotnet build` (if the project isn't packable) or `dotnet pack` (if the project is packable) with an additional `/p:ApiCompatGenerateSuppressionFile=true` argument.
+
+**Note:** If you are simply adding new APIs, you should not suppress API compatibility errors. Instead, make sure you have updated [the reference source](../../../coding-guidelines/updating-ref-source.md) for the library.
+
+See https://learn.microsoft.com/dotnet/fundamentals/apicompat/overview for more details.

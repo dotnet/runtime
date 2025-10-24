@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Runtime.General;
+using System.Runtime.CompilerServices;
 
 using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
@@ -41,6 +42,10 @@ namespace Internal.StackTraceMetadata
             RuntimeAugments.InitializeStackTraceMetadataSupport(new StackTraceMetadataCallbacksImpl());
         }
 
+        [Intrinsic]
+        [AnalysisCharacteristic]
+        internal static extern bool StackTraceHiddenMetadataPresent();
+
         /// <summary>
         /// Locate the containing module for a method and try to resolve its name based on start address.
         /// </summary>
@@ -75,21 +80,24 @@ namespace Internal.StackTraceMetadata
                 out TypeDefinitionHandle typeHandle,
                 out MethodHandle methodHandle))
             {
-                foreach (CustomAttributeHandle cah in reader.GetTypeDefinition(typeHandle).CustomAttributes)
+                if (StackTraceHiddenMetadataPresent())
                 {
-                    if (cah.IsCustomAttributeOfType(reader, ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
+                    foreach (CustomAttributeHandle cah in reader.GetTypeDefinition(typeHandle).CustomAttributes)
                     {
-                        isStackTraceHidden = true;
-                        break;
+                        if (cah.IsCustomAttributeOfType(reader, ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
+                        {
+                            isStackTraceHidden = true;
+                            break;
+                        }
                     }
-                }
 
-                foreach (CustomAttributeHandle cah in reader.GetMethod(methodHandle).CustomAttributes)
-                {
-                    if (cah.IsCustomAttributeOfType(reader, ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
+                    foreach (CustomAttributeHandle cah in reader.GetMethod(methodHandle).CustomAttributes)
                     {
-                        isStackTraceHidden = true;
-                        break;
+                        if (cah.IsCustomAttributeOfType(reader, ["System", "Diagnostics"], "StackTraceHiddenAttribute"))
+                        {
+                            isStackTraceHidden = true;
+                            break;
+                        }
                     }
                 }
 
@@ -347,7 +355,8 @@ namespace Internal.StackTraceMetadata
                     if ((command & StackTraceDataCommand.UpdateOwningType) != 0)
                     {
                         currentOwningType = Handle.FromIntToken((int)NativePrimitiveDecoder.ReadUInt32(ref pCurrent));
-                        Debug.Assert(currentOwningType.HandleType is HandleType.TypeDefinition or HandleType.TypeReference or HandleType.TypeSpecification);
+                        Debug.Assert((command & StackTraceDataCommand.IsStackTraceHidden) != 0 ||
+                            currentOwningType.HandleType is HandleType.TypeDefinition or HandleType.TypeReference or HandleType.TypeSpecification);
                     }
 
                     if ((command & StackTraceDataCommand.UpdateName) != 0)

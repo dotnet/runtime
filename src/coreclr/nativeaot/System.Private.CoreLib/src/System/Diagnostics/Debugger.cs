@@ -42,17 +42,6 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Constants representing the importance level of messages to be logged.
-        ///
-        /// An attached debugger can enable or disable which messages will
-        /// actually be reported to the user through the CLR debugger
-        /// services API.  This info is communicated to the runtime so only
-        /// desired events are actually reported to the debugger.
-        /// Constant representing the default category
-        /// </summary>
-        public static readonly string DefaultCategory;
-
-        /// <summary>
         /// Posts a message for the attached debugger.  If there is no
         /// debugger attached, has no effect.  The debugger may or may not
         /// report the message depending on its settings.

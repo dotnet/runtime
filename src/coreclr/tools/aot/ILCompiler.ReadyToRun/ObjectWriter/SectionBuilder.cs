@@ -944,5 +944,22 @@ namespace ILCompiler.PEWriter
             // Flush remaining PE file blocks after the last relocation
             relocationHelper.CopyRestOfFile();
         }
+
+        internal bool HasContent(string sectionName)
+        {
+            if (sectionName == R2RPEBuilder.ExportDataSectionName)
+                return _exportSymbols.Count > 0 && _dllNameForExportDirectoryTable != null;
+
+            if (sectionName == R2RPEBuilder.RelocSectionName)
+            {
+                return _sections.Any(
+                    s => s.PlacedObjectDataToRelocate.Any(
+                        d => d.Relocs.Any(
+                            r => Relocation.GetFileRelocationType(r.RelocType) != RelocType.IMAGE_REL_BASED_ABSOLUTE)));
+            }
+
+            Section section = FindSection(sectionName);
+            return section != null && section.Content.Count > 0;
+        }
     }
 }

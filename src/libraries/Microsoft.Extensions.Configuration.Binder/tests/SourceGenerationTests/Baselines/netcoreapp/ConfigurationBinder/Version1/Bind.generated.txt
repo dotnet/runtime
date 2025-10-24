@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #region IConfiguration extensions.
         /// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
         [InterceptsLocation(1, "/TzDbopkyui/vWzNJfmpq0IBAABzcmMtMC5jcw==")] // src-0.cs(12,14)
-        public static void Bind_ProgramMyClass(this IConfiguration configuration, object? instance)
+        public static void Bind_Program__MyClass(this IConfiguration configuration, object? instance)
         {
             ArgumentNullException.ThrowIfNull(configuration);
 
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         /// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
         [InterceptsLocation(1, "/TzDbopkyui/vWzNJfmpq2YBAABzcmMtMC5jcw==")] // src-0.cs(13,20)
-        public static void Bind_ProgramMyClass(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
+        public static void Bind_Program__MyClass(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
         {
             ArgumentNullException.ThrowIfNull(configuration);
 
@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         /// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>
         [InterceptsLocation(1, "/TzDbopkyui/vWzNJfmpq5oBAABzcmMtMC5jcw==")] // src-0.cs(14,20)
-        public static void Bind_ProgramMyClass(this IConfiguration configuration, string key, object? instance)
+        public static void Bind_Program__MyClass(this IConfiguration configuration, string key, object? instance)
         {
             ArgumentNullException.ThrowIfNull(configuration);
 
@@ -81,15 +81,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList", "MyDictionary", "MyComplexDictionary" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_Program__MyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList", "MyDictionary", "MyComplexDictionary" });
 
         public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.List<int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string value && !string.IsNullOrEmpty(value))
+                if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
-                    instance.Add(ParseInt(value, section.Path));
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        instance.Add(ParseInt(value, section.Path));
+                    }
                 }
             }
         }
@@ -98,7 +101,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             foreach (IConfigurationSection section in configuration.GetChildren())
             {
-                if (section.Value is string value)
+                if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
                     instance[section.Key] = value;
                 }
@@ -119,9 +122,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public static void BindCore(IConfiguration configuration, ref global::Program.MyClass instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
-            ValidateConfigurationKeys(typeof(global::Program.MyClass), s_configKeys_ProgramMyClass, configuration, binderOptions);
+            ValidateConfigurationKeys(typeof(global::Program.MyClass), s_configKeys_Program__MyClass, configuration, binderOptions);
 
-            if (configuration["MyString"] is string value0)
+            if (TryGetConfigurationValue(configuration, key: "MyString", out string? value0))
             {
                 instance.MyString = value0;
             }
@@ -134,50 +137,68 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (configuration["MyInt"] is string value1 && !string.IsNullOrEmpty(value1))
+            if (TryGetConfigurationValue(configuration, key: "MyInt", out string? value1))
             {
-                instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
+                if (!string.IsNullOrEmpty(value1))
+                {
+                    instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
+                }
             }
             else if (defaultValueIfNotFound)
             {
                 instance.MyInt = instance.MyInt;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("MyList")) is IConfigurationSection section2)
+            var value2 = configuration.GetSection("MyList");
+            if (AsConfigWithChildren(value2) is IConfigurationSection section3)
             {
-                global::System.Collections.Generic.List<int>? temp4 = instance.MyList;
-                temp4 ??= new global::System.Collections.Generic.List<int>();
-                BindCore(section2, ref temp4, defaultValueIfNotFound: false, binderOptions);
-                instance.MyList = temp4;
+                global::System.Collections.Generic.List<int>? temp5 = instance.MyList;
+                temp5 ??= new global::System.Collections.Generic.List<int>();
+                BindCore(section3, ref temp5, defaultValueIfNotFound: false, binderOptions);
+                instance.MyList = temp5;
             }
             else
             {
                 instance.MyList = instance.MyList;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("MyDictionary")) is IConfigurationSection section5)
+            var value6 = configuration.GetSection("MyDictionary");
+            if (AsConfigWithChildren(value6) is IConfigurationSection section7)
             {
-                global::System.Collections.Generic.Dictionary<string, string>? temp7 = instance.MyDictionary;
-                temp7 ??= new global::System.Collections.Generic.Dictionary<string, string>();
-                BindCore(section5, ref temp7, defaultValueIfNotFound: false, binderOptions);
-                instance.MyDictionary = temp7;
+                global::System.Collections.Generic.Dictionary<string, string>? temp9 = instance.MyDictionary;
+                temp9 ??= new global::System.Collections.Generic.Dictionary<string, string>();
+                BindCore(section7, ref temp9, defaultValueIfNotFound: false, binderOptions);
+                instance.MyDictionary = temp9;
             }
             else
             {
                 instance.MyDictionary = instance.MyDictionary;
             }
 
-            if (AsConfigWithChildren(configuration.GetSection("MyComplexDictionary")) is IConfigurationSection section8)
+            var value10 = configuration.GetSection("MyComplexDictionary");
+            if (AsConfigWithChildren(value10) is IConfigurationSection section11)
             {
-                global::System.Collections.Generic.Dictionary<string, global::Program.MyClass2>? temp10 = instance.MyComplexDictionary;
-                temp10 ??= new global::System.Collections.Generic.Dictionary<string, global::Program.MyClass2>();
-                BindCore(section8, ref temp10, defaultValueIfNotFound: false, binderOptions);
-                instance.MyComplexDictionary = temp10;
+                global::System.Collections.Generic.Dictionary<string, global::Program.MyClass2>? temp13 = instance.MyComplexDictionary;
+                temp13 ??= new global::System.Collections.Generic.Dictionary<string, global::Program.MyClass2>();
+                BindCore(section11, ref temp13, defaultValueIfNotFound: false, binderOptions);
+                instance.MyComplexDictionary = temp13;
             }
             else
             {
                 instance.MyComplexDictionary = instance.MyComplexDictionary;
             }
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                return section.TryGetValue(key, out value);
+            }
+        
+            value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
+            return value != null;
         }
 
 
@@ -238,7 +259,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
         #endregion Core binding extensions.

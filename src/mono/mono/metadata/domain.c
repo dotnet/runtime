@@ -238,6 +238,9 @@ mono_init_internal (const char *root_domain_name)
 	/* There is only one thread class */
 	mono_defaults.internal_thread_class = mono_defaults.thread_class;
 
+	mono_defaults.gc_class = mono_class_load_from_name (
+                mono_defaults.corlib, "System", "GC");
+
 #if defined(HOST_DARWIN)
 	mono_defaults.autoreleasepool_class = mono_class_try_load_from_name (
                 mono_defaults.corlib, "System.Threading", "AutoreleasePool");

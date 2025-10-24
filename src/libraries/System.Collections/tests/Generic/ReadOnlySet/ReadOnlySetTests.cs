@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Collections.ObjectModel.Tests
@@ -19,6 +20,24 @@ namespace System.Collections.ObjectModel.Tests
         {
             var set = new HashSet<int>();
             Assert.Same(set, new DerivedReadOnlySet<int>(set).Set);
+        }
+
+        [Fact]
+        public static void Ctor_CollectionExpressions_Empty()
+        {
+            ReadOnlySet<int> set = [];
+            Assert.IsType<ReadOnlySet<int>>(set);
+            Assert.Empty(set);
+            Assert.Same(set, ReadOnlySet<int>.Empty);
+        }
+
+        [Fact]
+        public static void Ctor_CollectionExpressions()
+        {
+            int[] array = [1, 2, 3, 3, 2, 1];
+            ReadOnlySet<int> set = [.. array];
+            Assert.IsType<ReadOnlySet<int>>(set);
+            Assert.Equal(set.Order(), array.Distinct().Order());
         }
 
         [Fact]

@@ -4,10 +4,13 @@
 
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using Xunit;
 
 namespace System.Text.Json.Tests
@@ -62,7 +65,7 @@ namespace System.Text.Json.Tests
             options.Encoder.Encode(inputArr, expectedChars, out int charsConsumed, out int charsWritten);
             Assert.Equal(inputArr.Length, charsConsumed);
 
-            SplitCodePointsHelper(inputArr, $@"""{new string(expectedChars, 0, charsWritten)}""", options);
+            SplitStringDataHelper(inputArr, options, $@"""{new string(expectedChars, 0, charsWritten)}""", StringValueEncodingType.Utf16);
         }
 
         public static IEnumerable<byte[]> InvalidUtf8Data()
@@ -120,31 +123,34 @@ namespace System.Text.Json.Tests
 
             string expectedString = $@"""{Encoding.UTF8.GetString(expectedBytes, 0, bytesWritten)}""";
 
-            SplitCodePointsHelper(inputArr, expectedString, options);
+            SplitStringDataHelper(inputArr, options, expectedString, StringValueEncodingType.Utf8);
         }
 
-        private static void SplitCodePointsHelper<T>(
-            T[] inputArr,
-            string expected,
-            JsonWriterOptions options)
-            where T : struct
-        {
-            SplitCodePointsHelper<T>(inputArr, options, output => JsonTestHelper.AssertContents(expected, output));
-        }
-
-        private static void SplitCodePointsHelper<T>(
+        private static void SplitStringDataHelper<T>(
             T[] inputArr,
             JsonWriterOptions options,
-            Action<ArrayBufferWriter<byte>> assert)
+            string expected,
+            StringValueEncodingType encoding)
             where T : struct
         {
-            SplitCodePointsHelper<T>(inputArr.AsSpan(), options, assert);
+            SplitStringDataHelper<T>(inputArr, options, output => JsonTestHelper.AssertContents(expected, output), encoding);
         }
 
-        private static void SplitCodePointsHelper<T>(
+        private static void SplitStringDataHelper<T>(
+            T[] inputArr,
+            JsonWriterOptions options,
+            Action<ArrayBufferWriter<byte>> assert,
+            StringValueEncodingType encoding)
+            where T : struct
+        {
+            SplitStringDataHelper<T>(inputArr.AsSpan(), options, assert, encoding);
+        }
+
+        private static void SplitStringDataHelper<T>(
             ReadOnlySpan<T> inputArr,
             JsonWriterOptions options,
-            Action<ArrayBufferWriter<byte>> assert)
+            Action<ArrayBufferWriter<byte>> assert,
+            StringValueEncodingType encoding)
             where T : struct
         {
             ReadOnlySpan<T> input = inputArr;
@@ -155,7 +161,7 @@ namespace System.Text.Json.Tests
 
                 using (var writer = new Utf8JsonWriter(output, options))
                 {
-                    WriteStringValueHelper(writer, input);
+                    WriteStringValueHelper(writer, input, encoding);
                     writer.Flush();
                 }
 
@@ -168,7 +174,7 @@ namespace System.Text.Json.Tests
 
                 using (var writer = new Utf8JsonWriter(output, options))
                 {
-                    WriteStringValueSegmentsHelper(writer, input.Slice(0, splitIndex), input.Slice(splitIndex));
+                    WriteStringValueSegmentsHelper(writer, input.Slice(0, splitIndex), input.Slice(splitIndex), encoding);
                     writer.Flush();
                 }
 
@@ -183,7 +189,7 @@ namespace System.Text.Json.Tests
 
                     using (var writer = new Utf8JsonWriter(output, options))
                     {
-                        WriteStringValueSegmentsHelper(writer, input.Slice(0, splitIndex), input.Slice(splitIndex, splitIndex2 - splitIndex), input.Slice(splitIndex2));
+                        WriteStringValueSegmentsHelper(writer, input.Slice(0, splitIndex), input.Slice(splitIndex, splitIndex2 - splitIndex), input.Slice(splitIndex2), encoding);
                         writer.Flush();
                     }
 
@@ -201,9 +207,25 @@ namespace System.Text.Json.Tests
                 " Wor".AsSpan(),
                 "ld!".AsSpan(),
                 options.Encoder.Encode("Hello"),
-                options.Encoder.Encode(" Wor"),
-                options.Encoder.Encode("ld!"),
-                options);
+                options.Encoder.Encode("Hello Wor"),
+                options.Encoder.Encode("Hello World!"),
+                options,
+                StringValueEncodingType.Utf16);
+        }
+
+        [Theory]
+        [MemberData(nameof(BasicStringJsonOptions_TestData))]
+        public static void WriteStringValueSegment_Utf16_BasicSplit(JsonWriterOptions options)
+        {
+            WriteStringValueSegment_BasicHelper(
+                "\uD800 <- Invalid Partial -> \uD800".AsSpan(),
+                "\uDC00 <- Partial".AsSpan(),
+                " Invalid -> \uD800".AsSpan(),
+                options.Encoder.Encode("\uD800 <- Invalid Partial -> \uD800"),
+                options.Encoder.Encode("\uD800 <- Invalid Partial -> \uD800\uDC00 <- Partial"),
+                options.Encoder.Encode("\uD800 <- Invalid Partial -> \uD800\uDC00 <- Partial Invalid -> \uD800"),
+                options,
+                StringValueEncodingType.Utf16);
         }
 
         [Theory]
@@ -215,9 +237,57 @@ namespace System.Text.Json.Tests
                 " Wor"u8,
                 "ld!"u8,
                 options.Encoder.Encode("Hello"),
-                options.Encoder.Encode(" Wor"),
-                options.Encoder.Encode("ld!"),
-                options);
+                options.Encoder.Encode("Hello Wor"),
+                options.Encoder.Encode("Hello World!"),
+                options,
+                StringValueEncodingType.Utf8);
+        }
+
+        [Theory]
+        [MemberData(nameof(BasicStringJsonOptions_TestData))]
+        public static void WriteStringValueSegment_Utf8_BasicSplit(JsonWriterOptions options)
+        {
+            byte[] segment1 = [0b10_000000, .. " <- Invalid Partial -> "u8, 0b110_11111];
+            byte[] segment2 = [0b10_111111, .. " <- Partial"u8];
+            byte[] segment3 = [.. " Invalid -> "u8, 0b110_11111];
+            WriteStringValueSegment_BasicHelper(
+                segment1,
+                segment2,
+                segment3,
+                // Since we're using string (base-16) encode for convenience, we just use an invalid utf-16 character
+                options.Encoder.Encode("\udc00 <- Invalid Partial -> \udc00"),
+                options.Encoder.Encode("\udc00 <- Invalid Partial -> \u07ff <- Partial"),
+                options.Encoder.Encode("\udc00 <- Invalid Partial -> \u07ff <- Partial Invalid -> \udc00"),
+                options,
+                StringValueEncodingType.Utf8);
+        }
+
+        [Fact]
+        public static void WriteStringValueSegment_Base64_Basic()
+        {
+            {
+                WriteStringValueSegment_BasicHelper(
+                    "Hello"u8,
+                    " Worl"u8,
+                    "d!"u8,
+                    "SGVsbG8=",
+                    "SGVsbG8gV29ybA==",
+                    "SGVsbG8gV29ybGQh",
+                    new JsonWriterOptions { Indented = false },
+                    StringValueEncodingType.Base64);
+            }
+
+            {
+                WriteStringValueSegment_BasicHelper(
+                    "Hello"u8,
+                    " Worl"u8,
+                    "d!"u8,
+                    "SGVsbG8=",
+                    "SGVsbG8gV29ybA==",
+                    "SGVsbG8gV29ybGQh",
+                    new JsonWriterOptions { Indented = true },
+                    StringValueEncodingType.Base64);
+            }
         }
 
         private static void WriteStringValueSegment_BasicHelper<T>(
@@ -227,27 +297,29 @@ namespace System.Text.Json.Tests
             string expected1,
             string expected2,
             string expected3,
-            JsonWriterOptions options)
+            JsonWriterOptions options,
+            StringValueEncodingType encoding)
             where T : struct
         {
+            JavaScriptEncoder encoder = options.Encoder ?? JavaScriptEncoder.Default;
             string indent = options.Indented ? new string(options.IndentCharacter, options.IndentSize) : "";
             string n = options.Indented ? options.NewLine : "";
             string ni = n + indent;
             string nii = ni + indent;
             string s = options.Indented ? " " : "";
             string e1 = '"' + expected1 + '"';
-            string e2 = '"' + expected1 + expected2 + '"';
-            string e3 = '"' + expected1 + expected2 + expected3 + '"';
-            string foo = '"' + options.Encoder.Encode("foo") + '"';
-            string bar = '"' + options.Encoder.Encode("bar") + '"';
-            string baz = '"' + options.Encoder.Encode("baz") + '"';
-            string inner = '"' + options.Encoder.Encode("inner") + '"';
+            string e2 = '"' + expected2 + '"';
+            string e3 = '"' + expected3 + '"';
+            string foo = '"' + encoder.Encode("foo") + '"';
+            string bar = '"' + encoder.Encode("bar") + '"';
+            string baz = '"' + encoder.Encode("baz") + '"';
+            string inner = '"' + encoder.Encode("inner") + '"';
 
             // JSON string
             {
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, encoding);
                 jsonUtf8.Flush();
 
                 JsonTestHelper.AssertContents(e1, output);
@@ -256,7 +328,7 @@ namespace System.Text.Json.Tests
             {
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, encoding);
                 jsonUtf8.Flush();
 
                 JsonTestHelper.AssertContents(e2, output);
@@ -265,7 +337,7 @@ namespace System.Text.Json.Tests
             {
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3, encoding);
                 jsonUtf8.Flush();
 
                 JsonTestHelper.AssertContents(e3, output);
@@ -276,7 +348,7 @@ namespace System.Text.Json.Tests
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartArray();
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, encoding);
                 jsonUtf8.WriteEndArray();
                 jsonUtf8.Flush();
 
@@ -289,7 +361,7 @@ namespace System.Text.Json.Tests
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartArray();
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, encoding);
                 jsonUtf8.WriteEndArray();
                 jsonUtf8.Flush();
 
@@ -302,7 +374,7 @@ namespace System.Text.Json.Tests
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartArray();
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3, encoding);
                 jsonUtf8.WriteEndArray();
                 jsonUtf8.Flush();
 
@@ -317,7 +389,7 @@ namespace System.Text.Json.Tests
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartArray();
                 jsonUtf8.WriteBooleanValue(true);
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, encoding);
                 jsonUtf8.WriteBooleanValue(false);
                 jsonUtf8.WriteEndArray();
                 jsonUtf8.Flush();
@@ -332,7 +404,7 @@ namespace System.Text.Json.Tests
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartArray();
                 jsonUtf8.WriteBooleanValue(true);
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, encoding);
                 jsonUtf8.WriteBooleanValue(false);
                 jsonUtf8.WriteEndArray();
                 jsonUtf8.Flush();
@@ -347,7 +419,7 @@ namespace System.Text.Json.Tests
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartArray();
                 jsonUtf8.WriteBooleanValue(true);
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3, encoding);
                 jsonUtf8.WriteBooleanValue(false);
                 jsonUtf8.WriteEndArray();
                 jsonUtf8.Flush();
@@ -364,7 +436,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteStartArray();
                 jsonUtf8.WriteStartArray();
                 jsonUtf8.WriteBooleanValue(true);
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, encoding);
                 jsonUtf8.WriteBooleanValue(false);
                 jsonUtf8.WriteEndArray();
                 jsonUtf8.WriteEndArray();
@@ -381,7 +453,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteStartArray();
                 jsonUtf8.WriteStartArray();
                 jsonUtf8.WriteBooleanValue(true);
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, encoding);
                 jsonUtf8.WriteBooleanValue(false);
                 jsonUtf8.WriteEndArray();
                 jsonUtf8.WriteEndArray();
@@ -398,7 +470,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteStartArray();
                 jsonUtf8.WriteStartArray();
                 jsonUtf8.WriteBooleanValue(true);
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3, encoding);
                 jsonUtf8.WriteBooleanValue(false);
                 jsonUtf8.WriteEndArray();
                 jsonUtf8.WriteEndArray();
@@ -415,7 +487,7 @@ namespace System.Text.Json.Tests
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WritePropertyName("foo");
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, encoding);
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.Flush();
 
@@ -429,7 +501,7 @@ namespace System.Text.Json.Tests
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WritePropertyName("foo");
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, encoding);
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.Flush();
 
@@ -443,7 +515,7 @@ namespace System.Text.Json.Tests
                 using var jsonUtf8 = new Utf8JsonWriter(output, options);
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WritePropertyName("foo");
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3, encoding);
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.Flush();
 
@@ -459,7 +531,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WriteBoolean("bar", true);
                 jsonUtf8.WritePropertyName("foo");
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, encoding);
                 jsonUtf8.WriteBoolean("baz", false);
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.Flush();
@@ -475,7 +547,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WriteBoolean("bar", true);
                 jsonUtf8.WritePropertyName("foo");
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, encoding);
                 jsonUtf8.WriteBoolean("baz", false);
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.Flush();
@@ -491,7 +563,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WriteBoolean("bar", true);
                 jsonUtf8.WritePropertyName("foo");
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3, encoding);
                 jsonUtf8.WriteBoolean("baz", false);
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.Flush();
@@ -509,7 +581,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteStartObject("inner");
                 jsonUtf8.WriteBoolean("bar", true);
                 jsonUtf8.WritePropertyName("foo");
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, encoding);
                 jsonUtf8.WriteBoolean("baz", false);
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.WriteEndObject();
@@ -527,7 +599,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteStartObject("inner");
                 jsonUtf8.WriteBoolean("bar", true);
                 jsonUtf8.WritePropertyName("foo");
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, encoding);
                 jsonUtf8.WriteBoolean("baz", false);
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.WriteEndObject();
@@ -545,7 +617,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteStartObject("inner");
                 jsonUtf8.WriteBoolean("bar", true);
                 jsonUtf8.WritePropertyName("foo");
-                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3);
+                WriteStringValueSegmentsHelper(jsonUtf8, segment1, segment2, segment3, encoding);
                 jsonUtf8.WriteBoolean("baz", false);
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.WriteEndObject();
@@ -639,6 +711,17 @@ namespace System.Text.Json.Tests
             JsonTestHelper.AssertContents($"{{\"full\":\"{result}\",\"segmented\":\"{result}\"}}", output);
         }
 
+        [Theory]
+        [InlineData("", "")]
+        [InlineData("0 padding", "MCBwYWRkaW5n")]
+        [InlineData("_1 padding", "XzEgcGFkZGluZw==")]
+        [InlineData("__2 padding", "X18yIHBhZGRpbmc=")]
+        public static void WriteStringValueSegment_Base64_SplitDataBasic(string input, string expected)
+        {
+            byte[] bytes = input.Select(c => (byte)c).ToArray();
+            SplitStringDataHelper(bytes, new JsonWriterOptions { Indented = true }, "\"" + expected + "\"", StringValueEncodingType.Base64);
+        }
+
         [Fact]
         public static void WriteStringValueSegment_Utf8_ClearedPartial()
         {
@@ -699,9 +782,9 @@ namespace System.Text.Json.Tests
 
                 jsonUtf8.WriteStartArray();
 
-                WriteStringValueSegmentsHelper(jsonUtf8, ['\uD800'], ['\uDC00']);
-                WriteStringValueSegmentsHelper(jsonUtf8, ['\uDC00']);
-                WriteStringValueSegmentsHelper(jsonUtf8, ['\uD800'], ['\uDC00'], ['\uDC00']);
+                WriteStringValueSegmentsHelper(jsonUtf8, ['\uD800'], ['\uDC00'], StringValueEncodingType.Utf16);
+                WriteStringValueSegmentsHelper(jsonUtf8, ['\uDC00'], StringValueEncodingType.Utf16);
+                WriteStringValueSegmentsHelper(jsonUtf8, ['\uD800'], ['\uDC00'], ['\uDC00'], StringValueEncodingType.Utf16);
 
                 jsonUtf8.WriteEndArray();
 
@@ -713,21 +796,107 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        public static void WriteStringValueSegment_Base64_ClearedPartial()
+        {
+            var output = new ArrayBufferWriter<byte>();
+
+            {
+                var expected = new StringBuilder();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+
+                jsonUtf8.WriteStartArray();
+                expected.Append('[');
+
+                // Helpers to build up the expected string
+                var buffer = new List<byte>();
+                ReadOnlySpan<byte> AddPartial(ReadOnlySpan<byte> arr)
+                {
+                    foreach (byte b in arr) buffer.Add(b);
+
+                    return arr;
+                }
+
+                ReadOnlySpan<byte> AddFinal(ReadOnlySpan<byte> arr)
+                {
+                    foreach (byte b in arr) buffer.Add(b);
+
+                    expected.Append('"');
+                    expected.Append(Convert.ToBase64String(buffer.ToArray()));
+                    expected.Append('"');
+                    expected.Append(',');
+                    buffer.Clear();
+
+                    return arr;
+                }
+
+                // 1 segment
+                WriteStringValueSegmentsHelper(jsonUtf8, AddFinal([]), StringValueEncodingType.Base64);
+                WriteStringValueSegmentsHelper(jsonUtf8, AddFinal([0]), StringValueEncodingType.Base64);
+                WriteStringValueSegmentsHelper(jsonUtf8, AddFinal([0, 1]), StringValueEncodingType.Base64);
+                WriteStringValueSegmentsHelper(jsonUtf8, AddFinal([0, 1, 2]), StringValueEncodingType.Base64);
+
+                // 2 segments
+                for (int i = 0; i <= 3; i++)
+                {
+                    for (int j = 0; j <= 3; j++)
+                    {
+                        WriteStringValueSegmentsHelper(
+                            jsonUtf8,
+                            AddPartial([..Enumerable.Range(0, i).Select(x => (byte)x)]),
+                            AddFinal([..Enumerable.Range(i, j).Select(x => (byte)x)]),
+                            StringValueEncodingType.Base64);
+                    }
+                }
+
+                // 3 segments
+                for (int i = 0; i <= 3; i++)
+                {
+                    for (int j = 0; j <= 3; j++)
+                    {
+                        for (int k = 0; k <= 3; k++)
+                        {
+                            WriteStringValueSegmentsHelper(
+                                jsonUtf8,
+                                AddPartial([..Enumerable.Range(0, i).Select(x => (byte)x)]),
+                                AddPartial([..Enumerable.Range(i, j).Select(x => (byte)x)]),
+                                AddFinal([.. Enumerable.Range(i + j, k).Select(x => (byte)x)]),
+                                StringValueEncodingType.Base64);
+                        }
+                    }
+                }
+
+                // Remove trailing comma
+                expected.Remove(expected.Length - 1, 1);
+
+                jsonUtf8.WriteEndArray();
+                expected.Append(']');
+
+                jsonUtf8.Flush();
+
+                // First code point is written and the second is replaced.
+                JsonTestHelper.AssertContents(expected.ToString(), output);
+            }
+        }
+
+        [Fact]
         public static void WriteStringValueSegment_Flush()
         {
             var noEscape = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
-            TestFlushImpl('\uD800', '\uDC00', new(), @"""\uD800\uDC00""");
-            TestFlushImpl<byte>(0b110_11111, 0b10_111111, new(), @"""\u07FF""");
-            TestFlushImpl<byte>(0b110_11111, 0b10_111111, new() { Encoder = noEscape }, "\"\u07FF\"");
+            TestFlushImpl(['\uD800'], ['\uDC00'], new(), @"""\uD800\uDC00""", StringValueEncodingType.Utf16);
+            TestFlushImpl<byte>([0b110_11111], [0b10_111111], new(), @"""\u07FF""", StringValueEncodingType.Utf8);
+            TestFlushImpl<byte>([0b110_11111], [0b10_111111], new() { Encoder = noEscape }, "\"\u07FF\"", StringValueEncodingType.Utf8);
+            TestFlushImpl<byte>([], [0, 0, 0], new(), "\"AAAA\"", StringValueEncodingType.Base64);
+            TestFlushImpl<byte>([0], [0, 0], new(), "\"AAAA\"", StringValueEncodingType.Base64);
+            TestFlushImpl<byte>([0, 0], [0], new(), "\"AAAA\"", StringValueEncodingType.Base64);
 
-            void TestFlushImpl<T>(T unit1, T unit2, JsonWriterOptions options, string expected)
+            void TestFlushImpl<T>(ReadOnlySpan<T> unit1, ReadOnlySpan<T> unit2, JsonWriterOptions options, string expected, StringValueEncodingType encoding)
                 where T : struct
             {
                 byte[] expectedBytes = Encoding.UTF8.GetBytes(expected);
                 var output = new ArrayBufferWriter<byte>();
                 using Utf8JsonWriter jsonUtf8 = new(output, options);
 
-                WriteStringValueSegmentHelper(jsonUtf8, [unit1], false);
+                WriteStringValueSegmentHelper(jsonUtf8, unit1, false, encoding);
 
                 Assert.Equal(0, output.WrittenCount);
                 Assert.Equal(0, jsonUtf8.BytesCommitted);
@@ -738,7 +907,7 @@ namespace System.Text.Json.Tests
                 Assert.Equal(1, jsonUtf8.BytesCommitted);
                 Assert.Equal(0, jsonUtf8.BytesPending);
 
-                WriteStringValueSegmentHelper(jsonUtf8, [unit2], true);
+                WriteStringValueSegmentHelper(jsonUtf8, unit2, true, encoding);
 
                 Assert.Equal(1, output.WrittenCount);
                 Assert.Equal(1, jsonUtf8.BytesCommitted);
@@ -814,6 +983,36 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        public static void WriteStringValueSegment_Base64_Reset()
+        {
+            var output = new ArrayBufferWriter<byte>();
+            using var jsonUtf8 = new Utf8JsonWriter(output);
+
+            jsonUtf8.WriteBase64StringSegment([0], false);
+            jsonUtf8.Flush();
+
+            Assert.Equal(0, jsonUtf8.BytesPending);
+            Assert.Equal(1, jsonUtf8.BytesCommitted);
+
+            jsonUtf8.Reset();
+
+            Assert.Equal(0, jsonUtf8.BytesPending);
+            Assert.Equal(0, jsonUtf8.BytesCommitted);
+
+            jsonUtf8.WriteBase64StringSegment([0, 0, 0], true);
+
+            string expected = @"""AAAA""";
+            Assert.Equal(expected.Length, jsonUtf8.BytesPending);
+            Assert.Equal(0, jsonUtf8.BytesCommitted);
+
+            jsonUtf8.Flush();
+
+            Assert.Equal(0, jsonUtf8.BytesPending);
+            Assert.Equal(expected.Length, jsonUtf8.BytesCommitted);
+            JsonTestHelper.AssertContents('"' + expected, output);
+        }
+
+        [Fact]
         public static void WriteStringValueSegment_MixEncoding()
         {
             {
@@ -830,8 +1029,48 @@ namespace System.Text.Json.Tests
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output);
 
+                // High surrogate
+                jsonUtf8.WriteStringValueSegment("\uD8D8".AsSpan(), false);
+
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteBase64StringSegment([0], true));
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+
                 // Start of a 3-byte sequence
                 jsonUtf8.WriteStringValueSegment([0b1110_1111], false);
+
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment("\u8080".AsSpan(), true));
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+
+                // Start of a 3-byte sequence
+                jsonUtf8.WriteStringValueSegment([0b1110_1111], false);
+
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteBase64StringSegment([0], true));
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+
+                // Partial Base64
+                jsonUtf8.WriteBase64StringSegment([0], false);
+
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment([0b10_111111], true));
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+
+                // Partial Base64
+                jsonUtf8.WriteBase64StringSegment([0], false);
 
                 Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment("\u8080".AsSpan(), true));
             }
@@ -855,6 +1094,22 @@ namespace System.Text.Json.Tests
             {
                 var output = new ArrayBufferWriter<byte>();
                 using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStringValueSegment([0b110_11111], false);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"", output);
+
+                // Writing empty base64 sequence will still keep the partial code point
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, false);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"", output);
+
+                // Writing empty UTF-8 sequence will throw
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteBase64StringSegment(ReadOnlySpan<byte>.Empty, false));
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
                 jsonUtf8.WriteStringValueSegment(['\uD800'], false);
                 jsonUtf8.Flush();
                 JsonTestHelper.AssertContents("\"", output);
@@ -864,8 +1119,56 @@ namespace System.Text.Json.Tests
                 jsonUtf8.Flush();
                 JsonTestHelper.AssertContents("\"", output);
 
-                // Writing empty UTF-8 sequence will dump the partial UTF-16 code point
+                // Writing empty UTF-8 sequence will throw
                 Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, false));
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteStringValueSegment(['\uD800'], false);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"", output);
+
+                // Writing empty UTF-16 sequence will still keep the partial code point
+                jsonUtf8.WriteStringValueSegment(ReadOnlySpan<char>.Empty, false);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"", output);
+
+                // Writing empty base64 sequence will throw
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteBase64StringSegment(ReadOnlySpan<byte>.Empty, false));
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteBase64StringSegment([0], false);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"", output);
+
+                // Writing empty base64 sequence will still keep the partial code point
+                jsonUtf8.WriteBase64StringSegment(ReadOnlySpan<byte>.Empty, false);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"", output);
+
+                // Writing empty UTF-8 sequence will throw
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment(ReadOnlySpan<byte>.Empty, false));
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteBase64StringSegment([0], false);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"", output);
+
+                // Writing empty base64 sequence will still keep the partial code point
+                jsonUtf8.WriteBase64StringSegment(ReadOnlySpan<byte>.Empty, false);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"", output);
+
+                // Writing empty UTF-16 sequence will throw
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStringValueSegment(ReadOnlySpan<char>.Empty, false));
             }
         }
 
@@ -941,146 +1244,191 @@ namespace System.Text.Json.Tests
                 jsonUtf8.Flush();
                 JsonTestHelper.AssertContents("\"\"", output);
             }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteBase64StringSegment([], true);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"\"", output);
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteBase64StringSegment([], false);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"", output);
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteBase64StringSegment([], false);
+                jsonUtf8.WriteBase64StringSegment([], true);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"\"", output);
+            }
+
+            {
+                var output = new ArrayBufferWriter<byte>();
+                using var jsonUtf8 = new Utf8JsonWriter(output);
+                jsonUtf8.WriteBase64StringSegment([], false);
+                jsonUtf8.WriteBase64StringSegment([], false);
+                jsonUtf8.WriteBase64StringSegment([], true);
+                jsonUtf8.Flush();
+                JsonTestHelper.AssertContents("\"\"", output);
+            }
         }
 
-        // Switch this to use an enum discriminator input when base64 is supported
-        private static void WriteStringValueHelper<T>(Utf8JsonWriter writer, ReadOnlySpan<T> value)
-            where T : struct
+        enum StringValueEncodingType
         {
-            if (typeof(T) == typeof(char))
-            {
-                writer.WriteStringValue(MemoryMarshal.Cast<T, char>(value));
-            }
-            else if (typeof(T) == typeof(byte))
-            {
-                writer.WriteStringValue(MemoryMarshal.Cast<T, byte>(value));
-            }
-            else
+            Utf8,
+            Utf16,
+            Base64,
+        }
+
+        private static void EnsureByteOrChar<T>([CallerMemberName]string caller = "<unknown>")
+        {
+            if (typeof(T) != typeof(byte) && typeof(T) != typeof(char))
             {
                 if (typeof(T) == typeof(int))
                 {
-                    Assert.Fail($"Did you pass in int or int[] instead of byte or byte[]? Type {typeof(T)} is not supported by {nameof(WriteStringValueHelper)}.");
+                    Assert.Fail($"Did you pass in int or int[] instead of byte or byte[]? Type {typeof(T)} is not supported by {caller}.");
                 }
-                else
-                {
-                    Assert.Fail($"Type {typeof(T)} is not supported by {nameof(WriteStringValueHelper)}.");
-                }
+
+                Assert.Fail($"Type {typeof(T)} is not supported by {caller}.");
+            }
+        }
+
+        private static void WriteStringValueHelper<T>(Utf8JsonWriter writer, ReadOnlySpan<T> value, StringValueEncodingType encoding)
+            where T : struct
+        {
+            EnsureByteOrChar<T>();
+
+            switch (encoding)
+            {
+                case StringValueEncodingType.Utf16:
+                    writer.WriteStringValue(MemoryMarshal.Cast<T, char>(value));
+                    break;
+                case StringValueEncodingType.Utf8:
+                    writer.WriteStringValue(MemoryMarshal.Cast<T, byte>(value));
+                    break;
+                case StringValueEncodingType.Base64:
+                    writer.WriteBase64StringValue(MemoryMarshal.Cast<T, byte>(value));
+                    break;
+                default:
+                    Assert.Fail($"Encoding {encoding} not valid.");
+                    break;
+            }
+        }
+
+        private static void WriteStringValueSegmentHelper<T>(Utf8JsonWriter writer, ReadOnlySpan<T> value, bool isFinal, StringValueEncodingType encoding)
+            where T : struct
+        {
+            EnsureByteOrChar<T>();
+
+            switch (encoding)
+            {
+                case StringValueEncodingType.Utf16:
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value), isFinal);
+                    break;
+                case StringValueEncodingType.Utf8:
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value), isFinal);
+                    break;
+                case StringValueEncodingType.Base64:
+                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value), isFinal);
+                    break;
+                default:
+                    Assert.Fail($"Encoding {encoding} not valid.");
+                    break;
+            }
+        }
+
+        private static void WriteStringValueSegmentsHelper<T>(Utf8JsonWriter writer, ReadOnlySpan<T> value, StringValueEncodingType encoding)
+            where T : struct
+        {
+            EnsureByteOrChar<T>();
+
+            switch (encoding)
+            {
+                case StringValueEncodingType.Utf16:
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value), true);
+                    break;
+                case StringValueEncodingType.Utf8:
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value), true);
+                    break;
+                case StringValueEncodingType.Base64:
+                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value), true);
+                    break;
+                default:
+                    Assert.Fail($"Encoding {encoding} not valid.");
+                    break;
             }
         }
 
         // Switch this to use an enum discriminator input when base64 is supported
-        private static void WriteStringValueSegmentHelper<T>(Utf8JsonWriter writer, ReadOnlySpan<T> value, bool isFinal)
+        private static void WriteStringValueSegmentsHelper<T>(Utf8JsonWriter writer, ReadOnlySpan<T> value1, ReadOnlySpan<T> value2, StringValueEncodingType encoding)
             where T : struct
         {
-            if (typeof(T) == typeof(char))
+            EnsureByteOrChar<T>();
+
+            switch (encoding)
             {
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value), isFinal);
-            }
-            else if (typeof(T) == typeof(byte))
-            {
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value), isFinal);
-            }
-            else
-            {
-                if (typeof(T) == typeof(int))
-                {
-                    Assert.Fail($"Did you pass in int or int[] instead of byte or byte[]? Type {typeof(T)} is not supported by {nameof(WriteStringValueSegmentsHelper)}.");
-                }
-                else
-                {
-                    Assert.Fail($"Type {typeof(T)} is not supported by {nameof(WriteStringValueSegmentsHelper)}.");
-                }
+                case StringValueEncodingType.Utf16:
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value1), false);
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value2), true);
+                    break;
+                case StringValueEncodingType.Utf8:
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value1), false);
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value2), true);
+                    break;
+                case StringValueEncodingType.Base64:
+                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value1), false);
+                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value2), true);
+                    break;
+                default:
+                    Assert.Fail($"Encoding {encoding} not valid.");
+                    break;
             }
         }
 
         // Switch this to use an enum discriminator input when base64 is supported
-        private static void WriteStringValueSegmentsHelper<T>(Utf8JsonWriter writer, ReadOnlySpan<T> value)
+        private static void WriteStringValueSegmentsHelper<T>(Utf8JsonWriter writer, ReadOnlySpan<T> value1, ReadOnlySpan<T> value2, ReadOnlySpan<T> value3, StringValueEncodingType encoding)
             where T : struct
         {
-            if (typeof(T) == typeof(char))
+            EnsureByteOrChar<T>();
+
+            switch (encoding)
             {
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value), true);
-            }
-            else if (typeof(T) == typeof(byte))
-            {
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value), true);
-            }
-            else
-            {
-                if (typeof(T) == typeof(int))
-                {
-                    Assert.Fail($"Did you pass in int or int[] instead of byte or byte[]? Type {typeof(T)} is not supported by {nameof(WriteStringValueSegmentsHelper)}.");
-                }
-                else
-                {
-                    Assert.Fail($"Type {typeof(T)} is not supported by {nameof(WriteStringValueSegmentsHelper)}.");
-                }
+                case StringValueEncodingType.Utf16:
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value1), false);
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value2), false);
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value3), true);
+                    break;
+                case StringValueEncodingType.Utf8:
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value1), false);
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value2), false);
+                    writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value3), true);
+                    break;
+                case StringValueEncodingType.Base64:
+                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value1), false);
+                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value2), false);
+                    writer.WriteBase64StringSegment(MemoryMarshal.Cast<T, byte>(value3), true);
+                    break;
+                default:
+                    Assert.Fail($"Encoding {encoding} not valid.");
+                    break;
             }
         }
 
-        // Switch this to use an enum discriminator input when base64 is supported
-        private static void WriteStringValueSegmentsHelper<T>(Utf8JsonWriter writer, ReadOnlySpan<T> value1, ReadOnlySpan<T> value2)
-            where T : struct
-        {
-            if (typeof(T) == typeof(char))
-            {
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value1), false);
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value2), true);
-            }
-            else if (typeof(T) == typeof(byte))
-            {
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value1), false);
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value2), true);
-            }
-            else
-            {
-                if (typeof(T) == typeof(int))
-                {
-                    Assert.Fail($"Did you pass in int or int[] instead of byte or byte[]? Type {typeof(T)} is not supported by {nameof(WriteStringValueSegmentsHelper)}.");
-                }
-                else
-                {
-                    Assert.Fail($"Type {typeof(T)} is not supported by {nameof(WriteStringValueSegmentsHelper)}.");
-                }
-            }
-        }
+        private static void WriteStringValueSegmentsHelper(Utf8JsonWriter writer, string value, StringValueEncodingType encoding)
+            => WriteStringValueSegmentsHelper(writer, value.AsSpan(), encoding);
 
-        // Switch this to use an enum discriminator input when base64 is supported
-        private static void WriteStringValueSegmentsHelper<T>(Utf8JsonWriter writer, ReadOnlySpan<T> value1, ReadOnlySpan<T> value2, ReadOnlySpan<T> value3)
-            where T : struct
-        {
-            if (typeof(T) == typeof(char))
-            {
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value1), false);
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value2), false);
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, char>(value3), true);
-            }
-            else if (typeof(T) == typeof(byte))
-            {
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value1), false);
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value2), false);
-                writer.WriteStringValueSegment(MemoryMarshal.Cast<T, byte>(value3), true);
-            }
-            else
-            {
-                if (typeof(T) == typeof(int))
-                {
-                    Assert.Fail($"Did you pass in int or int[] instead of byte or byte[]? Type {typeof(T)} is not supported by {nameof(WriteStringValueSegmentsHelper)}.");
-                }
-                else
-                {
-                    Assert.Fail($"Type {typeof(T)} is not supported by {nameof(WriteStringValueSegmentsHelper)}.");
-                }
-            }
-        }
+        private static void WriteStringValueSegmentsHelper(Utf8JsonWriter writer, string value1, string value2, StringValueEncodingType encoding)
+            => WriteStringValueSegmentsHelper(writer, value1.AsSpan(), value2.AsSpan(), encoding);
 
-        private static void WriteStringValueSegmentsHelper(Utf8JsonWriter writer, string value)
-            => WriteStringValueSegmentsHelper(writer, value.AsSpan());
-
-        private static void WriteStringValueSegmentsHelper(Utf8JsonWriter writer, string value1, string value2)
-            => WriteStringValueSegmentsHelper(writer, value1.AsSpan(), value2.AsSpan());
-
-        private static void WriteStringValueSegmentsHelper(Utf8JsonWriter writer, string value1, string value2, string value3)
-            => WriteStringValueSegmentsHelper(writer, value1.AsSpan(), value2.AsSpan(), value3.AsSpan());
+        private static void WriteStringValueSegmentsHelper(Utf8JsonWriter writer, string value1, string value2, string value3, StringValueEncodingType encoding)
+            => WriteStringValueSegmentsHelper(writer, value1.AsSpan(), value2.AsSpan(), value3.AsSpan(), encoding);
     }
 }

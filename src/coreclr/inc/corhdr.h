@@ -288,6 +288,7 @@ typedef enum CorTypeAttr
     tdAutoLayout            =   0x00000000,     // Class fields are auto-laid out
     tdSequentialLayout      =   0x00000008,     // Class fields are laid out sequentially
     tdExplicitLayout        =   0x00000010,     // Layout is supplied explicitly
+    tdExtendedLayout        =   0x00000018,     // Layout is supplied via the System.Runtime.InteropServices.ExtendedLayoutAttribute
     // end layout mask
 
     // Use this mask to retrieve class semantics information.
@@ -325,6 +326,10 @@ typedef enum CorTypeAttr
     tdHasSecurity           =   0x00040000,     // Class has security associate with it.
 } CorTypeAttr;
 
+enum class CorExtendedLayoutKind
+{
+    CStruct = 0, // C-style struct
+};
 
 // Macros for accessing the members of the CorTypeAttr.
 #define IsTdNotPublic(x)                    (((x) & tdVisibilityMask) == tdNotPublic)
@@ -340,6 +345,7 @@ typedef enum CorTypeAttr
 #define IsTdAutoLayout(x)                   (((x) & tdLayoutMask) == tdAutoLayout)
 #define IsTdSequentialLayout(x)             (((x) & tdLayoutMask) == tdSequentialLayout)
 #define IsTdExplicitLayout(x)               (((x) & tdLayoutMask) == tdExplicitLayout)
+#define IsTdExtendedLayout(x)               (((x) & tdLayoutMask) == tdExtendedLayout)
 
 #define IsTdClass(x)                        (((x) & tdClassSemanticsMask) == tdClass)
 #define IsTdInterface(x)                    (((x) & tdClassSemanticsMask) == tdInterface)
@@ -640,13 +646,15 @@ typedef enum CorMethodImpl
     miNoOptimization     =   0x0040,   // Method may not be optimized.
     miAggressiveOptimization = 0x0200, // Method may contain hot code and should be aggressively optimized.
 
+    miAsync              =   0x2000,   // Method requires async state machine rewrite.
+
     // These are the flags that are allowed in MethodImplAttribute's Value
     // property. This should include everything above except the code impl
     // flags (which are used for MethodImplAttribute's MethodCodeType field).
     miUserMask           =   miManagedMask | miForwardRef | miPreserveSig |
                              miInternalCall | miSynchronized |
                              miNoInlining | miAggressiveInlining |
-                             miNoOptimization | miAggressiveOptimization,
+                             miNoOptimization | miAggressiveOptimization | miAsync,
 
     miMaxMethodImplVal   =   0xffff,   // Range check value
 } CorMethodImpl;
@@ -670,6 +678,7 @@ typedef enum CorMethodImpl
 #define IsMiAggressiveInlining(x)           ((x) & miAggressiveInlining)
 #define IsMiNoOptimization(x)               ((x) & miNoOptimization)
 #define IsMiAggressiveOptimization(x)       (((x) & (miAggressiveOptimization | miNoOptimization)) == miAggressiveOptimization)
+#define IsMiAsync(x)                        ((x) & miAsync)
 
 // PinvokeMap attr bits, used by DefinePinvokeMap.
 typedef enum  CorPinvokeMap
@@ -972,7 +981,8 @@ typedef enum CorCallingConvention
     IMAGE_CEE_CS_CALLCONV_UNMANAGED     = 0x9,  // Unmanaged calling convention encoded as modopts
     IMAGE_CEE_CS_CALLCONV_GENERICINST   = 0xa,  // generic method instantiation
     IMAGE_CEE_CS_CALLCONV_NATIVEVARARG  = 0xb,  // used ONLY for 64bit vararg PInvoke calls
-    IMAGE_CEE_CS_CALLCONV_MAX           = 0xc,  // first invalid calling convention
+    IMAGE_CEE_CS_CALLCONV_ASYNC         = 0xc,  // used for calli in IL stubs
+    IMAGE_CEE_CS_CALLCONV_MAX           = 0xd,  // first invalid calling convention
 
 
         // The high bits of the calling convention convey additional info
@@ -1136,12 +1146,11 @@ typedef struct IMAGE_COR_ILMETHOD_SECT_FAT
 typedef enum CorExceptionFlag                       // definitions for the Flags field below (for both big and small)
 {
     COR_ILEXCEPTION_CLAUSE_NONE,                    // This is a typed handler
-    COR_ILEXCEPTION_CLAUSE_OFFSETLEN = 0x0000,      // Deprecated
-    COR_ILEXCEPTION_CLAUSE_DEPRECATED = 0x0000,     // Deprecated
     COR_ILEXCEPTION_CLAUSE_FILTER  = 0x0001,        // If this bit is on, then this EH entry is for a filter
     COR_ILEXCEPTION_CLAUSE_FINALLY = 0x0002,        // This clause is a finally clause
     COR_ILEXCEPTION_CLAUSE_FAULT = 0x0004,          // Fault clause (finally that is called on exception only)
-    COR_ILEXCEPTION_CLAUSE_DUPLICATED = 0x0008,     // duplicated clause. This clause was duplicated to a funclet which was pulled out of line
+    COR_ILEXCEPTION_CLAUSE_DUPLICATED = 0x0008,     // Deprecated: Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
+    COR_ILEXCEPTION_CLAUSE_SAMETRY    = 0x0010,     // This clause covers same try block as the previous one
 } CorExceptionFlag;
 
 /***********************************/
@@ -1680,6 +1689,8 @@ typedef enum CorAttributeTargets
 // Keep in sync with RuntimeCompatibilityAttribute.cs
 #define RUNTIMECOMPATIBILITY_TYPE_W             W("System.Runtime.CompilerServices.RuntimeCompatibilityAttribute")
 #define RUNTIMECOMPATIBILITY_TYPE               "System.Runtime.CompilerServices.RuntimeCompatibilityAttribute"
+#define RUNTIMECOMPATIBILITY_TYPE_NAMESPACE     "System.Runtime.CompilerServices"
+#define RUNTIMECOMPATIBILITY_TYPE_NAME          "RuntimeCompatibilityAttribute"
 
 
 // Keep in sync with AssemblySettingAttributes.cs

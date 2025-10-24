@@ -26,10 +26,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteCommentValue(string value)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
             WriteCommentValue(value.AsSpan());
         }
 

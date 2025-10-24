@@ -6,7 +6,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup;
 using Microsoft.DotNet.CoreSetup.Test;
+using Microsoft.NET.HostModel.Bundle;
 using Xunit;
 
 namespace AppHost.Bundle.Tests
@@ -80,6 +82,34 @@ namespace AppHost.Bundle.Tests
             }
         }
 
+        [Fact]
+        private void NonAsciiCharacterSelfContainedApp()
+        {
+            // Bundle to a single-file
+            bool selfContained = true;
+            string singleFile = sharedTestState.SpecialCharacterSelfContainedApp.Bundle();
+
+            // Run the bundled app
+            RunTheApp(singleFile, selfContained);
+
+            if (OperatingSystem.IsMacOS())
+            {
+                string fatApp = MakeUniversalBinary(singleFile, RuntimeInformation.OSArchitecture);
+
+                // Run the fat app
+                RunTheApp(fatApp, selfContained);
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                // StandaloneApp sets FileVersion to NETCoreApp version. On Windows, this should be copied to singlefilehost resources.
+                string expectedVersion = TestContext.MicrosoftNETCoreAppVersion.Contains('-')
+                    ? TestContext.MicrosoftNETCoreAppVersion[..TestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
+                    : TestContext.MicrosoftNETCoreAppVersion;
+                Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
+            }
+        }
+
         [ConditionalTheory(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
         [InlineData(true)]
         [InlineData(false)]
@@ -121,21 +151,83 @@ namespace AppHost.Bundle.Tests
             RunTheApp(singleFile, selfContained);
         }
 
+        [Fact]
+        public void FrameworkDependent_NoBundleEntryPoint()
+        {
+            var singleFile = sharedTestState.FrameworkDependentApp.Bundle();
+
+            using (var dotnetWithMockHostFxr = TestArtifact.Create("mockhostfxrFrameworkMissingFailure"))
+            {
+                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
+                    .RemoveHostFxr()
+                    .AddMockHostFxr(new Version(2, 2, 0))
+                    .Build();
+
+                // Run the bundled app
+                Command.Create(singleFile)
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .DotNetRoot(dotnet.BinPath)
+                    .Execute()
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("You must install or update .NET to run this application.")
+                    .And.HaveStdErrContaining("App host version:")
+                    .And.HaveStdErrContaining("apphost_version=");
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
+        public void FrameworkDependent_GUI_DownlevelHostFxr_ErrorDialog()
+        {
+            var singleFile = sharedTestState.FrameworkDependentApp.Bundle();
+            Microsoft.NET.HostModel.AppHost.PEUtils.SetWindowsGraphicalUserInterfaceBit(singleFile);
+
+            // The mockhostfxrBundleVersionFailure folder name is used by mock hostfxr to return the appropriate error code
+            using (var dotnetWithMockHostFxr = TestArtifact.Create("mockhostfxrBundleVersionFailure"))
+            {
+                string expectedErrorCode = Constants.ErrorCode.BundleExtractionFailure.ToString("x");
+
+                var dotnet = new DotNetBuilder(dotnetWithMockHostFxr.Location, TestContext.BuiltDotNet.BinPath, null)
+                    .RemoveHostFxr()
+                    .AddMockHostFxr(new Version(5, 0, 0))
+                    .Build();
+
+                Command command = Command.Create(singleFile)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(dotnet.BinPath, TestContext.BuildArchitecture)
+                    .Start();
+
+                WindowsUtils.WaitForPopupFromProcess(command.Process);
+                command.Process.Kill();
+
+                command
+                    .WaitForExit()
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("Bundle header version compatibility check failed.")
+                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(singleFile)}' - error code: 0x{expectedErrorCode}")
+                    .And.HaveStdErrContaining("apphost_version=");
+            }
+        }
+
         public class SharedTestState : IDisposable
         {
             public SingleFileTestApp FrameworkDependentApp { get; }
             public SingleFileTestApp SelfContainedApp { get; }
+            public SingleFileTestApp SpecialCharacterSelfContainedApp { get; }
 
             public SharedTestState()
             {
                 FrameworkDependentApp = SingleFileTestApp.CreateFrameworkDependent("HelloWorld");
                 SelfContainedApp = SingleFileTestApp.CreateSelfContained("HelloWorld");
+                SpecialCharacterSelfContainedApp = SingleFileTestApp.CreateSelfContained("HelloWorld_中文");
             }
 
             public void Dispose()
             {
                 FrameworkDependentApp.Dispose();
                 SelfContainedApp.Dispose();
+                SpecialCharacterSelfContainedApp.Dispose();
             }
         }
     }

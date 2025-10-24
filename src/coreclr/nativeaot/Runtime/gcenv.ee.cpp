@@ -63,7 +63,7 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
     // This is needed to synchronize threads that were running in preemptive mode while
     // the runtime was suspended and that will return to cooperative mode after the runtime
     // is restarted.
-    ::FlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 #endif // !defined(TARGET_X86) && !defined(TARGET_AMD64)
 
     SyncClean::CleanUp();
@@ -399,23 +399,23 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //     On architectures with strong ordering, we only need to prevent compiler reordering.
         //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
 
-#if defined(HOST_ARM64) || defined(HOST_ARM)
+#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
             // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
-            FlushProcessWriteBuffers();
+            minipal_memory_barrier_process_wide();
         }
 #endif
 
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
 
-#if defined(HOST_ARM64) || defined(HOST_ARM)
+#if defined(HOST_ARM64) || defined(HOST_ARM) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
-            FlushProcessWriteBuffers();
+            minipal_memory_barrier_process_wide();
         }
 #endif
         return;
@@ -574,7 +574,7 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
 
     // Helper used to wrap the start routine of GC threads so we can do things like initialize the
     // thread state which requires running in the new thread's context.
-    auto threadStub = [](void* argument) -> DWORD
+    auto threadStub = [](void* argument) -> uint32_t
         {
             ThreadStore::RawGetCurrentThread()->SetGCSpecial();
 
@@ -618,7 +618,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
 
     // Helper used to wrap the start routine of background GC threads so we can do things like initialize the
     // thread state which requires running in the new thread's context.
-    auto threadStub = [](void* argument) -> DWORD
+    auto threadStub = [](void* argument) -> uint32_t
         {
             ThreadStubArguments* pStartContext = (ThreadStubArguments*)argument;
 
@@ -807,6 +807,13 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
 void GCToEEInterface::FreeStringConfigValue(const char* value)
 {
     delete[] value;
+}
+
+void GCToEEInterface::TriggerClientBridgeProcessing(MarkCrossReferencesArgs* args)
+{
+#ifdef FEATURE_JAVAMARSHAL
+    JavaMarshalNative::TriggerClientBridgeProcessing(args);
+#endif
 }
 
 #endif // !DACCESS_COMPILE

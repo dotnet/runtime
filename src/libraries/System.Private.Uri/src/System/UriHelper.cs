@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -10,13 +12,28 @@ namespace System
 {
     internal static class UriHelper
     {
-        public static unsafe string SpanToLowerInvariantString(ReadOnlySpan<char> span)
+        public static string SpanToLowerInvariantString(ReadOnlySpan<char> span)
         {
             return string.Create(span.Length, span, static (buffer, span) =>
             {
                 int charsWritten = span.ToLowerInvariant(buffer);
                 Debug.Assert(charsWritten == buffer.Length);
             });
+        }
+
+        public static string NormalizeAndConcat(string? start, ReadOnlySpan<char> toNormalize)
+        {
+            var vsb = new ValueStringBuilder(stackalloc char[Uri.StackallocThreshold]);
+
+            int charsWritten;
+            while (!toNormalize.TryNormalize(vsb.RawChars, out charsWritten, NormalizationForm.FormC))
+            {
+                vsb.EnsureCapacity(vsb.Capacity + 1);
+            }
+
+            string result = string.Concat(start, vsb.RawChars.Slice(0, charsWritten));
+            vsb.Dispose();
+            return result;
         }
 
         // http://host/Path/Path/File?Query is the base of
@@ -212,7 +229,7 @@ namespace System
             return result;
         }
 
-        internal static unsafe void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
+        internal static void EscapeString(scoped ReadOnlySpan<char> stringToEscape, ref ValueStringBuilder dest,
             bool checkExistingEscaped, SearchValues<char> noEscape)
         {
             Debug.Assert(!noEscape.Contains('%'), "Need to treat % specially; it should be part of any escaped set");
@@ -365,7 +382,7 @@ namespace System
         {
             if ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.CopyOnly)
             {
-                dest.Append(pStr + start, end - start);
+                dest.Append(new ReadOnlySpan<char>(pStr + start, end - start));
                 return;
             }
 
@@ -423,8 +440,7 @@ namespace System
                                 next += 2;
                                 continue;
                             }
-                            else if (iriParsing && ((ch <= '\x9F' && IsNotSafeForUnescape(ch)) ||
-                                                    (ch > '\x9F' && !IriHelper.CheckIriUnicodeRange(ch, isQuery))))
+                            else if (iriParsing && (ch <= '\x9F' ? IsNotSafeForUnescape(ch) : !IriHelper.CheckIriUnicodeRange(ch, isQuery)))
                             {
                                 // check if unenscaping gives a char outside iri range
                                 // if it does then keep it escaped
@@ -530,38 +546,29 @@ namespace System
             return (char)((a << 4) | b);
         }
 
-        internal const string RFC3986ReservedMarks = @";/?:@&=+$,#[]!'()*";
-        private const string AdditionalUnsafeToUnescape = @"%\#"; // While not specified as reserved, these are still unsafe to unescape.
-
         // When unescaping in safe mode, do not unescape the RFC 3986 reserved set:
+        // reserved    = gen-delims / sub-delims
         // gen-delims  = ":" / "/" / "?" / "#" / "[" / "]" / "@"
         // sub-delims  = "!" / "$" / "&" / "'" / "(" / ")"
         //             / "*" / "+" / "," / ";" / "="
         //
         // In addition, do not unescape the following unsafe characters:
         // excluded    = "%" / "\"
-        //
-        // This implementation used to use the following variant of the RFC 2396 reserved set.
-        // That behavior is now disabled by default, and is controlled by a UriSyntax property.
-        // reserved    = ";" | "/" | "?" | "@" | "&" | "=" | "+" | "$" | ","
-        // excluded    = control | "#" | "%" | "\"
-        internal static bool IsNotSafeForUnescape(char ch)
-        {
-            if (ch <= '\x1F' || (ch >= '\x7F' && ch <= '\x9F'))
-            {
-                return true;
-            }
+        internal static bool IsNotSafeForUnescape(char ch) =>
+            s_notSafeForUnescapeChars.Contains(ch);
 
-            const string NotSafeForUnescape = RFC3986ReservedMarks + AdditionalUnsafeToUnescape;
+        private static readonly SearchValues<char> s_notSafeForUnescapeChars = SearchValues.Create(
+            "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\u0009\u000A\u000B\u000C\u000D\u000E\u000F" +
+            "\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F" +
+            ";/?:@&=+$,#[]!'()*" + "%\\" + "\u007F" +
+            "\u0080\u0081\u0082\u0083\u0084\u0085\u0086\u0087\u0088\u0089\u008A\u008B\u008C\u008D\u008E\u008F" +
+            "\u0090\u0091\u0092\u0093\u0094\u0095\u0096\u0097\u0098\u0099\u009A\u009B\u009C\u009D\u009E\u009F");
 
-            return NotSafeForUnescape.Contains(ch);
-        }
-
-        // true for all ASCII letters and digits, as well as the RFC3986 unreserved marks '-', '_', '.', and '~'
+        /// <summary>All ASCII letters and digits, as well as the RFC3986 unreserved marks '-', '_', '.', and '~'.</summary>
         public static readonly SearchValues<char> Unreserved =
             SearchValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~");
 
-        // true for all ASCII letters and digits, as well as the RFC3986 reserved characters, unreserved characters, and hash
+        /// <summary>All ASCII letters and digits, as well as the RFC3986 reserved and unreserved marks.</summary>
         public static readonly SearchValues<char> UnreservedReserved =
             SearchValues.Create("!#$&'()*+,-./0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
 
@@ -570,14 +577,6 @@ namespace System
 
         public static readonly SearchValues<char> UnreservedReservedExceptQuestionMarkHash =
             SearchValues.Create("!$&'()*+,-./0123456789:;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]_abcdefghijklmnopqrstuvwxyz~");
-
-        //
-        // Is this a gen delim char from RFC 3986
-        //
-        internal static bool IsGenDelim(char ch)
-        {
-            return (ch == ':' || ch == '/' || ch == '?' || ch == '#' || ch == '[' || ch == ']' || ch == '@');
-        }
 
         internal static readonly char[] s_WSchars = new char[] { ' ', '\n', '\r', '\t' };
 
@@ -591,10 +590,20 @@ namespace System
             char.IsBetween(ch, '\u200E', '\u202E') && !char.IsBetween(ch, '\u2010', '\u2029');
 
         // Strip Bidirectional control characters from this string
-        internal static unsafe string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
+        public static string StripBidiControlCharacters(ReadOnlySpan<char> strToClean, string? backingString = null)
         {
             Debug.Assert(backingString is null || strToClean.Length == backingString.Length);
 
+            if (StripBidiControlCharacters(strToClean, out string? stripped))
+            {
+                return stripped;
+            }
+
+            return backingString ?? strToClean.ToString();
+        }
+
+        public static bool StripBidiControlCharacters(ReadOnlySpan<char> strToClean, [NotNullWhen(true)] out string? stripped)
+        {
             int charsToRemove = 0;
 
             int indexOfPossibleCharToRemove = strToClean.IndexOfAnyInRange('\u200E', '\u202E');
@@ -613,10 +622,11 @@ namespace System
             if (charsToRemove == 0)
             {
                 // Hot path
-                return backingString ?? new string(strToClean);
+                stripped = null;
+                return false;
             }
 
-            return string.Create(strToClean.Length - charsToRemove, strToClean, static (buffer, strToClean) =>
+            stripped = string.Create(strToClean.Length - charsToRemove, strToClean, static (buffer, strToClean) =>
             {
                 int destIndex = 0;
                 foreach (char c in strToClean)
@@ -628,6 +638,164 @@ namespace System
                 }
                 Debug.Assert(buffer.Length == destIndex);
             });
+            return true;
+        }
+
+        // This will compress any "\" "/../" "/./" "///" "/..../" /XXX.../, etc found in the input
+        //
+        // The passed options control whether to use aggressive compression or the one specified in RFC 2396
+        public static int Compress(Span<char> span, bool convertPathSlashes, bool canonicalizeAsFilePath)
+        {
+            if (span.IsEmpty)
+            {
+                return 0;
+            }
+
+            if (convertPathSlashes)
+            {
+                span.Replace('\\', '/');
+            }
+
+            ValueListBuilder<(int Start, int Length)> removedSegments = default;
+
+            int slashCount = 0;
+            int lastSlash = 0;
+            int dotCount = 0;
+            int removeSegments = 0;
+
+            for (int i = span.Length - 1; i >= 0; i--)
+            {
+                char ch = span[i];
+
+                // compress multiple '/' for file URI
+                if (ch == '/')
+                {
+                    ++slashCount;
+                }
+                else
+                {
+                    if (slashCount > 1)
+                    {
+                        // else preserve repeated slashes
+                        lastSlash = i + 1;
+                    }
+                    slashCount = 0;
+                }
+
+                if (ch == '.')
+                {
+                    ++dotCount;
+                    continue;
+                }
+                else if (dotCount != 0)
+                {
+                    bool skipSegment = canonicalizeAsFilePath && (dotCount > 2 || ch != '/');
+
+                    // Cases:
+                    // /./                  = remove this segment
+                    // /../                 = remove this segment, mark next for removal
+                    // /....x               = DO NOT TOUCH, leave as is
+                    // x.../                = DO NOT TOUCH, leave as is, except for V2 legacy mode
+                    if (!skipSegment && ch == '/')
+                    {
+                        if ((lastSlash == i + dotCount + 1 // "/..../"
+                                || (lastSlash == 0 && i + dotCount + 1 == span.Length)) // "/..."
+                            && (dotCount <= 2))
+                        {
+                            //  /./ or /.<eos> or /../ or /..<eos>
+                            removedSegments.Append((i + 1, dotCount + (lastSlash == 0 ? 0 : 1)));
+
+                            lastSlash = i;
+                            if (dotCount == 2)
+                            {
+                                // We have 2 dots in between like /../ or /..<eos>,
+                                // Mark next segment for removal and remove this /../ or /..
+                                ++removeSegments;
+                            }
+                            dotCount = 0;
+                            continue;
+                        }
+                    }
+                    // .NET 4.5 no longer removes trailing dots in a path segment x.../  or  x...<eos>
+                    dotCount = 0;
+
+                    // Here all other cases go such as
+                    // x.[..]y or /.[..]x or (/x.[...][/] && removeSegments !=0)
+                }
+
+                // Now we may want to remove a segment because of previous /../
+                if (ch == '/')
+                {
+                    if (removeSegments != 0)
+                    {
+                        removeSegments--;
+                        removedSegments.Append((i + 1, lastSlash - i));
+                    }
+
+                    lastSlash = i;
+                }
+            }
+
+            if (canonicalizeAsFilePath)
+            {
+                if (slashCount <= 1)
+                {
+                    if (removeSegments != 0 && span[0] != '/')
+                    {
+                        // remove first not rooted segment
+                        removedSegments.Append((0, lastSlash + 1));
+                    }
+                    else if (dotCount != 0)
+                    {
+                        // If final string starts with a segment looking like .[...]/ or .[...]<eos>
+                        // then we remove this first segment
+                        if (lastSlash == dotCount || (lastSlash == 0 && dotCount == span.Length))
+                        {
+                            removedSegments.Append((0, dotCount + (lastSlash == 0 ? 0 : 1)));
+                        }
+                    }
+                }
+            }
+
+            if (removedSegments.Length == 0)
+            {
+                return span.Length;
+            }
+
+            // Merge any remaining segments.
+            // Write and read offsets are only ever the same for the first segment.
+            // Copying the first section would no-op anyway, so we start with the first removed segment.
+            int writeOffset = removedSegments[^1].Start;
+            int readOffset = writeOffset;
+
+            for (int i = removedSegments.Length - 1; i >= 0; i--)
+            {
+                (int start, int length) = removedSegments[i];
+
+                Debug.Assert(start >= readOffset && length > 0 && start + length <= span.Length);
+
+                if (readOffset != start)
+                {
+                    Debug.Assert(readOffset > writeOffset);
+
+                    int segmentLength = start - readOffset;
+                    span.Slice(readOffset, segmentLength).CopyTo(span.Slice(writeOffset));
+                    writeOffset += segmentLength;
+                }
+
+                readOffset = start + length;
+            }
+
+            if (readOffset != span.Length)
+            {
+                Debug.Assert(readOffset > writeOffset);
+
+                span.Slice(readOffset).CopyTo(span.Slice(writeOffset));
+                writeOffset += span.Length - readOffset;
+            }
+
+            removedSegments.Dispose();
+            return writeOffset;
         }
     }
 }

@@ -33,6 +33,7 @@
 #include "typestring.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
+#include <minipal/memorybarrierprocesswide.h>
 
 #ifdef FEATURE_COMINTEROP
     #include "comcallablewrapper.h"
@@ -547,23 +548,21 @@ extern "C" void QCALLTYPE Buffer_Clear(void *dst, size_t length)
     memset(dst, 0, length);
 }
 
-FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
-{
-    FCALL_CONTRACT;
-
-    if (dst != src && byteCount != 0)
-        InlinedMemmoveGCRefsHelper(dst, src, byteCount);
-
-    FC_GC_POLL();
-}
-FCIMPLEND
-
 extern "C" void QCALLTYPE Buffer_MemMove(void *dst, void *src, size_t length)
 {
     QCALL_CONTRACT;
 
     memmove(dst, src, length);
 }
+
+FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
+{
+    FCALL_CONTRACT;
+
+    if (dst != src && byteCount != 0)
+        InlinedMemmoveGCRefsHelper(dst, src, byteCount);
+}
+FCIMPLEND
 
 //
 // GCInterface
@@ -580,8 +579,6 @@ FCIMPL0(INT64, GCInterface::GetTotalPauseDuration)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     return GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration();
 }
 FCIMPLEND
@@ -589,8 +586,6 @@ FCIMPLEND
 FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     GCMEMORYINFODATAREF objGCMemoryInfo = (GCMEMORYINFODATAREF)(ObjectToOBJECTREF (objUNSAFE));
 
@@ -622,8 +617,6 @@ FCIMPL0(UINT32, GCInterface::GetMemoryLoad)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     int result = (INT32)GCHeapUtilities::GetGCHeap()->GetMemoryLoad();
     return result;
 }
@@ -632,8 +625,6 @@ FCIMPLEND
 FCIMPL0(int, GCInterface::GetGcLatencyMode)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     int result = (INT32)GCHeapUtilities::GetGCHeap()->GetGcLatencyMode();
     return result;
@@ -644,8 +635,6 @@ FCIMPL1(int, GCInterface::SetGcLatencyMode, int newLatencyMode)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     return GCHeapUtilities::GetGCHeap()->SetGcLatencyMode(newLatencyMode);
 }
 FCIMPLEND
@@ -653,8 +642,6 @@ FCIMPLEND
 FCIMPL0(int, GCInterface::GetLOHCompactionMode)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     int result = (INT32)GCHeapUtilities::GetGCHeap()->GetLOHCompactionMode();
     return result;
@@ -665,8 +652,6 @@ FCIMPL1(void, GCInterface::SetLOHCompactionMode, int newLOHCompactionyMode)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     GCHeapUtilities::GetGCHeap()->SetLOHCompactionMode(newLOHCompactionyMode);
 }
 FCIMPLEND
@@ -676,8 +661,6 @@ FCIMPL2(FC_BOOL_RET, GCInterface::RegisterForFullGCNotification, UINT32 gen2Perc
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
-
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->RegisterForFullGCNotification(gen2Percentage, lohPercentage));
 }
 FCIMPLEND
@@ -686,7 +669,6 @@ FCIMPL0(FC_BOOL_RET, GCInterface::CancelFullGCNotification)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();
     FC_RETURN_BOOL(GCHeapUtilities::GetGCHeap()->CancelFullGCNotification());
 }
 FCIMPLEND
@@ -736,9 +718,7 @@ FCIMPL1(int, GCInterface::GetGenerationInternal, Object* objUNSAFE)
 {
     FCALL_CONTRACT;
     _ASSERTE(objUNSAFE != NULL);
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
-    FC_GC_POLL_RET();
-    return result;
+    return (INT32)GCHeapUtilities::GetGCHeap()->WhichGeneration(objUNSAFE);
 }
 FCIMPLEND
 
@@ -756,8 +736,6 @@ FCIMPL0(UINT64, GCInterface::GetSegmentSize)
     _ASSERTE(segment_size < SIZE_T_MAX && large_segment_size < SIZE_T_MAX);
     if (segment_size < large_segment_size)
         segment_size = large_segment_size;
-
-    FC_GC_POLL_RET();
     return (UINT64) segment_size;
 }
 FCIMPLEND
@@ -776,9 +754,7 @@ FCIMPL2(int, GCInterface::CollectionCount, INT32 generation, INT32 getSpecialGCC
     _ASSERTE(generation >= 0);
 
     //We don't need to check the top end because the GC will take care of that.
-    int result = (INT32)GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
-    FC_GC_POLL_RET();
-    return result;
+    return (INT32)GCHeapUtilities::GetGCHeap()->CollectionCount(generation, getSpecialGCCount);
 }
 FCIMPLEND
 
@@ -861,7 +837,7 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory()
 **Arguments: args->generation:  The maximum generation to collect
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
+extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure)
 {
     QCALL_CONTRACT;
 
@@ -873,7 +849,7 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
     //We don't need to check the top end because the GC will take care of that.
 
     GCX_COOP();
-    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, false, mode);
+    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, lowMemoryPressure, mode);
 
     END_QCALL;
 }
@@ -1110,14 +1086,8 @@ FCIMPL1(void, GCInterface::SuppressFinalize, Object *obj)
 {
     FCALL_CONTRACT;
 
-    // Checked by the caller
-    _ASSERTE(obj != NULL);
-
-    if (!obj->GetMethodTable ()->HasFinalizer())
-        return;
-
+    _ASSERTE(obj->GetMethodTable ()->HasFinalizer());
     GCHeapUtilities::GetGCHeap()->SetFinalizationRun(obj);
-    FC_GC_POLL();
 }
 FCIMPLEND
 
@@ -1485,7 +1455,7 @@ NOINLINE void GCInterface::SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocate
     {
         // Ignore failures
     }
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 }
 
 // Out-of-line helper to avoid EH prolog/epilog in functions that otherwise don't throw.
@@ -1592,7 +1562,7 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
 {
     QCALL_CONTRACT;
 
-    FlushProcessWriteBuffers();
+    minipal_memory_barrier_process_wide();
 }
 
 static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)
@@ -1617,7 +1587,7 @@ static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD meth
 
     // If CoreLib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
     // to detect match reliably
-    if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
+    if (NonVirtualEntry2MethodDesc(actual) == NonVirtualEntry2MethodDesc(base))
     {
         return FALSE;
     }
@@ -1865,6 +1835,14 @@ FCIMPL1(MethodTable*, MethodTableNative::InstantiationArg0, MethodTable* mt);
 }
 FCIMPLEND
 
+FCIMPL1(OBJECTHANDLE, MethodTableNative::GetLoaderAllocatorHandle, MethodTable *mt)
+{
+    FCALL_CONTRACT;
+
+    return mt->GetLoaderAllocatorObjectHandle();
+}
+FCIMPLEND
+
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb)
 {
     QCALL_CONTRACT;
@@ -1935,7 +1913,7 @@ static bool HasOverriddenStreamMethod(MethodTable* streamMT, MethodTable* pMT, W
 
     // If CoreLib is JITed, the slots can be patched and thus we need to compare
     // the actual MethodDescs to detect match reliably.
-    return MethodTable::GetMethodDescForSlotAddress(actual) != MethodTable::GetMethodDescForSlotAddress(base);
+    return NonVirtualEntry2MethodDesc(actual) != NonVirtualEntry2MethodDesc(base);
 }
 
 extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead)

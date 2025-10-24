@@ -71,4 +71,4 @@ extends:
                     - syntheticpgo
                     - syntheticpgo_blend
                     - jitrlcse
-                    - jitoldlayout
+                    - instrument_if_optimizing

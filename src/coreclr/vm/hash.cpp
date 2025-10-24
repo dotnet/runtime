@@ -19,10 +19,10 @@ Module Name:
 #include "syncclean.hpp"
 
 #include "threadsuspend.h"
+#include "minipal/time.h"
 
 //---------------------------------------------------------------------
 //  Array of primes, used by hash table to choose the number of buckets
-//  Review: would we want larger primes? e.g., for 64-bit?
 
 const DWORD g_rgPrimes[] = {
 5,11,17,23,29,37,47,59,71,89,107,131,163,197,239,293,353,431,521,631,761,919,
@@ -30,7 +30,11 @@ const DWORD g_rgPrimes[] = {
 17519,21023,25229,30293,36353,43627,52361,62851,75431,90523, 108631, 130363,
 156437, 187751, 225307, 270371, 324449, 389357, 467237, 560689, 672827, 807403,
 968897, 1162687, 1395263, 1674319, 2009191, 2411033, 2893249, 3471899, 4166287,
-4999559, 5999471, 7199369
+4999559, 5999471, 7199369, 8639249, 10367101, 12440521, 14928637, 17914367,
+21497257, 25796711, 30956053, 37147273, 44576759, 53492113, 64190537, 77028659,
+92434393, 110921273, 133105543, 159726653, 191671993, 230006431, 276007757,
+331209331, 397451207, 476941459, 572329759, 686795723, 824154901, 988985923,
+1186783133, 1424139767, 1708967731, 2050761299
 };
 const SIZE_T g_rgNumPrimes = sizeof(g_rgPrimes) / sizeof(*g_rgPrimes);
 
@@ -262,7 +266,7 @@ void HashMap::Init(DWORD cbInitialSize, Compare* pCompare, BOOL fAsyncMode, Lock
 
     m_iPrimeIndex = GetNearestIndex(cbInitialSize);
     DWORD size = g_rgPrimes[m_iPrimeIndex];
-    PREFIX_ASSUME(size < 0x7fffffff);
+    _ASSERTE(size < 0x7fffffff);
 
     m_rgBuckets = new Bucket[size+1];
 
@@ -534,9 +538,6 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
         DISABLED(GC_NOTRIGGER); // This is not a bug, we cannot decide, since the function ptr called may be either.
     }
     CONTRACTL_END;
-
-    SCAN_IGNORE_THROW;          // See contract above.
-    SCAN_IGNORE_TRIGGER;        // See contract above.
 
 #ifndef DACCESS_COMPILE
     _ASSERTE (m_fAsyncMode || OwnLock());
@@ -1035,7 +1036,7 @@ void HashMap::Compact()
         EX_CATCH
         {
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
     }
 
     //compact deleted slots, mark them as EMPTY
@@ -1167,7 +1168,7 @@ HashMap::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 // This is for testing purposes only!
 void HashMap::HashMapTest()
 {
-    printf("HashMap test\n");
+    minipal_log_print_info("HashMap test\n");
 
     const unsigned int MinValue = 2;  // Deleted is reserved, and is 1.
     const unsigned int MinThreshold = 10000;
@@ -1179,12 +1180,12 @@ void HashMap::HashMapTest()
     table->Init(10, (CompareFnPtr) NULL, false, &lock);
     for(unsigned int i=MinValue; i < MinThreshold; i++)
         table->InsertValue(i, i);
-    printf("Added %d values.\n", MinThreshold);
+    minipal_log_print_info("Added %d values.\n", MinThreshold);
     //table.DumpStatistics();
 
     LookupPerfTest(table, MinThreshold);
 
-    INT64 t0 = GetTickCount();
+    INT64 t0 = minipal_lowres_ticks();
     INT64 t1;
     for(int rep = 0; rep < 10000000; rep++) {
         for(unsigned int i=MinThreshold; i < MaxThreshold; i++) {
@@ -1199,8 +1200,8 @@ void HashMap::HashMapTest()
             table->InsertValue(i, i);
 
         if (rep % 500 == 0) {
-            t1 = GetTickCount();
-            printf("Repetition %d, took %d ms\n", rep, (int) (t1-t0));
+            t1 = minipal_lowres_ticks();
+            minipal_log_print_info("Repetition %d, took %d ms\n", rep, (int) (t1-t0));
             t0 = t1;
             LookupPerfTest(table, MinThreshold);
             //table.DumpStatistics();
@@ -1212,25 +1213,25 @@ void HashMap::HashMapTest()
 // For testing purposes only.
 void HashMap::LookupPerfTest(HashMap * table, const unsigned int MinThreshold)
 {
-    INT64 t0 = GetTickCount();
+    INT64 t0 = minipal_lowres_ticks();
     for(int rep = 0; rep < 1000; rep++) {
         for(unsigned int i=2; i<MinThreshold; i++) {
             UPTR v = table->LookupValue(i, i);
             if (v != i) {
-                printf("LookupValue didn't return the expected value!");
+                minipal_log_print_info("LookupValue didn't return the expected value!\n");
                 _ASSERTE(v == i);
             }
         }
     }
-    INT64 t1 = GetTickCount();
+    INT64 t1 = minipal_lowres_ticks();
     for(unsigned int i = MinThreshold * 80; i < MinThreshold * 80 + 1000; i++)
         table->LookupValue(i, i);
     //cout << "Lookup perf test (1000 * " << MinThreshold << ": " << (t1-t0) << " ms." << endl;
 #ifdef HASHTABLE_PROFILE
-    printf("Lookup perf test time: %d ms  table size: %d  max failure probe: %d  longest collision chain: %d\n", (int) (t1-t0), (int) table->GetSize(table->Buckets()), (int) table->maxFailureProbe, (int) table->m_cbMaxCollisionLength);
+    minipal_log_print_info("Lookup perf test time: %d ms  table size: %d  max failure probe: %d  longest collision chain: %d\n", (int) (t1-t0), (int) table->GetSize(table->Buckets()), (int) table->maxFailureProbe, (int) table->m_cbMaxCollisionLength);
     table->DumpStatistics();
 #else // !HASHTABLE_PROFILE
-    printf("Lookup perf test time: %d ms   table size: %d\n", (int) (t1-t0), table->GetSize(table->Buckets()));
+    minipal_log_print_info("Lookup perf test time: %d ms   table size: %d\n", (int) (t1-t0), table->GetSize(table->Buckets()));
 #endif // !HASHTABLE_PROFILE
 }
 #endif // !DACCESS_COMPILE

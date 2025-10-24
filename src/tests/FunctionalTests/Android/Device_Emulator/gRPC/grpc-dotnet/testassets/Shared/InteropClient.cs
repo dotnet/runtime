@@ -79,7 +79,7 @@ namespace Grpc.Shared.TestAssets
             HttpMessageHandler httpMessageHandler = CreateHttpClientHandler();
             if (options.UseHttp3)
             {
-#if NET6_0_OR_GREATER
+#if NET
                 httpMessageHandler = new Http3DelegatingHandler(httpMessageHandler);
 #else
                 throw new Exception("HTTP/3 requires .NET 6 or later.");
@@ -95,7 +95,7 @@ namespace Grpc.Shared.TestAssets
             return new GrpcChannelWrapper(channel);
         }
 
-#if NET6_0_OR_GREATER
+#if NET
         private class Http3DelegatingHandler : DelegatingHandler
         {
             private static readonly Version Http3Version = new Version(3, 0);

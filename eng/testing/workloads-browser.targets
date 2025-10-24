@@ -80,7 +80,7 @@
       <!-- We need nugets for all wasm runtime flavors. The one corresponding the current
       property values is already built, the others need to be added to NuGetsToBuildForWorkloadTesting -->
       <NuGetsToBuildForWorkloadTesting Include="$(_DefaultRuntimePackNuGetPath)"
-                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
+                      Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.Mono.sfxproj"
                       Dependencies="$(_DefaultRuntimePackNuGetPath)"
                       Properties="@(_DefaultPropsForNuGetBuild, ';');WasmEnableThreads=$(_IsMTNugetMissing)"
                       Descriptor="$(_Descriptor)"/>

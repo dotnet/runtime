@@ -31,10 +31,7 @@ namespace System.Configuration
 
         protected ConfigurationElementCollection(IComparer comparer)
         {
-            if (comparer is null)
-            {
-                throw new ArgumentNullException(nameof(comparer));
-            }
+            ArgumentNullException.ThrowIfNull(comparer);
 
             _comparer = comparer;
         }
@@ -225,7 +222,7 @@ namespace System.Configuration
                     break;
                 }
 
-                if (found == false)
+                if (!found)
                 {
                     // not in the collection must be different
                     return false;
@@ -296,7 +293,7 @@ namespace System.Configuration
                 EmitClear = ((saveMode == ConfigurationSaveMode.Full) && (_clearElement.Length != 0)) ||
                     ((saveMode == ConfigurationSaveMode.Modified) && _collectionCleared) || sourceCollection.EmitClear;
 
-                if ((parentCollection != null) && (EmitClear != true))
+                if ((parentCollection != null) && !EmitClear)
                 {
                     foreach (Entry entry in parentCollection.Items)
                         if (entry.EntryType != EntryType.Removed)
@@ -352,7 +349,7 @@ namespace System.Configuration
                     }
                 }
 
-                if ((parentCollection != null) && (EmitClear != true))
+                if ((parentCollection != null) && !EmitClear)
                 {
                     foreach (Entry entry in parentCollection.Items)
                     {
@@ -506,7 +503,7 @@ namespace System.Configuration
 
             if (IsReadOnly()) throw new ConfigurationErrorsException(SR.Config_base_read_only);
 
-            if (LockItem && (ignoreLocks == false))
+            if (LockItem && !ignoreLocks)
                 throw new ConfigurationErrorsException(SR.Format(SR.Config_base_element_locked, _addElement));
 
             object key = GetElementKeyInternal(element);
@@ -516,7 +513,7 @@ namespace System.Configuration
                 Entry entry = (Entry)Items[index];
                 if (!CompareKeys(key, entry.GetKey(this))) continue;
 
-                if ((entry.Value != null) && entry.Value.LockItem && (ignoreLocks == false))
+                if ((entry.Value != null) && entry.Value.LockItem && !ignoreLocks)
                     throw new ConfigurationErrorsException(SR.Config_base_collection_item_locked);
 
                 if ((entry.EntryType != EntryType.Removed) && throwIfExists)
@@ -556,7 +553,7 @@ namespace System.Configuration
                 }
 
                 // check to see if the element is trying to set a locked property.
-                if (ignoreLocks == false)
+                if (!ignoreLocks)
                 {
                     element.HandleLockedAttributes(entry.Value);
                     // copy the lock from the removed element before setting the new element
@@ -644,7 +641,7 @@ namespace System.Configuration
                 }
                 else
                 {
-                    if ((index > Count + _removedItemCount - _inheritedCount) && (flagAsReplaced == false))
+                    if ((index > Count + _removedItemCount - _inheritedCount) && !flagAsReplaced)
                         throw new ConfigurationErrorsException(SR.Config_base_cannot_add_items_below_inherited_items);
                 }
             }
@@ -654,7 +651,7 @@ namespace System.Configuration
                 (index < _inheritedCount))
                 throw new ConfigurationErrorsException(SR.Config_base_cannot_add_items_above_inherited_items);
 
-            EntryType entryType = flagAsReplaced == false ? EntryType.Added : EntryType.Replaced;
+            EntryType entryType = !flagAsReplaced ? EntryType.Added : EntryType.Replaced;
 
             object key = GetElementKeyInternal(element);
 
@@ -750,7 +747,7 @@ namespace System.Configuration
                     if (entry.Value.LockItem)
                         throw new ConfigurationErrorsException(SR.Format(SR.Config_base_attribute_locked, key));
 
-                    if (entry.Value.ElementPresent == false)
+                    if (!entry.Value.ElementPresent)
                         CheckLockedElement(_removeElement, null); // has remove been locked?
 
                     switch (entry.EntryType)
@@ -982,7 +979,7 @@ namespace System.Configuration
                     entry.GetKey(this)));
             }
 
-            if (entry.Value.ElementPresent == false)
+            if (!entry.Value.ElementPresent)
                 CheckLockedElement(_removeElement, null); // has remove been locked?
 
             switch (entry.EntryType)
@@ -1003,7 +1000,7 @@ namespace System.Configuration
                     else
                     {
                         // don't really remove it from the collection just mark it removed
-                        if (entry.Value.ElementPresent == false)
+                        if (!entry.Value.ElementPresent)
                             CheckLockedElement(_removeElement, null); // has remove been locked?
 
                         entry.EntryType = EntryType.Removed;

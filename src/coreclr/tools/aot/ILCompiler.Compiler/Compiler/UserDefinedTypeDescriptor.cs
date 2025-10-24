@@ -78,7 +78,7 @@ namespace ILCompiler
                         // The set of fields we're going to touch is tagged as "parsed by the expression evaluator"
                         // in the Roslyn codebase, so it's somewhat safe to do this.
                         // https://github.com/dotnet/roslyn/blob/afd10305a37c0ffb2cfb2c2d8446154c68cfa87a/src/Compilers/CSharp/Portable/Symbols/Synthesized/GeneratedNameKind.cs#L15-L22
-                        string fieldNameEmit = fieldDesc.Name;
+                        string fieldNameEmit = fieldDesc.GetName();
                         if (fieldNameEmit.Length > 0 && fieldNameEmit[0] == '<')
                         {
                             if (TryGetGeneratedNameKind(fieldNameEmit, out char kind))
@@ -233,7 +233,7 @@ namespace ILCompiler
 
                 descriptor.MemberFunction = GetMethodTypeIndex(method);
                 descriptor.ParentClass = GetTypeIndex(method.OwningType, true);
-                descriptor.Name = method.Name;
+                descriptor.Name = method.GetName();
 
                 typeIndex = _objectWriter.GetMemberFunctionId(descriptor);
                 _methodIdIndices.Add(method, typeIndex);
@@ -420,7 +420,7 @@ namespace ILCompiler
                 FieldDesc field = fieldsDescriptors[i];
                 EnumRecordTypeDescriptor recordTypeDescriptor;
                 recordTypeDescriptor.Value = GetEnumRecordValue(field);
-                recordTypeDescriptor.Name = field.Name;
+                recordTypeDescriptor.Name = field.GetName();
                 typeRecords[i] = recordTypeDescriptor;
             }
             uint typeIndex = _objectWriter.GetEnumTypeIndex(enumTypeDescriptor, typeRecords);
@@ -665,7 +665,7 @@ namespace ILCompiler
                 {
                     FieldTypeIndex = fieldTypeIndex,
                     Offset = (ulong)fieldOffsetEmit,
-                    Name = fieldDesc.Name
+                    Name = fieldDesc.GetName()
                 };
 
                 if (fieldDesc.IsStatic)
@@ -732,11 +732,11 @@ namespace ILCompiler
                 statics[i] = staticsDescs[i];
             }
 
-            LayoutInt elementSize = defType.GetElementSize();
-            int elementSizeEmit = elementSize.IsIndeterminate ? 0xBAAD : elementSize.AsInt;
+            LayoutInt instanceSize = defType.IsValueType ? defType.InstanceFieldSize : defType.InstanceByteCount;
+            int instanceSizeEmit = instanceSize.IsIndeterminate ? 0xBAAD : instanceSize.AsInt;
             ClassFieldsTypeDescriptor fieldsDescriptor = new ClassFieldsTypeDescriptor
             {
-                Size = (ulong)elementSizeEmit,
+                Size = (ulong)instanceSizeEmit,
                 FieldsCount = fieldsDescs.Count,
             };
 
@@ -796,7 +796,7 @@ namespace ILCompiler
                         Is64Bit = Is64Bit ? 1 : 0,
                         IsConst = 0,
                         IsReference = 0,
-                        ElementType = GetTypeIndex(defType.Context.SystemModule.GetType("Internal.Runtime.CompilerHelpers", "TypeManagerSlot"), true)
+                        ElementType = GetTypeIndex(defType.Context.SystemModule.GetType("Internal.Runtime.CompilerHelpers"u8, "TypeManagerSlot"u8), true)
                     };
 
                     var helperFields = new DataFieldDescriptor[] {

@@ -13,13 +13,13 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     /// <summary>
-    /// Copies the metadata blob from input MSIL assembly to output ready-to-run image, fixing up Rvas to 
+    /// Copies the metadata blob from input MSIL assembly to output ready-to-run image, fixing up Rvas to
     /// method IL bodies and FieldRvas.
     /// </summary>
     public class CopiedMetadataBlobNode : ObjectNode, ISymbolDefinitionNode
     {
         EcmaModule _sourceModule;
-        
+
         public CopiedMetadataBlobNode(EcmaModule sourceModule)
         {
             _sourceModule = sourceModule;
@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             var tableIndex = TableIndex.FieldRva;
             int rowCount = metadataReader.GetTableRowCount(tableIndex);
             bool compressedFieldRef = 6 == metadataReader.GetTableRowSize(TableIndex.FieldRva);
-            
+
             for (int i = 1; i <= rowCount; i++)
             {
                 Debug.Assert(builder.CountBytes == reader.Offset);
@@ -91,7 +91,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     fieldToken = reader.ReadInt32();
                 }
                 EntityHandle fieldHandle = MetadataTokens.EntityHandle(TableIndex.Field, fieldToken);
-                EcmaField fieldDesc = (EcmaField)_sourceModule.GetField(fieldHandle);
+                EcmaField fieldDesc = _sourceModule.GetField((FieldDefinitionHandle)fieldHandle);
                 Debug.Assert(fieldDesc.HasRva);
 
                 builder.EmitReloc(factory.CopiedFieldRva(fieldDesc), RelocType.IMAGE_REL_BASED_ADDR32NB);
@@ -121,7 +121,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             int methodDefTableOffset = metadataReader.GetTableMetadataOffset(TableIndex.MethodDef);
             builder.EmitBytes(metadataBlob.ReadBytes(methodDefTableOffset));
-            
+
             WriteMethodTableRvas(factory, ref builder, ref metadataBlob);
 
             //

@@ -26,9 +26,8 @@ include asmconstants.inc
 ; whenever they change.
 ;
 ; At anyone time, the memory pointed to by JIT_WriteBarrier will contain one
-; of these functions.  See StompWriteBarrierResize and StompWriteBarrierEphemeral
-; in VM\AMD64\JITInterfaceAMD64.cpp and InitJITHelpers1 in VM\JITInterfaceGen.cpp
-; for more info.
+; of these functions.  See StompWriteBarrierResize, StompWriteBarrierEphemeral
+; and InitJITWriteBarrierHelpers in VM\AMD64\JITInterfaceAMD64.cpp for more info.
 ;
 ; READ THIS!!!!!!
 ; it is imperative that the addresses of the values that we overwrite

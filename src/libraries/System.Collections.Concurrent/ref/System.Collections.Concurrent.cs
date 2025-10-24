@@ -74,6 +74,69 @@ namespace System.Collections.Concurrent
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
         public bool TryTake([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
     }
+    public partial class ConcurrentStack<T> : System.Collections.Concurrent.IProducerConsumerCollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
+    {
+        public ConcurrentStack() { }
+        public ConcurrentStack(System.Collections.Generic.IEnumerable<T> collection) { }
+        public int Count { get { throw null; } }
+        public bool IsEmpty { get { throw null; } }
+        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
+        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        public void Clear() { }
+        public void CopyTo(T[] array, int index) { }
+        public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
+        public void Push(T item) { }
+        public void PushRange(T[] items) { }
+        public void PushRange(T[] items, int startIndex, int count) { }
+        bool System.Collections.Concurrent.IProducerConsumerCollection<T>.TryAdd(T item) { throw null; }
+        bool System.Collections.Concurrent.IProducerConsumerCollection<T>.TryTake([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T item) { throw null; }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public T[] ToArray() { throw null; }
+        public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
+        public bool TryPop([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
+        public int TryPopRange(T[] items) { throw null; }
+        public int TryPopRange(T[] items, int startIndex, int count) { throw null; }
+    }
+    [System.FlagsAttribute]
+    public enum EnumerablePartitionerOptions
+    {
+        None = 0,
+        NoBuffering = 1,
+    }
+    public abstract partial class OrderablePartitioner<TSource> : System.Collections.Concurrent.Partitioner<TSource>
+    {
+        protected OrderablePartitioner(bool keysOrderedInEachPartition, bool keysOrderedAcrossPartitions, bool keysNormalized) { }
+        public bool KeysNormalized { get { throw null; } }
+        public bool KeysOrderedAcrossPartitions { get { throw null; } }
+        public bool KeysOrderedInEachPartition { get { throw null; } }
+        public override System.Collections.Generic.IEnumerable<TSource> GetDynamicPartitions() { throw null; }
+        public virtual System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<long, TSource>> GetOrderableDynamicPartitions() { throw null; }
+        public abstract System.Collections.Generic.IList<System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<long, TSource>>> GetOrderablePartitions(int partitionCount);
+        public override System.Collections.Generic.IList<System.Collections.Generic.IEnumerator<TSource>> GetPartitions(int partitionCount) { throw null; }
+    }
+    public static partial class Partitioner
+    {
+        public static System.Collections.Concurrent.OrderablePartitioner<System.Tuple<int, int>> Create(int fromInclusive, int toExclusive) { throw null; }
+        public static System.Collections.Concurrent.OrderablePartitioner<System.Tuple<int, int>> Create(int fromInclusive, int toExclusive, int rangeSize) { throw null; }
+        public static System.Collections.Concurrent.OrderablePartitioner<System.Tuple<long, long>> Create(long fromInclusive, long toExclusive) { throw null; }
+        public static System.Collections.Concurrent.OrderablePartitioner<System.Tuple<long, long>> Create(long fromInclusive, long toExclusive, long rangeSize) { throw null; }
+        public static System.Collections.Concurrent.OrderablePartitioner<TSource> Create<TSource>(System.Collections.Generic.IEnumerable<TSource> source) { throw null; }
+        public static System.Collections.Concurrent.OrderablePartitioner<TSource> Create<TSource>(System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Concurrent.EnumerablePartitionerOptions partitionerOptions) { throw null; }
+        public static System.Collections.Concurrent.OrderablePartitioner<TSource> Create<TSource>(System.Collections.Generic.IList<TSource> list, bool loadBalance) { throw null; }
+        public static System.Collections.Concurrent.OrderablePartitioner<TSource> Create<TSource>(TSource[] array, bool loadBalance) { throw null; }
+    }
+    public abstract partial class Partitioner<TSource>
+    {
+        protected Partitioner() { }
+        public virtual bool SupportsDynamicPartitions { get { throw null; } }
+        public virtual System.Collections.Generic.IEnumerable<TSource> GetDynamicPartitions() { throw null; }
+        public abstract System.Collections.Generic.IList<System.Collections.Generic.IEnumerator<TSource>> GetPartitions(int partitionCount);
+    }
+}
+#endif // !BUILDING_CORELIB_REFERENCE
+namespace System.Collections.Concurrent
+{
     public partial class ConcurrentDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable where TKey : notnull
     {
         public ConcurrentDictionary() { }
@@ -140,69 +203,6 @@ namespace System.Collections.Concurrent
             public bool TryRemove(TAlternateKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TKey actualKey, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         }
     }
-    public partial class ConcurrentStack<T> : System.Collections.Concurrent.IProducerConsumerCollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
-    {
-        public ConcurrentStack() { }
-        public ConcurrentStack(System.Collections.Generic.IEnumerable<T> collection) { }
-        public int Count { get { throw null; } }
-        public bool IsEmpty { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
-        public void Clear() { }
-        public void CopyTo(T[] array, int index) { }
-        public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
-        public void Push(T item) { }
-        public void PushRange(T[] items) { }
-        public void PushRange(T[] items, int startIndex, int count) { }
-        bool System.Collections.Concurrent.IProducerConsumerCollection<T>.TryAdd(T item) { throw null; }
-        bool System.Collections.Concurrent.IProducerConsumerCollection<T>.TryTake([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T item) { throw null; }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        public T[] ToArray() { throw null; }
-        public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
-        public bool TryPop([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
-        public int TryPopRange(T[] items) { throw null; }
-        public int TryPopRange(T[] items, int startIndex, int count) { throw null; }
-    }
-    [System.FlagsAttribute]
-    public enum EnumerablePartitionerOptions
-    {
-        None = 0,
-        NoBuffering = 1,
-    }
-    public abstract partial class OrderablePartitioner<TSource> : System.Collections.Concurrent.Partitioner<TSource>
-    {
-        protected OrderablePartitioner(bool keysOrderedInEachPartition, bool keysOrderedAcrossPartitions, bool keysNormalized) { }
-        public bool KeysNormalized { get { throw null; } }
-        public bool KeysOrderedAcrossPartitions { get { throw null; } }
-        public bool KeysOrderedInEachPartition { get { throw null; } }
-        public override System.Collections.Generic.IEnumerable<TSource> GetDynamicPartitions() { throw null; }
-        public virtual System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<long, TSource>> GetOrderableDynamicPartitions() { throw null; }
-        public abstract System.Collections.Generic.IList<System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<long, TSource>>> GetOrderablePartitions(int partitionCount);
-        public override System.Collections.Generic.IList<System.Collections.Generic.IEnumerator<TSource>> GetPartitions(int partitionCount) { throw null; }
-    }
-    public static partial class Partitioner
-    {
-        public static System.Collections.Concurrent.OrderablePartitioner<System.Tuple<int, int>> Create(int fromInclusive, int toExclusive) { throw null; }
-        public static System.Collections.Concurrent.OrderablePartitioner<System.Tuple<int, int>> Create(int fromInclusive, int toExclusive, int rangeSize) { throw null; }
-        public static System.Collections.Concurrent.OrderablePartitioner<System.Tuple<long, long>> Create(long fromInclusive, long toExclusive) { throw null; }
-        public static System.Collections.Concurrent.OrderablePartitioner<System.Tuple<long, long>> Create(long fromInclusive, long toExclusive, long rangeSize) { throw null; }
-        public static System.Collections.Concurrent.OrderablePartitioner<TSource> Create<TSource>(System.Collections.Generic.IEnumerable<TSource> source) { throw null; }
-        public static System.Collections.Concurrent.OrderablePartitioner<TSource> Create<TSource>(System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Concurrent.EnumerablePartitionerOptions partitionerOptions) { throw null; }
-        public static System.Collections.Concurrent.OrderablePartitioner<TSource> Create<TSource>(System.Collections.Generic.IList<TSource> list, bool loadBalance) { throw null; }
-        public static System.Collections.Concurrent.OrderablePartitioner<TSource> Create<TSource>(TSource[] array, bool loadBalance) { throw null; }
-    }
-    public abstract partial class Partitioner<TSource>
-    {
-        protected Partitioner() { }
-        public virtual bool SupportsDynamicPartitions { get { throw null; } }
-        public virtual System.Collections.Generic.IEnumerable<TSource> GetDynamicPartitions() { throw null; }
-        public abstract System.Collections.Generic.IList<System.Collections.Generic.IEnumerator<TSource>> GetPartitions(int partitionCount);
-    }
-}
-#endif // !BUILDING_CORELIB_REFERENCE
-namespace System.Collections.Concurrent
-{
     public partial class ConcurrentQueue<T> : System.Collections.Concurrent.IProducerConsumerCollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public ConcurrentQueue() { }

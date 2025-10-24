@@ -3,11 +3,13 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.ObjectModel
 {
     /// <summary>Represents a read-only, generic set of values.</summary>
     /// <typeparam name="T">The type of values in the set.</typeparam>
+    [CollectionBuilder(typeof(ReadOnlyCollection), "CreateSet")]
     [DebuggerDisplay("Count = {Count}")]
     public class ReadOnlySet<T> : IReadOnlySet<T>, ISet<T>, ICollection
     {

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Tests;
@@ -48,6 +49,29 @@ namespace System.Reflection.PortableExecutable.Tests
 
             Assert.Throws<BadImageFormatException>(() => new PEHeaders(s, 1));
             Assert.Equal(0, s.Position);
+        }
+
+        [Fact]
+        public void Ctor_InvalidCoffHeader()
+        {
+            byte[] header = new byte[CoffHeader.Size];
+            _ = new PEHeaders(new MemoryStream(header));
+
+            // NumberOfSections is too big.
+            BinaryPrimitives.WriteInt16LittleEndian(header.AsSpan(16), 5);
+            Assert.Throws<BadImageFormatException>(() => new PEHeaders(new MemoryStream(header)));
+
+            header = new byte[CoffHeader.Size];
+            // SizeOfOptionalHeader is non-zero.
+            BinaryPrimitives.WriteInt16LittleEndian(header.AsSpan(2), 10);
+            Assert.Throws<BadImageFormatException>(() => new PEHeaders(new MemoryStream(header)));
+        }
+
+        [Fact]
+        public void Ctor_CoffFileLoadedImage()
+        {
+            byte[] file = new byte[CoffHeader.Size];
+            Assert.Throws<BadImageFormatException>(() => new PEHeaders(new MemoryStream(file), file.Length, isLoadedImage: true));
         }
 
         [Fact]

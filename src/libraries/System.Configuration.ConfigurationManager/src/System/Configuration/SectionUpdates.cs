@@ -146,7 +146,7 @@ namespace System.Configuration
         {
             _cUnretrieved = 0;
             foreach (SectionUpdates sectionUpdates in _groups.Values) sectionUpdates.MarkAsRetrieved();
-            if (_sectionGroupUpdate != null) _sectionGroupUpdate.Retrieved = true;
+            _sectionGroupUpdate?.Retrieved = true;
         }
 
         internal void MarkGroupAsRetrieved(string groupName)

@@ -24,12 +24,12 @@
 
     <!-- We need to add a placeholder file for all RIDs except the one that is actually included in the RID-specific package.
          This prevents an issue where during publish the SDK would select e.g. both linux-x64 and linux-musl-x64 assets because of the fallback path in the RID graph. -->
-    <PackagePlaceholderRID Include="@(PackageSupportedRID)" Exclude="$(OutputRID)" />
+    <PackagePlaceholderRID Include="@(PackageSupportedRID)" Exclude="$(TargetRid)" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)"
-          PackagePath="runtimes/$(OutputRID)/native"
+          PackagePath="runtimes/$(TargetRid)/native"
           Pack="true" />
     <None Include="$(PlaceholderFile)"
           PackagePath="@(PackagePlaceholderRID->'runtimes/%(Identity)/native')"
@@ -37,14 +37,14 @@
   </ItemGroup>
 
   <Target Name="ValidatePackageSupportedRID" BeforeTargets="Build">
-    <Error Text="$(OutputRID) is missing from PackageSupportedRID."
-           Condition="!@(PackageSupportedRID->AnyHaveMetadataValue('Identity', '$(OutputRID)'))" />
+    <Error Text="$(TargetRid) is missing from PackageSupportedRID."
+           Condition="!@(PackageSupportedRID->AnyHaveMetadataValue('Identity', '$(TargetRid)'))" />
   </Target>
 
   <Target Name="AddRuntimeSpecificNativeSymbolToPackage">
     <ItemGroup>
       <TfmSpecificDebugSymbolsFile Include="$(NativeBinDir)$(LibPrefix)System.IO.Ports.Native$(LibSuffix)$(SymbolsSuffix)"
-                                   TargetPath="/runtimes/$(OutputRID)/native"
+                                   TargetPath="/runtimes/$(TargetRid)/native"
                                    TargetFramework="$(TargetFramework)" />
     </ItemGroup>
   </Target>

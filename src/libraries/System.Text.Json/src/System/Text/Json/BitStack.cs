@@ -14,6 +14,7 @@ namespace System.Text.Json
 
         private const int DefaultInitialArraySize = 2;
 
+        // The backing array for the stack used when the depth exceeds AllocationFreeMaxDepth.
         private int[]? _array;
 
         // This ulong container represents a tiny stack to track the state during nested transitions.
@@ -26,8 +27,14 @@ namespace System.Text.Json
 
         private int _currentDepth;
 
-        public int CurrentDepth => _currentDepth;
+        /// <summary>
+        /// Gets the number of elements in the stack.
+        /// </summary>
+        public readonly int CurrentDepth => _currentDepth;
 
+        /// <summary>
+        /// Pushes <see langword="true"/> onto the stack.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void PushTrue()
         {
@@ -42,6 +49,9 @@ namespace System.Text.Json
             _currentDepth++;
         }
 
+        /// <summary>
+        /// Pushes <see langword="false"/> onto the stack.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void PushFalse()
         {
@@ -56,7 +66,10 @@ namespace System.Text.Json
             _currentDepth++;
         }
 
-        // Allocate the bit array lazily only when it is absolutely necessary
+        /// <summary>
+        /// Pushes a bit onto the stack. Allocate the bit array lazily only when it is absolutely necessary.
+        /// </summary>
+        /// <param name="value">The bit to push onto the stack.</param>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void PushToArray(bool value)
         {
@@ -94,6 +107,10 @@ namespace System.Text.Json
             _array[elementIndex] = newValue;
         }
 
+        /// <summary>
+        /// Pops the bit at the top of the stack and returns its value.
+        /// </summary>
+        /// <returns>The bit that was popped.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Pop()
         {
@@ -110,13 +127,18 @@ namespace System.Text.Json
             }
             else
             {
-                inObject = PopFromArray();
+                // Decrementing depth above effectively pops the last element in the array-backed case.
+                inObject = PeekInArray();
             }
             return inObject;
         }
 
+        /// <summary>
+        /// If the stack has a backing array allocated, this method will find the topmost bit in the array and return its value.
+        /// This should only be called if the depth is greater than AllocationFreeMaxDepth and an array has been allocated.
+        /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool PopFromArray()
+        private readonly bool PeekInArray()
         {
             int index = _currentDepth - AllocationFreeMaxDepth - 1;
             Debug.Assert(_array != null);
@@ -128,6 +150,14 @@ namespace System.Text.Json
 
             return (_array[elementIndex] & (1 << extraBits)) != 0;
         }
+
+        /// <summary>
+        /// Peeks at the bit at the top of the stack.
+        /// </summary>
+        /// <returns>The bit at the top of the stack.</returns>
+        public readonly bool Peek()
+            // If the stack is small enough, we can use the allocation-free container, otherwise check the allocated array.
+            => _currentDepth <= AllocationFreeMaxDepth ? (_allocationFreeContainer & 1) != 0 : PeekInArray();
 
         private void DoubleArray(int minSize)
         {
@@ -141,6 +171,9 @@ namespace System.Text.Json
             Array.Resize(ref _array, nextDouble);
         }
 
+        /// <summary>
+        /// Optimization to push <see langword="true"/> as the first bit when the stack is empty.
+        /// </summary>
         public void SetFirstBit()
         {
             Debug.Assert(_currentDepth == 0, "Only call SetFirstBit when depth is 0");
@@ -148,6 +181,9 @@ namespace System.Text.Json
             _allocationFreeContainer = 1;
         }
 
+        /// <summary>
+        /// Optimization to push <see langword="false"/> as the first bit when the stack is empty.
+        /// </summary>
         public void ResetFirstBit()
         {
             Debug.Assert(_currentDepth == 0, "Only call ResetFirstBit when depth is 0");

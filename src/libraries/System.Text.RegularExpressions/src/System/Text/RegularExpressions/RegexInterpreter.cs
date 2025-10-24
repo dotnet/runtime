@@ -521,12 +521,10 @@ namespace System.Text.RegularExpressions
                             }
                             else
                             {
-                                // The inner expression found an empty match, so we'll go directly to 'back2' if we
-                                // backtrack.  In this case, we need to push something on the stack, since back2 pops.
-                                // However, in the case of ()+? or similar, this empty match may be legitimate, so push the text
-                                // position associated with that empty match.
-                                StackPush(oldMarkPos);
-                                TrackPush2(StackPeek()); // Save old mark
+                                // The inner expression found an empty match. We'll go directly to BacktrackingSecond
+                                // if we backtrack. We do not touch the grouping stack here... instead, we record the
+                                // old mark and a "no-stack-pop" flag (0) on the backtracking stack.
+                                TrackPush2(oldMarkPos, 0);
                             }
                         }
                         advance = 1;
@@ -541,7 +539,11 @@ namespace System.Text.RegularExpressions
                             // fails, we go to Lazybranchmark | RegexOpcode.Back2
                             TrackPop(2);
                             int pos = TrackPeek(1);
-                            TrackPush2(TrackPeek()); // Save old mark
+
+                            // Store the previous mark. The second value (1) flags that a grouping stack frame
+                            // must be popped when backtracking, because a new frame will be pushed next.
+                            TrackPush2(TrackPeek(), 1);
+
                             StackPush(pos);          // Make new mark
                             runtextpos = pos;        // Recall position
                             Goto(Operand(0));        // Loop
@@ -551,9 +553,17 @@ namespace System.Text.RegularExpressions
                     case RegexOpcode.Lazybranchmark | RegexOpcode.BacktrackingSecond:
                         // The lazy loop has failed.  We'll do a true backtrack and
                         // start over before the lazy loop.
-                        StackPop();
-                        TrackPop();
-                        StackPush(TrackPeek()); // Recall old mark
+                        int needsPop = runtrack![runtrackpos]; // flag: 0 or 1
+                        int oldMark = runtrack[runtrackpos + 1]; // saved old mark
+                        runtrackpos += 2; // consume both payload ints
+                        if (needsPop != 0)
+                        {
+                            // We pushed on the grouping stack in the Backtracking arm; balance it now.
+                            StackPop();
+                        }
+
+                        // Restore the old mark and backtrack
+                        StackPush(oldMark);
                         break;
 
                     case RegexOpcode.Setcount:

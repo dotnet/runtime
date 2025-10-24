@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using static System.Globalization.GregorianCalendar;
 
 namespace System.Globalization
@@ -24,7 +25,7 @@ namespace System.Globalization
                 return GetWeeksInYear(date.Year - 1);
             }
 
-            if (week > GetWeeksInYear(date.Year))
+            if (week > WeeksInShortYear && GetWeeksInYear(date.Year) == WeeksInShortYear)
             {
                 // If a week number of 53 is obtained, one must check that
                 // the date is not actually in week 1 of the following year.
@@ -44,22 +45,22 @@ namespace System.Globalization
         public static int GetYear(DateTime date)
         {
             int week = GetWeekNumber(date);
+            int year = date.Year;
 
             if (week < MinWeek)
             {
                 // If the week number obtained equals 0, it means that the
                 // given date belongs to the preceding (week-based) year.
-                return date.Year - 1;
+                year--;
             }
-
-            if (week > GetWeeksInYear(date.Year))
+            else if (week > WeeksInShortYear && GetWeeksInYear(year) == WeeksInShortYear)
             {
                 // If a week number of 53 is obtained, one must check that
                 // the date is not actually in week 1 of the following year.
-                return date.Year + 1;
+                year++;
             }
 
-            return date.Year;
+            return year;
         }
 
         /// <summary>
@@ -100,12 +101,17 @@ namespace System.Globalization
         {
             if (year < MinYear || year > MaxYear)
             {
-                throw new ArgumentOutOfRangeException(nameof(year), SR.ArgumentOutOfRange_Year);
+                ThrowHelper.ThrowArgumentOutOfRange_Year();
             }
 
-            static int P(int y) => (y + (y / 4) - (y / 100) + (y / 400)) % 7;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static uint P(uint y)
+            {
+                uint cent = y / 100;
+                return (y + (y / 4) - cent + cent / 4) % 7;
+            }
 
-            if (P(year) == 4 || P(year - 1) == 3)
+            if (P((uint)year) == 4 || P((uint)year - 1) == 3)
             {
                 return WeeksInLongYear;
             }
@@ -127,7 +133,7 @@ namespace System.Globalization
         {
             if (year < MinYear || year > MaxYear)
             {
-                throw new ArgumentOutOfRangeException(nameof(year), SR.ArgumentOutOfRange_Year);
+                ThrowHelper.ThrowArgumentOutOfRange_Year();
             }
 
             if (week < MinWeek || week > MaxWeek)
@@ -149,7 +155,7 @@ namespace System.Globalization
 
             int ordinal = (week * 7) + GetWeekday(dayOfWeek) - correction;
 
-            return new DateTime(year, month: 1, day: 1).AddDays(ordinal - 1);
+            return jan4.AddTicks((ordinal - 4) * TimeSpan.TicksPerDay);
         }
 
 
@@ -172,7 +178,7 @@ namespace System.Globalization
         // If a week number of 53 is obtained, one must check that the date is not actually in week 1 of the following year.
         private static int GetWeekNumber(DateTime date)
         {
-            return (date.DayOfYear - GetWeekday(date.DayOfWeek) + 10) / 7;
+            return (int)((uint)(date.DayOfYear - GetWeekday(date.DayOfWeek) + 10) / 7);
         }
 
         // Day of week in ISO is represented by an integer from 1 through 7, beginning with Monday and ending with Sunday.

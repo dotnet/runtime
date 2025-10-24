@@ -12,6 +12,7 @@
     <!-- Contributes to DependencyKey which ensures stable provider key - do not change -->
     <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
     <OutputFilesCandleVariable>HostSrc</OutputFilesCandleVariable>
+
     <MajorUpgradeSchedule>afterInstallExecute</MajorUpgradeSchedule>
     <VersionInstallerName>false</VersionInstallerName>
     <UseBrandingNameInLinuxPackageDescription>true</UseBrandingNameInLinuxPackageDescription>
@@ -20,7 +21,7 @@
     <MacOSScriptsTemplateDirectory>osx_scripts/host</MacOSScriptsTemplateDirectory>
     <MacOSPackageDescription>The .NET Shared Host.</MacOSPackageDescription>
     <!-- Enables stable upgrade code - do not change -->
-    <MsiUpgradeCodeSeed>dotnet-host $(MajorVersion).$(MinorVersion) $(Platform)</MsiUpgradeCodeSeed>
+    <MsiUpgradeCodeSeed>dotnet-host $(MajorVersion).$(MinorVersion) $(TargetArchitecture)</MsiUpgradeCodeSeed>
   </PropertyGroup>
 
   <ItemGroup>

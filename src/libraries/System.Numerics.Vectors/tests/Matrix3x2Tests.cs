@@ -208,6 +208,8 @@ namespace System.Numerics.Tests
             Assert.True(MathHelper.Equal(i, Matrix3x2.Identity));
         }
 
+
+
         // A test for CreateRotation (float)
         [Fact]
         public void Matrix3x2CreateRotationTest()
@@ -1080,6 +1082,139 @@ namespace System.Numerics.Tests
 
             Assert.Equal(new IntPtr(basePtr + 4), new IntPtr(&mat.M31));
             Assert.Equal(new IntPtr(basePtr + 5), new IntPtr(&mat.M32));
+        }
+
+        [Fact]
+        public void Matrix3x2CreateBroadcastScalarTest()
+        {
+            Matrix3x2 a = Matrix3x2.Create(float.Pi);
+
+            Assert.Equal(Vector2.Pi, a.X);
+            Assert.Equal(Vector2.Pi, a.Y);
+            Assert.Equal(Vector2.Pi, a.Z);
+        }
+
+        [Fact]
+        public void Matrix3x2CreateBroadcastVectorTest()
+        {
+            Matrix3x2 a = Matrix3x2.Create(Vector2.Create(float.Pi, float.E));
+
+            Assert.Equal(Vector2.Create(float.Pi, float.E), a.X);
+            Assert.Equal(Vector2.Create(float.Pi, float.E), a.Y);
+            Assert.Equal(Vector2.Create(float.Pi, float.E), a.Z);
+        }
+
+        [Fact]
+        public void Matrix3x2CreateVectorsTest()
+        {
+            Matrix3x2 a = Matrix3x2.Create(
+                Vector2.Create(11.0f, 12.0f),
+                Vector2.Create(21.0f, 22.0f),
+                Vector2.Create(31.0f, 32.0f)
+            );
+
+            Assert.Equal(Vector2.Create(11.0f, 12.0f), a.X);
+            Assert.Equal(Vector2.Create(21.0f, 22.0f), a.Y);
+            Assert.Equal(Vector2.Create(31.0f, 32.0f), a.Z);
+        }
+
+        [Fact]
+        public void Matrix3x2GetElementTest()
+        {
+            Matrix3x2 a = GenerateTestMatrix();
+
+            Assert.Equal(a.M11, a.X.X);
+            Assert.Equal(a.M11, a[0, 0]);
+            Assert.Equal(a.M11, a.GetElement(0, 0));
+
+            Assert.Equal(a.M12, a.X.Y);
+            Assert.Equal(a.M12, a[0, 1]);
+            Assert.Equal(a.M12, a.GetElement(0, 1));
+
+            Assert.Equal(a.M21, a.Y.X);
+            Assert.Equal(a.M21, a[1, 0]);
+            Assert.Equal(a.M21, a.GetElement(1, 0));
+
+            Assert.Equal(a.M22, a.Y.Y);
+            Assert.Equal(a.M22, a[1, 1]);
+            Assert.Equal(a.M22, a.GetElement(1, 1));
+
+            Assert.Equal(a.M31, a.Z.X);
+            Assert.Equal(a.M31, a[2, 0]);
+            Assert.Equal(a.M31, a.GetElement(2, 0));
+
+            Assert.Equal(a.M32, a.Z.Y);
+            Assert.Equal(a.M32, a[2, 1]);
+            Assert.Equal(a.M32, a.GetElement(2, 1));
+        }
+
+        [Fact]
+        public void Matrix3x2GetRowTest()
+        {
+            Matrix3x2 a = GenerateTestMatrix();
+
+            Vector2 vx = new Vector2(a.M11, a.M12);
+            Assert.Equal(vx, a.X);
+            Assert.Equal(vx, a[0]);
+            Assert.Equal(vx, a.GetRow(0));
+
+            Vector2 vy = new Vector2(a.M21, a.M22);
+            Assert.Equal(vy, a.Y);
+            Assert.Equal(vy, a[1]);
+            Assert.Equal(vy, a.GetRow(1));
+
+            Vector2 vz = new Vector2(a.M31, a.M32);
+            Assert.Equal(vz, a.Z);
+            Assert.Equal(vz, a[2]);
+            Assert.Equal(vz, a.GetRow(2));
+        }
+
+        [Fact]
+        public void Matrix3x2WithElementTest()
+        {
+            Matrix3x2 a = Matrix3x2.Identity;
+
+            a[0, 0] = 11.0f;
+            Assert.Equal(11.5f, a.WithElement(0, 0, 11.5f).M11);
+            Assert.Equal(11.0f, a.M11);
+
+            a[0, 1] = 12.0f;
+            Assert.Equal(12.5f, a.WithElement(0, 1, 12.5f).M12);
+            Assert.Equal(12.0f, a.M12);
+
+            a[1, 0] = 21.0f;
+            Assert.Equal(21.5f, a.WithElement(1, 0, 21.5f).M21);
+            Assert.Equal(21.0f, a.M21);
+
+            a[1, 1] = 22.0f;
+            Assert.Equal(22.5f, a.WithElement(1, 1, 22.5f).M22);
+            Assert.Equal(22.0f, a.M22);
+
+            a[2, 0] = 31.0f;
+            Assert.Equal(31.5f, a.WithElement(2, 0, 31.5f).M31);
+            Assert.Equal(31.0f, a.M31);
+
+            a[2, 1] = 32.0f;
+            Assert.Equal(32.5f, a.WithElement(2, 1, 32.5f).M32);
+            Assert.Equal(32.0f, a.M32);
+        }
+
+        [Fact]
+        public void Matrix3x2WithRowTest()
+        {
+            Matrix3x2 a = Matrix3x2.Identity;
+
+            a[0] = Vector2.Create(11.0f, 12.0f);
+            Assert.Equal(Vector2.Create(11.5f, 12.5f), a.WithRow(0, Vector2.Create(11.5f, 12.5f)).X);
+            Assert.Equal(Vector2.Create(11.0f, 12.0f), a.X);
+
+            a[1] = Vector2.Create(21.0f, 22.0f);
+            Assert.Equal(Vector2.Create(21.5f, 22.5f), a.WithRow(1, Vector2.Create(21.5f, 22.5f)).Y);
+            Assert.Equal(Vector2.Create(21.0f, 22.0f), a.Y);
+
+            a[2] = Vector2.Create(31.0f, 32.0f);
+            Assert.Equal(Vector2.Create(31.5f, 32.5f), a.WithRow(2, Vector2.Create(31.5f, 32.5f)).Z);
+            Assert.Equal(Vector2.Create(31.0f, 32.0f), a.Z);
         }
     }
 }

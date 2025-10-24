@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -311,9 +311,6 @@
   </data>
   <data name="SystemNetSockets_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Sockets is not supported on this platform.</value>
-  </data>
-  <data name="net_sockets_handle_already_used" xml:space="preserve">
-    <value>Handle is already used by another Socket.</value>
   </data>
   <data name="net_sockets_address_small" xml:space="preserve">
     <value>Provided SocketAddress is too small for given AddressFamily.</value>

@@ -47,7 +47,7 @@ namespace TestUnhandledExceptionTester
             }
             else if (!OperatingSystem.IsWindows())
             {
-                expectedExitCode = 128 + 6;
+                expectedExitCode = 128 + 6; // SIGABRT
             }
             else if (TestLibrary.Utilities.IsNativeAot)
             {
@@ -55,7 +55,20 @@ namespace TestUnhandledExceptionTester
             }
             else
             {
-                expectedExitCode = unchecked((int)0xE0434352);
+                if (unhandledType.EndsWith("hardware"))
+                {
+                    // Null reference exception code
+                    expectedExitCode = unchecked((int)0xC0000005);
+                }
+                else if (unhandledType == "collecteddelegate")
+                {
+                    // Fail fast exit code
+                    expectedExitCode = unchecked((int)0x80131623);
+                }
+                else
+                {
+                    expectedExitCode = unchecked((int)0xE0434352);
+                }
             }
 
             if (expectedExitCode != testProcess.ExitCode)
@@ -89,9 +102,16 @@ namespace TestUnhandledExceptionTester
             }
             else
             {
-                if (unhandledType == "main")
+                if (unhandledType == "main" || unhandledType == "secondary")
                 {
                     if (lines[0] != "Unhandled exception. System.Exception: Test")
+                    {
+                        throw new Exception("Missing Unhandled exception header");
+                    }
+                }
+                if (unhandledType == "mainthreadinterrupted" || unhandledType == "secondarythreadinterrupted")
+                {
+                    if (lines[0] != "Unhandled exception. System.Threading.ThreadInterruptedException: Test")
                     {
                         throw new Exception("Missing Unhandled exception header");
                     }
@@ -104,11 +124,25 @@ namespace TestUnhandledExceptionTester
                         throw new Exception("Missing Unhandled exception header");
                     }
                 }
+                else if (unhandledType == "collecteddelegate")
+                {
+                    if (lines[1] != "A callback was made on a garbage collected delegate of type 'System.Private.CoreLib!System.Action::Invoke'.")
+                    {
+                        throw new Exception("Missing collected delegate diagnostic");
+                    }
+                }
             }
 
             if (unhandledType == "main")
             {
                 if (!lines[exceptionStackFrameLine].TrimStart().StartsWith("at TestUnhandledException.Program.Main"))
+                {
+                    throw new Exception("Missing exception source frame");
+                }
+            }
+            else if (unhandledType == "secondary")
+            {
+                if (!lines[exceptionStackFrameLine].TrimStart().StartsWith("at TestUnhandledException.Program."))
                 {
                     throw new Exception("Missing exception source frame");
                 }
@@ -121,9 +155,16 @@ namespace TestUnhandledExceptionTester
         public static void TestEntryPoint()
         {
             RunExternalProcess("main", "unhandled.dll");
+            RunExternalProcess("mainhardware", "unhandled.dll");
+            RunExternalProcess("mainthreadinterrupted", "unhandled.dll");
+            RunExternalProcess("secondary", "unhandled.dll");
+            RunExternalProcess("secondaryhardware", "unhandled.dll");
+            RunExternalProcess("secondarythreadinterrupted", "unhandled.dll");
             RunExternalProcess("foreign", "unhandled.dll");
             File.Delete(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "dependencytodelete.dll"));
             RunExternalProcess("missingdependency", "unhandledmissingdependency.dll");
+            if (!TestLibrary.Utilities.IsMonoRuntime && !TestLibrary.Utilities.IsNativeAot)
+                RunExternalProcess("collecteddelegate", "collecteddelegate.dll");
         }
     }
 }

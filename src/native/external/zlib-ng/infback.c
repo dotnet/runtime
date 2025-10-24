@@ -53,14 +53,19 @@ int32_t ZNG_CONDEXPORT PREFIX(inflateBackInit)(PREFIX3(stream) *strm, int32_t wi
     Tracev((stderr, "inflate: allocated\n"));
 
     strm->state = (struct internal_state *)state;
-    state->dmax = 32768U;
     state->wbits = (unsigned int)windowBits;
     state->wsize = 1U << windowBits;
+    state->wbufsize = 1U << windowBits;
     state->window = window;
     state->wnext = 0;
     state->whave = 0;
-    state->sane = 1;
     state->chunksize = FUNCTABLE_CALL(chunksize)();
+#ifdef INFLATE_STRICT
+    state->dmax = 32768U;
+#endif
+#ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
+    state->sane = 1;
+#endif
     return Z_OK;
 }
 
@@ -97,7 +102,7 @@ int32_t Z_EXPORT PREFIX(inflateBackInit_)(PREFIX3(stream) *strm, int32_t windowB
     do { \
         PULL(); \
         have--; \
-        hold += ((unsigned)(*next++) << bits); \
+        hold += ((uint64_t)(*next++) << bits); \
         bits += 8; \
     } while (0)
 
@@ -149,7 +154,7 @@ int32_t Z_EXPORT PREFIX(inflateBack)(PREFIX3(stream) *strm, in_func in, void *in
     z_const unsigned char *next; /* next input */
     unsigned char *put;          /* next output */
     unsigned have, left;         /* available input and output */
-    uint32_t hold;               /* bit buffer */
+    uint64_t hold;               /* bit buffer */
     unsigned bits;               /* bits in bit buffer */
     unsigned copy;               /* number of stored or match bytes to copy */
     unsigned char *from;         /* where to copy match bytes from */

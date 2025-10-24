@@ -31,8 +31,8 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         internal PackageCompilationAssemblyResolver(IFileSystem fileSystem, string[] nugetPackageDirectories)
         {
-            ThrowHelper.ThrowIfNull(fileSystem);
-            ThrowHelper.ThrowIfNull(nugetPackageDirectories);
+            ArgumentNullException.ThrowIfNull(fileSystem);
+            ArgumentNullException.ThrowIfNull(nugetPackageDirectories);
 
             _fileSystem = fileSystem;
             _nugetPackageDirectories = nugetPackageDirectories;
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
         public bool TryResolveAssemblyPaths(CompilationLibrary library, List<string>? assemblies)
         {
-            ThrowHelper.ThrowIfNull(library);
+            ArgumentNullException.ThrowIfNull(library);
 
             if (_nugetPackageDirectories == null || _nugetPackageDirectories.Length == 0 ||
                 !string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase))

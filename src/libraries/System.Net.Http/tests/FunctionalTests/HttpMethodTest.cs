@@ -37,6 +37,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal("HEAD", HttpMethod.Head.Method);
             Assert.Equal("OPTIONS", HttpMethod.Options.Method);
             Assert.Equal("TRACE", HttpMethod.Trace.Method);
+            Assert.Equal("QUERY", HttpMethod.Query.Method);
         }
 
         [Fact]
@@ -160,6 +161,7 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { HttpMethod.Patch, nameof(HttpMethod.Patch) };
             yield return new object[] { HttpMethod.Post, nameof(HttpMethod.Post) };
             yield return new object[] { HttpMethod.Put, nameof(HttpMethod.Put) };
+            yield return new object[] { HttpMethod.Query, nameof(HttpMethod.Query) };
             yield return new object[] { HttpMethod.Trace, nameof(HttpMethod.Trace) };
         }
 

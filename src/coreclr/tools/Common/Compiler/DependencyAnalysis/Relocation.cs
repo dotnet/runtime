@@ -20,7 +20,6 @@ namespace ILCompiler.DependencyAnalysis
         IMAGE_REL_BASED_LOONGARCH64_PC       = 0x16,   // LoongArch64: pcalau12i+imm12
         IMAGE_REL_BASED_LOONGARCH64_JIR      = 0x17,   // LoongArch64: pcaddu18i+jirl
         IMAGE_REL_BASED_RISCV64_PC           = 0x18,   // RiscV64: auipc
-        IMAGE_REL_BASED_RISCV64_JALR         = 0x19,   // RiscV64: jalr (indirect jump)
         IMAGE_REL_BASED_RELPTR32             = 0x7C,   // 32-bit relative address from byte starting reloc
                                                        // This is a special NGEN-specific relocation type
                                                        // for relative pointer (used to make NGen relocation
@@ -419,7 +418,7 @@ namespace ILCompiler.DependencyAnalysis
 
             uint pcInstr = *pCode;
 
-            Debug.Assert(pcInstr == 0x1e00000e);  // Must be pcaddu18i R14, 0
+            Debug.Assert(pcInstr == 0x1e000010);  // Must be pcaddu18i t4, 0
 
             long relOff = imm38 & 0x20000;
             long imm = imm38 + relOff;
@@ -470,7 +469,7 @@ namespace ILCompiler.DependencyAnalysis
         private static unsafe void PutRiscV64PC(uint* pCode, long imm32)
         {
             // Verify that we got a valid offset
-            Debug.Assert((int)imm32 == imm32);
+            Debug.Assert((imm32 >= (long)-0x80000000 - 0x800) && (imm32 < (long)0x80000000 - 0x800));
 
             int doff = (int)(imm32 & 0xfff);
             uint auipcInstr = *pCode;

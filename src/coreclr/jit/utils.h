@@ -785,11 +785,11 @@ private:
     bool GetCycles(uint64_t* time);
 };
 
-// Uses win API QueryPerformanceCounter/QueryPerformanceFrequency.
+// Uses minipal/time.h
 class PerfCounter
 {
-    LARGE_INTEGER beg;
-    double        freq;
+    int64_t beg;
+    double  freq;
 
 public:
     // If the method returns false, any other query yield unpredictable results.
@@ -1098,9 +1098,9 @@ double CachedCyclesPerSecond();
 template <typename T>
 bool FitsIn(var_types type, T value)
 {
-    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
-                          std::is_same<T, size_t>::value || std::is_same<T, ssize_t>::value ||
-                          std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+    static_assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                   std::is_same<T, size_t>::value || std::is_same<T, ssize_t>::value ||
+                   std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
 
     switch (type)
     {

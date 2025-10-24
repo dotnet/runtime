@@ -4,8 +4,8 @@
 
   <PropertyGroup>
     <SharedFrameworkName>$(MicrosoftNetCoreAppFrameworkName)</SharedFrameworkName>
-    <IsShipping Condition="'$(PgoInstrument)' != ''">false</IsShipping>
     <SharedFrameworkFriendlyName>.NET Runtime</SharedFrameworkFriendlyName>
+    <UseWix5>true</UseWix5>
   </PropertyGroup>
 
   <!--
@@ -83,6 +83,8 @@
     <PlatformManifestFileEntry Include="libSystem.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Native.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.TimeZoneData.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.TimeZoneData.Invariant.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Net.Http.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Net.Http.Native.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Net.Http.Native.so" IsNative="true" />
@@ -98,9 +100,12 @@
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Security.Cryptography.Native.OpenSsl.so" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.Browser.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Runtime.InteropServices.JavaScript.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="coreclr.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclr.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclr_static.a" IsNative="true" />
     <PlatformManifestFileEntry Include="clrgc.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrgc.dylib" IsNative="true" />
@@ -114,6 +119,8 @@
     <PlatformManifestFileEntry Condition="'$(PgoInstrument)' != ''" Include="clrjit.pgd" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libclrjit.dylib" IsNative="true" />
+    <PlatformManifestFileEntry Condition="('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')" Include="libclrinterpreter.so" IsNative="true" />
+    <PlatformManifestFileEntry Condition="('$(RuntimeConfiguration)' == 'Debug' or '$(RuntimeConfiguration)' == 'Checked') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')" Include="libclrinterpreter.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscordaccore.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordaccore.dylib" IsNative="true" />
@@ -218,11 +225,12 @@
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-simd.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-nosimd.a" IsNative="true" />
-    <PlatformManifestFileEntry Include="wasm-bundled-timezones.a" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.runtime.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.diagnostics.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="dotnet.diagnostics.js.map" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.worker.mjs" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.native.js.symbols" IsNative="true" />
@@ -253,7 +261,6 @@
     <PlatformManifestFileEntry Include="wasi-link.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
-    <PlatformManifestFileEntry Include="ILLink.Substitutions.LegacyJsInterop.xml" IsNative="true" />
     <!-- wasi specific -->
     <PlatformManifestFileEntry Include="main.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.h" IsNative="true" />

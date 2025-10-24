@@ -1,6 +1,37 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+//
+// Physical promotion is an optimization where struct fields accessed as
+// LCL_FLD nodes are promoted to individual primitive-typed local variables
+// accessed as LCL_VAR, allowing register allocation and removing unnecessary
+// memory operations.
+//
+// Key components:
+//
+// 1. Candidate Identification:
+//    - Identifies struct locals that aren't already promoted and aren't address-exposed
+//    - Analyzes access patterns to determine which fields are good promotion candidates
+//    - Uses weighted cost models to balance performance and code size and to take PGO
+//      data into account
+//
+// 2. Field Promotion:
+//    - Creates primitive-typed replacement locals for selected fields
+//    - Records which parts of the struct remains unpromoted
+//
+// 3. Access Transformation:
+//    - Transforms local field accesses to use promoted field variables
+//    - Decomposes struct stores and copies to operate on the primitive fields
+//    - Handles call argument passing and returns with field lists where appropriate
+//    - Tracks when values in promoted fields vs. original struct are fresher
+//    - Inserts read-backs when the struct field is fresher than the promoted local
+//    - Inserts write-backs when the promoted local is fresher than the struct field
+//    - Ensures proper state across basic block boundaries and exception flow
+//
+// The transformation carefully handles OSR locals, parameters, and call arguments,
+// while maintaining correct behavior for exception handling and control flow.
+//
+
 #include "jitpch.h"
 #include "promotion.h"
 #include "jitstd/algorithm.h"
@@ -702,40 +733,10 @@ public:
 
             if (otherAccess.CountRegCallArgs > 0)
             {
-                auto willPassFieldInRegister = [=, &access, &otherAccess]() {
-                    if (access.Offset < otherAccess.Offset)
-                    {
-                        return false;
-                    }
-
-                    unsigned layoutOffset = access.Offset - otherAccess.Offset;
-                    if ((layoutOffset % TARGET_POINTER_SIZE) != 0)
-                    {
-                        return false;
-                    }
-
-                    unsigned accessSize = genTypeSize(access.AccessType);
-                    if (accessSize == TARGET_POINTER_SIZE)
-                    {
-                        return true;
-                    }
-
-                    const StructSegments& significantSegments = comp->GetSignificantSegments(otherAccess.Layout);
-                    if (!significantSegments.Intersects(
-                            StructSegments::Segment(layoutOffset + accessSize, layoutOffset + TARGET_POINTER_SIZE)))
-                    {
-                        return true;
-                    }
-
-                    return false;
-                };
-                // We may be able to decompose the call argument to require no
+                // The call argument will be decomposed and will not require a
                 // write-back.
-                if (willPassFieldInRegister())
-                {
-                    countOverlappedCallArg -= otherAccess.CountRegCallArgs;
-                    countOverlappedCallArgWtd -= otherAccess.CountRegCallArgsWtd;
-                }
+                countOverlappedCallArg -= otherAccess.CountRegCallArgs;
+                countOverlappedCallArgWtd -= otherAccess.CountRegCallArgsWtd;
             }
         }
 
@@ -767,11 +768,33 @@ public:
 
         unsigned countReadBacks    = 0;
         weight_t countReadBacksWtd = 0;
-        // For parameters or OSR locals we always need one read back.
-        if (lcl->lvIsParam || lcl->lvIsOSRLocal)
+
+        // For OSR locals we always need one read back.
+        if (lcl->lvIsOSRLocal)
         {
             countReadBacks++;
             countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
+        }
+        else if (lcl->lvIsParam)
+        {
+            // For parameters, the backend may be able to map it directly from a register.
+            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType))
+            {
+                // No promotion will result in a store to stack in the prolog.
+                costWithout += COST_STRUCT_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
+                sizeWithout += COST_STRUCT_ACCESS_SIZE;
+
+                // Promotion we cost like the normal reg accesses above
+                costWith += COST_REG_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
+                sizeWith += COST_REG_ACCESS_SIZE;
+            }
+            else
+            {
+                // Otherwise we expect no prolog work to be required if we
+                // don't promote, and we need a read back from the stack.
+                countReadBacks++;
+                countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
+            }
         }
 
         // If the struct is stored from a call (either due to a multireg
@@ -1073,7 +1096,7 @@ public:
 
                 if (lcl->OperIs(GT_LCL_ADDR))
                 {
-                    assert(user->OperIs(GT_CALL) && dsc->IsHiddenBufferStructArg() &&
+                    assert(user->OperIs(GT_CALL) && dsc->IsDefinedViaAddress() &&
                            (user->AsCall()->gtArgs.GetRetBufferArg()->GetNode() == lcl));
 
                     accessType   = TYP_STRUCT;
@@ -1285,6 +1308,13 @@ public:
                 rep.LclNum     = m_compiler->lvaGrabTemp(false DEBUGARG(rep.Description));
                 LclVarDsc* dsc = m_compiler->lvaGetDesc(rep.LclNum);
                 dsc->lvType    = rep.AccessType;
+
+                // Are we promoting Span<>._length field?
+                if ((rep.Offset == OFFSETOF__CORINFO_Span__length) && (rep.AccessType == TYP_INT) &&
+                    m_compiler->lvaGetDesc(agg->LclNum)->IsSpan())
+                {
+                    dsc->SetIsNeverNegative(true);
+                }
             }
 
 #ifdef DEBUG
@@ -1296,17 +1326,17 @@ public:
             }
 #endif
 
-            agg->Unpromoted = m_compiler->GetSignificantSegments(m_compiler->lvaGetDesc(agg->LclNum)->GetLayout());
+            agg->Unpromoted = m_compiler->lvaGetDesc(agg->LclNum)->GetLayout()->GetNonPadding(m_compiler);
             for (Replacement& rep : reps)
             {
-                agg->Unpromoted.Subtract(StructSegments::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
+                agg->Unpromoted.Subtract(SegmentList::Segment(rep.Offset, rep.Offset + genTypeSize(rep.AccessType)));
             }
 
             JITDUMP("  Unpromoted remainder: ");
             DBEXEC(m_compiler->verbose, agg->Unpromoted.Dump());
             JITDUMP("\n\n");
 
-            StructSegments::Segment unpromotedSegment;
+            SegmentList::Segment unpromotedSegment;
             if (agg->Unpromoted.CoveringSegment(&unpromotedSegment))
             {
                 agg->UnpromotedMin = unpromotedSegment.Start;
@@ -1491,19 +1521,15 @@ private:
 
                 flags |= AccessKindFlags::IsCallArg;
 
-#if FEATURE_MULTIREG_ARGS
-                if (!call->gtArgs.IsNewAbiInformationDetermined())
+                if (!call->gtArgs.IsAbiInformationDetermined())
                 {
-                    call->gtArgs.DetermineNewABIInfo(m_compiler, call);
+                    call->gtArgs.DetermineABIInfo(m_compiler, call);
                 }
 
-                if (!arg.NewAbiInfo.HasAnyStackSegment() && !arg.NewAbiInfo.HasExactlyOneRegisterSegment())
+                if (!arg.AbiInfo.HasAnyStackSegment() && !arg.AbiInfo.IsPassedByReference())
                 {
-                    // TODO-CQ: Support for other register args than multireg
-                    // args as well.
                     flags |= AccessKindFlags::IsRegCallArg;
                 }
-#endif
 
                 break;
             }
@@ -1616,7 +1642,10 @@ GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, co
 // Parameters:
 //   block - The block
 //
-void ReplaceVisitor::StartBlock(BasicBlock* block)
+// Returns:
+//   Statement in block to start from.
+//
+Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
 {
     m_currentBlock = block;
 
@@ -1639,8 +1668,10 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
     // when we start the initial BB.
     if (block != m_compiler->fgFirstBB)
     {
-        return;
+        return block->firstStmt();
     }
+
+    Statement* lastInsertedStmt = nullptr;
 
     for (AggregateInfo* agg : m_aggregates)
     {
@@ -1650,24 +1681,48 @@ void ReplaceVisitor::StartBlock(BasicBlock* block)
             continue;
         }
 
-        JITDUMP("Marking fields of %s V%02u as needing read-back in entry BB " FMT_BB "\n",
-                dsc->lvIsParam ? "parameter" : "OSR-local", agg->LclNum, block->bbNum);
+        JITDUMP("Processing fields of %s V%02u in entry BB " FMT_BB "\n", dsc->lvIsParam ? "parameter" : "OSR-local",
+                agg->LclNum, block->bbNum);
 
         for (size_t i = 0; i < agg->Replacements.size(); i++)
         {
             Replacement& rep = agg->Replacements[i];
             ClearNeedsWriteBack(rep);
-            if (m_liveness->IsReplacementLiveIn(block, agg->LclNum, (unsigned)i))
+            if (!m_liveness->IsReplacementLiveIn(block, agg->LclNum, (unsigned)i))
+            {
+                JITDUMP("  V%02u (%s) ignored because it is not live-in to entry BB\n", rep.LclNum, rep.Description);
+                continue;
+            }
+
+            if (!dsc->lvIsParam ||
+                !Promotion::MapsToParameterRegister(m_compiler, agg->LclNum, rep.Offset, rep.AccessType))
             {
                 SetNeedsReadBack(rep);
-                JITDUMP("  V%02u (%s) marked\n", rep.LclNum, rep.Description);
+                JITDUMP("  V%02u (%s) marked as needing read back\n", rep.LclNum, rep.Description);
+                continue;
+            }
+
+            // Insert read backs of parameters mapping to registers eagerly to
+            // set the backend up for recognizing these as register accesses.
+            GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
+            Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+            JITDUMP("  V%02u (%s) is read back eagerly because it is a register parameter\n", rep.LclNum,
+                    rep.Description);
+            DISPSTMT(stmt);
+            if (lastInsertedStmt == nullptr)
+            {
+                m_compiler->fgInsertStmtAtBeg(block, stmt);
             }
             else
             {
-                JITDUMP("  V%02u (%s) not marked (not live-in to entry BB)\n", rep.LclNum, rep.Description);
+                m_compiler->fgInsertStmtAfter(block, lastInsertedStmt, stmt);
             }
+            lastInsertedStmt = stmt;
         }
     }
+
+    // Skip all the eager read-backs if any were inserted.
+    return lastInsertedStmt == nullptr ? block->firstStmt() : lastInsertedStmt->GetNextStmt();
 }
 
 //------------------------------------------------------------------------
@@ -2058,7 +2113,7 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
 
                     if (m_replacer->CanReplaceCallArgWithFieldListOfReplacements(call, &arg, node->AsLclVarCommon()))
                     {
-                        // Multi-reg arg; can decompose into FIELD_LIST.
+                        // Register arg that can be decomposed into FIELD_LIST.
                         continue;
                     }
 
@@ -2144,15 +2199,189 @@ GenTree** ReplaceVisitor::InsertMidTreeReadBacks(GenTree** use)
 }
 
 //------------------------------------------------------------------------
+// ReplaceStructLocal:
+//   Try to replace a promoted struct local with uses of its fields.
+//
+// Parameters:
+//   user  - The user
+//   value - The struct local
+//
+// Returns:
+//   True if the local was replaced and no more work needs to be done; false if
+//   the use will need to be handled via write-backs.
+//
+// Remarks:
+//   Usually this amounts to replacing the struct local by a FIELD_LIST with
+//   the promoted fields, but merged returns require more complicated handling.
+//
+bool ReplaceVisitor::ReplaceStructLocal(GenTree* user, GenTree** use, GenTreeLclVarCommon* value)
+{
+    if (user->IsCall())
+    {
+        return ReplaceCallArgWithFieldList(user->AsCall(), use, value);
+    }
+    else
+    {
+        assert(user->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
+        return ReplaceReturnedStructLocal(user->AsOp(), use, value);
+    }
+}
+
+//------------------------------------------------------------------------
+// ReplaceReturnedStructLocal:
+//   Try to replace a returned promoted struct local.
+//
+// Parameters:
+//   ret   - The return node
+//   use   - The edge pointing to 'value'
+//   value - The struct local
+//
+// Returns:
+//   True if the local was used and no more work needs to be done; false if the
+//   use will need to be handled via write-backs.
+//
+// Remarks:
+//   The backend supports arbitrary FIELD_LIST for returns, i.e. there is no
+//   requirement that the fields map cleanly to registers. However, morph does
+//   not support introducing a returned FIELD_LIST in cases where returns are
+//   being merged. Due to that, and for CQ, we instead decompose a store to the
+//   return local for that case.
+//
+bool ReplaceVisitor::ReplaceReturnedStructLocal(GenTreeOp* ret, GenTree** use, GenTreeLclVarCommon* value)
+{
+    if (m_compiler->genReturnLocal != BAD_VAR_NUM)
+    {
+        JITDUMP("Replacing merged return by store to merged return local\n");
+        // If we have merged returns then replace with a store to the return
+        // local, and switch out the GT_RETURN to return that local.
+        GenTree* sideEffects = nullptr;
+        m_compiler->gtExtractSideEffList(ret, &sideEffects, GTF_SIDE_EFFECT, true);
+        m_currentStmt->SetRootNode(sideEffects == nullptr ? m_compiler->gtNewNothingNode() : sideEffects);
+        DISPSTMT(m_currentStmt);
+        m_madeChanges = true;
+
+        GenTree*   store     = m_compiler->gtNewStoreLclVarNode(m_compiler->genReturnLocal, value);
+        Statement* storeStmt = m_compiler->fgNewStmtFromTree(store);
+        m_compiler->fgInsertStmtAfter(m_currentBlock, m_currentStmt, storeStmt);
+        DISPSTMT(storeStmt);
+
+        ret->SetReturnValue(m_compiler->gtNewLclVarNode(m_compiler->genReturnLocal));
+        Statement* retStmt = m_compiler->fgNewStmtFromTree(ret);
+        m_compiler->fgInsertStmtAfter(m_currentBlock, storeStmt, retStmt);
+        DISPSTMT(retStmt);
+
+        return true;
+    }
+
+    GenTreeFieldList* fieldList = CreateFieldListForStructLocal(value);
+
+    if (fieldList == nullptr)
+    {
+        return false;
+    }
+
+    *use = fieldList;
+
+    m_madeChanges = true;
+    return true;
+}
+
+//------------------------------------------------------------------------
+// CreateFieldListForStructLocal:
+//   Create a FIELD_LIST node that corresponds to a struct local that has uses
+//   of promoted fields.
+//
+// Parameters:
+//   lcl - The local
+//
+// Returns:
+//   A field list node, or null pointer if a FIELD_LIST cannot be created for
+//   this use of the local.
+//
+GenTreeFieldList* ReplaceVisitor::CreateFieldListForStructLocal(GenTreeLclVarCommon* lcl)
+{
+    AggregateInfo* agg    = m_aggregates.Lookup(lcl->GetLclNum());
+    ClassLayout*   layout = lcl->GetLayout(m_compiler);
+    assert(layout != nullptr);
+
+    unsigned startOffset     = lcl->GetLclOffs();
+    unsigned returnValueSize = layout->GetSize();
+    if (agg->Unpromoted.Intersects(SegmentList::Segment(startOffset, startOffset + returnValueSize)))
+    {
+        // TODO-CQ: We could handle cases where the intersected remainder is simple
+        return nullptr;
+    }
+
+    auto checkPartialOverlap = [=](Replacement& rep) {
+        bool contained =
+            (rep.Offset >= startOffset) && (rep.Offset + genTypeSize(rep.AccessType) <= startOffset + returnValueSize);
+
+        if (contained)
+        {
+            // Keep visiting overlapping replacements
+            return true;
+        }
+
+        // Partial overlap, abort the visit and give up
+        return false;
+    };
+
+    if (!VisitOverlappingReplacements(lcl->GetLclNum(), startOffset, returnValueSize, checkPartialOverlap))
+    {
+        return nullptr;
+    }
+
+    StructDeaths      deaths    = m_liveness->GetDeathsForStructLocal(lcl);
+    GenTreeFieldList* fieldList = m_compiler->gtNewFieldList();
+
+    auto addField = [=](Replacement& rep) {
+        GenTree* fieldValue;
+        if (!rep.NeedsReadBack)
+        {
+            fieldValue = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
+
+            if (deaths.IsReplacementDying(static_cast<unsigned>(&rep - agg->Replacements.data())))
+            {
+                fieldValue->gtFlags |= GTF_VAR_DEATH;
+                CheckForwardSubForLastUse(rep.LclNum);
+            }
+        }
+        else
+        {
+            // Replacement local is not up to date.
+            fieldValue = m_compiler->gtNewLclFldNode(lcl->GetLclNum(), rep.AccessType, rep.Offset);
+
+            if (!m_compiler->lvaGetDesc(lcl->GetLclNum())->lvDoNotEnregister)
+            {
+                m_compiler->lvaSetVarDoNotEnregister(lcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            }
+        }
+
+        fieldList->AddField(m_compiler, fieldValue, rep.Offset - startOffset, rep.AccessType);
+
+        return true;
+    };
+
+    VisitOverlappingReplacements(lcl->GetLclNum(), startOffset, returnValueSize, addField);
+
+    return fieldList;
+}
+
+//------------------------------------------------------------------------
 // ReplaceCallArgWithFieldList:
-//   Handle a call that may  pass a struct local with replacements as the
+//   Handle a call that may pass a struct local with replacements as the
 //   retbuf.
 //
 // Parameters:
 //   call    - The call
+//   use     - The edge pointing to argNode
 //   argNode - The argument node
 //
-bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVarCommon* argNode)
+// Returns:
+//   True if the call argument was replaced with a FIELD_LIST; false if the
+//   argument could not be represented as a FIELD_LIST.
+//
+bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** use, GenTreeLclVarCommon* argNode)
 {
     CallArg* callArg = call->gtArgs.FindByNode(argNode);
     if (callArg == nullptr)
@@ -2166,65 +2395,13 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTreeLclVa
         return false;
     }
 
-    AggregateInfo* agg    = m_aggregates.Lookup(argNode->GetLclNum());
-    ClassLayout*   layout = argNode->GetLayout(m_compiler);
-    assert(layout != nullptr);
-    StructDeaths      deaths    = m_liveness->GetDeathsForStructLocal(argNode);
-    GenTreeFieldList* fieldList = new (m_compiler, GT_FIELD_LIST) GenTreeFieldList;
-    for (const ABIPassingSegment& seg : callArg->NewAbiInfo.Segments())
+    GenTreeFieldList* fieldList = CreateFieldListForStructLocal(argNode);
+    if (fieldList == nullptr)
     {
-        Replacement* rep = nullptr;
-        if (agg->OverlappingReplacements(argNode->GetLclOffs() + seg.Offset, seg.Size, &rep, nullptr) &&
-            rep->NeedsWriteBack)
-        {
-            GenTreeLclVar* fieldValue = m_compiler->gtNewLclvNode(rep->LclNum, rep->AccessType);
-
-            if (deaths.IsReplacementDying(static_cast<unsigned>(rep - agg->Replacements.data())))
-            {
-                fieldValue->gtFlags |= GTF_VAR_DEATH;
-                CheckForwardSubForLastUse(rep->LclNum);
-            }
-
-            fieldList->AddField(m_compiler, fieldValue, seg.Offset, rep->AccessType);
-        }
-        else
-        {
-            // Unpromoted part, or replacement local is not up to date.
-            var_types type;
-            if (rep != nullptr)
-            {
-                type = rep->AccessType;
-            }
-            else if (genIsValidFloatReg(seg.GetRegister()))
-            {
-                type = seg.GetRegisterType();
-            }
-            else
-            {
-                if ((seg.Offset % TARGET_POINTER_SIZE) == 0 && (seg.Size == TARGET_POINTER_SIZE))
-                {
-                    type = layout->GetGCPtrType(seg.Offset / TARGET_POINTER_SIZE);
-                }
-                else
-                {
-                    type = seg.GetRegisterType();
-                }
-            }
-
-            GenTree* fieldValue =
-                m_compiler->gtNewLclFldNode(argNode->GetLclNum(), type, argNode->GetLclOffs() + seg.Offset);
-            fieldList->AddField(m_compiler, fieldValue, seg.Offset, type);
-
-            if (!m_compiler->lvaGetDesc(argNode->GetLclNum())->lvDoNotEnregister)
-            {
-                m_compiler->lvaSetVarDoNotEnregister(argNode->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
-            }
-        }
+        return false;
     }
 
-    assert(callArg->GetEarlyNode() == argNode);
-    callArg->SetEarlyNode(fieldList);
-
+    *use          = fieldList;
     m_madeChanges = true;
     return true;
 }
@@ -2247,71 +2424,9 @@ bool ReplaceVisitor::CanReplaceCallArgWithFieldListOfReplacements(GenTreeCall*  
                                                                   CallArg*             callArg,
                                                                   GenTreeLclVarCommon* lcl)
 {
-#if !FEATURE_MULTIREG_ARGS
-    // TODO-CQ: We should do a similar thing for structs passed in a single
-    // register.
-    return false;
-#else
     // We should have computed ABI information during the costing phase.
-    assert(call->gtArgs.IsNewAbiInformationDetermined());
-
-    if (callArg->NewAbiInfo.HasAnyStackSegment() || callArg->NewAbiInfo.HasExactlyOneRegisterSegment())
-    {
-        return false;
-    }
-
-    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
-    assert(agg != nullptr);
-
-    bool anyReplacements = false;
-    for (const ABIPassingSegment& seg : callArg->NewAbiInfo.Segments())
-    {
-        assert(seg.IsPassedInRegister());
-
-        auto callback = [=, &anyReplacements, &seg](Replacement& rep) {
-            anyReplacements = true;
-
-            // Replacement must start at the right offset...
-            if (rep.Offset != lcl->GetLclOffs() + seg.Offset)
-            {
-                return false;
-            }
-
-            // It must not be too long..
-            unsigned repSize = genTypeSize(rep.AccessType);
-            if (repSize > seg.Size)
-            {
-                return false;
-            }
-
-            // If it is too short, the remainder that would be passed in the
-            // register should be padding. We can check that by only checking
-            // whether the remainder intersects anything unpromoted, since if
-            // the remainder is a different promotion we will return false when
-            // the replacement is visited in this callback.
-            if ((repSize < seg.Size) &&
-                agg->Unpromoted.Intersects(StructSegments::Segment(rep.Offset + repSize, rep.Offset + seg.Size)))
-            {
-                return false;
-            }
-
-            // Finally, the backend requires the register types to match.
-            if (!varTypeUsesSameRegType(rep.AccessType, seg.GetRegisterType()))
-            {
-                return false;
-            }
-
-            return true;
-        };
-
-        if (!VisitOverlappingReplacements(lcl->GetLclNum(), lcl->GetLclOffs() + seg.Offset, seg.Size, callback))
-        {
-            return false;
-        }
-    }
-
-    return anyReplacements;
-#endif
+    assert(call->gtArgs.IsAbiInformationDetermined());
+    return !callArg->AbiInfo.HasAnyStackSegment() && !callArg->AbiInfo.IsPassedByReference();
 }
 
 //------------------------------------------------------------------------
@@ -2481,7 +2596,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
 
         assert(effectiveUser->OperIs(GT_CALL, GT_RETURN, GT_SWIFT_ERROR_RET));
 
-        if (!effectiveUser->IsCall() || !ReplaceCallArgWithFieldList(effectiveUser->AsCall(), lcl))
+        if (!ReplaceStructLocal(effectiveUser, use, lcl))
         {
             unsigned size = lcl->GetLayout(m_compiler)->GetSize();
             WriteBackBeforeUse(use, lclNum, lcl->GetLclOffs(), size);
@@ -2795,13 +2910,13 @@ PhaseStatus Promotion::Run()
     ReplaceVisitor replacer(this, aggregates, &liveness);
     for (BasicBlock* bb : m_compiler->Blocks())
     {
-        replacer.StartBlock(bb);
+        Statement* firstStmt = replacer.StartBlock(bb);
 
         JITDUMP("\nReplacing in ");
-        DBEXEC(m_compiler->verbose, bb->dspBlockHeader(m_compiler));
+        DBEXEC(m_compiler->verbose, bb->dspBlockHeader());
         JITDUMP("\n");
 
-        for (Statement* stmt : bb->Statements())
+        for (Statement* stmt : StatementList(firstStmt))
         {
             replacer.StartStatement(stmt);
 
@@ -2878,7 +2993,7 @@ bool Promotion::HaveCandidateLocals()
 //
 bool Promotion::IsCandidateForPhysicalPromotion(LclVarDsc* dsc)
 {
-    return (dsc->TypeGet() == TYP_STRUCT) && !dsc->lvPromoted && !dsc->IsAddressExposed();
+    return dsc->TypeIs(TYP_STRUCT) && !dsc->lvPromoted && !dsc->IsAddressExposed();
 }
 
 //------------------------------------------------------------------------
@@ -2905,6 +3020,59 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
     }
 
     return nullptr;
+}
+
+//------------------------------------------------------------------------
+// MapsToParameterRegister:
+//   Check if a specific access in the specified parameter local is
+//   expected to map to a register.
+//
+// Parameters:
+//   comp       - Compiler instance
+//   lclNum     - Local being accessed into
+//   offset     - Offset being accessed at
+//   accessType - Type of access
+//
+// Returns:
+//   True if the access can be efficiently done via a parameter register.
+//
+bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType)
+{
+    assert(lclNum < comp->info.compArgsCount);
+
+    if (comp->opts.IsOSR())
+    {
+        return false;
+    }
+
+    const ABIPassingInformation& abiInfo = comp->lvaGetParameterABIInfo(lclNum);
+    if (abiInfo.IsPassedByReference() || abiInfo.HasAnyStackSegment())
+    {
+        return false;
+    }
+
+    for (const ABIPassingSegment& seg : abiInfo.Segments())
+    {
+        // This code corresponds to code in Lower::FindInducedParameterRegisterLocals
+        if ((offset < seg.Offset) || (offset + genTypeSize(accessType) > seg.Offset + seg.Size))
+        {
+            continue;
+        }
+
+        if (!genIsValidIntReg(seg.GetRegister()) && varTypeUsesFloatReg(accessType))
+        {
+            continue;
+        }
+
+        if (genIsValidFloatReg(seg.GetRegister()) && (offset != seg.Offset))
+        {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 // Promotion::ExplicitlyZeroInitReplacementLocals:

@@ -20,8 +20,6 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-        private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods = new();
-
         private readonly HttpMessageHandler? _nativeUnderlyingHandler;
         private IMeterFactory? _nativeMeterFactory;
         private HttpMessageHandler? _nativeFirstHandler; // DiagnosticsHandler or MetricsHandler, depending on global configuration.
@@ -45,10 +43,14 @@ namespace System.Net.Http
 
                         // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
                         // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
-                        handler = new MetricsHandler(handler, _nativeMeterFactory, out _);
-                        if (DiagnosticsHandler.IsGloballyEnabled())
+                        // Since HttpClientHandler.Proxy is unsupported on most platforms, don't bother passing it to telemetry handlers.
+                        if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
                         {
-                            handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
+                            handler = new MetricsHandler(handler, _nativeMeterFactory, proxy: null, out _);
+                        }
+                        if (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation)
+                        {
+                            handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current, proxy: null);
                         }
 
                         // Ensure a single handler is used for all requests.
@@ -775,12 +777,11 @@ namespace System.Net.Http
         }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
-        private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
         [UnsupportedOSPlatform("browser")]
         public static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator =>
-            s_dangerousAcceptAnyServerCertificateValidator ??
-            Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
-            s_dangerousAcceptAnyServerCertificateValidator;
+            field ??
+            Interlocked.CompareExchange(ref field, delegate { return true; }, null) ??
+            field;
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()
         {

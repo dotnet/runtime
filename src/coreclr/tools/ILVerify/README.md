@@ -48,10 +48,15 @@ The test project itself is under [src/tests/ilverify](../../../tests/ilverify)
 
 General instructions to build this library can be found [here](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/testing.md).
 
-As the test project is marked with priority=1, simply building the test projects from the root of the project is not enough. For the initial build of priority=1 in release mode, run the following:
+As quick snippet which should be enough to build CoreCLR
+```
+./build.cmd -s clr+libs -c release
+```
 
-```sh
-src/tests/build.(cmd/sh) release -priority=1
+As the test project is marked with priority=1, simply building the test projects from the root of the project is not enough. Run the following to build ilverify tests:
+
+```shell
+src/tests/build.(cmd/sh) release tree ilverify
 ```
 
 It is important to not attempt to build the test project using `dotnet build` or `dotnet test`, as this will invalidate the state of the build and requires a full rebuild of both (see this [issue](https://github.com/dotnet/runtime/issues/43967)).
@@ -59,13 +64,18 @@ It is important to not attempt to build the test project using `dotnet build` or
 To incrementally build the ILVerify tests in isolation, run the following:
 
 ```sh
-dotnet.(cmd/sh) msbuild ./src/tests/ilverify/ILVerification.Tests.csproj /p:Configuration=Release
+dotnet.(cmd/sh) msbuild ./src/tests/ilverify/ILVerificationTests.csproj /p:Configuration=Release
 ```
 
 In order to run the tests, execute:
 
+on Linux
 ```sh
-artifacts/tests/coreclr/(windows/linux).x64.Release/ilverify/ILVerification.Tests.(cmd/sh) -coreroot=artifacts/tests/coreclr/(windows/linux).x64.Release/Tests/Core_Root
+artifacts/tests/coreclr/linux.x64.Release/ilverify/ILVerificationTests.sh -coreroot=<repo_root>artifacts/tests/coreclr/linux.x64.Release/Tests/Core_Root
+```
+on Windows
+```shell
+artifacts\tests\coreclr\windows.x64.Release\ilverify\ILVerificationTests.cmd -coreroot=<repo_root>artifacts\tests\coreclr\windows.x64.Release\Tests\Core_Root
 ```
 
 

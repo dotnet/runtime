@@ -133,7 +133,8 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <!-- Disable some C# warnings for the tests. -->
-    <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008,8981</NoWarn>
+    <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008,8500,8981</NoWarn>
+
     <!--
       Disable xunit warnings that aren't relevant with our custom runner.
       xUnit1028: Use supported test return types. We support test methods that return int where 100 is passing and everything else is failure.
@@ -223,7 +224,9 @@
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
     <_targetOS>$(TargetOS)</_targetOS>
     <_targetArchitecture>$(TargetArchitecture)</_targetArchitecture>
-    <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
+    <UseNativeAOTRuntime Condition="'$(TestBuildMode)' == 'nativeaot'">true</UseNativeAOTRuntime>
+    <AppleAppBuilderRuntime Condition="'$(TestBuildMode)' == 'nativeaot'">NativeAOT</AppleAppBuilderRuntime>
+    <AppleAppBuilderRuntime Condition="'$(TestBuildMode)' != 'nativeaot'">CoreCLR</AppleAppBuilderRuntime>
     <NativeLib>static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
     <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>

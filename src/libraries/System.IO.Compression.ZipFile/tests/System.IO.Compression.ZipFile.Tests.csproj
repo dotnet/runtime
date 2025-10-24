@@ -40,6 +40,8 @@
              Link="Common\System\IO\Compression\StreamHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.cs"
              Link="Common\System\IO\Compression\ZipTestHelper.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\Compression\ZipTestHelper.ZipFile.cs"
+             Link="Common\System\IO\Compression\ZipTestHelper.ZipFile.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="ZipFile.Unix.cs" />

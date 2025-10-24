@@ -67,6 +67,7 @@ static int generic_array_methods (MonoClass *klass);
 static void setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache);
 static FoundAttrUD class_has_isbyreflike_attribute (MonoClass *klass);
 static FoundAttrUD class_has_inlinearray_attribute (MonoClass *klass);
+static FoundAttrUD class_has_extendedlayout_attribute (MonoClass *klass);
 
 static
 GENERATE_TRY_GET_CLASS_WITH_CACHE(icollection, "System.Collections.Generic", "ICollection`1");
@@ -317,6 +318,13 @@ mono_class_setup_fields (MonoClass *klass)
 	if (explicit_size)
 		instance_size += real_size;
 
+	if (explicit_size && real_size != 0 && m_class_is_inlinearray (klass)) {
+		if (mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback)
+			mono_get_runtime_callbacks ()->mono_class_set_deferred_type_load_failure_callback (klass, "Inline array must not have explicit size.");
+		else
+			mono_class_set_type_load_failure (klass, "Inline array must not have explicit size.");
+	}
+
 	/*
 	 * This function can recursively call itself.
 	 * Prevent infinite recursion by using a list in TLS.
@@ -504,7 +512,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	}
 
 	klass->name = name;
-	klass->name_hash = mono_metadata_str_hash (name);
+	klass->name_hash = g_str_hash (name);
 	klass->name_space = nspace;
 
 	MONO_PROFILER_RAISE (class_loading, (klass));
@@ -524,7 +532,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		mono_class_set_generic_container (klass, generic_container);
 		MonoType *canonical_inst = &((MonoClassGtd*)klass)->canonical_inst;
 		canonical_inst->type = MONO_TYPE_GENERICINST;
-		canonical_inst->data.generic_class = mono_metadata_lookup_generic_class (klass, context->class_inst, FALSE);
+		m_type_data_set_generic_class_unchecked (canonical_inst, mono_metadata_lookup_generic_class (klass, context->class_inst, FALSE));
 		enable_gclass_recording ();
 	}
 
@@ -535,10 +543,10 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		if (mono_metadata_token_table (parent_token) == MONO_TABLE_TYPESPEC) {
 			/*WARNING: this must satisfy mono_metadata_type_hash*/
 			klass->this_arg.byref__ = 1;
-			klass->this_arg.data.klass = klass;
 			klass->this_arg.type = MONO_TYPE_CLASS;
-			klass->_byval_arg.data.klass = klass;
+			m_type_data_set_klass_unchecked (&klass->this_arg, klass);
 			klass->_byval_arg.type = MONO_TYPE_CLASS;
+			m_type_data_set_klass_unchecked (&klass->_byval_arg, klass);
 		}
 		parent = mono_class_get_checked (image, parent_token, error);
 		if (parent && context) /* Always inflate */
@@ -737,6 +745,24 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			klass->is_inlinearray = 1;
 			mono_class_set_inlinearray_value(klass, GPOINTER_TO_INT32 (attr.value));
 		}
+		if ((mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK) == TYPE_ATTRIBUTE_EXTENDED_LAYOUT) {
+			attr = class_has_extendedlayout_attribute (klass);
+			if (attr.has_attr) {
+				mono_class_set_extendedlayout_value (klass, GPOINTER_TO_INT32 (attr.value));
+			} else {
+				mono_class_set_type_load_failure (klass, "Extended layout attribute not found for %s", m_class_get_name (klass));
+				mono_loader_unlock ();
+				MONO_PROFILER_RAISE (class_failed, (klass));
+				return NULL;
+			}
+
+			if (klass->is_inlinearray) {
+				mono_class_set_type_load_failure (klass, "InlineArray type %s cannot have extended layout.", m_class_get_name (klass));
+				mono_loader_unlock ();
+				MONO_PROFILER_RAISE (class_failed, (klass));
+				return NULL;
+			}
+		}
 	}
 
 	// compute is_exception_class, used by interp to avoid inlining exception handling code
@@ -831,6 +857,25 @@ has_inline_array_attribute_value_func (MonoImage *image, uint32_t method_token, 
 	}
 }
 
+static void
+has_extended_layout_attribute_value_func (MonoImage *image, uint32_t method_token, uint32_t *cols, gpointer user_data)
+{
+	FoundAttrUD *attr = (FoundAttrUD *)user_data;
+	MonoError error;
+	MonoMethod *ctor = mono_get_method_checked (image, method_token, NULL, NULL, &error);
+	if (ctor) {
+		const char *data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
+		uint32_t data_size = mono_metadata_decode_value (data, &data);
+		MonoDecodeCustomAttr *decoded_attr = mono_reflection_create_custom_attr_data_args_noalloc (image, ctor, (guchar*)data, data_size, &error);
+		mono_error_assert_ok (&error);
+		g_assert (decoded_attr->named_args_num == 0 && decoded_attr->typed_args_num == 1);
+		attr->value = GUINT_TO_POINTER (*(guint32 *)decoded_attr->typed_args [0]->value.primitive);
+		g_free (decoded_attr);
+	} else {
+		g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to: %s", image->name, method_token, mono_error_get_message (&error));
+	}
+}
+
 static FoundAttrUD
 class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value, MonoHasValueCallback callback)
 {
@@ -876,6 +921,11 @@ class_has_inlinearray_attribute (MonoClass *klass)
 	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "InlineArrayAttribute", TRUE, TRUE, has_inline_array_attribute_value_func);
 }
 
+static FoundAttrUD
+class_has_extendedlayout_attribute (MonoClass *klass)
+{
+	return class_has_wellknown_attribute (klass, "System.Runtime.InteropServices", "ExtendedLayoutAttribute", TRUE, TRUE, has_extended_layout_attribute_value_func);
+}
 
 gboolean
 mono_class_setup_method_has_preserve_base_overrides_attribute (MonoMethod *method)
@@ -937,7 +987,8 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 
 	klass->_byval_arg.type = MONO_TYPE_GENERICINST;
 	klass->this_arg.type = m_class_get_byval_arg (klass)->type;
-	klass->this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
+	m_type_data_set_generic_class_unchecked (&klass->this_arg, gclass);
+	m_type_data_set_generic_class_unchecked (&klass->_byval_arg, gclass);
 	klass->this_arg.byref__ = TRUE;
 	klass->is_inlinearray = gklass->is_inlinearray;
 	mono_class_set_inlinearray_value(klass, mono_class_get_inlinearray_value(gklass));
@@ -1168,7 +1219,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	name [nsize + maxrank + bounded] = ']';
 	name [nsize + maxrank + bounded + 1] = 0;
 	klass->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
-	klass->name_hash = mono_metadata_str_hash (klass->name);
+	klass->name_hash = g_str_hash (klass->name);
 	g_free (name);
 
 	klass->type_token = 0;
@@ -1197,16 +1248,19 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 
 	mono_class_setup_supertypes (klass);
 
-	// NOTE: this is probably too aggressive if eclass is not a valuetype.  It looks like we
-	// only need the size info in order to set MonoClass:has_references for this array type -
-	// and for that we only need to setup the fields of the element type if it's not a reference
-	// type.
-	if (!eclass->size_inited)
+	// It looks like we only need the size info in order to set MonoClass:has_references
+	// for this array type and for that we only need to setup the fields of the element
+	// type if it's not a reference type.
+	gboolean is_eclass_valuetype = m_class_is_valuetype (eclass);
+	if (is_eclass_valuetype && !eclass->size_inited)
 		mono_class_setup_fields (eclass);
 	mono_class_set_type_load_failure_causedby_class (klass, eclass, "Could not load array element type");
 	/*FIXME we fail the array type, but we have to let other fields be set.*/
 
-	klass->has_references = MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (eclass)) || m_class_has_references (eclass)? TRUE: FALSE;
+	if (is_eclass_valuetype)
+		klass->has_references = m_class_has_references (eclass) ? TRUE : FALSE;
+	else
+		klass->has_references = TRUE;
 
 	if (eclass->enumtype)
 		klass->cast_class = eclass->element_class;
@@ -1218,13 +1272,13 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	if ((rank > 1) || bounded) {
 		MonoArrayType *at = mm ? (MonoArrayType *)mono_mem_manager_alloc0 (mm, sizeof (MonoArrayType)) : (MonoArrayType *)mono_image_alloc0 (image, sizeof (MonoArrayType));
 		klass->_byval_arg.type = MONO_TYPE_ARRAY;
-		klass->_byval_arg.data.array = at;
+		m_type_data_set_array_unchecked (&klass->_byval_arg, at);
 		at->eklass = eclass;
 		at->rank = GUINT32_TO_UINT8 (rank);
 		/* FIXME: complete.... */
 	} else {
 		klass->_byval_arg.type = MONO_TYPE_SZARRAY;
-		klass->_byval_arg.data.klass = eclass;
+		m_type_data_set_klass_unchecked (&klass->_byval_arg, eclass);
 	}
 	klass->this_arg = klass->_byval_arg;
 	klass->this_arg.byref__ = 1;
@@ -1398,8 +1452,8 @@ make_generic_param_class (MonoGenericParam *param)
 	MonoTypeEnum t = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 	klass->_byval_arg.type = t;
 	klass->this_arg.type = t;
-	CHECKED_METADATA_WRITE_PTR ( klass->this_arg.data.generic_param ,  param );
-	CHECKED_METADATA_WRITE_PTR ( klass->_byval_arg.data.generic_param , param );
+	CHECKED_METADATA_WRITE_PTR ( klass->this_arg.data__.generic_param ,  param );
+	CHECKED_METADATA_WRITE_PTR ( klass->_byval_arg.data__.generic_param , param );
 	klass->this_arg.byref__ = TRUE;
 
 	/* We don't use type_token for VAR since only classes can use it (not arrays, pointer, VARs, etc) */
@@ -1523,7 +1577,7 @@ mono_class_create_ptr (MonoType *type)
 	result->name_space = el_class->name_space;
 	name = g_strdup_printf ("%s*", el_class->name);
 	result->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
-	result->name_hash = mono_metadata_str_hash (result->name);
+	result->name_hash = g_str_hash (result->name);
 	result->class_kind = MONO_CLASS_POINTER;
 	g_free (name);
 
@@ -1543,7 +1597,8 @@ mono_class_create_ptr (MonoType *type)
 	class_composite_fixup_cast_class (result, TRUE);
 
 	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
-	result->this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
+	m_type_data_set_type_unchecked (&result->this_arg, m_class_get_byval_arg (el_class));
+	m_type_data_set_type_unchecked (&result->_byval_arg, m_class_get_byval_arg (el_class));
 	result->this_arg.byref__ = TRUE;
 
 	mono_class_setup_supertypes (result);
@@ -1601,7 +1656,7 @@ mono_class_create_fnptr (MonoMethodSignature *sig)
 	result->parent = NULL; /* no parent for PTR types */
 	result->name_space = "System";
 	result->name = "MonoFNPtrFakeClass";
-	result->name_hash = mono_metadata_str_hash (result->name);
+	result->name_hash = g_str_hash (result->name);
 	result->class_kind = MONO_CLASS_POINTER;
 
 	result->image = mono_defaults.corlib; /* need to fix... */
@@ -1609,7 +1664,8 @@ mono_class_create_fnptr (MonoMethodSignature *sig)
 	result->min_align = sizeof (gpointer);
 	result->cast_class = result->element_class = result;
 	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_FNPTR;
-	result->this_arg.data.method = result->_byval_arg.data.method = sig;
+	m_type_data_set_method_unchecked (&result->this_arg, sig);
+	m_type_data_set_method_unchecked (&result->_byval_arg, sig);
 	result->this_arg.byref__ = TRUE;
 	result->blittable = TRUE;
 	result->inited = TRUE;
@@ -1693,8 +1749,6 @@ mono_class_setup_count_virtual_methods (MonoClass *klass)
 	return vcount;
 }
 
-#ifdef COMPRESSED_INTERFACE_BITMAP
-
 /*
  * Compressed interface bitmap design.
  *
@@ -1749,7 +1803,7 @@ mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size)
 	while (bitmap < end) {
 		if (*bitmap || numz == 255) {
 			if (dest) {
-				*dest++ = numz;
+				*dest++ = (uint8_t)numz;
 				*dest++ = *bitmap;
 			}
 			res += 2;
@@ -1763,7 +1817,7 @@ mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size)
 	if (numz) {
 		res += 2;
 		if (dest) {
-			*dest++ = numz;
+			*dest++ = (uint8_t)numz;
 			*dest++ = 0;
 		}
 	}
@@ -1784,7 +1838,7 @@ mono_compress_bitmap (uint8_t *dest, const uint8_t *bitmap, int size)
  * FALSE otherwise.
  */
 int
-mono_class_interface_match (const uint8_t *bitmap, int id)
+mono_class_interface_match_compressed (const uint8_t *bitmap, int id)
 {
 	while (TRUE) {
 		id -= bitmap [0] * 8;
@@ -1797,7 +1851,6 @@ mono_class_interface_match (const uint8_t *bitmap, int id)
 		id -= 8;
 	}
 }
-#endif
 
 static char*
 concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)
@@ -1887,7 +1940,7 @@ type_has_references (MonoClass *klass, MonoType *ftype)
 	if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (klass, ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && class_has_references (mono_class_from_mono_type_internal (ftype)))))
 		return TRUE;
 	if (!m_type_is_byref (ftype) && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
-		MonoGenericParam *gparam = ftype->data.generic_param;
+		MonoGenericParam *gparam = m_type_data_get_generic_param_unchecked (ftype);
 
 		if (gparam->gshared_constraint)
 			return class_has_references (mono_class_from_mono_type_internal (gparam->gshared_constraint));
@@ -1935,7 +1988,7 @@ mono_class_is_gparam_with_nonblittable_parent (MonoClass *klass)
 {
 	MonoType *type = m_class_get_byval_arg (klass);
 	g_assert (mono_type_is_generic_parameter (type));
-	MonoGenericParam *gparam = type->data.generic_param;
+	MonoGenericParam *gparam = m_type_data_get_generic_param_unchecked (type);
 	if ((mono_generic_param_info (gparam)->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) != 0)
 		return TRUE;
 	if ((mono_generic_param_info (gparam)->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) != 0)
@@ -2049,6 +2102,10 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 
 	return TRUE;
 }
+
+typedef enum _ExtendedLayoutKind {
+	EXTENDED_LAYOUT_KIND_CSTRUCT = 0
+} ExtendedLayoutKind;
 
 /*
  * mono_class_layout_fields:
@@ -2381,7 +2438,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 			ftype = mono_type_get_underlying_type (field->type);
 			ftype = mono_type_get_basic_type_from_generic (ftype);
-			if (type_has_references (klass, ftype) || m_type_is_byref (ftype)) {
+			if (type_has_references (klass, ftype) || type_has_ref_fields (ftype) || m_type_is_byref (ftype)) {
 				if (field_offsets [i] % TARGET_SIZEOF_VOID_P) {
 					mono_class_set_type_load_failure (klass, "Reference typed field '%s' has explicit offset that is not pointer-size aligned.", field->name);
 				}
@@ -2418,6 +2475,89 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 		}
 		break;
+	}
+	case TYPE_ATTRIBUTE_EXTENDED_LAYOUT:  {
+		ExtendedLayoutKind extended_layout_kind = (ExtendedLayoutKind)mono_class_get_extendedlayout_value (klass);
+		if (extended_layout_kind == EXTENDED_LAYOUT_KIND_CSTRUCT) {
+			if (!m_class_is_valuetype(klass)) {
+				if (mono_class_set_type_load_failure (klass, "CStruct type must be value type."))
+					return;
+			}
+
+			mono_class_setup_fields (klass->parent);
+			if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Cannot initialize parent class"))
+				return;
+
+			real_size = klass->parent->instance_size;
+
+			if (top == 0) {
+				/* Empty structs are not allowed */
+				if (mono_class_set_type_load_failure (klass, "CStruct type cannot be empty."))
+					return;
+			}
+
+			if (any_field_has_auto_layout) {
+				if (mono_class_set_type_load_failure (klass, "CStruct type cannot have AutoLayout fields."))
+					return;
+			}
+
+			klass->blittable = TRUE;
+
+			for (i = 0; i < top; i++){
+				gint32 align;
+				guint32 size;
+				MonoType *ftype;
+
+				field = &klass->fields [i];
+
+				if (mono_field_is_deleted (field))
+					continue;
+				if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+					continue;
+
+				ftype = mono_type_get_underlying_type (field->type);
+				ftype = mono_type_get_basic_type_from_generic (ftype);
+
+				if ((top == 1) && (instance_size == MONO_ABI_SIZEOF (MonoObject)) &&
+					(strcmp (mono_field_get_name (field), "$PRIVATE$") == 0)) {
+					/* This field is a hack inserted by MCS to empty structures */
+					continue;
+				}
+
+				size = mono_type_size (field->type, &align);
+
+				if (type_has_references (klass, ftype))
+					if (mono_class_set_type_load_failure (klass, "CStruct type must not have reference fields."))
+						return;
+
+				min_align = MAX (align, min_align);
+				field_offsets [i] = real_size;
+				if (align) {
+					field_offsets [i] += align - 1;
+					field_offsets [i] &= ~(align - 1);
+				}
+				/*TypeBuilders produce all sort of weird things*/
+				g_assert (image_is_dynamic (klass->image) || field_offsets [i] > 0);
+
+				gint64 raw_real_size = (gint64)field_offsets [i] + size;
+				real_size = (gint32)raw_real_size;
+
+				if (real_size != raw_real_size)
+					mono_class_set_type_load_failure (klass, "Can't load type %s. The size is too big.", m_class_get_name (klass));
+			}
+
+			instance_size = real_size;
+
+			if (instance_size & (min_align - 1)) {
+				instance_size += min_align - 1;
+				instance_size &= ~(min_align - 1);
+			}
+			break;
+		}
+		else {
+			mono_class_set_type_load_failure (klass, "Unknown extended layout kind '%d'.", extended_layout_kind);
+			return;
+		}
 	}
 	}
 
@@ -2600,10 +2740,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		case MONO_TYPE_TYPEDBYREF:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
-			field_class = mono_class_from_mono_type_internal (field->type);
-			if (mono_class_is_ginst (field_class) && !mono_verifier_class_is_valid_generic_instantiation (field_class)) {
-				mono_class_set_type_load_failure (klass, "Field '%s' is an invalid generic instantiation of type %s", field->name, mono_type_get_full_name (field_class));
-				return;
+			if (!klass->skip_generic_constraints) {
+				field_class = mono_class_from_mono_type_internal (field->type);
+				if (mono_class_is_ginst (field_class) && !mono_verifier_class_is_valid_generic_instantiation (field_class)) {
+					mono_class_set_type_load_failure (klass, "Field '%s' is an invalid generic instantiation of type %s", field->name, mono_type_get_full_name (field_class));
+					return;
+				}
 			}
 			break;
 		default:
@@ -2699,7 +2841,7 @@ setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **met
 	if (mono_class_is_gtd (iface)) {
 		MonoType *ty = mono_class_gtd_get_canonical_inst (iface);
 		g_assert (ty->type == MONO_TYPE_GENERICINST);
-		gclass = ty->data.generic_class;
+		gclass = m_type_data_get_generic_class_unchecked (ty);
 	} else
 		gclass = mono_class_get_generic_class (iface);
 
@@ -3189,7 +3331,7 @@ mono_class_init_internal (MonoClass *klass)
 
 	mono_class_setup_interface_offsets_internal (klass, first_iface_slot, MONO_SETUP_ITF_OFFSETS_OVERWRITE);
 
-	if (mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass))
+	if (!klass->skip_generic_constraints && mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass))
 		mono_class_set_type_load_failure (klass, "Invalid generic instantiation");
 
 	goto leave;
@@ -3325,10 +3467,10 @@ mono_class_setup_mono_type (MonoClass *klass)
 	gboolean is_corlib = mono_is_corlib_image (klass->image);
 
 	klass->this_arg.byref__ = 1;
-	klass->this_arg.data.klass = klass;
 	klass->this_arg.type = MONO_TYPE_CLASS;
-	klass->_byval_arg.data.klass = klass;
 	klass->_byval_arg.type = MONO_TYPE_CLASS;
+	m_type_data_set_klass_unchecked (&klass->this_arg, klass);
+	m_type_data_set_klass_unchecked (&klass->_byval_arg, klass);
 
 	if (is_corlib && !strcmp (nspace, "System")) {
 		if (!strcmp (name, "ValueType")) {
@@ -3961,21 +4103,15 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 			if (iface)
 				array_ifaces [interface_count ++] = iface;
 		}
-		int mult = klass->element_class->enumtype ? 2 : 1;
 
-		interfaces = (MonoClass **)mono_image_alloc0 (klass->image, sizeof (MonoClass*) * interface_count * mult);
+		interfaces = (MonoClass **)mono_image_alloc0 (klass->image, sizeof (MonoClass*) * interface_count );
 
 		int itf_idx = 0;
 		args [0] = m_class_get_byval_arg (m_class_get_element_class (klass));
 		for (int i = 0; i < interface_count; ++i)
 			interfaces [itf_idx++] = mono_class_bind_generic_parameters (array_ifaces [i], 1, args, FALSE);
-		if (klass->element_class->enumtype) {
-			args [0] = mono_class_enum_basetype_internal (klass->element_class);
-			for (int i = 0; i < interface_count; ++i)
-				interfaces [itf_idx++] = mono_class_bind_generic_parameters (array_ifaces [i], 1, args, FALSE);
-		}
-		interface_count *= mult;
 		g_assert (itf_idx == interface_count);
+
 	} else if (mono_class_is_ginst (klass)) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 

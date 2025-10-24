@@ -563,7 +563,7 @@ extern "C" void QCALLTYPE MetadataImport_Enum(
         // The ASSOCIATE_RECORD is a pair of integers.
         // This means we require a size of 2x the returned length.
         resultLength = associatesCount * 2;
-        static_assert_no_msg(sizeof(ASSOCIATE_RECORD) == 2 * sizeof(INT32));
+        static_assert(sizeof(ASSOCIATE_RECORD) == 2 * sizeof(INT32));
 
         ASSOCIATE_RECORD* arAssocRecord = (ASSOCIATE_RECORD*)EnsureResultSize(resultLength, shortResultLen, shortResult, memory);
         IfFailThrow(pScope->GetAllAssociates(&hEnum, arAssocRecord, associatesCount));

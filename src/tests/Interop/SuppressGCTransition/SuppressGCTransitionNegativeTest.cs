@@ -109,7 +109,7 @@ unsafe static class SuppressGCTransitionNative
 
 public unsafe class SuppressGCTransitionTest
 {
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReturnInt(int value)
     {
         return value;
