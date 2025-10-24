@@ -14,7 +14,6 @@ namespace System.Diagnostics.Tracing
     [EventSourceAutoGenerate]
     internal sealed partial class RuntimeEventSource : EventSource
     {
-        internal static readonly Guid EventSourceGuid = new Guid("49592C0F-5A05-516D-AA4B-A64E02026C89");
         internal const string EventSourceName = "System.Runtime";
 
         public static class Keywords

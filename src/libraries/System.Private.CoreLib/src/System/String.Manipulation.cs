@@ -2365,7 +2365,7 @@ namespace System
         // Creates a copy of this string in lower case based on invariant culture.
         public string ToLowerInvariant()
         {
-            return TextInfo.Invariant.ToLower(this);
+            return TextInfo.ToLowerInvariant(this);
         }
 
         public string ToUpper() => ToUpper(null);
@@ -2380,7 +2380,7 @@ namespace System
         // Creates a copy of this string in upper case based on invariant culture.
         public string ToUpperInvariant()
         {
-            return TextInfo.Invariant.ToUpper(this);
+            return TextInfo.ToUpperInvariant(this);
         }
 
         // Trims the whitespace from both ends of the string.  Whitespace is defined by

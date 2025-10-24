@@ -14,6 +14,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
@@ -133,7 +134,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 #endif
         }
 
-        public static JsonSourceGeneratorResult RunJsonSourceGenerator(Compilation compilation, bool disableDiagnosticValidation = false)
+        public static JsonSourceGeneratorResult RunJsonSourceGenerator(
+            Compilation compilation,
+            bool disableDiagnosticValidation = false,
+            ITestOutputHelper? logger = null)
         {
             var generatedSpecs = ImmutableArray<ContextGenerationSpec>.Empty;
             var generator = new JsonSourceGenerator
@@ -143,6 +147,19 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             CSharpGeneratorDriver driver = CreateJsonSourceGeneratorDriver(compilation, generator);
             driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out ImmutableArray<Diagnostic> diagnostics);
+
+            if (logger is not null)
+            {
+                foreach (Diagnostic diagnostic in outCompilation.GetDiagnostics().Concat(diagnostics))
+                {
+                    logger.WriteLine(diagnostic.ToString());
+                }
+
+                foreach (var tree in outCompilation.SyntaxTrees)
+                {
+                    LogGeneratedCode(tree, logger);
+                }
+            }
 
             if (!disableDiagnosticValidation)
             {
@@ -182,16 +199,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 internal sealed class CompilerFeatureRequiredAttribute : Attribute
                 {
                     public CompilerFeatureRequiredAttribute(string featureName) { }
-                }
-            }
-
-            namespace System.Diagnostics.CodeAnalysis
-            {
-                internal sealed class ExperimentalAttribute : Attribute
-                {
-                    public ExperimentalAttribute(string diagnosticId) => DiagnosticId = diagnosticId;
-                    public string DiagnosticId { get; }
-                    public string UrlFormat { get; set; }
                 }
             }
             """;
@@ -840,6 +847,59 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         internal static void AssertMaxSeverity(this IEnumerable<Diagnostic> diagnostics, DiagnosticSeverity maxSeverity)
         {
             Assert.DoesNotContain(diagnostics, diagnostic => diagnostic.Severity > maxSeverity);
+        }
+
+        private static void LogGeneratedCode(SyntaxTree tree, ITestOutputHelper logger)
+        {
+            logger.WriteLine(FileSeparator);
+            logger.WriteLine($"{tree.FilePath} content:");
+            logger.WriteLine(FileSeparator);
+            using NumberedSourceFileWriter lineWriter = new(logger);
+            tree.GetRoot().WriteTo(lineWriter);
+            lineWriter.WriteLine(string.Empty);
+        }
+
+        private static readonly string FileSeparator = new string('=', 140);
+
+        private sealed class NumberedSourceFileWriter : TextWriter
+        {
+            private readonly ITestOutputHelper _logger;
+            private readonly StringBuilder _lineBuilder = new StringBuilder();
+            private int _lineNumber;
+
+            internal NumberedSourceFileWriter(ITestOutputHelper logger)
+            {
+                _logger = logger;
+            }
+
+            public override Encoding Encoding => Encoding.Unicode;
+
+            public override void WriteLine(string? value)
+            {
+                _logger.WriteLine($"{++_lineNumber,6}: {_lineBuilder}{value}");
+                _lineBuilder.Clear();
+            }
+
+            public override void Write(string? value)
+            {
+                if (value is null)
+                {
+                    return;
+                }
+
+                if (value.EndsWith("\r\n", StringComparison.Ordinal))
+                {
+                    WriteLine(value.Substring(0, value.Length - 2));
+                }
+                else if (value.EndsWith("\n", StringComparison.Ordinal))
+                {
+                    WriteLine(value.Substring(0, value.Length - 1));
+                }
+                else
+                {
+                    _lineBuilder.Append(value);
+                }
+            }
         }
     }
 

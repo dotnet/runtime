@@ -4058,6 +4058,9 @@
   <data name="NotSupported_CppCli" xml:space="preserve">
     <value>C++/CLI activation has been disabled via a feature switch. See https://aka.ms/dotnet-illink/nativehost for more information.</value>
   </data>
+  <data name="NotSupported_Continuation" xml:space="preserve">
+    <value>Object.GetType() is not supported for continuations</value>
+  </data>
   <data name="InvalidOperation_EmptyQueue" xml:space="preserve">
     <value>Queue empty.</value>
   </data>
