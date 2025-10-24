@@ -1873,8 +1873,8 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
         if (align < INTERP_STACK_SLOT_SIZE)
             align = INTERP_STACK_SLOT_SIZE;
 
-        // We do not align beyond the stack alignment 
-        // (This is relevant for structs with very high alignment requirements, 
+        // We do not align beyond the stack alignment
+        // (This is relevant for structs with very high alignment requirements,
         // where we align within struct layout, but the structs are not actually
         // aligned on the stack)
         if (align > INTERP_STACK_ALIGNMENT)

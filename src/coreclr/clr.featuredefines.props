@@ -36,7 +36,7 @@
         <FeatureObjCMarshal>true</FeatureObjCMarshal>
     </PropertyGroup>
 
-    <PropertyGroup Condition="('$(Platform)' == 'x64' OR '$(Platform)' == 'arm64') AND ('$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked') AND '$(TargetsAndroid)' != 'true'">
+    <PropertyGroup Condition="('$(Platform)' == 'x64' OR '$(Platform)' == 'arm64' OR '$(Platform)' == 'arm') AND ('$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked') AND '$(TargetsAndroid)' != 'true'">
         <FeatureInterpreter>true</FeatureInterpreter>
     </PropertyGroup>
 
