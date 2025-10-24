@@ -25,7 +25,7 @@ public static class Help
 
         Display Names:
           * For a given test, the display name can be one of the following:
-            - For tests where the only [Fact] method in the assembly is this test, the display name is the assembly name.
+            - For assemblies containing a single [Fact] test method, the display name is the assembly name.
             - For [Theory] tests, the display name is the fully qualified method name with the parameters for the test case.
             - If the parameters are computed at runtime, the display name will be the fully qualified method name.
             - For other tests, the display name is the fully qualified method name.
@@ -36,7 +36,8 @@ public static class Help
                                      Path to a file containing a list of tests to exclude.
                                      Each line in the file should be in the following format:
                                         displayName, reason
-                                     Intended to be generated from src/tests/issues.targets.
+                                     (In the dotnet/runtime repository, this file is typically generated as part of the build process as 'src/tests/issues.targets'.)
+                                     If you are running tests outside the repository context, you may need to create your own exclusion list file in the format shown above.
         """;
 
         Console.WriteLine(help);
