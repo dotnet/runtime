@@ -1575,6 +1575,142 @@ RefCopyDone$argReg
         EPILOG_BRANCH_REG x11
     LEAF_END Store_X1_X2_X3_X4_X5_X6_X7
 
+    ; Floating point stores for S registers using stp wherever possible
+    ; Due to the need to alignment, we need to add interpreter stack slot size alignment
+    ; to stores of odd numbers of registers
+
+    LEAF_ENTRY Store_S0
+        str s0, [x9], #8 ; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S0
+
+    LEAF_ENTRY Store_S1
+        str s1, [x9], #8 ; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S1
+
+    LEAF_ENTRY Store_S0_S1
+        stp s0, s1, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S0_S1
+
+    LEAF_ENTRY Store_S0_S1_S2
+        stp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Store_S2
+        str s2, [x9], #8 ; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S0_S1_S2
+
+    LEAF_ENTRY Store_S0_S1_S2_S3
+        stp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Store_S2_S3
+        stp s2, s3, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S0_S1_S2_S3
+
+    LEAF_ENTRY Store_S0_S1_S2_S3_S4
+        stp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Store_S2_S3_S4
+        stp s2, s3, [x9], #8
+    ALTERNATE_ENTRY Store_S4
+        str s4, [x9], #8 ; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S0_S1_S2_S3_S4
+
+    LEAF_ENTRY Store_S0_S1_S2_S3_S4_S5
+        stp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Store_S2_S3_S4_S5
+        stp s2, s3, [x9], #8
+    ALTERNATE_ENTRY Store_S4_S5
+        stp s4, s5, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S0_S1_S2_S3_S4_S5
+
+    LEAF_ENTRY Store_S0_S1_S2_S3_S4_S5_S6
+        stp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Store_S2_S3_S4_S5_S6
+        stp s2, s3, [x9], #8
+    ALTERNATE_ENTRY Store_S4_S5_S6
+        stp s4, s5, [x9], #8
+    ALTERNATE_ENTRY Store_S6
+        str s6, [x9], #8 ; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S0_S1_S2_S3_S4_S5_S6
+
+    LEAF_ENTRY Store_S0_S1_S2_S3_S4_S5_S6_S7
+        stp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Store_S2_S3_S4_S5_S6_S7
+        stp s2, s3, [x9], #8
+    ALTERNATE_ENTRY Store_S4_S5_S6_S7
+        stp s4, s5, [x9], #8
+    ALTERNATE_ENTRY Store_S6_S7
+        stp s6, s7, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S0_S1_S2_S3_S4_S5_S6_S7
+
+    LEAF_ENTRY Store_S1_S2
+        stp s1, s2, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S1_S2
+
+    LEAF_ENTRY Store_S1_S2_S3
+        stp s1, s2, [x9], #8
+    ALTERNATE_ENTRY Store_S3
+        str s3, [x9], #8; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S1_S2_S3
+
+    LEAF_ENTRY Store_S1_S2_S3_S4
+        stp s1, s2, [x9], #8
+    ALTERNATE_ENTRY Store_S3_S4
+        stp s3, s4, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S1_S2_S3_S4
+
+    LEAF_ENTRY Store_S1_S2_S3_S4_S5
+        stp s1, s2, [x9], #8
+    ALTERNATE_ENTRY Store_S3_S4_S5
+        stp s3, s4, [x9], #8
+    ALTERNATE_ENTRY Store_S5
+        str s5, [x9], #8; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S1_S2_S3_S4_S5
+
+    LEAF_ENTRY Store_S1_S2_S3_S4_S5_S6
+        stp s1, s2, [x9], #8
+    ALTERNATE_ENTRY Store_S3_S4_S5_S6
+        stp s3, s4, [x9], #8
+    ALTERNATE_ENTRY Store_S5_S6
+        stp s5, s6, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S1_S2_S3_S4_S5_S6
+
+    LEAF_ENTRY Store_S1_S2_S3_S4_S5_S6_S7
+        stp s1, s2, [x9], #8
+    ALTERNATE_ENTRY Store_S3_S4_S5_S6_S7
+        stp s3, s4, [x9], #8
+    ALTERNATE_ENTRY Store_S5_S6_S7
+        stp s5, s6, [x9], #8
+    ALTERNATE_ENTRY Store_S7
+        str s7, [x9], #8; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Store_S1_S2_S3_S4_S5_S6_S7
+
     ; Floating point stores using stp wherever possible
 
     LEAF_ENTRY Store_D0
@@ -2023,6 +2159,142 @@ CopyLoop
         ldr x11, [x10], #8
         EPILOG_BRANCH_REG x11
     LEAF_END Load_X1_X2_X3_X4_X5_X6_X7
+
+    ; Routines for passing arguments in floating point registers S0..S7
+    ; Due to the need to alignment, we need to add interpreter stack slot size alignment
+    ; to stores of odd numbers of registers
+
+    LEAF_ENTRY Load_S0
+        ldr s0, [x9], #8; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S0
+
+    LEAF_ENTRY Load_S1
+        ldr s1, [x9], #8; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S1
+
+    LEAF_ENTRY Load_S0_S1
+        ldp s0, s1, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S0_S1
+
+    LEAF_ENTRY Load_S0_S1_S2
+        ldp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Load_S2
+        ldr s2, [x9], #8; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S0_S1_S2
+
+    LEAF_ENTRY Load_S0_S1_S2_S3
+        ldp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Load_S2_S3
+        ldp s2, s3, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S0_S1_S2_S3
+
+    LEAF_ENTRY Load_S0_S1_S2_S3_S4
+        ldp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Load_S2_S3_S4
+        ldp s2, s3, [x9], #8
+    ALTERNATE_ENTRY Load_S4
+        ldr s4, [x9], #8; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S0_S1_S2_S3_S4
+
+    LEAF_ENTRY Load_S0_S1_S2_S3_S4_S5
+        ldp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Load_S2_S3_S4_S5
+        ldp s2, s3, [x9], #8
+    ALTERNATE_ENTRY Load_S4_S5
+        ldp s4, s5, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S0_S1_S2_S3_S4_S5
+
+    LEAF_ENTRY Load_S0_S1_S2_S3_S4_S5_S6
+        ldp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Load_S2_S3_S4_S5_S6
+        ldp s2, s3, [x9], #8
+    ALTERNATE_ENTRY Load_S4_S5_S6
+        ldp s4, s5, [x9], #8
+    ALTERNATE_ENTRY Load_S6
+        ldr s6, [x9], #8; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S0_S1_S2_S3_S4_S5_S6
+
+    LEAF_ENTRY Load_S0_S1_S2_S3_S4_S5_S6_S7
+        ldp s0, s1, [x9], #8
+    ALTERNATE_ENTRY Load_S2_S3_S4_S5_S6_S7
+        ldp s2, s3, [x9], #8
+    ALTERNATE_ENTRY Load_S4_S5_S6_S7
+        ldp s4, s5, [x9], #8
+    ALTERNATE_ENTRY Load_S6_S7
+        ldp s6, s7, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S0_S1_S2_S3_S4_S5_S6_S7
+
+    LEAF_ENTRY Load_S1_S2
+        ldp s1, s2, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S1_S2
+
+    LEAF_ENTRY Load_S1_S2_S3
+        ldp s1, s2, [x9], #8
+    ALTERNATE_ENTRY Load_S3
+        ldr s3, [x9], #8; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S1_S2_S3
+
+    LEAF_ENTRY Load_S1_S2_S3_S4
+        ldp s1, s2, [x9], #8
+    ALTERNATE_ENTRY Load_S3_S4
+        ldp s3, s4, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S1_S2_S3_S4
+
+    LEAF_ENTRY Load_S1_S2_S3_S4_S5
+        ldp s1, s2, [x9], #8
+    ALTERNATE_ENTRY Load_S3_S4_S5
+        ldp s3, s4, [x9], #8
+    ALTERNATE_ENTRY Load_S5
+        ldr s5, [x9], #8; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S1_S2_S3_S4_S5
+
+    LEAF_ENTRY Load_S1_S2_S3_S4_S5_S6
+        ldp s1, s2, [x9], #8
+    ALTERNATE_ENTRY Load_S3_S4_S5_S6
+        ldp s3, s4, [x9], #8
+    ALTERNATE_ENTRY Load_S5_S6
+        ldp s5, s6, [x9], #8
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S1_S2_S3_S4_S5
+
+    LEAF_ENTRY Load_S1_S2_S3_S4_S5_S6_S7
+        ldp s1, s2, [x9], #8
+    ALTERNATE_ENTRY Load_S3_S4_S5_S6_S7
+        ldp s3, s4, [x9], #8
+    ALTERNATE_ENTRY Load_S5_S6_S7
+        ldp s5, s6, [x9], #8
+    ALTERNATE_ENTRY Load_S7
+        ldr s7, [x9], #8; align to the interpreter stack slot size
+        ldr x11, [x10], #8
+        EPILOG_BRANCH_REG x11
+    LEAF_END Load_S1_S2_S3_S4_S5_S6_S7
 
     ; Routines for passing arguments in floating point registers D0..D7
 
