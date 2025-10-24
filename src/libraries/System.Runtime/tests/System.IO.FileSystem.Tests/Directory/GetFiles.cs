@@ -231,7 +231,7 @@ namespace System.IO.Tests
             Directory.CreateDirectory(problematicDirPath);
 
             string normalFileName = "normalfile.txt";
-            string filePath = Path.Combine(testDir.FullName, normalFileName);
+            string filePath = Path.Combine(Path.GetFullPath(problematicDirPath), normalFileName);
             File.Create(filePath).Dispose();
 
             string[] files = GetEntries(problematicDirPath);
