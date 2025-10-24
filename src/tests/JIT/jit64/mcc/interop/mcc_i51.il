@@ -20,7 +20,7 @@
     {
             .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [mscorlib]System.Type, string[]) = {
             type([TestLibrary]TestLibrary.PlatformDetection)
-            string[1] ('IsVarArgsSupported')
+            string[1] ('IsVarArgSupported')
         }
       .maxstack  1
 
