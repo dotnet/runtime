@@ -643,7 +643,8 @@ namespace System.Threading
         /// <exception cref="NotSupportedException">An unsupported <typeparamref name="T"/> is specified.</exception>
         /// <typeparam name="T">
         /// The type to be used for <paramref name="location1"/> and <paramref name="value"/>.
-        /// This type must be an enum type (i.e. typeof(T).IsEnum is true) or a primitive type (i.e. typeof(T).IsPrimitive is true).
+        /// This type must be an integer primitive type or an enum type backed by an integer type.
+        /// Floating-point types (float, double) are not supported.
         /// </typeparam>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -785,7 +786,8 @@ namespace System.Threading
         /// <exception cref="NotSupportedException">An unsupported <typeparamref name="T"/> is specified.</exception>
         /// <typeparam name="T">
         /// The type to be used for <paramref name="location1"/> and <paramref name="value"/>.
-        /// This type must be an enum type (i.e. typeof(T).IsEnum is true) or a primitive type (i.e. typeof(T).IsPrimitive is true).
+        /// This type must be an integer primitive type or an enum type backed by an integer type.
+        /// Floating-point types (float, double) are not supported.
         /// </typeparam>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
