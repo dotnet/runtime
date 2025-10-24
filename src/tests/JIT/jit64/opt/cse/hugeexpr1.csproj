@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Required for NativeAotIncompatible and to skip running crossgen (triggered by JitOptimizationSensitive) -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Takes long time to compile and not interesting from AOT perspective -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
