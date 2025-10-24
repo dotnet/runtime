@@ -1535,7 +1535,7 @@ namespace System.Net.Http
                 return;
             }
 
-            if (optionData != 0)
+            /*if (optionData != 0)
             {
                 uint protocolRequired = 1;
                 if (!Interop.WinHttp.WinHttpSetOption(
@@ -1545,7 +1545,7 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "HTTP protocol required option not supported");
                 }
-            }
+            }*/
         }
 
         private void SetWinHttpOption(SafeWinHttpHandle handle, uint option, ref uint optionData)
