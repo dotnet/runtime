@@ -224,20 +224,26 @@ namespace System.IO.Tests
         [Theory]
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsEnumerateDirectoryWithTrailingSpacePeriod(string dirName)
+        public void WindowsEnumerateDirectoryWithTrailingSpacePeriod(string trailingChars)
         {
-            DirectoryInfo parentDir = Directory.CreateDirectory(GetTestFilePath());
-            string problematicDirPath = Path.Combine(parentDir.FullName, dirName);
-            Directory.CreateDirectory(@"\\?\" + problematicDirPath);
-
+            // Test scenario from issue #113120: calling Directory.GetFiles with a path that has
+            // trailing spaces/periods should return paths without those trailing characters.
+            // Windows normalizes trailing spaces/periods away, so the returned paths should be normalized too.
+            
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string normalFileName = "normalfile.txt";
-            string filePath = Path.Combine(problematicDirPath, normalFileName);
+            string filePath = Path.Combine(testDir.FullName, normalFileName);
             File.Create(filePath).Dispose();
 
-            string[] files = GetEntries(problematicDirPath);
+            // Call GetFiles with trailing problematic characters added to the path
+            string pathWithTrailing = testDir.FullName + trailingChars;
+            string[] files = GetEntries(pathWithTrailing);
             Assert.Single(files);
             
             string returnedPath = files[0];
+            // The returned path should NOT contain the trailing spaces/periods
+            Assert.False(returnedPath.Contains(trailingChars), 
+                $"Returned path should not contain trailing characters. Path: '{returnedPath}'");
             Assert.True(File.Exists(returnedPath), 
                 $"File.Exists should work on path returned by Directory.GetFiles. Path: '{returnedPath}'");
         }
