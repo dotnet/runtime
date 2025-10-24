@@ -65,22 +65,16 @@
     Any settings in the project file could be replaced on Helix.
     See also eng\testing\WasmRunnerTemplate.sh
     -->
-  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-    <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="export SCENARIO=$(Scenario)" />
-    <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="export JS_ENGINE=--engine=$(JSEngine)" />
-    <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="export JS_ENGINE_ARGS=$(JSEngineArgs)" />
-    <SetScriptCommands Condition="'$(_WasmJSEnginePathForTests)' != ''" Include="export V8_PATH_FOR_TESTS=${V8_PATH_FOR_TESTS:=$(_WasmJSEnginePathForTests)}" />
-    <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="export MAIN_JS=--js-file=$(_WasmMainJSFileName)" />
+  <ItemGroup>
+    <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="$(EnvVarCommand) &quot;SCENARIO=$(Scenario)&quot;" />
+    <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="$(EnvVarCommand) &quot;JS_ENGINE=--engine^=$(JSEngine)&quot;" />
+    <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="$(EnvVarCommand) &quot;JS_ENGINE_ARGS=$(JSEngineArgs)&quot;" />
+    <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="$(EnvVarCommand) &quot;MAIN_JS=--js-file^=$(_WasmMainJSFileName)&quot;" />
     <!-- Workaround for https://github.com/dotnet/runtime/issues/74328 -->
-    <SetScriptCommands Condition="'$(BuildAOTTestsOnHelix)' == 'true'" Include="export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
+    <SetScriptCommands Condition="'$(BuildAOTTestsOnHelix)' == 'true'" Include="$(EnvVarCommand) DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
   </ItemGroup>
-  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-    <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="set &quot;SCENARIO=$(Scenario)&quot;" />
-    <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="set &quot;JS_ENGINE=--engine^=$(JSEngine)&quot;" />
-    <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="set &quot;JS_ENGINE_ARGS=$(JSEngineArgs)&quot;" />
-    <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="set &quot;MAIN_JS=--js-file^=$(_WasmMainJSFileName)&quot;" />
-    <!-- Workaround for https://github.com/dotnet/runtime/issues/74328 -->
-    <SetScriptCommands Condition="'$(BuildAOTTestsOnHelix)' == 'true'" Include="set DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
+  <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
+    <SetScriptCommands Condition="'$(_WasmJSEnginePathForTests)' != ''" Include="$(EnvVarCommand) V8_PATH_FOR_TESTS=${V8_PATH_FOR_TESTS:=$(_WasmJSEnginePathForTests)}" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -243,15 +237,10 @@
                       Text="Only supported scenarios are WasmTestOnV8, WasmTestOnChrome, WasmTestOnFirefox and BuildWasmApps at the moment. It was $(Scenario)." />
 
     <!-- Restore NPM packages -->
-    <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-      <SetScriptCommands Condition="'$(InstallChromeForTests)' == 'true' and '$(ChromeDriverBinaryPath)' != ''" Include="export PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(ChromeDriverBinaryPath)))" />
-      <SetScriptCommands Condition="'$(InstallFirefoxForTests)' == 'true' and '$(GeckoDriverBinaryPath)' != ''" Include="export PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
-      <SetScriptCommands Condition="'$(IsBrowserWasmProject)' == 'true'" Include="export RuntimeIdentifier=browser-wasm" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-      <SetScriptCommands Condition="'$(InstallChromeForTests)' == 'true' and '$(ChromeDriverBinaryPath)' != ''" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(ChromeDriverBinaryPath)))" />
-      <SetScriptCommands Condition="'$(InstallFirefoxForTests)' == 'true' and '$(GeckoDriverBinaryPath)' != ''" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
-      <SetScriptCommands Condition="'$(IsBrowserWasmProject)' == 'true'" Include="set RuntimeIdentifier=browser-wasm" />
+    <ItemGroup>
+      <SetScriptCommands Condition="'$(InstallChromeForTests)' == 'true' and '$(ChromeDriverBinaryPath)' != ''" Include="$(EnvVarCommand) PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(ChromeDriverBinaryPath)))" />
+      <SetScriptCommands Condition="'$(InstallFirefoxForTests)' == 'true' and '$(GeckoDriverBinaryPath)' != ''" Include="$(EnvVarCommand) PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
+      <SetScriptCommands Condition="'$(IsBrowserWasmProject)' == 'true'" Include="$(EnvVarCommand) RuntimeIdentifier=browser-wasm" />
     </ItemGroup>
   </Target>
 </Project>
