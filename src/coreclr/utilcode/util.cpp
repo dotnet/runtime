@@ -2344,6 +2344,8 @@ INT64 GetRiscV64AuipcCombo(UINT32 * pCode)
         OpcodeAddi = 0x13,
         OpcodeLoad = 0x03,
         OpcodeStore = 0x23,
+        OpcodeLoadFp = 0x07,
+        OpcodeStoreFp = 0x27,
         OpcodeJalr = 0x67,
         OpcodeMask = 0x7F,
 
@@ -2361,13 +2363,13 @@ INT64 GetRiscV64AuipcCombo(UINT32 * pCode)
     UINT32 instr = pCode[1];
     UINT32 opcode = instr & OpcodeMask;
     UINT32 funct3 = instr & Funct3Mask;
-    _ASSERTE(opcode == OpcodeLoad || opcode == OpcodeStore ||
+    _ASSERTE(opcode == OpcodeLoad || opcode == OpcodeStore || opcode == OpcodeLoadFp || opcode == OpcodeStoreFp ||
         ((opcode == OpcodeAddi || opcode == OpcodeJalr) && funct3 == Funct3AddiJalr));
     int addrReg = (instr >> 15) & 0x1F;
     _ASSERTE(auipcRegDest == addrReg);
 
     INT64 lo12 = (INT32(instr) >> 25) << 5; // top 7 bits are in the same spot
-    int bottomBitsPos = (opcode == OpcodeStore) ? 7 : 20;
+    int bottomBitsPos = (opcode == OpcodeStore || opcode == OpcodeStoreFp) ? 7 : 20;
     lo12 |= (instr >> bottomBitsPos) & 0x1F;
 
     return hi20 + lo12;
@@ -2382,6 +2384,7 @@ void PutRiscV64AuipcCombo(UINT32 * pCode, INT32 lo12, INT32 hi20)
     enum
     {
         OpcodeStore = 0x23,
+        OpcodeStoreFp = 0x27,
         OpcodeMask = 0x7F,
     };
     _ASSERTE((lo12 >> 11) == 0 || (lo12 >> 11) == -1);
@@ -2389,7 +2392,8 @@ void PutRiscV64AuipcCombo(UINT32 * pCode, INT32 lo12, INT32 hi20)
 
     _ASSERTE(GetRiscV64AuipcCombo(pCode) == 0);
     pCode[0] |= hi20;
-    int bottomBitsPos = ((pCode[1] & OpcodeMask) == OpcodeStore) ? 7 : 20;
+    UINT32 opcode = pCode[1] & OpcodeMask;
+    int bottomBitsPos = (opcode == OpcodeStore || opcode == OpcodeStoreFp) ? 7 : 20;
     pCode[1] |= (lo12 >> 5) << 25; // top 7 bits are in the same spot
     pCode[1] |= (lo12 & 0x1F) << bottomBitsPos;
     _ASSERTE(GetRiscV64AuipcCombo(pCode) == INT64(hi20) + INT64(lo12));

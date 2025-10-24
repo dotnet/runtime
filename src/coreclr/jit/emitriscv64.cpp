@@ -1238,8 +1238,8 @@ void emitter::emitIns_R_AI(instruction  ins,
 {
     assert(EA_IS_RELOC(attr));
     assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
-    assert(emitInsIsStore(ins) || (dataReg == addrReg && dataReg != REG_ZERO));
-    assert(isGeneralRegisterOrR0(dataReg) && isGeneralRegister(addrReg));
+    assert(emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg == addrReg && dataReg != REG_ZERO));
+    assert(isGeneralRegister(addrReg));
     // 2-ins:
     //   auipc  addrReg, off-hi-20bits
     //   ins    dataReg, addrReg, off-lo-12bits
@@ -3164,11 +3164,9 @@ BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruc
 
     regNumber dataReg = id->idReg1();
     regNumber addrReg = id->idReg2();
-    assert(isGeneralRegisterOrR0(dataReg) && isGeneralRegister(addrReg));
 
     *ins = id->idIns();
     assert(*ins == INS_addi || emitInsIsLoadOrStore(*ins));
-    assert(emitInsIsStore(*ins) || (dataReg == addrReg && dataReg != REG_ZERO));
     dst += emitOutput_UTypeInstr(dst, INS_auipc, addrReg, 0);
     emitGCregDeadUpd(addrReg, dst);
     dst += emitInsIsStore(*ins) ? emitOutput_STypeInstr(dst, *ins, addrReg, dataReg, 0)
@@ -5102,7 +5100,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 assert(memBase == indir->Addr());
                 ssize_t cns = addr->AsIntCon()->IconValue();
 
-                regNumber addrReg = emitInsIsStore(ins) ? codeGen->rsGetRsvdReg() : dataReg;
+                regNumber addrReg = (emitInsIsStore(ins) || isFloatReg(dataReg)) ? codeGen->rsGetRsvdReg() : dataReg;
                 if (addr->AsIntCon()->FitsInAddrBase(emitComp))
                 {
                     attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
