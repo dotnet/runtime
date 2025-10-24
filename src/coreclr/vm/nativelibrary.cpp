@@ -706,6 +706,30 @@ namespace
     }
 }
 
+// static
+NATIVE_LIBRARY_HANDLE NativeLibrary::LoadFromAssemblyDirectory(LPCWSTR libraryName, Assembly *callingAssembly)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(libraryName));
+        PRECONDITION(CheckPointer(callingAssembly));
+    }
+    CONTRACTL_END;
+
+    NATIVE_LIBRARY_HANDLE hmod = nullptr;
+
+    LoadLibErrorTracker errorTracker;
+    hmod = LoadFromPInvokeAssemblyDirectory(callingAssembly, libraryName, 0, &errorTracker);
+    if (hmod != nullptr)
+        return hmod;
+
+    SString libraryPathSString(libraryName);
+    errorTracker.Throw(libraryPathSString);
+
+    return hmod;
+}
+
 namespace
 {
     NATIVE_LIBRARY_HANDLE LoadNativeLibrary(PInvokeMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)

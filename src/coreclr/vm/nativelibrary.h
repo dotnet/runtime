@@ -9,6 +9,7 @@
 class NativeLibrary
 {
 public:
+    static NATIVE_LIBRARY_HANDLE LoadFromAssemblyDirectory(LPCWSTR libraryName, Assembly *callingAssembly);
     static NATIVE_LIBRARY_HANDLE LoadLibraryFromMethodDesc(PInvokeMethodDesc *pMD);
 };
 
