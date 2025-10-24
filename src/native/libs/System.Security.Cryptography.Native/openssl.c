@@ -1152,7 +1152,7 @@ int32_t CryptoNative_LookupFriendlyNameByOid(const char* oidValue, const char** 
 
 /*
 Function:
-SSLeay (OpenSSL_version_num for OpenSSL 1.1+)
+OpenSSL_version_num
 
 Gets the version of openssl library.
 
@@ -1339,16 +1339,12 @@ static void HandleShutdown(void)
 
 static int32_t EnsureOpenSsl11Initialized(void)
 {
-    // In OpenSSL 1.0 we call OPENSSL_add_all_algorithms_conf() and ERR_load_crypto_strings(),
-    // so do the same for 1.1
     OPENSSL_init_ssl(
-        // OPENSSL_add_all_algorithms_conf
             OPENSSL_INIT_ADD_ALL_CIPHERS |
             OPENSSL_INIT_ADD_ALL_DIGESTS |
             OPENSSL_INIT_LOAD_CONFIG |
-        // Do not unload on process exit, as the CLR may still have threads running
+            // Do not unload on process exit, as the CLR may still have threads running
             OPENSSL_INIT_NO_ATEXIT |
-        // ERR_load_crypto_strings
             OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
             OPENSSL_INIT_LOAD_SSL_STRINGS,
         NULL);

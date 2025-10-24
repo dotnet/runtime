@@ -13,17 +13,13 @@
 
 // Define pointers to all the used OpenSSL functions
 #define REQUIRED_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
-#define REQUIRED_FUNCTION_110(fn) TYPEOF(fn) fn##_ptr;
 #define LIGHTUP_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
 #define FALLBACK_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
 #define RENAMED_FUNCTION(fn,oldfn) TYPEOF(fn) fn##_ptr;
-#define LEGACY_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
 FOR_ALL_OPENSSL_FUNCTIONS
-#undef LEGACY_FUNCTION
 #undef RENAMED_FUNCTION
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
-#undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
 TYPEOF(OPENSSL_gmtime) OPENSSL_gmtime_ptr;
@@ -160,10 +156,6 @@ void InitializeOpenSSLShim(void)
         abort();
     }
 
-    // A function defined in libcrypto.so.1.0.0/libssl.so.1.0.0 that is not defined in
-    // libcrypto.so.1.1.0/libssl.so.1.1.0
-    const void* v1_0_sentinel = dlsym(libssl, "SSL_state");
-
     // Only permit a single assignment here so that two assemblies both triggering the initializer doesn't cause a
     // race where the fn_ptr is nullptr, then properly bound, then goes back to nullptr right before being used (then bound again).
     void* volatile tmp_ptr;
@@ -171,9 +163,6 @@ void InitializeOpenSSLShim(void)
     // Get pointers to all the functions that are needed
 #define REQUIRED_FUNCTION(fn) \
     if (!(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
-
-#define REQUIRED_FUNCTION_110(fn) \
-    if (!v1_0_sentinel && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
 
 #define LIGHTUP_FUNCTION(fn) \
     fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn));
@@ -187,15 +176,10 @@ void InitializeOpenSSLShim(void)
     if (!tmp_ptr && !(tmp_ptr = dlsym(libssl, #oldfn))) { fprintf(stderr, "Cannot get required symbol " #oldfn " from libssl\n"); abort(); } \
     fn##_ptr = (TYPEOF(fn))tmp_ptr;
 
-#define LEGACY_FUNCTION(fn) \
-    if (v1_0_sentinel && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
-
     FOR_ALL_OPENSSL_FUNCTIONS
-#undef LEGACY_FUNCTION
 #undef RENAMED_FUNCTION
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
-#undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
     if (!(OPENSSL_gmtime_ptr = (TYPEOF(OPENSSL_gmtime))(dlsym(libssl, "OPENSSL_gmtime")))) { fprintf(stderr, "Cannot get required symbol OPENSSL_gmtime from libssl\n"); abort(); }

@@ -85,26 +85,6 @@ static char* g_emptyAlpn = "";
 
 static void DetectCiphersuiteConfiguration(void)
 {
-#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-
-    if (API_EXISTS(SSL_state))
-    {
-        // For portable builds NEED_OPENSSL_1_1 is always set.
-        // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
-        g_config_specified_ciphersuites = 1;
-        return;
-    }
-
-#endif
-
-    // This routine will always produce g_config_specified_ciphersuites = 1 on OpenSSL 1.0.x,
-    // so if we're building direct for 1.0.x (the only time NEED_OPENSSL_1_1 is undefined) then
-    // just omit all the code here.
-    //
-    // The method uses OpenSSL 1.0.x API, except for the fallback function SSL_CTX_config, to
-    // make the portable version easier.
-#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
-
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
     assert(ctx != NULL);
@@ -156,13 +136,6 @@ static void DetectCiphersuiteConfiguration(void)
     }
 
     SSL_CTX_free(ctx);
-
-#else
-
-    // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
-    g_config_specified_ciphersuites = 1;
-
-#endif
 }
 
 void CryptoNative_EnsureLibSslInitialized(void)
