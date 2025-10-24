@@ -739,7 +739,7 @@ namespace System.IO.Compression
                                 }
                             }
                         }
-                        
+
                         _stream?.Dispose();
                     }
                 }
@@ -816,7 +816,7 @@ namespace System.IO.Compression
                                     }
                                 }
                             }
-                            
+
                             await stream.DisposeAsync().ConfigureAwait(false);
                         }
                     }
