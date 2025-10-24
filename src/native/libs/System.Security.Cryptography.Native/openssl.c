@@ -22,11 +22,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
 c_static_assert(CRYPTO_EX_INDEX_X509 == 3);
-#else
-c_static_assert(CRYPTO_EX_INDEX_X509 == 10);
-#endif
 
 // See X509NameType.SimpleName
 #define NAME_TYPE_SIMPLE 0
@@ -1192,11 +1188,7 @@ static void ExDataFreeOcspResponse(
 // In the OpenSSL 3 headers, `from_d` changed from (void*) to (void**).
 static int ExDataDupOcspResponse(
     CRYPTO_EX_DATA* to,
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
     const CRYPTO_EX_DATA* from,
-#else
-    CRYPTO_EX_DATA* from,
-#endif
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
     void** from_d,
 #else
@@ -1249,11 +1241,7 @@ static void ExDataFreeNoOp(
 
 static int ExDataDupNoOp(
     CRYPTO_EX_DATA* to,
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
     const CRYPTO_EX_DATA* from,
-#else
-    CRYPTO_EX_DATA* from,
-#endif
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
     void** from_d,
 #else

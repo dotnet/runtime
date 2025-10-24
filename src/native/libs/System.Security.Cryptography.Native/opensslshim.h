@@ -41,7 +41,6 @@
 #define OPENSSL_VERSION_3_0_RTM 0x30000000L
 #define OPENSSL_VERSION_1_1_1_RTM 0x10101000L
 #define OPENSSL_VERSION_1_1_0_RTM 0x10100000L
-#define OPENSSL_VERSION_1_0_2_RTM 0x10002000L
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include <openssl/provider.h>
@@ -186,13 +185,8 @@ int SSL_set_ciphersuites(SSL *s, const char *str);
 const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 #endif
 
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
-// Empty
-#elif OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_RTM
 #include "osslcompat_30.h"
-#else
-#include "osslcompat_30.h"
-#include "osslcompat_111.h"
 #endif
 
 #if !HAVE_OPENSSL_ALPN
@@ -701,8 +695,8 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_SESSION_free) \
     REQUIRED_FUNCTION(SSL_SESSION_get_ex_data) \
     REQUIRED_FUNCTION(SSL_SESSION_set_ex_data) \
-    LIGHTUP_FUNCTION(SSL_SESSION_get0_hostname) \
-    LIGHTUP_FUNCTION(SSL_SESSION_set1_hostname) \
+    REQUIRED_FUNCTION(SSL_SESSION_get0_hostname) \
+    REQUIRED_FUNCTION(SSL_SESSION_set1_hostname) \
     REQUIRED_FUNCTION(SSL_session_reused) \
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
@@ -720,8 +714,8 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_write) \
     REQUIRED_FUNCTION(SSL_use_certificate) \
     REQUIRED_FUNCTION(SSL_use_PrivateKey) \
-    LIGHTUP_FUNCTION(SSL_verify_client_post_handshake) \
-    LIGHTUP_FUNCTION(SSL_set_post_handshake_auth) \
+    REQUIRED_FUNCTION(SSL_verify_client_post_handshake) \
+    REQUIRED_FUNCTION(SSL_set_post_handshake_auth) \
     REQUIRED_FUNCTION(SSL_version) \
     REQUIRED_FUNCTION(UI_create_method) \
     REQUIRED_FUNCTION(UI_destroy_method) \
