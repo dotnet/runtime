@@ -30,6 +30,24 @@ namespace System.IO.Tests.Enumeration
             }
         }
 
+        private class OriginalRootDirectoryEnumerator : FileSystemEnumerator<string>
+        {
+            public string CapturedOriginalRootDirectory { get; private set; }
+
+            public OriginalRootDirectoryEnumerator(string directory, EnumerationOptions options)
+                : base(directory, options)
+            {
+            }
+
+            protected override bool ShouldIncludeEntry(ref FileSystemEntry entry) => true;
+
+            protected override string TransformEntry(ref FileSystemEntry entry)
+            {
+                CapturedOriginalRootDirectory = new string(entry.OriginalRootDirectory);
+                return entry.ToFullPath();
+            }
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Test could not work on android since accessing '/' isn't allowed.")]
         public void CanRecurseFromRoot()
@@ -53,6 +71,77 @@ namespace System.IO.Tests.Enumeration
                 }
 
                 Assert.NotNull(recursed.LastDirectory);
+            }
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("/")]
+        public void OriginalRootDirectoryPreservesInput(string trailingSeparators)
+        {
+            // OriginalRootDirectory should preserve the exact input path provided by the user,
+            // including trailing separators. This is important for backward compatibility with
+            // code that relies on the exact format of the original path.
+            // Note: On Unix, Path.GetFullPath normalizes multiple trailing separators to one,
+            // so we only test cases that won't be normalized.
+
+            DirectoryInfo testDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+            try
+            {
+                // Create a test file
+                string testFile = Path.Combine(testDir.FullName, "test.txt");
+                File.WriteAllText(testFile, "test");
+
+                string pathWithTrailingSeparators = testDir.FullName + trailingSeparators;
+
+                using (var enumerator = new OriginalRootDirectoryEnumerator(
+                    pathWithTrailingSeparators,
+                    new EnumerationOptions { RecurseSubdirectories = false }))
+                {
+                    if (enumerator.MoveNext())
+                    {
+                        // OriginalRootDirectory should match the input path exactly
+                        Assert.Equal(pathWithTrailingSeparators, enumerator.CapturedOriginalRootDirectory);
+                    }
+                }
+            }
+            finally
+            {
+                testDir.Delete(true);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void OriginalRootDirectoryPreservesTrailingSpaces()
+        {
+            // This test verifies that OriginalRootDirectory preserves trailing spaces in the path.
+            // Note: On Windows, trailing spaces are normalized away when opening directories,
+            // but the OriginalRootDirectory property should still preserve what the user passed in.
+            
+            DirectoryInfo testDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+            try
+            {
+                // Create a test file
+                string testFile = Path.Combine(testDir.FullName, "test.txt");
+                File.WriteAllText(testFile, "test");
+
+                string pathWithTrailingSpace = testDir.FullName + " ";
+
+                using (var enumerator = new OriginalRootDirectoryEnumerator(
+                    pathWithTrailingSpace,
+                    new EnumerationOptions { RecurseSubdirectories = false }))
+                {
+                    if (enumerator.MoveNext())
+                    {
+                        // OriginalRootDirectory should preserve the trailing space
+                        Assert.Equal(pathWithTrailingSpace, enumerator.CapturedOriginalRootDirectory);
+                    }
+                }
+            }
+            finally
+            {
+                testDir.Delete(true);
             }
         }
     }

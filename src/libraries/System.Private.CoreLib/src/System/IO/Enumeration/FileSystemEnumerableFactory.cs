@@ -35,6 +35,35 @@ namespace System.IO.Enumeration
             if (directory.Contains('\0'))
                 throw new ArgumentException(SR.Argument_NullCharInPath, directory);
 
+            // Trim trailing whitespace from directory path, but preserve directory separators.
+            // Windows normalizes trailing spaces away when resolving paths, but if we don't trim
+            // them here, the returned file paths will contain trailing spaces which causes issues
+            // with File.Exists and other file operations.
+            //
+            // Examples:
+            //   "/tmp/test "   → "/tmp/test"    (remove trailing space)
+            //   "/tmp/test/ "  → "/tmp/test/"   (preserve separator, remove space)
+            //   "/tmp/test// " → "/tmp/test//"  (preserve separators, remove space)
+            //
+            // Algorithm: Work backwards from the end:
+            // 1. Skip all trailing spaces
+            // 2. Keep all trailing directory separators
+            // 3. Trim at the boundary
+
+            int endIndex = directory.Length;
+
+            // Skip trailing spaces
+            while (endIndex > 0 && directory[endIndex - 1] == ' ')
+            {
+                endIndex--;
+            }
+
+            // If we found spaces to trim, do so
+            if (endIndex < directory.Length)
+            {
+                directory = directory.Substring(0, endIndex);
+            }
+
             // We always allowed breaking the passed ref directory and filter to be separated
             // any way the user wanted. Looking for "C:\foo\*.cs" could be passed as "C:\" and
             // "foo\*.cs" or "C:\foo" and "*.cs", for example. As such we need to combine and
