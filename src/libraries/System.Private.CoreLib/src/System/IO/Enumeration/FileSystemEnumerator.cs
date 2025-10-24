@@ -32,9 +32,42 @@ namespace System.IO.Enumeration
         {
             ArgumentNullException.ThrowIfNull(directory);
 
-            string path = isNormalized ? directory : Path.GetFullPath(directory);
-            _originalRootDirectory = path;
-            _rootDirectory = Path.TrimEndingDirectorySeparator(path);
+            // If not already normalized, we need to normalize the path. We preserve trailing
+            // directory separators from the original input to maintain backward compatibility,
+            // but Path.GetFullPath will normalize away trailing spaces (Windows behavior).
+            string normalizedPath;
+            if (!isNormalized)
+            {
+                // Count trailing separators from input AFTER removing any trailing spaces
+                // (spaces after separators should not prevent separator preservation)
+                ReadOnlySpan<char> trimmedInput = directory.AsSpan().TrimEnd(' ');
+                int originalTrailingSeparators = 0;
+                for (int i = trimmedInput.Length - 1; i >= 0 && PathInternal.IsDirectorySeparator(trimmedInput[i]); i--)
+                {
+                    originalTrailingSeparators++;
+                }
+
+                // Normalize the full path (this also removes trailing spaces on Windows)
+                normalizedPath = Path.GetFullPath(directory);
+
+                // If original (after space trimming) had trailing separators, preserve them
+                if (originalTrailingSeparators > 0)
+                {
+                    // Remove any trailing separators from normalized path
+                    normalizedPath = Path.TrimEndingDirectorySeparator(normalizedPath);
+                    // Add back the exact number from the original
+                    normalizedPath += new string(Path.DirectorySeparatorChar, originalTrailingSeparators);
+                }
+
+                _originalRootDirectory = normalizedPath;
+            }
+            else
+            {
+                normalizedPath = directory;
+                _originalRootDirectory = directory;
+            }
+
+            _rootDirectory = Path.TrimEndingDirectorySeparator(normalizedPath);
             _options = options ?? EnumerationOptions.Default;
             _remainingRecursionDepth = _options.MaxRecursionDepth;
 
