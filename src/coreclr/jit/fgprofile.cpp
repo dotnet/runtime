@@ -191,7 +191,7 @@ void Compiler::fgApplyProfileScale()
     //
     if (calleeWeight <= firstBlockPredWeight)
     {
-        calleeWeight = fgHaveProfileWeights() ? 1.0 : BB_UNITY_WEIGHT;
+        calleeWeight = BB_UNITY_WEIGHT;
         JITDUMP("   ... callee entry has zero or negative weight, will use weight of " FMT_WT " to scale\n",
                 calleeWeight);
         JITDUMP("Profile data could not be scaled consistently. Data %s inconsistent.\n",

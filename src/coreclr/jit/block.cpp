@@ -1589,36 +1589,16 @@ BBJumpTable::BBJumpTable(Compiler* comp, const BBJumpTable* other)
 //    compiler - Compiler instance
 //
 // Notes:
-//   If we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100)
+//   If we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (1.0)
 //   otherwise it returns the number of times that profile data says the method was called.
 
 // static
 weight_t BasicBlock::getCalledCount(Compiler* comp)
 {
-    // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
-    weight_t calledCount = comp->fgCalledCount;
-
-    // If we haven't yet reach the place where we setup fgCalledCount it could still be zero
-    // so return a reasonable value to use until we set it.
-    //
-    if (calledCount == 0)
-    {
-        if (comp->fgIsUsingProfileWeights())
-        {
-            // When we use profile data block counts we have exact counts,
-            // not multiples of BB_UNITY_WEIGHT (100)
-            calledCount = 1;
-        }
-        else
-        {
-            calledCount = comp->fgFirstBB->bbWeight;
-
-            if (calledCount == 0)
-            {
-                calledCount = BB_UNITY_WEIGHT;
-            }
-        }
-    }
+    // When we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT
+    const weight_t calledCount = comp->fgCalledCount;
+    assert(calledCount != BB_ZERO_WEIGHT);
+    assert((calledCount == BB_UNITY_WEIGHT) || comp->fgIsUsingProfileWeights());
     return calledCount;
 }
 
@@ -1634,20 +1614,13 @@ weight_t BasicBlock::getCalledCount(Compiler* comp)
 //
 weight_t BasicBlock::getBBWeight(Compiler* comp) const
 {
-    if (this->bbWeight == BB_ZERO_WEIGHT)
-    {
-        return BB_ZERO_WEIGHT;
-    }
-    else
-    {
-        weight_t calledCount = getCalledCount(comp);
+    weight_t calledCount = getCalledCount(comp);
 
-        // Normalize the bbWeight.
-        //
-        weight_t fullResult = (this->bbWeight / calledCount) * BB_UNITY_WEIGHT;
+    // Normalize the bbWeight.
+    //
+    weight_t fullResult = this->bbWeight / calledCount;
 
-        return fullResult;
-    }
+    return fullResult;
 }
 
 //------------------------------------------------------------------------
