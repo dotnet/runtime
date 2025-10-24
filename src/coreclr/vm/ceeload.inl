@@ -354,7 +354,7 @@ template<typename Ptr, typename FixupNativeEntryCallback>
 BOOL Module::FixupDelayListAux(TADDR pFixupList,
                                Ptr pThis, FixupNativeEntryCallback pfnCB,
                                PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
-                               PEDecoder * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods)
+                               ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods)
 {
     CONTRACTL
     {
