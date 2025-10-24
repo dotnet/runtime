@@ -108,26 +108,6 @@ static void OpenLibraryOnce(void)
         DlOpen(MAKELIB("1.1"));
     }
 
-    if (libssl == NULL)
-    {
-        // Debian 9 has dropped support for SSLv3 and so they have bumped their soname. Let's try it
-        // before trying the version 1.0.0 to make it less probable that some of our other dependencies
-        // end up loading conflicting version of libssl.
-        DlOpen(MAKELIB("1.0.2"));
-    }
-
-    if (libssl == NULL)
-    {
-        // Now try the default versioned so naming as described in the OpenSSL doc
-        DlOpen(MAKELIB("1.0.0"));
-    }
-
-    if (libssl == NULL)
-    {
-        // Fedora derived distros use different naming for the version 1.0.0
-        DlOpen(MAKELIB("10"));
-    }
-
 #ifdef __FreeBSD__
     // The ports version of OpenSSL is used over base where possible
     if (libssl == NULL)
@@ -234,7 +214,7 @@ void InitializeOpenSSLShim(void)
 
 #if defined(TARGET_ARM) && defined(TARGET_LINUX)
     c_static_assert_msg(sizeof(time_t) == 8, "Build requires 64-bit time_t.");
-    
+
     // This value will represent a time in year 2038 if 64-bit time is used,
     // or 1901 if the lower 32 bits are interpreted as a 32-bit time_t value.
     time_t timeVal = (time_t)0x80000000U;

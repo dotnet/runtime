@@ -33,14 +33,6 @@ c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 
 int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
-#ifdef NEED_OPENSSL_1_0
-static void EnsureLibSsl10Initialized(void)
-{
-    SSL_library_init();
-    SSL_load_error_strings();
-}
-#endif
-
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
 // redirect all SSL_CTX_set_options and SSL_set_options calls via dynamic shims
 // to work around ABI breaking change between 1.1 and 3.0
@@ -176,19 +168,6 @@ static void DetectCiphersuiteConfiguration(void)
 void CryptoNative_EnsureLibSslInitialized(void)
 {
     CryptoNative_EnsureOpenSslInitialized();
-
-    // If portable, call the 1.0 initializer when needed.
-    // If 1.0, call it statically.
-    // In 1.1 no action is required, since EnsureOpenSslInitialized does both libraries.
-#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (API_EXISTS(SSL_state))
-    {
-        EnsureLibSsl10Initialized();
-    }
-#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-    EnsureLibSsl10Initialized();
-#endif
-
     DetectCiphersuiteConfiguration();
 }
 
@@ -1238,7 +1217,7 @@ int32_t CryptoNative_GetDefaultSignatureAlgorithms(uint16_t* buffer, int32_t* co
         // send/receive the client hello
         ret = SSL_do_handshake(client);
         ret = SSL_do_handshake(server);
-        
+
         int c = SSL_get_sigalgs(server, 0, NULL, NULL, NULL, NULL, NULL);
         if (c > 0)
         {
@@ -1251,12 +1230,12 @@ int32_t CryptoNative_GetDefaultSignatureAlgorithms(uint16_t* buffer, int32_t* co
                     break;
                 }
 
-                unsigned char sig, hash; 
+                unsigned char sig, hash;
                 SSL_get_sigalgs(server, i, NULL, NULL, NULL, &sig, &hash);
                 buffer[i] = (uint16_t)(hash << 8 | sig);
             }
 
-            *count = c;        
+            *count = c;
             ret = 0;
         }
     }
