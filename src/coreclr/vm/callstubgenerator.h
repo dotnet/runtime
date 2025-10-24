@@ -92,7 +92,13 @@ class CallStubGenerator
         ReturnType3Float,
         ReturnType4Float,
         ReturnTypeVector64,
-        ReturnTypeVector128
+        ReturnType2Vector64,
+        ReturnType3Vector64,
+        ReturnType4Vector64,
+        ReturnTypeVector128,
+        ReturnType2Vector128,
+        ReturnType3Vector128,
+        ReturnType4Vector128
 #endif // TARGET_ARM64
     };
 
@@ -145,10 +151,20 @@ private:
         int numArgs = sig.NumFixedArgs() + (sig.HasThis() ? 1 : 0);
 
         // The size of the temporary storage is the size of the CallStubHeader plus the size of the routines array.
-        // The size of the routines array is twice the number of arguments plus one slot for the target method pointer.
-        return sizeof(CallStubHeader) + ((numArgs + 1) * 2 + 1) * sizeof(PCODE);
+        // The size of the routines array is three times the number of arguments plus one slot for the target method pointer.
+        return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
     }
     void ComputeCallStub(MetaSig &sig, PCODE *pRoutines);
+
+    enum class RoutineType
+    {
+        None,
+        GPReg,
+        FPReg,
+        Stack
+    };
+
+    void TerminateCurrentRoutineIfNotOfNewType(RoutineType type, PCODE *pRoutines);
 };
 
 void InitCallStubGenerator();

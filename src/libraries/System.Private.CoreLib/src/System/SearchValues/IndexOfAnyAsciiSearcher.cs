@@ -1152,7 +1152,7 @@ namespace System.Buffers
                 // The shift will map values above 127 to values above 16, which the shuffle will then map to 0.
                 // On X86 and WASM, use a logical right shift instead.
                 Vector128<byte> highNibbles = AdvSimd.IsSupported
-                    ? AdvSimd.ShiftRightArithmetic(source.AsSByte(), 4).AsByte()
+                    ? (source.AsSByte() >> 4).AsByte()
                     : source >>> 4;
 
                 // The bitmapLookup represents a 8x16 table of bits, indicating whether a character is present in the needle.

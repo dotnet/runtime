@@ -290,6 +290,15 @@ namespace System.Formats.Tar.Tests
             Assert.Null(await reader.GetNextEntryAsync());
         }
 
+        [Fact]
+        public async Task InvalidChecksum_ThrowsInvalidDataException()
+        {
+            await using MemoryStream archiveStream = GetTarMemoryStream(CompressionMethod.Uncompressed, "node-tar", "bad-cksum");
+            await using TarReader reader = new TarReader(archiveStream);
+            await reader.GetNextEntryAsync(); // first entry is okay
+            await Assert.ThrowsAsync<InvalidDataException>(async () => await reader.GetNextEntryAsync());
+        }
+
         [Theory]
         [InlineData("golang_tar", "gnu-nil-sparse-data")]
         [InlineData("golang_tar", "gnu-nil-sparse-hole")]
