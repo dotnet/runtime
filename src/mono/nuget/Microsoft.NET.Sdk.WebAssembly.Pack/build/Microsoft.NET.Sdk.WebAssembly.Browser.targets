@@ -55,10 +55,10 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup>
     <!-- Paths to tools, tasks, and extensions are calculated relative to the WebAssemblySdkDirectoryRoot. This can be modified to test a local build. -->
-    <WebAssemblySdkDirectoryRoot Condition="'$(WebAssemblySdkDirectoryRoot)'==''">$(MSBuildThisFileDirectory)..\</WebAssemblySdkDirectoryRoot>
+    <_WebAssemblySdkToolsDirectory Condition="'$(_WebAssemblySdkToolsDirectory)'==''">$(MSBuildThisFileDirectory)..\tools\</_WebAssemblySdkToolsDirectory>
     <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' == 'Core'">net10.0</_WebAssemblySdkTasksTFM>
     <_WebAssemblySdkTasksTFM Condition=" '$(MSBuildRuntimeType)' != 'Core'">net472</_WebAssemblySdkTasksTFM>
-    <_WebAssemblySdkTasksAssembly>$(WebAssemblySdkDirectoryRoot)tools\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
+    <_WebAssemblySdkTasksAssembly Condition="'$(_WebAssemblySdkTasksAssembly)' == ''">$(_WebAssemblySdkToolsDirectory)\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
 
     <!-- Compression -->
     <CompressionIncludePatterns>$(CompressionIncludePatterns);_framework\**</CompressionIncludePatterns>
@@ -232,15 +232,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="ResolveWasmOutputs" DependsOnTargets="_ResolveWasmOutputs" />
 
-  <Target Name="_GetWasmRuntimePackVersion">
-    <PropertyGroup>
-      <_WasmRuntimePackVersion>%(ResolvedRuntimePack.NuGetPackageVersion)</_WasmRuntimePackVersion>
-    </PropertyGroup>
-
-    <Error Code="WASM0005" Text="Unable to resolve WebAssembly runtime pack version" Condition="'$(_WasmRuntimePackVersion)' == ''" />
-  </Target>
-
-  <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild;_GetWasmRuntimePackVersion">
+  <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
     <PropertyGroup>
       <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
     </PropertyGroup>
@@ -578,7 +570,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     BeforeTargets="PrepareForPublish" />
 
   <!-- Wasm's Nested publish is run just to build the native bits. We don't need to run blazor targets for that -->
-  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GetWasmRuntimePackVersion;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+  <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <!-- The list of static web assets already contains all the assets from the build. We want to correct certain assets that might
          have changed as part of the publish process. We are going to do so as follows:
          * We will update Blazor runtime asset dlls if we are running PublishTrimmed
