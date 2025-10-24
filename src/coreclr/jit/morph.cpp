@@ -1773,7 +1773,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
         // put destination into R10/EAX
         arg = comp->gtClone(call->gtCallAddr, true);
-        // On x64 the pinvoke target is passed in r11 which is the same
+        // On x64 the pinvoke target is passed in r10 which is the same
         // register as the gs cookie check may use. That would be a problem if
         // this was a tailcall, but we do not tailcall functions with
         // non-standard added args except indirection cells currently.
