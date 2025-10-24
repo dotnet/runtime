@@ -394,5 +394,41 @@ namespace System.IO.Tests
             Assert.True(File.Exists(destPath));
             Assert.Equal(destContents, File.ReadAllBytes(destPath));
         }
+
+        [Theory]
+        [MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void MoveWithProblematicNames(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string srcPath = Path.Combine(testDir.FullName, fileName);
+            string destPath = Path.Combine(testDir.FullName, fileName + "_moved");
+
+            File.Create(srcPath).Dispose();
+            Move(srcPath, destPath);
+
+            Assert.False(File.Exists(srcPath));
+            Assert.True(File.Exists(destPath));
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsMoveWithTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
+        {
+            // Windows path normalization strips trailing spaces/periods unless using \\?\ extended syntax.
+            DirectoryInfo sourceDir = Directory.CreateDirectory(GetTestFilePath());
+            DirectoryInfo destDir = Directory.CreateDirectory(GetTestFilePath());
+            string sourcePath = Path.Combine(sourceDir.FullName, fileName);
+            string destPath = Path.Combine(destDir.FullName, fileName);
+            
+            // Create source with extended syntax (required for trailing spaces/periods)
+            File.Create(@"\\?\" + sourcePath).Dispose();
+            
+            // Move to destination with extended syntax (required for trailing spaces/periods)
+            Move(@"\\?\" + sourcePath, @"\\?\" + destPath);
+            
+            Assert.False(File.Exists(@"\\?\" + sourcePath));
+            Assert.True(File.Exists(@"\\?\" + destPath));
+        }
     }
 }
