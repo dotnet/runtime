@@ -46,6 +46,7 @@ namespace PInvokeTests
     public static class IEnumeratorTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
         public static void TestNativeToManaged()
         {
             AssertExtensions.CollectionEqual(Enumerable.Range(1, 10), EnumeratorAsEnumerable(IEnumeratorNative.GetIntegerEnumerator(1, 10)));
@@ -53,6 +54,7 @@ namespace PInvokeTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/120904", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
         public static void TestManagedToNative()
         {
             IEnumeratorNative.VerifyIntegerEnumerator(Enumerable.Range(1, 10).GetEnumerator(), 1, 10);
