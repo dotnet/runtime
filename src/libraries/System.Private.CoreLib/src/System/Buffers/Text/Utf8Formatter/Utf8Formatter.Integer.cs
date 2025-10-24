@@ -135,16 +135,16 @@ namespace System.Buffers.Text
         {
             if (format.IsDefault)
             {
-                return Number.TryUInt32ToDecStr(value, destination, out bytesWritten);
+                return NumberFormat<byte>.TryUInt32ToDecStr(value, destination, out bytesWritten);
             }
 
             switch (format.Symbol | 0x20)
             {
                 case 'd':
-                    return Number.TryUInt32ToDecStr(value, format.PrecisionOrZero, destination, out bytesWritten);
+                    return NumberFormat<byte>.TryUInt32ToDecStr(value, format.PrecisionOrZero, destination, out bytesWritten);
 
                 case 'x':
-                    return Number.TryInt32ToHexStr((int)value, Number.GetHexBase(format.Symbol), format.PrecisionOrZero, destination, out bytesWritten);
+                    return NumberFormat<byte>.TryInt32ToHexStr((int)value, Number.GetHexBase(format.Symbol), format.PrecisionOrZero, destination, out bytesWritten);
 
                 case 'n':
                     return FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
@@ -192,19 +192,19 @@ namespace System.Buffers.Text
             if (format.IsDefault)
             {
                 return value >= 0 ?
-                    Number.TryUInt32ToDecStr((uint)value, destination, out bytesWritten) :
-                    Number.TryNegativeInt32ToDecStr(value, format.PrecisionOrZero, "-"u8, destination, out bytesWritten);
+                    NumberFormat<byte>.TryUInt32ToDecStr((uint)value, destination, out bytesWritten) :
+                    NumberFormat<byte>.TryNegativeInt32ToDecStr(value, format.PrecisionOrZero, "-"u8, destination, out bytesWritten);
             }
 
             switch (format.Symbol | 0x20)
             {
                 case 'd':
                     return value >= 0 ?
-                        Number.TryUInt32ToDecStr((uint)value, format.PrecisionOrZero, destination, out bytesWritten) :
-                        Number.TryNegativeInt32ToDecStr(value, format.PrecisionOrZero, "-"u8, destination, out bytesWritten);
+                        NumberFormat<byte>.TryUInt32ToDecStr((uint)value, format.PrecisionOrZero, destination, out bytesWritten) :
+                        NumberFormat<byte>.TryNegativeInt32ToDecStr(value, format.PrecisionOrZero, "-"u8, destination, out bytesWritten);
 
                 case 'x':
-                    return Number.TryInt32ToHexStr(value & hexMask, Number.GetHexBase(format.Symbol), format.PrecisionOrZero, destination, out bytesWritten);
+                    return NumberFormat<byte>.TryInt32ToHexStr(value & hexMask, Number.GetHexBase(format.Symbol), format.PrecisionOrZero, destination, out bytesWritten);
 
                 case 'n':
                     return FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
@@ -249,16 +249,16 @@ namespace System.Buffers.Text
         {
             if (format.IsDefault)
             {
-                return Number.TryUInt64ToDecStr(value, destination, out bytesWritten);
+                return NumberFormat<byte>.TryUInt64ToDecStr(value, destination, out bytesWritten);
             }
 
             switch (format.Symbol | 0x20)
             {
                 case 'd':
-                    return Number.TryUInt64ToDecStr(value, format.PrecisionOrZero, destination, out bytesWritten);
+                    return NumberFormat<byte>.TryUInt64ToDecStr(value, format.PrecisionOrZero, destination, out bytesWritten);
 
                 case 'x':
-                    return Number.TryInt64ToHexStr((long)value, Number.GetHexBase(format.Symbol), format.PrecisionOrZero, destination, out bytesWritten);
+                    return NumberFormat<byte>.TryInt64ToHexStr((long)value, Number.GetHexBase(format.Symbol), format.PrecisionOrZero, destination, out bytesWritten);
 
                 case 'n':
                     return FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
@@ -303,19 +303,19 @@ namespace System.Buffers.Text
             if (format.IsDefault)
             {
                 return value >= 0 ?
-                    Number.TryUInt64ToDecStr((ulong)value, destination, out bytesWritten) :
-                    Number.TryNegativeInt64ToDecStr(value, format.PrecisionOrZero, "-"u8, destination, out bytesWritten);
+                    NumberFormat<byte>.TryUInt64ToDecStr((ulong)value, destination, out bytesWritten) :
+                    NumberFormat<byte>.TryNegativeInt64ToDecStr(value, format.PrecisionOrZero, "-"u8, destination, out bytesWritten);
             }
 
             switch (format.Symbol | 0x20)
             {
                 case 'd':
                     return value >= 0 ?
-                        Number.TryUInt64ToDecStr((ulong)value, format.PrecisionOrZero, destination, out bytesWritten) :
-                        Number.TryNegativeInt64ToDecStr(value, format.PrecisionOrZero, "-"u8, destination, out bytesWritten);
+                        NumberFormat<byte>.TryUInt64ToDecStr((ulong)value, format.PrecisionOrZero, destination, out bytesWritten) :
+                        NumberFormat<byte>.TryNegativeInt64ToDecStr(value, format.PrecisionOrZero, "-"u8, destination, out bytesWritten);
 
                 case 'x':
-                    return Number.TryInt64ToHexStr(value, Number.GetHexBase(format.Symbol), format.PrecisionOrZero, destination, out bytesWritten);
+                    return NumberFormat<byte>.TryInt64ToHexStr(value, Number.GetHexBase(format.Symbol), format.PrecisionOrZero, destination, out bytesWritten);
 
                 case 'n':
                     return FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);

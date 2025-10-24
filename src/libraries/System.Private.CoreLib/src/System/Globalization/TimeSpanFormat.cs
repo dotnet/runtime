@@ -242,7 +242,7 @@ namespace System.Globalization
                 // Write day and separator, if necessary
                 if (dayDigits != 0)
                 {
-                    Number.WriteDigits(days, p, dayDigits);
+                    NumberFormat<TChar>.WriteDigits(days, p, dayDigits);
                     p += dayDigits;
                     *p++ = TChar.CastFrom(format == StandardFormat.C ? '.' : ':');
                 }
@@ -251,7 +251,7 @@ namespace System.Globalization
                 Debug.Assert(hourDigits == 1 || hourDigits == 2);
                 if (hourDigits == 2)
                 {
-                    Number.WriteTwoDigits(hours, p);
+                    NumberFormat<TChar>.WriteTwoDigits(hours, p);
                     p += 2;
                 }
                 else
@@ -259,10 +259,10 @@ namespace System.Globalization
                     *p++ = TChar.CastFrom('0' + hours);
                 }
                 *p++ = TChar.CastFrom(':');
-                Number.WriteTwoDigits((uint)minutes, p);
+                NumberFormat<TChar>.WriteTwoDigits((uint)minutes, p);
                 p += 2;
                 *p++ = TChar.CastFrom(':');
-                Number.WriteTwoDigits((uint)seconds, p);
+                NumberFormat<TChar>.WriteTwoDigits((uint)seconds, p);
                 p += 2;
 
                 // Write fraction and separator, if necessary
@@ -282,7 +282,7 @@ namespace System.Globalization
                         p += decimalSeparator.Length;
                     }
 
-                    Number.WriteDigits(fraction, p, fractionDigits);
+                    NumberFormat<TChar>.WriteDigits(fraction, p, fractionDigits);
                     p += fractionDigits;
                 }
 
