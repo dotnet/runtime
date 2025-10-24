@@ -243,10 +243,10 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
                     }
                     _extentsSet = true;
                 }
-
-                *handle = 1;
-                hr = _extents[0].baseAddress != 0 ? HResults.S_OK : HResults.S_FALSE;
             }
+
+            *handle = 1;
+            hr = _extents[0].baseAddress != 0 ? HResults.S_OK : HResults.S_FALSE;
         }
         catch (System.Exception ex)
         {
@@ -303,10 +303,13 @@ public sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCLRD
             int hrLocal = _legacyModule.EnumExtent(&handleLocal, &dataModuleExtentLocal);
             legacyExtentHandle = handleLocal;
             Debug.Assert(hr == hrLocal, $"cDAC: {hr}, DAC: {hrLocal}");
-            CLRDataModuleExtent* dataModuleExtent = (CLRDataModuleExtent*)extent;
-            Debug.Assert(dataModuleExtent->baseAddress == dataModuleExtentLocal.baseAddress, $"cDAC: {dataModuleExtent->baseAddress}, DAC: {dataModuleExtentLocal.baseAddress}");
-            Debug.Assert(dataModuleExtent->length == dataModuleExtentLocal.length, $"cDAC: {dataModuleExtent->length}, DAC: {dataModuleExtentLocal.length}");
-            Debug.Assert(dataModuleExtent->type == dataModuleExtentLocal.type, $"cDAC: {dataModuleExtent->type}, DAC: {dataModuleExtentLocal.type}");
+            if (hr == HResults.S_OK)
+            {
+                CLRDataModuleExtent* dataModuleExtent = (CLRDataModuleExtent*)extent;
+                Debug.Assert(dataModuleExtent->baseAddress == dataModuleExtentLocal.baseAddress, $"cDAC: {dataModuleExtent->baseAddress}, DAC: {dataModuleExtentLocal.baseAddress}");
+                Debug.Assert(dataModuleExtent->length == dataModuleExtentLocal.length, $"cDAC: {dataModuleExtent->length}, DAC: {dataModuleExtentLocal.length}");
+                Debug.Assert(dataModuleExtent->type == dataModuleExtentLocal.type, $"cDAC: {dataModuleExtent->type}, DAC: {dataModuleExtentLocal.type}");
+            }
         }
 #endif
 

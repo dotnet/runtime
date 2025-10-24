@@ -64,8 +64,14 @@ namespace ILCompiler
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
-            // Only the Arm64 JIT respects the OS rules for vector type abi currently
-            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, (details.Architecture == TargetArchitecture.ARM64) ? true : bubbleIncludesCorelib);
+            // There are a few types which require special layout algorithms and which could change based on hardware
+            // or to better match the underlying native ABI in the future. However, these are also fairly core types
+            // which are used in many perf critical functions that exist on startup and which are often tied to an ISA.
+            //
+            // Given that, we treat them as ABI stable today to ensure that R2R works well. If we end up modifying the
+            // ABI handling in the future, we would need to take a major version bump to R2R, which is deemed worthwhile.
+
+            _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
             ReadOnlySpan<byte> matchingVectorType = "Unknown"u8;
             if (details.MaximumSimdVectorLength == SimdVectorLength.Vector128Bit)
@@ -75,10 +81,7 @@ namespace ILCompiler
             else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector512Bit)
                 matchingVectorType = "Vector512`1"u8;
 
-            // No architecture has completely stable handling of Vector<T> in the abi (Arm64 may change to SVE)
-            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType, bubbleIncludesCorelib);
-
-            // Int128 and UInt128 should be ABI stable on all currently supported platforms
+            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType);
             _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
             _typeWithRepeatedFieldsFieldLayoutAlgorithm = new TypeWithRepeatedFieldsFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
@@ -198,14 +201,12 @@ namespace ILCompiler
         private FieldLayoutAlgorithm _vectorFallbackAlgorithm;
         private byte[] _similarVectorName;
         private DefType _similarVectorOpenType;
-        private bool _vectorAbiIsStable;
 
-        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, ReadOnlySpan<byte> similarVector, bool vectorAbiIsStable = true)
+        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm, FieldLayoutAlgorithm vectorFallbackAlgorithm, ReadOnlySpan<byte> similarVector)
         {
             _fallbackAlgorithm = fallbackAlgorithm;
             _vectorFallbackAlgorithm = vectorFallbackAlgorithm;
             _similarVectorName = similarVector.ToArray();
-            _vectorAbiIsStable = vectorAbiIsStable;
         }
 
         private DefType GetSimilarVector(DefType vectorOfTType)
@@ -256,7 +257,7 @@ namespace ILCompiler
                     ByteCountUnaligned = LayoutInt.Indeterminate,
                     ByteCountAlignment = LayoutInt.Indeterminate,
                     Offsets = fieldsAndOffsets.ToArray(),
-                    LayoutAbiStable = false,
+                    LayoutAbiStable = true,
                     IsVectorTOrHasVectorTFields = true,
                 };
                 return instanceLayout;
@@ -275,7 +276,7 @@ namespace ILCompiler
                     FieldAlignment = layoutFromSimilarIntrinsicVector.FieldAlignment,
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
-                    LayoutAbiStable = _vectorAbiIsStable,
+                    LayoutAbiStable = true,
                     IsVectorTOrHasVectorTFields = true,
                 };
 #else
@@ -286,7 +287,7 @@ namespace ILCompiler
                     FieldAlignment = layoutFromMetadata.FieldAlignment,
                     FieldSize = layoutFromSimilarIntrinsicVector.FieldSize,
                     Offsets = layoutFromMetadata.Offsets,
-                    LayoutAbiStable = _vectorAbiIsStable,
+                    LayoutAbiStable = true,
                     IsVectorTOrHasVectorTFields = true,
                 };
 #endif

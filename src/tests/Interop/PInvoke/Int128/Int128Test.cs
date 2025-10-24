@@ -10,6 +10,8 @@ public struct StructJustInt128
 {
     public StructJustInt128(Int128 val) { value = val; }
     public Int128 value;
+
+    public override string ToString() => $"StructJustInt128(value={value:X32})";
 }
 
 public struct StructWithInt128
@@ -17,6 +19,8 @@ public struct StructWithInt128
     public StructWithInt128(Int128 val) { value = val; messUpPadding = 0x10; }
     public byte messUpPadding;
     public Int128 value;
+
+    public override string ToString() => $"StructWithInt128(messUpPadding={messUpPadding}, value={value:X32})";
 }
 
 unsafe partial class Int128Native

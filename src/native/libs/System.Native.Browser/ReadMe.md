@@ -8,6 +8,7 @@ And a native library compiled by CMake into `libSystem.Native.Browser.a` as part
 ## Emscripten library
 - `native/index` compiled -> `libSystem.Native.Browser.js` linked ->`dotnet.native.js`
 - `libSystem.Native.Browser.footer.js` compiled -> `libSystem.Native.Browser.js` linked ->`dotnet.native.js`
+- `libSystem.Browser.Utils.footer.js` compiled -> `libSystem.Browser.Utils.js` linked ->`dotnet.native.js`
 - `libSystem.Native.Browser.extpost.js` linked ->`dotnet.native.js`
 - `ententrypoints.c` compiled -> `libSystem.Native.Browser.a` linked -> `dotnet.native.wasm`
 
