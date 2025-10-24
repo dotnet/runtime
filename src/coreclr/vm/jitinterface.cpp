@@ -12085,7 +12085,7 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
         if (ExecutableAllocator::IsPreferredExecutableRange(target))
             return IMAGE_REL_BASED_REL32;
     }
-#endif // TARGET_AMD64 || 
+#endif // TARGET_AMD64 || TARGET_RISCV64
 
     // No hints
     return (WORD)-1;
