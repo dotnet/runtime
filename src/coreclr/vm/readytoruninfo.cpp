@@ -16,6 +16,7 @@
 #include "method.hpp"
 #include "wellknownattributes.h"
 #include "nativeimage.h"
+#include "dn-stdio.h"
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -429,7 +430,7 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
             DWORD pid = GetCurrentProcessId();
             FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
             fullname.Append(pidSuffix);
-            r2rLogFile = _wfopen(fullname.GetUnicode(), W("w"));
+            fopen_lp(&r2rLogFile, fullname.GetUnicode(), W("w"));
         }
         else
             r2rLogFile = NULL;

@@ -626,13 +626,13 @@ private:
     unsigned FindModule(Module * pModule);
     unsigned GetOrAddModuleIndex(Module * pModule);
 
-    HRESULT WriteModuleRecord(IStream * pStream,  const RecorderModuleInfo & module);
+    HRESULT WriteModuleRecord(FILE * fp,  const RecorderModuleInfo & module);
 
     void RecordMethodInfo(unsigned moduleIndex, MethodDesc * pMethod, bool application);
     unsigned RecordModuleInfo(Module * pModule);
     void RecordOrUpdateModuleInfo(FileLoadLevel needLevel, unsigned moduleIndex);
 
-    HRESULT WriteOutput(IStream * pStream);
+    HRESULT WriteOutput(FILE * fp);
 
     HRESULT WriteOutput();
 
