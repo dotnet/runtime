@@ -158,16 +158,41 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Problematic characters that could result in the Host component escaping into other components like the Path.</summary>
+        private static readonly SearchValues<char> s_hostReservedChars =
+            SearchValues.Create(@":/\?#@");
+
         [AllowNull]
         public string Host
         {
             get => _host;
             set
             {
-                if (!string.IsNullOrEmpty(value) && value.Contains(':') && value[0] != '[')
+                if (!string.IsNullOrEmpty(value) && value.AsSpan().ContainsAny(s_hostReservedChars))
                 {
-                    //probable ipv6 address - Note: this is only supported for cases where the authority is inet-based.
-                    value = "[" + value + "]";
+                    if (value.Contains(':'))
+                    {
+                        if (!value.StartsWith('['))
+                        {
+                            // probable ipv6 address - Note: this is only supported for cases where the authority is inet-based.
+                            value = "[" + value + "]";
+                        }
+
+                        if (value.AsSpan(0, value.Length - 1).Contains(']'))
+                        {
+                            // Reject inputs like "[::]/path" or "::]/path".
+                            throw new ArgumentException(SR.net_uri_BadHostName, nameof(value));
+                        }
+                    }
+                    else
+                    {
+                        // Reject inputs like "contoso.com/path" or "user@contoso.com".
+                        // We don't take this branch if the input is an IPv6 address because those can contain '/' characters.
+                        // If the input is an IPv6 address with invalid characters, Uri parsing will catch it later.
+                        // Nonsensical inputs will only be allowed by a custom parser with GenericUriParserOptions.GenericAuthority set.
+                        throw new ArgumentException(SR.net_uri_BadHostName, nameof(value));
+                    }
                 }
 
                 _host = value ?? string.Empty;
@@ -365,7 +390,7 @@ namespace System
                 }
             }
 
-            var path = Path;
+            string path = Path;
             if (path.Length != 0)
             {
                 if (!path.StartsWith('/') && host.Length != 0)
