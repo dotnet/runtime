@@ -15,17 +15,6 @@ typedef struct stack_st OPENSSL_STACK;
 #define OPENSSL_INIT_LOAD_CONFIG 0x00000040L
 #define OPENSSL_INIT_LOAD_SSL_STRINGS 0x00200000L
 
-void EVP_MD_CTX_free(EVP_MD_CTX* ctx);
-EVP_MD_CTX* EVP_MD_CTX_new(void);
-int OPENSSL_init_ssl(uint64_t opts, const OPENSSL_INIT_SETTINGS* settings);
-void OPENSSL_sk_free(OPENSSL_STACK*);
-OPENSSL_STACK* OPENSSL_sk_new_null(void);
-int OPENSSL_sk_num(const OPENSSL_STACK*);
-void* OPENSSL_sk_pop(OPENSSL_STACK* st);
-void OPENSSL_sk_pop_free(OPENSSL_STACK* st, void (*func)(void*));
-int OPENSSL_sk_push(OPENSSL_STACK* st, const void* data);
-void* OPENSSL_sk_value(const OPENSSL_STACK*, int);
-const RSA_METHOD* RSA_PKCS1_OpenSSL(void);
 unsigned long SSL_set_options(SSL* ctx, unsigned long options);
 void SSL_set_post_handshake_auth(SSL *s, int val);
 int32_t SSL_set_post_handshake_auth(SSL *s, int val);

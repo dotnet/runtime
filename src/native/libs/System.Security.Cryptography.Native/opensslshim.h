@@ -69,24 +69,6 @@
 #define HAVE_OPENSSL_RC2 0
 #endif
 
-
-#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-
-// Remove problematic #defines
-#undef SSL_get_state
-#undef X509_get_X509_PUBKEY
-#undef X509_get_version
-
-#endif
-
-#ifdef EVP_MD_CTX_create
-#undef EVP_MD_CTX_create
-#undef EVP_MD_CTX_init
-#undef EVP_MD_CTX_destroy
-#undef RSA_PKCS1_SSLeay
-#undef SSLv23_method
-#endif
-
 #ifdef ERR_put_error
 #undef ERR_put_error
 void ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, int32_t line);
@@ -205,10 +187,9 @@ const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
-#include "osslcompat_102.h"
+// Empty
 #elif OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
 #include "osslcompat_30.h"
-#include "osslcompat_102.h"
 #else
 #include "osslcompat_30.h"
 #include "osslcompat_111.h"
@@ -488,8 +469,8 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(EVP_MAC_update) \
     REQUIRED_FUNCTION(EVP_md5) \
     REQUIRED_FUNCTION(EVP_MD_CTX_copy_ex) \
-    RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
-    RENAMED_FUNCTION(EVP_MD_CTX_new, EVP_MD_CTX_create) \
+    REQUIRED_FUNCTION(EVP_MD_CTX_free) \
+    REQUIRED_FUNCTION(EVP_MD_CTX_new) \
     REQUIRED_FUNCTION(EVP_MD_CTX_set_flags) \
     LIGHTUP_FUNCTION(EVP_MD_fetch) \
     RENAMED_FUNCTION(EVP_MD_get_size, EVP_MD_size) \
@@ -602,13 +583,13 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(OCSP_RESPONSE_new) \
     REQUIRED_FUNCTION(OPENSSL_cleanse) \
     REQUIRED_FUNCTION(OPENSSL_init_ssl) \
-    RENAMED_FUNCTION(OPENSSL_sk_free, sk_free) \
-    RENAMED_FUNCTION(OPENSSL_sk_new_null, sk_new_null) \
-    RENAMED_FUNCTION(OPENSSL_sk_num, sk_num) \
-    RENAMED_FUNCTION(OPENSSL_sk_pop, sk_pop) \
-    RENAMED_FUNCTION(OPENSSL_sk_pop_free, sk_pop_free) \
-    RENAMED_FUNCTION(OPENSSL_sk_push, sk_push) \
-    RENAMED_FUNCTION(OPENSSL_sk_value, sk_value) \
+    REQUIRED_FUNCTION(OPENSSL_sk_free) \
+    REQUIRED_FUNCTION(OPENSSL_sk_new_null) \
+    REQUIRED_FUNCTION(OPENSSL_sk_num) \
+    REQUIRED_FUNCTION(OPENSSL_sk_pop) \
+    REQUIRED_FUNCTION(OPENSSL_sk_pop_free) \
+    REQUIRED_FUNCTION(OPENSSL_sk_push) \
+    REQUIRED_FUNCTION(OPENSSL_sk_value) \
     REQUIRED_FUNCTION(OpenSSL_version_num) \
     LIGHTUP_FUNCTION(OSSL_LIB_CTX_free) \
     LIGHTUP_FUNCTION(OSSL_LIB_CTX_new) \
@@ -652,7 +633,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(RSA_meth_get_flags) \
     REQUIRED_FUNCTION(RSA_new) \
     REQUIRED_FUNCTION(RSA_pkey_ctx_ctrl) \
-    RENAMED_FUNCTION(RSA_PKCS1_OpenSSL, RSA_PKCS1_SSLeay) \
+    REQUIRED_FUNCTION(RSA_PKCS1_OpenSSL) \
     REQUIRED_FUNCTION(RSA_set0_crt_params) \
     REQUIRED_FUNCTION(RSA_set0_factors) \
     REQUIRED_FUNCTION(RSA_set0_key) \
@@ -735,7 +716,7 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(SSL_get_session) \
     REQUIRED_FUNCTION(SSL_set_verify) \
     REQUIRED_FUNCTION(SSL_shutdown) \
-    RENAMED_FUNCTION(TLS_method, SSLv23_method) \
+    REQUIRED_FUNCTION(TLS_method) \
     REQUIRED_FUNCTION(SSL_write) \
     REQUIRED_FUNCTION(SSL_use_certificate) \
     REQUIRED_FUNCTION(SSL_use_PrivateKey) \
@@ -1425,16 +1406,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define sk_X509_NAME_value(stack, idx) (X509_NAME*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509_NAME)*)0), idx)
 #define sk_X509_value(stack, idx) (X509*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509)*)0), idx)
 
-#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-
-#define sk_free OPENSSL_sk_free_ptr
-#define sk_new_null OPENSSL_sk_new_null_ptr
-#define sk_num OPENSSL_sk_num_ptr
-#define sk_pop OPENSSL_sk_pop_ptr
-#define sk_pop_free OPENSSL_sk_pop_free_ptr
-#define sk_push OPENSSL_sk_push_ptr
-#define sk_value OPENSSL_sk_value_ptr
-
 #endif
 
 
@@ -1463,21 +1434,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 
 #define ERR_put_error local_ERR_put_error
-
-#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-
-// Restore the old names for RENAMED_FUNCTION functions.
-#define EVP_MD_CTX_free EVP_MD_CTX_destroy
-#define EVP_MD_CTX_new EVP_MD_CTX_create
-#define RSA_PKCS1_OpenSSL RSA_PKCS1_SSLeay
-#define OPENSSL_sk_free sk_free
-#define OPENSSL_sk_new_null sk_new_null
-#define OPENSSL_sk_num sk_num
-#define OPENSSL_sk_pop sk_pop
-#define OPENSSL_sk_pop_free sk_pop_free
-#define OPENSSL_sk_push sk_push
-#define OPENSSL_sk_value sk_value
-#define TLS_method SSLv23_method
 
 #endif
 
