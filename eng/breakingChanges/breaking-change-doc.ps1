@@ -230,6 +230,38 @@ function Limit-Text {
     return $truncated + "`n`n[Content truncated for length]"
 }
 
+# Function to execute a script block with a temporary GITHUB_TOKEN
+function Invoke-WithGitHubToken {
+    param(
+        [string]$ApiKey,
+        [scriptblock]$ScriptBlock
+    )
+
+    if (-not $ApiKey) {
+        # No API key provided, execute without modification
+        return & $ScriptBlock
+    }
+
+    # Store original token
+    $originalGitHubToken = $env:GITHUB_TOKEN
+
+    try {
+        # Set temporary token
+        $env:GITHUB_TOKEN = $ApiKey
+
+        # Execute the script block
+        return & $ScriptBlock
+    }
+    finally {
+        # Restore original token
+        if ($originalGitHubToken) {
+            $env:GITHUB_TOKEN = $originalGitHubToken
+        } else {
+            Remove-Item env:GITHUB_TOKEN -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 # Function to URL encode text for GitHub issue URLs
 function Get-UrlEncodedText {
     param([string]$text)
@@ -462,12 +494,10 @@ function Invoke-LlmApi {
                     $ghArgs += @("--system-prompt", $SystemPrompt)
                 }
 
-                # Add API key if provided via environment variable
-                if ($apiKey) {
-                    $ghArgs += @("--api-key", $apiKey)
+                $response = Invoke-WithGitHubToken -ApiKey $apiKey -ScriptBlock {
+                    gh @ghArgs
                 }
 
-                $response = gh @ghArgs
                 return $response -join "`n"
             }
             catch {
@@ -478,51 +508,36 @@ function Invoke-LlmApi {
         "github-copilot" {
             # Use GitHub Copilot CLI in programmatic mode
             try {
-                # Set API key environment variable if provided
-                $originalGitHubToken = $env:GITHUB_TOKEN
-                if ($apiKey) {
-                    $env:GITHUB_TOKEN = $apiKey
+                # Combine system prompt and user prompt, emphasizing text-only response
+                $fullPrompt = if ($SystemPrompt) {
+                    "$SystemPrompt`n`nIMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
+                } else {
+                    "IMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
                 }
 
-                try {
-                    # Combine system prompt and user prompt, emphasizing text-only response
-                    $fullPrompt = if ($SystemPrompt) {
-                        "$SystemPrompt`n`nIMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
-                    } else {
-                        "IMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
-                    }
-
-                    # Use copilot with -p flag for programmatic mode and suppress logs
-                    $rawResponse = copilot -p $fullPrompt --log-level none
-
-                    # Parse the response to extract just the content, removing usage statistics
-                    # The response format typically includes usage stats at the end starting with "Total usage est:"
-                    $lines = $rawResponse -split "`n"
-                    $contentLines = @()
-                    $foundUsageStats = $false
-
-                    foreach ($line in $lines) {
-                        if ($line -match "^Total usage est:" -or $line -match "^Total duration") {
-                            $foundUsageStats = $true
-                            break
-                        }
-                        if (-not $foundUsageStats) {
-                            $contentLines += $line
-                        }
-                    }
-
-                    # Join the content lines and trim whitespace
-                    $response = ($contentLines -join "`n").Trim()
-                    return $response
+                $rawResponse = Invoke-WithGitHubToken -ApiKey $apiKey -ScriptBlock {
+                    copilot -p $fullPrompt --log-level none
                 }
-                finally {
-                    # Restore original GITHUB_TOKEN
-                    if ($originalGitHubToken) {
-                        $env:GITHUB_TOKEN = $originalGitHubToken
-                    } elseif ($apiKey) {
-                        Remove-Item env:GITHUB_TOKEN -ErrorAction SilentlyContinue
+
+                # Parse the response to extract just the content, removing usage statistics
+                # The response format typically includes usage stats at the end starting with "Total usage est:"
+                $lines = $rawResponse -split "`n"
+                $contentLines = @()
+                $foundUsageStats = $false
+
+                foreach ($line in $lines) {
+                    if ($line -match "^Total usage est:" -or $line -match "^Total duration") {
+                        $foundUsageStats = $true
+                        break
+                    }
+                    if (-not $foundUsageStats) {
+                        $contentLines += $line
                     }
                 }
+
+                # Join the content lines and trim whitespace
+                $response = ($contentLines -join "`n").Trim()
+                return $response
             }
             catch {
                 Write-Error "GitHub Copilot CLI call failed: $($_.Exception.Message)"
