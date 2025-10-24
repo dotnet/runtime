@@ -68,9 +68,9 @@ void AsyncContinuationsManager::PrintContinuationName(MethodTable* pMT, AppendSt
 {
     append("Continuation_", W("Continuation_"));
     appendNum(pMT->GetBaseSize() - (OBJHEADER_SIZE + OFFSETOF__CORINFO_Continuation__data));
-    CGCDesc* desc = CGCDesc::GetCGCDescFromMT(pMT);
-    CGCDescSeries* lowestSeries = desc->GetLowestSeries();
-    for (CGCDescSeries* curSeries = desc->GetHighestSeries(); curSeries >= lowestSeries; curSeries--)
+    PTR_CGCDesc desc = CGCDesc::GetCGCDescFromMT(pMT);
+    PTR_CGCDescSeries lowestSeries = desc->GetLowestSeries();
+    for (PTR_CGCDescSeries curSeries = desc->GetHighestSeries(); curSeries >= lowestSeries; curSeries--)
     {
         if (curSeries->GetSeriesOffset() < OFFSETOF__CORINFO_Continuation__data)
         {
