@@ -2526,8 +2526,8 @@ regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
         // leaves rax, r10, r11. rax and r11 are used for indirection cells, so we pick r10.
         return RBM_R10;
     }
-    // Otherwise on x64 (win-x64 and SysV) r8 is never used for return values
-    return RBM_R8;
+    // Otherwise on x64 (win-x64, SysV and Swift) r9 is never used for return values
+    return RBM_R9;
 #elif TARGET_X86
     assert(!tailCall);
     // On x86 it's more difficult: we have only eax, ecx and edx available as volatile

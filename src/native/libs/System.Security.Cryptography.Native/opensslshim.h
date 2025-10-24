@@ -1463,7 +1463,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define sk_X509_push(stack,value) OPENSSL_sk_push((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0), (const void*)(1 ? value : (X509*)0))
 
 // type-safe OPENSSL_sk_pop
-#define sk_X509_pop(stack) OPENSSL_sk_pop((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0))
+#define sk_X509_pop(stack) ((X509*)OPENSSL_sk_pop((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0)))
 
 // type-safe OPENSSL_sk_pop_free
 #define sk_X509_pop_free(stack, freefunc) OPENSSL_sk_pop_free((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0), (OPENSSL_sk_freefunc)(1 ? freefunc : (sk_X509_freefunc)0))

@@ -7820,7 +7820,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
 
     if (pMD != NULL)
     {
-        _ASSERTE(!pMD->IsILStub());
+        _ASSERTE(!pMD->IsDiagnosticsHidden());
 
         pDebugJitInfo = GetJitInfo(pMD, (const BYTE *) pMethodAddr, &pDebugMethodInfo);
         if (pDebugMethodInfo != NULL)

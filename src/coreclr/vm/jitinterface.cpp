@@ -7938,7 +7938,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         // chance to prevent it.
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackJITInfo());
-            if (pCaller->IsILStub() || pCallee->IsILStub())
+            if (pCaller->IsDiagnosticsHidden() || pCallee->IsDiagnosticsHidden())
             {
                 // do nothing
             }
