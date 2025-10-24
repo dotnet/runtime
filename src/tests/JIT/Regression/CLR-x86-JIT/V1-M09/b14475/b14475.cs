@@ -6,7 +6,7 @@ using System;
 using Xunit;
 
 
-namespace DefaultNamespace
+namespace b14475
 {
     public class Bug_Cb4270
     {

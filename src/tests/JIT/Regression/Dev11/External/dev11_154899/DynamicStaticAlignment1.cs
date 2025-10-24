@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
 
-namespace Test
+namespace dev11_154899
 {
     public class Container<T>
     {

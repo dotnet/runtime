@@ -6,7 +6,7 @@ using Xunit;
 /**
  * A simple Com+ application.
  */
-namespace DefaultNamespace
+namespace b14422
 {
     //@BEGINRENAME; Verify this renames
     //@ENDRENAME; Verify this renames

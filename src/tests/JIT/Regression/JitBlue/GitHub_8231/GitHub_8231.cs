@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-namespace N
+namespace GitHub_8231
 {
     public static class C
     {

@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace Test
+namespace b47047
 {
     using System;
 

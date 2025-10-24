@@ -5,7 +5,7 @@ using System;
 using System.Reflection;
 using Xunit;
 
-namespace Test
+namespace b423721
 {
 
     public class C2

@@ -5,7 +5,7 @@
 using System;
 using Xunit;
 
-namespace test
+namespace b10790
 {
 
     public class Locals10K

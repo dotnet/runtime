@@ -24,7 +24,7 @@ D:\bugs\bug.exe
 Abort   Retry   Ignore
 ---------------------------
 */
-namespace Test
+namespace b41391
 {
     using System;
 

@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-namespace Test
+namespace dev11_132534
 {
     public struct BasicStruct
     {

@@ -8,7 +8,7 @@ namespace b119026a;
 using System;
 using Xunit;
 
-public class test
+public class bug
 {
     static short si16;
     static uint su32;

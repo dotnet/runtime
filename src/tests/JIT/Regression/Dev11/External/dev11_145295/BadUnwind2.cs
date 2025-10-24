@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using Xunit;
 
 
-namespace Test
+namespace dev11_145295
 {
     public static class Exceptions
     {

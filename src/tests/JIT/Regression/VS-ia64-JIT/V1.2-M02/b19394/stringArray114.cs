@@ -5,7 +5,7 @@
 using System;
 using Xunit;
 
-namespace test
+namespace b19394
 {
 
     public class LargeArray114

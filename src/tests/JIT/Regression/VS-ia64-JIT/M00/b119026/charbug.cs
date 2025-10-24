@@ -8,7 +8,7 @@ namespace b119026a;
 using System;
 using Xunit;
 
-public class test
+public class charbug
 {
     static sbyte si8;
     static char sc;

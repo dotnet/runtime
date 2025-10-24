@@ -27,7 +27,6 @@
     <Compile Include="JitBlue\DevDiv_590358\DevDiv_590358.cs" />
     <Compile Include="JitBlue\DevDiv_714266\DevDiv_714266.cs" />
     <Compile Include="JitBlue\DevDiv_718151\DevDiv_718151.cs" />
-    <Compile Include="JitBlue\GitHub_10215\GitHub_10215.cs" />
     <Compile Include="JitBlue\GitHub_10481\GitHub_10481.cs" />
     <Compile Include="JitBlue\GitHub_10621\GitHub_10621.cs" />
     <Compile Include="JitBlue\GitHub_10714\GitHub_10714.cs" />

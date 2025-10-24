@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace Test
+namespace b50535
 {
     using System;
     using System.Collections;

@@ -4,7 +4,7 @@
 
 using Xunit;
 using TestLibrary;
-namespace Test
+namespace b36472
 {
     using System;
 

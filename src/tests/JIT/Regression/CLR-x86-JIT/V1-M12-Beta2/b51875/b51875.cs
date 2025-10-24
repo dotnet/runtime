@@ -7,7 +7,7 @@ using System.Collections;
 using Xunit;
 
 
-namespace Test
+namespace b51875
 {
     public struct AA
     {

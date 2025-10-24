@@ -5,7 +5,6 @@
 // Debug: Outputs <0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0>
 // Release: Outputs <1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1>
 
-namespace Runtime_105468;
 
 using System;
 using System.Runtime.CompilerServices;
@@ -14,6 +13,8 @@ using System.Runtime.Intrinsics.X86;
 using Xunit;
 
 [module: SkipLocalsInit]
+
+namespace Runtime_105468;
 
 public struct S3
 {

@@ -5,7 +5,7 @@ using System;
 using System.Net;
 using Xunit;
 
-namespace Test
+namespace dev11_76013
 {
     class MyException : Exception
     {

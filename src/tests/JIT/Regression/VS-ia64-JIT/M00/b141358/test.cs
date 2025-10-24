@@ -5,7 +5,7 @@
 using System;
 using Xunit;
 
-namespace test
+namespace b141358
 {
 
     public class Class1

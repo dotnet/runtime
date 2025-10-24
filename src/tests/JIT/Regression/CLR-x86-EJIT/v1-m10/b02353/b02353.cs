@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-namespace DefaultNamespace
+namespace b02353
 {
     public class Bug
     {

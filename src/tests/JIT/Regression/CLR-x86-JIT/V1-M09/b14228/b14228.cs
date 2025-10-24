@@ -6,7 +6,7 @@ using System;
 using Xunit;
 
 
-namespace DefaultNamespace
+namespace b14228
 {
     public class MainClass
     {
