@@ -73,8 +73,9 @@ namespace System.Xml.XslCompiledTransformApiTests
                 }
 
                 string result = outWriter.ToString();
-                Assert.DoesNotContain("01:02:03", result);
-                Assert.Contains("03/02/2001", result);
+                DateTime expectedDate = new DateTime(2001, 2, 3, 1, 2, 3, DateTimeKind.Utc);
+                string expectedResult = expectedDate.ToString("d", new CultureInfo("en-GB"));
+                Assert.Equal(expectedResult, result);
             }
         }
 
@@ -104,8 +105,9 @@ namespace System.Xml.XslCompiledTransformApiTests
                 }
 
                 string result = outWriter.ToString();
-                Assert.DoesNotContain("03/02/2001", result);
-                Assert.Contains("01:02:03", result);
+                DateTime expectedTime = new DateTime(2001, 2, 3, 1, 2, 3, DateTimeKind.Utc);
+                string expectedResult = expectedTime.ToString("T", new CultureInfo("en-GB"));
+                Assert.Equal(expectedResult, result);
             }
         }
 
