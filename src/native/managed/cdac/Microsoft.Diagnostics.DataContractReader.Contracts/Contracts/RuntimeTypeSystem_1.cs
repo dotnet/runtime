@@ -9,6 +9,7 @@ using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using System.Reflection.Metadata;
 using System.Collections.Immutable;
+using System.Reflection;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -799,6 +800,118 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         CoreLibBinder coreLibData = _target.ProcessedData.GetOrAdd<CoreLibBinder>(coreLib);
         TargetPointer typeHandlePtr = _target.ReadPointer(coreLibData.Classes + (ulong)typeCode * (ulong)_target.PointerSize);
         return GetTypeHandle(typeHandlePtr);
+    }
+
+    private static bool ModuleMatch(AssemblyReference assemblyRef, AssemblyDefinition assemblyDef)
+    {
+        AssemblyName assemblyRefName = assemblyRef.GetAssemblyName();
+        AssemblyName assemblyDefName = assemblyDef.GetAssemblyName();
+        return ((assemblyRefName.Name == assemblyDefName.Name) &&
+                (assemblyRefName.Version == assemblyDefName.Version) &&
+                (assemblyRefName.CultureName == assemblyDefName.CultureName));
+    }
+
+    private MetadataReader? LookForHandle(AssemblyReference exportedAssemblyRef)
+    {
+        TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+        TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+        foreach (ModuleHandle mdhandle in _target.Contracts.Loader.GetModuleHandles(appDomain, AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution))
+        {
+            MetadataReader? md2 = _target.Contracts.EcmaMetadata.GetMetadata(mdhandle);
+            if (md2 == null)
+                continue;
+            AssemblyDefinition assemblyDefinition = md2.GetAssemblyDefinition();
+            if (ModuleMatch(exportedAssemblyRef, assemblyDefinition))
+            {
+                return md2;
+            }
+        }
+        return null;
+    }
+
+    TypeHandle IRuntimeTypeSystem.GetTypeByNameAndModule(string name, string nameSpace, ModuleHandle moduleHandle)
+    {
+        string[] parts = name.Split('+');
+        string outerName = parts[0];
+        MetadataReader? md = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle);
+        TypeDefinitionHandle currentHandle = default;
+        // create a hash set of MDs and if we come across the same one more than once in a loop then we return null typehandle
+        HashSet<MetadataReader> seenMDs = new();
+        // 1. find the outer type
+        while (md != null && seenMDs.Add(md))
+        {
+            foreach (TypeDefinitionHandle typeDefHandle in md.TypeDefinitions)
+            {
+                TypeDefinition typedef = md.GetTypeDefinition(typeDefHandle);
+                if (md.GetString(typedef.Name) == outerName && md.GetString(typedef.Namespace) == nameSpace)
+                {
+                    // found our outermost type, remember it
+                    currentHandle = typeDefHandle;
+                    break;
+                }
+            }
+
+            if (currentHandle == default)
+            {
+                // look for forwarded types
+                foreach (ExportedTypeHandle exportedTypeHandle in md.ExportedTypes)
+                {
+                    ExportedType exportedType = md.GetExportedType(exportedTypeHandle);
+                    if (exportedType.Implementation.Kind != HandleKind.AssemblyReference || !exportedType.IsForwarder)
+                        continue;
+                    if (md.GetString(exportedType.Name) == outerName && md.GetString(exportedType.Namespace) == nameSpace)
+                    {
+                        // get the assembly ref for target
+                        AssemblyReferenceHandle arefHandle = (AssemblyReferenceHandle)exportedType.Implementation;
+                        AssemblyReference exportedAssemblyRef = md.GetAssemblyReference(arefHandle);
+                        md = LookForHandle(exportedAssemblyRef);
+                        break;
+                    }
+                }
+            }
+            else break; // if we found our typedef without forwarding break out of the while loop
+        }
+
+        if (currentHandle == default)
+            return new TypeHandle(TargetPointer.Null);
+
+        // 2. Walk down the nested types
+        for (int i = 1; i < parts.Length; i++)
+        {
+            string nestedName = parts[i];
+            bool found = false;
+            foreach (TypeDefinitionHandle nestedHandle in md!.GetTypeDefinition(currentHandle).GetNestedTypes())
+            {
+                TypeDefinition nestedDef = md.GetTypeDefinition(nestedHandle);
+                if (md.GetString(nestedDef.Name) == nestedName)
+                {
+                    currentHandle = nestedHandle;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                throw new NotImplementedException();
+        }
+
+        // 3. We have the handle, look up the type handle
+        int token = MetadataTokens.GetToken((EntityHandle)currentHandle);
+        ILoader loader = _target.Contracts.Loader;
+        TargetPointer typeDefToMethodTable = loader.GetLookupTables(moduleHandle).TypeDefToMethodTable;
+        TargetPointer typeHandlePtr = loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        return (typeHandlePtr == TargetPointer.Null) ? new TypeHandle(TargetPointer.Null) : rts.GetTypeHandle(typeHandlePtr);
+    }
+
+    void IRuntimeTypeSystem.GetNameSpaceAndNameFromBinder(ushort index, out string nameSpace, out string name)
+    {
+        TargetPointer coreLib = _target.ReadGlobalPointer(Constants.Globals.CoreLib);
+        CoreLibBinder coreLibData = _target.ProcessedData.GetOrAdd<CoreLibBinder>(coreLib);
+        var typeInfo = _target.GetTypeInfo(DataType.CoreLibClassDescription);
+        TargetPointer coreLibClassDescriptionPtr = coreLibData.ClassDescriptions + index * typeInfo.Size!.Value;
+        CoreLibClassDescription coreLibClassDescription = _target.ProcessedData.GetOrAdd<CoreLibClassDescription>(coreLibClassDescriptionPtr);
+        nameSpace = coreLibClassDescription.NameSpace;
+        name = coreLibClassDescription.Name;
     }
 
     public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)

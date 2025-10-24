@@ -13,7 +13,9 @@ internal sealed class CoreLibBinder : IData<CoreLibBinder>
         Target.TypeInfo type = target.GetTypeInfo(DataType.CoreLibBinder);
 
         Classes = target.ReadPointer(address + (ulong)type.Fields[nameof(Classes)].Offset);
+        ClassDescriptions = target.ReadPointer(address + (ulong)type.Fields[nameof(ClassDescriptions)].Offset);
     }
 
     public TargetPointer Classes { get; init; }
+    public TargetPointer ClassDescriptions { get; init; }
 }
