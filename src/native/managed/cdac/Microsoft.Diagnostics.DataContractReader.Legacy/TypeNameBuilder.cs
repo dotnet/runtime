@@ -112,7 +112,7 @@ public struct TypeNameBuilder
                     arrayName = ".ctor";
                     break;
                 default:
-                    throw new ArgumentException(null, nameof(method));
+                    throw new ArgumentException($"Unkown ArrayFunctionType: {functionType}.", nameof(method));
             }
 
             stringBuilder.Append(arrayName);
