@@ -837,7 +837,7 @@ namespace System.Globalization
             // Binary specifier is not supported for floating point
             if ((style & NumberStyles.AllowBinarySpecifier) != 0)
             {
-                ThrowHexBinaryStylesNotSupported();
+                ThrowBinaryStyleNotSupported();
             }
 
             // When AllowHexSpecifier is used, only specific flags are allowed
@@ -856,8 +856,8 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
 
             [DoesNotReturn]
-            static void ThrowHexBinaryStylesNotSupported() =>
-                throw new ArgumentException(SR.Arg_HexBinaryStylesNotSupported, nameof(style));
+            static void ThrowBinaryStyleNotSupported() =>
+                throw new ArgumentException(SR.Arg_BinaryStyleNotSupported, nameof(style));
 
             [DoesNotReturn]
             static void ThrowInvalidHexBinaryStyle() =>

@@ -409,6 +409,9 @@
   <data name="Arg_HandleNotSync" xml:space="preserve">
     <value>Handle does not support synchronous operations. The parameters to the FileStream constructor may need to be changed to indicate that the handle was opened asynchronously (that is, it was opened explicitly for overlapped I/O).</value>
   </data>
+  <data name="Arg_BinaryStyleNotSupported" xml:space="preserve">
+    <value>The number style AllowBinarySpecifier is not supported on floating point data types.</value>
+  </data>
   <data name="Arg_HexBinaryStylesNotSupported" xml:space="preserve">
     <value>The number styles AllowHexSpecifier and AllowBinarySpecifier are not supported on floating point data types.</value>
   </data>

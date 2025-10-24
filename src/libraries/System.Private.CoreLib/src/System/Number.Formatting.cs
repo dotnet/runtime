@@ -647,14 +647,21 @@ namespace System
         private static void FormatInt32ToValueListBuilder<TChar>(ref ValueListBuilder<TChar> vlb, int value)
             where TChar : unmanaged, IUtfChar<TChar>
         {
+            uint uvalue;
             if (value < 0)
             {
                 vlb.Append(TChar.CastFrom('-'));
-                value = -value;
+                // Handle int.MinValue overflow: negating int.MinValue would overflow
+                // Use unchecked cast to uint which handles the two's complement correctly
+                uvalue = unchecked((uint)-value);
+            }
+            else
+            {
+                uvalue = (uint)value;
             }
 
             // Handle zero specially
-            if (value == 0)
+            if (uvalue == 0)
             {
                 vlb.Append(TChar.CastFrom('0'));
                 return;
@@ -662,7 +669,6 @@ namespace System
 
             // Format digits in reverse, then reverse the span
             int startIndex = vlb.Length;
-            uint uvalue = (uint)value;
 
             while (uvalue > 0)
             {
