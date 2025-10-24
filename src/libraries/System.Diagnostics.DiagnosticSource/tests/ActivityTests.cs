@@ -2548,5 +2548,162 @@ namespace System.Diagnostics.Tests
         }
 
         private const int MaxClockErrorMSec = 20;
+
+        [Fact]
+        public void TestActivityDebuggerDisplay()
+        {
+            Activity activity = new Activity("TestOperation");
+            activity.Start();
+
+            string debuggerDisplay = GetDebuggerDisplayString(activity);
+            Assert.Contains("OperationName = TestOperation", debuggerDisplay);
+            Assert.Contains("Id =", debuggerDisplay);
+
+            activity.Stop();
+        }
+
+        [Fact]
+        public void TestActivityDebuggerProxy()
+        {
+            Activity activity = new Activity("TestOperation");
+            activity.SetTag("key1", "value1");
+            activity.SetTag("key2", 42);
+            activity.SetBaggage("baggage1", "baggageValue1");
+            activity.AddEvent(new ActivityEvent("TestEvent"));
+            activity.Start();
+
+            object proxy = GetDebuggerProxy(activity);
+            Assert.NotNull(proxy);
+
+            Type proxyType = proxy.GetType();
+            PropertyInfo? operationNameProp = proxyType.GetProperty("OperationName");
+            Assert.NotNull(operationNameProp);
+            Assert.Equal("TestOperation", operationNameProp.GetValue(proxy));
+
+            PropertyInfo? tagsProp = proxyType.GetProperty("Tags");
+            Assert.NotNull(tagsProp);
+            object? tags = tagsProp.GetValue(proxy);
+            Assert.NotNull(tags);
+            var tagsArray = tags as KeyValuePair<string, object?>[];
+            Assert.NotNull(tagsArray);
+            Assert.Equal(2, tagsArray.Length);
+
+            PropertyInfo? baggageProp = proxyType.GetProperty("Baggage");
+            Assert.NotNull(baggageProp);
+            object? baggage = baggageProp.GetValue(proxy);
+            Assert.NotNull(baggage);
+            var baggageArray = baggage as KeyValuePair<string, string?>[];
+            Assert.NotNull(baggageArray);
+            Assert.Single(baggageArray);
+
+            PropertyInfo? eventsProp = proxyType.GetProperty("Events");
+            Assert.NotNull(eventsProp);
+            object? events = eventsProp.GetValue(proxy);
+            Assert.NotNull(events);
+            var eventsArray = events as ActivityEvent[];
+            Assert.NotNull(eventsArray);
+            Assert.Single(eventsArray);
+
+            activity.Stop();
+        }
+
+        [Fact]
+        public void TestActivityContextDebuggerDisplay()
+        {
+            ActivityTraceId traceId = ActivityTraceId.CreateRandom();
+            ActivitySpanId spanId = ActivitySpanId.CreateRandom();
+            ActivityContext context = new ActivityContext(traceId, spanId, ActivityTraceFlags.Recorded);
+
+            string debuggerDisplay = GetDebuggerDisplayString(context);
+            Assert.Contains("TraceId =", debuggerDisplay);
+            Assert.Contains("SpanId =", debuggerDisplay);
+            Assert.Contains("TraceFlags =", debuggerDisplay);
+        }
+
+        [Fact]
+        public void TestActivityLinkDebuggerDisplay()
+        {
+            ActivityTraceId traceId = ActivityTraceId.CreateRandom();
+            ActivitySpanId spanId = ActivitySpanId.CreateRandom();
+            ActivityContext context = new ActivityContext(traceId, spanId, ActivityTraceFlags.Recorded);
+            ActivityLink link = new ActivityLink(context);
+
+            string debuggerDisplay = GetDebuggerDisplayString(link);
+            Assert.Contains("TraceId =", debuggerDisplay);
+            Assert.Contains("SpanId =", debuggerDisplay);
+        }
+
+        [Fact]
+        public void TestActivityEventDebuggerDisplay()
+        {
+            ActivityEvent activityEvent = new ActivityEvent("TestEvent");
+
+            string debuggerDisplay = GetDebuggerDisplayString(activityEvent);
+            Assert.Contains("Name = TestEvent", debuggerDisplay);
+            Assert.Contains("Timestamp =", debuggerDisplay);
+        }
+
+        private static string GetDebuggerDisplayString(object obj)
+        {
+            Type type = obj.GetType();
+            DebuggerDisplayAttribute? attr = type.GetCustomAttribute<DebuggerDisplayAttribute>();
+            Assert.NotNull(attr);
+
+            string? displayString = attr.Value;
+            Assert.NotNull(displayString);
+
+            // Remove {nq} flag if present
+            displayString = displayString.Replace(",nq", "").Replace("{nq}", "");
+
+            // Evaluate the expression
+            System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex(@"\{([^}]+)\}");
+            string result = regex.Replace(displayString, match =>
+            {
+                string expression = match.Groups[1].Value;
+                PropertyInfo? prop = type.GetProperty(expression.Split('.')[0]);
+                if (prop is not null)
+                {
+                    object? value = prop.GetValue(obj);
+                    if (expression.Contains('.'))
+                    {
+                        string[] parts = expression.Split('.');
+                        for (int i = 1; i < parts.Length && value is not null; i++)
+                        {
+                            PropertyInfo? subProp = value.GetType().GetProperty(parts[i]);
+                            value = subProp?.GetValue(value);
+                        }
+                    }
+                    return value?.ToString() ?? "(null)";
+                }
+
+                MethodInfo? method = type.GetMethod(expression.TrimEnd('(', ')'), BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                if (method is not null && method.GetParameters().Length == 0)
+                {
+                    return method.Invoke(obj, null)?.ToString() ?? "(null)";
+                }
+
+                return match.Value;
+            });
+
+            return result;
+        }
+
+        private static object GetDebuggerProxy(object obj)
+        {
+            Type type = obj.GetType();
+            DebuggerTypeProxyAttribute? attr = type.GetCustomAttribute<DebuggerTypeProxyAttribute>();
+            Assert.NotNull(attr);
+
+            Type? proxyType = attr.ProxyTypeName switch
+            {
+                string typeName when typeName.Contains(',') => Type.GetType(typeName),
+                string typeName => type.Assembly.GetType(typeName) ?? Type.GetType($"{type.Namespace}.{typeName}, {type.Assembly.FullName}"),
+                _ => null
+            };
+
+            Assert.NotNull(proxyType);
+
+            return Activator.CreateInstance(proxyType, obj)!;
+        }
     }
 }

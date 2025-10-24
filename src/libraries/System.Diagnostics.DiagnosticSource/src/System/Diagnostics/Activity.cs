@@ -54,6 +54,8 @@ namespace System.Diagnostics
     /// but the exception is suppressed, and the operation does something reasonable (typically
     /// doing nothing).
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ActivityDebuggerProxy))]
     public partial class Activity : IDisposable
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
@@ -1839,6 +1841,12 @@ namespace System.Diagnostics
             }
         }
 
+        private string DebuggerToString()
+        {
+            string? id = Id;
+            return $"OperationName = {OperationName}, Id = {(id is not null ? id : "(null)")}";
+        }
+
         [Flags]
         private enum State : byte
         {
@@ -2166,6 +2174,90 @@ namespace System.Diagnostics
         public void CopyTo(Span<byte> destination)
         {
             ActivityTraceId.SetSpanFromHexChars(ToHexString().AsSpan(), destination);
+        }
+    }
+
+    internal sealed class ActivityDebuggerProxy
+    {
+        private readonly Activity _activity;
+
+        public ActivityDebuggerProxy(Activity activity)
+        {
+            _activity = activity;
+        }
+
+        public string? Id => _activity.Id;
+        public string OperationName => _activity.OperationName;
+        public string DisplayName => _activity.DisplayName;
+        public ActivitySource Source => _activity.Source;
+        public Activity? Parent => _activity.Parent;
+        public string? ParentId => _activity.ParentId;
+        public ActivityKind Kind => _activity.Kind;
+        public DateTime StartTimeUtc => _activity.StartTimeUtc;
+        public TimeSpan Duration => _activity.Duration;
+        public ActivityTraceId TraceId => _activity.TraceId;
+        public ActivitySpanId SpanId => _activity.SpanId;
+        public ActivitySpanId ParentSpanId => _activity.ParentSpanId;
+        public string? TraceStateString => _activity.TraceStateString;
+        public ActivityTraceFlags ActivityTraceFlags => _activity.ActivityTraceFlags;
+        public bool HasRemoteParent => _activity.HasRemoteParent;
+        public ActivityStatusCode Status => _activity.Status;
+        public string? StatusDescription => _activity.StatusDescription;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public KeyValuePair<string, object?>[] Tags
+        {
+            get
+            {
+                var tags = new List<KeyValuePair<string, object?>>();
+                foreach (var tag in _activity.TagObjects)
+                {
+                    tags.Add(tag);
+                }
+                return tags.ToArray();
+            }
+        }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public KeyValuePair<string, string?>[] Baggage
+        {
+            get
+            {
+                var baggage = new List<KeyValuePair<string, string?>>();
+                foreach (var item in _activity.Baggage)
+                {
+                    baggage.Add(item);
+                }
+                return baggage.ToArray();
+            }
+        }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public ActivityEvent[] Events
+        {
+            get
+            {
+                var events = new List<ActivityEvent>();
+                foreach (var evt in _activity.Events)
+                {
+                    events.Add(evt);
+                }
+                return events.ToArray();
+            }
+        }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public ActivityLink[] Links
+        {
+            get
+            {
+                var links = new List<ActivityLink>();
+                foreach (var link in _activity.Links)
+                {
+                    links.Add(link);
+                }
+                return links.ToArray();
+            }
         }
     }
 }
