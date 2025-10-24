@@ -133,6 +133,7 @@ namespace System.Runtime.InteropServices
             return handle != IntPtr.Zero;
         }
 
+#if !MONO
         // Not a public API. We expose this so that it's possible to bypass the codepath that tries to read search path
         // from custom attributes.
         internal static bool TryLoad(string libraryName, Assembly assembly, DllImportSearchPath searchPath, out IntPtr handle)
@@ -144,6 +145,7 @@ namespace System.Runtime.InteropServices
                                 throwOnError: false);
             return handle != IntPtr.Zero;
         }
+#endif
 
         /// <summary>
         /// Free a loaded library
