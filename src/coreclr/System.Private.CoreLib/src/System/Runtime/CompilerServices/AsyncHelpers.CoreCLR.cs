@@ -335,37 +335,43 @@ namespace System.Runtime.CompilerServices
 
         private static class RuntimeAsyncTaskCore
         {
-            private unsafe struct NextContinuationData
+            private unsafe ref struct DispatcherInfo
             {
-                public NextContinuationData* Next;
-                public Continuation* NextContinuation;
+                // Dispatcher info for next dispatcher present on stack, or
+                // null if none.
+                public DispatcherInfo* Next;
+                // Next continuation the dispatcher will process.
+                public Continuation? NextContinuation;
             }
 
-            // To be used for async stack walking
+            // Information about current task dispatching, to be used for async
+            // stackwalking.
             [ThreadStatic]
-            private static unsafe NextContinuationData* t_nextContinuation;
+            private static unsafe DispatcherInfo* t_dispatcherInfo;
 
             public static unsafe void DispatchContinuations<T, TOps>(T task) where T : Task, ITaskCompletionAction where TOps : IRuntimeAsyncTaskOps<T>
             {
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
-                Continuation? continuation = TOps.GetContinuationState(task);
 
-                ref NextContinuationData* nextContRef = ref t_nextContinuation;
-                NextContinuationData nextContinuationData;
-                nextContinuationData.Next = nextContRef;
-                nextContinuationData.NextContinuation = &continuation;
-
-                nextContRef = &nextContinuationData;
+                ref DispatcherInfo* dispatcherInfoRef = ref t_dispatcherInfo;
+                DispatcherInfo dispatcherInfo;
+                dispatcherInfo.Next = dispatcherInfoRef;
+                dispatcherInfo.NextContinuation = TOps.GetContinuationState(task);
+                // Ensure JIT does not reorder the above stores with publishing
+                // the info, which could put the frame information in a bad
+                // state.
+                Volatile.WriteBarrier();
+                dispatcherInfoRef = &dispatcherInfo;
 
                 while (true)
                 {
-                    Debug.Assert(continuation != null);
+                    Debug.Assert(dispatcherInfo.NextContinuation != null);
                     try
                     {
-                        Continuation curContinuation = continuation;
+                        Continuation curContinuation = dispatcherInfo.NextContinuation;
                         Continuation? nextContinuation = curContinuation.Next;
-                        continuation = nextContinuation;
+                        dispatcherInfo.NextContinuation = nextContinuation;
 
                         ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref TOps.GetResultStorage(task);
                         Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
@@ -375,13 +381,13 @@ namespace System.Runtime.CompilerServices
                             newContinuation.Next = nextContinuation;
                             HandleSuspended<T, TOps>(task);
                             contexts.Pop();
-                            t_nextContinuation = nextContinuationData.Next;
+                            t_dispatcherInfo = dispatcherInfo.Next;
                             return;
                         }
                     }
                     catch (Exception ex)
                     {
-                        Continuation? handlerContinuation = UnwindToPossibleHandler(continuation);
+                        Continuation? handlerContinuation = UnwindToPossibleHandler(dispatcherInfo.NextContinuation);
                         if (handlerContinuation == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
@@ -391,7 +397,7 @@ namespace System.Runtime.CompilerServices
 
                             contexts.Pop();
 
-                            t_nextContinuation = nextContinuationData.Next;
+                            t_dispatcherInfo = dispatcherInfo.Next;
 
                             if (!successfullySet)
                             {
@@ -402,16 +408,16 @@ namespace System.Runtime.CompilerServices
                         }
 
                         handlerContinuation.SetException(ex);
-                        continuation = handlerContinuation;
+                        dispatcherInfo.NextContinuation = handlerContinuation;
                     }
 
-                    if (continuation == null)
+                    if (dispatcherInfo.NextContinuation == null)
                     {
                         bool successfullySet = TOps.SetCompleted(task);
 
                         contexts.Pop();
 
-                        t_nextContinuation = nextContinuationData.Next;
+                        t_dispatcherInfo = dispatcherInfo.Next;
 
                         if (!successfullySet)
                         {
@@ -421,10 +427,10 @@ namespace System.Runtime.CompilerServices
                         return;
                     }
 
-                    if (QueueContinuationFollowUpActionIfNecessary<T, TOps>(task, continuation))
+                    if (QueueContinuationFollowUpActionIfNecessary<T, TOps>(task, dispatcherInfo.NextContinuation))
                     {
                         contexts.Pop();
-                        t_nextContinuation = nextContinuationData.Next;
+                        t_dispatcherInfo = dispatcherInfo.Next;
                         return;
                     }
                 }

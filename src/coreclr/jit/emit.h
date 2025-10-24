@@ -3472,9 +3472,9 @@ public:
     struct dataAsyncResumeInfo
     {
         // delegate*<Continuation, ref byte, Continuation>
-        void* Resume;
+        target_size_t Resume;
         // Pointer in main code where resumption eventually ends up
-        void* FinalResumeIP;
+        target_size_t FinalResumeIP;
     };
 
     /* One of these is allocated for every blob of initialized data */
