@@ -652,12 +652,13 @@ namespace System.Threading
         {
             // Only integer primitive types and enum types backed by integer types are supported.
             // Floating-point types and floating-point backed enums are not supported.
-            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) ||
-                (Type.GetTypeCode(typeof(T)) == TypeCode.Single) ||
-                (Type.GetTypeCode(typeof(T)) == TypeCode.Double))
+        if (!typeof(T).IsPrimitive || typeof(T) == typeof(float) || typeof(T) == typeof(double))
+        {
+            if (!typeof(T).IsEnum || typeof(T).GetEnumUnderlyingType() == typeof(float) || typeof(T).GetEnumUnderlyingType() == typeof(double))
             {
                 throw new NotSupportedException(SR.NotSupported_IntegerEnumOrPrimitiveTypeRequired);
             }
+        }
 
             // For 1-byte and 2-byte types, we need to use CompareExchange-based implementations
             // because there are no direct atomic And operations for these sizes.
@@ -795,12 +796,13 @@ namespace System.Threading
         {
             // Only integer primitive types and enum types backed by integer types are supported.
             // Floating-point types and floating-point backed enums are not supported.
-            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) ||
-                (Type.GetTypeCode(typeof(T)) == TypeCode.Single) ||
-                (Type.GetTypeCode(typeof(T)) == TypeCode.Double))
+        if (!typeof(T).IsPrimitive || typeof(T) == typeof(float) || typeof(T) == typeof(double))
+        {
+            if (!typeof(T).IsEnum || typeof(T).GetEnumUnderlyingType() == typeof(float) || typeof(T).GetEnumUnderlyingType() == typeof(double))
             {
                 throw new NotSupportedException(SR.NotSupported_IntegerEnumOrPrimitiveTypeRequired);
             }
+        }
 
             // For 1-byte and 2-byte types, we need to use CompareExchange-based implementations
             // because there are no direct atomic Or operations for these sizes.
