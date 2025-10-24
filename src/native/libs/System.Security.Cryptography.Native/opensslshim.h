@@ -245,17 +245,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
 #define EVP_CTRL_AEAD_SET_TAG 0x11
 #endif
 
-#if !HAVE_OPENSSL_SHA3
-#undef HAVE_OPENSSL_SHA3
-#define HAVE_OPENSSL_SHA3 1
-const EVP_MD *EVP_sha3_256(void);
-const EVP_MD *EVP_sha3_384(void);
-const EVP_MD *EVP_sha3_512(void);
-const EVP_MD *EVP_shake128(void);
-const EVP_MD *EVP_shake256(void);
-int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
-#endif
-
 #if !HAVE_OPENSSL_SHA3_SQUEEZE
 #undef HAVE_OPENSSL_SHA3_SQUEEZE
 #define HAVE_OPENSSL_SHA3_SQUEEZE 1
@@ -580,11 +569,11 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_sha256) \
     REQUIRED_FUNCTION(EVP_sha384) \
     REQUIRED_FUNCTION(EVP_sha512) \
-    LIGHTUP_FUNCTION(EVP_sha3_256) \
-    LIGHTUP_FUNCTION(EVP_sha3_384) \
-    LIGHTUP_FUNCTION(EVP_sha3_512) \
-    LIGHTUP_FUNCTION(EVP_shake128) \
-    LIGHTUP_FUNCTION(EVP_shake256) \
+    REQUIRED_FUNCTION(EVP_sha3_256) \
+    REQUIRED_FUNCTION(EVP_sha3_384) \
+    REQUIRED_FUNCTION(EVP_sha3_512) \
+    REQUIRED_FUNCTION(EVP_shake128) \
+    REQUIRED_FUNCTION(EVP_shake256) \
     LIGHTUP_FUNCTION(EVP_SIGNATURE_fetch) \
     LIGHTUP_FUNCTION(EVP_SIGNATURE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
