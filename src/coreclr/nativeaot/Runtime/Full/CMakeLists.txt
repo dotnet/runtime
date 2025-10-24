@@ -22,7 +22,7 @@ if (CLR_CMAKE_TARGET_WIN32)
   endif()
 endif (CLR_CMAKE_TARGET_WIN32)
 
-add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES}  ${RUNTIME_ARCH_ASM_OBJECTS})
+add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
 add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
 target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal)
 
