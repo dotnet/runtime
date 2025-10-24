@@ -768,7 +768,7 @@ public struct DacpReJitData2
     public ClrDataAddress ilCodeVersionNodePtr;
 }
 
-internal struct DacpProfilerILData
+public struct DacpProfilerILData
 {
     public enum ModificationType
     {

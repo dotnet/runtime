@@ -315,7 +315,7 @@ public unsafe partial interface IXCLRDataProcess
 
 public struct GcEvtArgs
 {
-    internal enum GcEvt_t
+    public enum GcEvt_t
     {
         GC_MARK_END = 1,
         GC_EVENT_TYPE_MAX = GC_MARK_END + 1

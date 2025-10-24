@@ -14,82 +14,82 @@ public abstract class ContractRegistry
     /// <summary>
     /// Gets an instance of the Exception contract for the target.
     /// </summary>
-    public abstract IException Exception { get; }
+    public IException Exception => GetContract<IException>();
     /// <summary>
     /// Gets an instance of the Loader contract for the target.
     /// </summary>
-    public abstract ILoader Loader { get; }
+    public ILoader Loader => GetContract<ILoader>();
     /// <summary>
     /// Gets an instance of the EcmaMetadata contract for the target.
     /// </summary>
-    public abstract IEcmaMetadata EcmaMetadata { get; }
+    public IEcmaMetadata EcmaMetadata => GetContract<IEcmaMetadata>();
     /// <summary>
     /// Gets an instance of the Object contract for the target.
     /// </summary>
-    public abstract IObject Object { get; }
+    public IObject Object => GetContract<IObject>();
     /// <summary>
     /// Gets an instance of the Thread contract for the target.
     /// </summary>
-    public abstract IThread Thread { get; }
+    public IThread Thread => GetContract<IThread>();
     /// <summary>
     /// Gets an instance of the RuntimeTypeSystem contract for the target.
     /// </summary>
-    public abstract IRuntimeTypeSystem RuntimeTypeSystem { get; }
+    public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
     /// <summary>
     /// Gets an instance of the DacStreams contract for the target.
     /// </summary>
-    public abstract IDacStreams DacStreams { get; }
+    public IDacStreams DacStreams => GetContract<IDacStreams>();
     /// <summary>
     /// Gets an instance of the ExecutionManager contract for the target.
     /// </summary>
-    public abstract IExecutionManager ExecutionManager { get; }
+    public IExecutionManager ExecutionManager => GetContract<IExecutionManager>();
     /// <summary>
     /// Gets an instance of the CodeVersions contract for the target.
     /// </summary>
-    public abstract ICodeVersions CodeVersions { get; }
+    public ICodeVersions CodeVersions => GetContract<ICodeVersions>();
     /// <summary>
     /// Gets an instance of the PlatformMetadata contract for the target.
     /// </summary>
-    public abstract IPlatformMetadata PlatformMetadata { get; }
+    public IPlatformMetadata PlatformMetadata => GetContract<IPlatformMetadata>();
     /// <summary>
     /// Gets an instance of the PrecodeStubs contract for the target.
     /// </summary>
-    public abstract IPrecodeStubs PrecodeStubs { get; }
+    public IPrecodeStubs PrecodeStubs => GetContract<IPrecodeStubs>();
     /// <summary>
     /// Gets an instance of the ReJIT contract for the target.
     /// </summary>
-    public abstract IReJIT ReJIT { get; }
+    public IReJIT ReJIT => GetContract<IReJIT>();
     /// <summary>
     /// Gets an instance of the StackWalk contract for the target.
     /// </summary>
-    public abstract IStackWalk StackWalk { get; }
+    public IStackWalk StackWalk => GetContract<IStackWalk>();
     /// <summary>
     /// Gets an instance of the RuntimeInfo contract for the target.
     /// </summary>
-    public abstract IRuntimeInfo RuntimeInfo { get; }
+    public IRuntimeInfo RuntimeInfo => GetContract<IRuntimeInfo>();
     /// <summary>
     /// Gets an instance of the ComWrappers contract for the target.
     /// </summary>
-    public abstract IComWrappers ComWrappers { get; }
+    public IComWrappers ComWrappers => GetContract<IComWrappers>();
     /// Gets an instance of the DebugInfo contract for the target.
     /// </summary>
-    public abstract IDebugInfo DebugInfo { get; }
+    public IDebugInfo DebugInfo => GetContract<IDebugInfo>();
     /// <summary>
     /// Gets an instance of the SHash contract for the target.
     /// </summary>
-    public abstract ISHash SHash { get; }
+    public ISHash SHash => GetContract<ISHash>();
     /// <summary>
     /// Gets an instance of the GC contract for the target.
     /// </summary>
-    public abstract IGC GC { get; }
+    public IGC GC => GetContract<IGC>();
     /// <summary>
     /// Gets an instance of the Notifications contract for the target.
     /// </summary>
-    public abstract INotifications Notifications { get; }
+    public INotifications Notifications => GetContract<INotifications>();
     /// <summary>
     /// Gets an instance of the SignatureDecoder contract for the target.
     /// </summary>
-    public abstract ISignatureDecoder SignatureDecoder { get; }
+    public ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
 
     public abstract TContract GetContract<TContract>() where TContract : IContract;
 }

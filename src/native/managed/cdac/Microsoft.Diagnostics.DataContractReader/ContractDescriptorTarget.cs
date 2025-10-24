@@ -60,7 +60,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
-        IEnumerable<IContractFactory<IContract>>? additionalFactories,
+        IEnumerable<IContractFactory<IContract>> additionalFactories,
         [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
         DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext);
@@ -95,7 +95,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         GetTargetThreadContextDelegate getThreadContext,
         bool isLittleEndian,
         int pointerSize,
-        IEnumerable<IContractFactory<IContract>>? additionalFactories = null)
+        IEnumerable<IContractFactory<IContract>> additionalFactories)
     {
         return new ContractDescriptorTarget(
             [
@@ -110,7 +110,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             additionalFactories);
     }
 
-    private ContractDescriptorTarget(Descriptor[] descriptors, DataTargetDelegates dataTargetDelegates, IEnumerable<IContractFactory<IContract>>? additionalFactories)
+    private ContractDescriptorTarget(Descriptor[] descriptors, DataTargetDelegates dataTargetDelegates, IEnumerable<IContractFactory<IContract>> additionalFactories)
     {
         Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, additionalFactories);
         ProcessedData = new DataCache(this);
