@@ -109,7 +109,7 @@ typedef cpuset_t cpu_set_t;
 #endif
 
 #ifdef __EMSCRIPTEN__
-extern "C" size_t emscripten_get_heap_max(void);
+#include <emscripten/heap.h>
 #endif // __EMSCRIPTEN__
 
 

@@ -461,7 +461,8 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         if (newCapacity > prevCapacity)
         {
             InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
-            if (prevCapacity != 0) {
+            if (prevCapacity != 0) 
+            {
                 memcpy(newa, from->ppOutBBs, from->outCount * sizeof(InterpBasicBlock*));
             }
             from->ppOutBBs = newa;
