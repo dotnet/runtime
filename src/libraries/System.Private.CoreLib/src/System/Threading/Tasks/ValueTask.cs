@@ -176,7 +176,17 @@ namespace System.Threading.Tasks
             return
                 obj == null ? Task.CompletedTask :
                 obj as Task ??
-                GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj));
+                GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj), ValueTaskSourceOnCompletedFlags.None);
+        }
+
+        internal Task AsUnconfiguredTask()
+        {
+            object? obj = _obj;
+            Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
+            return
+                obj == null ? Task.CompletedTask :
+                obj as Task ??
+                GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj), IValueTaskAsTask._unconfigured);
         }
 
         /// <summary>Gets a <see cref="ValueTask"/> that may be used at any point in the future.</summary>
@@ -187,7 +197,7 @@ namespace System.Threading.Tasks
         /// The <see cref="IValueTaskSource"/> is passed in rather than reading and casting <see cref="_obj"/>
         /// so that the caller can pass in an object it's already validated.
         /// </remarks>
-        private Task GetTaskForValueTaskSource(IValueTaskSource t)
+        private Task GetTaskForValueTaskSource(IValueTaskSource t, ValueTaskSourceOnCompletedFlags flags)
         {
             ValueTaskSourceStatus status = t.GetStatus(_token);
             if (status != ValueTaskSourceStatus.Pending)
@@ -225,11 +235,11 @@ namespace System.Threading.Tasks
                 }
             }
 
-            return new ValueTaskSourceAsTask(t, _token);
+            return new ValueTaskSourceAsTask(t, _token, flags);
         }
 
         /// <summary>Type used to create a <see cref="Task"/> to represent a <see cref="IValueTaskSource"/>.</summary>
-        private sealed class ValueTaskSourceAsTask : Task
+        private sealed class ValueTaskSourceAsTask : Task, IValueTaskAsTask
         {
             private static readonly Action<object?> s_completionAction = static state =>
             {
@@ -283,11 +293,28 @@ namespace System.Threading.Tasks
             /// <summary>The token to pass through to operations on <see cref="_source"/></summary>
             private readonly short _token;
 
-            internal ValueTaskSourceAsTask(IValueTaskSource source, short token)
+            private bool _configured;
+
+            bool IValueTaskAsTask.IsConfigured => _configured;
+            void IValueTaskAsTask.Configure(ValueTaskSourceOnCompletedFlags flags) => Configure(flags);
+
+            private void Configure(ValueTaskSourceOnCompletedFlags flags)
+            {
+                Debug.Assert(!_configured);
+
+                _configured = true;
+                _source!.OnCompleted(s_completionAction, this, _token, flags);
+            }
+
+            internal ValueTaskSourceAsTask(IValueTaskSource source, short token, ValueTaskSourceOnCompletedFlags flags)
             {
                 _token = token;
                 _source = source;
-                source.OnCompleted(s_completionAction, this, token, ValueTaskSourceOnCompletedFlags.None);
+
+                if (flags != IValueTaskAsTask._unconfigured)
+                {
+                    Configure(flags);
+                }
             }
         }
 
@@ -585,7 +612,25 @@ namespace System.Threading.Tasks
                 return t;
             }
 
-            return GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource<TResult>>(obj));
+            return GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource<TResult>>(obj), ValueTaskSourceOnCompletedFlags.None);
+        }
+
+        internal Task<TResult> AsUnconfiguredTask()
+        {
+            object? obj = _obj;
+            Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
+
+            if (obj == null)
+            {
+                return Task.FromResult(_result!);
+            }
+
+            if (obj is Task<TResult> t)
+            {
+                return t;
+            }
+
+            return GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource<TResult>>(obj), IValueTaskAsTask._unconfigured);
         }
 
         /// <summary>Gets a <see cref="ValueTask{TResult}"/> that may be used at any point in the future.</summary>
@@ -596,7 +641,7 @@ namespace System.Threading.Tasks
         /// The <see cref="IValueTaskSource{TResult}"/> is passed in rather than reading and casting <see cref="_obj"/>
         /// so that the caller can pass in an object it's already validated.
         /// </remarks>
-        private Task<TResult> GetTaskForValueTaskSource(IValueTaskSource<TResult> t)
+        private Task<TResult> GetTaskForValueTaskSource(IValueTaskSource<TResult> t, ValueTaskSourceOnCompletedFlags flags)
         {
             ValueTaskSourceStatus status = t.GetStatus(_token);
             if (status != ValueTaskSourceStatus.Pending)
@@ -633,11 +678,11 @@ namespace System.Threading.Tasks
                 }
             }
 
-            return new ValueTaskSourceAsTask(t, _token);
+            return new ValueTaskSourceAsTask(t, _token, flags);
         }
 
         /// <summary>Type used to create a <see cref="Task{TResult}"/> to represent a <see cref="IValueTaskSource{TResult}"/>.</summary>
-        private sealed class ValueTaskSourceAsTask : Task<TResult>
+        private sealed class ValueTaskSourceAsTask : Task<TResult>, IValueTaskAsTask
         {
             private static readonly Action<object?> s_completionAction = static state =>
             {
@@ -690,11 +735,28 @@ namespace System.Threading.Tasks
             /// <summary>The token to pass through to operations on <see cref="_source"/></summary>
             private readonly short _token;
 
-            public ValueTaskSourceAsTask(IValueTaskSource<TResult> source, short token)
+            private bool _configured;
+
+            bool IValueTaskAsTask.IsConfigured => _configured;
+            void IValueTaskAsTask.Configure(ValueTaskSourceOnCompletedFlags flags) => Configure(flags);
+
+            private void Configure(ValueTaskSourceOnCompletedFlags flags)
             {
-                _source = source;
+                Debug.Assert(!_configured);
+
+                _configured = true;
+                _source!.OnCompleted(s_completionAction, this, _token, flags);
+            }
+
+            internal ValueTaskSourceAsTask(IValueTaskSource<TResult> source, short token, ValueTaskSourceOnCompletedFlags flags)
+            {
                 _token = token;
-                source.OnCompleted(s_completionAction, this, token, ValueTaskSourceOnCompletedFlags.None);
+                _source = source;
+
+                if (flags != IValueTaskAsTask._unconfigured)
+                {
+                    Configure(flags);
+                }
             }
         }
 
@@ -847,5 +909,13 @@ namespace System.Threading.Tasks
 
             return string.Empty;
         }
+    }
+
+    internal interface IValueTaskAsTask
+    {
+        internal const ValueTaskSourceOnCompletedFlags _unconfigured = (ValueTaskSourceOnCompletedFlags)(-1);
+
+        bool IsConfigured { get; }
+        void Configure(ValueTaskSourceOnCompletedFlags flags);
     }
 }
