@@ -59,6 +59,7 @@ SETUP:
        - For GitHub Models: gh extension install github/gh-models
        - For GitHub Copilot: Install GitHub Copilot CLI from https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli
        - For OpenAI: `$env:OPENAI_API_KEY = "your-key"
+       - For Azure OpenAI: `$env:AZURE_OPENAI_API_KEY = "your-key" and set LlmBaseUrl in config.ps1
        - For others: Set appropriate API key
     3. Edit config.ps1 to customize settings
 "@
@@ -233,15 +234,7 @@ function Limit-Text {
 function Get-UrlEncodedText {
     param([string]$text)
 
-    # Basic URL encoding for GitHub issue URLs
-    $encoded = $text -replace '\r\n', '%0A' -replace '\n', '%0A' -replace '\r', '%0A'
-    $encoded = $encoded -replace ' ', '%20' -replace '#', '%23' -replace '&', '%26'
-    $encoded = $encoded -replace '\[', '%5B' -replace '\]', '%5D' -replace '\(', '%28' -replace '\)', '%29'
-    $encoded = $encoded -replace ':', '%3A' -replace ';', '%3B' -replace '\?', '%3F' -replace '=', '%3D'
-    $encoded = $encoded -replace '@', '%40' -replace '\+', '%2B' -replace '\$', '%24'
-    $encoded = $encoded -replace '"', '%22' -replace "'", '%27' -replace '<', '%3C' -replace '>', '%3E'
-
-    return $encoded
+    return [System.Web.HttpUtility]::UrlEncode($text)
 }
 
 # Function to fetch issue template from GitHub
@@ -469,7 +462,7 @@ function Invoke-LlmApi {
                     $ghArgs += @("--system-prompt", $SystemPrompt)
                 }
 
-                $response = & gh @ghArgs
+                $response = gh @ghArgs
                 return $response -join "`n"
             }
             catch {
@@ -515,57 +508,102 @@ function Invoke-LlmApi {
                 return $null
             }
         }
-        default {
-            # Existing API-based providers
-            $headers = @{ 'Content-Type' = 'application/json' }
-            $body = @{}
-            $endpoint = ""
+        "openai" {
+            # OpenAI API
+            $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/chat/completions" } else { "https://api.openai.com/v1/chat/completions" }
+            $headers = @{ 
+                'Content-Type' = 'application/json'
+                'Authorization' = "Bearer $apiKey"
+            }
 
-            switch ($Config.LlmProvider) {
-                "openai" {
-                    $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/chat/completions" } else { "https://api.openai.com/v1/chat/completions" }
-                    $headers['Authorization'] = "Bearer $apiKey"
+            $messages = @()
+            if ($SystemPrompt) { $messages += @{ role = "system"; content = $SystemPrompt } }
+            $messages += @{ role = "user"; content = $Prompt }
 
-                    $messages = @()
-                    if ($SystemPrompt) { $messages += @{ role = "system"; content = $SystemPrompt } }
-                    $messages += @{ role = "user"; content = $Prompt }
-
-                    $body = @{
-                        model = $Config.LlmModel
-                        messages = $messages
-                        max_tokens = $MaxTokens
-                        temperature = 0.1
-                    }
-                }
-                "anthropic" {
-                    $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/messages" } else { "https://api.anthropic.com/v1/messages" }
-                    $headers['x-api-key'] = $apiKey
-                    $headers['anthropic-version'] = "2023-06-01"
-
-                    $fullPrompt = if ($SystemPrompt) { "$SystemPrompt`n`nHuman: $Prompt`n`nAssistant:" } else { "Human: $Prompt`n`nAssistant:" }
-
-                    $body = @{
-                        model = $Config.LlmModel
-                        max_tokens = $MaxTokens
-                        messages = @(@{ role = "user"; content = $fullPrompt })
-                        temperature = 0.1
-                    }
-                }
+            $body = @{
+                model = $Config.LlmModel
+                messages = $messages
+                max_tokens = $MaxTokens
+                temperature = 0.1
             }
 
             try {
                 $requestJson = $body | ConvertTo-Json -Depth 10
                 $response = Invoke-RestMethod -Uri $endpoint -Method POST -Headers $headers -Body $requestJson
-
-                switch ($Config.LlmProvider) {
-                    "openai" { return $response.choices[0].message.content }
-                    "anthropic" { return $response.content[0].text }
-                }
+                return $response.choices[0].message.content
             }
             catch {
-                Write-Error "LLM API call failed: $($_.Exception.Message)"
+                Write-Error "OpenAI API call failed: $($_.Exception.Message)"
                 return $null
             }
+        }
+        "anthropic" {
+            # Anthropic API
+            $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/messages" } else { "https://api.anthropic.com/v1/messages" }
+            $headers = @{ 
+                'Content-Type' = 'application/json'
+                'x-api-key' = $apiKey
+                'anthropic-version' = "2023-06-01"
+            }
+
+            $fullPrompt = if ($SystemPrompt) { "$SystemPrompt`n`nHuman: $Prompt`n`nAssistant:" } else { "Human: $Prompt`n`nAssistant:" }
+
+            $body = @{
+                model = $Config.LlmModel
+                max_tokens = $MaxTokens
+                messages = @(@{ role = "user"; content = $fullPrompt })
+                temperature = 0.1
+            }
+
+            try {
+                $requestJson = $body | ConvertTo-Json -Depth 10
+                $response = Invoke-RestMethod -Uri $endpoint -Method POST -Headers $headers -Body $requestJson
+                return $response.content[0].text
+            }
+            catch {
+                Write-Error "Anthropic API call failed: $($_.Exception.Message)"
+                return $null
+            }
+        }
+        "azure-openai" {
+            # Azure OpenAI API
+            # Endpoint format: https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version={api-version}
+            if (-not $Config.LlmBaseUrl) {
+                Write-Error "Azure OpenAI requires LlmBaseUrl to be set in config (e.g., 'https://your-resource.openai.azure.com')"
+                return $null
+            }
+            
+            $apiVersion = if ($Config.AzureApiVersion) { $Config.AzureApiVersion } else { "2024-02-15-preview" }
+            $endpoint = "$($Config.LlmBaseUrl)/openai/deployments/$($Config.LlmModel)/chat/completions?api-version=$apiVersion"
+            
+            $headers = @{ 
+                'Content-Type' = 'application/json'
+                'api-key' = $apiKey
+            }
+
+            $messages = @()
+            if ($SystemPrompt) { $messages += @{ role = "system"; content = $SystemPrompt } }
+            $messages += @{ role = "user"; content = $Prompt }
+
+            $body = @{
+                messages = $messages
+                max_tokens = $MaxTokens
+                temperature = 0.1
+            }
+
+            try {
+                $requestJson = $body | ConvertTo-Json -Depth 10
+                $response = Invoke-RestMethod -Uri $endpoint -Method POST -Headers $headers -Body $requestJson
+                return $response.choices[0].message.content
+            }
+            catch {
+                Write-Error "Azure OpenAI API call failed: $($_.Exception.Message)"
+                return $null
+            }
+        }
+        default {
+            Write-Error "Unknown LLM provider: $($Config.LlmProvider)"
+            return $null
         }
     }
 }
