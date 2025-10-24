@@ -1088,7 +1088,7 @@ uint64_t GetAvailablePhysicalMemory()
         available = info.free_memory;
     }
 #elif defined(__EMSCRIPTEN__)
-    available = emscripten_get_heap_max();
+    available = emscripten_get_heap_max() - emscripten_get_heap_size();
 #else // Linux
     static volatile bool tryReadMemInfo = true;
 

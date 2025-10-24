@@ -461,7 +461,7 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         if (newCapacity > prevCapacity)
         {
             InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
-            if (prevCapacity != 0) 
+            if (from->outCount != 0) 
             {
                 memcpy(newa, from->ppOutBBs, from->outCount * sizeof(InterpBasicBlock*));
             }
@@ -486,7 +486,7 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         int newCapacity = GetBBLinksCapacity(to->inCount + 1);
         if (newCapacity > prevCapacity) {
             InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
-            if (prevCapacity != 0) {
+            if (to->inCount != 0) {
                 memcpy(newa, to->ppInBBs, to->inCount * sizeof(InterpBasicBlock*));
             }
             to->ppInBBs = newa;
@@ -5305,7 +5305,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         // We need to realloc the IL code buffer to hold the extra opcodes
 
         uint8_t* newILCode = (uint8_t*)AllocMemPool(newILCodeSize);
-        if (m_ILCodeSize)
+        if (m_ILCodeSize != 0)
         {
             memcpy(newILCode, m_pILCode, m_ILCodeSize);
         }
