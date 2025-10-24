@@ -173,6 +173,7 @@
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
+    <HelixProperties Condition="'$(WorkItemPrefix)' != ''" Include="jobName" Value="$(WorkItemPrefix)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RunGrpcTestsOnly)' == 'true' and '$(BuildGrpcServerDockerImage)' == 'true'">
@@ -288,6 +289,7 @@
         $(HelixPreCommands);
         find $HELIX_CORRELATION_PAYLOAD -name createdump | xargs -n 1 codesign -s - -f --preserve-metadata=entitlements
       </HelixPreCommands>
+      <HelixJobName>$(WorkItemPrefix.Trim())</HelixJobName>
     </PropertyGroup>
 
     <Error Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true' and ('$(SdkWithWorkloadForTestingPath)' == '' or !Exists($(SdkWithWorkloadForTestingPath)))"
