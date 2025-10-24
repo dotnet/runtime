@@ -53,7 +53,7 @@ namespace Test
             while ((bool)m_axStatic2) { }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
         public static void TestEntryPoint()
         {
             try
