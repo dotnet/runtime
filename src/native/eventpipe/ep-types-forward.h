@@ -169,6 +169,42 @@ typedef enum {
 	EP_THREAD_TYPE_SAMPLING
 } EventPipeThreadType;
 
+/**
+ * Tracks the lifecycle of a ThreadSessionState in relation to SequencePoint tracking.
+ *
+ * SequencePoints capture a snapshot of thread sequence numbers at a point in time to establish
+ * ordering boundaries for event processing. This enum tracks whether a thread's sequence number
+ * needs to be included in SequencePoint snapshots.
+ *
+ * State transitions:
+ * UNTRACKED -> TRACKED: When a thread first participates in event writing after a SequencePoint is initialized
+ * TRACKED -> RETIRED: When a thread unregisters and will write no more events
+ *
+ * The UNTRACKED state exists to handle threads that write events and unregister before a SequencePoint
+ * is initialized. In this scenario, the thread's last known sequence number still needs to be tracked
+ * by the SequencePoint to maintain proper event ordering boundaries. However, if a thread has no new
+ * event writes between two SequencePoints and unregisters before the second SequencePoint, that
+ * SequencePoint does not need to track it.
+ *
+ * UNTRACKED (0): The thread has not yet been tracked by any SequencePoint since the last SequencePoint
+ * was written. This is the initial state for new ThreadSessionStates, and also applies
+ * to threads that wrote events but unregistered before a SequencePoint could track them.
+ *
+ * TRACKED (1): The thread is actively being tracked by SequencePoints. The thread's sequence number
+ * will be captured in SequencePoint snapshots to establish event ordering boundaries.
+ *
+ * RETIRED (2): The thread has unregistered and will write no more events. Once a thread unregisters
+ * before a SequencePoint, there will never be any events written by the thread past that SequencePoint,
+ * and therefore no future SequencePoints will need to track that thread's sequence numbers. The final
+ * sequence number has been captured, and future SequencePoints do not need to track this thread unless
+ * there are still unread events from this thread.
+ */
+typedef enum {
+	EP_SEQUENCE_POINT_THREAD_ID_UNTRACKED = 0,
+	EP_SEQUENCE_POINT_THREAD_ID_TRACKED = 1,
+	EP_SEQUENCE_POINT_THREAD_ID_RETIRED = 2
+} EventPipeThreadSequencePointTrackState;
+
 /*
  * EventPipe Basic Types.
  */
