@@ -308,6 +308,7 @@
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
+      <MainLibraryFileName></MainLibraryFileName>
     </ItemGroup>
 
     <PropertyGroup>
