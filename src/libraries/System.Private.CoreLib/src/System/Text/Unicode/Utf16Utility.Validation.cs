@@ -59,11 +59,7 @@ namespace System.Text.Unicode
             int tempScalarCountAdjustment = 0;
             char* pEndOfInputBuffer = pInputBuffer + (uint)inputLength;
 
-            // Per https://github.com/dotnet/runtime/issues/41699, temporarily disabling
-            // ARM64-intrinsicified code paths. ARM64 platforms may still use the vectorized
-            // non-intrinsicified 'else' block below.
-
-            if (/* (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) || */ Sse2.IsSupported)
+            if (Sse2.IsSupported)
             {
                 if (inputLength >= Vector128<ushort>.Count)
                 {
@@ -267,8 +263,8 @@ namespace System.Text.Unicode
                     Vector128<ushort> vector0800 = Vector128.Create<ushort>(0x0800);
                     Vector128<ushort> vectorD800 = Vector128.Create<ushort>(0xD800);
 
-                    char* pHighestAddressWhereCanReadOneVector = pEndOfInputBuffer - Vector128<ushort>.Count;
-                    Debug.Assert(pHighestAddressWhereCanReadOneVector >= pInputBuffer);
+                    char* pLastVectorAddress = pEndOfInputBuffer - Vector128<ushort>.Count;
+                    Debug.Assert(pLastVectorAddress >= pInputBuffer);
 
                     do
                     {
@@ -290,91 +286,170 @@ namespace System.Text.Unicode
                         Vector128<ushort> utf16Data = Vector128.Load((ushort*)pInputBuffer);
                         Vector128<ushort> twoOrMoreUtf8Bytes = Vector128.GreaterThanOrEqual(utf16Data, vector0080);
                         Vector128<ushort> threeOrMoreUtf8Bytes = Vector128.GreaterThanOrEqual(utf16Data, vector0800);
-                        Vector128<nuint> sumVector = (Vector128<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes).AsNUInt();
+                        Vector128<ushort> sumVector = Vector128<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes;
+                        uint popcnt32;
 
-                        // We'll try summing by a natural word (rather than a 16-bit word) at a time,
-                        // which should halve the number of operations we must perform.
-
-                        nuint popcnt = 0;
-                        for (int i = 0; i < Vector128<nuint>.Count; i++)
+                        if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                         {
-                            popcnt += (nuint)sumVector[i];
-                        }
+                            // Sum up the values across the lanes in the vector to get the popcnt.
 
-                        uint popcnt32 = (uint)popcnt;
-                        if (IntPtr.Size == 8)
-                        {
-                            popcnt32 += (uint)(popcnt >> 32);
-                        }
+                            popcnt32 = AdvSimd.Arm64.AddAcross(sumVector).ToScalar();
 
-                        // As in the SSE4.1 paths, compute popcnt but don't fold it in until we
-                        // know there aren't any unpaired surrogates in the input data.
+                            // Now check for surrogates.
 
-                        popcnt32 = (ushort)popcnt32 + (popcnt32 >> 16);
+                            // Extract the upper byte of each 16-bit char and convert into scalar.
+                            // Then, mask out the top 5 bits and check if they are surrogates characters.
+                            // If the byte is a surrogate, it will be set to zero after XORing with 0xD8.
 
-                        // Now check for surrogates.
+                            ulong maskUpperByte = AdvSimd.Arm64.UnzipOdd(utf16Data.AsByte(), utf16Data.AsByte()).AsUInt64().ToScalar();
+                            ulong maskTop = (maskUpperByte & 0xF8F8F8F8F8F8F8F8) ^ 0xD8D8D8D8D8D8D8D8;
 
-                        utf16Data -= vectorD800;
-                        Vector128<ushort> surrogateChars = Vector128.LessThan(utf16Data, vector0800);
-                        if (surrogateChars != Vector128<ushort>.Zero)
-                        {
-                            // There's at least one surrogate (high or low) UTF-16 code unit in
-                            // the vector. We'll build up additional vectors: 'highSurrogateChars'
-                            // and 'lowSurrogateChars', where the elements are 0xFFFF iff the original
-                            // UTF-16 code unit was a high or low surrogate, respectively.
+                            // Check if 'maskTop' contains any zero bytes. We use this transformation to invert
+                            // the logic such that zero bytes are set to 0x80, and 0x00 otherwise. Only zero
+                            // bytes will cause the MSB to flip to 1 after subtracting one from them. Since each
+                            // byte is either zero or at least 0x08, carry wouldn't affect the results.
 
-                            Vector128<ushort> highSurrogateChars = Vector128.LessThan(utf16Data, vector0400);
-                            Vector128<ushort> lowSurrogateChars = Vector128.AndNot(surrogateChars, highSurrogateChars);
-
-                            // We want to make sure that each high surrogate code unit is followed by
-                            // a low surrogate code unit and each low surrogate code unit follows a
-                            // high surrogate code unit. Since we don't have an equivalent of pmovmskb
-                            // or palignr available to us, we'll do this as a loop. We won't look at
-                            // the very last high surrogate char element since we don't yet know if
-                            // the next vector read will have a low surrogate char element.
-
-                            if (lowSurrogateChars[0] != 0)
+                            ulong hasSurrogate = (maskTop - 0x0101010101010101) & ~maskTop & 0x8080808080808080;
+                            if (hasSurrogate != 0)
                             {
-                                goto Error; // error: start of buffer contains standalone low surrogate char
-                            }
+                                // From now on, only the LSB of each byte is used, other bits are all zeros:
+                                // - A low surrogate is a surrogate and bit 2 of the upper byte is set.
+                                // - A high surrogate is a surrogate that isn't also a low surrogate.
 
-                            ushort surrogatePairsCount = 0;
-                            for (int i = 0; i < Vector128<ushort>.Count - 1; i++)
-                            {
-                                surrogatePairsCount -= highSurrogateChars[i]; // turns into +1 or +0
-                                if (highSurrogateChars[i] != lowSurrogateChars[i + 1])
+                                ulong maskSurr = hasSurrogate >> 7;
+                                ulong maskLow = maskSurr & (maskUpperByte >> 2);
+                                ulong maskHigh = maskSurr & (~maskLow);
+
+                                // The first character corresponds to the least significant byte (Litte-Endian).
+                                // First, we check that the first character is not a low surrogate.
+                                // Then, left-shift 'maskHigh' by one byte to check that it matches 'maskLow'.
+                                // This makes sure that each high surrogate is followed by a low surrogate and
+                                // each low surrogate follows a high surrogate.
+                                // Lastly, ignore the last character if it is a high surrogate because we don't
+                                // know yet whether the next character is a low surrogate.
+
+                                if ((maskLow & 0x01) != 0)
+                                {
+                                    goto Error; // error: start of buffer contains standalone low surrogate char
+                                }
+
+                                if ((maskHigh << 8) != maskLow)
                                 {
                                     goto NonVectorizedLoop; // error: mismatched surrogate pair; break out of vectorized logic
                                 }
-                            }
 
-                            if (highSurrogateChars[Vector128<ushort>.Count - 1] != 0)
+                                if ((maskHigh & 0x0100000000000000) != 0)
+                                {
+                                    // There was a standalone high surrogate at the end of the vector.
+                                    // We'll adjust our counters so that we don't consider this char consumed.
+
+                                    pInputBuffer--;
+                                    popcnt32 -= 2;
+                                }
+
+                                // Set the surrogate pairs count to the number of low surrogates.
+
+                                nint surrogatePairsCountNint = (nint)BitOperations.PopCount(maskLow); // zero-extend to native int size
+
+                                // 2 UTF-16 chars become 1 Unicode scalar
+
+                                tempScalarCountAdjustment -= (int)surrogatePairsCountNint;
+
+                                // Since each surrogate code unit was >= 0x0800, we eagerly assumed
+                                // it'd be encoded as 3 UTF-8 code units. Each surrogate half is only
+                                // encoded as 2 UTF-8 code units (for 4 UTF-8 code units total),
+                                // so we'll adjust this now.
+
+                                tempUtf8CodeUnitCountAdjustment -= surrogatePairsCountNint;
+                                tempUtf8CodeUnitCountAdjustment -= surrogatePairsCountNint;
+                            }
+                        }
+                        else
+                        {
+                            // We'll try summing by a natural word (rather than a 16-bit word) at a time,
+                            // which should halve the number of operations we must perform.
+
+                            nuint popcnt = 0;
+                            for (int i = 0; i < Vector128<nuint>.Count; i++)
                             {
-                                // There was a standalone high surrogate at the end of the vector.
-                                // We'll adjust our counters so that we don't consider this char consumed.
-
-                                pInputBuffer--;
-                                popcnt32 -= 2;
+                                popcnt += (nuint)(sumVector.AsNUInt()[i]);
                             }
 
-                            nint surrogatePairsCountNint = (nint)surrogatePairsCount; // zero-extend to native int size
+                            popcnt32 = (uint)popcnt;
+                            if (IntPtr.Size == 8)
+                            {
+                                popcnt32 += (uint)(popcnt >> 32);
+                            }
 
-                            // 2 UTF-16 chars become 1 Unicode scalar
+                            // As in the SSE4.1 paths, compute popcnt but don't fold it in until we
+                            // know there aren't any unpaired surrogates in the input data.
 
-                            tempScalarCountAdjustment -= (int)surrogatePairsCountNint;
+                            popcnt32 = (ushort)popcnt32 + (popcnt32 >> 16);
 
-                            // Since each surrogate code unit was >= 0x0800, we eagerly assumed
-                            // it'd be encoded as 3 UTF-8 code units. Each surrogate half is only
-                            // encoded as 2 UTF-8 code units (for 4 UTF-8 code units total),
-                            // so we'll adjust this now.
+                            // Now check for surrogates.
 
-                            tempUtf8CodeUnitCountAdjustment -= surrogatePairsCountNint;
-                            tempUtf8CodeUnitCountAdjustment -= surrogatePairsCountNint;
+                            utf16Data -= vectorD800;
+                            Vector128<ushort> surrogateChars = Vector128.LessThan(utf16Data, vector0800);
+                            if (surrogateChars != Vector128<ushort>.Zero)
+                            {
+                                // There's at least one surrogate (high or low) UTF-16 code unit in
+                                // the vector. We'll build up additional vectors: 'highSurrogateChars'
+                                // and 'lowSurrogateChars', where the elements are 0xFFFF iff the original
+                                // UTF-16 code unit was a high or low surrogate, respectively.
+
+                                Vector128<ushort> highSurrogateChars = Vector128.LessThan(utf16Data, vector0400);
+                                Vector128<ushort> lowSurrogateChars = Vector128.AndNot(surrogateChars, highSurrogateChars);
+
+                                // We want to make sure that each high surrogate code unit is followed by
+                                // a low surrogate code unit and each low surrogate code unit follows a
+                                // high surrogate code unit. Since we don't have an equivalent of pmovmskb
+                                // or palignr available to us, we'll do this as a loop. We won't look at
+                                // the very last high surrogate char element since we don't yet know if
+                                // the next vector read will have a low surrogate char element.
+
+                                if (lowSurrogateChars[0] != 0)
+                                {
+                                    goto Error; // error: start of buffer contains standalone low surrogate char
+                                }
+
+                                ushort surrogatePairsCount = 0;
+                                for (int i = 0; i < Vector128<ushort>.Count - 1; i++)
+                                {
+                                    surrogatePairsCount -= highSurrogateChars[i]; // turns into +1 or +0
+                                    if (highSurrogateChars[i] != lowSurrogateChars[i + 1])
+                                    {
+                                        goto NonVectorizedLoop; // error: mismatched surrogate pair; break out of vectorized logic
+                                    }
+                                }
+
+                                if (highSurrogateChars[Vector128<ushort>.Count - 1] != 0)
+                                {
+                                    // There was a standalone high surrogate at the end of the vector.
+                                    // We'll adjust our counters so that we don't consider this char consumed.
+
+                                    pInputBuffer--;
+                                    popcnt32 -= 2;
+                                }
+
+                                nint surrogatePairsCountNint = (nint)surrogatePairsCount; // zero-extend to native int size
+
+                                // 2 UTF-16 chars become 1 Unicode scalar
+
+                                tempScalarCountAdjustment -= (int)surrogatePairsCountNint;
+
+                                // Since each surrogate code unit was >= 0x0800, we eagerly assumed
+                                // it'd be encoded as 3 UTF-8 code units. Each surrogate half is only
+                                // encoded as 2 UTF-8 code units (for 4 UTF-8 code units total),
+                                // so we'll adjust this now.
+
+                                tempUtf8CodeUnitCountAdjustment -= surrogatePairsCountNint;
+                                tempUtf8CodeUnitCountAdjustment -= surrogatePairsCountNint;
+                            }
                         }
 
                         tempUtf8CodeUnitCountAdjustment += popcnt32;
                         pInputBuffer += Vector128<ushort>.Count;
-                    } while (pInputBuffer <= pHighestAddressWhereCanReadOneVector);
+                    } while (pInputBuffer <= pLastVectorAddress);
                 }
             }
 
