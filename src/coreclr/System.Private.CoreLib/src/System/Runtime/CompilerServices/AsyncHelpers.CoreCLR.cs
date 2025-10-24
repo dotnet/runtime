@@ -354,15 +354,10 @@ namespace System.Runtime.CompilerServices
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
 
-                ref DispatcherInfo* dispatcherInfoRef = ref t_dispatcherInfo;
                 DispatcherInfo dispatcherInfo;
-                dispatcherInfo.Next = dispatcherInfoRef;
+                dispatcherInfo.Next = t_dispatcherInfo;
                 dispatcherInfo.NextContinuation = TOps.GetContinuationState(task);
-                // Ensure JIT does not reorder the above stores with publishing
-                // the info, which could put the frame information in a bad
-                // state.
-                Volatile.WriteBarrier();
-                dispatcherInfoRef = &dispatcherInfo;
+                t_dispatcherInfo = &dispatcherInfo;
 
                 while (true)
                 {
