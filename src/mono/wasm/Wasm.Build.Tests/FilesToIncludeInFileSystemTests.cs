@@ -21,7 +21,16 @@ public class FilesToIncludeInFileSystemTests : WasmTemplateTestsBase
     {
     }
 
+    public static IEnumerable<object?[]> LoadFilesToVfsData()
+    {
+        if (!EnvironmentVariables.UseJavascriptBundler)
+            yield return new object?[] { false };
+        
+        yield return new object?[] { true };
+    }
+
     [Theory, TestCategory("bundler-friendly")]
+    [MemberData(nameof(LoadFilesToVfsData))]
     [InlineData(true)]
     [InlineData(false)]
     public async Task LoadFilesToVfs(bool publish)
