@@ -10130,7 +10130,7 @@ public:
         bool compReloc; // Generate relocs for pointers in code, true for all AOT codegen
 
 #ifdef DEBUG
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
         bool compEnablePCRelAddr; // Whether absolute addr be encoded as PC-rel offset by RyuJIT where possible
 #endif
 #endif // DEBUG

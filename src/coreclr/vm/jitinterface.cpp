@@ -12019,7 +12019,19 @@ void CEEJitInfo::recordRelocation(void * location,
             _ASSERTE(addlDelta == 0);
 
             INT64 offset = (INT64)target - (INT64)location;
-            PutRiscV64AuipcItype((UINT32 *)locationRW, offset);
+
+            INT32 lo12 = (offset << (64 - 12)) >> (64 - 12);
+            INT32 hi20 = INT32(offset - lo12);
+
+            if (INT64(hi20) + INT64(lo12) == offset)
+            {
+                PutRiscV64AuipcCombo((UINT32 *)locationRW, lo12, hi20);
+            }
+            else
+            {
+                // TODO: emit a stub if it's a jump
+                m_fJumpStubOverflow = TRUE;
+            }
         }
         break;
 
@@ -12067,13 +12079,13 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
     if (m_fAllowRel32)
     {
         if (ExecutableAllocator::IsPreferredExecutableRange(target))
             return IMAGE_REL_BASED_REL32;
     }
-#endif // TARGET_AMD64
+#endif // TARGET_AMD64 || 
 
     // No hints
     return (WORD)-1;
@@ -13265,22 +13277,22 @@ static TADDR UnsafeJitFunctionWorker(
 
 class JumpStubOverflowCheck final
 {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
     static BOOL g_fAllowRel32;
-#endif // TARGET_AMD64
+#endif // TARGET_AMD64 || TARGET_RISCV64
 
     BOOL _fForceJumpStubOverflow;
     BOOL _fAllowRel32;
     size_t _reserveForJumpStubs;
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
 public:
     JumpStubOverflowCheck()
     {
         STANDARD_VM_CONTRACT;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         _fForceJumpStubOverflow = FALSE;
 #ifdef _DEBUG
         // Always exercise the overflow codepath with force relocs
@@ -13289,12 +13301,12 @@ public:
 #endif
 
         _fAllowRel32 = FALSE;
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
         _fAllowRel32 = (g_fAllowRel32 | _fForceJumpStubOverflow) && g_pConfig->JitEnableOptionalRelocs();
-#endif // TARGET_AMD64
+#endif // TARGET_AMD64 || TARGET_RISCV64
 
         _reserveForJumpStubs = 0;
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
     }
 
     ~JumpStubOverflowCheck() = default;
@@ -13303,8 +13315,8 @@ public:
     {
         STANDARD_VM_CONTRACT;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
         if (_fForceJumpStubOverflow)
             jitInfo.SetJumpStubOverflow(_fAllowRel32);
         jitInfo.SetAllowRel32(_fAllowRel32);
@@ -13313,24 +13325,24 @@ public:
             jitInfo.SetJumpStubOverflow(_fForceJumpStubOverflow);
 #endif
         jitInfo.SetReserveForJumpStubs(_reserveForJumpStubs);
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
     }
 
     bool Detected(CEEJitInfo& jitInfo, EEJitManager* jitMgr)
     {
         STANDARD_VM_CONTRACT;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         if (jitInfo.IsJumpStubOverflow())
         {
             // Try again with fAllowRel32 == FALSE.
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
             // Disallow rel32 relocs in future.
             g_fAllowRel32 = FALSE;
 
             _fAllowRel32 = FALSE;
-#endif // TARGET_AMD64
+#endif // TARGET_AMD64 || TARGET_RISCV64
 #if defined(TARGET_ARM64)
             _fForceJumpStubOverflow = FALSE;
 #endif // TARGET_ARM64
@@ -13338,16 +13350,16 @@ public:
             _reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
             return true;
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
         // No overflow detected
         return false;
     }
 };
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
 BOOL JumpStubOverflowCheck::g_fAllowRel32 = TRUE;
-#endif // TARGET_AMD64
+#endif // TARGET_AMD64 || TARGET_RISCV64
 
 static void LogJitMethodBegin(MethodDesc* ftn)
 {

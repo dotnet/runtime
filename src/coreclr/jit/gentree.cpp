@@ -18216,7 +18216,7 @@ bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
     return !ImmedValNeedsReloc(comp) || (op == GT_EQ) || (op == GT_NE);
 }
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
 // Returns true if this absolute address fits within the base of an addr mode.
 // On Amd64 this effectively means, whether an absolute indirect address can
 // be encoded as 32-bit offset relative to IP or zero.

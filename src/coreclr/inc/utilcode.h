@@ -3353,14 +3353,14 @@ void PutLoongArch64PC12(UINT32 * pCode, INT64 imm);
 void PutLoongArch64JIR(UINT32 * pCode, INT64 imm);
 
 //*****************************************************************************
-//  Extract the PC-Relative offset from auipc + I-type adder (addi/load/jalr)
+//  Extract the PC-Relative offset from auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-INT64 GetRiscV64AuipcItype(UINT32 * pCode);
+INT64 GetRiscV64AuipcCombo(UINT32 * pCode);
 
 //*****************************************************************************
-//  Deposit the PC-Relative offset into auipc + I-type adder (addi/load/jalr)
+//  Deposit the PC-Relative offset into auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-void PutRiscV64AuipcItype(UINT32 * pCode, INT64 offset);
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT32 offsetLo12, INT32 offsetHi20);
 
 //*****************************************************************************
 // Returns whether the offset fits into bl instruction

@@ -351,7 +351,8 @@ void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg,
 
 void emitIns_R_AI(instruction  ins,
                   emitAttr     attr,
-                  regNumber    reg,
+                  regNumber    dataReg,
+                  regNumber    addrReg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id);

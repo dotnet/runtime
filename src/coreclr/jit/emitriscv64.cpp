@@ -1232,21 +1232,23 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 // This computes address from the immediate which is relocatable.
 void emitter::emitIns_R_AI(instruction  ins,
                            emitAttr     attr,
-                           regNumber    reg,
+                           regNumber    dataReg,
+                           regNumber    addrReg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr));
-    assert(ins == INS_addi || emitInsIsLoad(ins));
-    assert(isGeneralRegister(reg));
+    assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
+    assert(emitInsIsStore(ins) || (dataReg == addrReg && dataReg != REG_ZERO));
+    assert(isGeneralRegisterOrR0(dataReg) && isGeneralRegister(addrReg));
     // 2-ins:
-    //   auipc  reg, off-hi-20bits
-    //   ins    reg, reg, off-lo-12bits
+    //   auipc  addrReg, off-hi-20bits
+    //   ins    dataReg, addrReg, off-lo-12bits
 
     instrDesc* id = emitNewInstr(attr);
 
     id->idIns(ins);
-    assert(reg != REG_R0); // for special. reg Must not be R0.
-    id->idReg1(reg);       // destination register that will get the constant value.
+    id->idReg1(dataReg);
+    id->idReg2(addrReg);
 
     id->idInsOpt(INS_OPTS_RELOC);
     id->idAddr()->iiaAddr = (BYTE*)addr;
@@ -3158,15 +3160,19 @@ static ssize_t UpperWordOfDoubleWordDoubleSignExtend(ssize_t doubleWord)
 
 BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins)
 {
-    BYTE* const     dstBase = dst;
-    const regNumber reg1    = id->idReg1();
-    assert(isGeneralRegister(reg1));
+    BYTE* const dstBase = dst;
+
+    regNumber dataReg = id->idReg1();
+    regNumber addrReg = id->idReg2();
+    assert(isGeneralRegisterOrR0(dataReg) && isGeneralRegister(addrReg));
 
     *ins = id->idIns();
-    assert(*ins == INS_addi || emitInsIsLoad(*ins));
-    dst += emitOutput_UTypeInstr(dst, INS_auipc, reg1, 0);
-    emitGCregDeadUpd(reg1, dst);
-    dst += emitOutput_ITypeInstr(dst, *ins, reg1, reg1, 0);
+    assert(*ins == INS_addi || emitInsIsLoadOrStore(*ins));
+    assert(emitInsIsStore(*ins) || (dataReg == addrReg && dataReg != REG_ZERO));
+    dst += emitOutput_UTypeInstr(dst, INS_auipc, addrReg, 0);
+    emitGCregDeadUpd(addrReg, dst);
+    dst += emitInsIsStore(*ins) ? emitOutput_STypeInstr(dst, *ins, addrReg, dataReg, 0)
+                                : emitOutput_ITypeInstr(dst, *ins, dataReg, addrReg, 0);
 
     emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
     return dst;
@@ -5096,18 +5102,19 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 assert(memBase == indir->Addr());
                 ssize_t cns = addr->AsIntCon()->IconValue();
 
-                if (addr->IsIconHandle(GTF_ICON_FTN_ADDR))
+                regNumber addrReg = emitInsIsStore(ins) ? codeGen->rsGetRsvdReg() : dataReg;
+                if (addr->AsIntCon()->FitsInAddrBase(emitComp))
                 {
                     attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
-                    emitIns_R_AI(ins, attr, dataReg, (size_t)cns, cns, addr->GetIconHandleFlag());
+                    emitIns_R_AI(ins, attr, dataReg, addrReg, (size_t)cns, cns, addr->GetIconHandleFlag());
                 }
                 else
                 {
                     ssize_t off = (cns << (64 - 12)) >> (64 - 12); // low 12 bits, sign-extended
                     cns -= off;
 
-                    emitLoadImmediate(EA_PTRSIZE, codeGen->rsGetRsvdReg(), cns);
-                    emitIns_R_R_I(ins, attr, dataReg, codeGen->rsGetRsvdReg(), off);
+                    emitLoadImmediate(EA_PTRSIZE, addrReg, cns);
+                    emitIns_R_R_I(ins, attr, dataReg, addrReg, off);
                 }
             }
             else if (isValidSimm12(offset))
