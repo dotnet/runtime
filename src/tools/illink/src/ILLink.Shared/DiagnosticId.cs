@@ -212,6 +212,13 @@ namespace ILLink.Shared
         RequiresDynamicCodeOnStaticConstructor = 3056,
         RequiresDynamicCodeOnEntryPoint = 3057,
         ReferenceNotMarkedIsAotCompatible = 3058,
+
+#if DEBUG
+        RequiresUnsafe = 3559,
+        RequiresUnsafeAttributeMismatch = 3560,
+        RequiresUnsafeOnStaticConstructor = 3561,
+        RequiresUnsafeOnEntryPoint = 3562,
+#endif
         _EndAotAnalysisWarningsSentinel,
 
         // Feature guard diagnostic ids.
@@ -240,7 +247,10 @@ namespace ILLink.Shared
                 2107 => MessageSubCategory.TrimAnalysis,
                 >= 2109 and < (int)DiagnosticId._EndTrimAnalysisWarningsSentinel => MessageSubCategory.TrimAnalysis,
                 >= 3050 and <= 3052 => MessageSubCategory.AotAnalysis,
-                >= 3054 and < (int)DiagnosticId._EndAotAnalysisWarningsSentinel => MessageSubCategory.AotAnalysis,
+                >= 3054 and <= 3058 => MessageSubCategory.AotAnalysis,
+#if DEBUG
+                >= 3059 and < (int)DiagnosticId._EndAotAnalysisWarningsSentinel => MessageSubCategory.AotAnalysis,
+#endif
                 _ => MessageSubCategory.None,
             };
 
