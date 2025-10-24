@@ -2862,11 +2862,11 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(m.Success, $"Match should succeed for input '{input}'");
             Assert.Equal(expectedMatch, m.Value);
 
+#if !NETFRAMEWORK // This bug was fixed in .NET Core and doesn't exist in .NET Framework
             // Check that the group 2 state is consistent
             bool group2Success = m.Groups[2].Success;
             int group2CapturesCount = m.Groups[2].Captures.Count;
 
-#if !NETFRAMEWORK // This bug was fixed in .NET Core and doesn't exist in .NET Framework
             // The key test: Group.Success and Captures.Count should be consistent with the conditional behavior
             Assert.Equal(expectedGroup2Matched, group2Success);
             if (expectedGroup2Matched)
@@ -2930,11 +2930,11 @@ namespace System.Text.RegularExpressions.Tests
 
             Assert.True(m.Success, $"Match should succeed for input '{input}'");
 
+#if !NETFRAMEWORK // This bug was fixed in .NET Core and doesn't exist in .NET Framework
             // Check that the group state is consistent
             bool groupSuccess = m.Groups[groupNumber].Success;
             int capturesCount = m.Groups[groupNumber].Captures.Count;
 
-#if !NETFRAMEWORK // This bug was fixed in .NET Core and doesn't exist in .NET Framework
             Assert.Equal(expectedMatched, groupSuccess);
             if (expectedMatched)
             {
@@ -2946,6 +2946,7 @@ namespace System.Text.RegularExpressions.Tests
             }
 #else
             // On .NET Framework, just use the parameters to avoid xUnit warning
+            _ = groupNumber;
             _ = expectedMatched;
 #endif
         }
