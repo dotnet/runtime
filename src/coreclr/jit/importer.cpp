@@ -6715,12 +6715,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // If we see a local being assigned the result of a GDV-inlineable
                     // GetEnumerator call, keep track of both the local and the call.
                     //
-                    if (op1->OperIs(GT_RET_EXPR))
+                    if (op1->IsCall())
                     {
                         JITDUMP(".... checking for GDV returning IEnumerator<T>...\n");
 
                         bool                 isEnumeratorT = false;
-                        GenTreeCall* const   call          = op1->AsRetExpr()->gtInlineCandidate;
+                        GenTreeCall* const   call = op1->AsCall();
                         bool                 isExact       = false;
                         bool                 isNonNull     = false;
                         CORINFO_CLASS_HANDLE retCls        = gtGetClassHandle(call, &isExact, &isNonNull);
@@ -13248,7 +13248,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         }
 
         arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
-        impInlineRecordArgInfo(pInlineInfo, &arg, argInfo, inlineResult);
+        impInlineRecordArgInfo(pInlineInfo, argInfo, &arg, inlineResult);
 
         if (inlineResult->IsFailure())
         {

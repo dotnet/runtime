@@ -274,6 +274,11 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         LateDevirtualization(use, user);
+        if (m_nextBlock != nullptr)
+        {
+            // Restart process.
+            return fgWalkResult::WALK_ABORT;
+        }
 
         return fgWalkResult::WALK_CONTINUE;
     }
@@ -737,44 +742,10 @@ private:
                     callInfo.hMethod           = method;
                     callInfo.methodFlags       = methodFlags;
                     m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext);
-
-                    if (call->IsInlineCandidate())
-                    {
-                        Statement* newStmt = nullptr;
-                        GenTree**  callUse = nullptr;
-                        if (m_compiler->gtSplitTree(m_block, m_statement, call, &newStmt, &callUse, true, true))
-                        {
-                            if (m_nextStatement == nullptr)
-                            {
-                                m_nextStatement = newStmt;
-                            }
-                        }
-
-                        // If the call is the root expression in a statement, and it returns void,
-                        // we can inline it directly without creating a RET_EXPR.
-                        if (parent != nullptr || call->gtReturnType != TYP_VOID)
-                        {
-                            Statement* stmt = m_compiler->gtNewStmt(call);
-                            m_compiler->fgInsertStmtBefore(m_block, m_statement, stmt);
-                            if (m_statement == nullptr)
-                            {
-                                m_firstNewStmt = stmt;
-                            }
-
-                            GenTreeRetExpr* retExpr =
-                                m_compiler->gtNewInlineCandidateReturnExpr(call->AsCall(),
-                                                                           genActualType(call->TypeGet()));
-                            call->GetSingleInlineCandidateInfo()->retExpr = retExpr;
-
-                            JITDUMP("Creating new RET_EXPR for [%06u]:\n", call->gtTreeID);
-                            DISPTREE(retExpr);
-
-                            *pTree = retExpr;
-                        }
-
-                        JITDUMP("New inline candidate due to late devirtualization:\n");
-                        DISPTREE(call);
-                    }
+                    // Reprocess the statement to pick up the inline in preorder.
+                    assert(m_nextBlock == nullptr);
+                    m_nextBlock = m_block;
+                    m_nextStatement = m_statement;
                 }
                 m_madeChanges = true;
             }
@@ -820,6 +791,7 @@ private:
             // See if this jtrue is now foldable.
             BasicBlock* block = m_block;
             GenTree*    condTree = tree->AsOp()->gtOp1;
+            bool modifiedTree = false;
             assert(tree == block->lastStmt()->GetRootNode());
 
             while (condTree->OperIs(GT_COMMA))
@@ -2034,18 +2006,7 @@ void Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         }
     }
 
-    // Append the InstParam
-    if (inlineInfo->inlInstParamArgInfo != nullptr)
-    {
-        fgInsertInlineeArgument(inlineInfo->setupStatements, *inlineInfo->inlInstParamArgInfo, callDI);
-    }
-
-    if (inlineInfo->inlRetBufferArgInfo != nullptr)
-    {
-        fgInsertInlineeArgument(inlineInfo->setupStatements, *inlineInfo->inlRetBufferArgInfo, callDI);
-    }
-
-    // Treat arguments that had to be assigned to temps
+#ifdef DEBUG
     if (inlineInfo->argCnt)
     {
         JITDUMP("\nArguments setup:\n");
@@ -2058,11 +2019,22 @@ void Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         InlArgInfo* argInfo = nullptr;
         switch (arg.GetWellKnownArg())
         {
-            fgInsertInlineeArgument(inlineInfo->setupStatements, inlArgInfo[argNum], callDI);
+        case WellKnownArg::AsyncContinuation:
+            continue;
+        case WellKnownArg::RetBuffer:
+            argInfo = inlineInfo->inlRetBufferArgInfo;
+            break;
+        case WellKnownArg::InstParam:
+            argInfo = inlineInfo->inlInstParamArgInfo;
+            break;
+        default:
+            assert(ilArgNum < inlineInfo->argCnt);
+            argInfo = &inlineInfo->inlArgInfo[ilArgNum++];
+            break;
         }
 
         assert(argInfo != nullptr);
-        fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
+        fgInsertInlineeArgument(inlineInfo->setupStatements, *argInfo, callDI);
     }
 
     // Add the CCTOR check if asked for.
@@ -2155,7 +2127,7 @@ void Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 //    we skip nulling the locals, since it can interfere
 //    with tail calls introduced by the local.
 //
-void Compiler::fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmtAfter)
+void Compiler::fgInlineAppendStatements(class StatementListBuilder& statements, InlineInfo* inlineInfo)
 {
     // Null out any gc ref locals
     if (!inlineInfo->HasGcRefLocals())
