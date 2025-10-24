@@ -98,6 +98,9 @@ CONFIG_INTEGER(JitUnrollLoopMaxIterationCount,
 
 CONFIG_INTEGER(JitUnrollLoopsWithEH, "JitUnrollLoopsWithEH", 0) // If 0, don't unroll loops containing EH regions
 
+RELEASE_CONFIG_INTEGER(JitTransformIrreducibleLoops, "JitTransformIrreducibleLoops", 1) // 0: leave as is; 1: switch
+                                                                                        // dispatch
+
 CONFIG_INTEGER(JitDirectAlloc, "JitDirectAlloc", 0)
 CONFIG_INTEGER(JitDoubleAlign, "JitDoubleAlign", 1)
 CONFIG_INTEGER(JitEmitPrintRefRegs, "JitEmitPrintRefRegs", 0)

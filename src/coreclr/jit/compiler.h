@@ -88,6 +88,7 @@ struct JumpThreadInfo;     // defined in redundantbranchopts.cpp
 class ProfileSynthesis;    // defined in profilesynthesis.h
 class PerLoopInfo;         // defined in inductionvariableopts.cpp
 class RangeCheck;          // defined in rangecheck.h
+class SCC;
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -2751,6 +2752,7 @@ public:
     bool bbInHandlerRegions(unsigned regionIndex, BasicBlock* blk);
     bool bbInCatchHandlerRegions(BasicBlock* tryBlk, BasicBlock* hndBlk);
     unsigned short bbFindInnermostCommonTryRegion(BasicBlock* bbOne, BasicBlock* bbTwo);
+    unsigned short bbFindInnermostCommonTryRegion(unsigned tryIndex, BasicBlock* bbTwo);
 
     unsigned short bbFindInnermostTryRegionContainingHandlerRegion(unsigned handlerIndex);
     unsigned short bbFindInnermostHandlerRegionContainingTryRegion(unsigned tryIndex);
@@ -6239,6 +6241,9 @@ public:
     template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile = false>
     unsigned fgRunDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge);
 
+    template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile = false>
+    unsigned fgRunSubgraphDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge, BitVec& subgraph, BitVecTraits& subgraphTraits);
+
     template <const bool useProfile = false>
     FlowGraphDfsTree* fgComputeDfs();
     void fgInvalidateDfsTree();
@@ -7023,6 +7028,9 @@ public:
 
     void optFindLoops();
     bool optCanonicalizeLoops();
+
+    bool optFindSCCs(bool& failedToModify);
+    void optFindSCCs(BitVec& subset, BitVecTraits& traits, ArrayStack<SCC*>& sccs, BasicBlock** postorder, unsigned postorderCount);
 
     void optCompactLoops();
     void optCompactLoop(FlowGraphNaturalLoop* loop);
