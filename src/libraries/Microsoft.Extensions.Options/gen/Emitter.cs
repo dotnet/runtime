@@ -660,7 +660,7 @@ namespace Microsoft.Extensions.Options.Generators
                 OutLn($"context.MemberName = \"Validate\";");
                 // Use the name parameter if it already contains a dot (nested validation),
                 // otherwise use the model name (root level validation or option name doesn't match type name)
-                OutLn($"context.DisplayName = (!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.Validate\" : $\"{modelName}.Validate\";");
+                OutLn($"context.DisplayName = (!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.Validate\" : \"{modelName}.Validate\";");
                 OutLn($"(builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));");
                 OutLn();
             }
@@ -697,7 +697,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutLn("#if NET10_0_OR_GREATER");
             // Use the name parameter if it already contains a dot (nested validation),
             // otherwise use the model name (root level validation or option name doesn't match type name)
-            OutLn($"string displayName = (!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.Validate\" : $\"{modelToValidate.SimpleName}.Validate\";");
+            OutLn($"string displayName = (!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.Validate\" : \"{modelToValidate.SimpleName}.Validate\";");
             OutLn($"var context = new {StaticValidationContextType}(options, displayName, null, null);");
             OutLn("#else");
             OutLn($"var context = new {StaticValidationContextType}(options);");
@@ -744,7 +744,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutLn($"context.MemberName = \"{vm.Name}\";");
             // Use the name parameter if it already contains the model name (nested validation),
             // otherwise use the model name (root level validation or option name doesn't match type name)
-            OutLn($"context.DisplayName = (!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.{vm.Name}\" : $\"{modelName}.{vm.Name}\";");
+            OutLn($"context.DisplayName = (!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.{vm.Name}\" : \"{modelName}.{vm.Name}\";");
 
             if (cleanListsBeforeUse)
             {
@@ -842,7 +842,7 @@ namespace Microsoft.Extensions.Options.Generators
 
             // Use the name parameter if it already contains a dot (nested validation),
             // otherwise use the model name (root level validation or option name doesn't match type name)
-            var baseName = $"(!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.{vm.Name}\" : $\"{modelName}.{vm.Name}\"";
+            var baseName = $"(!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.{vm.Name}\" : \"{modelName}.{vm.Name}\"";
 
             if (vm.IsNullable)
             {
