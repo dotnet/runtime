@@ -196,13 +196,8 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
 
 static void ResetCtxProtocolRestrictions(SSL_CTX* ctx)
 {
-#ifndef SSL_CTRL_SET_MIN_PROTO_VERSION
-#define SSL_CTRL_SET_MIN_PROTO_VERSION 123
-#endif
-#ifndef SSL_CTRL_SET_MAX_PROTO_VERSION
-#define SSL_CTRL_SET_MAX_PROTO_VERSION 124
-#endif
-
+    c_static_assert(SSL_CTRL_SET_MIN_PROTO_VERSION == 123);
+    c_static_assert(SSL_CTRL_SET_MAX_PROTO_VERSION == 124);
     SSL_CTX_ctrl(ctx, SSL_CTRL_SET_MIN_PROTO_VERSION, 0, NULL);
     SSL_CTX_ctrl(ctx, SSL_CTRL_SET_MAX_PROTO_VERSION, 0, NULL);
 }
