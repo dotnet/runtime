@@ -328,7 +328,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 if (bundlerFriendly)
                 {
                     string escaped = EscapeName(string.Concat(asset.name));
-                    imports.Add($"import * as {escaped} from \"./{asset.name}\";");
+                    imports.Add($"import {escaped} from \"./{asset.name}\";");
                     asset.resolvedUrl = EncodeJavascriptVariableInJson(escaped);
                 }
 
