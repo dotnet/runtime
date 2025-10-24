@@ -430,26 +430,36 @@ namespace System
         private static bool TryParseComponent<TChar>(ReadOnlySpan<TChar> component, string componentName, bool throwOnFailure, ReadOnlySpan<TChar> originalInput, out int parsedComponent)
             where TChar : unmanaged, IUtfChar<TChar>
         {
-            if (throwOnFailure)
+            Number.ParsingStatus parseStatus = Number.TryParseBinaryIntegerStyle(component, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out parsedComponent);
+
+            if (parseStatus == Number.ParsingStatus.OK && parsedComponent >= 0)
             {
-                try
-                {
-                    parsedComponent = Number.ParseBinaryInteger<TChar, int>(component, NumberStyles.Integer, NumberFormatInfo.InvariantInfo);
-                }
-                catch (FormatException) when (typeof(TChar) == typeof(char))
-                {
-                    throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(originalInput).ToString()));
-                }
-                catch (FormatException) when (typeof(TChar) == typeof(byte))
-                {
-                    throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, Encoding.UTF8.GetString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(originalInput))));
-                }
-                ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
                 return true;
             }
 
-            Number.ParsingStatus parseStatus = Number.TryParseBinaryIntegerStyle(component, NumberStyles.Integer, NumberFormatInfo.InvariantInfo, out parsedComponent);
-            return parseStatus == Number.ParsingStatus.OK && parsedComponent >= 0;
+            if (throwOnFailure)
+            {
+                if (parsedComponent < 0)
+                {
+                    ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
+                }
+
+                if (parseStatus == Number.ParsingStatus.Overflow)
+                {
+                    Number.ThrowOverflowException<int>();
+                }
+
+                if (typeof(TChar) == typeof(char))
+                {
+                    throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(originalInput).ToString()));
+                }
+                else
+                {
+                    throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, Encoding.UTF8.GetString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(originalInput))));
+                }
+            }
+
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
