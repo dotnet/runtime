@@ -224,7 +224,7 @@ namespace System.IO.Tests
         [Theory]
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void WindowsEnumerateDirectoryWithTrailingSpacePeriod(string trailingChars)
+        public void WindowsEnumerateDirectoryWithTrailingSpacePeriod(string dirName)
         {
             // Test scenario from issue #113120: calling Directory.GetFiles with a path that has
             // trailing spaces/periods should return paths without those trailing characters.
