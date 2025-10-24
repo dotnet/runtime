@@ -85,4 +85,6 @@ public abstract class ContractRegistry
     /// Gets an instance of the SignatureDecoder contract for the target.
     /// </summary>
     public abstract ISignatureDecoder SignatureDecoder { get; }
+
+    public abstract TContract GetContract<TContract>() where TContract : IContract;
 }

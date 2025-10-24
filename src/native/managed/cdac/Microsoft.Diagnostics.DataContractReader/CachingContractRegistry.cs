@@ -20,7 +20,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
     private readonly Target _target;
     private readonly TryGetContractVersionDelegate _tryGetContractVersion;
 
-    public CachingContractRegistry(Target target, TryGetContractVersionDelegate tryGetContractVersion, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
+    public CachingContractRegistry(Target target, TryGetContractVersionDelegate tryGetContractVersion, IEnumerable<IContractFactory<IContract>>? additionalFactories = null, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
     {
         _target = target;
         _tryGetContractVersion = tryGetContractVersion;
@@ -46,6 +46,14 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(IGC)] = new GCFactory(),
             [typeof(ISignatureDecoder)] = new SignatureDecoderFactory(),
         };
+
+        if (additionalFactories != null)
+        {
+            foreach (IContractFactory<IContract> factory in additionalFactories)
+            {
+                _factories[factory.ContractType] = factory;
+            }
+        }
         configureFactories?.Invoke(_factories);
     }
 
@@ -69,7 +77,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
     public override IGC GC => GetContract<IGC>();
     public override ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
 
-    private TContract GetContract<TContract>() where TContract : IContract
+    public override TContract GetContract<TContract>()
     {
         if (_contracts.TryGetValue(typeof(TContract), out IContract? contractMaybe))
             return (TContract)contractMaybe;

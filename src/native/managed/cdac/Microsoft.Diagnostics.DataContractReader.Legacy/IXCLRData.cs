@@ -10,14 +10,14 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 // This file contains managed declarations for the IXCLRData interfaces.
 // See src/coreclr/inc/xclrdata.idl
 
-internal struct CLRDataModuleExtent
+public struct CLRDataModuleExtent
 {
     public ClrDataAddress baseAddress;
     public uint length;
     public uint /* CLRDataModuleExtentType */ type;
 }
 
-internal struct DacpGetModuleData
+public struct DacpGetModuleData
 {
     public uint IsDynamic;
     public uint IsInMemory;
@@ -31,7 +31,7 @@ internal struct DacpGetModuleData
 
 [GeneratedComInterface]
 [Guid("88E32849-0A0A-4cb0-9022-7CD2E9E139E2")]
-internal unsafe partial interface IXCLRDataModule
+public unsafe partial interface IXCLRDataModule
 {
     [PreserveSig]
     int StartEnumAssemblies(ulong* handle);
@@ -129,7 +129,7 @@ internal unsafe partial interface IXCLRDataModule
 
 [GeneratedComInterface]
 [Guid("34625881-7EB3-4524-817B-8DB9D064C760")]
-internal unsafe partial interface IXCLRDataModule2
+public unsafe partial interface IXCLRDataModule2
 {
     [PreserveSig]
     int SetJITCompilerFlags(uint flags);
@@ -137,7 +137,7 @@ internal unsafe partial interface IXCLRDataModule2
 
 [GeneratedComInterface]
 [Guid("5c552ab6-fc09-4cb3-8e36-22fa03c798b7")]
-internal unsafe partial interface IXCLRDataProcess
+public unsafe partial interface IXCLRDataProcess
 {
     [PreserveSig]
     int Flush();
@@ -313,7 +313,7 @@ internal unsafe partial interface IXCLRDataProcess
         /*IXCLRDisassemblySupport*/ void* dis);
 }
 
-internal struct GcEvtArgs
+public struct GcEvtArgs
 {
     public /*GcEvt_t*/ uint type;
     public int condemnedGeneration;
@@ -321,7 +321,7 @@ internal struct GcEvtArgs
 
 [GeneratedComInterface]
 [Guid("5c552ab6-fc09-4cb3-8e36-22fa03c798b8")]
-internal unsafe partial interface IXCLRDataProcess2 : IXCLRDataProcess
+public unsafe partial interface IXCLRDataProcess2 : IXCLRDataProcess
 {
     [PreserveSig]
     int GetGcNotification(GcEvtArgs* gcEvtArgs);
@@ -331,7 +331,7 @@ internal unsafe partial interface IXCLRDataProcess2 : IXCLRDataProcess
 
 [GeneratedComInterface]
 [Guid("E59D8D22-ADA7-49a2-89B5-A415AFCFC95F")]
-internal unsafe partial interface IXCLRDataStackWalk
+public unsafe partial interface IXCLRDataStackWalk
 {
     [PreserveSig]
     int GetContext(
@@ -364,7 +364,7 @@ internal unsafe partial interface IXCLRDataStackWalk
 
 [GeneratedComInterface]
 [Guid("271498C2-4085-4766-BC3A-7F8ED188A173")]
-internal unsafe partial interface IXCLRDataFrame
+public unsafe partial interface IXCLRDataFrame
 {
     [PreserveSig]
     int GetFrameType(uint* simpleType, uint* detailedType);
@@ -428,7 +428,7 @@ internal unsafe partial interface IXCLRDataFrame
 
 [GeneratedComInterface]
 [Guid("1C4D9A4B-702D-4CF6-B290-1DB6F43050D0")]
-internal unsafe partial interface IXCLRDataFrame2
+public unsafe partial interface IXCLRDataFrame2
 {
     [PreserveSig]
     int GetExactGenericArgsToken(/*IXCLRDataValue*/ void** genericToken);
@@ -436,7 +436,7 @@ internal unsafe partial interface IXCLRDataFrame2
 
 [GeneratedComInterface]
 [Guid("A5B0BEEA-EC62-4618-8012-A24FFC23934C")]
-internal unsafe partial interface IXCLRDataTask
+public unsafe partial interface IXCLRDataTask
 {
     [PreserveSig]
     int GetProcess(/*IXCLRDataProcess*/ void** process);
@@ -487,13 +487,13 @@ internal unsafe partial interface IXCLRDataTask
     int GetLastExceptionState(/*IXCLRDataExceptionState*/ void** exception);
 }
 
-internal enum ClrDataSourceType : uint
+public enum ClrDataSourceType : uint
 {
     CLRDATA_SOURCE_TYPE_INVALID = 0,
 }
 
 // CLRDATA_IL_ADDRESS_MAP
-internal struct ClrDataILAddressMap
+public struct ClrDataILAddressMap
 {
     public uint ilOffset;
     public ClrDataAddress startAddress;
@@ -503,7 +503,7 @@ internal struct ClrDataILAddressMap
 
 [GeneratedComInterface]
 [Guid("ECD73800-22CA-4b0d-AB55-E9BA7E6318A5")]
-internal unsafe partial interface IXCLRDataMethodInstance
+public unsafe partial interface IXCLRDataMethodInstance
 {
     [PreserveSig]
     int GetTypeInstance(/*IXCLRDataTypeInstance*/ void** typeInstance);

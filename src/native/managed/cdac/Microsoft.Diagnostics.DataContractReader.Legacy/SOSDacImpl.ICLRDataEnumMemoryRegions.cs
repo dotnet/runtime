@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// Implementation of ICLRDataEnumMemoryRegions interface intended to be passed out to consumers
 /// interacting with the DAC via those COM interfaces.
 /// </summary>
-internal sealed unsafe partial class SOSDacImpl : ICLRDataEnumMemoryRegions
+public sealed unsafe partial class SOSDacImpl : ICLRDataEnumMemoryRegions
 {
     int ICLRDataEnumMemoryRegions.EnumMemoryRegions(void* callback, uint miniDumpFlags, int clrFlags)
         => _legacyEnumMemory is not null ? _legacyEnumMemory.EnumMemoryRegions(callback, miniDumpFlags, clrFlags) : HResults.E_NOTIMPL;

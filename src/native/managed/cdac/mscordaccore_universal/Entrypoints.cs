@@ -8,12 +8,12 @@ using Microsoft.Diagnostics.DataContractReader.Legacy;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-internal static class Entrypoints
+public static class Entrypoints
 {
     private const string CDAC = "cdac_reader_";
 
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}init")]
-    private static unsafe int Init(
+    public static unsafe int Init(
         ulong descriptor,
         delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget,
         delegate* unmanaged<ulong, byte*, uint, void*, int> writeToTarget,
@@ -45,6 +45,7 @@ internal static class Entrypoints
                     return readThreadContext(threadId, contextFlags, (uint)buffer.Length, bufferPtr, delegateContext);
                 }
             },
+            null,
             out ContractDescriptorTarget? target))
             return -1;
 
@@ -54,7 +55,7 @@ internal static class Entrypoints
     }
 
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}free")]
-    private static unsafe int Free(IntPtr handle)
+    public static unsafe int Free(IntPtr handle)
     {
         GCHandle h = GCHandle.FromIntPtr(handle);
         h.Free();
@@ -69,7 +70,7 @@ internal static class Entrypoints
     /// <param name="obj"><c>IUnknown</c> pointer that can be queried for ISOSDacInterface*</param>
     /// <returns></returns>
     [UnmanagedCallersOnly(EntryPoint = $"{CDAC}create_sos_interface")]
-    private static unsafe int CreateSosInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
+    public static unsafe int CreateSosInterface(IntPtr handle, IntPtr legacyImplPtr, nint* obj)
     {
         ComWrappers cw = new StrategyBasedComWrappers();
         Target? target = GCHandle.FromIntPtr(handle).Target as Target;
@@ -86,7 +87,7 @@ internal static class Entrypoints
     }
 
     [UnmanagedCallersOnly(EntryPoint = "CLRDataCreateInstanceWithFallback")]
-    private static unsafe int CLRDataCreateInstanceWithFallback(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
+    public static unsafe int CLRDataCreateInstanceWithFallback(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
     {
         return CLRDataCreateInstanceImpl(pIID, pLegacyTarget, pLegacyImpl, iface);
     }
@@ -98,7 +99,7 @@ internal static class Entrypoints
         return CLRDataCreateInstanceImpl(pIID, pLegacyTarget, IntPtr.Zero, iface);
     }
 
-    private static unsafe int CLRDataCreateInstanceImpl(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
+    public static unsafe int CLRDataCreateInstanceImpl(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
     {
         if (pLegacyTarget == IntPtr.Zero || iface == null)
             return HResults.E_INVALIDARG;
@@ -147,6 +148,7 @@ internal static class Entrypoints
                     return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
                 }
             },
+            null,
             out ContractDescriptorTarget? target))
         {
             return -1;
