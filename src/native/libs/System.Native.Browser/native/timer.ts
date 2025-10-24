@@ -15,7 +15,7 @@ export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
         _SystemJS_ExecuteTimerCallback();
     }
 }
-SystemJS_ScheduleTimer["__deps"] = ['SystemJS_ExecuteTimerCallback'];
+SystemJS_ScheduleTimer["__deps"] = ["SystemJS_ExecuteTimerCallback"];
 
 export function SystemJS_ScheduleBackgroundJob(): void {
     if (DOTNET.lastScheduledThreadPoolId) {
@@ -29,4 +29,4 @@ export function SystemJS_ScheduleBackgroundJob(): void {
         _SystemJS_ExecuteBackgroundJobCallback();
     }
 }
-SystemJS_ScheduleBackgroundJob["__deps"] = ['SystemJS_ExecuteBackgroundJobCallback'];
+SystemJS_ScheduleBackgroundJob["__deps"] = ["SystemJS_ExecuteBackgroundJobCallback"];

@@ -1,8 +1,6 @@
 project(System.Native.Browser C)
 
-set(BROWSER_SOURCES
-    ./native/timer.c
-)
+set(BROWSER_SOURCES)
 
 if (NOT GEN_PINVOKE)
     set (BROWSER_SOURCES ${BROWSER_SOURCES} entrypoints.c)

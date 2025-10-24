@@ -4,7 +4,7 @@
 import type { CharPtr, VoidPtr, VoidPtrPtr } from "./types";
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
-const loadedAssemblies : Map<string, { ptr: number, length: number }> = new Map();
+const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
 
 export function registerDllBytes(bytes: Uint8Array, asset: { name: string }) {
     const sp = Module.stackSave();
@@ -24,7 +24,7 @@ export function registerDllBytes(bytes: Uint8Array, asset: { name: string }) {
 }
 
 // bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
-export function BrowserHost_ExternalAssemblyProbe(pathPtr:CharPtr, outDataStartPtr:VoidPtrPtr, outSize:VoidPtr) {
+export function BrowserHost_ExternalAssemblyProbe(pathPtr: CharPtr, outDataStartPtr: VoidPtrPtr, outSize: VoidPtr) {
     const path = Module.UTF8ToString(pathPtr);
     const assembly = loadedAssemblies.get(path);
     if (assembly) {
@@ -40,24 +40,45 @@ export function BrowserHost_ExternalAssemblyProbe(pathPtr:CharPtr, outDataStartP
     return false;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function runMain(mainAssemblyName?: string, args?: string[]): Promise<number> {
-    if(!mainAssemblyName){
-        const config = dotnetApi.getConfig();
+    const config = dotnetApi.getConfig();
+    if (!mainAssemblyName) {
         mainAssemblyName = config.mainAssemblyName!;
     }
-    const res = _BrowserHost_ExecuteAssembly(mainAssemblyName);
-    if (res != 0) {
-        const reason = new Error("Failed to execute assembly");
-        dotnetApi.exit(res, reason);
-        throw reason;
+    const mainAssemblyNamePtr = dotnetBrowserUtilsExports.stringToUTF8Ptr(mainAssemblyName) as any;
+
+    if (!args) {
+        args = [];
     }
 
-    return dotnetLoaderExports.getRunMainPromise();
+    const sp = Module.stackSave();
+    const argsvPtr: number = Module.stackAlloc((args.length + 1) * 4) as any;
+    const ptrs: VoidPtr[] = [];
+    try {
+
+        for (const arg of args) {
+            const ptr = dotnetBrowserUtilsExports.stringToUTF8Ptr(arg) as any;
+            ptrs.push(ptr);
+            Module.HEAPU32.set(ptr, argsvPtr >>> 2);
+        }
+        const res = _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length, argsvPtr);
+        for (const ptr of ptrs) {
+            Module._free(ptr);
+        }
+
+        if (res != 0) {
+            const reason = new Error("Failed to execute assembly");
+            dotnetApi.exit(res, reason);
+            throw reason;
+        }
+
+        return dotnetLoaderExports.getRunMainPromise();
+    } finally {
+        Module.stackRestore(sp);
+    }
 }
 runMain["__deps"] = ["_BrowserHost_ExecuteAssembly"];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function runMainAndExit(mainAssemblyName?: string, args?: string[]): Promise<number> {
     try {
         await runMain(mainAssemblyName, args);

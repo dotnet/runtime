@@ -23,7 +23,9 @@ namespace System.Runtime.CompilerServices
             {
                 if (t.IsFaulted)
                 {
-                    SystemJS_RejectMainPromise(t.Exception.Message);
+                    var message = t.Exception.Message ?? "";
+                    var stackTrace = t.Exception.StackTrace ?? "";
+                    SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
                 }
                 else
                 {
@@ -39,7 +41,9 @@ namespace System.Runtime.CompilerServices
             {
                 if (t.IsFaulted)
                 {
-                    SystemJS_RejectMainPromise(t.Exception.Message);
+                    var message = t.Exception.Message ?? "";
+                    var stackTrace = t.Exception.StackTrace ?? "";
+                    SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
                 }
                 else
                 {
@@ -49,7 +53,9 @@ namespace System.Runtime.CompilerServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static unsafe partial void SystemJS_RejectMainPromise([MarshalAs(UnmanagedType.LPWStr)] string pMessage);
+        private static unsafe partial void SystemJS_RejectMainPromise(
+            [MarshalAs(UnmanagedType.LPWStr)] string pMessage, int messageLength,
+            [MarshalAs(UnmanagedType.LPWStr)] string pStackTrace, int stackTraceLength);
 
         [LibraryImport(RuntimeHelpers.QCall)]
         private static partial void SystemJS_ResolveMainPromise(int exitCode);

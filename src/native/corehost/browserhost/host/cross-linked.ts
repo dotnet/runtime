@@ -5,5 +5,5 @@ import { } from "../../../libs/Common/JavaScript/cross-linked";
 
 declare global {
     export const BROWSER_HOST: any;
-    export function _BrowserHost_ExecuteAssembly(mainAssemblyName: string): number;
+    export function _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr: number, argsLength: number, argsPtr: number): number;
 }

@@ -137,10 +137,10 @@ extern "C" int BrowserHost_InitializeCoreCLR(void)
 }
 
 // WASM-TODO: process commandline arguments
-extern "C" int BrowserHost_ExecuteAssembly(const char* assemblyPath)
+extern "C" int BrowserHost_ExecuteAssembly(const char* assemblyPath, int argc, const char** argv)
 {
     int exit_code = 0;
-    int retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, 0, nullptr, assemblyPath, (uint32_t*)&exit_code);
+    int retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, argc, argv, assemblyPath, (uint32_t*)&exit_code);
 
     if (retval < 0)
     {

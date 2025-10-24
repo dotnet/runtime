@@ -9,9 +9,11 @@ export function SystemJS_ResolveMainPromise(exitCode:number) {
     }
 }
 
-export function SystemJS_RejectMainPromise(reason:any) {
-    // todo UNMARSHAL utf16 LPWSTR
+export function SystemJS_RejectMainPromise(messagePtr:number, messageLength:number, stackTracePtr:number, stackTraceLength:number) {
     if (dotnetLoaderExports.rejectRunMainPromise) {
-        dotnetLoaderExports.rejectRunMainPromise(reason);
+        const message = dotnetBrowserUtilsExports.utf16ToString(messagePtr, messagePtr + messageLength * 2);
+        const stackTrace = dotnetBrowserUtilsExports.utf16ToString(stackTracePtr, stackTracePtr + stackTraceLength * 2);
+        const error = new Error(message + "\n" + stackTrace);
+        dotnetLoaderExports.rejectRunMainPromise(error);
     }
 }
