@@ -56,8 +56,8 @@ QUERY EXAMPLES:
 SETUP:
     1. Install GitHub CLI and authenticate: gh auth login
     2. Choose LLM provider:
-       - For GitHub Models: gh extension install github/gh-models
-       - For GitHub Copilot: Install GitHub Copilot CLI from https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli
+       - For GitHub Models: gh extension install github/gh-models (optional: set GITHUB_MODELS_API_KEY)
+       - For GitHub Copilot: Install GitHub Copilot CLI from https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli (optional: set GITHUB_COPILOT_API_KEY)
        - For OpenAI: `$env:OPENAI_API_KEY = "your-key"
        - For Azure OpenAI: `$env:AZURE_OPENAI_API_KEY = "your-key" and set LlmBaseUrl in config.ps1
        - For others: Set appropriate API key
@@ -104,8 +104,8 @@ $apiKey = switch ($llmProvider) {
     "openai" { $env:OPENAI_API_KEY }
     "anthropic" { $env:ANTHROPIC_API_KEY }
     "azure-openai" { $env:AZURE_OPENAI_API_KEY }
-    "github-models" { $null }  # No API key needed for GitHub Models
-    "github-copilot" { $null }  # No API key needed for GitHub Copilot CLI
+    "github-models" { $env:GITHUB_MODELS_API_KEY }  # Optional API key for GitHub Models
+    "github-copilot" { $env:GITHUB_COPILOT_API_KEY }  # Optional API key for GitHub Copilot CLI
     default { $env:OPENAI_API_KEY }
 }
 
@@ -141,8 +141,8 @@ if ($llmProvider -eq "github-models") {
     Write-Host "   For OpenAI: `$env:OPENAI_API_KEY = 'your-key'"
     Write-Host "   For Anthropic: `$env:ANTHROPIC_API_KEY = 'your-key'"
     Write-Host "   For Azure OpenAI: `$env:AZURE_OPENAI_API_KEY = 'your-key'"
-    Write-Host "   For GitHub Models: Use 'github-models' provider (no key needed)"
-    Write-Host "   For GitHub Copilot: Install GitHub Copilot CLI from https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli (no key needed)"
+    Write-Host "   For GitHub Models: Use 'github-models' provider (no key needed, or set GITHUB_MODELS_API_KEY for different account)"
+    Write-Host "   For GitHub Copilot: Install GitHub Copilot CLI from https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli (no key needed, or set GITHUB_COPILOT_API_KEY for different account)"
     exit 1
 } else {
     Write-Host "✅ LLM API key found ($llmProvider)" -ForegroundColor Green
@@ -462,6 +462,11 @@ function Invoke-LlmApi {
                     $ghArgs += @("--system-prompt", $SystemPrompt)
                 }
 
+                # Add API key if provided via environment variable
+                if ($apiKey) {
+                    $ghArgs += @("--api-key", $apiKey)
+                }
+
                 $response = gh @ghArgs
                 return $response -join "`n"
             }
@@ -473,35 +478,51 @@ function Invoke-LlmApi {
         "github-copilot" {
             # Use GitHub Copilot CLI in programmatic mode
             try {
-                # Combine system prompt and user prompt, emphasizing text-only response
-                $fullPrompt = if ($SystemPrompt) {
-                    "$SystemPrompt`n`nIMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
-                } else {
-                    "IMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
+                # Set API key environment variable if provided
+                $originalGitHubToken = $env:GITHUB_TOKEN
+                if ($apiKey) {
+                    $env:GITHUB_TOKEN = $apiKey
                 }
 
-                # Use copilot with -p flag for programmatic mode and suppress logs
-                $rawResponse = copilot -p $fullPrompt --log-level none --allow-all-tools
-
-                # Parse the response to extract just the content, removing usage statistics
-                # The response format typically includes usage stats at the end starting with "Total usage est:"
-                $lines = $rawResponse -split "`n"
-                $contentLines = @()
-                $foundUsageStats = $false
-
-                foreach ($line in $lines) {
-                    if ($line -match "^Total usage est:" -or $line -match "^Total duration") {
-                        $foundUsageStats = $true
-                        break
+                try {
+                    # Combine system prompt and user prompt, emphasizing text-only response
+                    $fullPrompt = if ($SystemPrompt) {
+                        "$SystemPrompt`n`nIMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
+                    } else {
+                        "IMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
                     }
-                    if (-not $foundUsageStats) {
-                        $contentLines += $line
+
+                    # Use copilot with -p flag for programmatic mode and suppress logs
+                    $rawResponse = copilot -p $fullPrompt --log-level none
+
+                    # Parse the response to extract just the content, removing usage statistics
+                    # The response format typically includes usage stats at the end starting with "Total usage est:"
+                    $lines = $rawResponse -split "`n"
+                    $contentLines = @()
+                    $foundUsageStats = $false
+
+                    foreach ($line in $lines) {
+                        if ($line -match "^Total usage est:" -or $line -match "^Total duration") {
+                            $foundUsageStats = $true
+                            break
+                        }
+                        if (-not $foundUsageStats) {
+                            $contentLines += $line
+                        }
+                    }
+
+                    # Join the content lines and trim whitespace
+                    $response = ($contentLines -join "`n").Trim()
+                    return $response
+                }
+                finally {
+                    # Restore original GITHUB_TOKEN
+                    if ($originalGitHubToken) {
+                        $env:GITHUB_TOKEN = $originalGitHubToken
+                    } elseif ($apiKey) {
+                        Remove-Item env:GITHUB_TOKEN -ErrorAction SilentlyContinue
                     }
                 }
-
-                # Join the content lines and trim whitespace
-                $response = ($contentLines -join "`n").Trim()
-                return $response
             }
             catch {
                 Write-Error "GitHub Copilot CLI call failed: $($_.Exception.Message)"
@@ -511,7 +532,7 @@ function Invoke-LlmApi {
         "openai" {
             # OpenAI API
             $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/chat/completions" } else { "https://api.openai.com/v1/chat/completions" }
-            $headers = @{ 
+            $headers = @{
                 'Content-Type' = 'application/json'
                 'Authorization' = "Bearer $apiKey"
             }
@@ -540,7 +561,7 @@ function Invoke-LlmApi {
         "anthropic" {
             # Anthropic API
             $endpoint = if ($Config.LlmBaseUrl) { "$($Config.LlmBaseUrl)/messages" } else { "https://api.anthropic.com/v1/messages" }
-            $headers = @{ 
+            $headers = @{
                 'Content-Type' = 'application/json'
                 'x-api-key' = $apiKey
                 'anthropic-version' = "2023-06-01"
@@ -572,11 +593,11 @@ function Invoke-LlmApi {
                 Write-Error "Azure OpenAI requires LlmBaseUrl to be set in config (e.g., 'https://your-resource.openai.azure.com')"
                 return $null
             }
-            
+
             $apiVersion = if ($Config.AzureApiVersion) { $Config.AzureApiVersion } else { "2024-02-15-preview" }
             $endpoint = "$($Config.LlmBaseUrl)/openai/deployments/$($Config.LlmModel)/chat/completions?api-version=$apiVersion"
-            
-            $headers = @{ 
+
+            $headers = @{
                 'Content-Type' = 'application/json'
                 'api-key' = $apiKey
             }

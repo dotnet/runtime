@@ -34,11 +34,6 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
 
-    - name: Install GitHub Copilot CLI
-      run: |
-        npm install -g @github/copilot
-        copilot --version
-
     - name: Fetch latest tags
       run: |
         git fetch --tags --force
@@ -49,6 +44,7 @@ jobs:
       run: ./breaking-change-doc.ps1 -PrNumber ${{ github.event.pull_request.number }} -Comment
       env:
         GH_TOKEN: ${{ github.token }}
+        GITHUB_MODELS_API_KEY: ${{ secrets.MODELS_TOKEN }}
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
