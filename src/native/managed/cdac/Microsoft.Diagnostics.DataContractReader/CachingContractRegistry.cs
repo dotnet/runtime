@@ -20,7 +20,11 @@ internal sealed class CachingContractRegistry : ContractRegistry
     private readonly Target _target;
     private readonly TryGetContractVersionDelegate _tryGetContractVersion;
 
-    public CachingContractRegistry(Target target, TryGetContractVersionDelegate tryGetContractVersion, Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
+    public CachingContractRegistry(
+        Target target,
+        TryGetContractVersionDelegate tryGetContractVersion,
+        IEnumerable<IContractFactory<IContract>>? additionalFactories = null,
+        Action<Dictionary<Type, IContractFactory<IContract>>>? configureFactories = null)
     {
         _target = target;
         _tryGetContractVersion = tryGetContractVersion;
@@ -45,8 +49,17 @@ internal sealed class CachingContractRegistry : ContractRegistry
             [typeof(ISHash)] = new SHashFactory(),
             [typeof(IGC)] = new GCFactory(),
             [typeof(INotifications)] = new NotificationsFactory(),
-            [typeof(ISignatureDecoder)] = new SignatureDecoderFactory(),
+            // [typeof(ISignatureDecoder)] = new SignatureDecoderFactory(),
         };
+
+        if (additionalFactories != null)
+        {
+            foreach (IContractFactory<IContract> factory in additionalFactories)
+            {
+                _factories[factory.ContractType] = factory;
+            }
+        }
+
         configureFactories?.Invoke(_factories);
     }
 
@@ -69,9 +82,9 @@ internal sealed class CachingContractRegistry : ContractRegistry
     public override ISHash SHash => GetContract<ISHash>();
     public override IGC GC => GetContract<IGC>();
     public override INotifications Notifications => GetContract<INotifications>();
-    public override ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
+    // public override ISignatureDecoder SignatureDecoder => GetContract<ISignatureDecoder>();
 
-    private TContract GetContract<TContract>() where TContract : IContract
+    public override TContract GetContract<TContract>()
     {
         if (_contracts.TryGetValue(typeof(TContract), out IContract? contractMaybe))
             return (TContract)contractMaybe;

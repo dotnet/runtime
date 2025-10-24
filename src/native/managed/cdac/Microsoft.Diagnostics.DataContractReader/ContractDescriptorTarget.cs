@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader;
@@ -108,7 +109,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
 
     private ContractDescriptorTarget(Descriptor[] descriptors, DataTargetDelegates dataTargetDelegates)
     {
-        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion);
+        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, [new SignatureDecoderFactory()]);
         ProcessedData = new DataCache(this);
         _config = descriptors[0].Config;
         _dataTargetDelegates = dataTargetDelegates;

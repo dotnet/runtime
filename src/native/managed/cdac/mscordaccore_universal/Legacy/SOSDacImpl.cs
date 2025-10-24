@@ -765,7 +765,7 @@ internal sealed unsafe partial class SOSDacImpl
 
             IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             IEcmaMetadata ecmaMetadataContract = _target.Contracts.EcmaMetadata;
-            ISignatureDecoder signatureDecoder = _target.Contracts.SignatureDecoder;
+            ISignatureDecoder signatureDecoder = _target.Contracts.GetContract<ISignatureDecoder>();
 
             TargetPointer fieldDescTargetPtr = fieldDesc.ToTargetPointer(_target);
             CorElementType fieldDescType = rtsContract.GetFieldDescType(fieldDescTargetPtr);
