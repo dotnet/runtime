@@ -28,7 +28,6 @@ struct _EventPipeEventInstance_Internal {
 	ep_timestamp_t timestamp;
 	EventPipeEvent *ep_event;
 	const uint8_t *data;
-	uint32_t metadata_id;
 	uint32_t proc_num;
 	uint32_t data_len;
 #ifdef EP_CHECKED_BUILD
@@ -45,8 +44,6 @@ struct _EventPipeEventInstance {
 #endif
 
 EP_DEFINE_GETTER(EventPipeEventInstance *, event_instance, EventPipeEvent *, ep_event)
-EP_DEFINE_GETTER(EventPipeEventInstance *, event_instance, uint32_t, metadata_id)
-EP_DEFINE_SETTER(EventPipeEventInstance *, event_instance, uint32_t, metadata_id)
 EP_DEFINE_GETTER(EventPipeEventInstance *, event_instance, uint32_t, proc_num)
 EP_DEFINE_GETTER(EventPipeEventInstance *, event_instance, uint64_t, thread_id)
 EP_DEFINE_GETTER(EventPipeEventInstance *, event_instance, ep_timestamp_t, timestamp)
