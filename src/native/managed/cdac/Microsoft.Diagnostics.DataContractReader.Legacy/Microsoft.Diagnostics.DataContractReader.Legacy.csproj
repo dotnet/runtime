@@ -5,7 +5,6 @@
     <RootNamespace>Microsoft.Diagnostics.DataContractReader.Legacy</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Do not produce a public package. This ships as part of the runtime -->
     <IsShipping>false</IsShipping>
     <IsPackable>true</IsPackable>
     <InvariantGlobalization>true</InvariantGlobalization>
