@@ -366,7 +366,7 @@ namespace System.Xml.Xsl.Runtime
         {
             try
             {
-                string locale = GetCultureInfo(lang).Name;
+                CultureInfo ci = GetCultureInfo(lang);
 
                 XsdDateTime xdt;
                 if (!XsdDateTime.TryParse(dateTime, XsdDateTimeFlags.AllXsd | XsdDateTimeFlags.XdrDateTime | XsdDateTimeFlags.XdrTimeNoTz, out xdt))
@@ -381,7 +381,7 @@ namespace System.Xml.Xsl.Runtime
                     format = isDate ? "d" : "T";
                 }
 
-                return dt.ToString(format, new CultureInfo(locale));
+                return dt.ToString(format, ci);
             }
             catch (ArgumentException)
             { // Operations with DateTime can throw this exception eventualy
