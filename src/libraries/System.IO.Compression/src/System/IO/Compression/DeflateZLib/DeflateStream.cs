@@ -812,7 +812,6 @@ namespace System.IO.Compression
                                     catch
                                     {
                                         // If seeking fails, we don't want to throw during disposal
-                                        // The stream might have become non-seekable or hit some other issue
                                     }
                                 }
                             }
