@@ -283,6 +283,50 @@ namespace System.Tests
             Assert.Null(version);
         }
 
+        [Theory]
+        [InlineData(".")]
+        [InlineData("1.")]
+        [InlineData("1.0.")]
+        [InlineData("1.0.0.")]
+        public static void Parse_TrailingDot_ThrowsFormatExceptionWithOriginalInput(string input)
+        {
+            FormatException ex = Assert.Throws<FormatException>(() => Version.Parse(input));
+            Assert.Contains(input, ex.Message);
+
+            Assert.False(Version.TryParse(input, out Version version));
+            Assert.Null(version);
+        }
+
+        [Theory]
+        [InlineData(".")]
+        [InlineData("1.")]
+        [InlineData("1.0.")]
+        [InlineData("1.0.0.")]
+        public static void Parse_Span_TrailingDot_ThrowsFormatExceptionWithOriginalInput(string input)
+        {
+            FormatException ex = Assert.Throws<FormatException>(() => Version.Parse(input.AsSpan()));
+            Assert.Contains(input, ex.Message);
+
+            Assert.False(Version.TryParse(input.AsSpan(), out Version version));
+            Assert.Null(version);
+        }
+
+        [Theory]
+        [InlineData(".")]
+        [InlineData("1.")]
+        [InlineData("1.0.")]
+        [InlineData("1.0.0.")]
+        public static void Parse_Utf8_TrailingDot_ThrowsFormatExceptionWithOriginalInput(string input)
+        {
+            byte[] utf8Bytes = Encoding.UTF8.GetBytes(input);
+
+            FormatException ex = Assert.Throws<FormatException>(() => Version.Parse(utf8Bytes));
+            Assert.Contains(input, ex.Message);
+
+            Assert.False(Version.TryParse(utf8Bytes, out Version version));
+            Assert.Null(version);
+        }
+
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
         {
             foreach (object[] inputs in Parse_Valid_TestData())

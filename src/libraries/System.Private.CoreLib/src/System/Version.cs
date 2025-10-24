@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System
 {
@@ -387,7 +388,7 @@ namespace System
             int minor, build, revision;
 
             // Parse the major version
-            if (!TryParseComponent(input.Slice(0, majorEnd), nameof(input), throwOnFailure, out int major))
+            if (!TryParseComponent(input.Slice(0, majorEnd), nameof(input), throwOnFailure, input, out int major))
             {
                 return null;
             }
@@ -395,7 +396,7 @@ namespace System
             if (minorEnd != -1)
             {
                 // If there's more than a major and minor, parse the minor, too.
-                if (!TryParseComponent(input.Slice(majorEnd + 1, minorEnd - majorEnd - 1), nameof(input), throwOnFailure, out minor))
+                if (!TryParseComponent(input.Slice(majorEnd + 1, minorEnd - majorEnd - 1), nameof(input), throwOnFailure, input, out minor))
                 {
                     return null;
                 }
@@ -404,15 +405,15 @@ namespace System
                 {
                     // major.minor.build.revision
                     return
-                        TryParseComponent(input.Slice(minorEnd + 1, buildEnd - minorEnd - 1), nameof(build), throwOnFailure, out build) &&
-                        TryParseComponent(input.Slice(buildEnd + 1), nameof(revision), throwOnFailure, out revision) ?
+                        TryParseComponent(input.Slice(minorEnd + 1, buildEnd - minorEnd - 1), nameof(build), throwOnFailure, input, out build) &&
+                        TryParseComponent(input.Slice(buildEnd + 1), nameof(revision), throwOnFailure, input, out revision) ?
                             new Version(major, minor, build, revision) :
                             null;
                 }
                 else
                 {
                     // major.minor.build
-                    return TryParseComponent(input.Slice(minorEnd + 1), nameof(build), throwOnFailure, out build) ?
+                    return TryParseComponent(input.Slice(minorEnd + 1), nameof(build), throwOnFailure, input, out build) ?
                         new Version(major, minor, build) :
                         null;
                 }
@@ -420,18 +421,29 @@ namespace System
             else
             {
                 // major.minor
-                return TryParseComponent(input.Slice(majorEnd + 1), nameof(input), throwOnFailure, out minor) ?
+                return TryParseComponent(input.Slice(majorEnd + 1), nameof(input), throwOnFailure, input, out minor) ?
                     new Version(major, minor) :
                     null;
             }
         }
 
-        private static bool TryParseComponent<TChar>(ReadOnlySpan<TChar> component, string componentName, bool throwOnFailure, out int parsedComponent)
+        private static bool TryParseComponent<TChar>(ReadOnlySpan<TChar> component, string componentName, bool throwOnFailure, ReadOnlySpan<TChar> originalInput, out int parsedComponent)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             if (throwOnFailure)
             {
-                parsedComponent = Number.ParseBinaryInteger<TChar, int>(component, NumberStyles.Integer, NumberFormatInfo.InvariantInfo);
+                try
+                {
+                    parsedComponent = Number.ParseBinaryInteger<TChar, int>(component, NumberStyles.Integer, NumberFormatInfo.InvariantInfo);
+                }
+                catch (FormatException) when (typeof(TChar) == typeof(char))
+                {
+                    throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(originalInput).ToString()));
+                }
+                catch (FormatException) when (typeof(TChar) == typeof(byte))
+                {
+                    throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, Encoding.UTF8.GetString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(originalInput))));
+                }
                 ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
                 return true;
             }
