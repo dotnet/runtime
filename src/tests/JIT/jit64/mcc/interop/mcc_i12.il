@@ -101,8 +101,3 @@
   } // end of class MyClass
 
 } // end of namespace mcc_i12
-
-
-
-
-
