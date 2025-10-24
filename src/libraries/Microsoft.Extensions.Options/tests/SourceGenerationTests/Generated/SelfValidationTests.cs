@@ -50,6 +50,6 @@ public class SelfValidationTests
         SelfValidateOptions validator = new();
         ValidateOptionsResult vr = validator.Validate("SelfValidation", validator);
         Assert.Equal(1, vr.Failures.Count());
-        Assert.Equal($"Display: SelfValidation.Validate, Member: Validate", vr.Failures.First());
+        Assert.Equal($"Display: SelfValidateOptions.Validate, Member: Validate", vr.Failures.First());
     }
 }
