@@ -29,10 +29,10 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task Dispose_HandlerWithProxy_ProxyNotDisposed()
         {
-            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            /*if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
                 return;
-            }
+            }*/
 
             var proxy = new TrackDisposalProxy();
 
