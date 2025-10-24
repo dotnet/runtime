@@ -17,7 +17,7 @@ namespace Test
         public static int[] Test(ref double[] param1, ref float[] param3)
         { return Method1(m_auStatic1, ref param3[2], __arglist()); }
 
-        [Fact]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
         public static void TestEntryPoint()
         {
             double[] ad = new double[16];

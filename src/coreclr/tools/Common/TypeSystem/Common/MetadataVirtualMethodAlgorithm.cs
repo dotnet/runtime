@@ -425,7 +425,7 @@ namespace Internal.TypeSystem
                     return nameSigOverride;
                 }
 
-                currentType = currentType.MetadataBaseType;
+                currentType = currentType.BaseType;
             }
 
             return null;
@@ -506,7 +506,7 @@ namespace Internal.TypeSystem
             }
 
             MethodDesc nameSigMatchMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(unificationGroup.DefiningMethod, currentType, reverseMethodSearch: true);
-            MetadataType baseType = currentType.MetadataBaseType;
+            MetadataType baseType = currentType.BaseType;
 
             // Unless the current type has a name/sig match for the group, look to the base type to define the unification group further
             if ((nameSigMatchMethod == null) && (baseType != null))
@@ -707,7 +707,7 @@ namespace Internal.TypeSystem
 
             // If interface is explicitly defined on a type, search for a name/sig match.
             bool foundExplicitInterface = IsInterfaceExplicitlyImplementedOnType(currentType, interfaceType);
-            MetadataType baseType = currentType.MetadataBaseType;
+            MetadataType baseType = currentType.BaseType;
 
             if (foundExplicitInterface)
             {
@@ -813,7 +813,7 @@ namespace Internal.TypeSystem
                 if (currentTypeInterfaceResolution != null)
                     return currentTypeInterfaceResolution;
 
-                currentType = currentType.MetadataBaseType;
+                currentType = currentType.BaseType;
             }
         }
 
@@ -834,7 +834,7 @@ namespace Internal.TypeSystem
                     return FindSlotDefiningMethodForVirtualMethod(nameSigOverride);
                 }
 
-                currentType = currentType.MetadataBaseType;
+                currentType = currentType.BaseType;
             }
         }
 
@@ -878,7 +878,7 @@ namespace Internal.TypeSystem
                         impl = interfaceMethodDefinition;
                     }
                 }
-                else if (Array.IndexOf(runtimeInterface.RuntimeInterfaces, interfaceMethodOwningType) != -1)
+                else if (Array.IndexOf(runtimeInterface.RuntimeInterfaces, interfaceMethodOwningType) >= 0)
                 {
                     // This interface might provide a default implementation
                     MethodImplRecord[] possibleImpls = runtimeInterface.FindMethodsImplWithMatchingDeclName(interfaceMethod.Name);
@@ -890,13 +890,13 @@ namespace Internal.TypeSystem
                             {
                                 // This interface provides a default implementation.
                                 // Is it also most specific?
-                                if (mostSpecificInterface == null || Array.IndexOf(runtimeInterface.RuntimeInterfaces, mostSpecificInterface) != -1)
+                                if (mostSpecificInterface == null || Array.IndexOf(runtimeInterface.RuntimeInterfaces, mostSpecificInterface) >= 0)
                                 {
                                     mostSpecificInterface = runtimeInterface;
                                     impl = implRecord.Body;
                                     diamondCase = false;
                                 }
-                                else if (Array.IndexOf(mostSpecificInterface.RuntimeInterfaces, runtimeInterface) == -1)
+                                else if (Array.IndexOf(mostSpecificInterface.RuntimeInterfaces, runtimeInterface) < 0)
                                 {
                                     diamondCase = true;
                                 }
@@ -988,7 +988,7 @@ namespace Internal.TypeSystem
                         }
                     }
 
-                    type = type.MetadataBaseType;
+                    type = type.BaseType;
                 } while (type != null);
             }
         }
@@ -1007,7 +1007,7 @@ namespace Internal.TypeSystem
                 return null;
 
             // Search for match on a per-level in the type hierarchy
-            for (MetadataType typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.MetadataBaseType)
+            for (MetadataType typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.BaseType)
             {
                 MethodDesc resolvedMethodOnType = TryResolveVirtualStaticMethodOnThisType(typeToCheck, interfaceMethod);
                 if (resolvedMethodOnType != null)
@@ -1029,7 +1029,7 @@ namespace Internal.TypeSystem
             TypeDesc interfaceType = interfaceMethod.OwningType;
 
             // Search for match on a per-level in the type hierarchy
-            for (MetadataType typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.MetadataBaseType)
+            for (MetadataType typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.BaseType)
             {
                 MethodDesc resolvedMethodOnType = TryResolveVirtualStaticMethodOnThisType(typeToCheck, interfaceMethod);
                 if (resolvedMethodOnType != null)

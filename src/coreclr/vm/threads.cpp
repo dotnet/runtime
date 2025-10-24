@@ -405,7 +405,7 @@ DWORD Thread::JoinEx(DWORD timeout, WaitMode mode)
 {
     CONTRACTL {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS; // For DoAppropriateWait
     }
     CONTRACTL_END;
 
@@ -583,7 +583,7 @@ static void DeleteThread(Thread* pThread)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -628,7 +628,7 @@ Thread* SetupThread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -773,7 +773,7 @@ Thread* SetupThreadNoThrow(HRESULT *pHR)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        if (GetThreadNULLOk()) {DISABLED(GC_NOTRIGGER);} else {GC_TRIGGERS;}
     }
     CONTRACTL_END;
 
@@ -824,7 +824,7 @@ Thread* SetupUnstartedThread(SetupUnstartedThreadFlags flags)
 {
     CONTRACTL {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -972,6 +972,8 @@ DWORD GetRuntimeId()
 DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 #endif
 
+#ifndef FEATURE_PORTABLE_HELPERS
+
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
 
@@ -1023,6 +1025,20 @@ extern "C" void (*JIT_WriteBarrier_Table)();
 extern "C" void *JIT_WriteBarrier_Table_Loc;
 void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+
+#else // FEATURE_PORTABLE_HELPERS
+
+BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc)
+{
+    return FALSE;
+}
+
+PCODE AdjustWriteBarrierIP(PCODE controlPc)
+{
+    UNREACHABLE();
+}
+
+#endif // FEATURE_PORTABLE_HELPERS
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -1305,7 +1321,7 @@ Thread::Thread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -1543,7 +1559,7 @@ void Thread::InitThread()
 {
     CONTRACTL {
         THROWS;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -2198,7 +2214,7 @@ int Thread::IncExternalCount()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -2229,7 +2245,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -2394,7 +2410,7 @@ Thread::~Thread()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -2670,7 +2686,7 @@ void Thread::CleanupCOMState()
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -2768,7 +2784,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS; // For DecExternalCount & other calls
     }
     CONTRACTL_END;
 
@@ -4053,35 +4069,28 @@ void Thread::SetExposedObject(OBJECTREF exposed)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    if (exposed != NULL)
-    {
-        _ASSERTE (GetThreadNULLOk() != this);
-        _ASSERTE(IsUnstarted());
-        _ASSERTE(ObjectFromHandle(m_ExposedObject) == NULL);
-        // The exposed object keeps us alive until it is GC'ed.  This doesn't mean the
-        // physical thread continues to run, of course.
-        StoreObjectInHandle(m_ExposedObject, exposed);
-        // This makes sure the contexts on the backing thread
-        // and the managed thread start off in sync with each other.
-        // BEWARE: the IncExternalCount call below may cause GC to happen.
+    _ASSERTE(exposed);
 
-        // IncExternalCount will store exposed in m_StrongHndToExposedObject which is in default domain.
-        // If the creating thread is killed before the target thread is killed in Thread.Start, Thread object
-        // will be kept alive forever.
-        // Instead, IncExternalCount should be called after the target thread has been started in Thread.Start.
-        // IncExternalCount();
-    }
-    else
-    {
-        // Simply set both of the handles to NULL. The GC of the old exposed thread
-        // object will take care of decrementing the external ref count.
-        StoreObjectInHandle(m_ExposedObject, NULL);
-        StoreObjectInHandle(m_StrongHndToExposedObject, NULL);
-    }
+    _ASSERTE(GetThreadNULLOk() != this);
+    _ASSERTE(IsUnstarted());
+    _ASSERTE(ObjectFromHandle(m_ExposedObject) == NULL);
+    // The exposed object keeps us alive until it is GC'ed.  This doesn't mean the
+    // physical thread continues to run, of course.
+    StoreObjectInHandle(m_ExposedObject, exposed);
+    // This makes sure the contexts on the backing thread
+    // and the managed thread start off in sync with each other.
+    // BEWARE: the IncExternalCount call below may cause GC to happen.
+
+    // IncExternalCount will store exposed in m_StrongHndToExposedObject which is in default domain.
+    // If the creating thread is killed before the target thread is killed in Thread.Start, Thread object
+    // will be kept alive forever.
+    // Instead, IncExternalCount should be called after the target thread has been started in Thread.Start.
+    // IncExternalCount();
 }
 
 void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
@@ -4632,9 +4641,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
     // This method can be called on current thread only
     _ASSERTE(m_OSThreadId == ::GetCurrentThreadId());
 
-    // Reset any bits that request for CoInitialize
-    ResetRequiresCoInitialize();
-
     // Setting the state to AS_Unknown indicates we should CoUninitialize
     // the thread.
     if (state == AS_Unknown)
@@ -4795,10 +4801,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
         }
     }
 
-    // Since we've just called CoInitialize, COM has effectively been started up.
-    // To ensure the CLR is aware of this, we need to call EnsureComStarted.
-    EnsureComStarted(FALSE);
-
     return GetApartment();
 }
 
@@ -4931,7 +4933,7 @@ void ThreadStore::AddThread(Thread *newThread)
 {
     CONTRACTL {
         NOTHROW;
-        if (GetThreadNULLOk()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -6043,13 +6045,11 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
     {
         m_CacheStackBase  = GetStackUpperBound();
         m_CacheStackLimit = GetStackLowerBound();
-#if !defined(TARGET_WASM) // WASM-TODO: stack can start at address 0 on wasm/emscripten and usually does in Debug builds
         if (m_CacheStackLimit == NULL)
         {
             _ASSERTE(!"Failed to set stack limits");
             return FALSE;
         }
-#endif
 
         // Compute the limit used by TryEnsureSufficientExecutionStack and cache it on the thread. This minimum stack size should
         // be sufficient to allow a typical non-recursive call chain to execute, including potential exception handling and
@@ -6670,14 +6670,7 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
                 SetIP(pctx, 0);
 #ifdef TARGET_X86
                 SetRegdisplayPCTAddr(pRD, (TADDR)&(pctx->Eip));
-#elif defined(TARGET_AMD64)
-                // nothing more to do here, on Win64 setting the IP to 0 is enough.
-#elif defined(TARGET_ARM)
-                // nothing more to do here, on Win64 setting the IP to 0 is enough.
-#else
-                PORTABILITY_ASSERT("NYI for platform Thread::InitRegDisplay");
 #endif
-
                 return false;
             }
 #endif // DACCESS_COMPILE
@@ -6710,6 +6703,9 @@ void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool fLightU
 
 void CheckRegDisplaySP (REGDISPLAY *pRD)
 {
+// on wasm the SP is address to interpreter stack, which is located on heap and not on C runtime stack
+// WASM-TODO: update this when we will have codegen
+#ifndef TARGET_WASM
     if (pRD->SP && pRD->_pThread)
     {
 #ifndef NO_FIXED_STACK_LIMIT
@@ -6717,6 +6713,7 @@ void CheckRegDisplaySP (REGDISPLAY *pRD)
 #endif // NO_FIXED_STACK_LIMIT
         _ASSERTE(pRD->_pThread->IsExecutingOnAltStack() || PTR_VOID(pRD->SP) <  pRD->_pThread->GetCachedStackBase());
     }
+#endif // !TARGET_WASM
 }
 
 #endif // DEBUG_REGDISPLAY
@@ -7688,6 +7685,7 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
     // Falling back to RtlRestoreContext() for now, though it should be possible to have simpler variants for these cases
     RtlRestoreContext(ContextRecord, NULL);
 #endif
+    UNREACHABLE();
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -7702,6 +7700,137 @@ InterpThreadContext* Thread::GetInterpThreadContext()
 
     return m_pInterpThreadContext;
 }
+
+InterpThreadContext* GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Worker(Thread* currentThread, InterpByteCodeStart* pByteCodeStart)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    InterpThreadContext *pThreadContext = currentThread->GetInterpThreadContext();
+    if (pThreadContext == NULL)
+        COMPlusThrowOM();
+    CreateNativeToInterpreterCallStub(pByteCodeStart->Method);
+
+    return pThreadContext;
+}
+
+//=============================================================================
+// This function is used when starting from Preemptive mode.
+// It is specifically designed to work with the UnmanagedCallersOnlyAttribute.
+//=============================================================================
+static InterpThreadContext* GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Preemptive(
+    _In_ TransitionBlock* pTransitionBlock,
+    Thread* currentThread,
+    InterpByteCodeStart* pByteCodeStart)
+{
+    _ASSERTE(pByteCodeStart->Method->methodDesc->HasUnmanagedCallersOnlyAttribute());
+
+    InterpThreadContext *pThreadContext = NULL;
+
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_PREEMPTIVE;
+
+    // Starting from preemptive mode means the possibility exists
+    // that the thread is new to the runtime so we might have to
+    // create one.
+    if (currentThread == NULL)
+    {
+        // If our attempt to create a thread fails, there is nothing
+        // more we can do except fail fast. The reverse P/Invoke isn't
+        // going to work.
+        CREATETHREAD_IF_NULL_FAILFAST(currentThread, W("Failed to setup new thread during reverse P/Invoke"));
+    }
+
+    MAKE_CURRENT_THREAD_AVAILABLE_EX(currentThread);
+
+    // No GC frame is needed here since there should be no OBJECTREFs involved
+    // in this call due to UnmanagedCallersOnlyAttribute semantics.
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    pThreadContext = GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Worker(currentThread, pByteCodeStart);
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    return pThreadContext;
+}
+
+//=============================================================================
+// This function ensures that the interpreter thread context is initialized, and
+// the CallStub for calling from jit calling convention to interpreter convention
+// is in place. Usually ***BUT NOT ALWAYS***, this function runs only once
+// per methoddesc. In addition to installing the new code, this function
+// returns a pointer to the interpreter thread context.
+//=============================================================================
+extern "C" InterpThreadContext* STDCALL GetInterpThreadContextWithPossiblyMissingThreadOrCallStub(TransitionBlock* pTransitionBlock, InterpByteCodeStart* pByteCodeStart)
+{
+    InterpThreadContext *pThreadContext = NULL;
+
+    PreserveLastErrorHolder preserveLastError;
+
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+    STATIC_CONTRACT_ENTRY_POINT;
+
+    MAKE_CURRENT_THREAD_AVAILABLE_EX(GetThreadNULLOk());
+
+    // Attempt to check what GC mode we are running under.
+    if (CURRENT_THREAD == NULL
+        || !CURRENT_THREAD->PreemptiveGCDisabled())
+    {
+        pThreadContext = GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Preemptive(pTransitionBlock, CURRENT_THREAD, pByteCodeStart);
+    }
+    else
+    {
+        // This is the typical case (i.e. COOP mode).
+
+#ifdef _DEBUG
+        Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+        PrestubMethodFrame frame(pTransitionBlock, pByteCodeStart->Method->methodDesc);
+        PrestubMethodFrame* pPFrame = &frame;
+
+        pPFrame->Push(CURRENT_THREAD);
+
+        EX_TRY
+        {
+            bool propagateExceptionToNativeCode = IsCallDescrWorkerInternalReturnAddress(pTransitionBlock->m_ReturnAddress);
+
+            INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
+            INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
+
+            pThreadContext = GetInterpThreadContextWithPossiblyMissingThreadOrCallStub_Worker(CURRENT_THREAD, pByteCodeStart);
+
+            UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
+            UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        }
+        EX_CATCH
+        {
+            OBJECTHANDLE ohThrowable = CURRENT_THREAD->LastThrownObjectHandle();
+            _ASSERTE(ohThrowable);
+            StackTraceInfo::AppendElement(ohThrowable, 0, (UINT_PTR)pTransitionBlock, pByteCodeStart->Method->methodDesc, NULL);
+            EX_RETHROW;
+        }
+        EX_END_CATCH
+
+        pPFrame->Pop(CURRENT_THREAD);
+    }
+
+    _ASSERTE(pThreadContext != NULL);
+
+    return pThreadContext;
+}
+
 #endif // FEATURE_INTERPRETER
 
 /* static */
@@ -7745,15 +7874,24 @@ BOOL Thread::IsAddressInStack (PTR_VOID addr) const
     return m_CacheStackLimit < addr && addr <= m_CacheStackBase;
 }
 
-#ifdef DACCESS_COMPILE
-
-void
-STATIC_DATA::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+PTR_GCFrame Thread::GetGCFrame()
 {
-    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
 
-    DAC_ENUM_STHIS(STATIC_DATA);
+#ifdef _DEBUG_IMPL
+    WRAPPER_NO_CONTRACT;
+    if (this == GetThreadNULLOk())
+    {
+        void* curSP;
+        curSP = (void *)GetCurrentSP();
+        _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame->GetOSStackLocation() && m_pGCFrame->GetOSStackLocation() < m_CacheStackBase));
+    }
+#endif
+
+    return m_pGCFrame;
 }
+
+#ifdef DACCESS_COMPILE
 
 void
 Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)

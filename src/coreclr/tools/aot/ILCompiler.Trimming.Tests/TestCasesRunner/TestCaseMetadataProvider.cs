@@ -93,6 +93,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 tclo.AdditionalArguments.Add(new KeyValuePair<string, string[]>((string)ca[0].Value, values));
             }
 
+            foreach (var rootEntire in _testCaseTypeDefinition.CustomAttributes.Where(attr => attr.AttributeType.Name == nameof(SetupRootEntireAssemblyAttribute)))
+            {
+                var ca = rootEntire.ConstructorArguments;
+                var assemblyName = (string)ca[0].Value;
+                tclo.RootEntireAssemblies.Add(assemblyName);
+            }
+
             return tclo;
         }
 

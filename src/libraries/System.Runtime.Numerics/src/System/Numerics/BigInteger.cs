@@ -699,7 +699,12 @@ namespace System.Numerics
 
         public static BigInteger Parse(ReadOnlySpan<char> value, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
-            return Number.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(value), style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        public static BigInteger Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
+        {
+            return Number.ParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result)
@@ -709,7 +714,17 @@ namespace System.Numerics
 
         public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return Number.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<char, Utf16Char>(value), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+        }
+
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out BigInteger result)
+        {
+            return TryParse(utf8Text, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+        }
+
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out BigInteger result)
+        {
+            return Number.TryParseBigInteger(MemoryMarshal.Cast<byte, Utf8Char>(utf8Text), style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static int Compare(BigInteger left, BigInteger right)
@@ -1670,7 +1685,12 @@ namespace System.Numerics
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
+            return Number.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), MemoryMarshal.Cast<char, Utf16Char>(destination), out charsWritten);
+        }
+
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        {
+            return Number.TryFormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider), MemoryMarshal.Cast<byte, Utf8Char>(utf8Destination), out bytesWritten);
         }
 
         private static BigInteger Add(ReadOnlySpan<uint> leftBits, int leftSign, ReadOnlySpan<uint> rightBits, int rightSign)
@@ -1895,6 +1915,14 @@ namespace System.Numerics
         public static explicit operator Half(BigInteger value)
         {
             return (Half)(double)value;
+        }
+
+        /// <summary>Explicitly converts a big integer to a <see cref="BFloat16" /> value.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to <see cref="BFloat16" /> value.</returns>
+        public static explicit operator BFloat16(BigInteger value)
+        {
+            return (BFloat16)(double)value;
         }
 
         public static explicit operator short(BigInteger value)
@@ -2146,6 +2174,14 @@ namespace System.Numerics
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a big integer.</returns>
         public static explicit operator BigInteger(Half value)
+        {
+            return new BigInteger((float)value);
+        }
+
+        /// <summary>Explicitly converts a <see cref="BFloat16" /> value to a big integer.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a big integer.</returns>
+        public static explicit operator BigInteger(BFloat16 value)
         {
             return new BigInteger((float)value);
         }
@@ -3994,6 +4030,12 @@ namespace System.Numerics
                 result = checked((BigInteger)actualValue);
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = checked((BigInteger)actualValue);
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualValue = (short)(object)value;
@@ -4109,6 +4151,12 @@ namespace System.Numerics
             {
                 Half actualValue = (Half)(object)value;
                 result = Half.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = BFloat16.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(short))
@@ -4228,6 +4276,12 @@ namespace System.Numerics
                 result = Half.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = BFloat16.IsNaN(actualValue) ? Zero : (BigInteger)actualValue;
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualValue = (short)(object)value;
@@ -4338,6 +4392,12 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -4480,6 +4540,12 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -4685,6 +4751,12 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (Half)value;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -5168,5 +5240,15 @@ namespace System.Numerics
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out BigInteger result) => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static BigInteger Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Integer, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out BigInteger result) => TryParse(utf8Text, NumberStyles.Integer, provider, out result);
     }
 }

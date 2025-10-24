@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using ILCompiler;
 using ILCompiler.Logging;
 using Internal.TypeSystem;
 using Mono.Cecil;
@@ -206,17 +207,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
             List<string> unexpectedMessageWarnings = [];
             foreach (var attrProvider in GetAttributeProviders(original))
             {
-                if (attrProvider is IMemberDefinition attrMember &&
-                    attrMember is not TypeDefinition &&
-                    attrMember.DeclaringType is TypeDefinition declaringType &&
+                if (attrProvider is MethodDefinition attrMethod &&
+                    attrMethod.DeclaringType is TypeDefinition declaringType &&
                     declaringType.Name.StartsWith("<G>"))
                 {
-                    // Workaround: C# 14 extension members result in a compiler-generated type
-                    // that has a member for each extension member (this is in addition to the type
-                    // which contains the actual extension member implementation).
-                    // The generated members inherit attributes from the extension members, but
+                    // Workaround: C# 14 extension methods result in a compiler-generated type
+                    // that has a method for each extension method (this is in addition to the type
+                    // which contains the actual extension method implementation).
+                    // The generated methods inherit attributes from the extension methods, but
                     // have empty implementations. We don't want to check inherited ExpectedWarningAttributes
-                    // for these members.
+                    // for these methods.
+                    // ExpectedWarnings for extension properties are still included, because those are only
+                    // included once in the generated output (and the user type doesn't have any properties).
                     continue;
                 }
 
@@ -295,7 +297,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                             string? expectedOrigin = null;
                             bool expectedWarningFound = false;
 
-                            foreach (var loggedMessage in unmatchedMessages)
+                            foreach (var loggedMessage in unmatchedMessages.ToList())
                             {
                                 if (loggedMessage.Category != MessageCategory.Warning || loggedMessage.Code != expectedWarningCodeNumber)
                                     continue;
@@ -353,12 +355,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                 }
                                 else if (isCompilerGeneratedCode == true)
                                 {
-                                    if (loggedMessage.Origin?.MemberDefinition is not MethodDesc methodDesc)
+                                    if (loggedMessage.Origin?.MemberDefinition is not TypeSystemEntity memberDesc)
                                         continue;
 
                                     if (attrProvider is IMemberDefinition expectedMember)
                                     {
-                                        string? actualName = NameUtils.GetActualOriginDisplayName(methodDesc);
+                                        string? actualName = NameUtils.GetActualOriginDisplayName(memberDesc);
                                         string expectedTypeName = NameUtils.GetExpectedOriginDisplayName(expectedMember.DeclaringType);
                                         if (actualName?.Contains(expectedTypeName) == true &&
                                             actualName?.Contains("<" + expectedMember.Name + ">") == true)
@@ -376,8 +378,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                                 unmatchedMessages.Remove(loggedMessage);
                                                 break;
                                             }
-                                            if (methodDesc.IsConstructor &&
+                                            if (memberDesc is MethodDesc methodDesc && methodDesc.IsConstructor &&
                                                 (expectedMember is FieldDefinition || expectedMember is PropertyDefinition || new AssemblyQualifiedToken(methodDesc.OwningType).Equals(new AssemblyQualifiedToken(expectedMember))))
+                                            {
+                                                expectedWarningFound = true;
+                                                unmatchedMessages.Remove(loggedMessage);
+                                                break;
+                                            }
+                                            if (GetMemberName(GetOwningType(memberDesc))!.StartsWith("<G>") == true && GetMemberName(memberDesc) == expectedMember.Name)
                                             {
                                                 expectedWarningFound = true;
                                                 unmatchedMessages.Remove(loggedMessage);
@@ -388,7 +396,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                                     else if (attrProvider is AssemblyDefinition expectedAssembly)
                                     {
                                         // Allow assembly-level attributes to match warnings from compiler-generated Main
-                                        if (NameUtils.GetActualOriginDisplayName(methodDesc) == "Program.<Main>$(String[])")
+                                        if (NameUtils.GetActualOriginDisplayName(memberDesc) == "Program.<Main>$(String[])")
                                         {
                                             expectedWarningFound = true;
                                             unmatchedMessages.Remove(loggedMessage);
@@ -453,8 +461,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
                         continue;
 
                     // This is a hacky way to say anything in the "subtree" of the attrProvider
-                    if (attrProvider is IMemberDefinition attrMember && (mc.Origin?.MemberDefinition is TypeSystemEntity member) && member.ToString()?.Contains(attrMember.FullName) != true)
-                        continue;
+                    if (attrProvider is IMemberDefinition attrMember && (mc.Origin?.MemberDefinition is TypeSystemEntity member))
+                    {
+                        var memberDisplayName = NameUtils.GetActualOriginDisplayName(member);
+                        if (memberDisplayName?.Contains(attrMember.FullName) == false)
+                            continue;
+                    }
 
                     unexpectedMessageWarnings.Add($"Unexpected warning found: {mc}");
                 }
@@ -464,8 +476,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 missingMessageWarnings.Add("Unmatched Messages:" + Environment.NewLine);
                 missingMessageWarnings.AddRange(unmatchedMessages.Select(m => m.ToString()));
-                missingMessageWarnings.Add(Environment.NewLine + "All Messages:" + Environment.NewLine);
-                missingMessageWarnings.AddRange(allMessages.Select(m => m.ToString()));
+                // Uncomment to show all messages when diagnosing test infrastructure issues
+                // missingMessageWarnings.Add(Environment.NewLine + "All Messages:" + Environment.NewLine);
+                // missingMessageWarnings.AddRange(allMessages.Select(m => m.ToString()));
                 Assert.Fail(string.Join(Environment.NewLine, missingMessageWarnings));
             }
 
@@ -512,6 +525,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 DefType defType => defType.ContainingType,
                 MethodDesc method => method.OwningType,
                 FieldDesc field => field.OwningType,
+                PropertyPseudoDesc property => property.OwningType,
                 _ => null
             };
 
@@ -520,6 +534,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 DefType defType => defType.GetName(),
                 MethodDesc method => method.GetName(),
                 FieldDesc field => field.GetName(),
+                PropertyPseudoDesc property => property.Name,
                 _ => null
             };
 

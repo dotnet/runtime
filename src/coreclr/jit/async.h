@@ -5,33 +5,43 @@ struct LiveLocalInfo
 {
     unsigned LclNum;
     unsigned Alignment;
-    unsigned DataOffset;
-    unsigned DataSize;
-    unsigned GCDataIndex;
-    unsigned GCDataCount;
+    unsigned Offset;
+    unsigned Size;
 
     explicit LiveLocalInfo(unsigned lclNum)
         : LclNum(lclNum)
     {
     }
+
+    unsigned HeapAlignment() const
+    {
+        return std::min(Alignment, (unsigned)TARGET_POINTER_SIZE);
+    }
 };
 
 struct ContinuationLayout
 {
-    unsigned                             DataSize                       = 0;
-    unsigned                             GCRefsCount                    = 0;
-    ClassLayout*                         ReturnStructLayout             = nullptr;
-    unsigned                             ReturnSize                     = 0;
-    bool                                 ReturnInGCData                 = false;
-    unsigned                             ReturnValDataOffset            = UINT_MAX;
-    unsigned                             ExceptionGCDataIndex           = UINT_MAX;
-    unsigned                             ExecContextGCDataIndex         = UINT_MAX;
-    unsigned                             ContinuationContextGCDataIndex = UINT_MAX;
+    unsigned                             Size                      = 0;
+    unsigned                             OSRILOffset               = UINT_MAX;
+    unsigned                             ExceptionOffset           = UINT_MAX;
+    unsigned                             ContinuationContextOffset = UINT_MAX;
+    unsigned                             KeepAliveOffset           = UINT_MAX;
+    ClassLayout*                         ReturnStructLayout        = nullptr;
+    unsigned                             ReturnAlignment           = 0;
+    unsigned                             ReturnSize                = 0;
+    unsigned                             ReturnValOffset           = UINT_MAX;
+    unsigned                             ExecContextOffset         = UINT_MAX;
     const jitstd::vector<LiveLocalInfo>& Locals;
+    CORINFO_CLASS_HANDLE                 ClassHnd = NO_CLASS_HANDLE;
 
     explicit ContinuationLayout(const jitstd::vector<LiveLocalInfo>& locals)
         : Locals(locals)
     {
+    }
+
+    unsigned ReturnHeapAlignment() const
+    {
+        return std::min(ReturnAlignment, (unsigned)TARGET_POINTER_SIZE);
     }
 };
 
@@ -80,8 +90,11 @@ class AsyncTransformation
                       const jitstd::vector<GenTree*>& defs,
                       jitstd::vector<LiveLocalInfo>&  liveLocals);
 
+    bool ContinuationNeedsKeepAlive(class AsyncLiveness& life);
+
     ContinuationLayout LayOutContinuation(BasicBlock*                    block,
                                           GenTreeCall*                   call,
+                                          bool                           needsKeepAlive,
                                           jitstd::vector<LiveLocalInfo>& liveLocals);
 
     void ClearSuspendedIndicator(BasicBlock* block, GenTreeCall* call);
@@ -90,39 +103,27 @@ class AsyncTransformation
 
     BasicBlock* CreateSuspension(
         BasicBlock* block, GenTreeCall* call, unsigned stateNum, AsyncLiveness& life, const ContinuationLayout& layout);
-    GenTreeCall* CreateAllocContinuationCall(AsyncLiveness& life,
-                                             GenTree*       prevContinuation,
-                                             unsigned       gcRefsCount,
-                                             unsigned int   dataSize);
-    void FillInGCPointersOnSuspension(GenTreeCall* call, const ContinuationLayout& layout, BasicBlock* suspendBB);
-    void FillInDataOnSuspension(const jitstd::vector<LiveLocalInfo>& liveLocals, BasicBlock* suspendBB);
-    void CreateCheckAndSuspendAfterCall(BasicBlock*               block,
-                                        GenTreeCall*              call,
-                                        const CallDefinitionInfo& callDefInfo,
-                                        AsyncLiveness&            life,
-                                        BasicBlock*               suspendBB,
-                                        BasicBlock**              remainder);
-    BasicBlock* CreateResumption(BasicBlock*               block,
-                                 BasicBlock*               remainder,
-                                 GenTreeCall*              call,
-                                 const CallDefinitionInfo& callDefInfo,
-                                 unsigned                  stateNum,
-                                 const ContinuationLayout& layout);
-    void        SetSuspendedIndicator(BasicBlock* block, BasicBlock* callBlock, GenTreeCall* call);
-    void        RestoreFromDataOnResumption(unsigned                             resumeByteArrLclNum,
-                                            const jitstd::vector<LiveLocalInfo>& liveLocals,
-                                            BasicBlock*                          resumeBB);
-    void        RestoreFromGCPointersOnResumption(unsigned                  resumeObjectArrLclNum,
-                                                  const ContinuationLayout& layout,
-                                                  BasicBlock*               resumeBB);
-    BasicBlock* RethrowExceptionOnResumption(BasicBlock*               block,
-                                             unsigned                  resumeObjectArrLclNum,
-                                             const ContinuationLayout& layout,
-                                             BasicBlock*               resumeBB);
+    GenTreeCall* CreateAllocContinuationCall(AsyncLiveness&            life,
+                                             GenTree*                  prevContinuation,
+                                             const ContinuationLayout& layout);
+    void         FillInDataOnSuspension(GenTreeCall* call, const ContinuationLayout& layout, BasicBlock* suspendBB);
+    void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
+                                                GenTreeCall*              call,
+                                                const CallDefinitionInfo& callDefInfo,
+                                                AsyncLiveness&            life,
+                                                BasicBlock*               suspendBB,
+                                                BasicBlock**              remainder);
+    BasicBlock*  CreateResumption(BasicBlock*               block,
+                                  BasicBlock*               remainder,
+                                  GenTreeCall*              call,
+                                  const CallDefinitionInfo& callDefInfo,
+                                  unsigned                  stateNum,
+                                  const ContinuationLayout& layout);
+    void         SetSuspendedIndicator(BasicBlock* block, BasicBlock* callBlock, GenTreeCall* call);
+    void         RestoreFromDataOnResumption(const ContinuationLayout& layout, BasicBlock* resumeBB);
+    BasicBlock* RethrowExceptionOnResumption(BasicBlock* block, const ContinuationLayout& layout, BasicBlock* resumeBB);
     void        CopyReturnValueOnResumption(GenTreeCall*              call,
                                             const CallDefinitionInfo& callDefInfo,
-                                            unsigned                  resumeByteArrLclNum,
-                                            unsigned                  resumeObjectArrLclNum,
                                             const ContinuationLayout& layout,
                                             BasicBlock*               storeResultBB);
 
@@ -130,10 +131,12 @@ class AsyncTransformation
                                     unsigned     offset,
                                     var_types    type,
                                     GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
-    GenTreeStoreInd* StoreAtOffset(GenTree* base, unsigned offset, GenTree* value, var_types storeType);
+    GenTreeStoreInd* StoreAtOffset(GenTree*     base,
+                                   unsigned     offset,
+                                   GenTree*     value,
+                                   var_types    storeType,
+                                   GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    unsigned GetDataArrayVar();
-    unsigned GetGCDataArrayVar();
     unsigned GetResultBaseVar();
     unsigned GetExceptionVar();
 

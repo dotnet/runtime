@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "noImplicitAny": true,
+        "noEmitOnError": true,
+        "removeComments": false,
+        "module": "esnext",
+        "sourceMap": true,
+        // keep in sync with src/native/rollup.config.defines.js
+        "target": "ES2020",
+        "moduleResolution": "Node",
+        "strict": true,
+        "lib": [
+            "esnext",
+            "dom"
+        ],
+        "types": [
+            "node"
+        ],
+        "typeRoots": [
+            "./node_modules/@types",
+            "./libs/Common/JavaScript/types"
+        ],
+        "rootDirs": [
+            "./",
+            "../../artifacts/bin/native/generated"
+        ]
+    },
+    "exclude": [
+        "./corehost/loader/dotnet.d.ts"
+    ]
+}

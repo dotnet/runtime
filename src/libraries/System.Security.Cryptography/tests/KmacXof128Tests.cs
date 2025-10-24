@@ -28,6 +28,10 @@ namespace System.Security.Cryptography.Tests
             public static void GetHashAndReset(KmacXof128 kmac, Span<byte> destination) => kmac.GetHashAndReset(destination);
             public static byte[] GetCurrentHash(KmacXof128 kmac, int outputLength) => kmac.GetCurrentHash(outputLength);
             public static void GetCurrentHash(KmacXof128 kmac, Span<byte> destination) => kmac.GetCurrentHash(destination);
+            public static bool VerifyCurrentHash(KmacXof128 kmac, ReadOnlySpan<byte> hash) => kmac.VerifyCurrentHash(hash);
+            public static bool VerifyCurrentHash(KmacXof128 kmac, byte[] hash) => kmac.VerifyCurrentHash(hash);
+            public static bool VerifyHashAndReset(KmacXof128 kmac, ReadOnlySpan<byte> hash) => kmac.VerifyHashAndReset(hash);
+            public static bool VerifyHashAndReset(KmacXof128 kmac, byte[] hash) => kmac.VerifyHashAndReset(hash);
             public static KmacXof128 Clone(KmacXof128 kmac) => kmac.Clone();
 
             public static byte[] HashData(byte[] key, byte[] source, int outputLength, byte[] customizationString) =>
@@ -76,6 +80,54 @@ namespace System.Security.Cryptography.Tests
                 CancellationToken cancellationToken)
             {
                 return KmacXof128.HashDataAsync(key, source, outputLength, customizationString, cancellationToken);
+            }
+
+            public static bool Verify(
+                ReadOnlySpan<byte> key,
+                ReadOnlySpan<byte> source,
+                ReadOnlySpan<byte> hash,
+                ReadOnlySpan<byte> customizationString)
+            {
+                return KmacXof128.Verify(key, source, hash, customizationString);
+            }
+
+            public static bool Verify(byte[] key, byte[] source, byte[] hash, byte[] customizationString)
+            {
+                return KmacXof128.Verify(key, source, hash, customizationString);
+            }
+
+            public static bool Verify(
+                ReadOnlySpan<byte> key,
+                Stream source,
+                ReadOnlySpan<byte> hash,
+                ReadOnlySpan<byte> customizationString)
+            {
+                return KmacXof128.Verify(key, source, hash, customizationString);
+            }
+
+            public static bool Verify(byte[] key, Stream source, byte[] hash, byte[] customizationString)
+            {
+                return KmacXof128.Verify(key, source, hash, customizationString);
+            }
+
+            public static ValueTask<bool> VerifyAsync(
+                ReadOnlyMemory<byte> key,
+                Stream source,
+                ReadOnlyMemory<byte> hash,
+                ReadOnlyMemory<byte> customizationString,
+                CancellationToken cancellationToken)
+            {
+                return KmacXof128.VerifyAsync(key, source, hash, customizationString, cancellationToken);
+            }
+
+            public static ValueTask<bool> VerifyAsync(
+                byte[] key,
+                Stream source,
+                byte[] hash,
+                byte[] customizationString,
+                CancellationToken cancellationToken)
+            {
+                return KmacXof128.VerifyAsync(key, source, hash, customizationString, cancellationToken);
             }
         }
 

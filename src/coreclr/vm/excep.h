@@ -720,15 +720,10 @@ bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord);
 
 inline void CopyOSContext(T_CONTEXT* pDest, T_CONTEXT* pSrc)
 {
-    SIZE_T cbReadOnlyPost = 0;
-#ifdef TARGET_AMD64
-    cbReadOnlyPost = sizeof(CONTEXT) - offsetof(CONTEXT, FltSave); // older OSes don't have the vector reg fields
-#endif // TARGET_AMD64
-
-    memcpyNoGCRefs(pDest, pSrc, sizeof(T_CONTEXT) - cbReadOnlyPost);
-#ifdef TARGET_AMD64
-    pDest->ContextFlags = (pDest->ContextFlags & ~(CONTEXT_XSTATE | CONTEXT_FLOATING_POINT)) | CONTEXT_AMD64;
-#endif // TARGET_AMD64
+    memcpyNoGCRefs(pDest, pSrc, sizeof(T_CONTEXT));
+#ifdef CONTEXT_XSTATE
+    pDest->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
+#endif
 }
 
 void SaveCurrentExceptionInfo(PEXCEPTION_RECORD pRecord, PT_CONTEXT pContext);

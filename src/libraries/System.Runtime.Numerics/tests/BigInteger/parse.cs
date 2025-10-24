@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Tests;
-using System.Text.RegularExpressions;
-using System.Threading;
-using Microsoft.DotNet.RemoteExecutor;
+using System.Text;
 using Xunit;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace System.Numerics.Tests
 {
@@ -81,6 +78,17 @@ namespace System.Numerics.Tests
                     Assert.Equal("1", junk.ToString("d"));
                 });
 
+                AssertExtensions.Throws<ArgumentException>("style", () =>
+                {
+                    BigInteger.Parse("1"u8, invalid).ToString("d");
+                });
+                AssertExtensions.Throws<ArgumentException>("style", () =>
+                {
+                    BigInteger junk;
+                    BigInteger.TryParse("1"u8, invalid, null, out junk);
+                    Assert.Equal("1", junk.ToString("d"));
+                });
+
                 //FormatProvider tests
                 RunFormatProviderParseStrings();
             }
@@ -107,6 +115,16 @@ namespace System.Numerics.Tests
             Eval(test, expected);
         }
 
+        [Theory]
+        [MemberData(nameof(Parse_Subspan_Success_TestData))]
+        public static void ParseUtf8_Subspan_Success(string input, int offset, int length, string expected)
+        {
+            byte[] utf8Input = Encoding.UTF8.GetBytes(input);
+            Eval(BigInteger.Parse(utf8Input.AsSpan(offset, length)), expected);
+            Assert.True(BigInteger.TryParse(utf8Input.AsSpan(offset, length), out BigInteger test));
+            Eval(test, expected);
+        }
+
         [Fact]
         public static void Parse_EmptySubspan_Fails()
         {
@@ -115,7 +133,19 @@ namespace System.Numerics.Tests
             Assert.False(BigInteger.TryParse("12345".AsSpan(0, 0), out result));
             Assert.Equal(0, result);
 
-            Assert.False(BigInteger.TryParse([], out result));
+            Assert.False(BigInteger.TryParse(ReadOnlySpan<char>.Empty, out result));
+            Assert.Equal(0, result);
+        }
+
+        [Fact]
+        public static void ParseUtf8_EmptySubspan_Fails()
+        {
+            BigInteger result;
+
+            Assert.False(BigInteger.TryParse("12345"u8.Slice(0, 0), out result));
+            Assert.Equal(0, result);
+
+            Assert.False(BigInteger.TryParse(ReadOnlySpan<byte>.Empty, out result));
             Assert.Equal(0, result);
         }
 
@@ -169,6 +199,56 @@ namespace System.Numerics.Tests
             });
         }
 
+        [Fact]
+        public void ParseUtf8_Hex32Bits()
+        {
+            // Regression test for: https://github.com/dotnet/runtime/issues/54251
+            BigInteger result;
+
+            Assert.True(BigInteger.TryParse("80000000"u8, NumberStyles.HexNumber, null, out result));
+            Assert.Equal(int.MinValue, result);
+
+            Assert.True(BigInteger.TryParse("080000001"u8, NumberStyles.HexNumber, null, out result));
+            Assert.Equal(0x80000001u, result);
+
+            Assert.True(BigInteger.TryParse("F0000001"u8, NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-0xFFFFFFFL, result);
+
+            Assert.True(BigInteger.TryParse("0F0000001"u8, NumberStyles.HexNumber, null, out result));
+            Assert.Equal(0xF0000001u, result);
+
+            Assert.True(BigInteger.TryParse("F00000001"u8, NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-0xFFFFFFFFL, result);
+
+            Assert.True(BigInteger.TryParse("0F00000001"u8, NumberStyles.HexNumber, null, out result));
+            Assert.Equal(0xF00000001u, result);
+
+            // Regression test for: https://github.com/dotnet/runtime/issues/74758
+            Assert.True(BigInteger.TryParse("FFFFFFFFE"u8, NumberStyles.HexNumber, null, out result));
+            Assert.Equal(new BigInteger(-2), result);
+            Assert.Equal(-2, result);
+
+            Assert.True(BigInteger.TryParse("F"u8, NumberStyles.HexNumber, null, out result));
+            Assert.Equal(-1, result);
+
+            for (int i = 0; i < 40; i++)
+            {
+                byte[] test = [(byte)'F', .. Enumerable.Repeat((byte)'0', i)];
+                Assert.True(BigInteger.TryParse(test, NumberStyles.HexNumber, null, out result));
+                Assert.Equal(BigInteger.MinusOne << (4 * i), result);
+            }
+
+            Assert.Throws<FormatException>(() =>
+            {
+                BigInteger.Parse("zzz"u8, NumberStyles.HexNumber);
+            });
+
+            AssertExtensions.Throws<ArgumentException>("style", () =>
+            {
+                BigInteger.Parse("1"u8, NumberStyles.AllowHexSpecifier | NumberStyles.AllowCurrencySymbol);
+            });
+        }
+
         [Theory]
         [InlineData("1", -1L)]
         [InlineData("01", 1L)]
@@ -181,6 +261,31 @@ namespace System.Numerics.Tests
         {
             Assert.True(BigInteger.TryParse(input, NumberStyles.BinaryNumber, null, out BigInteger result));
             Assert.Equal(expectedValue, result);
+        }
+
+        [Fact]
+        public void ParseUtf8_BinSpecialCases()
+        {
+            Assert.True(BigInteger.TryParse("1"u8, NumberStyles.BinaryNumber, null, out BigInteger result));
+            Assert.Equal(-1, result);
+
+            Assert.True(BigInteger.TryParse("01"u8, NumberStyles.BinaryNumber, null, out result));
+            Assert.Equal(1, result);
+
+            Assert.True(BigInteger.TryParse("10000000000000000000000000000000"u8, NumberStyles.BinaryNumber, null, out result));
+            Assert.Equal(int.MinValue, result);
+
+            Assert.True(BigInteger.TryParse("010000000000000000000000000000001"u8, NumberStyles.BinaryNumber, null, out result));
+            Assert.Equal(0x080000001, result);
+
+            Assert.True(BigInteger.TryParse("111111111111111111111111111111110"u8, NumberStyles.BinaryNumber, null, out result));
+            Assert.Equal(-2, result);
+
+            Assert.True(BigInteger.TryParse("100000000000000000000000000000001"u8, NumberStyles.BinaryNumber, null, out result));
+            Assert.Equal(-0xFFFFFFFF, result);
+
+            Assert.True(BigInteger.TryParse("0111111111111111111111111111111111"u8, NumberStyles.BinaryNumber, null, out result));
+            Assert.Equal(0x1FFFFFFFF, result);
         }
 
         public static IEnumerable<object[]> RegressionIssueRuntime94610_TestData()
@@ -686,24 +791,25 @@ namespace System.Numerics.Tests
 
         private static void VerifyParseToString(string num1)
         {
-            BigInteger test;
+            string expected = Fix(num1.Trim());
+            Eval(BigInteger.Parse(num1), expected);
 
-            Eval(BigInteger.Parse(num1), Fix(num1.Trim()));
-            Assert.True(BigInteger.TryParse(num1, out test));
-            Eval(test, Fix(num1.Trim()));
+            Assert.True(BigInteger.TryParse(num1, out BigInteger test));
+            Eval(test, expected);
         }
 
         private static void VerifyFailParseToString(string num1, Type expectedExceptionType)
         {
-            BigInteger test;
-            Assert.False(BigInteger.TryParse(num1, out test), string.Format("Expected TryParse to fail on {0}", num1));
+            Assert.False(BigInteger.TryParse(num1, out _), string.Format("Expected TryParse to fail on {0}", num1));
             if (num1 == null)
             {
                 Assert.Throws<ArgumentNullException>(() => { BigInteger.Parse(num1).ToString("d"); });
             }
             else
             {
-                Assert.Throws<FormatException>(() => { BigInteger.Parse(num1).ToString("d"); });
+                byte[] utf8Num1 = Encoding.UTF8.GetBytes(num1);
+                Assert.False(BigInteger.TryParse(utf8Num1, out _), string.Format("Expected TryParse to fail on {0}", num1));
+                Assert.Throws<FormatException>(() => { BigInteger.Parse(utf8Num1).ToString("d"); });
             }
         }
 
@@ -714,40 +820,50 @@ namespace System.Numerics.Tests
 
         static void VerifyParseSpanToString(string num1, NumberStyles ns, bool failureNotExpected, string expected)
         {
+            byte[] utf8Num1 = Encoding.UTF8.GetBytes(num1);
+
             if (failureNotExpected)
             {
                 Eval(BigInteger.Parse(num1.AsSpan(), ns), expected);
+                Eval(BigInteger.Parse(utf8Num1, ns), expected);
 
                 Assert.True(BigInteger.TryParse(num1.AsSpan(), ns, provider: null, out BigInteger test));
+                Eval(test, expected);
+
+                Assert.True(BigInteger.TryParse(utf8Num1, ns, provider: null, out test));
                 Eval(test, expected);
 
                 if (ns == NumberStyles.Integer)
                 {
                     Assert.True(BigInteger.TryParse(num1.AsSpan(), out test));
                     Eval(test, expected);
+
+                    Assert.True(BigInteger.TryParse(utf8Num1, out test));
+                    Eval(test, expected);
                 }
             }
             else
             {
                 Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsSpan(), ns); });
+                Assert.Throws<FormatException>(() => { BigInteger.Parse(utf8Num1, ns); });
 
-                Assert.False(BigInteger.TryParse(num1.AsSpan(), ns, provider: null, out BigInteger test));
+                Assert.False(BigInteger.TryParse(num1.AsSpan(), ns, provider: null, out _));
+                Assert.False(BigInteger.TryParse(utf8Num1, ns, provider: null, out _));
 
                 if (ns == NumberStyles.Integer)
                 {
-                    Assert.False(BigInteger.TryParse(num1.AsSpan(), out test));
+                    Assert.False(BigInteger.TryParse(num1.AsSpan(), out _));
+                    Assert.False(BigInteger.TryParse(utf8Num1, out _));
                 }
             }
         }
 
         private static void VerifyParseToString(string num1, NumberStyles ns, bool failureNotExpected, string expected)
         {
-            BigInteger test;
-
             if (failureNotExpected)
             {
                 Eval(BigInteger.Parse(num1, ns), expected);
-                Assert.True(BigInteger.TryParse(num1, ns, null, out test));
+                Assert.True(BigInteger.TryParse(num1, ns, null, out BigInteger test));
                 Eval(test, expected);
             }
             else
@@ -760,7 +876,7 @@ namespace System.Numerics.Tests
                 {
                     Assert.Throws<FormatException>(() => { BigInteger.Parse(num1, ns); });
                 }
-                Assert.False(BigInteger.TryParse(num1, ns, null, out test), string.Format("Expected TryParse to fail on {0}", num1));
+                Assert.False(BigInteger.TryParse(num1, ns, null, out _), string.Format("Expected TryParse to fail on {0}", num1));
             }
 
             if (num1 != null)
@@ -771,33 +887,40 @@ namespace System.Numerics.Tests
 
         static void VerifySimpleFormatParseSpan(string num1, NumberFormatInfo nfi, BigInteger expected, bool failureExpected)
         {
+            byte[] utf8Num1 = Encoding.UTF8.GetBytes(num1);
+
             if (!failureExpected)
             {
                 Assert.Equal(expected, BigInteger.Parse(num1.AsSpan(), provider: nfi));
                 Assert.True(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out BigInteger test));
                 Assert.Equal(expected, test);
+
+                Assert.Equal(expected, BigInteger.Parse(utf8Num1, provider: nfi));
+                Assert.True(BigInteger.TryParse(utf8Num1, NumberStyles.Any, nfi, out test));
+                Assert.Equal(expected, test);
             }
             else
             {
                 Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsSpan(), provider: nfi); });
-                Assert.False(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out BigInteger test), string.Format("Expected TryParse to fail on {0}", num1));
+                Assert.False(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out _), string.Format("Expected TryParse to fail on {0}", num1));
+
+                Assert.Throws<FormatException>(() => { BigInteger.Parse(utf8Num1, provider: nfi); });
+                Assert.False(BigInteger.TryParse(utf8Num1, NumberStyles.Any, nfi, out _), string.Format("Expected TryParse to fail on {0}", num1));
             }
         }
 
         private static void VerifySimpleFormatParse(string num1, NumberFormatInfo nfi, BigInteger expected, bool failureExpected = false)
         {
-            BigInteger test;
-
             if (!failureExpected)
             {
                 Assert.Equal(expected, BigInteger.Parse(num1, nfi));
-                Assert.True(BigInteger.TryParse(num1, NumberStyles.Any, nfi, out test));
+                Assert.True(BigInteger.TryParse(num1, NumberStyles.Any, nfi, out BigInteger test));
                 Assert.Equal(expected, test);
             }
             else
             {
                 Assert.Throws<FormatException>(() => { BigInteger.Parse(num1, nfi); });
-                Assert.False(BigInteger.TryParse(num1, NumberStyles.Any, nfi, out test), string.Format("Expected TryParse to fail on {0}", num1));
+                Assert.False(BigInteger.TryParse(num1, NumberStyles.Any, nfi, out _), string.Format("Expected TryParse to fail on {0}", num1));
             }
 
             if (num1 != null)
@@ -808,16 +931,25 @@ namespace System.Numerics.Tests
 
         static void VerifyFormatParseSpan(string num1, NumberStyles ns, NumberFormatInfo nfi, BigInteger expected, bool failureExpected)
         {
+            byte[] utf8Num1 = Encoding.UTF8.GetBytes(num1);
+
             if (!failureExpected)
             {
                 Assert.Equal(expected, BigInteger.Parse(num1.AsSpan(), ns, nfi));
                 Assert.True(BigInteger.TryParse(num1.AsSpan(), NumberStyles.Any, nfi, out BigInteger test));
                 Assert.Equal(expected, test);
+
+                Assert.Equal(expected, BigInteger.Parse(utf8Num1, ns, nfi));
+                Assert.True(BigInteger.TryParse(utf8Num1, NumberStyles.Any, nfi, out test));
+                Assert.Equal(expected, test);
             }
             else
             {
                 Assert.Throws<FormatException>(() => { BigInteger.Parse(num1.AsSpan(), ns, nfi); });
-                Assert.False(BigInteger.TryParse(num1.AsSpan(), ns, nfi, out BigInteger test), string.Format("Expected TryParse to fail on {0}", num1));
+                Assert.False(BigInteger.TryParse(num1.AsSpan(), ns, nfi, out _), string.Format("Expected TryParse to fail on {0}", num1));
+
+                Assert.Throws<FormatException>(() => { BigInteger.Parse(utf8Num1, ns, nfi); });
+                Assert.False(BigInteger.TryParse(utf8Num1, ns, nfi, out _), string.Format("Expected TryParse to fail on {0}", num1));
             }
         }
 

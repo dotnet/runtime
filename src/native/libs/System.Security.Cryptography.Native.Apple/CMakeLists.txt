@@ -83,9 +83,14 @@ if (CMAKE_OSX_SYSROOT)
     set(SWIFT_SDK_FLAG -sdk ${CMAKE_OSX_SYSROOT})
 endif()
 
+set(SWIFT_COMPILER_ERRORS_FLAG "")
+if (PRERELEASE)
+    set(SWIFT_COMPILER_ERRORS_FLAG "-warnings-as-errors")
+endif()
+
 add_custom_command(
     OUTPUT pal_swiftbindings.o
-    COMMAND xcrun swiftc -emit-object -static -parse-as-library -enable-library-evolution -g ${SWIFT_OPTIMIZATION_FLAG} -runtime-compatibility-version none ${SWIFT_SDK_FLAG} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
+    COMMAND xcrun swiftc -emit-object -static -parse-as-library -enable-library-evolution ${SWIFT_COMPILER_ERRORS_FLAG} -g ${SWIFT_OPTIMIZATION_FLAG} -runtime-compatibility-version none ${SWIFT_SDK_FLAG} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
     MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift
     COMMENT "Compiling Swift file pal_swiftbindings.swift"
 )
