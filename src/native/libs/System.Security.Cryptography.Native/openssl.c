@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 c_static_assert(CRYPTO_EX_INDEX_X509 == 3);
+c_static_assert(CRYPTO_EX_INDEX_SSL_SESSION == 2);
 
 // See X509NameType.SimpleName
 #define NAME_TYPE_SIMPLE 0
