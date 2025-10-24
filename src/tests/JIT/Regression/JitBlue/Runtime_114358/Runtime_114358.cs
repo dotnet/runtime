@@ -44,13 +44,10 @@ public class TestClass_114358
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(AdvSimd), nameof(AdvSimd.IsSupported))]
     public static void Repro()
     {
-        if (AdvSimd.IsSupported)
-        {
-            new TestClass_114358().Method0();
-        }
+        new TestClass_114358().Method0();
     }
 }
 /*

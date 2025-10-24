@@ -22,26 +22,23 @@ public class Runtime_114570
     public static Vector128<sbyte> s_17;
     public static uint s_22;
 
-    [Fact]
+    [ConditionalFact(typeof(Bmi1), nameof(Bmi1.IsSupported))]
     public static void Problem()
     {
-        if (Bmi1.IsSupported)
-        {
-            var vr17 = M8();
-        }
+        var vr17 = M8();
     }
 
     public static Vector128<ulong> M8()
     {
-        var vr6 = Vector128.Create(0, 0, s_22, 0);
-        var vr3 = (ulong)Bmi1.AndNot(0, M23(vr6, ref s_17));
-        return Vector128.CreateScalar(vr3);
+    var vr6 = Vector128.Create(0, 0, s_22, 0);
+    var vr3 = (ulong)Bmi1.AndNot(0, M23(vr6, ref s_17));
+    return Vector128.CreateScalar(vr3);
     }
 
     public static ref byte M23(Vector128<uint> arg0, ref Vector128<sbyte> arg1)
     {
-        s_rt.WriteLine(arg0);
-        return ref s_1;
+    s_rt.WriteLine(arg0);
+    return ref s_1;
     }
 }
 

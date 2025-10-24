@@ -26,17 +26,14 @@ public class Runtime_107173
 {
     public static C0 s_8 = new C0();
 
-    [Fact]
+    [ConditionalFact(typeof(AdvSimd), nameof(AdvSimd.IsSupported))]
     public static void TestLeftShift()
     {
-        if (AdvSimd.IsSupported)
-        {
-            var vr6 = s_8.F8;
-            var vr7 = s_8.F2;
-            var vr8 = Vector64.Create(vr6, vr7, 0, 0);
-            Vector128<uint> vr9 = AdvSimd.ShiftLeftLogicalWideningLower(vr8, 0);
-            Assert.Equal(vr9, Vector128<uint>.Zero);
-        }
+        var vr6 = s_8.F8;
+        var vr7 = s_8.F2;
+        var vr8 = Vector64.Create(vr6, vr7, 0, 0);
+        Vector128<uint> vr9 = AdvSimd.ShiftLeftLogicalWideningLower(vr8, 0);
+        Assert.Equal(vr9, Vector128<uint>.Zero);
     }
 
     [Fact]

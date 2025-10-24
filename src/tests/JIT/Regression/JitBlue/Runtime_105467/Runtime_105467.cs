@@ -25,14 +25,11 @@ public class Runtime_105467
 {
     public static Vector128<float>[] s_6 = new []{ Vector128<float>.Zero };
 
-    [Fact]
+    [ConditionalFact(typeof(Sse41), nameof(Sse41.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sse41.IsSupported)
-        {
-            var vr3 = s_6[0];
-            var vr4 = Vector128.Create<float>(0);
-            s_6[0] = Sse41.Insert(vr3, vr4, 254);
-        }
+        var vr3 = s_6[0];
+        var vr4 = Vector128.Create<float>(0);
+        s_6[0] = Sse41.Insert(vr3, vr4, 254);
     }
 }

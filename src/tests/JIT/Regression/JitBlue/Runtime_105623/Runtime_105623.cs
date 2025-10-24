@@ -23,19 +23,16 @@ using Xunit;
 
 public class Runtime_105623
 {
-    [Fact]
+    [ConditionalFact(typeof(Avx512BW.VL), nameof(Avx512BW.VL.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx512BW.VL.IsSupported)
-        {
-            uint[,][] vr4 = new uint[1,1][];
-            vr4[0,0] = new uint[1];
-            var vr5 = Vector256.Create<sbyte>(0);
-            var vr6 = vr4[0, 0][0];
-            var vr7 = (sbyte)Sse42.Crc32(vr6, 0);
-            var vr8 = Vector256.Create<sbyte>(vr7);
-            Vector256<sbyte> vr9 = Avx512BW.VL.CompareLessThan(vr5, vr8);
-            Assert.Equal(Vector256<sbyte>.Zero, vr9);
-        }
+        uint[,][] vr4 = new uint[1,1][];
+        vr4[0,0] = new uint[1];
+        var vr5 = Vector256.Create<sbyte>(0);
+        var vr6 = vr4[0, 0][0];
+        var vr7 = (sbyte)Sse42.Crc32(vr6, 0);
+        var vr8 = Vector256.Create<sbyte>(vr7);
+        Vector256<sbyte> vr9 = Avx512BW.VL.CompareLessThan(vr5, vr8);
+        Assert.Equal(Vector256<sbyte>.Zero, vr9);
     }
 }

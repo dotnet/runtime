@@ -25,20 +25,17 @@ public class Runtime_105468
 {
     public static S3 s_3;
 
-    [Fact]
+    [ConditionalFact(typeof(Avx2), nameof(Avx2.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx2.IsSupported)
-        {
-            var vr15 = (ushort)0;
-            var vr16 = Vector256.CreateScalar(vr15);
-            var vr17 = Vector256.Create<ushort>(1);
-            var vr18 = (ushort)0;
-            var vr19 = Vector256.CreateScalar(vr18);
-            var vr20 = s_3.F0;
-            var vr21 = Avx2.AlignRight(vr17, vr19, vr20);
-            M6(vr16, vr21);
-        }
+        var vr15 = (ushort)0;
+        var vr16 = Vector256.CreateScalar(vr15);
+        var vr17 = Vector256.Create<ushort>(1);
+        var vr18 = (ushort)0;
+        var vr19 = Vector256.CreateScalar(vr18);
+        var vr20 = s_3.F0;
+        var vr21 = Avx2.AlignRight(vr17, vr19, vr20);
+        M6(vr16, vr21);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

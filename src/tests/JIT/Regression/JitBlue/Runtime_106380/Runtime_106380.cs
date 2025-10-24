@@ -22,13 +22,10 @@ public class Runtime_106380
             return;
         }
     }
-    [Fact]
+    [ConditionalFact(typeof(AdvSimd), nameof(AdvSimd.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (AdvSimd.IsSupported)
-        {
-            new Runtime_106380().Method0();
-        }
+        new Runtime_106380().Method0();
     }
 }
 

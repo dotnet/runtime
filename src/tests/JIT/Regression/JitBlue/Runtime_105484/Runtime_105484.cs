@@ -47,16 +47,13 @@ public class Runtime_105484
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sve.IsSupported)
+        try
         {
-            try
-            {
-                M();
-            }
-            catch {}
+            M();
         }
+        catch {}
     }
 }

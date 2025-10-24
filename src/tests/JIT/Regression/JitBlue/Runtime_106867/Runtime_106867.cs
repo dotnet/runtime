@@ -45,13 +45,10 @@ public class Runtime_106867
     };
     public static byte s_16;
 
-    [Fact]
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sve.IsSupported)
-        {
-            var vr6 = s_5[0];
-            new S0().M6(s_16, vr6);
-        }
+        var vr6 = s_5[0];
+        new S0().M6(s_16, vr6);
     }
 }

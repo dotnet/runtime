@@ -14,16 +14,13 @@ using Xunit;
 
 public class Runtime_105465
 {
-    [Fact]
+    [ConditionalFact(typeof(Avx2), nameof(Avx2.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx2.IsSupported)
-        {
-            var vr2 = Vector256.Create<ushort>(1);
-            var vr3 = Vector128.Create<ushort>(1);
-            Vector256<ushort> vr4 = Avx2.ShiftLeftLogical(vr2, vr3);
-            Assert.Equal(Vector256<ushort>.Zero, vr4);
-        }
+        var vr2 = Vector256.Create<ushort>(1);
+        var vr3 = Vector128.Create<ushort>(1);
+        Vector256<ushort> vr4 = Avx2.ShiftLeftLogical(vr2, vr3);
+        Assert.Equal(Vector256<ushort>.Zero, vr4);
     }
 }
 

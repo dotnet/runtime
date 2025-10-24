@@ -29,15 +29,12 @@ public class Runtime_106864
 {
     public static C1 s_2 = new C1();
 
-    [Fact]
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sve.IsSupported)
-        {
-            C1 vr2 = s_2;
-            var vr3 = vr2.F1;
-            var vr4 = vr2.F1;
-            vr2.F1 = Sve.Max(vr3, vr4);
-        }
+        C1 vr2 = s_2;
+        var vr3 = vr2.F1;
+        var vr4 = vr2.F1;
+        vr2.F1 = Sve.Max(vr3, vr4);
     }
 }

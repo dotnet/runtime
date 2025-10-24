@@ -23,14 +23,9 @@ public class Runtime_90508
     private static Vector128<double> Test3(Vector128<double> v) =>
         v + Sse3.MoveAndDuplicate(Vector128<double>.One);
 
-    [Fact]
+    [ConditionalFact(typeof(Sse3), nameof(Sse3.IsSupported))]
     public static int TestEntryPoint()
     {
-        if (!Sse3.IsSupported)
-        {
-            return 100;
-        }
-
         if (Test1(Vector128.Create(42.0), 1).ToString().Equals("<43, 43>") &&
             Test2(Vector128.Create(42.0)).ToString().Equals("<43, 43>") &&
             Test3(Vector128.Create(42.0)).ToString().Equals("<43, 43>"))

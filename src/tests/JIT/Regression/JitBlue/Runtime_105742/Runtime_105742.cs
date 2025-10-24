@@ -18,14 +18,9 @@ using Xunit;
 
 public class Runtime_105742
 {
-    [Fact]
-    public static void TestEntyPoint()
+    [ConditionalFact(typeof(Avx512BW.VL), nameof(Avx512BW.VL.IsSupported))]
+    public static void TestEntryPoint()
     {
-        if (!Avx512BW.VL.IsSupported)
-        {
-            return;
-        }
-
         if (ShiftLeft().ToString() != "<2, 1, 1, 1, 1, 1, 1, 1>")
         {
             throw new Exception("ShiftLeft");

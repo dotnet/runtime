@@ -24,18 +24,15 @@ public class Runtime_109218
 {
     public static sbyte s_1;
 
-    [Fact]
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sve.IsSupported)
-        {
-            var vr4 = Vector.Create<double>(0);
-            var vr5 = Sve.MinNumberAcross(vr4);
-            var vr6 = Sve.AddAcross(vr5);
-            var vr7 = Vector.Create<double>(0);
-            s_1 = (sbyte)Sve.GetActiveElementCount(vr6, vr7);
-            Consume(s_1);
-        }
+        var vr4 = Vector.Create<double>(0);
+        var vr5 = Sve.MinNumberAcross(vr4);
+        var vr6 = Sve.AddAcross(vr5);
+        var vr7 = Vector.Create<double>(0);
+        s_1 = (sbyte)Sve.GetActiveElementCount(vr6, vr7);
+        Consume(s_1);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

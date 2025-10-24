@@ -25,12 +25,9 @@ public class Runtime_106355
     private static ulong s_3;
     private static Vector128<ulong> s_5;
 
-    [Fact]
+    [ConditionalFact(typeof(Sse2), nameof(Sse2.IsSupported))]
     public static void TestEntrypoint()
     {
-        if (Sse2.IsSupported)
-        {
-            s_5 = Sse2.ShiftLeftLogical(s_5, Vector128.Create<ulong>(s_3));
-        }
+        s_5 = Sse2.ShiftLeftLogical(s_5, Vector128.Create<ulong>(s_3));
     }
 }

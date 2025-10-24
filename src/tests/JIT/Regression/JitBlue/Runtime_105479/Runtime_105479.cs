@@ -27,21 +27,15 @@ public class Runtime_105479_A
         Avx.Compare(vr1, vr1, (FloatComparisonMode)255);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(AdvSimd), nameof(AdvSimd.IsSupported))]
     public static void TestEntryPointArm()
     {
-        if (AdvSimd.IsSupported)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105479_A().Method0());
-        }
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105479_A().Method0());
     }
 
-    [Fact]
+    [ConditionalFact(typeof(AdvSimd), nameof(Avx.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx.IsSupported)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105479_A().Method1());
-        }
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105479_A().Method1());
     }
 }

@@ -17,17 +17,14 @@ using Xunit;
 
 public class Runtime_113334
 {
-    [Fact]
+    [ConditionalFact(typeof(Fma), nameof(Fma.IsSupported))]
     public static void Problem()
     {
-        if (Fma.IsSupported)
+        float[] vr8 = new float[]
         {
-            float[] vr8 = new float[]
-            {
-                0
-            };
-            var vr9 = Vector128.Create<float>(0);
-            Fma.MultiplyAddNegatedScalar(vr9, Vector128.Create(vr8[0], vr8[0], vr8[0], vr8[0]), Sse.CompareScalarEqual(Vector128.Create<float>(vr8[0]), Vector128.CreateScalar(vr8[0])));
-        }
+            0
+        };
+        var vr9 = Vector128.Create<float>(0);
+        Fma.MultiplyAddNegatedScalar(vr9, Vector128.Create(vr8[0], vr8[0], vr8[0], vr8[0]), Sse.CompareScalarEqual(Vector128.Create<float>(vr8[0]), Vector128.CreateScalar(vr8[0])));
     }
 }

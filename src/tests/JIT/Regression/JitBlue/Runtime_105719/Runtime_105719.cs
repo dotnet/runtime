@@ -13,17 +13,14 @@ using System.Runtime.Intrinsics.Arm;
 
 public class Runtime_105723
 {
-    [Fact]
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Sve.IsSupported)
-        {
-            var vr3 = Sve.CreateTrueMaskInt32();
-            var vr4 = Vector.Create<int>(1);
-            var vr5 = Vector128.CreateScalar(0).AsVector();
-            Vector<int> vr6 = Sve.ConditionalSelect(vr3, vr4, vr5);
-            Consume(vr6);
-        }
+        var vr3 = Sve.CreateTrueMaskInt32();
+        var vr4 = Vector.Create<int>(1);
+        var vr5 = Vector128.CreateScalar(0).AsVector();
+        Vector<int> vr6 = Sve.ConditionalSelect(vr3, vr4, vr5);
+        Consume(vr6);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

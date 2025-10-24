@@ -24,52 +24,43 @@ public class Runtime_114572
     public static byte s_ub = 1;
     public static ushort s_us = 1;
 
-    [Fact]
+    [ConditionalFact(typeof(Avx512F.VL), nameof(Avx512F.VL.IsSupported))]
     public static void Problem()
     {
-        if (Avx512F.VL.IsSupported)
-        {
-            var vr11 = Vector256.Create<ushort>(0);
-            var vr12 = Vector256.Create<ushort>(1);
-            var vr13 = (ushort)0;
-            var vr14 = Vector256.CreateScalar(vr13);
-            var vr15 = (ushort)1;
-            var vr16 = Vector256.CreateScalar(vr15);
-            var vr17 = Vector256.Create<ushort>(s_4);
-            var vr18 = Avx2.Max(vr16, vr17);
-            s_2 = Avx512F.VL.TernaryLogic(vr11, vr12, Avx512BW.VL.CompareGreaterThanOrEqual(vr14, vr18), 216);
-            System.Console.WriteLine(s_2);
-            Assert.Equal(Vector256.Create((ushort)0, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1), s_2);
-        }
+        var vr11 = Vector256.Create<ushort>(0);
+        var vr12 = Vector256.Create<ushort>(1);
+        var vr13 = (ushort)0;
+        var vr14 = Vector256.CreateScalar(vr13);
+        var vr15 = (ushort)1;
+        var vr16 = Vector256.CreateScalar(vr15);
+        var vr17 = Vector256.Create<ushort>(s_4);
+        var vr18 = Avx2.Max(vr16, vr17);
+        s_2 = Avx512F.VL.TernaryLogic(vr11, vr12, Avx512BW.VL.CompareGreaterThanOrEqual(vr14, vr18), 216);
+        System.Console.WriteLine(s_2);
+        Assert.Equal(Vector256.Create((ushort)0, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1, (ushort)1), s_2);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Avx512F.VL), nameof(Avx512F.VL.IsSupported))]
     public static void Problem2()
     {
-        if (Avx512F.VL.IsSupported)
-        {
-            var v0 = Vector128<ushort>.Zero;
-            var v1 = Vector128<ushort>.One;
-            var vs = Vector128.CreateScalar(s_us);
+        var v0 = Vector128<ushort>.Zero;
+        var v1 = Vector128<ushort>.One;
+        var vs = Vector128.CreateScalar(s_us);
 
-            var vr = Avx512F.VL.TernaryLogic(v0, v1, Avx512BW.VL.CompareGreaterThanOrEqual(v0, vs), 0xE4);
-            Console.WriteLine(vr);
-            Assert.Equal(Vector128.Create((ushort)1, (ushort)0, (ushort)0, (ushort)0, (ushort)0, (ushort)0, (ushort)0, (ushort)0), vr);
-        }
+        var vr = Avx512F.VL.TernaryLogic(v0, v1, Avx512BW.VL.CompareGreaterThanOrEqual(v0, vs), 0xE4);
+        Console.WriteLine(vr);
+        Assert.Equal(Vector128.Create((ushort)1, (ushort)0, (ushort)0, (ushort)0, (ushort)0, (ushort)0, (ushort)0, (ushort)0), vr);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Avx512F.VL), nameof(Avx512F.VL.IsSupported))]
     public static void Problem3()
     {
-        if (Avx512F.VL.IsSupported)
-        {
-            var v0 = Vector128<byte>.Zero;
-            var v1 = Vector128<byte>.One;
-            var vs = Vector128.CreateScalar(s_ub);
+        var v0 = Vector128<byte>.Zero;
+        var v1 = Vector128<byte>.One;
+        var vs = Vector128.CreateScalar(s_ub);
 
-            var vr = Avx512F.VL.TernaryLogic(v0, v1, Avx512BW.VL.CompareGreaterThanOrEqual(v0, vs), 0xE4);
-            Console.WriteLine(vr);
-            Assert.Equal(Vector128.Create((byte)1, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0), vr);
-        }
+        var vr = Avx512F.VL.TernaryLogic(v0, v1, Avx512BW.VL.CompareGreaterThanOrEqual(v0, vs), 0xE4);
+        Console.WriteLine(vr);
+        Assert.Equal(Vector128.Create((byte)1, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0, (byte)0), vr);
     }
 }
