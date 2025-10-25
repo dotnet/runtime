@@ -439,6 +439,14 @@ namespace System
 
             if (throwOnFailure)
             {
+                ThrowFailure(parseStatus, parsedComponent, componentName, originalInput);
+            }
+
+            return false;
+
+            [DoesNotReturn]
+            static void ThrowFailure(Number.ParsingStatus parseStatus, int parsedComponent, string componentName, ReadOnlySpan<TChar> originalInput)
+            {
                 if (parsedComponent < 0)
                 {
                     ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
@@ -458,8 +466,6 @@ namespace System
                     throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, Encoding.UTF8.GetString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(originalInput))));
                 }
             }
-
-            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
