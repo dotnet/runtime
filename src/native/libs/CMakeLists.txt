@@ -113,12 +113,16 @@ else ()
     add_subdirectory(System.Globalization.Native)
 endif ()
 
-add_subdirectory(System.IO.Compression.Native)
+if (NOT CORERUN_LIBS_ONLY)
+    add_subdirectory(System.IO.Compression.Native)
+endif ()
 
 # Only when Browser for CoreCLR
 if (CLR_CMAKE_TARGET_BROWSER AND BUILD_LIBS_NATIVE_BROWSER)
     add_subdirectory(System.Native.Browser)
-    add_subdirectory(System.Runtime.InteropServices.JavaScript.Native)
+    if (NOT CORERUN_LIBS_ONLY)
+        add_subdirectory(System.Runtime.InteropServices.JavaScript.Native)
+    endif ()
 endif ()
 
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)

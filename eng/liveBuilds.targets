@@ -18,11 +18,14 @@
     <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'mono', '$(TargetOS).$(TargetArchitecture).$(MonoConfiguration)'))</MonoArtifactsPath>
     <LibrariesArtifactsPath Condition="'$(LibrariesArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesArtifactsPath>
     <LibrariesAllConfigurationsArtifactsPath Condition="'$(LibrariesAllConfigurationsArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesAllConfigurationsArtifactsPath>
+    <HostArtifactsPath Condition="'$(HostArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', '$(TargetOS)-$(TargetArchitecture).$(HostConfiguration)'))</HostArtifactsPath>
   </PropertyGroup>
 
   <!-- Set up artifact subpaths. -->
   <PropertyGroup>
     <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
+    <LibrariesSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(LibrariesNativeArtifactsPath)','sharedFramework'))</LibrariesSharedFrameworkDir>
+    <HostSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(HostArtifactsPath)','sharedFramework'))</HostSharedFrameworkDir>
     <CoreCLRCoreHostDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'corehost'))</CoreCLRCoreHostDir>
     <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'ilc-published'))</CoreCLRILCompilerDir>
     <CoreCLRCrossILCompilerDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', '$(BuildArchitecture)', 'ilc'))</CoreCLRCrossILCompilerDir>
@@ -88,6 +91,8 @@
         value is different after CoreCLRArtifactsPath is normalized.
       -->
       <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
+      <LibrariesSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(LibrariesNativeArtifactsPath)','sharedFramework'))</LibrariesSharedFrameworkDir>
+      <HostSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(HostArtifactsPath)','sharedFramework'))</HostSharedFrameworkDir>
       <CoreCLRSharedFrameworkPdbDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRSharedFrameworkDir)','PDB'))</CoreCLRSharedFrameworkPdbDir>
       <CoreCLRCrossTargetComponentDir
         Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','$(CoreCLRCrossTargetComponentDirName)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
@@ -218,15 +223,22 @@
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'"
                              Include="
-        $(CoreCLRCoreHostDir)package.json;
-        $(CoreCLRCoreHostDir)dotnet.native.js;
-        $(CoreCLRCoreHostDir)dotnet.native.wasm;
-        $(CoreCLRSharedFrameworkDir)dotnet.d.ts;
-        $(CoreCLRSharedFrameworkDir)dotnet.js;
-        $(CoreCLRSharedFrameworkDir)dotnet.js.map;
-        $(CoreCLRSharedFrameworkDir)dotnet.runtime.js;
-        $(CoreCLRSharedFrameworkDir)dotnet.runtime.js.map;
-        $(CoreCLRSharedFrameworkDir)*.dat;"
+        $(CoreCLRSharedFrameworkDir)libclrinterpreter.a;
+        $(CoreCLRSharedFrameworkDir)libcoreclr_static.a;
+        $(CoreCLRSharedFrameworkDir)libcoreclrminipal.a;
+        $(CoreCLRSharedFrameworkDir)libcoreclrpal.a;
+        $(CoreCLRSharedFrameworkDir)libgcinfo_unix_wasm.a;
+        $(CoreCLRSharedFrameworkDir)libnativeresourcestring.a;
+        $(LibrariesSharedFrameworkDir)package.json;
+        $(LibrariesSharedFrameworkDir)dotnet.d.ts;
+        $(LibrariesSharedFrameworkDir)*.map;
+        $(LibrariesSharedFrameworkDir)*.js;
+        $(LibrariesSharedFrameworkDir)*.a;
+        $(LibrariesSharedFrameworkDir)*.dat;
+        $(HostSharedFrameworkDir)libBrowserHost.a;
+        $(HostSharedFrameworkDir)dotnet.native.js;
+        $(HostSharedFrameworkDir)dotnet.native.wasm;
+        "
         IsNative="true" />
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'"
