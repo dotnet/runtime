@@ -48,11 +48,13 @@ namespace System.Data.SqlTypes
 
         private const int DayBase = 693595;             // Jan 1 1900 is this many days from Jan 1 0001
 
+        private const long DateTimeMaxTicks = 3155378975999999999; // DateTime.MaxValue.Ticks
+
         private static ReadOnlySpan<int> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
         private static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
         private static TimeSpan MinTimeSpan => new DateTime(1753, 1, 1).Subtract(BaseDate);
-        private static TimeSpan MaxTimeSpan => new DateTime(3155378975999999999).Subtract(BaseDate);
+        private static TimeSpan MaxTimeSpan => new DateTime(DateTimeMaxTicks).Subtract(BaseDate);
         private const string ISO8601_DateTimeFormat = "yyyy-MM-ddTHH:mm:ss.fff";
 
         // These formats are valid styles in SQL Server (style 9, 12, 13, 14)
