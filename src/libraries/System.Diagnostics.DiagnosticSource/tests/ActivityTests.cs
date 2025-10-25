@@ -2555,12 +2555,10 @@ namespace System.Diagnostics.Tests
             Activity activity = new Activity("TestOperation");
             activity.Start();
 
-            // Activity uses DebuggerToString() method which the helper doesn't support,
-            // so we just verify the attribute exists and can be accessed
-            Type type = activity.GetType();
-            DebuggerDisplayAttribute? attr = type.GetCustomAttribute<DebuggerDisplayAttribute>();
-            Assert.NotNull(attr);
-            Assert.Contains("DebuggerToString", attr.Value);
+            // Validate the DebuggerDisplay attribute and ensure the property can be evaluated
+            string debuggerDisplay = DebuggerAttributes.ValidateDebuggerDisplayReferences(activity);
+            Assert.Contains("OperationName = TestOperation", debuggerDisplay);
+            Assert.Contains("Id =", debuggerDisplay);
 
             activity.Stop();
         }

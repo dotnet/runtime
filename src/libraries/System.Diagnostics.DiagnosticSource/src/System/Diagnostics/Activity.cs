@@ -54,7 +54,7 @@ namespace System.Diagnostics
     /// but the exception is suppressed, and the operation does something reasonable (typically
     /// doing nothing).
     /// </summary>
-    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerDisplay("{DebuggerDisplayString,nq}")]
     [DebuggerTypeProxy(typeof(ActivityDebuggerProxy))]
     public partial class Activity : IDisposable
     {
@@ -1841,10 +1841,13 @@ namespace System.Diagnostics
             }
         }
 
-        private string DebuggerToString()
+        private string DebuggerDisplayString
         {
-            string? id = Id;
-            return $"OperationName = {OperationName}, Id = {(id is not null ? id : "(null)")}";
+            get
+            {
+                string? id = Id;
+                return $"OperationName = {OperationName}, Id = {(id is not null ? id : "(null)")}";
+            }
         }
 
         [Flags]
