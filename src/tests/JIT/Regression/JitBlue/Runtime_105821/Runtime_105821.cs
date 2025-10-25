@@ -10,6 +10,9 @@
 // 
 //     File: /__w/1/s/src/coreclr/jit/hwintrinsiccodegenxarch.cpp Line: 2242
 // 
+
+namespace Runtime_105821;
+
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;

@@ -1,8 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <CLRTestPriority>0</CLRTestPriority>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="test71592.cs" />
-  </ItemGroup>
-</Project>

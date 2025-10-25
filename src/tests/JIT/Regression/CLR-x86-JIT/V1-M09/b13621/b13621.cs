@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
-namespace DefaultNamespace
+namespace b13621
 {
     public class RootMem
     {

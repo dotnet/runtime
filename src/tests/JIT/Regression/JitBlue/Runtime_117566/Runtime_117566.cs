@@ -13,6 +13,9 @@
 //    at System.Reflection.MethodBase.Invoke(System.Object, System.Object[])
 //    at Runtime_117566.TestEntryPoint()
 
+
+namespace Runtime_117566;
+
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.CompilerServices;

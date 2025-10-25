@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_105944;
+
 using System;
 using System.Buffers;
 using System.Numerics;
@@ -11,14 +14,9 @@ using Xunit;
 
 public unsafe class Runtime_105944
 {
-    [Fact]
+    [ConditionalFact(typeof(Sve), nameof(Sve.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (!Sve.IsSupported)
-        {
-            return;
-        }
-        
         using BoundedMemory<byte> memory = BoundedMemory.Allocate<byte>(Vector<byte>.Count);
         fixed (byte* pMemory = &memory.Span.GetPinnableReference())
         {

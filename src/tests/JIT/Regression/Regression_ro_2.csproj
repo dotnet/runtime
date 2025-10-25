@@ -1,0 +1,88 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <HasMergedInTests>True</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="JitBlue\Runtime_46529\Runtime_46529.cs" />
+    <Compile Include="JitBlue\Runtime_49078\Runtime_49078.cs" />
+    <Compile Include="JitBlue\Runtime_49101\Runtime_49101.cs" />
+    <Compile Include="JitBlue\Runtime_49780\Runtime_49780.cs" />
+    <Compile Include="JitBlue\Runtime_51612\Runtime_51612.cs" />
+    <Compile Include="JitBlue\Runtime_54100\Runtime_54100.cs" />
+    <Compile Include="JitBlue\Runtime_54102\Runtime_54102.cs" />
+    <Compile Include="JitBlue\Runtime_54118\Runtime_54118_1.cs" />
+    <Compile Include="JitBlue\Runtime_54118\Runtime_54118_2.cs" />
+    <Compile Include="JitBlue\Runtime_54118\Runtime_54118.cs" />
+    <Compile Include="JitBlue\Runtime_54466\Runtime_54466.cs" />
+    <Compile Include="JitBlue\Runtime_54647\Runtime_54647.cs" />
+    <Compile Include="JitBlue\Runtime_54842\Runtime_54842.cs" />
+    <Compile Include="JitBlue\Runtime_55129\Runtime_55129.cs" />
+    <Compile Include="JitBlue\Runtime_55140\Runtime_55140.cs" />
+    <Compile Include="JitBlue\Runtime_55141\Runtime_55141_2.cs" />
+    <Compile Include="JitBlue\Runtime_55141\Runtime_55141.cs" />
+    <Compile Include="JitBlue\Runtime_55143\Runtime_55143.cs" />
+    <Compile Include="JitBlue\Runtime_56495\Runtime_56485.cs" />
+    <Compile Include="JitBlue\Runtime_56743\Runtime_56743_0.cs" />
+    <Compile Include="JitBlue\Runtime_56743\Runtime_56743_1.cs" />
+    <Compile Include="JitBlue\Runtime_56743\Runtime_56743_2.cs" />
+    <Compile Include="JitBlue\Runtime_56930\Runtime_56930.cs" />
+    <Compile Include="JitBlue\Runtime_56935\Runtime_56935.cs" />
+    <Compile Include="JitBlue\Runtime_56967\Runtime_56967.cs" />
+    <Compile Include="JitBlue\Runtime_56980\Runtime_56980.cs" />
+    <Compile Include="JitBlue\Runtime_57061\Runtime_57061_2.cs" />
+    <Compile Include="JitBlue\Runtime_57061\Runtime_57061_3.cs" />
+    <Compile Include="JitBlue\Runtime_57061\Runtime_57061.cs" />
+    <Compile Include="JitBlue\Runtime_57064\Runtime_57064.cs" />
+    <Compile Include="JitBlue\Runtime_57074\Runtime_57074.cs" />
+    <Compile Include="JitBlue\Runtime_57282\Runtime_57282_1.cs" />
+    <Compile Include="JitBlue\Runtime_57282\Runtime_57282_2.cs" />
+    <Compile Include="JitBlue\Runtime_57364\Runtime_57364.cs" />
+    <Compile Include="JitBlue\Runtime_57535\Runtime_57535_1.cs" />
+    <Compile Include="JitBlue\Runtime_57535\Runtime_57535.cs" />
+    <Compile Include="JitBlue\Runtime_57640\Runtime_57640.cs" />
+    <Compile Include="JitBlue\Runtime_57752\Runtime_57752_1.cs" />
+    <Compile Include="JitBlue\Runtime_57752\Runtime_57752_2.cs" />
+    <Compile Include="JitBlue\Runtime_57767\Runtime_57767.cs" />
+    <Compile Include="JitBlue\Runtime_57912\Runtime_57912.cs" />
+    <Compile Include="JitBlue\Runtime_57914\Runtime_57914.cs" />
+    <Compile Include="JitBlue\Runtime_58083\Runtime_58083.cs" />
+    <Compile Include="JitBlue\Runtime_58259\Runtime_58259.cs" />
+    <Compile Include="JitBlue\Runtime_58293\Runtime_58293.cs" />
+    <Compile Include="JitBlue\Runtime_58373\Runtime_58373_1.cs" />
+    <Compile Include="JitBlue\Runtime_58373\Runtime_58373_2.cs" />
+    <Compile Include="JitBlue\Runtime_58832\Runtime_58832.cs" />
+    <Compile Include="JitBlue\Runtime_58877\Runtime_58877.cs" />
+    <Compile Include="JitBlue\Runtime_58972\Runtime_58972.cs" />
+    <Compile Include="JitBlue\Runtime_59298\Runtime_59298.cs" />
+    <Compile Include="JitBlue\Runtime_59444\Runtime_59444.cs" />
+    <Compile Include="JitBlue\Runtime_59871\Runtime_59871.cs" />
+    <Compile Include="JitBlue\Runtime_60035\Runtime_60035.cs" />
+    <Compile Include="JitBlue\Runtime_60297\Runtime_60297.cs" />
+    <Compile Include="JitBlue\Runtime_60827\Runtime_60827.cs" />
+    <Compile Include="JitBlue\Runtime_60957\Runtime_60957.cs" />
+    <Compile Include="JitBlue\Runtime_61037\Runtime_61037.cs" />
+    <Compile Include="JitBlue\Runtime_61359\Runtime_61359.cs" />
+    <Compile Include="JitBlue\Runtime_620\Runtime_620.cs" />
+    <Compile Include="JitBlue\Runtime_62597\Runtime_62597.cs" />
+    <Compile Include="JitBlue\Runtime_65937\Runtime_65937.cs" />
+    <Compile Include="JitBlue\Runtime_66578\Runtime_66578.cs" />
+    <Compile Include="JitBlue\Runtime_75832\Runtime_75832.cs" />
+    <Compile Include="JitBlue\Runtime_764\Runtime_764.cs" />
+    <Compile Include="JitBlue\Runtime_83167\Runtime_83167.cs" />
+    <Compile Include="JitBlue\Runtime_84619\Runtime_84619.cs" />
+    <Compile Include="JitBlue\Runtime_85892\Runtime_85892.cs" />
+    <Compile Include="JitBlue\Runtime_86027\Runtime_86207.cs" />
+    <Compile Include="JitBlue\Runtime_88091\Runtime_88091.cs" />
+    <Compile Include="JitBlue\Runtime_88616\Runtime_88616.cs" />
+    <Compile Include="JitBlue\Runtime_95349\Runtime_95349.cs" />
+    <Compile Include="JitBlue\Runtime_96174\Runtime_96174.cs" />
+    <Compile Include="JitBlue\Runtime_96306\Runtime_96306.cs" />
+    <Compile Include="JitBlue\Runtime_96461\Runtime_96461.cs" />
+    <Compile Include="JitBlue\Runtime_96591\Runtime_96591_2.cs" />
+    <Compile Include="JitBlue\Runtime_96591\Runtime_96591.cs" />
+    <Compile Include="JitBlue\Runtime_96939\Runtime_96939.cs" />
+  </ItemGroup>
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

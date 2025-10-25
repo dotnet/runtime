@@ -4,7 +4,9 @@
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsVarArgSupported), nameof(PlatformDetection.IsArm64Process))]
 public class Runtime_71375
 {
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]

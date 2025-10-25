@@ -1,11 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace GitHub_12037;
+
 using System;
 using Xunit;
 
 public class TailCallOptTest
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

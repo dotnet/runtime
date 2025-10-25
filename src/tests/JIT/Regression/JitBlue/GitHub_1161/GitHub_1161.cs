@@ -4,6 +4,9 @@
 // This test illustrates a limitation in the JIT in that it will not promote
 // a struct that has a single double register. See https://github.com/dotnet/coreclr/issues/1161.
 
+
+namespace GitHub_1161;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

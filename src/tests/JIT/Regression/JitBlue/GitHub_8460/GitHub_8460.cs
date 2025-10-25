@@ -16,6 +16,7 @@ namespace bug
         // 'test' instruction incorrectly, because shift
         // operations on xarch don't modify flags if the
         // shift count is zero.
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

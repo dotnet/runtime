@@ -10,6 +10,9 @@
 // 
 //     File: /Users/runner/work/1/s/src/coreclr/jit/emitarm64.cpp Line: 2676
 // 
+
+namespace Runtime_106020;
+
 using System;
 using System.Numerics;
 using System.Runtime.Intrinsics;

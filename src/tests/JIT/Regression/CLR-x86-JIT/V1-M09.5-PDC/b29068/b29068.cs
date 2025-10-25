@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-namespace Test
+namespace b29068
 {
     using System;
 
