@@ -245,17 +245,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
 #define EVP_CTRL_AEAD_SET_TAG 0x11
 #endif
 
-#if !HAVE_OPENSSL_SHA3
-#undef HAVE_OPENSSL_SHA3
-#define HAVE_OPENSSL_SHA3 1
-const EVP_MD *EVP_sha3_256(void);
-const EVP_MD *EVP_sha3_384(void);
-const EVP_MD *EVP_sha3_512(void);
-const EVP_MD *EVP_shake128(void);
-const EVP_MD *EVP_shake256(void);
-int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
-#endif
-
 #if !HAVE_OPENSSL_SHA3_SQUEEZE
 #undef HAVE_OPENSSL_SHA3_SQUEEZE
 #define HAVE_OPENSSL_SHA3_SQUEEZE 1
@@ -580,11 +569,11 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_sha256) \
     REQUIRED_FUNCTION(EVP_sha384) \
     REQUIRED_FUNCTION(EVP_sha512) \
-    LIGHTUP_FUNCTION(EVP_sha3_256) \
-    LIGHTUP_FUNCTION(EVP_sha3_384) \
-    LIGHTUP_FUNCTION(EVP_sha3_512) \
-    LIGHTUP_FUNCTION(EVP_shake128) \
-    LIGHTUP_FUNCTION(EVP_shake256) \
+    REQUIRED_FUNCTION(EVP_sha3_256) \
+    REQUIRED_FUNCTION(EVP_sha3_384) \
+    REQUIRED_FUNCTION(EVP_sha3_512) \
+    REQUIRED_FUNCTION(EVP_shake128) \
+    REQUIRED_FUNCTION(EVP_shake256) \
     LIGHTUP_FUNCTION(EVP_SIGNATURE_fetch) \
     LIGHTUP_FUNCTION(EVP_SIGNATURE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
@@ -1463,7 +1452,7 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define sk_X509_push(stack,value) OPENSSL_sk_push((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0), (const void*)(1 ? value : (X509*)0))
 
 // type-safe OPENSSL_sk_pop
-#define sk_X509_pop(stack) OPENSSL_sk_pop((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0))
+#define sk_X509_pop(stack) ((X509*)OPENSSL_sk_pop((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0)))
 
 // type-safe OPENSSL_sk_pop_free
 #define sk_X509_pop_free(stack, freefunc) OPENSSL_sk_pop_free((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0), (OPENSSL_sk_freefunc)(1 ? freefunc : (sk_X509_freefunc)0))

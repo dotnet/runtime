@@ -431,7 +431,7 @@ namespace Microsoft.Extensions.Options.Generators
                             {
                                 convertedValue = ConvertValue(value, formatProvider);
                             }
-                            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
                             {
                                 return false;
                             }
@@ -443,7 +443,7 @@ namespace Microsoft.Extensions.Options.Generators
                         {
                             convertedValue = ConvertValue(value, formatProvider);
                         }
-                        catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                        catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
                         {
                             return false;
                         }
