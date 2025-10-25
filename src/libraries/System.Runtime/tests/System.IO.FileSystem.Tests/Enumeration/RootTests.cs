@@ -30,6 +30,24 @@ namespace System.IO.Tests.Enumeration
             }
         }
 
+        private class OriginalRootDirectoryEnumerator : FileSystemEnumerator<string>
+        {
+            public string CapturedOriginalRootDirectory { get; private set; }
+
+            public OriginalRootDirectoryEnumerator(string directory, EnumerationOptions options)
+                : base(directory, options)
+            {
+            }
+
+            protected override bool ShouldIncludeEntry(ref FileSystemEntry entry) => true;
+
+            protected override string TransformEntry(ref FileSystemEntry entry)
+            {
+                CapturedOriginalRootDirectory = new string(entry.OriginalRootDirectory);
+                return entry.ToFullPath();
+            }
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Android, "Test could not work on android since accessing '/' isn't allowed.")]
         public void CanRecurseFromRoot()
@@ -53,6 +71,44 @@ namespace System.IO.Tests.Enumeration
                 }
 
                 Assert.NotNull(recursed.LastDirectory);
+            }
+        }
+
+        [Theory]
+        [InlineData("/")]
+        [InlineData("//")]
+        [InlineData("///")]
+        public void OriginalRootDirectoryPreservesInput(string trailingSeparators)
+        {
+            // OriginalRootDirectory should preserve the exact input path provided by the user,
+            // including trailing directory separators. This is important for backward compatibility with
+            // code that relies on the exact format of the original path when using FileSystemEnumerator directly.
+            // Note: This tests direct FileSystemEnumerator usage, not Directory.GetFiles which goes through
+            // NormalizeInputs and trims trailing spaces/periods.
+
+            DirectoryInfo testDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+            try
+            {
+                // Create a test file
+                string testFile = Path.Combine(testDir.FullName, "test.txt");
+                File.WriteAllText(testFile, "test");
+
+                string pathWithTrailingSeparators = testDir.FullName + trailingSeparators;
+
+                using (var enumerator = new OriginalRootDirectoryEnumerator(
+                    pathWithTrailingSeparators,
+                    new EnumerationOptions { RecurseSubdirectories = false }))
+                {
+                    if (enumerator.MoveNext())
+                    {
+                        // OriginalRootDirectory should match the input path exactly
+                        Assert.Equal(pathWithTrailingSeparators, enumerator.CapturedOriginalRootDirectory);
+                    }
+                }
+            }
+            finally
+            {
+                testDir.Delete(true);
             }
         }
     }

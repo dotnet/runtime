@@ -35,6 +35,54 @@ namespace System.IO.Enumeration
             if (directory.Contains('\0'))
                 throw new ArgumentException(SR.Argument_NullCharInPath, directory);
 
+#if WINDOWS
+            // Trim trailing whitespace and periods from directory path, but preserve directory separators.
+            // Windows normalizes trailing spaces and periods away when resolving paths, but if we don't
+            // trim them here, the returned file paths will contain trailing spaces/periods which causes
+            // issues with File.Exists and other file operations.
+            //
+            // Examples:
+            //   "C:\test "      → "C:\test"      (remove trailing space)
+            //   "C:\test."      → "C:\test"      (remove trailing period)
+            //   "C:\test\ "     → "C:\test\"     (preserve separator, remove space)
+            //   "C:\test\. "    → "C:\test\"     (preserve separator, remove period and space)
+            //   "C:\test\\ "    → "C:\test\\"    (preserve separators, remove space)
+            //
+            // Special cases we don't trim:
+            //   "."             → "."             (relative path reference)
+            //   ".."            → ".."            (parent directory reference)
+            //   " "             → " "             (only spaces - would result in empty)
+            //   "\\?\C:\test."  → "\\?\C:\test." (extended path syntax - no normalization)
+            //
+            // Algorithm: Trim trailing spaces/periods, but only if:
+            // 1. Result is non-empty
+            // 2. Path does not use extended syntax (\\?\ or \\.\)
+
+            // Don't trim paths using extended syntax (\\?\ or \\.\) as they explicitly disable normalization
+            // Check for extended path syntax on Windows
+            // Extended paths are paths like \\?\C:\ or \\.\device
+            // While paths like "//?/C:/" will work, they're treated the same as "\\.\" paths.
+            // Skipping of normalization will *only* occur if back slashes ('\') are used.
+            ReadOnlySpan<char> path = directory.AsSpan();
+            const int DevicePrefixLength = 4;
+            bool isExtended = path.Length >= DevicePrefixLength
+                && path[0] == '\\'
+                && (path[1] == '\\' || path[1] == '?')
+                && path[2] == '?'
+                && path[3] == '\\';
+
+            if (!isExtended)
+            {
+                string trimmed = directory.TrimEnd(' ', '.');
+
+                // Only apply the trim if it results in a non-empty string
+                if (trimmed.Length > 0)
+                {
+                    directory = trimmed;
+                }
+            }
+#endif
+
             // We always allowed breaking the passed ref directory and filter to be separated
             // any way the user wanted. Looking for "C:\foo\*.cs" could be passed as "C:\" and
             // "foo\*.cs" or "C:\foo" and "*.cs", for example. As such we need to combine and

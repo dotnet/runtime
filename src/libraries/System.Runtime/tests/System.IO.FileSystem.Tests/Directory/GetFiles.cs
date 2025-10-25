@@ -222,17 +222,16 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/113120")]
-        public void WindowsEnumerateDirectoryWithTrailingSpacePeriod(string dirName)
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
+        public void EnumerateDirectoryWithTrailingSpacePeriod(string dirName)
         {
             DirectoryInfo parentDir = Directory.CreateDirectory(GetTestFilePath());
             string problematicDirPath = Path.Combine(parentDir.FullName, dirName);
-            Directory.CreateDirectory(@"\\?\" + problematicDirPath);
+            Directory.CreateDirectory(problematicDirPath);
 
             string normalFileName = "normalfile.txt";
-            string filePath = Path.Combine(problematicDirPath, normalFileName);
+            string filePath = Path.Combine(Path.GetFullPath(problematicDirPath), normalFileName);
             File.Create(filePath).Dispose();
 
             string[] files = GetEntries(problematicDirPath);
