@@ -345,14 +345,15 @@ namespace System
                 if (TChar.CastToUInt32(*str) != '\0')
                 {
                     // We only hurt the failure case
-                    // This fix is for French or Kazakh cultures. Since a user cannot type 0xA0 or 0x202F as a
+                    // This fix is for French, Kazakh, and Ukrainian cultures. Since a user cannot type 0xA0 or 0x202F as a
                     // space character we use 0x20 space character instead to mean the same.
+                    // We also need to handle the reverse case where the input has 0xA0 or 0x202F and the format string has 0x20.
                     while (true)
                     {
                         uint cp = (p < pEnd) ? TChar.CastToUInt32(*p) : '\0';
                         uint val = TChar.CastToUInt32(*str);
 
-                        if ((cp != val) && !(IsSpaceReplacingChar(val) && (cp == '\u0020')))
+                        if ((cp != val) && !((IsSpaceReplacingChar(val) && (cp == '\u0020')) || (IsSpaceReplacingChar(cp) && (val == '\u0020'))))
                         {
                             break;
                         }
