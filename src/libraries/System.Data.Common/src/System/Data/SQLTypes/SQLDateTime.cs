@@ -5,6 +5,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Xml;
 using System.Xml.Schema;
@@ -53,8 +54,18 @@ namespace System.Data.SqlTypes
         private static ReadOnlySpan<int> DaysToMonth365 => [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
         private static ReadOnlySpan<int> DaysToMonth366 => [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366];
 
-        private static TimeSpan MinTimeSpan => new DateTime(1753, 1, 1).Subtract(BaseDate);
-        private static TimeSpan MaxTimeSpan => new DateTime(DateTimeMaxTicks).Subtract(BaseDate);
+        private static TimeSpan MinTimeSpan
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new DateTime(1753, 1, 1).Subtract(BaseDate);
+        }
+
+        private static TimeSpan MaxTimeSpan
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new DateTime(DateTimeMaxTicks).Subtract(BaseDate);
+        }
+
         private const string ISO8601_DateTimeFormat = "yyyy-MM-ddTHH:mm:ss.fff";
 
         // These formats are valid styles in SQL Server (style 9, 12, 13, 14)
