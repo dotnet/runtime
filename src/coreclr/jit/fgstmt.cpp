@@ -382,6 +382,64 @@ Statement* Compiler::fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAft
     return stmtLast;
 }
 
+void Compiler::fgInsertStmtListAtEnd(BasicBlock* block, Statement* stmtList)
+{
+    if (stmtList == nullptr)
+    {
+        return;
+    }
+
+    Statement* firstStmt = block->firstStmt();
+    if (firstStmt != nullptr)
+    {
+        Statement* lastStmt = firstStmt->GetPrevStmt();
+        noway_assert(lastStmt != nullptr && lastStmt->GetNextStmt() == nullptr);
+
+        // Append the statement after the last one.
+        Statement* stmtLast = stmtList->GetPrevStmt();
+        lastStmt->SetNextStmt(stmtList);
+        stmtList->SetPrevStmt(lastStmt);
+        firstStmt->SetPrevStmt(stmtLast);
+    }
+    else
+    {
+        // The block is completely empty.
+        block->bbStmtList = stmtList;
+    }
+}
+
+void Compiler::fgInsertStmtListBefore(BasicBlock* block, Statement* before, Statement* stmtList)
+{
+    if (stmtList == nullptr)
+    {
+        return;
+    }
+
+    assert(block->bbStmtList != nullptr);
+    Statement* stmtLast = stmtList->GetPrevStmt();
+
+    if (before == block->bbStmtList)
+    {
+        // We're inserting before the first statement in the block.
+        Statement* first = block->firstStmt();
+        Statement* last  = block->lastStmt();
+
+        stmtLast->SetNextStmt(first);
+        stmtList->SetPrevStmt(last);
+
+        block->bbStmtList = stmtList;
+        first->SetPrevStmt(stmtLast);
+    }
+    else
+    {
+        stmtLast->SetNextStmt(before);
+        stmtList->SetPrevStmt(before->GetPrevStmt());
+
+        stmtList->GetPrevStmt()->SetNextStmt(stmtList);
+        stmtLast->GetNextStmt()->SetPrevStmt(stmtLast);
+    }
+}
+
 /*****************************************************************************
  *
  *  Create a new statement from tree and wire the links up.
