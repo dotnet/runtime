@@ -2189,6 +2189,60 @@ namespace System.Diagnostics
         public string? Id => _activity.Id;
         public string OperationName => _activity.OperationName;
         public string DisplayName => _activity.DisplayName;
+
+        public KeyValuePair<string, object?>[] TagObjects
+        {
+            get
+            {
+                var tags = new List<KeyValuePair<string, object?>>();
+                foreach (var tag in _activity.TagObjects)
+                {
+                    tags.Add(tag);
+                }
+                return tags.ToArray();
+            }
+        }
+
+        public KeyValuePair<string, string?>[] Baggage
+        {
+            get
+            {
+                var baggage = new List<KeyValuePair<string, string?>>();
+                foreach (var item in _activity.Baggage)
+                {
+                    baggage.Add(item);
+                }
+                return baggage.ToArray();
+            }
+        }
+
+        public ActivityEvent[] Events
+        {
+            get
+            {
+                var events = new List<ActivityEvent>();
+                foreach (var evt in _activity.Events)
+                {
+                    events.Add(evt);
+                }
+                return events.ToArray();
+            }
+        }
+
+        public ActivityLink[] Links
+        {
+            get
+            {
+                var links = new List<ActivityLink>();
+                foreach (var link in _activity.Links)
+                {
+                    links.Add(link);
+                }
+                return links.ToArray();
+            }
+        }
+
+        public ActivityContext Context => _activity.Context;
         public ActivitySource Source => _activity.Source;
         public Activity? Parent => _activity.Parent;
         public string? ParentId => _activity.ParentId;
@@ -2203,61 +2257,5 @@ namespace System.Diagnostics
         public bool HasRemoteParent => _activity.HasRemoteParent;
         public ActivityStatusCode Status => _activity.Status;
         public string? StatusDescription => _activity.StatusDescription;
-
-        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public KeyValuePair<string, object?>[] Tags
-        {
-            get
-            {
-                var tags = new List<KeyValuePair<string, object?>>();
-                foreach (var tag in _activity.TagObjects)
-                {
-                    tags.Add(tag);
-                }
-                return tags.ToArray();
-            }
-        }
-
-        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public KeyValuePair<string, string?>[] Baggage
-        {
-            get
-            {
-                var baggage = new List<KeyValuePair<string, string?>>();
-                foreach (var item in _activity.Baggage)
-                {
-                    baggage.Add(item);
-                }
-                return baggage.ToArray();
-            }
-        }
-
-        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public ActivityEvent[] Events
-        {
-            get
-            {
-                var events = new List<ActivityEvent>();
-                foreach (var evt in _activity.Events)
-                {
-                    events.Add(evt);
-                }
-                return events.ToArray();
-            }
-        }
-
-        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public ActivityLink[] Links
-        {
-            get
-            {
-                var links = new List<ActivityLink>();
-                foreach (var link in _activity.Links)
-                {
-                    links.Add(link);
-                }
-                return links.ToArray();
-            }
-        }
     }
 }

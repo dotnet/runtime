@@ -2580,7 +2580,7 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(operationNameProp);
             Assert.Equal("TestOperation", operationNameProp.GetValue(proxy));
 
-            PropertyInfo? tagsProp = proxyType.GetProperty("Tags");
+            PropertyInfo? tagsProp = proxyType.GetProperty("TagObjects");
             Assert.NotNull(tagsProp);
             object? tags = tagsProp.GetValue(proxy);
             Assert.NotNull(tags);
