@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
             if (ret == IntPtr.Zero)
             {
                 string? message = Marshal.PtrToStringUTF8(Interop.Sys.GetLoadLibraryError());
-                errorTracker.TrackErrorMessage(message);
+                errorTracker.TrackErrorMessage(message ?? string.Empty);
             }
 
             return ret;
@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices
 #endif
             }
 
-            public void TrackErrorMessage(string? message)
+            public void TrackErrorMessage(string message)
             {
                 _errorMessage ??= Environment.NewLine;
                 if (!_errorMessage.Contains(message))
