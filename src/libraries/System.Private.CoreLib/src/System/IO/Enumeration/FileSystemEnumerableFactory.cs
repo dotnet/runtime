@@ -47,23 +47,19 @@ namespace System.IO.Enumeration
             //   "/tmp/test/. "  → "/tmp/test/"   (preserve separator, remove period and space)
             //   "/tmp/test// "  → "/tmp/test//"  (preserve separators, remove space)
             //
-            // Algorithm: Work backwards from the end:
-            // 1. Skip all trailing spaces and periods
-            // 2. Keep all trailing directory separators
-            // 3. Trim at the boundary
+            // Special cases we don't trim (would result in empty or meaningless path):
+            //   "."             → "."             (relative path reference)
+            //   ".."            → ".."            (parent directory reference)
+            //   " "             → " "             (only spaces)
+            //
+            // Algorithm: Trim trailing spaces/periods, but only if we end up with a non-empty result
 
-            int endIndex = directory.Length;
+            string trimmed = directory.TrimEnd(' ', '.');
 
-            // Skip trailing spaces and periods
-            while (endIndex > 0 && (directory[endIndex - 1] == ' ' || directory[endIndex - 1] == '.'))
+            // Only apply the trim if it results in a non-empty string
+            if (trimmed.Length > 0)
             {
-                endIndex--;
-            }
-
-            // If we found spaces/periods to trim, do so
-            if (endIndex < directory.Length)
-            {
-                directory = directory.Substring(0, endIndex);
+                directory = trimmed;
             }
 
             // We always allowed breaking the passed ref directory and filter to be separated
