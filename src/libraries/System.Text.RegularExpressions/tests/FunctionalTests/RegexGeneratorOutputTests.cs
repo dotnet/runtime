@@ -1193,5 +1193,29 @@ namespace System.Text.RegularExpressions.Tests
             // The actual pattern string should properly escape the newline for C#
             Assert.Contains("base.pattern = \"\\n\";", actual);
         }
+
+        [Fact]
+        public async Task ValidateCommentsInGeneratedCode()
+        {
+            string program = """
+                using System.Text.RegularExpressions;
+                partial class C
+                {
+                    [GeneratedRegex(@"(?x)
+                        ^           # Start of line
+                        \w+         # Word characters
+                        $           # End of line
+                    ")]
+                    public static partial Regex WithComments();
+                }
+                """;
+
+            string actual = await RegexGeneratorHelper.GenerateSourceText(program, allowUnsafe: true, checkOverflow: false);
+            
+            // Verify comments appear in the explanation section
+            Assert.Contains("// Start of line", actual);
+            Assert.Contains("// Word characters", actual);
+            Assert.Contains("// End of line", actual);
+        }
     }
 }

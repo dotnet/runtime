@@ -52,7 +52,10 @@ namespace System.Text.RegularExpressions
 
         private bool _ignoreNextParen; // flag to skip capturing a parentheses group
 
-        private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Hashtable caps, int capsize, Hashtable? capnames, Span<int> optionSpan)
+        private Dictionary<RegexNode, List<string>>? _nodeComments; // side-channel for storing comments associated with nodes
+        private List<string>? _pendingComments; // comments waiting to be associated with the next node
+
+        private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Hashtable caps, int capsize, Hashtable? capnames, Span<int> optionSpan, bool captureComments = false)
         {
             Debug.Assert(pattern != null, "Pattern must be set");
             Debug.Assert(culture != null, "Culture must be set");
@@ -79,6 +82,12 @@ namespace System.Text.RegularExpressions
             _capnumlist = null;
             _capnamelist = null;
             _ignoreNextParen = false;
+
+            if (captureComments)
+            {
+                _nodeComments = new Dictionary<RegexNode, List<string>>();
+                _pendingComments = new List<string>();
+            }
         }
 
         /// <summary>Gets the culture to use based on the specified options.</summary>
@@ -100,9 +109,9 @@ namespace System.Text.RegularExpressions
             return foundOptionsInPattern;
         }
 
-        public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
+        public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture, bool captureComments = false)
         {
-            using var parser = new RegexParser(pattern, options, culture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize]);
+            using var parser = new RegexParser(pattern, options, culture, new Hashtable(), 0, null, stackalloc int[OptionStackDefaultSize], captureComments);
 
             parser.CountCaptures(out _);
             parser.Reset(options);
@@ -130,7 +139,7 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            return new RegexTree(root, captureCount, parser._capnamelist?.ToArray(), parser._capnames!, sparseMapping, options, parser._hasIgnoreCaseBackreferenceNodes ? culture : null);
+            return new RegexTree(root, captureCount, parser._capnamelist?.ToArray(), parser._capnames!, sparseMapping, options, parser._hasIgnoreCaseBackreferenceNodes ? culture : null, parser._nodeComments);
         }
 
         /// <summary>This static call constructs a flat concatenation node given a replacement pattern.</summary>
@@ -330,6 +339,7 @@ namespace System.Text.RegularExpressions
                     if (isQuantifier)
                     {
                         _unit = RegexNode.CreateOneWithCaseConversion(_pattern[endpos - 1], _options, _culture, ref _caseBehavior);
+                        AttachCommentsToNode(_unit);
                     }
                 }
 
@@ -345,6 +355,7 @@ namespace System.Text.RegularExpressions
                         {
                             string setString = ScanCharClass((_options & RegexOptions.IgnoreCase) != 0, scanOnly: false)!.ToStringClass();
                             _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, setString);
+                            AttachCommentsToNode(_unit);
                         }
                         break;
 
@@ -352,6 +363,7 @@ namespace System.Text.RegularExpressions
                         _optionsStack.Append((int)_options);
                         if (ScanGroupOpen() is RegexNode grouper)
                         {
+                            AttachCommentsToNode(grouper);
                             PushGroup();
                             StartGroup(grouper);
                         }
@@ -388,20 +400,27 @@ namespace System.Text.RegularExpressions
                         }
 
                         _unit = ScanBackslash(scanOnly: false)!;
+                        if (_unit is not null)
+                        {
+                            AttachCommentsToNode(_unit);
+                        }
                         break;
 
                     case '^':
                         _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Bol : RegexNodeKind.Beginning, _options);
+                        AttachCommentsToNode(_unit);
                         break;
 
                     case '$':
                         _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
+                        AttachCommentsToNode(_unit);
                         break;
 
                     case '.':
                         _unit = (_options & RegexOptions.Singleline) != 0 ?
                             new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass) :
                             new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
+                        AttachCommentsToNode(_unit);
                         break;
 
                     case '{':
@@ -1048,19 +1067,35 @@ namespace System.Text.RegularExpressions
 
                 if ((_options & RegexOptions.IgnorePatternWhitespace) != 0 && _pos < _pattern.Length && _pattern[_pos] == '#')
                 {
+                    int commentStart = _pos + 1; // Skip the '#'
                     _pos = _pattern.IndexOf('\n', _pos);
                     if (_pos < 0)
                     {
                         _pos = _pattern.Length;
                     }
+
+                    if (_pendingComments is not null && commentStart < _pos)
+                    {
+                        string comment = _pattern.Substring(commentStart, _pos - commentStart).Trim();
+                        // Preserve even empty comments for visual separation
+                        _pendingComments.Add(comment);
+                    }
                 }
                 else if (_pos + 2 < _pattern.Length && _pattern[_pos + 2] == '#' && _pattern[_pos + 1] == '?' && _pattern[_pos] == '(')
                 {
+                    int commentStart = _pos + 3; // Skip '(?#'
                     _pos = _pattern.IndexOf(')', _pos);
                     if (_pos < 0)
                     {
                         _pos = _pattern.Length;
                         throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
+                    }
+
+                    if (_pendingComments is not null && commentStart < _pos)
+                    {
+                        string comment = _pattern.Substring(commentStart, _pos - commentStart).Trim();
+                        // Preserve even empty comments for visual separation
+                        _pendingComments.Add(comment);
                     }
 
                     _pos++;
@@ -1069,6 +1104,22 @@ namespace System.Text.RegularExpressions
                 {
                     break;
                 }
+            }
+        }
+
+        /// <summary>Attaches any pending comments to the specified node.</summary>
+        private void AttachCommentsToNode(RegexNode node)
+        {
+            if (_pendingComments is not null && _pendingComments.Count > 0)
+            {
+                if (!_nodeComments!.TryGetValue(node, out List<string>? comments))
+                {
+                    comments = new List<string>();
+                    _nodeComments[node] = comments;
+                }
+
+                comments.AddRange(_pendingComments);
+                _pendingComments.Clear();
             }
         }
 
