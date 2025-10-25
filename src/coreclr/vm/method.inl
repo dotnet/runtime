@@ -135,10 +135,10 @@ inline bool MethodDesc::IsILStub()
 
 // This method is intended to identify runtime defined methods that don't have a corresponding Metadata or
 // LCG definition so they can be filtered from diagnostic introspection (stacktraces, code viewing, stepping, etc). 
-// Partly this is this is a user experience consideration to preserve the abstraction users would expect based on
+// Partly this is a user experience consideration to preserve the abstraction users would expect based on
 // source code and assembly contents. Partly it is also a technical limitation that many parts of
 // diagnostics don't know how to work with methods that aren't backed by metadata and IL in a module.
-// Currently this method only triages methods whose code was generated from IL. We rely on filtering that occurs implictly
+// Currently this method only triages methods whose code was generated from IL. We rely on filtering that occurs implicitly
 // elsewhere to avoid including other kinds of stubs like prestubs or unboxing stubs.
 inline bool MethodDesc::IsDiagnosticsHidden()
 {
