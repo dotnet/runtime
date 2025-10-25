@@ -116,6 +116,7 @@ PROBE_FRAME_SIZE    field 0
         ;; Fix the stack by restoring the original return address
         ;;
         ldr         lr, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        DCD     0xD50320FF  ;; xpaclri instruction in binary to avoid error while compiling with non-PAC enabled compilers
 
         ;;
         ;; Clear hijack state

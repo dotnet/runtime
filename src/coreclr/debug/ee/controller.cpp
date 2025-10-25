@@ -21,6 +21,10 @@
 #include "../../vm/methoditer.h"
 #include "../../vm/tailcallhelp.h"
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // TARGET_ARM64
+
 const char *GetTType( TraceType tt);
 
 #define IsSingleStep(exception) ((exception) == EXCEPTION_SINGLE_STEP)
@@ -5836,6 +5840,11 @@ static bool IsTailCall(const BYTE * ip, ControllerStackInfo* info, TailCallFunct
     LPVOID retAddr = (LPVOID)GetControlPC(&info->GetReturnFrame().registers);
     TailCallTls* tls = GetThread()->GetTailCallTls();
     LPVOID tailCallAwareRetAddr = tls->GetFrame()->TailCallAwareReturnAddress;
+
+#if defined(TARGET_ARM64)
+    retAddr = PacStripPtr(retAddr);
+    tailCallAwareRetAddr = PacStripPtr(tailCallAwareRetAddr);
+#endif // TARGET_ARM64
 
     LOG((LF_CORDB,LL_INFO1000, "ITCTR: ret addr is %p, tailcall aware ret addr is %p\n",
         retAddr, tailCallAwareRetAddr));

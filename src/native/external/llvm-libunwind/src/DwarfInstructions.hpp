@@ -354,7 +354,18 @@ int DwarfInstructions<A, R>::stepWithDwarf(A &addressSpace, pint_t pc,
           if (cieInfo.addressesSignedWithBKey)
             asm("hint 0xe" : "+r"(x17) : "r"(x16)); // autib1716
           else
-            asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+          {
+            //TODO-PAC: Restore the authenticating with A key when signing with SP is in place.
+            //asm("hint 0xc" : "+r"(x17) : "r"(x16)); // autia1716
+            __asm__ __volatile__ ("mov x9, lr\n\t"
+                                  "mov lr, %0\n\t"
+                                  "xpaclri\n\t"
+                                  "mov %0, lr\n\t"
+                                  "mov lr, x9"
+                                  : "+r"(x17)
+                                  :
+                                  : "x9", "lr"); // strip PAC
+          }
         }
         returnAddress = x17;
 #endif
