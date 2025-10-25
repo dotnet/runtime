@@ -69,10 +69,11 @@ namespace System
             return null;
         }
 
-        private static void PopulateAllSystemTimeZones(CachedData cachedData)
+        private static Dictionary<string, TimeZoneInfo> PopulateAllSystemTimeZones(CachedData cachedData)
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 
+            // Ensure _systemTimeZones is initialized. TryGetTimeZone with Invariant mode depend on that.
             cachedData._systemTimeZones ??= new Dictionary<string, TimeZoneInfo>(StringComparer.OrdinalIgnoreCase)
             {
                 { UtcId, s_utcTimeZone }
@@ -80,7 +81,7 @@ namespace System
 
             if (Invariant)
             {
-                return;
+                return cachedData._systemTimeZones;
             }
 
             using (RegistryKey? reg = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive, writable: false))
@@ -89,10 +90,13 @@ namespace System
                 {
                     foreach (string keyName in reg.GetSubKeyNames())
                     {
-                        TryGetTimeZone(keyName, false, out _, out _, cachedData);  // populate the cache
+                        TryGetTimeZone(keyName, false, out _, out _, cachedData); // should update cache._systemTimeZones
                     }
                 }
             }
+
+            // On Windows, there is no filtered list as _systemTimeZones always not having any duplicates.
+            return cachedData._systemTimeZones;
         }
 
         private static string? GetAlternativeId(string id, out bool idIsIana)
