@@ -773,6 +773,13 @@ namespace Internal.JitInterface
                     return;
                 }
 
+                if (MethodBeingCompiled.IsAsync)
+                {
+                    if (logger.IsVerbose)
+                        logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it is an async method");
+                    return;
+                }
+
                 if (MethodBeingCompiled.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {
                     if ((methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL && _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && ecmaMethod.Module == ecmaMethod.Context.SystemModule) ||
