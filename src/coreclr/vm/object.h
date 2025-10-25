@@ -15,7 +15,6 @@
 #include "util.hpp"
 #include "syncblk.h"
 #include "gcdesc.h"
-#include "specialstatics.h"
 #include "sstring.h"
 #include "daccess.h"
 #include "fcall.h"

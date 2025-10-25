@@ -1764,16 +1764,18 @@ namespace System.Diagnostics.Tracing
                 0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
             ];
 
-            byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
-            Sha1ForNonSecretPurposes hash = default;
-            hash.Start();
-            hash.Append(namespaceBytes);
-            hash.Append(bytes);
-            Array.Resize(ref bytes, 16);
-            hash.Finish(bytes);
+            int nameByteCount = Encoding.BigEndianUnicode.GetByteCount(name);
+            int totalLength = namespaceBytes.Length + nameByteCount;
+            Span<byte> source = totalLength <= 256 ? stackalloc byte[totalLength] : new byte[totalLength];
+
+            namespaceBytes.CopyTo(source);
+            Encoding.BigEndianUnicode.GetBytes(name, source.Slice(namespaceBytes.Length));
+
+            Span<byte> bytes = stackalloc byte[20];
+            Sha1ForNonSecretPurposes.HashData(source, bytes);
 
             bytes[7] = unchecked((byte)((bytes[7] & 0x0F) | 0x50));    // Set high 4 bits of octet 7 to 5, as per RFC 4122
-            return new Guid(bytes);
+            return new Guid(bytes.Slice(0, 16));
         }
 
         private static unsafe void DecodeObjects(object?[] decodedObjects, Type[] parameterTypes, EventData* data)

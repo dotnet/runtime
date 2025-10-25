@@ -440,6 +440,11 @@ public:
 
     bool    RuntimeAsync()                 const { LIMITED_METHOD_CONTRACT; return runtimeAsync; }
 
+#ifdef FEATURE_INTERPRETER
+    bool    EnableInterpreter()            const { LIMITED_METHOD_CONTRACT; return enableInterpreter; }
+#endif
+    bool    EnableHWIntrinsic()            const { LIMITED_METHOD_CONTRACT; return enableHWIntrinsic; }
+
 private: //----------------------------------------------------------------
 
     bool fInited;                   // have we synced to the registry at least once?
@@ -608,6 +613,12 @@ private: //----------------------------------------------------------------
 
 #if defined(FEATURE_READYTORUN)
     bool fReadyToRun;
+#endif
+
+    bool enableHWIntrinsic;
+
+#ifdef FEATURE_INTERPRETER
+    bool enableInterpreter;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)

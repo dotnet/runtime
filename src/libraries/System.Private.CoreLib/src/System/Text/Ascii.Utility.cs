@@ -71,8 +71,8 @@ namespace System.Text
             }
 
             // extractedBits[i] = (value[i] >> 7) & (1 << (12 * (i % 2)));
-            Vector128<byte> mostSignificantBitIsSet = AdvSimd.ShiftRightArithmetic(value.AsSByte(), 7).AsByte();
-            Vector128<byte> extractedBits = AdvSimd.And(mostSignificantBitIsSet, bitmask);
+            Vector128<byte> mostSignificantBitIsSet = (value.AsSByte() >> 7).AsByte();
+            Vector128<byte> extractedBits = mostSignificantBitIsSet & bitmask;
 
             // collapse mask to lower bits
             extractedBits = AdvSimd.Arm64.AddPairwise(extractedBits, extractedBits);

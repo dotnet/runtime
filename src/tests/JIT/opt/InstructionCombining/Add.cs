@@ -135,6 +135,106 @@ namespace TestAdd
                 fail = true;
             }
 
+            if (AddGtZero(-3, 4) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddGtZero(3, -3) != 0)
+            {
+                fail = true;
+            }
+
+            if (AddGtZero(-5, -10) != 0)
+            {
+                fail = true;
+            }
+
+            if (AddGtZero(int.MaxValue, 1) != 0)
+            {
+                fail = true;
+            }
+
+            if (AddGtZero(int.MinValue, -1) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddGeZero(1, 1) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddGeZero(0, 0) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddGeZero(-1, -1) != 0)
+            {
+                fail = true;
+            }
+
+            if (AddGeZero(int.MaxValue, 1) != 0)
+            {
+                fail = true;
+            }
+
+            if (AddGeZero(int.MinValue, -1) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddLtZero(1, 1) != 0)
+            {
+                fail = true;
+            }
+
+            if (AddLtZero(0, 0) != 0)
+            {
+                fail = true;
+            }
+
+            if (AddLtZero(-1, -1) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddLtZero(int.MaxValue, 1) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddLtZero(int.MinValue, -1) != 0)
+            {
+                fail = true;
+            }
+
+            if (AddLeZero(1, 1) != 0)
+            {
+                fail = true;
+            }
+
+            if (AddLeZero(0, 0) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddLeZero(-1, -1) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddLeZero(int.MaxValue, 1) != 1)
+            {
+                fail = true;
+            }
+
+            if (AddLeZero(int.MinValue, -1) != 0)
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -335,6 +435,49 @@ namespace TestAdd
             //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: adds {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
             return (a + b == 0) | (c + d == 0);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AddGtZero(int a, int b) {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, gt
+            if (a + b > 0) {
+                return 1;
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AddGeZero(int a, int b) {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, ge
+            if (a + b >= 0) {
+                return 1;
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AddLtZero(int a, int b) {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}}, #31
+            if (a + b < 0) {
+                return 1;
+            }
+            return 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int AddLeZero(int a, int b) {
+            //ARM64-FULL-LINE: add {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
+            //ARM64-FULL-LINE: cset {{x[0-9]+}}, le
+            if (a + b <= 0) {
+                return 1;
+            }
+            return 0;
         }
     }
 }
