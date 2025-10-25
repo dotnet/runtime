@@ -2178,41 +2178,29 @@ namespace System.Diagnostics
         }
     }
 
-    internal sealed class ActivityDebuggerProxy
+    internal sealed class ActivityDebuggerProxy(Activity activity)
     {
-        private readonly Activity _activity;
-
-        public ActivityDebuggerProxy(Activity activity)
-        {
-            _activity = activity;
-        }
-
-        public string? Id => _activity.Id;
-        public string OperationName => _activity.OperationName;
-        public string DisplayName => _activity.DisplayName;
-
-        public KeyValuePair<string, object?>[] TagObjects => _activity.TagObjects.ToArray();
-
-        public KeyValuePair<string, string?>[] Baggage => _activity.Baggage.ToArray();
-
-        public ActivityEvent[] Events => _activity.Events.ToArray();
-
-        public ActivityLink[] Links => _activity.Links.ToArray();
-
-        public ActivityContext Context => _activity.Context;
-        public ActivitySource Source => _activity.Source;
-        public Activity? Parent => _activity.Parent;
-        public string? ParentId => _activity.ParentId;
-        public ActivityKind Kind => _activity.Kind;
-        public DateTime StartTimeUtc => _activity.StartTimeUtc;
-        public TimeSpan Duration => _activity.Duration;
-        public ActivityTraceId TraceId => _activity.TraceId;
-        public ActivitySpanId SpanId => _activity.SpanId;
-        public ActivitySpanId ParentSpanId => _activity.ParentSpanId;
-        public string? TraceStateString => _activity.TraceStateString;
-        public ActivityTraceFlags ActivityTraceFlags => _activity.ActivityTraceFlags;
-        public bool HasRemoteParent => _activity.HasRemoteParent;
-        public ActivityStatusCode Status => _activity.Status;
-        public string? StatusDescription => _activity.StatusDescription;
+        public ActivityTraceFlags ActivityTraceFlags => activity.ActivityTraceFlags;
+        public KeyValuePair<string, string?>[] Baggage => activity.Baggage.ToArray();
+        public ActivityContext Context => activity.Context;
+        public string DisplayName => activity.DisplayName;
+        public TimeSpan Duration => activity.Duration;
+        public ActivityEvent[] Events => activity.Events.ToArray();
+        public bool HasRemoteParent => activity.HasRemoteParent;
+        public string? Id => activity.Id;
+        public ActivityKind Kind => activity.Kind;
+        public ActivityLink[] Links => activity.Links.ToArray();
+        public string OperationName => activity.OperationName;
+        public Activity? Parent => activity.Parent;
+        public string? ParentId => activity.ParentId;
+        public ActivitySpanId ParentSpanId => activity.ParentSpanId;
+        public ActivitySource Source => activity.Source;
+        public ActivitySpanId SpanId => activity.SpanId;
+        public DateTime StartTimeUtc => activity.StartTimeUtc;
+        public ActivityStatusCode Status => activity.Status;
+        public string? StatusDescription => activity.StatusDescription;
+        public KeyValuePair<string, object?>[] TagObjects => activity.TagObjects.ToArray();
+        public ActivityTraceId TraceId => activity.TraceId;
+        public string? TraceStateString => activity.TraceStateString;
     }
 }
