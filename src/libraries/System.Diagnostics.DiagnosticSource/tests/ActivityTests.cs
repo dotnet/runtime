@@ -2596,9 +2596,7 @@ namespace System.Diagnostics.Tests
             ActivityContext context = new ActivityContext(traceId, spanId, ActivityTraceFlags.Recorded);
             ActivityLink link = new ActivityLink(context);
 
-            Type type = link.GetType();
-            DebuggerDisplayAttribute? attr = type.GetCustomAttribute<DebuggerDisplayAttribute>();
-            Assert.NotNull(attr);
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(link);
         }
 
         [Fact]
