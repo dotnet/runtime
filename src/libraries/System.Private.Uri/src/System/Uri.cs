@@ -1319,47 +1319,38 @@ namespace System
             }
 
             int end = name.Length;
-            unsafe
+            if (name.StartsWith('[') && name.EndsWith(']'))
             {
-                fixed (char* fixedName = name)
-                {
-                    if (name.StartsWith('[') && name.EndsWith(']'))
-                    {
-                        // we require that _entire_ name is recognized as ipv6 address
-                        if (IPv6AddressHelper.IsValid(fixedName, 1, ref end) && end == name.Length)
-                        {
-                            return UriHostNameType.IPv6;
-                        }
-                    }
-
-                    end = name.Length;
-                    if (IPv4AddressHelper.IsValid(fixedName, 0, ref end, false, false, false) && end == name.Length)
-                    {
-                        return UriHostNameType.IPv4;
-                    }
-                }
-
-                if (DomainNameHelper.IsValid(name, iri: false, notImplicitFile: false, out int length) && length == name.Length)
-                {
-                    return UriHostNameType.Dns;
-                }
-
-                if (DomainNameHelper.IsValid(name, iri: true, notImplicitFile: false, out length) && length == name.Length)
-                {
-                    return UriHostNameType.Dns;
-                }
-
-                //This checks the form without []
-                end = name.Length + 2;
                 // we require that _entire_ name is recognized as ipv6 address
-                name = "[" + name + "]";
-                fixed (char* newFixedName = name)
+                if (IPv6AddressHelper.IsValid(name.AsSpan(1), ref end) && end == name.Length)
                 {
-                    if (IPv6AddressHelper.IsValid(newFixedName, 1, ref end) && end == name.Length)
-                    {
-                        return UriHostNameType.IPv6;
-                    }
+                    return UriHostNameType.IPv6;
                 }
+            }
+
+            end = name.Length;
+            if (IPv4AddressHelper.IsValid(name.AsSpan(), ref end, false, false, false) && end == name.Length)
+            {
+                return UriHostNameType.IPv4;
+            }
+
+            if (DomainNameHelper.IsValid(name, iri: false, notImplicitFile: false, out int length) && length == name.Length)
+            {
+                return UriHostNameType.Dns;
+            }
+
+            if (DomainNameHelper.IsValid(name, iri: true, notImplicitFile: false, out length) && length == name.Length)
+            {
+                return UriHostNameType.Dns;
+            }
+
+            //This checks the form without []
+            end = name.Length + 2;
+            // we require that _entire_ name is recognized as ipv6 address
+            name = "[" + name + "]";
+            if (IPv6AddressHelper.IsValid(name.AsSpan(1), ref end) && end == name.Length)
+            {
+                return UriHostNameType.IPv6;
             }
             return UriHostNameType.Unknown;
         }
@@ -3886,7 +3877,7 @@ namespace System
             }
 
             if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host) &&
-                IPv6AddressHelper.IsValid(pString, start + 1, ref end))
+                IPv6AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start + 1, end - (start + 1)), ref end))
             {
                 if (end < length && pString[end] is not (':' or '/' or '?' or '#'))
                 {
@@ -3904,7 +3895,7 @@ namespace System
                 }
             }
             else if (char.IsAsciiDigit(ch) && syntax.InFact(UriSyntaxFlags.AllowIPv4Host) &&
-                IPv4AddressHelper.IsValid(pString, start, ref end, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
+                IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), ref end, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
             {
                 flags |= Flags.IPv4HostType;
 

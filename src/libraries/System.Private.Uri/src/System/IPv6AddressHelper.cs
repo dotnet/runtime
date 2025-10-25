@@ -144,8 +144,9 @@ namespace System.Net
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        private static unsafe bool InternalIsValid(char* name, int start, ref int end, bool validateStrictAddress)
+        private static bool InternalIsValid(ReadOnlySpan<char> name, ref int end, bool validateStrictAddress)
         {
+            int start = 0;
             int sequenceCount = 0;
             int sequenceLength = 0;
             bool haveCompressor = false;
@@ -244,7 +245,7 @@ namespace System.Net
                             }
 
                             i = end;
-                            if (!IPv4AddressHelper.IsValid(name, lastSequence, ref i, true, false, false))
+                            if (!IPv4AddressHelper.IsValid(name.Slice(lastSequence), ref i, true, false, false))
                             {
                                 return false;
                             }
@@ -321,9 +322,9 @@ namespace System.Net
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
 
-        internal static unsafe bool IsValid(char* name, int start, ref int end)
+        internal static bool IsValid(ReadOnlySpan<char> name, ref int end)
         {
-            return InternalIsValid(name, start, ref end, false);
+            return InternalIsValid(name, ref end, false);
         }
     }
 }

@@ -97,17 +97,17 @@ namespace System.Net
         //
 
         //Remark: MUST NOT be used unless all input indexes are verified and trusted.
-        internal static unsafe bool IsValid<TChar>(TChar* name, int start, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+        internal static bool IsValid<TChar>(ReadOnlySpan<TChar> name, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // IPv6 can only have canonical IPv4 embedded. Unknown schemes will not attempt parsing of non-canonical IPv4 addresses.
             if (allowIPv6 || unknownScheme)
             {
-                return IsValidCanonical(name, start, ref end, allowIPv6, notImplicitFile);
+                return IsValidCanonical(name, ref end, allowIPv6, notImplicitFile);
             }
             else
             {
-                return ParseNonCanonical(name, start, ref end, notImplicitFile) != Invalid;
+                return ParseNonCanonical(name, ref end, notImplicitFile) != Invalid;
             }
         }
 
@@ -124,11 +124,12 @@ namespace System.Net
         //                 / "2" %x30-34 DIGIT     ; 200-249
         //                 / "25" %x30-35          ; 250-255
         //
-        internal static unsafe bool IsValidCanonical<TChar>(TChar* name, int start, ref int end, bool allowIPv6, bool notImplicitFile)
+        internal static bool IsValidCanonical<TChar>(ReadOnlySpan<TChar> name, ref int end, bool allowIPv6, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
+            int start = 0;
             int dots = 0;
             long number = 0;
             bool haveNumber = false;
@@ -210,7 +211,7 @@ namespace System.Net
         // Return Invalid (-1) for failures.
         // If the address has less than three dots, only the rightmost section is assumed to contain the combined value for
         // the missing sections: 0xFF00FFFF == 0xFF.0x00.0xFF.0xFF == 0xFF.0xFFFF
-        internal static unsafe long ParseNonCanonical<TChar>(TChar* name, int start, ref int end, bool notImplicitFile)
+        internal static long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, ref int end, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
@@ -223,7 +224,7 @@ namespace System.Net
 
             // Parse one dotted section at a time
             int dotCount = 0; // Limit 3
-            int current = start;
+            int current = 0;
 
             for (; current < end; current++)
             {
