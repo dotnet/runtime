@@ -461,7 +461,10 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         if (newCapacity > prevCapacity)
         {
             InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
-            memcpy(newa, from->ppOutBBs, from->outCount * sizeof(InterpBasicBlock*));
+            if (from->outCount != 0) 
+            {
+                memcpy(newa, from->ppOutBBs, from->outCount * sizeof(InterpBasicBlock*));
+            }
             from->ppOutBBs = newa;
         }
         from->ppOutBBs [from->outCount] = to;
@@ -483,7 +486,9 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         int newCapacity = GetBBLinksCapacity(to->inCount + 1);
         if (newCapacity > prevCapacity) {
             InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
-            memcpy(newa, to->ppInBBs, to->inCount * sizeof(InterpBasicBlock*));
+            if (to->inCount != 0) {
+                memcpy(newa, to->ppInBBs, to->inCount * sizeof(InterpBasicBlock*));
+            }
             to->ppInBBs = newa;
         }
         to->ppInBBs [to->inCount] = from;
@@ -5300,7 +5305,10 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         // We need to realloc the IL code buffer to hold the extra opcodes
 
         uint8_t* newILCode = (uint8_t*)AllocMemPool(newILCodeSize);
-        memcpy(newILCode, m_pILCode, m_ILCodeSize);
+        if (m_ILCodeSize != 0)
+        {
+            memcpy(newILCode, m_pILCode, m_ILCodeSize);
+        }
         memcpy(newILCode + m_synchronizedFinallyStartOffset, opCodesForSynchronizedMethodFinally, sizeof(opCodesForSynchronizedMethodFinally));
         memcpy(newILCode + m_synchronizedPostFinallyOffset, opCodesForSynchronizedMethodEpilog, sizeof(opCodesForSynchronizedMethodEpilog));
         m_pILCode = newILCode;
@@ -5512,7 +5520,10 @@ retry_emit:
                 {
                     MergeStackTypeInfo(m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight);
                     // This is relevant only for copying the vars associated with the values on the stack
-                    memcpy(m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    if (pNewBB->stackHeight != 0)
+                    {
+                        memcpy(m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    }
                     m_pStackPointer = m_pStackBase + pNewBB->stackHeight;
                 }
                 else
@@ -5527,7 +5538,10 @@ retry_emit:
                 if (pNewBB->stackHeight >= 0)
                 {
                     // This is relevant only for copying the vars associated with the values on the stack
-                    memcpy (m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    if (pNewBB->stackHeight != 0)
+                    {
+                        memcpy (m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    }
                     m_pStackPointer = m_pStackBase + pNewBB->stackHeight;
                     pNewBB->emitState = BBStateEmitting;
                     emittedBBlocks = true;

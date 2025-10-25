@@ -3678,7 +3678,10 @@ VOID    MethodTableBuilder::AllocateWorkingSlotTables()
 
     // Allocate a FieldDesc* for each field
     bmtMFDescs->ppFieldDescList = new (GetStackingAllocator()) FieldDesc*[bmtMetaData->cFields];
-    ZeroMemory(bmtMFDescs->ppFieldDescList, bmtMetaData->cFields * sizeof(FieldDesc *));
+    if (bmtMetaData->cFields != 0)
+    {
+        ZeroMemory(bmtMFDescs->ppFieldDescList, bmtMetaData->cFields * sizeof(FieldDesc *));
+    }
 
     // Create a temporary function table (we don't know how large the vtable will be until the very end,
     // since we don't yet know how many declared methods are overrides vs. newslots).
