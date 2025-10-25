@@ -12,7 +12,7 @@ namespace System
 {
     internal static partial class Number
     {
-        private const int CharStackBufferSize = 32;
+        internal const int CharStackBufferSize = 32;
 
         private const int DefaultPrecisionExponentialFormat = 6;
 
@@ -950,7 +950,11 @@ namespace System
             }
 
             TChar* digits = stackalloc TChar[MaxUInt32DecDigits];
+#if !SYSTEM_PRIVATE_CORELIB
             TChar* p = UInt32ToDecChars(digits + MaxUInt32DecDigits, (uint)value, minDigits);
+#else
+            TChar* p = NumberFormat<TChar>.UInt32ToDecChars(digits + MaxUInt32DecDigits, (uint)value, minDigits);
+#endif
             vlb.Append(new ReadOnlySpan<TChar>(p, (int)(digits + MaxUInt32DecDigits - p)));
         }
 

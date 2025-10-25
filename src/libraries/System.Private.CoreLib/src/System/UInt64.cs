@@ -127,13 +127,13 @@ namespace System
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatUInt64(m_value, format, provider, destination, out charsWritten);
+            return NumberFormat<char>.TryFormatUInt64(m_value, format, provider, destination, out charsWritten);
         }
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatUInt64(m_value, format, provider, utf8Destination, out bytesWritten);
+            return NumberFormat<byte>.TryFormatUInt64(m_value, format, provider, utf8Destination, out bytesWritten);
         }
 
         public static ulong Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);

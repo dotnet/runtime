@@ -117,13 +117,13 @@ namespace System
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatInt128(this, format, provider, destination, out charsWritten);
+            return NumberFormat<char>.TryFormatInt128(this, format, provider, destination, out charsWritten);
         }
 
         /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
         public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatInt128(this, format, provider, utf8Destination, out bytesWritten);
+            return NumberFormat<byte>.TryFormatInt128(this, format, provider, utf8Destination, out bytesWritten);
         }
 
         public static Int128 Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
