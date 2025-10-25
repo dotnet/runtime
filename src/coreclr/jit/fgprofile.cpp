@@ -2624,6 +2624,20 @@ PhaseStatus Compiler::fgInstrumentMethod()
             JITDUMP("Inlinee instrumentation disabled by config\n");
             return PhaseStatus::MODIFIED_NOTHING;
         }
+
+        const InlineIRResult& result = impInlineInfo->inlineCandidateInfo->result;
+
+        // If there's a retExpr but no substBB, we assume the retExpr is a temp
+        // and so not interesting to instrumentation.
+        //
+        if (result.substBB != nullptr)
+        {
+            assert(result.substExpr != nullptr);
+            retBB = result.substBB;
+
+            tempInlineeReturnStmt = fgNewStmtAtEnd(retBB, result.substExpr);
+            JITDUMP("Temporarily adding ret expr [%06u] to " FMT_BB "\n", dspTreeID(result.substExpr), retBB->bbNum);
+        }
     }
 
     PhaseStatus status = fgInstrumentMethodCore();

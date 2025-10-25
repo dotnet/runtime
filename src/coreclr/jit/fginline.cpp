@@ -204,11 +204,11 @@ bool Compiler::TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, i
 
 class InlineAndDevirtualizeWalker : public GenTreeVisitor<InlineAndDevirtualizeWalker>
 {
-    bool m_madeChanges = false;
-    BasicBlock* m_block = nullptr;
-    Statement* m_statement = nullptr;
-    BasicBlock* m_nextBlock = nullptr;
-    Statement* m_nextStatement = nullptr;
+    bool        m_madeChanges   = false;
+    BasicBlock* m_block         = nullptr;
+    Statement*  m_statement     = nullptr;
+    BasicBlock* m_nextBlock     = nullptr;
+    Statement*  m_nextStatement = nullptr;
 
 
 public:
@@ -241,10 +241,10 @@ public:
 
     void VisitStatement(BasicBlock* block, Statement* statement)
     {
-        m_nextBlock = nullptr;
+        m_nextBlock     = nullptr;
         m_nextStatement = nullptr;
-        m_block = block;
-        m_statement = statement;
+        m_block         = block;
+        m_statement     = statement;
         WalkTree(statement->GetRootNodePointer(), nullptr);
     }
 
@@ -295,7 +295,7 @@ private:
 
         InlineResult inlineResult(m_compiler, call, call->gtInlineCandidateInfo->inlinersContext, "TryInline");
 
-        m_compiler->compCurBB = m_block;
+        m_compiler->compCurBB   = m_block;
         m_compiler->fgMorphStmt = m_statement;
 
         InlineInfo inlineInfo{};
@@ -327,10 +327,11 @@ private:
 
         JITDUMP("Splitting is required\n");
         BasicBlock* callBlock = m_compiler->compCurBB;
-        Statement* callStmt = m_compiler->fgMorphStmt;
-        Statement* newStmt = nullptr;
-        GenTree** use2 = nullptr;
-        m_compiler->gtSplitTree(callBlock, callStmt, call, &newStmt, &use2, /* includeOperands */ false, /* early */ true);
+        Statement*  callStmt  = m_compiler->fgMorphStmt;
+        Statement*  newStmt   = nullptr;
+        GenTree**   use2      = nullptr;
+        m_compiler->gtSplitTree(callBlock, callStmt, call, &newStmt, &use2, /* includeOperands */ false,
+                                /* early */ true);
         assert(use2 == use);
 
         JITDUMP("After split:\n");
@@ -346,14 +347,15 @@ private:
 
         inlineInfo.setupStatements.InsertIntoBlockBefore(callBlock, callStmt);
 
-        GenTree* substExpr = call->gtInlineCandidateInfo->result.substExpr;
+        GenTree* substExpr     = call->gtInlineCandidateInfo->result.substExpr;
         auto     getComplexity = [](GenTree* tree) {
             return 1;
         };
-        if ((substExpr != nullptr) && substExpr->IsValue() && m_compiler->gtComplexityExceeds(substExpr, 16, getComplexity))
+        if ((substExpr != nullptr) && substExpr->IsValue() &&
+            m_compiler->gtComplexityExceeds(substExpr, 16, getComplexity))
         {
             JITDUMP("Substitution expression is complex so spilling it to its own statement\n");
-            unsigned lclNum = m_compiler->lvaGrabTemp(false DEBUGARG("Complex inlinee substitution expression"));
+            unsigned   lclNum    = m_compiler->lvaGrabTemp(false DEBUGARG("Complex inlinee substitution expression"));
             Statement* storeTemp = m_compiler->gtNewStmt(m_compiler->gtNewTempStore(lclNum, substExpr));
             DISPSTMT(storeTemp);
             inlineInfo.teardownStatements.Append(storeTemp);
@@ -387,13 +389,13 @@ private:
 
         if (InsertMidBlock(inlineInfo, callBlock, callStmt))
         {
-            m_nextBlock = callBlock;
+            m_nextBlock     = callBlock;
             m_nextStatement = predStmt == nullptr ? callBlock->firstStmt() : predStmt->GetNextStmt();
             return true;
         }
 
-        BasicBlock* continueBlock = m_compiler->fgSplitBlockBeforeStatement(callBlock, callStmt);
-        unsigned const baseBBNum = m_compiler->fgBBNumMax;
+        BasicBlock*    continueBlock = m_compiler->fgSplitBlockBeforeStatement(callBlock, callStmt);
+        unsigned const baseBBNum     = m_compiler->fgBBNumMax;
 
         JITDUMP("split " FMT_BB " after the inlinee call site; after portion is now " FMT_BB "\n", callBlock->bbNum,
                 continueBlock->bbNum);
@@ -504,9 +506,9 @@ private:
             //
             for (unsigned XTnum = 0; XTnum < inlineeRegionCount; XTnum++)
             {
-                unsigned newXTnum      = XTnum + inlineeIndexShift;
+                unsigned newXTnum                  = XTnum + inlineeIndexShift;
                 m_compiler->compHndBBtab[newXTnum] = m_compiler->InlineeCompiler->compHndBBtab[XTnum];
-                EHblkDsc* const ebd    = &m_compiler->compHndBBtab[newXTnum];
+                EHblkDsc* const ebd                = &m_compiler->compHndBBtab[newXTnum];
 
                 if (ebd->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
                 {
@@ -625,9 +627,10 @@ private:
 
         // Append statements to null out gc ref locals, if necessary.
         inlineInfo.teardownStatements.InsertIntoBlockAtBeginning(continueBlock);
-        JITDUMPEXEC(m_compiler->fgDispBasicBlocks(m_compiler->InlineeCompiler->fgFirstBB, m_compiler->InlineeCompiler->fgLastBB, true));
+        JITDUMPEXEC(m_compiler->fgDispBasicBlocks(m_compiler->InlineeCompiler->fgFirstBB,
+                                                  m_compiler->InlineeCompiler->fgLastBB, true));
 
-        m_nextBlock = callBlock;
+        m_nextBlock     = callBlock;
         m_nextStatement = predStmt == nullptr ? callBlock->firstStmt() : predStmt->GetNextStmt();
 
         return true;
@@ -646,8 +649,7 @@ private:
             return false;
         }
 
-        if ((inlineeComp->fgFirstBB->bbStmtList != nullptr) ||
-            !inlineInfo.setupStatements.Empty() ||
+        if ((inlineeComp->fgFirstBB->bbStmtList != nullptr) || !inlineInfo.setupStatements.Empty() ||
             !inlineInfo.teardownStatements.Empty())
         {
             return false;
@@ -660,9 +662,11 @@ private:
         }
 
         GenTree* call = *use;
-        *use = inlineInfo.inlineCandidateInfo->result.substExpr;
+        *use          = inlineInfo.inlineCandidateInfo->result.substExpr;
 
-        auto getComplexity = [](GenTree* tree) { return 1; };
+        auto getComplexity = [](GenTree* tree) {
+            return 1;
+        };
         if (m_compiler->gtComplexityExceeds(m_statement->GetRootNode(), 16, getComplexity))
         {
             *use = call;
@@ -913,7 +917,7 @@ private:
                     m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext);
                     // Reprocess the statement to pick up the inline in preorder.
                     assert(m_nextBlock == nullptr);
-                    m_nextBlock = m_block;
+                    m_nextBlock     = m_block;
                     m_nextStatement = m_statement;
                 }
                 m_madeChanges = true;
@@ -959,9 +963,9 @@ private:
         else if (tree->OperIs(GT_JTRUE))
         {
             // See if this jtrue is now foldable.
-            BasicBlock* block = m_block;
-            GenTree*    condTree = tree->AsOp()->gtOp1;
-            bool modifiedTree = false;
+            BasicBlock* block        = m_block;
+            GenTree*    condTree     = tree->AsOp()->gtOp1;
+            bool        modifiedTree = false;
             assert(tree == block->lastStmt()->GetRootNode());
 
             while (condTree->OperIs(GT_COMMA))
@@ -1094,8 +1098,8 @@ PhaseStatus Compiler::fgInline()
     noway_assert(fgFirstBB != nullptr);
 
     InlineAndDevirtualizeWalker walker(this);
-    bool                                        madeChanges = false;
-    BasicBlock* currentBlock = fgFirstBB;
+    bool                        madeChanges  = false;
+    BasicBlock*                 currentBlock = fgFirstBB;
 
     while (currentBlock != nullptr)
     {
@@ -1112,7 +1116,7 @@ PhaseStatus Compiler::fgInline()
             if (walker.NextBlock() != nullptr)
             {
                 currentBlock = walker.NextBlock();
-                currentStmt = walker.NextStatement();
+                currentStmt  = walker.NextStatement();
                 continue;
             }
 
@@ -1128,7 +1132,6 @@ PhaseStatus Compiler::fgInline()
         }
 
         currentBlock = currentBlock->Next();
-
     }
 
     madeChanges |= walker.MadeChanges();
@@ -1143,7 +1146,6 @@ PhaseStatus Compiler::fgInline()
             // Call Compiler::fgDebugCheckInlineCandidates on each node
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckInlineCandidates);
         }
-
     }
 
     fgVerifyHandlerTab();
@@ -1249,7 +1251,7 @@ void Compiler::fgMorphCallInline(InlineInfo& inlineInfo, GenTreeCall* call, Inli
             // hanging a "nothing" node to it. Later the "nothing" node will be removed
             // and the original GT_CALL tree will be picked up by the GT_RET_EXPR node.
             inlCandInfo->result.substExpr = nullptr;
-            inlCandInfo->result.substBB = nullptr;
+            inlCandInfo->result.substBB   = nullptr;
         }
 
         // Inlinee compiler may have determined call does not return; if so, update this compiler's state.
@@ -1282,7 +1284,10 @@ void Compiler::fgMorphCallInline(InlineInfo& inlineInfo, GenTreeCall* call, Inli
 //    If the inline succeeded, this context will already be marked as successful. If it failed and
 //    a context is returned, then it will not have been marked as success or failed.
 //
-void Compiler::fgMorphCallInlineHelper(InlineInfo& inlineInfo, GenTreeCall* call, InlineResult* result, InlineContext** createdContext)
+void Compiler::fgMorphCallInlineHelper(InlineInfo&     inlineInfo,
+                                       GenTreeCall*    call,
+                                       InlineResult*   result,
+                                       InlineContext** createdContext)
 {
     // Don't expect any surprises here.
     assert(result->IsCandidate());
@@ -1481,7 +1486,10 @@ Compiler::fgWalkResult Compiler::fgDebugCheckInlineCandidates(GenTree** pTree, f
 
 #endif // DEBUG
 
-void Compiler::fgInvokeInlineeCompiler(InlineInfo& inlineInfo, GenTreeCall* call, InlineResult* inlineResult, InlineContext** createdContext)
+void Compiler::fgInvokeInlineeCompiler(InlineInfo&     inlineInfo,
+                                       GenTreeCall*    call,
+                                       InlineResult*   inlineResult,
+                                       InlineContext** createdContext)
 {
     noway_assert(call->OperIs(GT_CALL));
     noway_assert(call->IsInlineCandidate());
@@ -1965,7 +1973,9 @@ void Compiler::fgFinalizeInlineeStatements(InlineInfo* pInlineInfo)
 //    newStmt   - updated with the new statement
 //    callDI    - debug info for the call
 //
-void Compiler::fgInsertInlineeArgument(StatementListBuilder& statements, const InlArgInfo& argInfo, const DebugInfo& callDI)
+void Compiler::fgInsertInlineeArgument(StatementListBuilder& statements,
+                                       const InlArgInfo&     argInfo,
+                                       const DebugInfo&      callDI)
 {
     const bool argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
     CallArg*   arg            = argInfo.arg;
@@ -2023,7 +2033,7 @@ void Compiler::fgInsertInlineeArgument(StatementListBuilder& statements, const I
         {
             noway_assert(argInfo.argIsUsed == false);
             Statement* newStmt = nullptr;
-            bool append = true;
+            bool       append  = true;
 
             if (argNode->OperIs(GT_BLK))
             {
@@ -2141,9 +2151,9 @@ void Compiler::fgInsertInlineeArgument(StatementListBuilder& statements, const I
 //
 void Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 {
-    BasicBlock* block = inlineInfo->iciBlock;
-    const DebugInfo& callDI    = inlineInfo->iciStmt->GetDebugInfo();
-    GenTreeCall*     call      = inlineInfo->iciCall->AsCall();
+    BasicBlock*      block  = inlineInfo->iciBlock;
+    const DebugInfo& callDI = inlineInfo->iciStmt->GetDebugInfo();
+    GenTreeCall*     call   = inlineInfo->iciCall->AsCall();
 
     noway_assert(call->OperIs(GT_CALL));
 
@@ -2189,18 +2199,18 @@ void Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         InlArgInfo* argInfo = nullptr;
         switch (arg.GetWellKnownArg())
         {
-        case WellKnownArg::AsyncContinuation:
-            continue;
-        case WellKnownArg::RetBuffer:
-            argInfo = inlineInfo->inlRetBufferArgInfo;
-            break;
-        case WellKnownArg::InstParam:
-            argInfo = inlineInfo->inlInstParamArgInfo;
-            break;
-        default:
-            assert(ilArgNum < inlineInfo->argCnt);
-            argInfo = &inlineInfo->inlArgInfo[ilArgNum++];
-            break;
+            case WellKnownArg::AsyncContinuation:
+                continue;
+            case WellKnownArg::RetBuffer:
+                argInfo = inlineInfo->inlRetBufferArgInfo;
+                break;
+            case WellKnownArg::InstParam:
+                argInfo = inlineInfo->inlInstParamArgInfo;
+                break;
+            default:
+                assert(ilArgNum < inlineInfo->argCnt);
+                argInfo = &inlineInfo->inlArgInfo[ilArgNum++];
+                break;
         }
 
         assert(argInfo != nullptr);
@@ -2217,7 +2227,7 @@ void Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     {
         CORINFO_CLASS_HANDLE exactClass = eeGetClassFromContext(inlineInfo->inlineCandidateInfo->exactContextHandle);
 
-        tree    = fgGetSharedCCtor(exactClass);
+        tree               = fgGetSharedCCtor(exactClass);
         Statement* newStmt = gtNewStmt(tree, callDI);
         inlineInfo->setupStatements.Append(newStmt);
     }

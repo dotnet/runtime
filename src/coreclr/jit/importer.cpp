@@ -6810,7 +6810,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         JITDUMP(".... checking for GDV returning IEnumerator<T>...\n");
 
                         bool                 isEnumeratorT = false;
-                        GenTreeCall* const   call = op1->AsCall();
+                        GenTreeCall* const   call          = op1->AsCall();
                         bool                 isExact       = false;
                         bool                 isNonNull     = false;
                         CORINFO_CLASS_HANDLE retCls        = gtGetClassHandle(call, &isExact, &isNonNull);
@@ -11321,7 +11321,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     assert(iciCall->gtArgs.HasRetBuffer() && (impInlineInfo->inlRetBufferArgInfo != nullptr));
                     InlLclVarInfo lclInfo = {};
                     lclInfo.lclTypeInfo   = TYP_BYREF;
-                    GenTree* dest = impInlineFetchArg(*impInlineInfo->inlRetBufferArgInfo, lclInfo);
+                    GenTree* dest         = impInlineFetchArg(*impInlineInfo->inlRetBufferArgInfo, lclInfo);
 
                     if (fgNeedReturnSpillTemp())
                     {
@@ -13145,7 +13145,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
                                       CallArg*      arg,
                                       InlineResult* inlineResult)
 {
-    argInfo->arg = arg;
+    argInfo->arg       = arg;
     GenTree* curArgVal = arg->GetNode();
 
     GenTree*   lclVarTree;
@@ -13167,7 +13167,8 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
 
         // Spilling code relies on correct aliasability annotations, except for
         // retbufs that are not actually exposed in IL.
-        assert(varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed() || (arg->GetWellKnownArg() == WellKnownArg::RetBuffer));
+        assert(varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed() ||
+               (arg->GetWellKnownArg() == WellKnownArg::RetBuffer));
     }
 
     if (curArgVal->gtFlags & GTF_ALL_EFFECT)
@@ -13199,8 +13200,8 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         argInfo->argHasSideEff  = false;
     }
 
-    bool isExact              = false;
-    bool isNonNull            = false;
+    bool isExact        = false;
+    bool isNonNull      = false;
     argInfo->argIsExact = (gtGetClassHandle(curArgVal, &isExact, &isNonNull) != NO_CLASS_HANDLE) && isExact;
 
     // If the arg is a local that is address-taken, we can't safely

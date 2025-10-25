@@ -16947,8 +16947,13 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
 // Returns:
 //   True if any changes were made; false if nothing needed to be done to split the tree.
 //
-bool Compiler::gtSplitTree(
-    BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse, bool includeOperands, bool early)
+bool Compiler::gtSplitTree(BasicBlock* block,
+                           Statement*  stmt,
+                           GenTree*    splitPoint,
+                           Statement** firstNewStmt,
+                           GenTree***  splitNodeUse,
+                           bool        includeOperands,
+                           bool        early)
 {
     class Splitter final : public GenTreeVisitor<Splitter>
     {
@@ -16973,7 +16978,8 @@ bool Compiler::gtSplitTree(
             UseExecutionOrder = true
         };
 
-        Splitter(Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode, bool includeOperands, bool early)
+        Splitter(
+            Compiler* compiler, BasicBlock* bb, Statement* stmt, GenTree* splitNode, bool includeOperands, bool early)
             : GenTreeVisitor(compiler)
             , m_bb(bb)
             , m_splitStmt(stmt)

@@ -202,8 +202,8 @@ private:
         }
 
     protected:
-        virtual const char*  Name()                       = 0;
-        virtual void         ClearFlag()                  = 0;
+        virtual const char* Name()      = 0;
+        virtual void        ClearFlag() = 0;
 
         //------------------------------------------------------------------------
         // CreateRemainder: split current block at the call stmt and
@@ -386,8 +386,8 @@ private:
         FatPointerCallTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt)
         {
-            fptrAddress     = origCall->gtCallAddr;
-            pointerType     = fptrAddress->TypeGet();
+            fptrAddress = origCall->gtCallAddr;
+            pointerType = fptrAddress->TypeGet();
         }
 
     protected:
@@ -411,7 +411,7 @@ private:
         {
             assert(checkIdx == 0);
 
-            checkBlock                 = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock, currBlock);
+            checkBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, currBlock, currBlock);
 
             GenTree** lastSpilledArg = nullptr;
             for (GenTree** arg : origCall->UseEdges())
@@ -458,7 +458,8 @@ private:
                     DoPreOrder = true,
                 };
 
-                Visitor(Compiler* comp) : GenTreeVisitor(comp)
+                Visitor(Compiler* comp)
+                    : GenTreeVisitor(comp)
                 {
                 }
 
@@ -982,9 +983,10 @@ private:
 
                 // Re-establish this call as an inline candidate.
                 //
-                inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
-                inlineInfo->exactContextHandle   = context;
-                inlineInfo->preexistingSpillTemp = doesReturnValue ? stmt->GetRootNode()->AsLclVarCommon()->GetLclNum() : BAD_VAR_NUM;
+                inlineInfo->clsHandle          = compiler->info.compCompHnd->getMethodClass(methodHnd);
+                inlineInfo->exactContextHandle = context;
+                inlineInfo->preexistingSpillTemp =
+                    doesReturnValue ? stmt->GetRootNode()->AsLclVarCommon()->GetLclNum() : BAD_VAR_NUM;
                 call->SetSingleInlineCandidateInfo(inlineInfo);
             }
 

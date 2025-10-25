@@ -1410,7 +1410,7 @@ DONE_CALL:
 
                 if (isGuardedDevirtualizationCandidate)
                 {
-                    unsigned lclNum = lvaGrabTemp(false DEBUGARG("GDV candidate result"));
+                    unsigned   lclNum = lvaGrabTemp(false DEBUGARG("GDV candidate result"));
                     LclVarDsc* varDsc = lvaGetDesc(lclNum);
                     // Keep the information about small typedness to avoid
                     // inserting unnecessary casts around normalization.
