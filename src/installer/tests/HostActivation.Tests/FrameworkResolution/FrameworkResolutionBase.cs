@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
             public DotNetBuilder DotNet(string name)
             {
-                return new DotNetBuilder(_baseDirArtifact.Location, TestContext.BuiltDotNet.BinPath, name);
+                return new DotNetBuilder(_baseDirArtifact.Location, HostTestContext.BuiltDotNet.BinPath, name);
             }
 
             public TestApp CreateFrameworkReferenceApp()

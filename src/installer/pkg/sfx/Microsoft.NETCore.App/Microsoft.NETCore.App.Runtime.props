@@ -86,7 +86,6 @@
   <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
   <Import Project="$(Crossgen2SdkOverrideTargetsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverrideTargetsPath)' != ''" />
 </Project>

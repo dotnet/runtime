@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         /// </summary>
         /// <param name="appName">Name of pre-built app</param>
         /// <returns>
-        /// The <paramref name="appName"/> is expected to be in <see cref="TestContext.TestAssetsOutput"/>
+        /// The <paramref name="appName"/> is expected to be in <see cref="HostTestContext.TestAssetsOutput"/>
         /// and have been built as framework-dependent
         /// </returns>
         public static SingleFileTestApp CreateFrameworkDependent(string appName)
@@ -54,7 +54,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         /// </summary>
         /// <param name="appName">Name of pre-built app</param>
         /// <returns>
-        /// The <paramref name="appName"/> is expected to be in <see cref="TestContext.TestAssetsOutput"/>
+        /// The <paramref name="appName"/> is expected to be in <see cref="HostTestContext.TestAssetsOutput"/>
         /// and have been built as framework-dependent
         /// </returns>
         public static SingleFileTestApp CreateSelfContained(string appName)
@@ -177,23 +177,23 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             // Copy the compiled app output - the app is expected to have been built as framework-dependent
             TestArtifact.CopyRecursive(
-                Path.Combine(TestContext.TestAssetsOutput, AppName),
+                Path.Combine(HostTestContext.TestAssetsOutput, AppName),
                 builtApp.Location);
 
             // Remove any runtimeconfig.json or deps.json - we will be creating new ones
             File.Delete(builtApp.RuntimeConfigJson);
             File.Delete(builtApp.DepsJson);
 
-            var shortVersion = TestContext.Tfm[3..]; // trim "net" from beginning
-            var builder = NetCoreAppBuilder.ForNETCoreApp(AppName, TestContext.BuildRID, shortVersion);
+            var shortVersion = HostTestContext.Tfm[3..]; // trim "net" from beginning
+            var builder = NetCoreAppBuilder.ForNETCoreApp(AppName, HostTestContext.BuildRID, shortVersion);
 
             // Update the .runtimeconfig.json
             builder.WithRuntimeConfig(c =>
             {
-                c.WithTfm(TestContext.Tfm);
+                c.WithTfm(HostTestContext.Tfm);
                 c = selfContained
-                    ? c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion)
-                    : c.WithFramework(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion);
+                    ? c.WithIncludedFramework(Constants.MicrosoftNETCoreApp, HostTestContext.MicrosoftNETCoreAppVersion)
+                    : c.WithFramework(Constants.MicrosoftNETCoreApp, HostTestContext.MicrosoftNETCoreAppVersion);
             });
 
             // Add runtime libraries and assets for generating the .deps.json.
@@ -205,7 +205,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     .WithAsset(Path.GetFileName(builtApp.AppDll), f => f.NotOnDisk())));
             if (selfContained)
             {
-                builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{TestContext.BuildRID}", TestContext.MicrosoftNETCoreAppVersion, l => l
+                builder.WithRuntimePack($"{Constants.MicrosoftNETCoreApp}.Runtime.{HostTestContext.BuildRID}", HostTestContext.MicrosoftNETCoreAppVersion, l => l
                     .WithAssemblyGroup(string.Empty, g =>
                     {
                         foreach (var file in Binaries.GetRuntimeFiles().Assemblies)

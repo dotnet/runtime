@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOff()
         {
-            TestContext.BuiltDotNet.Exec("--list-runtimes")
+            HostTestContext.BuiltDotNet.Exec("--list-runtimes")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -30,7 +30,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOnDefault()
         {
-            TestContext.BuiltDotNet.Exec("--list-runtimes")
+            HostTestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
@@ -41,7 +41,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOnVerbose()
         {
-            TestContext.BuiltDotNet.Exec("--list-runtimes")
+            HostTestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "4")
                 .Execute()
@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOnInfo()
         {
-            TestContext.BuiltDotNet.Exec("--list-runtimes")
+            HostTestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "3")
                 .Execute()
@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOnWarning()
         {
-            TestContext.BuiltDotNet.Exec("--list-runtimes")
+            HostTestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "2")
                 .Execute()
@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void TracingOnToFileDefault()
         {
             string traceFilePath;
-            TestContext.BuiltDotNet.Exec("--list-runtimes")
+            HostTestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableHostTracingToFile(out traceFilePath)
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -95,7 +95,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void TracingOnToFileBadPathDefault()
         {
-            TestContext.BuiltDotNet.Exec("--list-runtimes")
+            HostTestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable(Constants.HostTracing.TraceFileEnvironmentVariable, "badpath/TracingOnToFileBadPathDefault.log")
                 .Execute()
@@ -110,7 +110,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             using (TestArtifact directory = TestArtifact.Create("trace"))
             {
-                var result = TestContext.BuiltDotNet.Exec("--list-runtimes")
+                var result = HostTestContext.BuiltDotNet.Exec("--list-runtimes")
                     .EnableHostTracingToPath(directory.Location)
                     .CaptureStdOut()
                     .CaptureStdErr()
@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void LegacyVariableName()
         {
-            TestContext.BuiltDotNet.Exec("--list-runtimes")
+            HostTestContext.BuiltDotNet.Exec("--list-runtimes")
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdErr()
                 .Execute()

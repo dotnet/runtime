@@ -1,5 +1,7 @@
 <Project>
 
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
+
   <PropertyGroup>
     <InstallerName>$(InstallerName)</InstallerName>
   </PropertyGroup>
@@ -22,8 +24,6 @@
     tools targets are already imported before this file.
   -->
   <Import Project="packaging.stubs.targets" Condition="'$(MSBuildProjectExtension)' != '.pkgproj'" />
-
-  <Import Project="..\..\Directory.Build.targets" />
 
   <!-- Provide default targets which can be hooked onto or overridden as necessary -->
   <Target Name="Pack" DependsOnTargets="Build" />
