@@ -658,7 +658,9 @@ namespace Microsoft.Extensions.Options.Generators
             if (modelToValidate.SelfValidates)
             {
                 OutLn($"context.MemberName = \"Validate\";");
-                OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{modelName}.Validate\" : $\"{{name}}.Validate\";");
+                // Use the name parameter if it already contains a dot (nested validation),
+                // otherwise use the model name (root level validation or option name doesn't match type name)
+                OutLn($"context.DisplayName = (!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.Validate\" : \"{modelName}.Validate\";");
                 OutLn($"(builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));");
                 OutLn();
             }
@@ -693,7 +695,9 @@ namespace Microsoft.Extensions.Options.Generators
             OutOpenBrace();
             OutLn($"global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;");
             OutLn("#if NET10_0_OR_GREATER");
-            OutLn($"string displayName = string.IsNullOrEmpty(name) ? \"{modelToValidate.SimpleName}.Validate\" : $\"{{name}}.Validate\";");
+            // Use the name parameter if it already contains a dot (nested validation),
+            // otherwise use the model name (root level validation or option name doesn't match type name)
+            OutLn($"string displayName = (!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.Validate\" : \"{modelToValidate.SimpleName}.Validate\";");
             OutLn($"var context = new {StaticValidationContextType}(options, displayName, null, null);");
             OutLn("#else");
             OutLn($"var context = new {StaticValidationContextType}(options);");
@@ -738,7 +742,9 @@ namespace Microsoft.Extensions.Options.Generators
         private void GenMemberValidation(ValidatedMember vm, string modelName, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, bool cleanListsBeforeUse)
         {
             OutLn($"context.MemberName = \"{vm.Name}\";");
-            OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{modelName}.{vm.Name}\" : $\"{{name}}.{vm.Name}\";");
+            // Use the name parameter if it already contains the model name (nested validation),
+            // otherwise use the model name (root level validation or option name doesn't match type name)
+            OutLn($"context.DisplayName = (!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.{vm.Name}\" : \"{modelName}.{vm.Name}\";");
 
             if (cleanListsBeforeUse)
             {
@@ -834,7 +840,9 @@ namespace Microsoft.Extensions.Options.Generators
 
             var valueAccess = (vm.IsNullable && vm.IsValueType) ? ".Value" : string.Empty;
 
-            var baseName = $"string.IsNullOrEmpty(name) ? \"{modelName}.{vm.Name}\" : $\"{{name}}.{vm.Name}\"";
+            // Use the name parameter if it already contains a dot (nested validation),
+            // otherwise use the model name (root level validation or option name doesn't match type name)
+            var baseName = $"(!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.{vm.Name}\" : \"{modelName}.{vm.Name}\"";
 
             if (vm.IsNullable)
             {
@@ -880,7 +888,9 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 OutLn($"if (o is not null)");
                 OutOpenBrace();
-                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count}}]\" : $\"{{name}}.{vm.Name}[{{count}}]\"";
+                // Use the name parameter if it already contains a dot (nested validation),
+                // otherwise use the model name (root level validation or option name doesn't match type name)
+                var propertyName = $"(!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.{vm.Name}[{{count}}]\" : $\"{modelName}.{vm.Name}[{{count}}]\"";
                 OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
                 OutCloseBrace();
 
@@ -888,7 +898,7 @@ namespace Microsoft.Extensions.Options.Generators
                 {
                     OutLn($"else");
                     OutOpenBrace();
-                    var error = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count}}] is null\" : $\"{{name}}.{vm.Name}[{{count}}] is null\"";
+                    var error = $"(!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.{vm.Name}[{{count}}] is null\" : $\"{modelName}.{vm.Name}[{{count}}] is null\"";
                     OutLn($"(builder ??= new()).AddError({error});");
                     OutCloseBrace();
                 }
@@ -897,7 +907,7 @@ namespace Microsoft.Extensions.Options.Generators
             }
             else
             {
-                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count++}}] is null\" : $\"{{name}}.{vm.Name}[{{count++}}] is null\"";
+                var propertyName = $"(!string.IsNullOrEmpty(name) && name.Contains(\".\")) ? $\"{{name}}.{vm.Name}[{{count++}}]\" : $\"{modelName}.{vm.Name}[{{count++}}]\"";
                 OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
             }
 
