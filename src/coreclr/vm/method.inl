@@ -109,6 +109,9 @@ inline PTR_DynamicMethodDesc MethodDesc::AsDynamicMethodDesc()
     return dac_cast<PTR_DynamicMethodDesc>(this);
 }
 
+// NOTE: Not all methods that create IL at runtime are considered dynamic methods. This only returns TRUE
+// for methods represented by DynamicMethodDesc. Transient IL (see TryGenerateTransientILImplementation) also
+// generates IL at runtime but returns FALSE here.
 inline bool MethodDesc::IsDynamicMethod()
 {
     LIMITED_METHOD_CONTRACT;
@@ -121,12 +124,22 @@ inline bool MethodDesc::IsLCGMethod()
     return ((mcDynamic == GetClassification()) && dac_cast<PTR_DynamicMethodDesc>(this)->IsLCGMethod());
 }
 
+// NOTE: This method only detects the subset of ILStubs that are internally represented using DynamicMethodDesc.
+// There are other methods compiled from IL generated at runtime via ILStubLinker that still return FALSE here.
+// See TryGenerateTransientILImplementation.
 inline bool MethodDesc::IsILStub()
 {
     WRAPPER_NO_CONTRACT;
     return ((mcDynamic == GetClassification()) && dac_cast<PTR_DynamicMethodDesc>(this)->IsILStub());
 }
 
+// This method is intended to identify runtime defined methods that don't have a corresponding Metadata or
+// LCG definition so they can be filtered from diagnostic introspection (stacktraces, code viewing, stepping, etc). 
+// Partly this is this is a user experience consideration to preserve the abstraction users would expect based on
+// source code and assembly contents. Partly it is also a technical limitation that many parts of
+// diagnostics don't know how to work with methods that aren't backed by metadata and IL in a module.
+// Currently this method only triages methods whose code was generated from IL. We rely on filtering that occurs implictly
+// elsewhere to avoid including other kinds of stubs like prestubs or unboxing stubs.
 inline bool MethodDesc::IsDiagnosticsHidden()
 {
     WRAPPER_NO_CONTRACT;
