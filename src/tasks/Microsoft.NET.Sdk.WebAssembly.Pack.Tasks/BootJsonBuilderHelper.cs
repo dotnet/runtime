@@ -321,14 +321,14 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 var asset = new VfsAsset()
                 {
                     virtualPath = a.Key,
-                    name = a.Value.Keys.First(),
+                    name = $"../{a.Value.Keys.First()}",
                     integrity = a.Value.Values.First()
                 };
 
                 if (bundlerFriendly)
                 {
                     string escaped = EscapeName(string.Concat(asset.name));
-                    imports.Add($"import * as {escaped} from \"./{asset.name}\";");
+                    imports.Add($"import {escaped} from \"./{asset.name}\";");
                     asset.resolvedUrl = EncodeJavascriptVariableInJson(escaped);
                 }
 

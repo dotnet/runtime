@@ -49,3 +49,4 @@ Wasm.Build.Tests.PreloadingTests
 Wasm.Build.Tests.EnvVariablesTests
 Wasm.Build.Tests.HttpTests
 Wasm.Build.Tests.DiagnosticsTests
+Wasm.Build.Tests.FilesToIncludeInFileSystemTests
