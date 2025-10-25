@@ -227,7 +227,6 @@
     <Compile Include="System\Text\StringBuilder.NativeAot.cs" />
     <Compile Include="System\Threading\ManagedThreadId.cs" />
     <Compile Include="System\Threading\Lock.NativeAot.cs" />
-    <Compile Include="System\Threading\Condition.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\Monitor.NativeAot.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" />

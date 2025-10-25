@@ -10,7 +10,7 @@ namespace System.Threading
 {
     internal sealed class Condition
     {
-        internal class Waiter
+        internal sealed class Waiter
         {
             public Waiter? next;
             public Waiter? prev;
@@ -19,7 +19,7 @@ namespace System.Threading
         }
 
         [ThreadStatic]
-        private static Waiter t_waiterForCurrentThread;
+        private static Waiter? t_waiterForCurrentThread;
 
         private static Waiter GetWaiterForCurrentThread()
         {
@@ -96,11 +96,7 @@ namespace System.Threading
             _lock = @lock;
         }
 
-        public bool Wait() => Wait(Timeout.Infinite);
-
-        public bool Wait(TimeSpan timeout) => Wait(WaitHandle.ToTimeoutMilliseconds(timeout));
-
-        public unsafe bool Wait(int millisecondsTimeout, object? associatedObjectForMonitorWait = null)
+        public unsafe bool Wait(int millisecondsTimeout, object associatedObjectForMonitorWait)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
 
@@ -121,9 +117,7 @@ namespace System.Threading
                         millisecondsTimeout,
                         false, // useTrivialWaits
                         associatedObjectForMonitorWait,
-                        associatedObjectForMonitorWait != null
-                            ? NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait
-                            : NativeRuntimeEventSource.WaitHandleWaitSourceMap.Unknown);
+                        NativeRuntimeEventSource.WaitHandleWaitSourceMap.MonitorWait);
             }
             finally
             {

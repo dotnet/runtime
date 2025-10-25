@@ -2375,7 +2375,10 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
                     if (orUnwind != NULL)
                     {
-                        orUnwind->LeaveObjMonitorAtException();
+                        PREPARE_NONVIRTUAL_CALLSITE(METHOD__MONITOR__EXIT);
+                        DECLARE_ARGHOLDER_ARRAY(args, 1);
+                        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(orUnwind);
+                        CALL_MANAGED_METHOD_NORET(args);
                     }
                 }
             }
@@ -3065,10 +3068,14 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
         _ASSERTE(obj != NULL);
         VALIDATEOBJECTREF(obj);
 
-        DWORD threadId = 0;
-        DWORD acquisitionCount = 0;
-        _ASSERTE(obj->GetThreadOwningMonitorLock(&threadId, &acquisitionCount) &&
-                 (threadId == m_crawl.pThread->GetThreadId()));
+        GCPROTECT_BEGIN(obj);
+
+        DWORD owningThreadId = 0;
+        DWORD recursionLevel;
+        obj->GetSyncBlock()->TryGetLockInfo(&owningThreadId, &recursionLevel);
+        _ASSERTE(owningThreadId == m_crawl.pThread->GetThreadId());
+
+        GCPROTECT_END();
 
         END_GCX_ASSERT_COOP;
     }

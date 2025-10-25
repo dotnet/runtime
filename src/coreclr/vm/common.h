@@ -270,7 +270,6 @@ namespace Loader
 #include "eehash.h"
 
 #include "vars.hpp"
-#include "eventstore.hpp"
 
 #include "synch.h"
 #include "regdisp.h"

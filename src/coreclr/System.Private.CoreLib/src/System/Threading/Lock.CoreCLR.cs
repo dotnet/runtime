@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Runtime;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -12,9 +11,26 @@ namespace System.Threading
     {
         private const short SpinCountNotInitialized = short.MinValue;
 
-        // NOTE: Lock must not have a static (class) constructor, as Lock itself is used to synchronize
-        // class construction.  If Lock has its own class constructor, this can lead to infinite recursion.
-        // All static data in Lock must be lazy-initialized.
+        // NOTE: Like NativeAOT, we try to avoid a static constructor in Lock.
+        // However, unlike NativeAOT, we don't do this because Lock is used to synchronize class construction.
+        // Instead, we do this as our statics read from AppContext, and AppContext uses Monitor-based locks.
+        // So, we can end up in the following situation:
+        // - Thread 1 owns the thin-lock for the data store in AppContext
+        // - Thread 2 tries to lock the thin-lock, forcing an upgrade to a sync-block
+        // - Thread 2 tries to get the lock for the sync-block, triggering the Lock static constructor.
+        // - The Lock static constructor tries to read from AppContext, blocking on the data store lock.
+        // - Thread 1 tries to leave the data store lock, but it tries to do so by getting the Lock instance.
+        // - Thread 1 tries to trigger the static constructor for Lock, but it is blocked as Thread 2
+        //   is currently executing it.
+        // - Deadlock!
+        //
+        // As a result, we'll do something similar to what NativeAOT does and delay statics initialization
+        // until the first Lock entry.
+        // This means that (in the example above), the Lock instance would be successfully constructed by Thread 2
+        // and Thread 1 would be able to exit without calling into AppContext to initialize the statics.
+        //
+        // We'll match NativeAOT's behavior for the other statics cases to ensure that we don't get difficult-to-debug
+        // issues if we ever port CoreCLR's class constructor running to match NativeAOT's.
         private static int s_staticsInitializationStage;
         private static bool s_isSingleProcessor;
         private static short s_maxSpinCount;
@@ -25,47 +41,13 @@ namespace System.Threading
         /// </summary>
         public Lock() => _spinCount = SpinCountNotInitialized;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryEnterOneShot(int currentManagedThreadId)
+        internal void InitializeToLockedWithNoWaiters(uint owningManagedThreadId, uint recursionLevel)
         {
-            Debug.Assert(currentManagedThreadId != 0);
+            Debug.Assert(owningManagedThreadId != 0);
 
-            if (State.TryLock(this))
-            {
-                Debug.Assert(_owningThreadId == 0);
-                Debug.Assert(_recursionCount == 0);
-                _owningThreadId = (uint)currentManagedThreadId;
-                return true;
-            }
-
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void Exit(int currentManagedThreadId)
-        {
-            Debug.Assert(currentManagedThreadId != 0);
-
-            if (_owningThreadId != (uint)currentManagedThreadId)
-            {
-                ThrowHelper.ThrowSynchronizationLockException_LockExit();
-            }
-
-            ExitImpl();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool TryEnterSlow(int timeoutMs, int currentManagedThreadId) =>
-            TryEnterSlow(timeoutMs, new ThreadId((uint)currentManagedThreadId)).IsInitialized;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool GetIsHeldByCurrentThread(int currentManagedThreadId)
-        {
-            Debug.Assert(currentManagedThreadId != 0);
-
-            bool isHeld = _owningThreadId == (uint)currentManagedThreadId;
-            Debug.Assert(!isHeld || new State(this).IsLocked);
-            return isHeld;
+            _owningThreadId = owningManagedThreadId;
+            _recursionCount = recursionLevel;
+            _state = State.LockedStateValue;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -166,18 +148,16 @@ namespace System.Threading
                 {
                     // If the stage is PartiallyComplete, these will have already been initialized.
                     //
-                    // Not using Environment.ProcessorCount here as it involves class construction, and if that property is
-                    // already being constructed earlier in the stack on the same thread, it would return the default value
-                    // here. Initialize s_isSingleProcessor first, as it may be used by other initialization afterwards.
-                    s_isSingleProcessor = RuntimeImports.RhGetProcessCpuCount() == 1;
+                    // Not using Environment.ProcessorCount here as it involves class construction.
+                    // We don't do class-construction in managed today in CoreCLR,
+                    // but if we ever port that logic from NativeAOT, this would be a nasty bug.
+                    s_isSingleProcessor = Environment.GetProcessorCount() == 1;
                     s_maxSpinCount = DetermineMaxSpinCount();
                     s_minSpinCountForAdaptiveSpin = DetermineMinSpinCountForAdaptiveSpin();
                 }
 
-                // Also initialize some types that are used later to prevent potential class construction cycles. If
-                // NativeRuntimeEventSource is already being class-constructed by this thread earlier in the stack, Log can be
-                // null. Avoid going down the wait path in that case to avoid null checks in several other places. If not fully
-                // initialized, the stage will also be set to PartiallyComplete to try again.
+                // Also initialize some types that are used later to ensure we don't get bad bugs
+                // if we port the NativeAOT logic for class construction.
                 isFullyInitialized = NativeRuntimeEventSource.Log != null;
             }
             catch
@@ -193,40 +173,7 @@ namespace System.Threading
                     : (int)StaticsInitializationStage.PartiallyComplete);
             return isFullyInitialized;
         }
-
-        // Returns false until the static variable is lazy-initialized
         internal static bool IsSingleProcessor => s_isSingleProcessor;
-
-        // Used to transfer the state when inflating thin locks. The lock is considered unlocked if managedThreadId is zero, and
-        // locked otherwise.
-        internal void ResetForMonitor(int managedThreadId, uint recursionCount)
-        {
-            Debug.Assert(recursionCount == 0 || managedThreadId != 0);
-            Debug.Assert(!new State(this).UseTrivialWaits);
-
-            _state = managedThreadId == 0 ? State.InitialStateValue : State.LockedStateValue;
-            _owningThreadId = (uint)managedThreadId;
-            _recursionCount = recursionCount;
-
-            Debug.Assert(!new State(this).UseTrivialWaits);
-        }
-
-        internal struct ThreadId
-        {
-            private uint _id;
-
-            public ThreadId(uint id) => _id = id;
-            public uint Id => _id;
-            public bool IsInitialized => _id != 0;
-            public static ThreadId Current_NoInitialize => new ThreadId((uint)ManagedThreadId.CurrentManagedThreadIdUnchecked);
-
-            public void InitializeForCurrentThread()
-            {
-                Debug.Assert(!IsInitialized);
-                _id = (uint)ManagedThreadId.Current;
-                Debug.Assert(IsInitialized);
-            }
-        }
 
         private enum StaticsInitializationStage
         {
@@ -234,6 +181,24 @@ namespace System.Threading
             Started,
             PartiallyComplete,
             Complete
+        }
+
+        internal partial struct ThreadId(uint id)
+        {
+            // This thread-static is initialized by the runtime.
+            [ThreadStatic]
+            private static uint t_threadId;
+            public uint Id => id;
+
+            public bool IsInitialized => id != 0;
+            public static ThreadId Current_NoInitialize => new ThreadId(t_threadId);
+
+#pragma warning disable CA1822 // Mark members as static. This method is expected to exist for other runtimes.
+            public void InitializeForCurrentThread()
+#pragma warning restore CA1822 // Mark members as static
+            {
+                Debug.Fail("The managed thread ID for the current thread should always be initialized.");
+            }
         }
     }
 }

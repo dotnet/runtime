@@ -272,12 +272,10 @@ endif(FEATURE_READYTORUN)
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     conditionalweaktable.cpp # The usage of conditionalweaktable is only in the DAC, but we put the headers in the VM to enable validation.
-    threaddebugblockinginfo.cpp
 )
 
 set(VM_HEADERS_DAC
     ${VM_HEADERS_DAC_AND_WKS_COMMON}
-    threaddebugblockinginfo.h
 )
 
 set(GC_SOURCES_DAC
@@ -324,7 +322,6 @@ set(VM_SOURCES_WKS
     eepolicy.cpp
     eetoprofinterfaceimpl.cpp
     eventpipeinternal.cpp
-    eventstore.cpp
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp
@@ -376,7 +373,6 @@ set(VM_SOURCES_WKS
     syncclean.cpp
     synch.cpp
     tailcallhelp.cpp
-    threaddebugblockinginfo.cpp
     threadsuspend.cpp
     typeparse.cpp
     unsafeaccessors.cpp
@@ -432,7 +428,6 @@ set(VM_HEADERS_WKS
     eventpipeadapter.h
     eventpipeadaptertypes.h
     eventpipeinternal.h
-    eventstore.hpp
     fcall.h
     fieldmarshaler.h
     finalizerthread.h
@@ -477,7 +472,6 @@ set(VM_HEADERS_WKS
     synch.h
     tailcallhelp.h
     tieredcompilation.h
-    threaddebugblockinginfo.h
     threadsuspend.h
     typeparse.h
     weakreferencenative.h
