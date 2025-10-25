@@ -63,7 +63,7 @@ namespace System.Globalization
 
         private static int GetGregorianYear(double numberOfDays)
         {
-            return new DateTime(Math.Min((long)(Math.Floor(numberOfDays) * TimeSpan.TicksPerDay), DateTime.MaxValue.Ticks)).Year;
+            return new DateTime(Math.Min((long)(Math.Floor(numberOfDays) * TimeSpan.TicksPerDay), DateTime.MaxTicks)).Year;
         }
 
         private enum CorrectionAlgorithm
