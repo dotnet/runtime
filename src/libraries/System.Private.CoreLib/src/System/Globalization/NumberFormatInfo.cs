@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -827,14 +828,40 @@ namespace System.Globalization
 
         internal static void ValidateParseStyleFloatingPoint(NumberStyles style)
         {
-            // Check for undefined flags or hex number
-            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0)
+            // Check for undefined flags
+            if ((style & InvalidNumberStyles) != 0)
             {
-                ThrowInvalid(style);
-
-                static void ThrowInvalid(NumberStyles value) =>
-                    throw new ArgumentException((value & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Arg_HexBinaryStylesNotSupported, nameof(style));
+                ThrowInvalidStyle();
             }
+
+            // Binary specifier is not supported for floating point
+            if ((style & NumberStyles.AllowBinarySpecifier) != 0)
+            {
+                ThrowBinaryStyleNotSupported();
+            }
+
+            // When AllowHexSpecifier is used, only specific flags are allowed
+            if ((style & NumberStyles.AllowHexSpecifier) != 0)
+            {
+                // HexFloat allows: AllowLeadingWhite, AllowTrailingWhite, AllowLeadingSign, AllowHexSpecifier, AllowDecimalPoint, AllowExponent
+                NumberStyles invalidFlags = style & ~NumberStyles.HexFloat;
+                if (invalidFlags != 0)
+                {
+                    ThrowInvalidHexBinaryStyle();
+                }
+            }
+
+            [DoesNotReturn]
+            static void ThrowInvalidStyle() =>
+                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
+
+            [DoesNotReturn]
+            static void ThrowBinaryStyleNotSupported() =>
+                throw new ArgumentException(SR.Arg_BinaryStyleNotSupported, nameof(style));
+
+            [DoesNotReturn]
+            static void ThrowInvalidHexBinaryStyle() =>
+                throw new ArgumentException(SR.Arg_InvalidHexBinaryStyle, nameof(style));
         }
     }
 }

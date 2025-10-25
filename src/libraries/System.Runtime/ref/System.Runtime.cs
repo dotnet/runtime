@@ -9768,6 +9768,7 @@ namespace System.Globalization
         Any = 511,
         AllowHexSpecifier = 512,
         HexNumber = 515,
+        HexFloat = 679,
         AllowBinarySpecifier = 1024,
         BinaryNumber = 1027,
     }

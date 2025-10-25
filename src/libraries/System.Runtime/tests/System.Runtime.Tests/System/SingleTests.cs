@@ -330,6 +330,19 @@ namespace System.Tests
             yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, float.NaN };
             yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, float.PositiveInfinity };
             yield return new object[] { "-Infinity", NumberStyles.Any, invariantFormat, float.NegativeInfinity };
+
+            // Hex float tests
+            yield return new object[] { "0x1.0p0", NumberStyles.HexFloat, invariantFormat, 1.0f };
+            yield return new object[] { "0x1.8p0", NumberStyles.HexFloat, invariantFormat, 1.5f };
+            yield return new object[] { "0x1.0p1", NumberStyles.HexFloat, invariantFormat, 2.0f };
+            yield return new object[] { "0x1.0p-1", NumberStyles.HexFloat, invariantFormat, 0.5f };
+            yield return new object[] { "-0x1.0p0", NumberStyles.HexFloat, invariantFormat, -1.0f };
+            yield return new object[] { "0X1.0P0", NumberStyles.HexFloat, invariantFormat, 1.0f };
+            yield return new object[] { "0xAp0", NumberStyles.HexFloat, invariantFormat, 10.0f };
+            yield return new object[] { "0x.8p1", NumberStyles.HexFloat, invariantFormat, 1.0f };
+            yield return new object[] { "0x1.0p-149", NumberStyles.HexFloat, invariantFormat, float.Epsilon };
+            yield return new object[] { "0x1.fffffep127", NumberStyles.HexFloat, invariantFormat, float.MaxValue };
+            yield return new object[] { "  0x1.0p0  ", NumberStyles.HexFloat, invariantFormat, 1.0f };
         }
 
         [Theory]
@@ -716,6 +729,21 @@ namespace System.Tests
             yield return new object[] { 32.5f, "E100", invariantFormat, "3.2500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
             yield return new object[] { 32.5f, "F100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { 32.5f, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+
+            // Hex float formatting tests
+            yield return new object[] { 1.0f, "X", invariantFormat, "0x1p+0" };
+            yield return new object[] { 1.0f, "x", invariantFormat, "0x1p+0" };
+            yield return new object[] { 1.5f, "X", invariantFormat, "0x1.8p+0" };
+            yield return new object[] { 2.0f, "X", invariantFormat, "0x1p+1" };
+            yield return new object[] { 0.5f, "X", invariantFormat, "0x1p-1" };
+            yield return new object[] { -1.0f, "X", invariantFormat, "-0x1p+0" };
+            yield return new object[] { 0.0f, "X", invariantFormat, "0x0p+0" };
+            yield return new object[] { 3.25f, "X", invariantFormat, "0x1.ap+1" };
+            yield return new object[] { 1.0f, "X2", invariantFormat, "0x1.00p+0" };
+            yield return new object[] { 1.5f, "X6", invariantFormat, "0x1.800000p+0" };
+            yield return new object[] { float.Epsilon, "X", invariantFormat, "0x1p-149" };
+            yield return new object[] { float.MaxValue, "X", invariantFormat, "0x1.fffffep+127" };
+            yield return new object[] { float.MinValue, "X", invariantFormat, "-0x1.fffffep+127" };
         }
 
         [Fact]
