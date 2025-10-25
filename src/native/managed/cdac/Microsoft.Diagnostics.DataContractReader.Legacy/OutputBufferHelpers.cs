@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
-internal static class OutputBufferHelpers
+public static class OutputBufferHelpers
 {
     public static unsafe void CopyStringToBuffer(char* stringBuf, uint bufferSize, uint* neededBufferSize, string str)
     {
