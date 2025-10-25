@@ -28,7 +28,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// corresponding error code.
 /// </remarks>
 [GeneratedComClass]
-internal sealed unsafe partial class SOSDacImpl
+public sealed unsafe partial class SOSDacImpl
     : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface3, ISOSDacInterface4, ISOSDacInterface5,
       ISOSDacInterface6, ISOSDacInterface7, ISOSDacInterface8, ISOSDacInterface9, ISOSDacInterface10,
       ISOSDacInterface11, ISOSDacInterface12, ISOSDacInterface13, ISOSDacInterface14, ISOSDacInterface15,

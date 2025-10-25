@@ -12,7 +12,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
-internal sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame2
+public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame2
 {
     private readonly Target _target;
     private readonly IXCLRDataFrame? _legacyImpl;

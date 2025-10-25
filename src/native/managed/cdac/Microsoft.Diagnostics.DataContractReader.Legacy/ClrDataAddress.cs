@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// When marshalled to native code, this type is represented as a 64-bit unsigned integer.
 /// </summary>
 [NativeMarshalling(typeof(ClrDataAddressMarshaller))]
-internal struct ClrDataAddress : IEquatable<ClrDataAddress>
+public struct ClrDataAddress : IEquatable<ClrDataAddress>
 {
     public ulong Value;
 
@@ -29,7 +29,7 @@ internal struct ClrDataAddress : IEquatable<ClrDataAddress>
 }
 
 [CustomMarshaller(typeof(ClrDataAddress), MarshalMode.Default, typeof(ClrDataAddressMarshaller))]
-internal static class ClrDataAddressMarshaller
+public static class ClrDataAddressMarshaller
 {
     public static ClrDataAddress ConvertToManaged(ulong address) => new ClrDataAddress(address);
     public static ulong ConvertToUnmanaged(ClrDataAddress address) => address.Value;

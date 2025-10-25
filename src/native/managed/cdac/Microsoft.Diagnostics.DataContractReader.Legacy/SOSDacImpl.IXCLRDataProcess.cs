@@ -16,7 +16,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// Implementation of IXCLRDataProcess* interfaces intended to be passed out to consumers
 /// interacting with the DAC via those COM interfaces.
 /// </summary>
-internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2
+public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProcess2
 {
     int IXCLRDataProcess.Flush()
     {
@@ -136,7 +136,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
     int IXCLRDataProcess.GetModuleByAddress(ClrDataAddress address, /*IXCLRDataModule*/ void** mod)
         => _legacyProcess is not null ? _legacyProcess.GetModuleByAddress(address, mod) : HResults.E_NOTIMPL;
 
-    internal class EnumMethodInstances
+    internal sealed class EnumMethodInstances
     {
         private readonly Target _target;
         private readonly TargetPointer _mainMethodDesc;

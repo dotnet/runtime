@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
@@ -59,6 +60,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
         ReadFromTargetDelegate readFromTarget,
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
+        IEnumerable<IContractFactory<IContract>> additionalFactories,
         [NotNullWhen(true)] out ContractDescriptorTarget? target)
     {
         DataTargetDelegates dataTargetDelegates = new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext);
@@ -67,7 +69,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
             dataTargetDelegates,
             out Descriptor[] descriptors))
         {
-            target = new ContractDescriptorTarget(descriptors, dataTargetDelegates);
+            target = new ContractDescriptorTarget(descriptors, dataTargetDelegates, additionalFactories);
             return true;
         }
 
@@ -92,7 +94,8 @@ public sealed unsafe class ContractDescriptorTarget : Target
         WriteToTargetDelegate writeToTarget,
         GetTargetThreadContextDelegate getThreadContext,
         bool isLittleEndian,
-        int pointerSize)
+        int pointerSize,
+        IEnumerable<IContractFactory<IContract>> additionalFactories)
     {
         return new ContractDescriptorTarget(
             [
@@ -103,12 +106,13 @@ public sealed unsafe class ContractDescriptorTarget : Target
                     PointerData = globalPointerValues
                 }
             ],
-            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext));
+            new DataTargetDelegates(readFromTarget, writeToTarget, getThreadContext),
+            additionalFactories);
     }
 
-    private ContractDescriptorTarget(Descriptor[] descriptors, DataTargetDelegates dataTargetDelegates)
+    private ContractDescriptorTarget(Descriptor[] descriptors, DataTargetDelegates dataTargetDelegates, IEnumerable<IContractFactory<IContract>> additionalFactories)
     {
-        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion);
+        Contracts = new CachingContractRegistry(this, this.TryGetContractVersion, additionalFactories);
         ProcessedData = new DataCache(this);
         _config = descriptors[0].Config;
         _dataTargetDelegates = dataTargetDelegates;

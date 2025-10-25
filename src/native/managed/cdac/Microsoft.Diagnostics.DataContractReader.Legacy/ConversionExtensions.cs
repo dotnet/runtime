@@ -7,7 +7,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
-internal static class ConversionExtensions
+public static class ConversionExtensions
 {
     private const uint Arm32ThumbBit = 1;
 
@@ -86,7 +86,7 @@ internal static class ConversionExtensions
     /// <summary>
     /// Converts a TargetCodePointer to an address TargetPointer, removing any platform-specific bits such as the ARM32 Thumb bit or ARM64 pointer authentication.
     /// </summary>
-    internal static TargetPointer ToAddress(this TargetCodePointer code, Target target)
+    public static TargetPointer ToAddress(this TargetCodePointer code, Target target)
     {
         IPlatformMetadata metadata = target.Contracts.PlatformMetadata;
         CodePointerFlags flags = metadata.GetCodePointerFlags();

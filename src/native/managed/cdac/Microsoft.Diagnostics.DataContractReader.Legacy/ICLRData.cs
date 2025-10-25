@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComInterface]
 [Guid("471c35b4-7c2f-4ef0-a945-00f8c38056f1")]
-internal unsafe partial interface ICLRDataEnumMemoryRegions
+public unsafe partial interface ICLRDataEnumMemoryRegions
 {
     [PreserveSig]
     int EnumMemoryRegions(/*ICLRDataEnumMemoryRegionsCallback*/ void* callback, uint miniDumpFlags, /*CLRDataEnumMemoryFlags*/ int clrFlags);
@@ -20,7 +20,7 @@ internal unsafe partial interface ICLRDataEnumMemoryRegions
 
 [GeneratedComInterface]
 [Guid("3e11ccee-d08b-43e5-af01-32717a64da03")]
-internal unsafe partial interface ICLRDataTarget
+public unsafe partial interface ICLRDataTarget
 {
     [PreserveSig]
     int GetMachineType(uint* machineType);
@@ -58,7 +58,7 @@ internal unsafe partial interface ICLRDataTarget
 
 [GeneratedComInterface]
 [Guid("17d5b8c6-34a9-407f-af4f-a930201d4e02")]
-internal unsafe partial interface ICLRContractLocator
+public unsafe partial interface ICLRContractLocator
 {
     [PreserveSig]
     int GetContractDescriptor(ulong* contractAddress);
