@@ -19,7 +19,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _size = -1;
         }
 
-        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            return ObjectNodeSection.Win32ResourcesSection;
+        }
 
         public override bool IsShareable => false;
 
@@ -44,6 +47,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private ObjectData GetDataInternal()
         {
             ObjectDataBuilder builder = new ObjectDataBuilder();
+            builder.RequireInitialAlignment(1);
             builder.AddSymbol(this);
             _resourceData.WriteResources(this, ref builder);
             _size = builder.CountBytes;

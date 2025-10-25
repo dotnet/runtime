@@ -75,6 +75,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodNode.cs" Link="Compiler\DependencyAnalysis\IMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" Link="Compiler\DependencyAnalysis\INodeWithCodeInfo.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectDumper.cs" Link="Compiler\DependencyAnalysis\IObjectDumper.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISymbolNode.cs" Link="Compiler\DependencyAnalysis\ISymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ObjectDataBuilder.cs" Link="Compiler\DependencyAnalysis\ObjectDataBuilder.cs" />
@@ -137,6 +138,24 @@
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs" Link="JitInterface\SwiftPhysicalLowering.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\UnmanagedCallingConventions.cs" Link="Interop\UnmanagedCallingConventions.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfHelper.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfHelper.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" Link="Compiler\ObjectWriter\Eabi\EabiAttributesBuilder.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Eabi\EabiNative.cs" Link="Compiler\ObjectWriter\Eabi\EabiNative.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\ObjectWriter.cs" Link="Compiler\ObjectWriter\ObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\ObjectWritingOptions.cs" Link="Compiler\ObjectWriter\ObjectWritingOptions.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\OutputInfoBuilder.cs" Link="Compiler\ObjectWriter\OutputInfoBuilder.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\MachNative.cs" Link="Compiler\ObjectWriter\MachNative.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\MachObjectWriter.cs" Link="Compiler\ObjectWriter\MachObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\ElfNative.cs" Link="Compiler\ObjectWriter\ElfNative.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\ElfObjectWriter.cs" Link="Compiler\ObjectWriter\ElfObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\UnixObjectWriter.cs" Link="Compiler\ObjectWriter\UnixObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\CoffObjectWriter.cs" Link="Compiler\ObjectWriter\CoffObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\PEObjectWriter.cs" Link="Compiler\ObjectWriter\PEObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\PETargetExtensions.cs" Link="Compiler\ObjectWriter\PETargetExtensions.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\SectionData.cs" Link="Compiler\ObjectWriter\SectionData.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\SectionWriter.cs" Link="Compiler\ObjectWriter\SectionWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" Link="ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" />
@@ -149,6 +168,7 @@
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" Link="ILLink.Shared\TypeSystemProxy\ParameterProxy.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\TypeProxy.cs" Link="ILLink.Shared\TypeSystemProxy\TypeProxy.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\WellKnownType.cs" Link="ILLink.Shared\TypeSystemProxy\WellKnownType.cs" />
+    <Compile Include="CodeGen\ReadyToRunContainerFormat.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\EnclosingTypeMapNode.cs" />
@@ -274,19 +294,14 @@
     <Compile Include="IL\Stubs\PInvokeILEmitter.cs" />
     <Compile Include="Interop\IL\Marshaller.ReadyToRun.cs" />
     <Compile Include="Compiler\PerfEventSource.cs" />
-    <Compile Include="ObjectWriter\OutputInfoBuilder.cs" />
     <Compile Include="ObjectWriter\ProfileFileBuilder.cs" />
     <Compile Include="ObjectWriter\SymbolFileBuilder.cs" />
-    <Compile Include="ObjectWriter\TypeString.cs" />
     <Compile Include="Compiler\RuntimeDeterminedTypeHelper.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NoMethodsCompilationModuleGroup.cs" />
     <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
-    <Compile Include="ObjectWriter\SectionBuilder.cs" />
-    <Compile Include="ObjectWriter\R2RPEBuilder.cs" />
-    <Compile Include="ObjectWriter\RelocationHelper.cs" />
     <Compile Include="ObjectWriter\TargetExtensions.cs" />
     <Compile Include="TypeSystem\Mutable\MutableModule.cs" />
     <Compile Include="TypeSystem\Mutable\MutableModule.Sorting.cs" />
@@ -345,5 +360,9 @@
     <Compile Include="..\..\Common\JitInterface\AsyncMethodDescFactory.cs">
       <Link>JitInterface\AsyncMethodDesc.cs</Link>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="tools\aot\ilcompiler.readytorun\codegen\" />
   </ItemGroup>
 </Project>
