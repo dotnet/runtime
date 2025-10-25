@@ -462,6 +462,9 @@ void CodeGen::genCodeForBBlist()
 
 #endif // DEBUG
             }
+            else if (node->OperIs(GT_RECORD_ASYNC_RESUME))
+            {
+            }
 
             genCodeForTreeNode(node);
             if (node->gtHasReg(compiler) && node->IsUnusedValue())
@@ -882,11 +885,11 @@ void CodeGen::genCodeForBBlist()
     // This call is for cleaning the GC refs
     genUpdateLife(VarSetOps::MakeEmpty(compiler));
 
-    /* Finalize the spill  tracking logic */
+    // Finalize the spill  tracking logic
 
     regSet.rsSpillEnd();
 
-    /* Finalize the temp   tracking logic */
+    // Finalize the temp   tracking logic
 
     regSet.tmpEnd();
 
@@ -899,6 +902,19 @@ void CodeGen::genCodeForBBlist()
         printf("%s\n", compiler->info.compFullName);
     }
 #endif
+}
+
+void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
+{
+    size_t index = asyncResume->gtVal1;
+    assert(compiler->compSuspensionPoints != nullptr);
+    assert(index < compiler->compSuspensionPoints->size());
+
+    emitter::dataSection* asyncResumeInfo;
+    genEmitAsyncResumeInfoTable(&asyncResumeInfo);
+
+    BYTE* addr = asyncResumeInfo->dsCont + index * sizeof(emitLocation);
+    new (addr, jitstd::placement_t()) emitLocation(GetEmitter());
 }
 
 /*

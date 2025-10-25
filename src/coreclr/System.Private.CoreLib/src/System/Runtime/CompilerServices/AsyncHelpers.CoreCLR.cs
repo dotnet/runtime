@@ -78,11 +78,19 @@ namespace System.Runtime.CompilerServices
         ContinueOnCapturedTaskScheduler = 64,
     }
 
+    // Keep in sync with dataAsyncResumeInfo in the JIT
+    internal unsafe struct ResumeInfo
+    {
+        public delegate*<Continuation, ref byte, Continuation?> Resume;
+        // IP in final code
+        public void* FinalResumeIP;
+    }
+
 #pragma warning disable CA1852 // "Type can be sealed" -- no it cannot because the runtime constructs subtypes dynamically
     internal unsafe class Continuation
     {
         public Continuation? Next;
-        public delegate*<Continuation, ref byte, Continuation?> Resume;
+        public ResumeInfo* ResumeInfo;
         public ContinuationFlags Flags;
         public int State;
 
@@ -195,9 +203,8 @@ namespace System.Runtime.CompilerServices
             static abstract ref byte GetResultStorage(T task);
         }
 
-        /// <summary>
-        /// Represents a wrapped runtime async operation.
-        /// </summary>
+        // Represents execution of a chain of suspended and resuming runtime
+        // async functions.
         private sealed class RuntimeAsyncTask<T> : Task<T>, ITaskCompletionAction
         {
             public RuntimeAsyncTask()
@@ -261,9 +268,8 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        /// <summary>
-        /// Represents a wrapped runtime async operation.
-        /// </summary>
+        // Represents execution of a chain of suspended and resuming runtime
+        // async functions.
         private sealed class RuntimeAsyncTask : Task, ITaskCompletionAction
         {
             public RuntimeAsyncTask()
@@ -329,35 +335,55 @@ namespace System.Runtime.CompilerServices
 
         private static class RuntimeAsyncTaskCore
         {
+            private unsafe ref struct DispatcherInfo
+            {
+                // Dispatcher info for next dispatcher present on stack, or
+                // null if none.
+                public DispatcherInfo* Next;
+                // Next continuation the dispatcher will process.
+                public Continuation? NextContinuation;
+            }
+
+            // Information about current task dispatching, to be used for async
+            // stackwalking.
+            [ThreadStatic]
+            private static unsafe DispatcherInfo* t_dispatcherInfo;
+
             public static unsafe void DispatchContinuations<T, TOps>(T task) where T : Task, ITaskCompletionAction where TOps : IRuntimeAsyncTaskOps<T>
             {
                 ExecutionAndSyncBlockStore contexts = default;
                 contexts.Push();
-                Continuation? continuation = TOps.GetContinuationState(task);
+
+                DispatcherInfo dispatcherInfo;
+                dispatcherInfo.Next = t_dispatcherInfo;
+                dispatcherInfo.NextContinuation = TOps.GetContinuationState(task);
+                t_dispatcherInfo = &dispatcherInfo;
 
                 while (true)
                 {
-                    Debug.Assert(continuation != null);
+                    Debug.Assert(dispatcherInfo.NextContinuation != null);
                     try
                     {
-                        ref byte resultLoc = ref continuation.Next != null ? ref continuation.Next.GetResultStorageOrNull() : ref TOps.GetResultStorage(task);
-                        Continuation? newContinuation = continuation.Resume(continuation, ref resultLoc);
+                        Continuation curContinuation = dispatcherInfo.NextContinuation;
+                        Continuation? nextContinuation = curContinuation.Next;
+                        dispatcherInfo.NextContinuation = nextContinuation;
+
+                        ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref TOps.GetResultStorage(task);
+                        Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
 
                         if (newContinuation != null)
                         {
-                            newContinuation.Next = continuation.Next;
+                            newContinuation.Next = nextContinuation;
                             HandleSuspended<T, TOps>(task);
                             contexts.Pop();
+                            t_dispatcherInfo = dispatcherInfo.Next;
                             return;
                         }
-
-                        continuation = continuation.Next;
                     }
                     catch (Exception ex)
                     {
-                        Debug.Assert(continuation != null);
-                        Continuation? nextContinuation = UnwindToPossibleHandler(continuation);
-                        if (nextContinuation == null)
+                        Continuation? handlerContinuation = UnwindToPossibleHandler(dispatcherInfo.NextContinuation);
+                        if (handlerContinuation == null)
                         {
                             // Tail of AsyncTaskMethodBuilderT.SetException
                             bool successfullySet = ex is OperationCanceledException oce ?
@@ -365,6 +391,8 @@ namespace System.Runtime.CompilerServices
                                 task.TrySetException(ex);
 
                             contexts.Pop();
+
+                            t_dispatcherInfo = dispatcherInfo.Next;
 
                             if (!successfullySet)
                             {
@@ -374,16 +402,17 @@ namespace System.Runtime.CompilerServices
                             return;
                         }
 
-                        nextContinuation.SetException(ex);
-
-                        continuation = nextContinuation;
+                        handlerContinuation.SetException(ex);
+                        dispatcherInfo.NextContinuation = handlerContinuation;
                     }
 
-                    if (continuation == null)
+                    if (dispatcherInfo.NextContinuation == null)
                     {
                         bool successfullySet = TOps.SetCompleted(task);
 
                         contexts.Pop();
+
+                        t_dispatcherInfo = dispatcherInfo.Next;
 
                         if (!successfullySet)
                         {
@@ -393,26 +422,23 @@ namespace System.Runtime.CompilerServices
                         return;
                     }
 
-                    if (QueueContinuationFollowUpActionIfNecessary<T, TOps>(task, continuation))
+                    if (QueueContinuationFollowUpActionIfNecessary<T, TOps>(task, dispatcherInfo.NextContinuation))
                     {
                         contexts.Pop();
+                        t_dispatcherInfo = dispatcherInfo.Next;
                         return;
                     }
                 }
             }
 
-            private static Continuation? UnwindToPossibleHandler(Continuation continuation)
+            private static Continuation? UnwindToPossibleHandler(Continuation? continuation)
             {
                 while (true)
                 {
-                    Continuation? nextContinuation = continuation.Next;
-                    if (nextContinuation == null)
-                        return null;
+                    if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
+                        return continuation;
 
-                    if ((nextContinuation.Flags & ContinuationFlags.HasException) != 0)
-                        return nextContinuation;
-
-                    continuation = nextContinuation;
+                    continuation = continuation.Next;
                 }
             }
 

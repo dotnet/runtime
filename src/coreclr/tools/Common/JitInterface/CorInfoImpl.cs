@@ -3216,6 +3216,14 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
+        private void reportAsyncDebugInfo(AsyncInfo* asyncInfo, AsyncSuspensionPoint* suspensionPoints, AsyncContinuationVarInfo* vars, uint numVars)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            NativeMemory.Free(suspensionPoints);
+            NativeMemory.Free(vars);
+        }
+
+#pragma warning disable CA1822 // Mark members as static
         private void reportMetadata(byte* key, void* value, nuint length)
 #pragma warning restore CA1822 // Mark members as static
         {
@@ -3361,7 +3369,7 @@ namespace Internal.JitInterface
             DefType continuation = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
             pAsyncInfoOut.continuationClsHnd = ObjectToHandle(continuation);
             pAsyncInfoOut.continuationNextFldHnd = ObjectToHandle(continuation.GetKnownField("Next"u8));
-            pAsyncInfoOut.continuationResumeFldHnd = ObjectToHandle(continuation.GetKnownField("Resume"u8));
+            pAsyncInfoOut.continuationResumeInfoFldHnd = ObjectToHandle(continuation.GetKnownField("ResumeInfo"u8));
             pAsyncInfoOut.continuationStateFldHnd = ObjectToHandle(continuation.GetKnownField("State"u8));
             pAsyncInfoOut.continuationFlagsFldHnd = ObjectToHandle(continuation.GetKnownField("Flags"u8));
             DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
@@ -3728,7 +3736,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
 #pragma warning restore CA1822 // Mark members as static
         {
             throw new NotImplementedException("Crossgen2 does not support runtime-async yet");

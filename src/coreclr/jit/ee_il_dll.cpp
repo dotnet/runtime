@@ -1003,7 +1003,7 @@ void Compiler::eeSetLIinfo(unsigned which, UNATIVE_OFFSET nativeOffset, IPmappin
     {
         case IPmappingDscKind::Normal:
             eeBoundaries[which].ilOffset = loc.GetOffset();
-            eeBoundaries[which].source   = loc.EncodeSourceTypes();
+            eeBoundaries[which].source   = loc.GetSourceTypes();
             break;
         case IPmappingDscKind::Prolog:
             eeBoundaries[which].ilOffset = ICorDebugInfo::PROLOG;
@@ -1096,12 +1096,17 @@ void Compiler::eeDispLineInfo(const ICorDebugInfo::OffsetMapping* line)
         {
             printf("CALL_SITE ");
         }
+        if ((line->source & ICorDebugInfo::ASYNC) != 0)
+        {
+            printf("ASYNC ");
+        }
         printf(")");
     }
     printf("\n");
 
     // We don't expect to see any other bits.
-    assert((line->source & ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION)) == 0);
+    assert((line->source & ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::ASYNC)) ==
+           0);
 }
 
 void Compiler::eeDispLineInfos()

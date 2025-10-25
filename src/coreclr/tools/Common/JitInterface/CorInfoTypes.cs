@@ -878,8 +878,8 @@ namespace Internal.JitInterface
         public CORINFO_CLASS_STRUCT_* continuationClsHnd;
         // 'Next' field
         public CORINFO_FIELD_STRUCT_* continuationNextFldHnd;
-        // 'Resume' field
-        public CORINFO_FIELD_STRUCT_* continuationResumeFldHnd;
+        // 'ResumeInfo' field
+        public CORINFO_FIELD_STRUCT_* continuationResumeInfoFldHnd;
         // 'State' field
         public CORINFO_FIELD_STRUCT_* continuationStateFldHnd;
         // 'Flags' field
@@ -1271,7 +1271,8 @@ namespace Internal.JitInterface
         STACK_EMPTY = 0x02, // The stack is empty here
         CALL_SITE = 0x04, // This is a call site.
         NATIVE_END_OFFSET_UNKNOWN = 0x08, // Indicates a epilog endpoint
-        CALL_INSTRUCTION = 0x10  // The actual instruction of a call.
+        CALL_INSTRUCTION = 0x10, // The actual instruction of a call.
+        ASYNC = 0x20, // async suspension/resumption code for a specific async call
     };
 
     public struct OffsetMapping
@@ -1326,6 +1327,27 @@ namespace Internal.JitInterface
         public uint ILOffset;
         // Source information about the IL instruction in the inlinee
         public SourceTypes Source;
+    }
+
+    public struct AsyncContinuationVarInfo
+    {
+        // IL number of variable (or one of the special IL numbers, like TYPECTXT_ILNUM)
+        public uint VarNumber;
+        // Offset in continuation object where this variable is stored
+        public uint Offset;
+    }
+
+    public struct AsyncSuspensionPoint
+    {
+        // Count of AsyncContinuationVarInfo in array of locals starting where
+        // the previous suspension point's locals end.
+        public uint NumContinuationVars;
+    }
+
+    public struct AsyncInfo
+    {
+        // Number of suspension points in the method.
+        public uint NumSuspensionPoints;
     }
 
     // This enum is used for JIT to tell EE where this token comes from.

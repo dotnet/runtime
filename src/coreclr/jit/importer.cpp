@@ -2100,11 +2100,10 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         {
             // Report the debug info. impImportBlockCode won't treat the actual handler as exception block and thus
             // won't do it for us.
-            // TODO-DEBUGINFO: Previous code always set stack as non-empty
-            // here. Can we not just use impCurStmtOffsSet? Are we out of sync
-            // here with the stack?
-            impCurStmtDI = DebugInfo(compInlineContext, ILLocation(newBlk->bbCodeOffs, false, false));
-            argStmt      = gtNewStmt(argStore, impCurStmtDI);
+            // TODO-Bug: Should be reported with ICorDebugInfo::CALL_SITE?
+            impCurStmtDI =
+                DebugInfo(compInlineContext, ILLocation(newBlk->bbCodeOffs, ICorDebugInfo::SOURCE_TYPE_INVALID));
+            argStmt = gtNewStmt(argStore, impCurStmtDI);
         }
         else
         {
@@ -2175,8 +2174,13 @@ DebugInfo Compiler::impCreateDIWithCurrentStackInfo(IL_OFFSET offs, bool isCall)
 {
     assert(offs != BAD_IL_OFFSET);
 
-    bool isStackEmpty = stackState.esStackDepth <= 0;
-    return DebugInfo(compInlineContext, ILLocation(offs, isStackEmpty, isCall));
+    unsigned sourceTypes = 0;
+    if (isCall)
+        sourceTypes |= ICorDebugInfo::CALL_INSTRUCTION;
+    if (stackState.esStackDepth <= 0)
+        sourceTypes |= ICorDebugInfo::STACK_EMPTY;
+
+    return DebugInfo(compInlineContext, ILLocation(offs, (ICorDebugInfo::SourceTypes)sourceTypes));
 }
 
 //------------------------------------------------------------------------
