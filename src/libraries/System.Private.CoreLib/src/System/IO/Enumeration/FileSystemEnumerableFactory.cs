@@ -51,14 +51,20 @@ namespace System.IO.Enumeration
             //   "."             → "."             (relative path reference)
             //   ".."            → ".."            (parent directory reference)
             //   " "             → " "             (only spaces - would result in empty)
-            //   "\\?\C:\test."  → "\\?\C:\test." (extended path syntax - no normalization)
+            //   "\\?\C:\test."  → "\\?\C:\test." (extended path syntax on Windows - no normalization)
             //
             // Algorithm: Trim trailing spaces/periods, but only if:
             // 1. Result is non-empty
-            // 2. Path does not use extended syntax (\\?\ or \\.\)
+            // 2. On Windows: Path does not use extended syntax (\\?\ or \\.\)
 
-            // Don't trim paths using extended syntax (\\?\ or \\.\) as they explicitly disable normalization
-            if (!PathInternal.IsExtended(directory.AsSpan()))
+            // Don't trim paths using extended syntax on Windows (\\?\ or \\.\) as they explicitly disable normalization
+            // On Unix, there's no extended syntax concept, so we always trim (unless result would be empty)
+            bool shouldTrim = true;
+#if WINDOWS
+            shouldTrim = !PathInternal.IsExtended(directory.AsSpan());
+#endif
+
+            if (shouldTrim)
             {
                 string trimmed = directory.TrimEnd(' ', '.');
 
