@@ -252,7 +252,7 @@ namespace System
             {
                 // For built-in (simple) parsers, it is safe to do an Interlocked update here
                 Debug.Assert(sizeof(Flags) == sizeof(ulong));
-                Interlocked.Or(ref Unsafe.As<Flags, ulong>(ref _flags), (ulong)flags);
+                Interlocked.Or(ref _flags, flags);
             }
             else
             {
