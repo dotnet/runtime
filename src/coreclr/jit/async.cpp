@@ -1415,32 +1415,168 @@ BasicBlock* AsyncTransformation::CreateSuspension(
 
     JITDUMP("  Creating suspension " FMT_BB " for state %u\n", suspendBB->bbNum, stateNum);
 
-    // Allocate continuation
+    BasicBlock* suspendEntry = suspendBB;
+    suspendBB                = CreateAllocNewOrReuseContinuation(stateNum, suspendBB, call, life, layout);
+
+    if (layout.Size > 0)
+    {
+        FillInDataOnSuspension(call, layout, suspendBB);
+    }
+
+    if (suspendBB->KindIs(BBJ_RETURN))
+    {
+        GenTree* newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+        GenTree* ret             = m_comp->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
+        LIR::AsRange(suspendBB).InsertAtEnd(newContinuation, ret);
+    }
+
+    return suspendEntry;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::CreateAllocNewOrReuseContinuation:
+//   Create IR to obtain a continuation object instance.
+//
+// Parameters:
+//   stateNum - State number assigned to this suspension point
+//   block    - Block to insert IR into
+//   call     - The async call
+//   life     - Liveness information about live locals
+//   layout   - Layout information for the continuation object
+//
+// Returns:
+//   The block that has the continuation instance available in
+//   m_newContinuationVar.
+//
+// Remarks:
+//  If enabled, opportunistically try to reuse the continuation that was used
+//  for resumption; otherwise allocate a new one.
+//
+BasicBlock* AsyncTransformation::CreateAllocNewOrReuseContinuation(
+    unsigned stateNum, BasicBlock* block, GenTreeCall* call, AsyncLiveness& life, const ContinuationLayout& layout)
+{
+    if (JitConfig.JitOpportunisticContinuationReuse() == 0)
+    {
+        CreateAllocNewContinuation(stateNum, block, call, life, layout);
+        return block;
+    }
+
+    // Generate IR to try to reuse existing continuation if possible.
+
+    BasicBlock* joinBB            = m_comp->fgSplitBlockAtEnd(block);
+    BasicBlock* checkForContState = m_comp->fgNewBBafter(BBJ_COND, block, true);
+    BasicBlock* reuseBB           = m_comp->fgNewBBafter(BBJ_ALWAYS, checkForContState, true);
+    BasicBlock* allocNewBB        = m_comp->fgNewBBafter(BBJ_ALWAYS, reuseBB, true);
+
+    m_comp->fgRemoveRefPred(block->GetTargetEdge());
+    joinBB->inheritWeight(block);
+    checkForContState->inheritWeight(block);
+    reuseBB->inheritWeight(block);
+    allocNewBB->inheritWeight(block);
+
+    // If continuation is null we will jump to allocNew; otherwise to checkForContState
+    FlowEdge* toAllocNew = m_comp->fgAddRefPred(allocNewBB, block);
+    // 85% probability that we had no continuation to reuse
+    toAllocNew->setLikelihood(0.85);
+    FlowEdge* toCheckForContState = m_comp->fgAddRefPred(checkForContState, block);
+    toCheckForContState->setLikelihood(0.15);
+    block->SetCond(toAllocNew, toCheckForContState);
+
+    // If continuation state is mismatching we jump to allocNew; otherwise to reuse
+    toAllocNew = m_comp->fgAddRefPred(allocNewBB, checkForContState);
+    // 50% probability that the continuation cannot be reused
+    toAllocNew->setLikelihood(0.5);
+    FlowEdge* toReuse = m_comp->fgAddRefPred(reuseBB, checkForContState);
+    toReuse->setLikelihood(0.5);
+    checkForContState->SetCond(toAllocNew, toReuse);
+
+    reuseBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_comp->fgAddRefPred(joinBB, reuseBB));
+    allocNewBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_comp->fgAddRefPred(joinBB, allocNewBB));
+
+    if (block->hasProfileWeight())
+    {
+        checkForContState->setBBProfileWeight(checkForContState->computeIncomingWeight());
+        reuseBB->setBBProfileWeight(reuseBB->computeIncomingWeight());
+        allocNewBB->setBBProfileWeight(allocNewBB->computeIncomingWeight());
+    }
+
+    // Add IR to do actual checks. First the null check.
+    GenTree* contEqNull =
+        m_comp->gtNewOperNode(GT_EQ, TYP_INT, m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF),
+                              m_comp->gtNewNull());
+    GenTree* jumpIfContNull = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, contEqNull);
+    LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(m_comp, jumpIfContNull));
+
+    // Then the state check.
+    unsigned stateOffset     = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
+    GenTree* stateOffsetNode = m_comp->gtNewIconNode((ssize_t)stateOffset, TYP_I_IMPL);
+    GenTree* continuationArg = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+    GenTree* stateAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, continuationArg, stateOffsetNode);
+    GenTree* stateInd        = m_comp->gtNewIndir(TYP_INT, stateAddr, GTF_IND_NONFAULTING);
+
+    GenTree* contStateNeqState =
+        m_comp->gtNewOperNode(GT_NE, TYP_INT, stateInd, m_comp->gtNewIconNode((ssize_t)stateNum));
+    GenTree* jumpIfContState = m_comp->gtNewOperNode(GT_JTRUE, TYP_VOID, contStateNeqState);
+    LIR::AsRange(checkForContState).InsertAtEnd(LIR::SeqTree(m_comp, jumpIfContState));
+
+    // Generate IR to allocate a new continuation
+    CreateAllocNewContinuation(stateNum, allocNewBB, call, life, layout);
+
+    // Otherwise reuse the continuation
+    GenTree* contParam    = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
+    GenTree* storeNewCont = m_comp->gtNewStoreLclVarNode(m_newContinuationVar, contParam);
+    LIR::AsRange(reuseBB).InsertAtEnd(contParam, storeNewCont);
+
+    // Update Continuation.Next of suspending callee to point to new one.
+    unsigned         nextOffset   = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationNextFldHnd);
+    GenTree*         newCont      = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+    GenTree*         returnedCont = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
+    GenTreeStoreInd* storeNext    = StoreAtOffset(returnedCont, nextOffset, newCont, TYP_REF);
+    LIR::AsRange(reuseBB).InsertAtEnd(LIR::SeqTree(m_comp, storeNext));
+
+    return joinBB;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::CreateAllocNewContinuation:
+//   Create IR to allocate a new continuation instance and fill it with static
+//   data for this state.
+//
+// Parameters:
+//   stateNum - State number assigned to this suspension point
+//   block    - Block to insert IR into
+//   call     - The async call
+//   life     - Liveness information about live locals
+//   layout   - Layout information for the continuation object
+//
+void AsyncTransformation::CreateAllocNewContinuation(
+    unsigned stateNum, BasicBlock* block, GenTreeCall* call, AsyncLiveness& life, const ContinuationLayout& layout)
+{
     GenTree* returnedContinuation = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
 
     GenTreeCall* allocContinuation = CreateAllocContinuationCall(life, returnedContinuation, layout);
 
-    m_comp->compCurBB = suspendBB;
+    m_comp->compCurBB = block;
     m_comp->fgMorphTree(allocContinuation);
 
-    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, allocContinuation));
+    LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(m_comp, allocContinuation));
 
     GenTree* storeNewContinuation = m_comp->gtNewStoreLclVarNode(m_newContinuationVar, allocContinuation);
-    LIR::AsRange(suspendBB).InsertAtEnd(storeNewContinuation);
+    LIR::AsRange(block).InsertAtEnd(storeNewContinuation);
 
     // Fill in 'Resume'
     GenTree* newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned resumeOffset    = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeFldHnd);
     GenTree* resumeStubAddr  = CreateResumptionStubAddrTree();
     GenTree* storeResume     = StoreAtOffset(newContinuation, resumeOffset, resumeStubAddr, TYP_I_IMPL);
-    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResume));
+    LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(m_comp, storeResume));
 
     // Fill in 'state'
     newContinuation       = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
     unsigned stateOffset  = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationStateFldHnd);
     GenTree* stateNumNode = m_comp->gtNewIconNode((ssize_t)stateNum, TYP_INT);
     GenTree* storeState   = StoreAtOffset(newContinuation, stateOffset, stateNumNode, TYP_INT);
-    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeState));
+    LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(m_comp, storeState));
 
     // Fill in 'flags'
     const AsyncCallInfo& callInfo          = call->GetAsyncInfo();
@@ -1460,21 +1596,7 @@ BasicBlock* AsyncTransformation::CreateSuspension(
     unsigned flagsOffset = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationFlagsFldHnd);
     GenTree* flagsNode   = m_comp->gtNewIconNode((ssize_t)continuationFlags, TYP_INT);
     GenTree* storeFlags  = StoreAtOffset(newContinuation, flagsOffset, flagsNode, TYP_INT);
-    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeFlags));
-
-    if (layout.Size > 0)
-    {
-        FillInDataOnSuspension(call, layout, suspendBB);
-    }
-
-    if (suspendBB->KindIs(BBJ_RETURN))
-    {
-        newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-        GenTree* ret    = m_comp->gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, newContinuation);
-        LIR::AsRange(suspendBB).InsertAtEnd(newContinuation, ret);
-    }
-
-    return suspendBB;
+    LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(m_comp, storeFlags));
 }
 
 //------------------------------------------------------------------------

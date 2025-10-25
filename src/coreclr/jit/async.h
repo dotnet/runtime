@@ -103,6 +103,10 @@ class AsyncTransformation
 
     BasicBlock* CreateSuspension(
         BasicBlock* block, GenTreeCall* call, unsigned stateNum, AsyncLiveness& life, const ContinuationLayout& layout);
+    BasicBlock* CreateAllocNewOrReuseContinuation(
+        unsigned stateNum, BasicBlock* block, GenTreeCall* call, AsyncLiveness& life, const ContinuationLayout& layout);
+    void CreateAllocNewContinuation(
+        unsigned stateNum, BasicBlock* block, GenTreeCall* call, AsyncLiveness& life, const ContinuationLayout& layout);
     GenTreeCall* CreateAllocContinuationCall(AsyncLiveness&            life,
                                              GenTree*                  prevContinuation,
                                              const ContinuationLayout& layout);
