@@ -1,0 +1,13 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Treat these tests as merged test runners.
+    Many of these NativeAOT tests need to be their own executables to validate specific features,
+    but we want to run them on mobile platforms as well.
+    However, mobile platforms don't support tests that require process isolation, so we can't use RequiresProcessIsolation.
+    Instead, we treat these tests as merged test runners themselves, so that they can run on mobile platforms.
+  -->
+  <Import Condition="'$(CLRTestKind)' != 'SharedLibrary'" Project="$(TestSourceDir)MergedTestRunner.targets" />
+
+  <!-- SDK Style projects auto-magically include this file. -->
+  <Import Project="..\Directory.Build.targets" />
+</Project>
