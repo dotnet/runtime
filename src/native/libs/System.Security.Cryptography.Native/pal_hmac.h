@@ -18,8 +18,7 @@ typedef struct hmac_ctx_st HMAC_CTX;
  *
  * Implemented by:
  *    1) allocating a new HMAC_CTX
- *    2) calling HMAC_CTX_Init on the new HMAC_CTX
- *    3) calling HMAC_Init_ex with the new HMAC_CTX and the given args.
+ *    2) calling HMAC_Init_ex with the new HMAC_CTX and the given args.
  *
  * Returns new HMAC_CTX on success, nullptr on failure.
  */
@@ -28,9 +27,7 @@ PALEXPORT HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, 
 /**
  * Cleans up and deletes an HMAC_CTX instance created by HmacCreate.
  *
- * Implemented by:
- *   1) Calling HMAC_CTX_Cleanup
- *   2) Deleting the HMAC_CTX instance.
+ * Implemented by calling HMAC_CTX_free
  *
  * No-op if ctx is null.
  * The given HMAC_CTX pointer is invalid after this call.
