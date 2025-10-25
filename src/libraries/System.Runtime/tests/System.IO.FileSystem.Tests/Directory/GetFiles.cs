@@ -222,6 +222,7 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)]
         [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
         public void EnumerateDirectoryWithTrailingSpacePeriod(string dirName)
         {

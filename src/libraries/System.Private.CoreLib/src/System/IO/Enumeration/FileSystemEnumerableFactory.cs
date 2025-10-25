@@ -60,9 +60,21 @@ namespace System.IO.Enumeration
             // Don't trim paths using extended syntax on Windows (\\?\ or \\.\) as they explicitly disable normalization
             // On Unix, there's no extended syntax concept, so we always trim (unless result would be empty)
             bool shouldTrim = true;
-#if WINDOWS
-            shouldTrim = !PathInternal.IsExtended(directory.AsSpan());
-#endif
+            if (OperatingSystem.IsWindows())
+            {
+                // Check for extended path syntax (\\?\ or \\.\) on Windows
+                // Extended paths are paths like \\?\C:\ or \\.\device
+                // While paths like "//?/C:/" will work, they're treated the same as "\\.\" paths.
+                // Skipping of normalization will *only* occur if back slashes ('\') are used.
+                ReadOnlySpan<char> path = directory.AsSpan();
+                const int DevicePrefixLength = 4;
+                bool isExtended = path.Length >= DevicePrefixLength
+                    && path[0] == '\\'
+                    && (path[1] == '\\' || path[1] == '?')
+                    && path[2] == '?'
+                    && path[3] == '\\';
+                shouldTrim = !isExtended;
+            }
 
             if (shouldTrim)
             {
