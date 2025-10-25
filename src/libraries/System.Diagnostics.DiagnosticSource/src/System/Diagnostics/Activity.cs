@@ -2181,15 +2181,15 @@ namespace System.Diagnostics
     internal sealed class ActivityDebuggerProxy(Activity activity)
     {
         public ActivityTraceFlags ActivityTraceFlags => activity.ActivityTraceFlags;
-        public KeyValuePair<string, string?>[] Baggage => activity.Baggage.ToArray();
+        public List<KeyValuePair<string, string?>> Baggage => activity.Baggage.ToList();
         public ActivityContext Context => activity.Context;
         public string DisplayName => activity.DisplayName;
         public TimeSpan Duration => activity.Duration;
-        public ActivityEvent[] Events => activity.Events.ToArray();
+        public List<ActivityEvent> Events => activity.Events.ToList();
         public bool HasRemoteParent => activity.HasRemoteParent;
         public string? Id => activity.Id;
         public ActivityKind Kind => activity.Kind;
-        public ActivityLink[] Links => activity.Links.ToArray();
+        public List<ActivityLink> Links => activity.Links.ToList();
         public string OperationName => activity.OperationName;
         public Activity? Parent => activity.Parent;
         public string? ParentId => activity.ParentId;
@@ -2199,7 +2199,7 @@ namespace System.Diagnostics
         public DateTime StartTimeUtc => activity.StartTimeUtc;
         public ActivityStatusCode Status => activity.Status;
         public string? StatusDescription => activity.StatusDescription;
-        public KeyValuePair<string, object?>[] TagObjects => activity.TagObjects.ToArray();
+        public List<KeyValuePair<string, object?>> TagObjects => activity.TagObjects.ToList();
         public ActivityTraceId TraceId => activity.TraceId;
         public string? TraceStateString => activity.TraceStateString;
     }

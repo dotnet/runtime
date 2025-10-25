@@ -2584,25 +2584,25 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(tagsProp);
             object? tags = tagsProp.GetValue(proxy);
             Assert.NotNull(tags);
-            var tagsArray = tags as KeyValuePair<string, object?>[];
-            Assert.NotNull(tagsArray);
-            Assert.Equal(2, tagsArray.Length);
+            var tagsList = tags as List<KeyValuePair<string, object?>>;
+            Assert.NotNull(tagsList);
+            Assert.Equal(2, tagsList.Count);
 
             PropertyInfo? baggageProp = proxyType.GetProperty("Baggage");
             Assert.NotNull(baggageProp);
             object? baggage = baggageProp.GetValue(proxy);
             Assert.NotNull(baggage);
-            var baggageArray = baggage as KeyValuePair<string, string?>[];
-            Assert.NotNull(baggageArray);
-            Assert.Single(baggageArray);
+            var baggageList = baggage as List<KeyValuePair<string, string?>>;
+            Assert.NotNull(baggageList);
+            Assert.Single(baggageList);
 
             PropertyInfo? eventsProp = proxyType.GetProperty("Events");
             Assert.NotNull(eventsProp);
             object? events = eventsProp.GetValue(proxy);
             Assert.NotNull(events);
-            var eventsArray = events as ActivityEvent[];
-            Assert.NotNull(eventsArray);
-            Assert.Single(eventsArray);
+            var eventsList = events as List<ActivityEvent>;
+            Assert.NotNull(eventsList);
+            Assert.Single(eventsList);
 
             activity.Stop();
         }
