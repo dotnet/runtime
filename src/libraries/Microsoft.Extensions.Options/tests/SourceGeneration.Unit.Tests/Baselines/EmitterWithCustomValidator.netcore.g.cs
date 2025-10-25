@@ -21,7 +21,7 @@
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
             #if NET10_0_OR_GREATER
-            string displayName = string.IsNullOrEmpty(name) ? "MyOptions.Validate" : $"{name}.Validate";
+            string displayName = (!string.IsNullOrEmpty(name) && name.Contains(".")) ? $"{name}.Validate" : "MyOptions.Validate";
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, displayName, null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
@@ -30,7 +30,7 @@
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.Val1" : $"{name}.Val1";
+            context.DisplayName = (!string.IsNullOrEmpty(name) && name.Contains(".")) ? $"{name}.Val1" : "MyOptions.Val1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1, context, validationResults, validationAttributes))
             {
@@ -38,7 +38,7 @@
             }
 
             context.MemberName = "Val2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.Val2" : $"{name}.Val2";
+            context.DisplayName = (!string.IsNullOrEmpty(name) && name.Contains(".")) ? $"{name}.Val2" : "MyOptions.Val2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
