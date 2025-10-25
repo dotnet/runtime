@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
             // For backwards compat, this checks env vars first before using Env.GetFolderPath
             string? appData = Environment.GetEnvironmentVariable("APPDATA");
             string? root = appData                                                                   // On Windows it goes to %APPDATA%\Microsoft\UserSecrets\
-                       ?? Environment.GetEnvironmentVariable("HOME")                             // On Mac/Linux it goes to ~/.microsoft/usersecrets/
+                       ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) // On Mac it goes to ~/Library/Application Support, on Linux to ~/.local/share (or $XDG_DATA_HOME)
                        ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
                        ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
                        ?? Environment.GetEnvironmentVariable(userSecretsFallbackDir);            // this fallback is an escape hatch if everything else fails
@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
 
             return !string.IsNullOrEmpty(appData)
                 ? Path.Combine(root, "Microsoft", "UserSecrets", userSecretsId, SecretsFileName)
-                : Path.Combine(root, ".microsoft", "usersecrets", userSecretsId, SecretsFileName);
+                : Path.Combine(root, "Microsoft", "User-secrets", userSecretsId, SecretsFileName);
         }
     }
 }
