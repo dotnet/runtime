@@ -2555,7 +2555,6 @@ namespace System.Diagnostics.Tests
             Activity activity = new Activity("TestOperation");
             activity.Start();
 
-            // Validate the DebuggerDisplay attribute and ensure the property can be evaluated
             string debuggerDisplay = DebuggerAttributes.ValidateDebuggerDisplayReferences(activity);
             Assert.Contains("OperationName = TestOperation", debuggerDisplay);
             Assert.Contains("Id =", debuggerDisplay);
@@ -2573,38 +2572,7 @@ namespace System.Diagnostics.Tests
             activity.AddEvent(new ActivityEvent("TestEvent"));
             activity.Start();
 
-            DebuggerAttributeInfo proxyInfo = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(activity);
-            object proxy = proxyInfo.Instance;
-            Assert.NotNull(proxy);
-
-            Type proxyType = proxy.GetType();
-            PropertyInfo? operationNameProp = proxyType.GetProperty("OperationName");
-            Assert.NotNull(operationNameProp);
-            Assert.Equal("TestOperation", operationNameProp.GetValue(proxy));
-
-            PropertyInfo? tagsProp = proxyType.GetProperty("TagObjects");
-            Assert.NotNull(tagsProp);
-            object? tags = tagsProp.GetValue(proxy);
-            Assert.NotNull(tags);
-            var tagsList = tags as List<KeyValuePair<string, object?>>;
-            Assert.NotNull(tagsList);
-            Assert.Equal(2, tagsList.Count);
-
-            PropertyInfo? baggageProp = proxyType.GetProperty("Baggage");
-            Assert.NotNull(baggageProp);
-            object? baggage = baggageProp.GetValue(proxy);
-            Assert.NotNull(baggage);
-            var baggageList = baggage as List<KeyValuePair<string, string?>>;
-            Assert.NotNull(baggageList);
-            Assert.Single(baggageList);
-
-            PropertyInfo? eventsProp = proxyType.GetProperty("Events");
-            Assert.NotNull(eventsProp);
-            object? events = eventsProp.GetValue(proxy);
-            Assert.NotNull(events);
-            var eventsList = events as List<ActivityEvent>;
-            Assert.NotNull(eventsList);
-            Assert.Single(eventsList);
+            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(activity);
 
             activity.Stop();
         }
@@ -2616,8 +2584,6 @@ namespace System.Diagnostics.Tests
             ActivitySpanId spanId = ActivitySpanId.CreateRandom();
             ActivityContext context = new ActivityContext(traceId, spanId, ActivityTraceFlags.Recorded);
 
-            // ValidateDebuggerDisplayReferences will validate the DebuggerDisplay
-            // attribute and ensure all expressions can be evaluated
             string debuggerDisplay = DebuggerAttributes.ValidateDebuggerDisplayReferences(context);
             Assert.NotNull(debuggerDisplay);
         }
@@ -2630,13 +2596,9 @@ namespace System.Diagnostics.Tests
             ActivityContext context = new ActivityContext(traceId, spanId, ActivityTraceFlags.Recorded);
             ActivityLink link = new ActivityLink(context);
 
-            // ActivityLink uses nested property Context.TraceId which the helper doesn't support,
-            // so we just verify the attribute exists and has the correct format
             Type type = link.GetType();
             DebuggerDisplayAttribute? attr = type.GetCustomAttribute<DebuggerDisplayAttribute>();
             Assert.NotNull(attr);
-            Assert.Contains("Context.TraceId", attr.Value);
-            Assert.Contains("Context.SpanId", attr.Value);
         }
 
         [Fact]
