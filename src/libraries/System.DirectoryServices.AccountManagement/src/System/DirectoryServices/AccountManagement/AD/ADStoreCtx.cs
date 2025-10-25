@@ -1743,6 +1743,7 @@ namespace System.DirectoryServices.AccountManagement
 
             Debug.Assert(g.UnderlyingObject != null && g.UnderlyingObject is DirectoryEntry);
             IEnumerable cachedMembersEnum = null; //This variables stores a reference to the direct members enumerator of the group.
+            RangeRetriever rangeRetrieverToDispose = null;
 
             // Only real principals can be directly a member of the group, since only real principals
             // actually exist in the store.
@@ -1774,11 +1775,13 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // this is a large group. use range retrieval instead of simple attribute check.
                     RangeRetriever rangeRetriever = new RangeRetriever(groupDE, "member", false);
+                    rangeRetrieverToDispose = rangeRetriever;
                     rangeRetriever.CacheValues = true;
                     foreach (string memberDN in rangeRetriever)
                     {
                         if (principalDN.Equals(memberDN, StringComparison.OrdinalIgnoreCase))
                         {
+                            ((IDisposable)rangeRetriever).Dispose();
                             return true;
                         }
                     }
@@ -1798,6 +1801,7 @@ namespace System.DirectoryServices.AccountManagement
             if (Sid == null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADStoreCtx", "IsMemberOfInStore: no SID IC or null UrnValue");
+                ((IDisposable)rangeRetrieverToDispose)?.Dispose();
                 throw new ArgumentException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
             }
             DirectoryEntry defaultNCDirEntry = null;
@@ -1854,6 +1858,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
+                ((IDisposable)rangeRetrieverToDispose)?.Dispose();
                 ds?.Dispose();
                 defaultNCDirEntry?.Dispose();
             }
