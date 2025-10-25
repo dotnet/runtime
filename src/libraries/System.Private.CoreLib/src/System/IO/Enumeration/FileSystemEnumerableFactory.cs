@@ -47,19 +47,26 @@ namespace System.IO.Enumeration
             //   "/tmp/test/. "  → "/tmp/test/"   (preserve separator, remove period and space)
             //   "/tmp/test// "  → "/tmp/test//"  (preserve separators, remove space)
             //
-            // Special cases we don't trim (would result in empty or meaningless path):
+            // Special cases we don't trim:
             //   "."             → "."             (relative path reference)
             //   ".."            → ".."            (parent directory reference)
-            //   " "             → " "             (only spaces)
+            //   " "             → " "             (only spaces - would result in empty)
+            //   "\\?\C:\test."  → "\\?\C:\test." (extended path syntax - no normalization)
             //
-            // Algorithm: Trim trailing spaces/periods, but only if we end up with a non-empty result
+            // Algorithm: Trim trailing spaces/periods, but only if:
+            // 1. Result is non-empty
+            // 2. Path does not use extended syntax (\\?\ or \\.\)
 
-            string trimmed = directory.TrimEnd(' ', '.');
-
-            // Only apply the trim if it results in a non-empty string
-            if (trimmed.Length > 0)
+            // Don't trim paths using extended syntax (\\?\ or \\.\) as they explicitly disable normalization
+            if (!PathInternal.IsExtended(directory.AsSpan()))
             {
-                directory = trimmed;
+                string trimmed = directory.TrimEnd(' ', '.');
+
+                // Only apply the trim if it results in a non-empty string
+                if (trimmed.Length > 0)
+                {
+                    directory = trimmed;
+                }
             }
 
             // We always allowed breaking the passed ref directory and filter to be separated
