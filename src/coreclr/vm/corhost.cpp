@@ -647,7 +647,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
         // Preload the libSystem.Native.so/dylib to detect possible problems with loading it early
         EX_TRY
         {
-            NativeLibrary::LoadFromAssemblyDirectory(W("libSystem.Native"), SystemDomain::SystemAssembly());
+            NativeLibrary::LoadFromAssemblyDirectory(W("libSystem.Native") PAL_SHLIB_SUFFIX_W, SystemDomain::SystemAssembly());
         }
         EX_HOOK
         {
