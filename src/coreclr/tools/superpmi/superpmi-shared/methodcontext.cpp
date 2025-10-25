@@ -6081,7 +6081,7 @@ void MethodContext::dmpGetCookieForPInvokeCalliSig(const GetCookieForPInvokeCall
 }
 LPVOID MethodContext::repGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
 {
-    AssertMapExistsNoMessage(GetCookieForInterpreterCalliSig);
+    AssertMapExistsNoMessage(GetCookieForPInvokeCalliSig);
 
     GetCookieForPInvokeCalliSigValue key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
@@ -6124,6 +6124,8 @@ void MethodContext::dmpGetCookieForInterpreterCalliSig(const GetCookieForInterpr
 }
 LPVOID MethodContext::repGetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
+    AssertMapExistsNoMessage(GetCookieForInterpreterCalliSig);
+
     GetCookieForInterpreterCalliSigValue key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.cbSig      = (DWORD)szMetaSig->cbSig;
