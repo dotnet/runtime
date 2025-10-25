@@ -74,9 +74,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 
     switch (insOp)
     {
-        case INS_OPTS_JALR:
-        case INS_OPTS_J_cond:
-        case INS_OPTS_J:
+        case INS_OPTS_JUMP:
             return sizeof(instrDescJmp);
 
         case INS_OPTS_C:
@@ -1293,8 +1291,41 @@ void emitter::emitIns_R_AI(instruction  ins,
  */
 void emitter::emitSetShortJump(instrDescJmp* id)
 {
-    // TODO-RISCV64: maybe delete it on future.
-    NYI_RISCV64("emitSetShortJump-----unimplemented/unused on RISCV64 yet----");
+    if (id->idjKeepLong)
+        return;
+
+    assert(emitIsCmpJump(id) || emitIsUncondJump(id));
+    id->idCodeSize(sizeof(code_t)); // single 32-bit instruction
+    id->idjShort = true;
+
+#if DEBUG_EMIT
+    if (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
+    {
+        printf("[8] Converting jump %u to short\n", id->idDebugOnlyInfo()->idNum);
+    }
+#endif // DEBUG_EMIT
+}
+
+/*****************************************************************************
+ *
+ *  Record that a jump instruction uses the medium encoding
+ *
+ */
+void emitter::emitSetMediumJump(instrDescJmp* id)
+{
+    if (id->idjKeepLong)
+        return;
+
+#if DEBUG_EMIT
+    if (id->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
+    {
+        printf("[9] Converting jump %u to medium\n", id->idDebugOnlyInfo()->idNum);
+    }
+#endif // DEBUG_EMIT
+
+    assert(emitIsCmpJump(id));
+    id->idCodeSize(2 * sizeof(code_t)); // two 32-bit instructions
+    id->idjShort = false;
 }
 
 /*****************************************************************************
@@ -1346,89 +1377,33 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
-void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst)
 {
-    NYI_RISCV64("emitIns_J_R-----unimplemented/unused on RISCV64 yet----");
-}
-
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
-{
-    assert(dst != nullptr);
-    //
-    // INS_OPTS_J: placeholders.  1-ins: if the dst outof-range will be replaced by INS_OPTS_JALR.
-    // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dst
-
-    assert(dst->HasFlag(BBF_HAS_LABEL));
-
-    instrDescJmp* id = emitNewInstrJmp();
-    assert((INS_jal <= ins) && (ins <= INS_bgeu));
-    id->idIns(ins);
-    id->idReg1((regNumber)(instrCount & 0x1f));
-    id->idReg2((regNumber)((instrCount >> 5) & 0x1f));
-
-    id->idInsOpt(INS_OPTS_J);
-    emitCounts_INS_OPTS_J++;
-    id->idAddr()->iiaBBlabel = dst;
-
-    if (emitComp->opts.compReloc)
-    {
-        id->idSetIsDspReloc();
-    }
-
-    id->idjShort = false;
-
-    // TODO-RISCV64: maybe deleted this.
-    id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
-#ifdef DEBUG
-    if (emitComp->opts.compLongAddress) // Force long branches
-        id->idjKeepLong = 1;
-#endif // DEBUG
-
-    /* Record the jump's IG and offset within it */
-    id->idjIG   = emitCurIG;
-    id->idjOffs = emitCurIGsize;
-
-    /* Append this jump to this IG's jump list */
-    id->idjNext      = emitCurIGjmpList;
-    emitCurIGjmpList = id;
-
-#if EMITTER_STATS
-    emitTotalIGjmps++;
-#endif
-
-    id->idCodeSize(4);
-
-    appendToCurIG(id);
+    assert(emitIsUncondJump(ins));
+    regNumber linkReg = (ins == INS_jal) ? REG_RA : REG_ZERO;
+    emitIns_Jump(ins, dst, linkReg, REG_ZERO);
 }
 
 void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1, regNumber reg2)
 {
-    // TODO-RISCV64:
-    //   Now the emitIns_J_cond_la() is only the short condition branch.
-    //   There is no long condition branch for RISCV64 so far.
-    //   For RISCV64 , the long condition branch is like this:
-    //     --->  branch_condition  condition_target;     //here is the condition branch, short branch is enough.
-    //     --->  jump jump_target; (this supporting the long jump.)
-    //     condition_target:
-    //     ...
-    //     ...
-    //     jump_target:
-    //
-    //
-    // INS_OPTS_J_cond: placeholders.  1-ins.
-    //   ins  reg1, reg2, dst
+    assert(emitIsCmpJump(ins));
+    assert((ins != INS_bnez && ins != INS_beqz) || (reg2 == REG_ZERO));
+    emitIns_Jump(ins, dst, reg1, reg2);
+}
 
+void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, regNumber reg2)
+{
     assert(dst != nullptr);
     assert(dst->HasFlag(BBF_HAS_LABEL));
 
     instrDescJmp* id = emitNewInstrJmp();
-
     id->idIns(ins);
     id->idReg1(reg1);
     id->idReg2(reg2);
+    // Start from the worst case: "[branch (reversed);] auipc; jalr"
     id->idjShort = false;
-
-    id->idInsOpt(INS_OPTS_J_cond);
+    id->idCodeSize((emitIsCmpJump(id) ? 3 : 2) * sizeof(code_t));
+    id->idInsOpt(INS_OPTS_JUMP);
     id->idAddr()->iiaBBlabel = dst;
 
     id->idjKeepLong = emitComp->fgInDifferentRegions(emitComp->compCurBB, dst);
@@ -1449,7 +1424,37 @@ void emitter::emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1
     emitTotalIGjmps++;
 #endif
 
-    id->idCodeSize(4);
+    /* Figure out the max. size of the jump/call instruction */
+    insGroup* tgt = (insGroup*)emitCodeGetCookie(dst);
+    if (!id->idjKeepLong && (tgt != nullptr))
+    {
+        /* This is a backward jump - figure out the distance */
+        UNATIVE_OFFSET srcOffs = emitCurCodeOffset + emitCurIGsize;
+
+        /* Compute the distance estimate */
+        int jmpDist = srcOffs - tgt->igOffs;
+        assert(jmpDist >= 0);
+
+        if (emitIsCmpJump(id))
+        {
+            if (B_DIST_SMALL_MAX_NEG <= -jmpDist)
+            {
+                emitSetShortJump(id);
+            }
+            else if (J_DIST_SMALL_MAX_NEG <= -jmpDist - sizeof(code_t)) // the PC will be taken after the reversed
+                                                                        // branch
+            {
+                emitSetMediumJump(id);
+            }
+        }
+        else
+        {
+            if (J_DIST_SMALL_MAX_NEG <= -jmpDist)
+            {
+                emitSetShortJump(id);
+            }
+        }
+    }
 
     appendToCurIG(id);
 }
@@ -2079,346 +2084,6 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
     assert(dst > origDst);
     assert((dst - origDst) <= UINT_MAX);
     return (unsigned)(dst - origDst);
-}
-
-void emitter::emitJumpDistBind()
-{
-#ifdef DEBUG
-    if (emitComp->verbose)
-    {
-        printf("*************** In emitJumpDistBind()\n");
-    }
-    if (EMIT_INSTLIST_VERBOSE)
-    {
-        printf("\nInstruction list before the jump distance binding:\n\n");
-        emitDispIGlist(true);
-    }
-#endif
-
-#if DEBUG_EMIT
-    auto printJmpInfo = [this](const instrDescJmp* jmp, const insGroup* jmpIG, NATIVE_OFFSET extra,
-                               UNATIVE_OFFSET srcInstrOffs, UNATIVE_OFFSET srcEncodingOffs, UNATIVE_OFFSET dstOffs,
-                               NATIVE_OFFSET jmpDist, const char* direction) {
-        assert(jmp->idDebugOnlyInfo() != nullptr);
-        if (jmp->idDebugOnlyInfo()->idNum == (unsigned)INTERESTING_JUMP_NUM || INTERESTING_JUMP_NUM == 0)
-        {
-            const char* dirId = (strcmp(direction, "fwd") == 0) ? "[1]" : "[2]";
-            if (INTERESTING_JUMP_NUM == 0)
-            {
-                printf("%s Jump %u:\n", dirId, jmp->idDebugOnlyInfo()->idNum);
-            }
-            printf("%s Jump  block is at %08X\n", dirId, jmpIG->igOffs);
-            printf("%s Jump reloffset is %04X\n", dirId, jmp->idjOffs);
-            printf("%s Jump source is at %08X\n", dirId, srcEncodingOffs);
-            printf("%s Label block is at %08X\n", dirId, dstOffs);
-            printf("%s Jump  dist. is    %04X\n", dirId, jmpDist);
-            if (extra > 0)
-            {
-                printf("%s Dist excess [S] = %d  \n", dirId, extra);
-            }
-        }
-        if (EMITVERBOSE)
-        {
-            printf("Estimate of %s jump [%08X/%03u]: %04X -> %04X = %04X\n", direction, dspPtr(jmp),
-                   jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
-        }
-    };
-#endif
-
-    instrDescJmp* jmp;
-
-    UNATIVE_OFFSET adjIG;
-    UNATIVE_OFFSET adjSJ;
-    insGroup*      lstIG;
-#ifdef DEBUG
-    insGroup* prologIG = emitPrologIG;
-#endif // DEBUG
-
-    // NOTE:
-    //  bit0 of isLinkingEnd: indicating whether updating the instrDescJmp's size with the type INS_OPTS_J;
-    //  bit1 of isLinkingEnd: indicating not needed updating the size while emitTotalCodeSize <= 0xfff or had
-    //  updated;
-    unsigned int isLinkingEnd = emitTotalCodeSize <= 0xfff ? 2 : 0;
-
-    UNATIVE_OFFSET ssz = 0; // relative small jump's delay-slot.
-    // small  jump max. neg distance
-    NATIVE_OFFSET nsd = B_DIST_SMALL_MAX_NEG;
-    // small  jump max. pos distance
-    NATIVE_OFFSET maxPlaceholderSize =
-        emitCounts_INS_OPTS_J * (6 << 2); // the max placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J)
-    NATIVE_OFFSET psd = B_DIST_SMALL_MAX_POS - maxPlaceholderSize;
-
-    /*****************************************************************************/
-    /* If the default small encoding is not enough, we start again here.     */
-    /*****************************************************************************/
-
-AGAIN:
-
-#ifdef DEBUG
-    emitCheckIGList();
-#endif
-
-#ifdef DEBUG
-    insGroup*     lastIG = nullptr;
-    instrDescJmp* lastSJ = nullptr;
-#endif
-
-    lstIG = nullptr;
-    adjSJ = 0;
-    adjIG = 0;
-
-    for (jmp = emitJumpList; jmp; jmp = jmp->idjNext)
-    {
-        insGroup* jmpIG;
-        insGroup* tgtIG;
-
-        UNATIVE_OFFSET jsz; // size of the jump instruction in bytes
-
-        NATIVE_OFFSET  extra;           // How far beyond the short jump range is this jump offset?
-        UNATIVE_OFFSET srcInstrOffs;    // offset of the source instruction of the jump
-        UNATIVE_OFFSET srcEncodingOffs; // offset of the source used by the instruction set to calculate the relative
-                                        // offset of the jump
-        UNATIVE_OFFSET dstOffs;
-        NATIVE_OFFSET  jmpDist; // the relative jump distance, as it will be encoded
-
-        /* Make sure the jumps are properly ordered */
-
-#ifdef DEBUG
-        assert(lastSJ == nullptr || lastIG != jmp->idjIG || lastSJ->idjOffs < (jmp->idjOffs + adjSJ));
-        lastSJ = (lastIG == jmp->idjIG) ? jmp : nullptr;
-
-        assert(lastIG == nullptr || lastIG->igNum <= jmp->idjIG->igNum || jmp->idjIG == prologIG ||
-               emitNxtIGnum > unsigned(0xFFFF)); // igNum might overflow
-        lastIG = jmp->idjIG;
-#endif // DEBUG
-
-        /* Get hold of the current jump size */
-
-        jsz = jmp->idCodeSize();
-
-        /* Get the group the jump is in */
-
-        jmpIG = jmp->idjIG;
-
-        /* Are we in a group different from the previous jump? */
-
-        if (lstIG != jmpIG)
-        {
-            /* Were there any jumps before this one? */
-
-            if (lstIG)
-            {
-                /* Adjust the offsets of the intervening blocks */
-
-                do
-                {
-                    lstIG = lstIG->igNext;
-                    assert(lstIG);
-#ifdef DEBUG
-                    if (EMITVERBOSE)
-                    {
-                        printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
-                               lstIG->igOffs + adjIG);
-                    }
-#endif // DEBUG
-                    lstIG->igOffs += adjIG;
-                    assert(IsCodeAligned(lstIG->igOffs));
-                } while (lstIG != jmpIG);
-            }
-
-            /* We've got the first jump in a new group */
-            adjSJ = 0;
-            lstIG = jmpIG;
-        }
-
-        /* Apply any local size adjustment to the jump's relative offset */
-        jmp->idjOffs += adjSJ;
-
-        // If this is a jump via register, the instruction size does not change, so we are done.
-
-        /* Have we bound this jump's target already? */
-
-        if (jmp->idIsBound())
-        {
-            /* Does the jump already have the smallest size? */
-
-            if (jmp->idjShort)
-            {
-                // We should not be jumping/branching across funclets/functions
-                emitCheckFuncletBranch(jmp, jmpIG);
-
-                continue;
-            }
-
-            tgtIG = jmp->idAddr()->iiaIGlabel;
-        }
-        else
-        {
-            /* First time we've seen this label, convert its target */
-
-            tgtIG = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
-
-#ifdef DEBUG
-            if (EMITVERBOSE)
-            {
-                if (tgtIG)
-                {
-                    printf(" to %s\n", emitLabelString(tgtIG));
-                }
-                else
-                {
-                    printf("-- ERROR, no emitter cookie for " FMT_BB "; it is probably missing BBF_HAS_LABEL.\n",
-                           jmp->idAddr()->iiaBBlabel->bbNum);
-                }
-            }
-            assert(tgtIG);
-#endif // DEBUG
-
-            /* Record the bound target */
-
-            jmp->idAddr()->iiaIGlabel = tgtIG;
-            jmp->idSetIsBound();
-        }
-
-        // We should not be jumping/branching across funclets/functions
-        emitCheckFuncletBranch(jmp, jmpIG);
-
-        /*
-            In the following distance calculations, if we're not actually
-            scheduling the code (i.e. reordering instructions), we can
-            use the actual offset of the jump (rather than the beg/end of
-            the instruction group) since the jump will not be moved around
-            and thus its offset is accurate.
-
-            First we need to figure out whether this jump is a forward or
-            backward one; to do this we simply look at the ordinals of the
-            group that contains the jump and the target.
-         */
-
-        srcInstrOffs = jmpIG->igOffs + jmp->idjOffs;
-
-        /* Note that the destination is always the beginning of an IG, so no need for an offset inside it */
-        dstOffs = tgtIG->igOffs;
-
-        srcEncodingOffs = srcInstrOffs + ssz; // Encoding offset of relative offset for small branch
-
-        const char* direction = nullptr;
-        if (jmpIG->igNum < tgtIG->igNum)
-        {
-            /* Forward jump */
-            direction = "fwd";
-
-            /* Adjust the target offset by the current delta. This is a worst-case estimate, as jumps between
-               here and the target could be shortened, causing the actual distance to shrink.
-             */
-            dstOffs += adjIG;
-
-            /* Compute the distance estimate */
-            jmpDist = dstOffs - srcEncodingOffs;
-
-            /* How much beyond the max. short distance does the jump go? */
-            extra = jmpDist - psd;
-        }
-        else
-        {
-            /* Backward jump */
-            direction = "bwd";
-
-            /* Compute the distance estimate */
-            jmpDist = srcEncodingOffs - dstOffs;
-
-            /* How much beyond the max. short distance does the jump go? */
-            extra = jmpDist + nsd;
-        }
-
-#if DEBUG_EMIT
-        printJmpInfo(jmp, jmpIG, extra, srcInstrOffs, srcEncodingOffs, dstOffs, jmpDist, direction);
-#endif // DEBUG_EMIT
-
-        assert(jmpDist >= 0);
-        assert(!(jmpDist & 0x1));
-
-        if (!(isLinkingEnd & 0x2) && (extra > 0) &&
-            (jmp->idInsOpt() == INS_OPTS_J || jmp->idInsOpt() == INS_OPTS_J_cond))
-        {
-            // transform INS_OPTS_J/INS_OPTS_J_cond jump when jmpDist exceed the maximum short distance
-            instruction ins = jmp->idIns();
-            assert((INS_jal <= ins) && (ins <= INS_bgeu));
-
-            if (ins > INS_jalr || (ins < INS_jalr && ins > INS_j)) // jal < beqz < bnez < jalr <
-                                                                   // beq/bne/blt/bltu/bge/bgeu
-            {
-                if (isValidSimm13(jmpDist + maxPlaceholderSize))
-                {
-                    continue;
-                }
-                // convert branch to opposite branch and jump
-                int insCount = isValidSimm21(jmpDist + maxPlaceholderSize) ? 1 /*jal*/ : 2 /*auipc+jalr*/;
-                extra        = insCount * sizeof(code_t);
-            }
-            else if (ins == INS_jal || ins == INS_j)
-            {
-                if (isValidSimm21(jmpDist + maxPlaceholderSize))
-                {
-                    continue;
-                }
-                // convert jal to auipc+jalr
-                extra = sizeof(code_t);
-            }
-            else
-            {
-                unreached();
-            }
-
-            jmp->idInsOpt(INS_OPTS_JALR);
-            jmp->idCodeSize(jmp->idCodeSize() + extra);
-            jmpIG->igSize += (unsigned short)extra; // the placeholder sizeof(INS_OPTS_JALR) - sizeof(INS_OPTS_J).
-            adjSJ += (UNATIVE_OFFSET)extra;
-            adjIG += (UNATIVE_OFFSET)extra;
-            emitTotalCodeSize += (UNATIVE_OFFSET)extra;
-            jmpIG->igFlags |= IGF_UPD_ISZ;
-            isLinkingEnd |= 0x1;
-        }
-    } // end for each jump
-
-    if ((isLinkingEnd & 0x3) < 0x2)
-    {
-        // indicating the instrDescJmp's size of the type INS_OPTS_J had updated
-        // after the first round and should iterate again to update.
-        isLinkingEnd = 0x2;
-
-        // Adjust offsets of any remaining blocks.
-        for (; lstIG;)
-        {
-            lstIG = lstIG->igNext;
-            if (!lstIG)
-            {
-                break;
-            }
-#ifdef DEBUG
-            if (EMITVERBOSE)
-            {
-                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
-                       lstIG->igOffs + adjIG);
-            }
-#endif // DEBUG
-
-            lstIG->igOffs += adjIG;
-
-            assert(IsCodeAligned(lstIG->igOffs));
-        }
-        goto AGAIN;
-    }
-
-#ifdef DEBUG
-    if (EMIT_INSTLIST_VERBOSE)
-    {
-        printf("\nLabels list after the jump distance binding:\n\n");
-        emitDispIGlist(false);
-    }
-
-    emitCheckIGList();
-#endif // DEBUG
 }
 
 /*****************************************************************************
@@ -3265,82 +2930,54 @@ BYTE* emitter::emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins
     return dst;
 }
 
-BYTE* emitter::emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins)
+BYTE* emitter::emitOutputInstr_OptsJump(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins)
 {
-    const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, jmp) - 4;
+    ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, jmp);
     assert((immediate & 0x01) == 0);
+    assert(emitIsUncondJump(jmp) || emitIsCmpJump(jmp));
 
     *ins = jmp->idIns();
-    if (jmp->idInsIs(INS_jal, INS_j)) // far jump
+    if (jmp->idjShort)
     {
-        assert(jmp->idCodeSize() == 2 * sizeof(code_t));
-        assert(isValidSimm32(immediate));
-        dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_RA, UpperNBitsOfWordSignExtend<20>(immediate));
-        dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_RA, REG_RA, LowerNBitsOfWord<12>(immediate));
-    }
-    else // opposite branch + jump
-    {
-        assert(jmp->idInsIs(INS_beqz, INS_bnez, INS_beq, INS_bne, INS_blt, INS_bltu, INS_bge, INS_bgeu));
-        regNumber reg2 = jmp->idInsIs(INS_beqz, INS_bnez) ? REG_R0 : jmp->idReg2();
-        dst += emitOutput_BTypeInstr_InvertComparation(dst, jmp->idIns(), jmp->idReg1(), reg2, jmp->idCodeSize());
-        if (jmp->idCodeSize() == 2 * sizeof(code_t))
+        assert(jmp->idCodeSize() == sizeof(code_t));
+        if (emitIsUncondJump(jmp))
         {
-            dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
+            dst += emitOutput_JTypeInstr(dst, *ins, jmp->idReg1(), TrimSignedToImm21(immediate));
         }
         else
         {
-            assert(jmp->idCodeSize() == 3 * sizeof(code_t));
-            assert(isValidSimm32(immediate));
-            dst += emitOutput_UTypeInstr(dst, INS_auipc, REG_RA, UpperNBitsOfWordSignExtend<20>(immediate));
-            dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_ZERO, REG_RA, LowerNBitsOfWord<12>(immediate));
+            dst += emitOutput_BTypeInstr(dst, *ins, jmp->idReg1(), jmp->idReg2(), TrimSignedToImm13(immediate));
         }
     }
-    return dst;
-}
-
-BYTE* emitter::emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
-{
-    const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
-
-    *ins = id->idIns();
-
-    dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), id->idReg2(), TrimSignedToImm13(immediate));
-    return dst;
-}
-
-BYTE* emitter::emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins)
-{
-    const ssize_t immediate = emitOutputInstrJumpDistance(dst, ig, static_cast<instrDescJmp*>(id));
-    assert((immediate & 0x01) == 0);
-
-    *ins = id->idIns();
-
-    switch (*ins)
+    else // far jump
     {
-        case INS_jal:
-            dst += emitOutput_JTypeInstr(dst, INS_jal, REG_RA, TrimSignedToImm21(immediate));
-            break;
-        case INS_j:
-            dst += emitOutput_JTypeInstr(dst, INS_j, REG_ZERO, TrimSignedToImm21(immediate));
-            break;
-        case INS_jalr:
-            dst += emitOutput_ITypeInstr(dst, INS_jalr, id->idReg1(), id->idReg2(), TrimSignedToImm12(immediate));
-            break;
-        case INS_bnez:
-        case INS_beqz:
-            dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), REG_ZERO, TrimSignedToImm13(immediate));
-            break;
-        case INS_beq:
-        case INS_bne:
-        case INS_blt:
-        case INS_bge:
-        case INS_bltu:
-        case INS_bgeu:
-            dst += emitOutput_BTypeInstr(dst, *ins, id->idReg1(), id->idReg2(), TrimSignedToImm13(immediate));
-            break;
-        default:
-            unreached();
-            break;
+        if (emitIsUncondJump(jmp))
+        {
+            assert(jmp->idCodeSize() == 2 * sizeof(code_t));
+            assert(isValidSimm32(immediate));
+            regNumber linkReg = jmp->idReg1();
+            regNumber tempReg = (linkReg == REG_ZERO) ? codeGen->rsGetRsvdReg() : linkReg;
+            dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
+            dst += emitOutput_ITypeInstr(dst, INS_jalr, linkReg, tempReg, LowerNBitsOfWord<12>(immediate));
+        }
+        else // opposite branch + jump
+        {
+            assert(!jmp->idInsIs(INS_beqz, INS_bnez) || (jmp->idReg2() == REG_ZERO));
+            dst += emitOutput_BTypeInstr_InvertComparation(dst, *ins, jmp->idReg1(), jmp->idReg2(), jmp->idCodeSize());
+            immediate -= sizeof(code_t);
+            if (jmp->idCodeSize() == 2 * sizeof(code_t))
+            {
+                dst += emitOutput_JTypeInstr(dst, INS_jal, REG_ZERO, TrimSignedToImm21(immediate));
+            }
+            else
+            {
+                assert(jmp->idCodeSize() == 3 * sizeof(code_t));
+                assert(isValidSimm32(immediate));
+                regNumber tempReg = codeGen->rsGetRsvdReg();
+                dst += emitOutput_UTypeInstr(dst, INS_auipc, tempReg, UpperNBitsOfWordSignExtend<20>(immediate));
+                dst += emitOutput_ITypeInstr(dst, INS_jalr, REG_ZERO, tempReg, LowerNBitsOfWord<12>(immediate));
+            }
+        }
     }
     return dst;
 }
@@ -3440,17 +3077,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst = emitOutputInstr_OptsRl(dst, id, &ins);
             sz  = sizeof(instrDesc);
             break;
-        case INS_OPTS_JALR:
-            dst = emitOutputInstr_OptsJalr(dst, static_cast<instrDescJmp*>(id), ig, &ins);
-            sz  = sizeof(instrDescJmp);
-            break;
-        case INS_OPTS_J_cond:
-            dst = emitOutputInstr_OptsJCond(dst, id, ig, &ins);
-            sz  = sizeof(instrDescJmp);
-            break;
-        case INS_OPTS_J:
-            // jal/j/jalr/bnez/beqz/beq/bne/blt/bge/bltu/bgeu dstRW-relative.
-            dst = emitOutputInstr_OptsJ(dst, id, ig, &ins);
+        case INS_OPTS_JUMP:
+            dst = emitOutputInstr_OptsJump(dst, static_cast<instrDescJmp*>(id), ig, &ins);
             sz  = sizeof(instrDescJmp);
             break;
         case INS_OPTS_C:
