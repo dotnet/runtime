@@ -75,12 +75,13 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Theory]
-        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void OriginalRootDirectoryPreservesInput(string trailingCharacters)
+        [InlineData("/")]
+        [InlineData("//")]
+        [InlineData("///")]
+        public void OriginalRootDirectoryPreservesInput(string trailingSeparators)
         {
             // OriginalRootDirectory should preserve the exact input path provided by the user,
-            // including trailing spaces and periods. This is important for backward compatibility with
+            // including trailing directory separators. This is important for backward compatibility with
             // code that relies on the exact format of the original path when using FileSystemEnumerator directly.
             // Note: This tests direct FileSystemEnumerator usage, not Directory.GetFiles which goes through
             // NormalizeInputs and trims trailing spaces/periods.
@@ -92,16 +93,16 @@ namespace System.IO.Tests.Enumeration
                 string testFile = Path.Combine(testDir.FullName, "test.txt");
                 File.WriteAllText(testFile, "test");
 
-                string pathWithTrailingCharacters = testDir.FullName + trailingCharacters;
+                string pathWithTrailingSeparators = testDir.FullName + trailingSeparators;
 
                 using (var enumerator = new OriginalRootDirectoryEnumerator(
-                    pathWithTrailingCharacters,
+                    pathWithTrailingSeparators,
                     new EnumerationOptions { RecurseSubdirectories = false }))
                 {
                     if (enumerator.MoveNext())
                     {
                         // OriginalRootDirectory should match the input path exactly
-                        Assert.Equal(pathWithTrailingCharacters, enumerator.CapturedOriginalRootDirectory);
+                        Assert.Equal(pathWithTrailingSeparators, enumerator.CapturedOriginalRootDirectory);
                     }
                 }
             }
