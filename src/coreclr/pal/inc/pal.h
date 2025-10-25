@@ -673,65 +673,6 @@ OpenEventW(
 #endif
 
 PALIMPORT
-HANDLE
-PALAPI
-CreateMutexW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    IN BOOL bInitialOwner,
-    IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateMutexExW(
-    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
-    IN LPCWSTR lpName,
-    IN DWORD dwFlags,
-    IN DWORD dwDesiredAccess);
-
-PALIMPORT
-HANDLE
-PALAPI
-PAL_CreateMutexW(
-    IN BOOL bInitialOwner,
-    IN LPCWSTR lpName,
-    IN BOOL bCurrentUserOnly,
-    IN LPSTR lpSystemCallErrors,
-    IN DWORD dwSystemCallErrorsBufferSize);
-
-// CreateMutexExW: dwFlags
-#define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
-
-#define CreateMutex CreateMutexW
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenMutexW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-PAL_OpenMutexW(
-       IN LPCWSTR lpName,
-       IN BOOL bCurrentUserOnly,
-       IN LPSTR lpSystemCallErrors,
-       IN DWORD dwSystemCallErrorsBufferSize);
-
-#ifdef UNICODE
-#define OpenMutex  OpenMutexW
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-ReleaseMutex(
-    IN HANDLE hMutex);
-
-PALIMPORT
 DWORD
 PALAPI
 GetCurrentProcessId();
@@ -836,8 +777,6 @@ GetExitCodeProcess(
 
 #define MAXIMUM_WAIT_OBJECTS  64
 #define WAIT_OBJECT_0 0
-#define WAIT_ABANDONED   0x00000080
-#define WAIT_ABANDONED_0 0x00000080
 #define WAIT_TIMEOUT 258
 #define WAIT_FAILED ((DWORD)0xFFFFFFFF)
 
@@ -847,13 +786,6 @@ PALIMPORT
 DWORD
 PALAPI
 WaitForSingleObject(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-PAL_WaitForSingleObjectPrioritized(
             IN HANDLE hHandle,
             IN DWORD dwMilliseconds);
 
