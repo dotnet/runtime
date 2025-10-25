@@ -6,6 +6,8 @@ import { InternalExchangeIndex } from "../types";
 
 export { SystemJS_RandomBytes } from "./crypto";
 export { SystemJS_GetLocaleInfo } from "./globalization-locale";
+export { SystemJS_RejectMainPromise, SystemJS_ResolveMainPromise } from "./main";
+export { SystemJS_ScheduleTimer, SystemJS_ScheduleBackgroundJob } from "./timer";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     internals[InternalExchangeIndex.NativeBrowserExportsTable] = nativeBrowserExportsToTable({

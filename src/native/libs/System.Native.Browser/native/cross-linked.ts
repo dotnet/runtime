@@ -3,3 +3,8 @@
 
 
 import { } from "../../Common/JavaScript/cross-linked";
+declare global {
+    export const DOTNET: any;
+    export function _SystemJS_ExecuteTimerCallback(): void;
+    export function _SystemJS_ExecuteBackgroundJobCallback(): void;
+}

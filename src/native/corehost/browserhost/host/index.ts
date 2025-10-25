@@ -29,4 +29,4 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     }
 }
 
-export { BrowserHost_ExternalAssemblyProbe, BrowserHost_ResolveMain, BrowserHost_RejectMain } from "./host";
+export { BrowserHost_ExternalAssemblyProbe } from "./host";

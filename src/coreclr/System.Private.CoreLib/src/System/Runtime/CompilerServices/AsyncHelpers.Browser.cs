@@ -1,0 +1,63 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+
+namespace System.Runtime.CompilerServices
+{
+    public static partial class AsyncHelpers
+    {
+        [DynamicDependency(nameof(MainWrapper))]
+        [DynamicDependency(nameof(MainWrapperVoid))]
+        static AsyncHelpers()
+        {
+        }
+
+        private static void MainWrapper(object exitCodeTask)
+        {
+            var task = (Task<int>)exitCodeTask;
+            task.ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                {
+                    var message = t.Exception.Message ?? "";
+                    var stackTrace = t.Exception.StackTrace ?? "";
+                    SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
+                }
+                else
+                {
+                    SystemJS_ResolveMainPromise(t.Result);
+                }
+            }, TaskScheduler.Default);
+        }
+
+        private static void MainWrapperVoid(object exitCodeTask)
+        {
+            var task = (Task)exitCodeTask;
+            task.ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                {
+                    var message = t.Exception.Message ?? "";
+                    var stackTrace = t.Exception.StackTrace ?? "";
+                    SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
+                }
+                else
+                {
+                    SystemJS_ResolveMainPromise(0);
+                }
+            }, TaskScheduler.Default);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall)]
+        private static unsafe partial void SystemJS_RejectMainPromise(
+            [MarshalAs(UnmanagedType.LPWStr)] string pMessage, int messageLength,
+            [MarshalAs(UnmanagedType.LPWStr)] string pStackTrace, int stackTraceLength);
+
+        [LibraryImport(RuntimeHelpers.QCall)]
+        private static partial void SystemJS_ResolveMainPromise(int exitCode);
+    }
+}

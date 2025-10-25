@@ -54,6 +54,8 @@ set(ROLLUP_TS_SOURCES
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/crypto.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/globalization-locale.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/index.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/timer.ts"
+    "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/main.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/native/per-module.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/types.ts"
     "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/utils/cross-module.ts"

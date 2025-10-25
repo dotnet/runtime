@@ -10,7 +10,7 @@ import {
     getHeapB32, getHeapB8, getHeapU8, getHeapU16, getHeapU32, getHeapI8, getHeapI16, getHeapI32, getHeapI52, getHeapU52, getHeapI64Big, getHeapF32, getHeapF64,
     localHeapViewI8, localHeapViewI16, localHeapViewI32, localHeapViewI64Big, localHeapViewU8, localHeapViewU16, localHeapViewU32, localHeapViewF32, localHeapViewF64,
 } from "./memory";
-import { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "./strings";
+import { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "./strings";
 import { exit, setEnvironmentVariable } from "./host";
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "../utils/cross-module";
 
@@ -31,14 +31,16 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         utf16ToString,
         stringToUTF16,
         stringToUTF16Ptr,
+        stringToUTF8Ptr,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
-    function browserUtilsExportsToTable(map:BrowserUtilsExports):BrowserUtilsExportsTable {
+    function browserUtilsExportsToTable(map: BrowserUtilsExports): BrowserUtilsExportsTable {
         // keep in sync with browserUtilsExportsFromTable()
         return [
             map.utf16ToString,
             map.stringToUTF16,
             map.stringToUTF16Ptr,
+            map.stringToUTF8Ptr,
         ];
     }
 }
