@@ -2766,7 +2766,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117731", TestPlatforms.Android)]
         public static void NoBackwardTimeZones()
         {
