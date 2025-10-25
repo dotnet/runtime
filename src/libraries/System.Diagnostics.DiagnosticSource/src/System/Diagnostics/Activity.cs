@@ -8,7 +8,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -2181,15 +2180,15 @@ namespace System.Diagnostics
     internal sealed class ActivityDebuggerProxy(Activity activity)
     {
         public ActivityTraceFlags ActivityTraceFlags => activity.ActivityTraceFlags;
-        public List<KeyValuePair<string, string?>> Baggage => activity.Baggage.ToList();
+        public List<KeyValuePair<string, string?>> Baggage => new List<KeyValuePair<string, string?>>(activity.Baggage);
         public ActivityContext Context => activity.Context;
         public string DisplayName => activity.DisplayName;
         public TimeSpan Duration => activity.Duration;
-        public List<ActivityEvent> Events => activity.Events.ToList();
+        public List<ActivityEvent> Events => new List<ActivityEvent>(activity.Events);
         public bool HasRemoteParent => activity.HasRemoteParent;
         public string? Id => activity.Id;
         public ActivityKind Kind => activity.Kind;
-        public List<ActivityLink> Links => activity.Links.ToList();
+        public List<ActivityLink> Links => new List<ActivityLink>(activity.Links);
         public string OperationName => activity.OperationName;
         public Activity? Parent => activity.Parent;
         public string? ParentId => activity.ParentId;
@@ -2199,7 +2198,7 @@ namespace System.Diagnostics
         public DateTime StartTimeUtc => activity.StartTimeUtc;
         public ActivityStatusCode Status => activity.Status;
         public string? StatusDescription => activity.StatusDescription;
-        public List<KeyValuePair<string, object?>> TagObjects => activity.TagObjects.ToList();
+        public List<KeyValuePair<string, object?>> TagObjects => new List<KeyValuePair<string, object?>>(activity.TagObjects);
         public ActivityTraceId TraceId => activity.TraceId;
         public string? TraceStateString => activity.TraceStateString;
     }
