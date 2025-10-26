@@ -339,7 +339,6 @@ namespace System.Text.RegularExpressions
                     if (isQuantifier)
                     {
                         _unit = RegexNode.CreateOneWithCaseConversion(_pattern[endpos - 1], _options, _culture, ref _caseBehavior);
-                        AttachCommentsToNode(_unit);
                     }
                 }
 
@@ -355,7 +354,6 @@ namespace System.Text.RegularExpressions
                         {
                             string setString = ScanCharClass((_options & RegexOptions.IgnoreCase) != 0, scanOnly: false)!.ToStringClass();
                             _unit = new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, setString);
-                            AttachCommentsToNode(_unit);
                         }
                         break;
 
@@ -400,27 +398,20 @@ namespace System.Text.RegularExpressions
                         }
 
                         _unit = ScanBackslash(scanOnly: false)!;
-                        if (_unit is not null)
-                        {
-                            AttachCommentsToNode(_unit);
-                        }
                         break;
 
                     case '^':
                         _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Bol : RegexNodeKind.Beginning, _options);
-                        AttachCommentsToNode(_unit);
                         break;
 
                     case '$':
                         _unit = new RegexNode((_options & RegexOptions.Multiline) != 0 ? RegexNodeKind.Eol : RegexNodeKind.EndZ, _options);
-                        AttachCommentsToNode(_unit);
                         break;
 
                     case '.':
                         _unit = (_options & RegexOptions.Singleline) != 0 ?
                             new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass) :
                             new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
-                        AttachCommentsToNode(_unit);
                         break;
 
                     case '{':
@@ -442,6 +433,12 @@ namespace System.Text.RegularExpressions
                 }
 
                 ScanBlank();
+
+                // Attach any comments that appeared after this node in the pattern
+                if (_unit is not null)
+                {
+                    AttachCommentsToNode(_unit);
+                }
 
                 if (_pos == _pattern.Length || !(isQuantifier = IsTrueQuantifier()))
                 {
