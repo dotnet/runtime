@@ -457,14 +457,11 @@ namespace System
                     Number.ThrowOverflowException<int>();
                 }
 
-                if (typeof(TChar) == typeof(char))
-                {
-                    throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(originalInput).ToString()));
-                }
-                else
-                {
-                    throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, Encoding.UTF8.GetString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(originalInput))));
-                }
+                string inputString = typeof(TChar) == typeof(char) ?
+                    Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(originalInput).ToString() :
+                    Encoding.UTF8.GetString(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(originalInput));
+
+                throw new FormatException(SR.Format(SR.Format_InvalidStringWithValue, inputString));
             }
         }
 
