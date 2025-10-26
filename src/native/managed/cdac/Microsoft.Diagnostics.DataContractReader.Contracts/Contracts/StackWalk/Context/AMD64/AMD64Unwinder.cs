@@ -845,7 +845,7 @@ internal class AMD64Unwinder(Target target)
                 }
                 else
                 {
-                    Debug.Assert(target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows);
+                    Debug.Assert(_target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows);
                     if (unwindOp.UnwindOp > UnwindCode.OpCodes.UWOP_PUSH_MACHFRAME)
                     {
                         Debug.Fail("Expected unwind code");
