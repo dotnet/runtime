@@ -79,18 +79,16 @@ namespace System
                 { UtcId, s_utcTimeZone }
             };
 
-            if (Invariant)
+            if (!Invariant)
             {
-                return cachedData._systemTimeZones;
-            }
-
-            using (RegistryKey? reg = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive, writable: false))
-            {
-                if (reg != null)
+                using (RegistryKey? reg = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive, writable: false))
                 {
-                    foreach (string keyName in reg.GetSubKeyNames())
+                    if (reg != null)
                     {
-                        TryGetTimeZone(keyName, false, out _, out _, cachedData); // should update cache._systemTimeZones
+                        foreach (string keyName in reg.GetSubKeyNames())
+                        {
+                            TryGetTimeZone(keyName, false, out _, out _, cachedData); // should update cache._systemTimeZones
+                        }
                     }
                 }
             }

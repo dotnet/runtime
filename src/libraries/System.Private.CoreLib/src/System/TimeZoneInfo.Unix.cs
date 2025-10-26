@@ -298,8 +298,10 @@ namespace System
                 return cachedData._systemTimeZones;
             }
 
+            const int initialCapacity = 430; // Should be enough for all time zones
+
             // The filtered list that shouldn't have any duplicates.
-            Dictionary<string, TimeZoneInfo> filteredTimeZones = new Dictionary<string, TimeZoneInfo>(StringComparer.OrdinalIgnoreCase)
+            Dictionary<string, TimeZoneInfo> filteredTimeZones = new Dictionary<string, TimeZoneInfo>(capacity: initialCapacity, comparer: StringComparer.OrdinalIgnoreCase)
             {
                 { UtcId, s_utcTimeZone }
             };
