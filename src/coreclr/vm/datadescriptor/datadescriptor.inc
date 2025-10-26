@@ -990,20 +990,20 @@ CDAC_TYPES_END()
 CDAC_GLOBALS_BEGIN()
 
 #if defined(TARGET_BROWSER)
-#ifdef browser
-#error Handle 'browser' define
-#endif // browser
-CDAC_GLOBAL_STRING(OperatingSystem, browser)
+#ifdef Browser
+#error Handle 'Browser' define
+#endif // Browser
+CDAC_GLOBAL_STRING(OperatingSystem, Browser)
 #elif defined(TARGET_UNIX)
-#ifdef unix
-#error Handle 'unix' define
-#endif // unix
-CDAC_GLOBAL_STRING(OperatingSystem, unix)
+#ifdef Unix
+#error Handle 'Unix' define
+#endif // Unix
+CDAC_GLOBAL_STRING(OperatingSystem, Unix)
 #elif defined(TARGET_WINDOWS)
-#ifdef windows
-#error Handle 'windows' define
-#endif // windows
-CDAC_GLOBAL_STRING(OperatingSystem, windows)
+#ifdef Windows
+#error Handle 'Windows' define
+#endif // Windows
+CDAC_GLOBAL_STRING(OperatingSystem, Windows)
 #else
 #error TARGET_{OS} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
 #endif
