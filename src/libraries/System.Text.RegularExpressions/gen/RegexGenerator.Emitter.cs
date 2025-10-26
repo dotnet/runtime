@@ -2960,6 +2960,21 @@ namespace System.Text.RegularExpressions.Generator
                         return;
                 }
 
+                // Output any regex pattern comments associated with this node
+                if (rm.Tree.NodeComments?.TryGetValue(node, out List<string>? comments) is true)
+                {
+                    foreach (string comment in comments)
+                    {
+                        // Split multi-line comments to maintain proper alignment
+                        string[] lines = comment.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (string line in lines)
+                        {
+                            string trimmedLine = line.Trim();
+                            writer.WriteLine($"// {trimmedLine}");
+                        }
+                    }
+                }
+
                 // For everything else, output a comment about what the node is.
                 writer.WriteLine($"// {DescribeNode(node, rm)}");
 
@@ -5798,22 +5813,6 @@ namespace System.Text.RegularExpressions.Generator
                     };
 
                     string nodeDescription = DescribeNode(node, rm);
-
-                    // Write out any comments associated with this node.
-                    if (rm.Tree.NodeComments?.TryGetValue(node, out List<string>? comments) is true)
-                    {
-                        string indent = new string(' ', depth * 4);
-                        foreach (string comment in comments)
-                        {
-                            // Split multi-line comments to maintain proper alignment
-                            string[] lines = comment.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                            foreach (string line in lines)
-                            {
-                                string trimmedLine = line.Trim();
-                                writer.WriteLine($"/// {indent}// {EscapeXmlComment(trimmedLine)}<br/>");
-                            }
-                        }
-                    }
 
                     // Write out the line for the node.
                     const char BulletPoint = '\u25CB';
