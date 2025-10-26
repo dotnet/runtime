@@ -4,27 +4,33 @@
 using System;
 using System.Runtime.CompilerServices;
 
-bool success = RunTest(Dataflow.Run);
-success &= RunTest(DeadCodeElimination.Run);
-success &= RunTest(FeatureSwitches.Run);
-success &= RunTest(ILLinkDescriptor.Run);
-success &= RunTest(DependencyInjectionPattern.Run);
-
-return success ? 100 : 1;
-
-static bool RunTest(Func<int> t, [CallerArgumentExpression(nameof(t))] string name = null)
+class Program
 {
-    Console.WriteLine($"===== Running test {name} =====");
-    bool success = true;
-    try
+    public static int Main(string[] args)
     {
-        success = t() == 100;
+        bool success = RunTest(Dataflow.Run);
+        success &= RunTest(DeadCodeElimination.Run);
+        success &= RunTest(FeatureSwitches.Run);
+        success &= RunTest(ILLinkDescriptor.Run);
+        success &= RunTest(DependencyInjectionPattern.Run);
+
+        return success ? 100 : 1;
+
+        static bool RunTest(Func<int> t, [CallerArgumentExpression(nameof(t))] string name = null)
+        {
+            Console.WriteLine($"===== Running test {name} =====");
+            bool success = true;
+            try
+            {
+                success = t() == 100;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                success = false;
+            }
+            Console.WriteLine($"===== Test {name} {(success ? "succeeded" : "failed")} =====");
+            return success;
+        }
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine(ex.ToString());
-        success = false;
-    }
-    Console.WriteLine($"===== Test {name} {(success ? "succeeded" : "failed")} =====");
-    return success;
 }

@@ -508,7 +508,7 @@
   <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
   <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(TargetsAndroid)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" Condition="'$(TargetsAndroid)' == 'true' and '$(UsingMicrosoftNETSdk)' == 'true' and '$(_CLRTestBuildsExecutable)' == 'true'" />
 
   <Target Name="GetBinPlaceTargetFramework" />
 

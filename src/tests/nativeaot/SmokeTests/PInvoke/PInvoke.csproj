@@ -13,6 +13,10 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
+    <DefineConstants>$(DefineConstants);GLOBAL_PROGRAM_MAIN</DefineConstants>
+    <StartupObject>Program</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvoke.cs" />
   </ItemGroup>

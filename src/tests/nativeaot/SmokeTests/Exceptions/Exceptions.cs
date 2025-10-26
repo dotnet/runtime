@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text;
 
-public class BringUpTest
+public class Program
 {
     const int Pass = 100;
     const int Fail = -1;
@@ -15,12 +15,12 @@ public class BringUpTest
     volatile int myField;
     volatile Object myObjectField;
 
-    public BringUpTest()
+    public Program()
     {
         myField = 1;
     }
 
-    static BringUpTest g = null;
+    static Program g = null;
 
     static int finallyCounter = 0;
 
@@ -33,7 +33,7 @@ public class BringUpTest
         if (string.Empty.Length > 0)
         {
             // Just something to make sure we generate reflection metadata for the type
-            new BringUpTest().ToString();
+            new Program().ToString();
         }
 
         TestGenericExceptions();
@@ -63,7 +63,7 @@ public class BringUpTest
             }
 
             string stackTrace = e.StackTrace;
-            if (!stackTrace.Contains("BringUpTest.Main"))
+            if (!stackTrace.Contains("Program.Main"))
             {
                 Console.WriteLine("Unexpected stack trace: " + stackTrace);
                 return Fail;

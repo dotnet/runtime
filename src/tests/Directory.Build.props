@@ -235,7 +235,7 @@
     <HybridGlobalization Condition="'$(_IsApplePlatform)' == 'true'">true</HybridGlobalization>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'android' and '$(TestBuildMode)' == 'nativeaot'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'android' and '$(TestBuildMode)' == 'nativeaot' and '$(OutputType)' == 'Exe'">
     <NativeLib>shared</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
   </PropertyGroup>

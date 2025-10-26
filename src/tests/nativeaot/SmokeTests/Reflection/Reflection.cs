@@ -17,7 +17,7 @@ using System.Reflection;
 [assembly: TestAssembly]
 [module: TestModule]
 
-internal static class ReflectionTest
+internal static class Program
 {
     public static int Main(string[] args)
     {
@@ -1012,7 +1012,7 @@ internal static class ReflectionTest
             }
             catch (NotSupportedException e)
             {
-                if (!e.Message.Contains("ReflectionTest+TestGetUninitializedObject+NeverAllocatedButUsedInGenericMethod`1[ReflectionTest+TestGetUninitializedObject+Atom]"))
+                if (!e.Message.Contains("Program+TestGetUninitializedObject+NeverAllocatedButUsedInGenericMethod`1[Program+TestGetUninitializedObject+Atom]"))
                     throw new Exception();
             }
             if (!thrown)
@@ -1166,7 +1166,7 @@ internal static class ReflectionTest
         {
             Console.WriteLine(nameof(TestAttributeExpressions));
 
-            const string attr1expected = "ReflectionTest+TestAttributeExpressions+FirstNeverUsedType*[,]";
+            const string attr1expected = "Program+TestAttributeExpressions+FirstNeverUsedType*[,]";
             TypeAttribute attr1 = typeof(Holder1).GetCustomAttribute<TypeAttribute>();
             if (attr1.SomeType.ToString() != attr1expected)
                 throw new Exception();
@@ -1185,7 +1185,7 @@ internal static class ReflectionTest
             if (!exceptionString1.Contains(attr1expected))
                 throw new Exception(exceptionString1);
 
-            const string attr2expected = "ReflectionTest+TestAttributeExpressions+Gen`1[ReflectionTest+TestAttributeExpressions+SecondNeverUsedType]";
+            const string attr2expected = "Program+TestAttributeExpressions+Gen`1[Program+TestAttributeExpressions+SecondNeverUsedType]";
             TypeAttribute attr2 = typeof(Holder2).GetCustomAttribute<TypeAttribute>();
             if (attr2.SomeType.ToString() != attr2expected)
                 throw new Exception();
@@ -1211,7 +1211,7 @@ internal static class ReflectionTest
                 throw new Exception();
 
             TypeAttribute attr4 = typeof(Holder4).GetCustomAttribute<TypeAttribute>();
-            if (attr4.SomeType.ToString() != "ReflectionTest+TestAttributeExpressions+ThirdNeverUsedType")
+            if (attr4.SomeType.ToString() != "Program+TestAttributeExpressions+ThirdNeverUsedType")
                 throw new Exception();
         }
     }
@@ -2169,7 +2169,7 @@ internal static class ReflectionTest
             {
                 message1 = ex.Message;
             }
-            if (!message1.Contains("ReflectionTest+TypeConstructionTest+Gen`1[ReflectionTest+TypeConstructionTest+Atom]"))
+            if (!message1.Contains("Program+TypeConstructionTest+Gen`1[Program+TypeConstructionTest+Atom]"))
                 throw new Exception();
 
             string message2 = "";
@@ -2181,7 +2181,7 @@ internal static class ReflectionTest
             {
                 message2 = ex.Message;
             }
-            if (!message2.Contains("ReflectionTest+TypeConstructionTest+Atom[]"))
+            if (!message2.Contains("Program+TypeConstructionTest+Atom[]"))
                 throw new Exception();
 
             string message3 = "";
@@ -2193,7 +2193,7 @@ internal static class ReflectionTest
             {
                 message3 = ex.Message;
             }
-            if (!message3.Contains("ReflectionTest+TypeConstructionTest+Atom[]"))
+            if (!message3.Contains("Program+TypeConstructionTest+Atom[]"))
                 throw new Exception();
 
             // Do what's needed so that we force an unconstructed MT for ArrayElementUsedInGenericDictionary[] into the program
@@ -2211,7 +2211,7 @@ internal static class ReflectionTest
             {
                 message4 = ex.Message;
             }
-            if (!message4.Contains("ReflectionTest+TypeConstructionTest+ArrayElementUsedInGenericDictionary[]"))
+            if (!message4.Contains("Program+TypeConstructionTest+ArrayElementUsedInGenericDictionary[]"))
                 throw new Exception();
         }
     }
@@ -2893,7 +2893,7 @@ internal static class ReflectionTest
         private static void ReflectionInLambda()
         {
             var func = () => {
-                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary1));
+                Type helpersType = Type.GetType(nameof(Program) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary1));
                 Assert.NotNull(helpersType);
             };
 
@@ -2906,7 +2906,7 @@ internal static class ReflectionTest
 
             void func()
             {
-                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary2));
+                Type helpersType = Type.GetType(nameof(Program) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary2));
                 Assert.NotNull(helpersType);
             };
         }
@@ -2914,7 +2914,7 @@ internal static class ReflectionTest
         private static async void ReflectionInAsync()
         {
             await System.Threading.Tasks.Task.Delay(100);
-            Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary3));
+            Type helpersType = Type.GetType(nameof(Program) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary3));
             Assert.NotNull(helpersType);
         }
 
@@ -2923,7 +2923,7 @@ internal static class ReflectionTest
             await System.Threading.Tasks.Task.Delay(100);
 
             var func = () => {
-                Type helpersType = Type.GetType(nameof(ReflectionTest) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary4));
+                Type helpersType = Type.GetType(nameof(Program) + "+" + nameof(TestCompilerGeneratedCode) + "+" + nameof(Canary4));
                 Assert.NotNull(helpersType);
             };
 
@@ -3025,7 +3025,7 @@ internal static class ReflectionTest
 
     private static Type SecretGetType(string testName, string typeName)
     {
-        string fullTypeName = $"{nameof(ReflectionTest)}+{testName}+{typeName}";
+        string fullTypeName = $"{nameof(Program)}+{testName}+{typeName}";
         return Type.GetType(fullTypeName);
     }
 
