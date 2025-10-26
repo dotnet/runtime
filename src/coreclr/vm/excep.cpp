@@ -10871,6 +10871,252 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
 }
 
+#elif defined(TARGET_AMD64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+    m_Context.SegCs = 0;
+    m_Context.SegSs = 0;
+    m_Context.EFlags = 0;
+
+#ifdef UNIX_AMD64_ABI
+    // On Unix AMD64, argument registers are saved in the transition block
+    m_Context.Rax = 0;
+    m_Context.Rdi = pTransitionBlock->m_argumentRegisters.rdi;
+    m_Context.Rsi = pTransitionBlock->m_argumentRegisters.rsi;
+    m_Context.Rdx = pTransitionBlock->m_argumentRegisters.rdx;
+    m_Context.Rcx = pTransitionBlock->m_argumentRegisters.rcx;
+    m_Context.R8 = pTransitionBlock->m_argumentRegisters.r8;
+    m_Context.R9 = pTransitionBlock->m_argumentRegisters.r9;
+
+    m_ContextPointers.Rdi = &m_Context.Rdi;
+    m_ContextPointers.Rsi = &m_Context.Rsi;
+    m_ContextPointers.Rdx = &m_Context.Rdx;
+    m_ContextPointers.Rcx = &m_Context.Rcx;
+    m_ContextPointers.R8 = &m_Context.R8;
+    m_ContextPointers.R9 = &m_Context.R9;
+#else
+    // On Windows AMD64, argument registers are not saved in the transition block
+    m_Context.Rax = 0;
+    m_Context.Rcx = 0;
+    m_Context.Rdx = 0;
+    m_Context.R8 = 0;
+    m_Context.R9 = 0;
+#endif
+
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg; \
+    m_ContextPointers.reg = &m_Context.reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    m_Context.Rsp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Rip = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_ARM)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    // Copy argument registers (R0-R3)
+    m_Context.R0 = pTransitionBlock->m_argumentRegisters.r[0];
+    m_Context.R1 = pTransitionBlock->m_argumentRegisters.r[1];
+    m_Context.R2 = pTransitionBlock->m_argumentRegisters.r[2];
+    m_Context.R3 = pTransitionBlock->m_argumentRegisters.r[3];
+
+    // Copy callee-saved registers (R4-R11, Lr)
+    m_Context.R4 = pTransitionBlock->m_calleeSavedRegisters.r4;
+    m_Context.R5 = pTransitionBlock->m_calleeSavedRegisters.r5;
+    m_Context.R6 = pTransitionBlock->m_calleeSavedRegisters.r6;
+    m_Context.R7 = pTransitionBlock->m_calleeSavedRegisters.r7;
+    m_Context.R8 = pTransitionBlock->m_calleeSavedRegisters.r8;
+    m_Context.R9 = pTransitionBlock->m_calleeSavedRegisters.r9;
+    m_Context.R10 = pTransitionBlock->m_calleeSavedRegisters.r10;
+    m_Context.R11 = pTransitionBlock->m_calleeSavedRegisters.r11;
+    m_Context.Lr = pTransitionBlock->m_calleeSavedRegisters.r14; // r14 is link register
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.R4 = &m_Context.R4;
+    m_ContextPointers.R5 = &m_Context.R5;
+    m_ContextPointers.R6 = &m_Context.R6;
+    m_ContextPointers.R7 = &m_Context.R7;
+    m_ContextPointers.R8 = &m_Context.R8;
+    m_ContextPointers.R9 = &m_Context.R9;
+    m_ContextPointers.R10 = &m_Context.R10;
+    m_ContextPointers.R11 = &m_Context.R11;
+    m_ContextPointers.Lr = &m_Context.Lr;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_ARM64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    // Copy argument registers (X0-X7)
+    for (int i = 0; i < 8; i++)
+    {
+        m_Context.X[i] = pTransitionBlock->m_argumentRegisters.x[i];
+    }
+
+    // Copy return buffer register (X8)
+    m_Context.X8 = pTransitionBlock->m_x8RetBuffReg;
+
+    // Copy callee-saved registers (X19-X28)
+    m_Context.X19 = pTransitionBlock->m_calleeSavedRegisters.x19;
+    m_Context.X20 = pTransitionBlock->m_calleeSavedRegisters.x20;
+    m_Context.X21 = pTransitionBlock->m_calleeSavedRegisters.x21;
+    m_Context.X22 = pTransitionBlock->m_calleeSavedRegisters.x22;
+    m_Context.X23 = pTransitionBlock->m_calleeSavedRegisters.x23;
+    m_Context.X24 = pTransitionBlock->m_calleeSavedRegisters.x24;
+    m_Context.X25 = pTransitionBlock->m_calleeSavedRegisters.x25;
+    m_Context.X26 = pTransitionBlock->m_calleeSavedRegisters.x26;
+    m_Context.X27 = pTransitionBlock->m_calleeSavedRegisters.x27;
+    m_Context.X28 = pTransitionBlock->m_calleeSavedRegisters.x28;
+
+    // Copy frame pointer and link register
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.x29;
+    m_Context.Lr = pTransitionBlock->m_calleeSavedRegisters.x30;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.X19 = &m_Context.X19;
+    m_ContextPointers.X20 = &m_Context.X20;
+    m_ContextPointers.X21 = &m_Context.X21;
+    m_ContextPointers.X22 = &m_Context.X22;
+    m_ContextPointers.X23 = &m_Context.X23;
+    m_ContextPointers.X24 = &m_Context.X24;
+    m_ContextPointers.X25 = &m_Context.X25;
+    m_ContextPointers.X26 = &m_Context.X26;
+    m_ContextPointers.X27 = &m_Context.X27;
+    m_ContextPointers.X28 = &m_Context.X28;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Lr = &m_Context.Lr;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_LOONGARCH64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    // Copy argument registers (A0-A7)
+    m_Context.A0 = pTransitionBlock->m_argumentRegisters.a[0];
+    m_Context.A1 = pTransitionBlock->m_argumentRegisters.a[1];
+    m_Context.A2 = pTransitionBlock->m_argumentRegisters.a[2];
+    m_Context.A3 = pTransitionBlock->m_argumentRegisters.a[3];
+    m_Context.A4 = pTransitionBlock->m_argumentRegisters.a[4];
+    m_Context.A5 = pTransitionBlock->m_argumentRegisters.a[5];
+    m_Context.A6 = pTransitionBlock->m_argumentRegisters.a[6];
+    m_Context.A7 = pTransitionBlock->m_argumentRegisters.a[7];
+
+    // Copy callee-saved registers (Fp, Ra, S0-S8)
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.fp;
+    m_Context.Ra = pTransitionBlock->m_calleeSavedRegisters.ra;
+    m_Context.S0 = pTransitionBlock->m_calleeSavedRegisters.s0;
+    m_Context.S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    m_Context.S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    m_Context.S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    m_Context.S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    m_Context.S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    m_Context.S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    m_Context.S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    m_Context.S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.S0 = &m_Context.S0;
+    m_ContextPointers.S1 = &m_Context.S1;
+    m_ContextPointers.S2 = &m_Context.S2;
+    m_ContextPointers.S3 = &m_Context.S3;
+    m_ContextPointers.S4 = &m_Context.S4;
+    m_ContextPointers.S5 = &m_Context.S5;
+    m_ContextPointers.S6 = &m_Context.S6;
+    m_ContextPointers.S7 = &m_Context.S7;
+    m_ContextPointers.S8 = &m_Context.S8;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Ra = &m_Context.Ra;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
+#elif defined(TARGET_RISCV64)
+
+void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_Context.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER;
+
+    // Copy argument registers (A0-A7)
+    m_Context.A0 = pTransitionBlock->m_argumentRegisters.a[0];
+    m_Context.A1 = pTransitionBlock->m_argumentRegisters.a[1];
+    m_Context.A2 = pTransitionBlock->m_argumentRegisters.a[2];
+    m_Context.A3 = pTransitionBlock->m_argumentRegisters.a[3];
+    m_Context.A4 = pTransitionBlock->m_argumentRegisters.a[4];
+    m_Context.A5 = pTransitionBlock->m_argumentRegisters.a[5];
+    m_Context.A6 = pTransitionBlock->m_argumentRegisters.a[6];
+    m_Context.A7 = pTransitionBlock->m_argumentRegisters.a[7];
+
+    // Copy callee-saved registers (Fp, Ra, S1-S11, Tp, Gp)
+    m_Context.Fp = pTransitionBlock->m_calleeSavedRegisters.fp;
+    m_Context.Ra = pTransitionBlock->m_calleeSavedRegisters.ra;
+    m_Context.S1 = pTransitionBlock->m_calleeSavedRegisters.s1;
+    m_Context.S2 = pTransitionBlock->m_calleeSavedRegisters.s2;
+    m_Context.S3 = pTransitionBlock->m_calleeSavedRegisters.s3;
+    m_Context.S4 = pTransitionBlock->m_calleeSavedRegisters.s4;
+    m_Context.S5 = pTransitionBlock->m_calleeSavedRegisters.s5;
+    m_Context.S6 = pTransitionBlock->m_calleeSavedRegisters.s6;
+    m_Context.S7 = pTransitionBlock->m_calleeSavedRegisters.s7;
+    m_Context.S8 = pTransitionBlock->m_calleeSavedRegisters.s8;
+    m_Context.S9 = pTransitionBlock->m_calleeSavedRegisters.s9;
+    m_Context.S10 = pTransitionBlock->m_calleeSavedRegisters.s10;
+    m_Context.S11 = pTransitionBlock->m_calleeSavedRegisters.s11;
+    m_Context.Tp = pTransitionBlock->m_calleeSavedRegisters.tp;
+    m_Context.Gp = pTransitionBlock->m_calleeSavedRegisters.gp;
+
+    // Set up context pointers for callee-saved registers
+    m_ContextPointers.S1 = &m_Context.S1;
+    m_ContextPointers.S2 = &m_Context.S2;
+    m_ContextPointers.S3 = &m_Context.S3;
+    m_ContextPointers.S4 = &m_Context.S4;
+    m_ContextPointers.S5 = &m_Context.S5;
+    m_ContextPointers.S6 = &m_Context.S6;
+    m_ContextPointers.S7 = &m_Context.S7;
+    m_ContextPointers.S8 = &m_Context.S8;
+    m_ContextPointers.S9 = &m_Context.S9;
+    m_ContextPointers.S10 = &m_Context.S10;
+    m_ContextPointers.S11 = &m_Context.S11;
+    m_ContextPointers.Fp = &m_Context.Fp;
+    m_ContextPointers.Gp = &m_Context.Gp;
+    m_ContextPointers.Tp = &m_Context.Tp;
+    m_ContextPointers.Ra = &m_Context.Ra;
+
+    m_Context.Sp = (UINT_PTR)(pTransitionBlock + 1);
+    m_Context.Pc = pTransitionBlock->m_ReturnAddress;
+    m_ReturnAddress = pTransitionBlock->m_ReturnAddress;
+}
+
 #endif // TARGET_X86
 
 //

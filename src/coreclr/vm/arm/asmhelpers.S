@@ -897,3 +897,49 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     eor  r0, r0, r1
     EPILOG_BRANCH_REG r12
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   r0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+    PROLOG_PUSH "{r0-r3,r11,lr}"
+    PROLOG_VPUSH "{d0-d7}"
+    mov     r1, sp  // r1 = TransitionBlock*
+    bl      C_FUNC(IL_Throw_Impl)
+    // Should never return
+    bkpt    #0
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   r0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+    PROLOG_PUSH "{r0-r3,r11,lr}"
+    PROLOG_VPUSH "{d0-d7}"
+    mov     r1, sp  // r1 = TransitionBlock*
+    bl      C_FUNC(IL_ThrowExact_Impl)
+    // Should never return
+    bkpt    #0
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+    PROLOG_PUSH "{r0-r3,r11,lr}"
+    PROLOG_VPUSH "{d0-d7}"
+    mov     r0, sp  // r0 = TransitionBlock*
+    bl      C_FUNC(IL_Rethrow_Impl)
+    // Should never return
+    bkpt    #0
+NESTED_END IL_Rethrow, _TEXT
+

@@ -1200,4 +1200,48 @@ NESTED_END CallJittedMethodRetI8, _TEXT
 
 endif ; FEATURE_INTERPRETER
 
+;==========================================================================
+; Capture a transition block with register values and call the IL_Throw_Impl
+; implementation written in C.
+;
+; Input state:
+;   RCX = Pointer to exception object
+;==========================================================================
+NESTED_ENTRY IL_Throw, _TEXT
+        PUSH_COOP_PINVOKE_FRAME rdx
+        ; RCX already contains exception object
+        ; RDX contains pointer to TransitionBlock
+        call    IL_Throw_Impl
+        ; Should never return
+        int     3
+NESTED_END IL_Throw, _TEXT
+
+;==========================================================================
+; Capture a transition block with register values and call the IL_ThrowExact_Impl
+; implementation written in C.
+;
+; Input state:
+;   RCX = Pointer to exception object
+;==========================================================================
+NESTED_ENTRY IL_ThrowExact, _TEXT
+        PUSH_COOP_PINVOKE_FRAME rdx
+        ; RCX already contains exception object
+        ; RDX contains pointer to TransitionBlock
+        call    IL_ThrowExact_Impl
+        ; Should never return
+        int     3
+NESTED_END IL_ThrowExact, _TEXT
+
+;==========================================================================
+; Capture a transition block with register values and call the IL_Rethrow_Impl
+; implementation written in C.
+;==========================================================================
+NESTED_ENTRY IL_Rethrow, _TEXT
+        PUSH_COOP_PINVOKE_FRAME rcx
+        ; RCX contains pointer to TransitionBlock
+        call    IL_Rethrow_Impl
+        ; Should never return
+        int     3
+NESTED_END IL_Rethrow, _TEXT
+
         end

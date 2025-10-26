@@ -765,12 +765,8 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
-EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
-#else
-HCIMPL1(void, IL_Throw,  Object* obj)
-#endif
+EXTERN_C HCIMPL2(void, IL_Throw_Impl,  Object* obj, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
@@ -782,11 +778,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
@@ -804,23 +796,15 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL0(void, IL_Rethrow);
-EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
-#else
-HCIMPL0(void, IL_Rethrow)
-#endif
+EXTERN_C HCIMPL1(void, IL_Rethrow_Impl, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();
@@ -832,12 +816,8 @@ HCIMPL0(void, IL_Rethrow)
 }
 HCIMPLEND
 
-#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
-EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
-#else
-HCIMPL1(void, IL_ThrowExact, Object* obj)
-#endif
+EXTERN_C HCIMPL2(void, IL_ThrowExact_Impl,  Object* obj, TransitionBlock* transitionBlock)
 {
     FCALL_CONTRACT;
 
@@ -850,11 +830,7 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
-#ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
-#else
-    RtlCaptureContext(exceptionFrame.GetContext());
-#endif
     exceptionFrame.InitAndLink(pThread);
 
     FC_CAN_TRIGGER_GC();

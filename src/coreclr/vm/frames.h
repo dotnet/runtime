@@ -989,9 +989,7 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-#ifdef TARGET_X86
     void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
-#endif
 #endif
 
     TADDR GetReturnAddressPtr_Impl()

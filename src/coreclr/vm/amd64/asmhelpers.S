@@ -1913,3 +1913,48 @@ END_PROLOGUE
 NESTED_END CallJittedMethodRetDoubleDouble, _TEXT
 
 #endif // FEATURE_INTERPRETER
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   rdi = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+        PUSH_COOP_PINVOKE_FRAME rsi
+        // rdi already contains exception object
+        // rsi contains pointer to TransitionBlock
+        call    C_FUNC(IL_Throw_Impl)
+        // Should never return
+        int3
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   rdi = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+        PUSH_COOP_PINVOKE_FRAME rsi
+        // rdi already contains exception object
+        // rsi contains pointer to TransitionBlock
+        call    C_FUNC(IL_ThrowExact_Impl)
+        // Should never return
+        int3
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+        PUSH_COOP_PINVOKE_FRAME rdi
+        // rdi contains pointer to TransitionBlock
+        call    C_FUNC(IL_Rethrow_Impl)
+        // Should never return
+        int3
+NESTED_END IL_Rethrow, _TEXT
+

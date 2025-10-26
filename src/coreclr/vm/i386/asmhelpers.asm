@@ -1635,7 +1635,7 @@ FASTCALL_FUNC IL_Throw, 4
     STUB_PROLOG
 
     mov     edx, esp
-    call    @IL_Throw_x86@8
+    call    @IL_Throw_Impl@8
 
     STUB_EPILOG
     ret     4
@@ -1652,7 +1652,7 @@ FASTCALL_FUNC IL_ThrowExact, 4
     STUB_PROLOG
 
     mov     edx, esp
-    call    @IL_ThrowExact_x86@8
+    call    @IL_ThrowExact_Impl@8
 
     STUB_EPILOG
     ret     4
@@ -1666,7 +1666,7 @@ FASTCALL_FUNC IL_Rethrow, 0
     STUB_PROLOG
 
     mov     ecx, esp
-    call    @IL_Rethrow_x86@4
+    call    @IL_Rethrow_Impl@4
 
     STUB_EPILOG
     ret     4

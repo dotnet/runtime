@@ -878,6 +878,77 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     EPILOG_BRANCH_REG t2
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Throw_Impl
+// implementation written in C.
+//
+// Input state:
+//   a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Throw, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0xa0
+    // Spill callee saved registers
+    PROLOG_SAVE_REG_PAIR   s1, s2, 16
+    PROLOG_SAVE_REG_PAIR   s3, s4, 32
+    PROLOG_SAVE_REG_PAIR   s5, s6, 48
+    PROLOG_SAVE_REG_PAIR   s7, s8, 64
+    PROLOG_SAVE_REG_PAIR   s9, s10, 80
+    PROLOG_SAVE_REG_PAIR   s11, gp, 96
+    PROLOG_SAVE_REG        tp, 112
+
+    // a0 already contains exception object
+    addi  a1, sp, 0  // a1 = TransitionBlock*
+    call  C_FUNC(IL_Throw_Impl)
+    // Should never return
+    ebreak
+NESTED_END IL_Throw, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_ThrowExact_Impl
+// implementation written in C.
+//
+// Input state:
+//   a0 = Pointer to exception object
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_ThrowExact, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0xa0
+    // Spill callee saved registers
+    PROLOG_SAVE_REG_PAIR   s1, s2, 16
+    PROLOG_SAVE_REG_PAIR   s3, s4, 32
+    PROLOG_SAVE_REG_PAIR   s5, s6, 48
+    PROLOG_SAVE_REG_PAIR   s7, s8, 64
+    PROLOG_SAVE_REG_PAIR   s9, s10, 80
+    PROLOG_SAVE_REG_PAIR   s11, gp, 96
+    PROLOG_SAVE_REG        tp, 112
+
+    // a0 already contains exception object
+    addi  a1, sp, 0  // a1 = TransitionBlock*
+    call  C_FUNC(IL_ThrowExact_Impl)
+    // Should never return
+    ebreak
+NESTED_END IL_ThrowExact, _TEXT
+
+// ------------------------------------------------------------------
+// Capture a transition block with register values and call the IL_Rethrow_Impl
+// implementation written in C.
+// ------------------------------------------------------------------
+NESTED_ENTRY IL_Rethrow, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 0xa0
+    // Spill callee saved registers
+    PROLOG_SAVE_REG_PAIR   s1, s2, 16
+    PROLOG_SAVE_REG_PAIR   s3, s4, 32
+    PROLOG_SAVE_REG_PAIR   s5, s6, 48
+    PROLOG_SAVE_REG_PAIR   s7, s8, 64
+    PROLOG_SAVE_REG_PAIR   s9, s10, 80
+    PROLOG_SAVE_REG_PAIR   s11, gp, 96
+    PROLOG_SAVE_REG        tp, 112
+
+    addi  a0, sp, 0  // a0 = TransitionBlock*
+    call  C_FUNC(IL_Rethrow_Impl)
+    // Should never return
+    ebreak
+NESTED_END IL_Rethrow, _TEXT
+
 #ifdef FEATURE_INTERPRETER
 
 // Align interpreter stack by adjusting it by 8 bytes
