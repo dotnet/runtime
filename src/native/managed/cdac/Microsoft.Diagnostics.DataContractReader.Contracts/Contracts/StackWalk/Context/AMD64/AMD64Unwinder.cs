@@ -31,7 +31,7 @@ internal class AMD64Unwinder(Target target)
     private readonly Target _target = target;
     private readonly IExecutionManager _eman = target.Contracts.ExecutionManager;
 
-    private readonly bool _unix = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix;
+    private readonly bool _unix = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() != RuntimeInfoOperatingSystem.Windows;
 
     public bool Unwind(ref AMD64Context context)
     {
