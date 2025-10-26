@@ -513,7 +513,7 @@ namespace __OptionValidationGeneratedAttributes
                 {
                     convertedValue = ConvertValue(value, formatProvider);
                 }
-                catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
                 {
                     return false;
                 }
