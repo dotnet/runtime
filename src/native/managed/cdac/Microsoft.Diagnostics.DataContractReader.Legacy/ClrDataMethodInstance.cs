@@ -15,7 +15,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 [GeneratedComClass]
-internal sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstance
+public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstance
 {
     private readonly Target _target;
     private readonly MethodDescHandle _methodDesc;
