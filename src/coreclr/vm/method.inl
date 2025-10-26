@@ -137,7 +137,7 @@ inline bool MethodDesc::IsILStub()
 // code viewing, stepping, etc). Partly this is a user experience consideration to preserve the
 // abstraction users would expect based on source code and assembly contents. Partly it is also a technical
 // limitation that many parts of diagnostics don't know how to work with methods that aren't backed by
-// metadata and IL in a module. Currently this method only triages methods whose code was generated from IL.
+// metadata and IL in a module.
 inline bool MethodDesc::IsDiagnosticsHidden()
 {
     // Although good user experience can be subjective these are guidelines:
@@ -151,10 +151,8 @@ inline bool MethodDesc::IsDiagnosticsHidden()
     //   one frame for these calls as well but we haven't always done this consistently. For calls that redirect to another managed method users
     //   tolerate if the runtime-implemented frame is missing because they can still see the managed target method.
 
-    // NOTE: Currently this method doesn't filter out unboxing stubs although it seems like it should. I haven't identified a concrete
-    // scenario that produces a bad user experience but more exploration might find one.
     WRAPPER_NO_CONTRACT;
-    return IsILStub() || IsAsyncThunkMethod();
+    return IsILStub() || IsAsyncThunkMethod() || IsWrapperStub();
 }
 
 inline BOOL MethodDesc::IsQCall()
