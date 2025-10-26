@@ -447,10 +447,7 @@ namespace System
             [DoesNotReturn]
             static void ThrowFailure(Number.ParsingStatus parseStatus, int parsedComponent, string componentName, ReadOnlySpan<TChar> originalInput)
             {
-                if (parsedComponent < 0)
-                {
-                    ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
 
                 if (parseStatus == Number.ParsingStatus.Overflow)
                 {
