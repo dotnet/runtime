@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -355,6 +356,22 @@ namespace System.Runtime.InteropServices
             return alc?.GetResolvedUnmanagedDll(callingAssembly, libraryName) ?? IntPtr.Zero;
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "The method explicitly handles single file scenario")]
+        private static IntPtr LoadFromPInvokeAssemblyDirectory(Assembly callingAssembly, string libraryName, int flags, ref LoadLibErrorTracker errorTracker)
+        {
+            string? path = Path.GetDirectoryName(callingAssembly.Location);
+
+            // Bundled assembly/NativeAOT - path will be empty, path to load should point to the single-file bundle
+            if (string.IsNullOrEmpty(path))
+            {
+                path = AppContext.BaseDirectory;
+            }
+
+            IntPtr ret = LoadLibraryHelper(Path.Combine(path, libraryName), flags, ref errorTracker);
+            return ret;
+        }
+
         private static DllImportSearchPath GetDllImportSearchPath(Assembly callingAssembly, out bool userSpecifiedSearchFlags)
         {
             foreach (CustomAttributeData cad in callingAssembly.CustomAttributes)
@@ -408,7 +425,7 @@ namespace System.Runtime.InteropServices
 
                     // Try to load the module alongside the assembly where the PInvoke was declared.
                     // For PInvokes where the DllImportSearchPath.AssemblyDirectory is specified, look next to the application.
-                    ret = LoadLibraryHelper(Path.Combine(AppContext.BaseDirectory, currLibNameVariation), flags, ref errorTracker);
+                    ret = LoadFromPInvokeAssemblyDirectory(callingAssembly, libraryName, flags, ref errorTracker);
                     if (ret != IntPtr.Zero)
                     {
                         return ret;
@@ -456,5 +473,5 @@ namespace System.Runtime.InteropServices
             return ret;
         }
 #endif
-    }
+        }
 }
