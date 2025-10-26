@@ -133,15 +133,26 @@ inline bool MethodDesc::IsILStub()
     return ((mcDynamic == GetClassification()) && dac_cast<PTR_DynamicMethodDesc>(this)->IsILStub());
 }
 
-// This method is intended to identify runtime defined methods that don't have a corresponding Metadata or
-// LCG definition so they can be filtered from diagnostic introspection (stacktraces, code viewing, stepping, etc). 
-// Partly this is a user experience consideration to preserve the abstraction users would expect based on
-// source code and assembly contents. Partly it is also a technical limitation that many parts of
-// diagnostics don't know how to work with methods that aren't backed by metadata and IL in a module.
-// Currently this method only triages methods whose code was generated from IL. We rely on filtering that occurs implicitly
-// elsewhere to avoid including other kinds of stubs like prestubs or unboxing stubs.
+// This method is intended to identify methods that aren't shown in diagnostic introspection (stacktraces,
+// code viewing, stepping, etc). Partly this is a user experience consideration to preserve the
+// abstraction users would expect based on source code and assembly contents. Partly it is also a technical
+// limitation that many parts of diagnostics don't know how to work with methods that aren't backed by
+// metadata and IL in a module. Currently this method only triages methods whose code was generated from IL.
 inline bool MethodDesc::IsDiagnosticsHidden()
 {
+    // Although good user experience can be subjective these are guidelines:
+    // - We don't want stacktraces to show extra frames when the IL only shows a single call was made. If our runtime stackwalker
+    //   is going to include multiple frames pointing at different MethodDescs then all but one of them should be hidden.
+    // - In most cases when multiple MethodDescs occur for the same IL call, one of them is a MethodDesc that
+    //   compiled original IL defined in the module (for its default code version at least). That is the one we want to show
+    //   and the rest should be hidden.
+    // - In other cases the user defines methods in their source code but provides no implementation (for
+    //   example interop calls, Array methods, Delegate.Invoke, or UnsafeAccessor). Ideally a filtered stacktrace would include exactly
+    //   one frame for these calls as well but we haven't always done this consistently. For calls that redirect to another managed method users
+    //   tolerate if the runtime-implemented frame is missing because they can still see the managed target method.
+
+    // NOTE: Currently this method doesn't filter out unboxing stubs although it seems like it should. I haven't identified a concrete
+    // scenario that produces a bad user experience but more exploration might find one.
     WRAPPER_NO_CONTRACT;
     return IsILStub() || IsAsyncThunkMethod();
 }
