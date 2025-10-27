@@ -926,9 +926,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             emitAttr attr = emitActualTypeSize(targetType);
             // TODO-RISCV64-CQ: Currently we cannot do this for all handles because of
             // https://github.com/dotnet/runtime/issues/60712
-            if (con->FitsInAddrBase(compiler) && con->AddrNeedsReloc(compiler))
+            if (con->ImmedValNeedsReloc(compiler))
             {
-                // Use PC-relative synthesizing when possible, as it results in fewer instructions (6-8 vs. 2 for PCrel).
                 attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
             }
 

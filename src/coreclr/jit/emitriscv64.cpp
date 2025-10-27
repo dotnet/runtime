@@ -1237,9 +1237,9 @@ void emitter::emitIns_R_AI(instruction  ins,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr));
-    assert(IMAGE_REL_BASED_REL32 == emitComp->eeGetRelocTypeHint((void*)addr));
+    assert(emitComp->opts.compReloc || (IMAGE_REL_BASED_REL32 == emitComp->eeGetRelocTypeHint((void*)addr)));
     assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
-    assert(emitInsIsStore(ins) || isFloatReg(dataReg) || dataReg == REG_ZERO || (dataReg == addrReg));
+    assert(emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg == REG_ZERO) || (dataReg == addrReg));
     assert(isGeneralRegister(addrReg));
     // 2-ins:
     //   auipc  addrReg, off-hi-20bits
