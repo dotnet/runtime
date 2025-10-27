@@ -370,16 +370,18 @@ namespace System.Formats.Tar
             {
                 return null;
             }
-            
+
+            int checksum;
             try
             {
-                int checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
+                checksum = (int)TarHelpers.ParseOctal<uint>(spanChecksum);
             }
             catch (InvalidDataException)
             {
                 // This is likely not a TAR file
                 // Check for compression magic numbers to provide better error message
                 ThrowInvalidFormatWithBetterMessage(buffer);
+                throw; // Ensure control flow never reaches code using 'checksum'
             }
 
             // Zero checksum means the whole header is empty
@@ -801,13 +803,12 @@ namespace System.Formats.Tar
             return true;
         }
 
-        /// <summary>
-        /// Analyzes the buffer for known file format magic numbers and throws an InvalidDataException 
-        /// with a specific error message. This provides better user experience by identifying the 
+
+        /// Analyzes the buffer for known file format magic numbers and throws an InvalidDataException
+        /// with a specific error message. This provides better user experience by identifying the
         /// actual file type when users pass non-TAR files to the TAR reader.
-        /// </summary>
-        /// <param name="buffer">The buffer containing the file header bytes</param>
         /// <exception cref="InvalidDataException">Always thrown with either a format-specific or generic message</exception>
+        [DoesNotReturn]
         private static void ThrowInvalidFormatWithBetterMessage(ReadOnlySpan<byte> buffer)
         {
             if (buffer.Length < 2)
@@ -819,7 +820,7 @@ namespace System.Formats.Tar
             switch (firstByte)
             {
                 case 0x28: // Zstandard
-                    if (buffer.Length >= 4 && 
+                    if (buffer.Length >= 4 &&
                         buffer[1] == 0xB5 && buffer[2] == 0x2F && buffer[3] == 0xFD)
                     {
                         throw new InvalidDataException("The file appears to be a Zstandard archive. TAR format expected.");
@@ -827,8 +828,8 @@ namespace System.Formats.Tar
                     break;
 
                 case 0x37: // 7-Zip
-                    if (buffer.Length >= 6 && 
-                        buffer[1] == 0x7A && buffer[2] == 0xBC && 
+                    if (buffer.Length >= 6 &&
+                        buffer[1] == 0x7A && buffer[2] == 0xBC &&
                         buffer[3] == 0xAF && buffer[4] == 0x27 && buffer[5] == 0x1C)
                     {
                         throw new InvalidDataException("The file appears to be a 7-Zip archive. TAR format expected.");
@@ -857,8 +858,8 @@ namespace System.Formats.Tar
                     break;
 
                 case 0xFD: // XZ
-                    if (buffer.Length >= 6 && 
-                        buffer[1] == 0x37 && buffer[2] == 0x7A && 
+                    if (buffer.Length >= 6 &&
+                        buffer[1] == 0x37 && buffer[2] == 0x7A &&
                         buffer[3] == 0x58 && buffer[4] == 0x5A && buffer[5] == 0x00)
                     {
                         throw new InvalidDataException("The file appears to be an XZ archive. TAR format expected.");
@@ -869,8 +870,8 @@ namespace System.Formats.Tar
                     if (buffer.Length >= 2)
                     {
                         byte secondByte = buffer[1];
-                        if (secondByte == 0x01 || secondByte == 0x5E || secondByte == 0x9C || 
-                            secondByte == 0xDA || secondByte == 0x20 || secondByte == 0x7D || 
+                        if (secondByte == 0x01 || secondByte == 0x5E || secondByte == 0x9C ||
+                            secondByte == 0xDA || secondByte == 0x20 || secondByte == 0x7D ||
                             secondByte == 0xBB || secondByte == 0xF9)
                         {
                             throw new InvalidDataException("The file appears to be a ZLIB archive. TAR format expected.");
