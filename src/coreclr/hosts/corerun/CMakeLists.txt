@@ -75,7 +75,7 @@ else()
                 -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
                 -sWASM_BIGINT=1
-                -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,safeSetTimeout,maybeExit,exitJS,abort
+                -sEXPORTED_RUNTIME_METHODS=cwrap,ccall,HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64,safeSetTimeout,maybeExit,exitJS,abort,lengthBytesUTF8,UTF8ToString,stringToUTF8Array
                 -sEXPORTED_FUNCTIONS=_main,_GetDotNetRuntimeContractDescriptor
                 -sENVIRONMENT=node,shell,web
                 -Wl,-error-limit=0)

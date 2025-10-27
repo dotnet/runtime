@@ -138,13 +138,13 @@ extern "C" int BrowserHost_InitializeCoreCLR(void)
 
 extern "C" int BrowserHost_ExecuteAssembly(const char* assemblyPath, int argc, const char** argv)
 {
-    int exit_code = 0;
-    int retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, argc, argv, assemblyPath, (uint32_t*)&exit_code);
+    int ignore_exit_code = 0;
+    int retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, argc, argv, assemblyPath, (uint32_t*)&ignore_exit_code);
 
     if (retval < 0)
     {
         std::fprintf(stderr, "coreclr_execute_assembly failed - Error: 0x%08x\n", retval);
         return -1;
     }
-    return exit_code;
+    return 0;
 }
