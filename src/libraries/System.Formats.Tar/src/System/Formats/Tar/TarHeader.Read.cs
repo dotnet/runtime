@@ -379,8 +379,7 @@ namespace System.Formats.Tar
             {
                 // This is likely not a TAR file
                 // Check for compression magic numbers to provide better error message
-                CheckForCompressionMagicNumbers(buffer);
-                throw new InvalidDataException("The file is not a valid TAR archive format.");
+                ThrowInvalidFormatWithBetterMessage(buffer);
             }
 
             // Zero checksum means the whole header is empty
@@ -777,9 +776,14 @@ namespace System.Formats.Tar
             return true;
         }
 
-        /// Checks if the buffer starts with common file format magic numbers and provides a helpful error message.
-        /// This helps users understand when they've passed the wrong file type to the TAR reader.
-        private static void CheckForCompressionMagicNumbers(ReadOnlySpan<byte> buffer)
+        /// <summary>
+        /// Analyzes the buffer for known file format magic numbers and throws an InvalidDataException 
+        /// with a specific error message. This provides better user experience by identifying the 
+        /// actual file type when users pass non-TAR files to the TAR reader.
+        /// </summary>
+        /// <param name="buffer">The buffer containing the file header bytes</param>
+        /// <exception cref="InvalidDataException">Always thrown with either a format-specific or generic message</exception>
+        private static void ThrowInvalidFormatWithBetterMessage(ReadOnlySpan<byte> buffer)
         {
             if (buffer.Length < 2)
             {
