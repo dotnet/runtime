@@ -5102,7 +5102,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
                 bool      needTemp = emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg == REG_ZERO);
                 regNumber addrReg  = needTemp ? codeGen->rsGetRsvdReg() : dataReg;
-                if (addr->AsIntCon()->FitsInAddrBase(emitComp))
+                if (addr->AsIntCon()->FitsInAddrBase(emitComp) && addr->AsIntCon()->AddrNeedsReloc(emitComp))
                 {
                     attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
                     emitIns_R_AI(ins, attr, dataReg, addrReg, (size_t)cns, cns, addr->GetIconHandleFlag());
