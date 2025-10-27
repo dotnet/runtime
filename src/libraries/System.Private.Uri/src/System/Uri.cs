@@ -2393,7 +2393,11 @@ namespace System
                 {
                     ++idx;
                 }
-                ++idx;
+                // Only increment if we found '@' within bounds
+                if (idx < _string.Length)
+                {
+                    ++idx;
+                }
                 info.Offset.Host = idx;
             }
             else
@@ -2404,12 +2408,18 @@ namespace System
             //Now reload the end of the parsed host
             idx = (int)(cF & Flags.IndexMask);
 
-            // Ensure idx doesn't exceed string length (e.g., when bidi chars were stripped)
-            // If it does, the URI is malformed after bidi stripping
+            // Handle cases where _string was modified during parsing (percent-decoding, bidi removal).
+            // If idx exceeds _string.Length AND we have a file:// URI with UncPath, this indicates
+            // bidi character removal created a malformed URI (empty host). Otherwise, clamp for IRI processing.
             if (idx > _string.Length)
             {
-                // Throw UriFormatException instead of allowing IndexOutOfRangeException
-                throw GetException(ParsingError.BadHostName)!;
+                if (StaticIsFile(_syntax) && StaticInFact(cF, Flags.UncPath))
+                {
+                    // File UNC paths with out-of-bounds indices indicate malformed URIs from bidi removal
+                    throw GetException(ParsingError.BadHostName)!;
+                }
+                // For other cases (e.g., percent-decoding in IRI), clamp to string length
+                idx = _string.Length;
             }
 
             //From now on we do not need IndexMask bits, and reuse the space for X_NotCanonical flags
