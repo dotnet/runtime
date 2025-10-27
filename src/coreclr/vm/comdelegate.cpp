@@ -31,7 +31,7 @@
 
 #ifndef DACCESS_COMPILE
 
-#if !defined(FEATURE_SHUFFLE_THUNKS)
+#if defined(TARGET_X86)
 
 // Return an encoded shuffle entry describing a general register or stack offset that needs to be shuffled.
 static UINT16 ShuffleOfs(INT ofs, UINT stackSizeDelta = 0)
@@ -56,7 +56,9 @@ static UINT16 ShuffleOfs(INT ofs, UINT stackSizeDelta = 0)
 
     return static_cast<UINT16>(ofs);
 }
-#else // !defined(FEATURE_SHUFFLE_THUNKS)
+#endif // defined(TARGET_X86)
+
+#if defined(FEATURE_SHUFFLE_THUNKS)
 
 // Iterator for extracting shuffle entries for argument desribed by an ArgLocDesc.
 // Used when calculating shuffle array entries in GenerateShuffleArray below.
@@ -642,7 +644,7 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     // Portable default implementation
     if (!GenerateShuffleArrayPortable(pInvoke, pTargetMeth, pShuffleEntryArray, ShuffleComputationType::DelegateShuffleThunk))
         return FALSE;
-#elif defined(TARGET_X86) || defined(TARGET_ARM64) || defined(TARGET_AMD64)
+#elif defined(TARGET_X86)
     ShuffleEntry entry;
     ZeroMemory(&entry, sizeof(entry));
 
@@ -726,6 +728,9 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     entry.stacksizedelta = static_cast<UINT16>(stackSizeDelta);
     pShuffleEntryArray->Append(entry);
 
+#elif defined(TARGET_ARM64) || defined(TARGET_AMD64)
+    // Fall back to IL-based shuffle thunks
+    return FALSE;
 #else
 #error Unsupported architecture
 #endif
@@ -827,7 +832,7 @@ LoaderHeap *DelegateEEClass::GetStubHeap()
     return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
 }
 
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(FEATURE_PORTABLE_ENTRYPOINTS)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) ||  defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(FEATURE_PORTABLE_ENTRYPOINTS)
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
 {
     SigTypeContext typeContext(pDelegateMD);
@@ -887,7 +892,7 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
 
     return Stub::NewStub(JitILStub(pStubMD), NEWSTUB_FL_SHUFFLE_THUNK);
 }
-#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64 || TARGET_ARM64 || TARGET_AMD64
 
 static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 {
@@ -931,12 +936,12 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     else
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
     {
-#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(FEATURE_PORTABLE_ENTRYPOINTS)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64) || defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(FEATURE_PORTABLE_ENTRYPOINTS)
         pShuffleThunk = CreateILDelegateShuffleThunk(pMD, isInstRetBuff);
 #else
         _ASSERTE(FALSE);
         return (PCODE)NULL;
-#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64 || TARGET_ARM64 || TARGET_AMD64
     }
 
     if (!pShuffleThunk)

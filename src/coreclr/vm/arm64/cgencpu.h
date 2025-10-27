@@ -513,9 +513,7 @@ public:
 
     void EmitLoadStoreRegImm(DWORD flags, IntReg Xt, IntReg Xn, int offset=0, int log2Size = 3);
     void EmitLoadStoreRegImm(DWORD flags, VecReg Vt, IntReg Xn, int offset=0);
-#if !defined(FEATURE_SHUFFLE_THUNKS)
     void EmitUnboxMethodStub(MethodDesc* pRealMD);
-#endif // !defined(FEATURE_SHUFFLE_THUNKS)
 
     void EmitRet(IntReg reg);
 };
