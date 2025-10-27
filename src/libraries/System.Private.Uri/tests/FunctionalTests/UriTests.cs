@@ -1001,5 +1001,21 @@ namespace System.PrivateUri.Tests
                 Assert.Throws<OutOfMemoryException>(() => uri.AbsoluteUri);
             }
         }
+
+        [Theory]
+        [InlineData("/\\//")]
+        [InlineData("\\/\u200e")]
+        [InlineData("/\\\\-\u0100\r")]
+        [InlineData("\\\\\\\\\\")]
+        [InlineData("\\\\\u200E")]
+        [InlineData("\\\\\u200E:1234")]
+        [InlineData("\\\\\u200E//")]
+        [InlineData("\\\\\u200E//ab")]
+        public static void InvalidUriWithBidiControlCharacters_ThrowsUriFormatException(string uriString)
+        {
+            // These URIs should throw UriFormatException, not IndexOutOfRangeException
+            // Issue: https://github.com/dotnet/runtime/issues/18640
+            Assert.Throws<UriFormatException>(() => new Uri(uriString, UriKind.Absolute));
+        }
     }
 }
