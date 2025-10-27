@@ -50,9 +50,15 @@ namespace System.IO
         /// <summary>
         /// Gets the count of common characters from the left optionally ignoring case
         /// </summary>
-        internal static int EqualStartingCharacterCount(string? first, string? second, bool ignoreCase)
+        private static int EqualStartingCharacterCount(string? first, string? second, bool ignoreCase)
         {
             if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(second)) return 0;
+
+            if (!ignoreCase)
+            {
+                // We can use the existing accelerated API for case-sensitive comparison
+                return first.AsSpan().CommonPrefixLength(second);
+            }
 
             for (int i = 0; i < first.Length; i++)
             {
@@ -62,9 +68,9 @@ namespace System.IO
                     return i;
                 }
 
-                // Check for character mismatch
-                if ((first[i] != second[i]) &&
-                    (!ignoreCase || char.ToUpperInvariant(first[i]) != char.ToUpperInvariant(second[i])))
+                // Check for character mismatch. first[i] != second[i] is a fast path for the common case.
+                if (first[i] != second[i] &&
+                    char.ToUpperInvariant(first[i]) != char.ToUpperInvariant(second[i]))
                 {
                     return i;
                 }
