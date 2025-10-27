@@ -346,6 +346,27 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, methodInfo.GetHashCode());
         }
 
+        [Fact]
+        public void GetHashCode_MultipleSubClasses_ShouldBeUnique()
+        {
+            var numberOfCollisions = 0;
+            var hashset = new HashSet<int>();
+
+            foreach (var type in new Type[] { typeof(MI_BaseClass), typeof(MI_SubClassA), typeof(MI_SubClassB), typeof(MI_SubClassC) })
+            {
+                foreach (var methodInfo in type.GetMethods())
+                {
+                    if (!hashset.Add(methodInfo.GetHashCode()))
+                    {
+                        numberOfCollisions++;
+                    }
+                }
+            }
+
+            // If intermittent failures are observed, it's acceptable to relax the assertion to allow some collisions.
+            Assert.Equal(0, numberOfCollisions);
+        }
+
         public static IEnumerable<object[]> Invoke_TestData()
         {
             yield return new object[] { typeof(MI_BaseClass), nameof(MI_BaseClass.VirtualReturnIntMethod), new MI_BaseClass(), null, 0 };
@@ -807,6 +828,10 @@ namespace System.Reflection.Tests
         TypeAttr(typeof(object), name = "TypeAttrSimple")]
         public void MethodWithAttributes() { }
     }
+
+    public class MI_SubClassA : MI_BaseClass { }
+    public class MI_SubClassB : MI_BaseClass { }
+    public class MI_SubClassC : MI_BaseClass { }
 
     public class MethodInfoDummySubClass : MI_BaseClass
     {

@@ -278,7 +278,6 @@ namespace Loader
 #include "fcall.h"
 #include "syncblk.h"
 #include "gcdesc.h"
-#include "specialstatics.h"
 #include "object.h"  // <NICE> We should not really need to put this so early... </NICE>
 #include "gchelpers.h"
 #include "peassembly.h"

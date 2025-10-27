@@ -741,7 +741,7 @@ namespace System.Reflection.Metadata
             if (nestedIdx != -1)
                 comparisonName = typeName.Substring(nestedIdx+1);
             Assert.True(comparisonName == ty.Name, $"{callerFilePath}:{callerLineNumber}: returned type has unexpected name '{ty.Name}' (expected: '{comparisonName}') in {callerMemberName}");
-            Assert.True(ContainsTypeWithName (allTypes, fullName), $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetTypes to contain '{fullName}', but it didn'type_ReflectionDeleteMember in {callerMemberName}");
+            Assert.True(ContainsTypeWithName (allTypes, fullName), $"{callerFilePath}:{callerLineNumber}: expected Assembly.GetTypes to contain '{fullName}', but it didn't in {callerMemberName}");
             if (moreChecks != null)
                 moreChecks(ty);
             return ty;
