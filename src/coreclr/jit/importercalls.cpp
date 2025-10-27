@@ -13,7 +13,7 @@
 //    newObjThis                - tree for this pointer or uninitialized newobj temp (or nullptr)
 //    prefixFlags               - IL prefix flags for the call
 //    callInfo                  - EE supplied info for the call
-//    rawILOffset               - IL offset of the opcode, used for guarded devirtualization.
+//    rawILOffset               - IL offset of the opcode
 //
 // Returns:
 //    Type of the call's return value.
