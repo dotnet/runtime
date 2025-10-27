@@ -580,7 +580,7 @@
   <Target Name="CreateAndroidApps"
       DependsOnTargets="BuildAllAndroidApp"
       AfterTargets="ManagedBuild"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and $(RunWithAndroid)" />
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and $(RunWithAndroid) and '$(TestBuildMode)' != 'nativeaot'" />
 
   <Target Name="CreateIosApps"
       DependsOnTargets="BuildAlliOSApp"
