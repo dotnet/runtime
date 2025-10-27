@@ -174,9 +174,6 @@ public:
         FM_ExcludePublic       = (FM_ExcludeFamORAssem   << 1), // Accessibly by anyone who has visibility to this scope.
         FM_Unique = (FM_ExcludePublic   << 1),  // Make sure the method is unique for the class
 
-        FM_IgnoreReturnType    = (FM_Unique              << 1), // Ignore the return type altogether
-        FM_IgnoreCallConv      = (FM_IgnoreReturnType    << 1), // Ignore the call convention altogether
-
         // This means that FindMethod will only consider mdPublic mdVirtual methods.
         // This is the only time when name/sig lookup will look past the first match.
         FM_ForInterface        = (FM_ExcludeNonVirtual |

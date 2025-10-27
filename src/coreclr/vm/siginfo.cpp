@@ -4550,40 +4550,6 @@ MetaSig::CompareMethodSigs(
     BOOL                 skipReturnTypeSig,
     TokenPairList *      pVisited) //= NULL
 {
-    return CompareMethodSigs(
-        pSignature1,
-        cSig1,
-        pModule1,
-        pSubst1,
-        pSignature2,
-        cSig2,
-        pModule2,
-        pSubst2,
-        skipReturnTypeSig,
-        FALSE,
-        pVisited);
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Compare two method sigs and return whether they are the same.
-// @GENERICS: instantiation of the type variables in the second signature
-//
-//static
-BOOL
-MetaSig::CompareMethodSigs(
-    PCCOR_SIGNATURE      pSignature1,
-    DWORD                cSig1,
-    ModuleBase *         pModule1,
-    const Substitution * pSubst1,
-    PCCOR_SIGNATURE      pSignature2,
-    DWORD                cSig2,
-    ModuleBase *         pModule2,
-    const Substitution * pSubst2,
-    BOOL                 skipReturnTypeSig,
-    BOOL                 skipCallConv,
-    TokenPairList *      pVisited) //= NULL
-{
     CONTRACTL
     {
         THROWS;
@@ -4613,7 +4579,7 @@ MetaSig::CompareMethodSigs(
         return TRUE;
     }
 
-    if (!skipCallConv && (*pSig1 & ~CORINFO_CALLCONV_PARAMTYPE) != (*pSig2 & ~CORINFO_CALLCONV_PARAMTYPE))
+    if ((*pSig1 & ~CORINFO_CALLCONV_PARAMTYPE) != (*pSig2 & ~CORINFO_CALLCONV_PARAMTYPE))
     {   // Calling convention or hasThis mismatch
         return FALSE;
     }

@@ -69,7 +69,7 @@
             lib[name] = () => "dummy";
             assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
             const fn = exports[name];
-            if(fn.__deps) {
+            if (fn.__deps) {
                 lib[name + "__deps"] = fn.__deps;
             }
         }

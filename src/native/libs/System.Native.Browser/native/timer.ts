@@ -8,9 +8,9 @@ export function SystemJS_ScheduleTimer(shortestDueTimeMs: number): void {
         globalThis.clearTimeout(DOTNET.lastScheduledTimerId);
         DOTNET.lastScheduledTimerId = undefined;
     }
-    DOTNET.lastScheduledTimerId = Module.safeSetTimeout(timerTick, shortestDueTimeMs);
+    DOTNET.lastScheduledTimerId = Module.safeSetTimeout(SystemJS_ScheduleTimerTick, shortestDueTimeMs);
 
-    function timerTick(): void {
+    function SystemJS_ScheduleTimerTick(): void {
         Module.maybeExit();
         _SystemJS_ExecuteTimerCallback();
     }
@@ -22,9 +22,9 @@ export function SystemJS_ScheduleBackgroundJob(): void {
         globalThis.clearTimeout(DOTNET.lastScheduledThreadPoolId);
         DOTNET.lastScheduledThreadPoolId = undefined;
     }
-    DOTNET.lastScheduledThreadPoolId = Module.safeSetTimeout(timerTick, 0);
+    DOTNET.lastScheduledThreadPoolId = Module.safeSetTimeout(SystemJS_ScheduleBackgroundJobTick, 0);
 
-    function timerTick(): void {
+    function SystemJS_ScheduleBackgroundJobTick(): void {
         Module.maybeExit();
         _SystemJS_ExecuteBackgroundJobCallback();
     }

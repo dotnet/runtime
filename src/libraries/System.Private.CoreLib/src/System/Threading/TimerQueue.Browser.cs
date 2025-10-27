@@ -80,9 +80,6 @@ namespace System.Threading
             return true;
         }
 
-#if !MONO
-        [DynamicDependency(nameof(TimerHandler))]
-#endif
         // shortest time of all TimerQueues
         private static unsafe void ReplaceNextTimer(long shortestDueTimeMs, long currentTimeMs)
         {

@@ -136,7 +136,6 @@ extern "C" int BrowserHost_InitializeCoreCLR(void)
     return 0;
 }
 
-// WASM-TODO: process commandline arguments
 extern "C" int BrowserHost_ExecuteAssembly(const char* assemblyPath, int argc, const char** argv)
 {
     int exit_code = 0;

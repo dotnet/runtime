@@ -10,13 +10,7 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class AsyncHelpers
     {
-        [DynamicDependency(nameof(MainWrapper))]
-        [DynamicDependency(nameof(MainWrapperVoid))]
-        static AsyncHelpers()
-        {
-        }
-
-        private static void MainWrapper(object exitCodeTask)
+        private static void ExecuteAsyncEntryPoint(object exitCodeTask)
         {
             var task = (Task<int>)exitCodeTask;
             task.ContinueWith(t =>
@@ -34,7 +28,7 @@ namespace System.Runtime.CompilerServices
             }, TaskScheduler.Default);
         }
 
-        private static void MainWrapperVoid(object exitCodeTask)
+        private static void ExecuteAsyncEntryPointVoid(object exitCodeTask)
         {
             var task = (Task)exitCodeTask;
             task.ContinueWith(t =>

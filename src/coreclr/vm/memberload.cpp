@@ -1033,9 +1033,7 @@ static BOOL CompareMethodSigWithCorrectSubstitution(
             ModuleBase* pModule,
             MethodDesc *pCurDeclMD,
             const Substitution *pDefSubst,
-            MethodTable *pCurMT,
-            bool ignoreReturnType = false,
-            bool ignoreCallConv = false
+            MethodTable *pCurMT
         )
 {
     CONTRACTL
@@ -1056,7 +1054,7 @@ static BOOL CompareMethodSigWithCorrectSubstitution(
 
         pCurDeclMD->GetSig(&pCurMethodSig, &cCurMethodSig);
         return MetaSig::CompareMethodSigs(pSignature, cSignature, pModule, NULL, pCurMethodSig,
-                                       cCurMethodSig, pCurDeclMD->GetModule(), pDefSubst, ignoreReturnType, ignoreCallConv);
+                                       cCurMethodSig, pCurDeclMD->GetModule(), pDefSubst, FALSE);
     }
     else
     {
@@ -1065,7 +1063,7 @@ static BOOL CompareMethodSigWithCorrectSubstitution(
         {
             Substitution subst2 = pCurMT->GetSubstitutionForParent(pDefSubst);
 
-            return CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, &subst2, pParentMT, ignoreReturnType, ignoreCallConv);
+            return CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, &subst2, pParentMT);
         }
         return FALSE;
     }
@@ -1098,8 +1096,6 @@ MemberLoader::FindMethod(
 
     const bool canSkipMethod = FM_PossibleToSkipMethod(flags);
     const bool ignoreName = (flags & FM_IgnoreName) != 0;
-    const bool ignoreReturnType = (flags & FM_IgnoreReturnType) != 0;
-    const bool ignoreCallConv = (flags & FM_IgnoreCallConv) != 0;
 
     // Statistically it's most likely for a method to be found in non-vtable portion of this class's members, then in the
     // vtable of this class's declared members, then in the inherited portion of the vtable, so we search backwards.
@@ -1136,7 +1132,7 @@ MemberLoader::FindMethod(
 
         if (ignoreName || StrCompFunc(pszName, pCurDeclMD->GetNameThrowing()) == 0)
         {
-            if (CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, pDefSubst, pMT, ignoreReturnType, ignoreCallConv))
+            if (CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, pDefSubst, pMT))
             {
                 RETURN pCurDeclMD;
             }
@@ -1200,7 +1196,7 @@ MemberLoader::FindMethod(
 
             if (ignoreName || StrCompFunc(pszName, pCurDeclMD->GetNameThrowing()) == 0)
             {
-                if (CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, pDefSubst, pMT, ignoreReturnType, ignoreCallConv))
+                if (CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, pDefSubst, pMT))
                 {
                     RETURN pCurDeclMD;
                 }

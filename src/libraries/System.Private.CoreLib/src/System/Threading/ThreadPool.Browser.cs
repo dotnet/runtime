@@ -77,9 +77,6 @@ namespace System.Threading
 
         public static long CompletedWorkItemCount => 0;
 
-#if !MONO
-        [DynamicDependency(nameof(BackgroundJobHandler))]
-#endif
         internal static unsafe void RequestWorkerThread()
         {
             if (_callbackQueued)

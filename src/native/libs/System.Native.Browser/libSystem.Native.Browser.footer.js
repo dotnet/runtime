@@ -38,7 +38,7 @@
             const name = String(exportName);
             if (name === "dotnetInitializeModule") continue;
             const fn = lib[name] = exports[name];
-            if(fn.__deps) {
+            if (fn.__deps) {
                 lib[name + "__deps"] = fn.__deps;
             }
         }
