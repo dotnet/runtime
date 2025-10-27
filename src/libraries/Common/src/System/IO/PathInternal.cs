@@ -52,23 +52,24 @@ namespace System.IO
         /// </summary>
         private static int EqualStartingCharacterCount(string? first, string? second, bool ignoreCase)
         {
-            if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(second)) return 0;
-
-            int i = first.AsSpan().CommonPrefixLength(second);
-            if (!ignoreCase)
+            if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(second))
             {
-                return i;
+                return 0;
             }
 
-            for (; i < first.Length; i++)
+            int commonLength = first.AsSpan().CommonPrefixLength(second);
+            if (ignoreCase)
             {
-                if (i >= second.Length ||
-                    char.ToUpperInvariant(first[i]) != char.ToUpperInvariant(second[i]))
+                for (; commonLength < first.Length; commonLength++)
                 {
-                    return i;
+                    if (commonLength >= second.Length ||
+                        char.ToUpperInvariant(first[commonLength]) != char.ToUpperInvariant(second[commonLength]))
+                    {
+                        break;
+                    }
                 }
             }
-            return first.Length;
+            return commonLength;
         }
 
         /// <summary>
