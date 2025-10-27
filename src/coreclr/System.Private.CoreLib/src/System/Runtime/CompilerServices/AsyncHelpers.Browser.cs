@@ -17,8 +17,9 @@ namespace System.Runtime.CompilerServices
             {
                 if (t.IsFaulted)
                 {
-                    var message = t.Exception.Message ?? "";
-                    var stackTrace = t.Exception.StackTrace ?? "";
+                    var inner= t.Exception.InnerException ?? t.Exception;
+                    var message = inner.GetType().Name + ": " + (inner.Message ?? "");
+                    var stackTrace = inner.StackTrace ?? "";
                     SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
                 }
                 else
@@ -35,10 +36,9 @@ namespace System.Runtime.CompilerServices
             {
                 if (t.IsFaulted)
                 {
-                    var message = t.Exception.Message ?? "";
-                    // WASM-TODO: why is stack trace empty here?
-                    // https://github.com/dotnet/runtime/issues/121116
-                    var stackTrace = t.Exception.StackTrace ?? "";
+                    var inner= t.Exception.InnerException ?? t.Exception;
+                    var message = inner.GetType().Name + ": " + (inner.Message ?? "");
+                    var stackTrace = inner.StackTrace ?? "";
                     SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
                 }
                 else

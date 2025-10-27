@@ -43,7 +43,6 @@ export function stringToUTF8Ptr(str: string): CharPtr {
     Module.stringToUTF8Array(str, Module.HEAPU8, ptr, size);
     return ptr;
 }
-}
 
 export function utf16ToString(startPtr: number, endPtr: number): string {
     stringsInit();

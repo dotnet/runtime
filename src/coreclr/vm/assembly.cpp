@@ -1585,7 +1585,7 @@ MethodDesc* Assembly::GetEntryPoint()
         if (IsMdSpecialName(dwAttrs) && (*szName == '<') && (*szEnd == '>'))
         {
             // look for "<Name>$"
-            LPUTF8 pszAsyncName = (LPUTF8)malloc (nameLength + 2);
+            LPUTF8 pszAsyncName = (LPUTF8)new char[nameLength + 2];
             snprintf (pszAsyncName, nameLength + 2, "%s$", szName);
             m_pEntryPoint = MemberLoader::FindMethodByName(pInitialMT, pszAsyncName);
 
@@ -1596,7 +1596,7 @@ MethodDesc* Assembly::GetEntryPoint()
                 m_pEntryPoint = MemberLoader::FindMethodByName(pInitialMT, pszAsyncName + 1);
             }
 
-            free (pszAsyncName);
+            delete[] pszAsyncName;
         }
     }
 #endif // TARGET_BROWSER
