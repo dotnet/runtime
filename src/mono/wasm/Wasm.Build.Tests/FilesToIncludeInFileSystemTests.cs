@@ -31,8 +31,6 @@ public class FilesToIncludeInFileSystemTests : WasmTemplateTestsBase
 
     [Theory, TestCategory("bundler-friendly")]
     [MemberData(nameof(LoadFilesToVfsData))]
-    [InlineData(true)]
-    [InlineData(false)]
     public async Task LoadFilesToVfs(bool publish)
     {
         Configuration config = Configuration.Debug;
