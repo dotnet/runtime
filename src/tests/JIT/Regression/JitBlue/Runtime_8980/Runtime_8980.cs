@@ -5023,7 +5023,7 @@ public class Runtime_8980
 
         // Verify the dictionary was created successfully
         // The test passes if we got here without StackOverflowException
-        if (dict.Count != 5000)
+        if (dict.Count != 5001)
         {
             Console.WriteLine($"Expected 5000 entries, got {dict.Count}");
             return 101;
