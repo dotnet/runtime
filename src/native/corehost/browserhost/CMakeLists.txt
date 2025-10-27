@@ -123,7 +123,7 @@ target_link_options(browserhost PRIVATE
     -sMODULARIZE=1
     -sEXPORT_ES6=1
     -sEXIT_RUNTIME=0
-    -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,BROWSER_HOST,safeSetTimeout,maybeExit
+    -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,BROWSER_HOST,safeSetTimeout,maybeExit,exitJS,abort
     -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,___cpp_exception,_GetDotNetRuntimeContractDescriptor,_BrowserHost_InitializeCoreCLR
     -sEXPORT_NAME=createDotnetRuntime
     -fwasm-exceptions
