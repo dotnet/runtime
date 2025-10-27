@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Regression test for https://github.com/dotnet/roslyn/issues/17455
+// Regression test for https://github.com/dotnet/runtime/issues/8980
 // Large Dictionary with ValueTuple values should not cause StackOverflow
 // This test uses a large collection initializer with ValueTuple values.
 // Prior to the JIT fix, this would cause a StackOverflowException due to
@@ -11,7 +11,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-public class GitHub_17455
+public class Runtime_8980
 {
     [Fact]
     public static int TestEntryPoint()
