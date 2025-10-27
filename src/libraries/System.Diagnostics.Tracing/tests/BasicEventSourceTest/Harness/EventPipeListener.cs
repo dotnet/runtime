@@ -110,13 +110,22 @@ namespace BasicEventSourceTests
             {
                 return;
             }
-            _disposed = true;
-            _session?.Stop();
-            _session?.Dispose();
 
-            if (_processingTask != null && !_processingTask.Wait(TimeSpan.FromSeconds(5)))
+            try
             {
-                Debug.WriteLine("EventPipeEventListener processing task failed to stop in a timely manner.");
+                _disposed = true;
+                _session?.Stop();
+
+                if (_processingTask != null && !_processingTask.Wait(TimeSpan.FromSeconds(5)))
+                {
+                    // If the session is still streaming data then session.Dispose() below will disconnect the stream 
+                    // and likely cause the thread running source.Process() to throw.
+                    Assert.Fail("EventPipeEventListener processing task failed to complete in 5 seconds.");
+                }
+            }
+            finally
+            {
+                _session?.Dispose();
             }
         }
 

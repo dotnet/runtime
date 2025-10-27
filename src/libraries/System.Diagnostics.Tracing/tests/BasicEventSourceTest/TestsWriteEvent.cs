@@ -30,7 +30,8 @@ namespace BasicEventSourceTests
         public static TheoryData<Listener> GetListeners()
         {
             TheoryData<Listener> data = new TheoryData<Listener>();
-            if (PlatformDetection.IsNetCore && PlatformDetection.IsNotAndroid && PlatformDetection.IsNotBrowser && PlatformDetection.IsNotMonoRuntime)
+            if (PlatformDetection.IsNetCore && PlatformDetection.IsNotAndroid && PlatformDetection.IsNotBrowser &&
+                (PlatformDetection.IsNotMonoRuntime || PlatformDetection.IsMacCatalyst))
             {
                 data.Add(new EventPipeListener());
             }
