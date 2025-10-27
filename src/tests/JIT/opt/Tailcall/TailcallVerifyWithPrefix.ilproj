@@ -11,6 +11,8 @@
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="TailcallVerifyWithPrefix.il TailcallVerifyTransparentLibraryWithPrefix.il TailcallVerifyVerifiableLibraryWithPrefix.il" />
+    <Compile Include="TailcallVerifyWithPrefix.il" />
+    <Compile Include="TailcallVerifyTransparentLibraryWithPrefix.il" />
+    <Compile Include="TailcallVerifyVerifiableLibraryWithPrefix.il" />
   </ItemGroup>
 </Project>

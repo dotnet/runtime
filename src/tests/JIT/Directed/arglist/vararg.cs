@@ -4551,7 +4551,7 @@ namespace NativeVarargTest
         ////////////////////////////////////////////////////////////////////////////
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        [Fact]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
         public static int TestEntryPoint()
         {
             int success = 100;

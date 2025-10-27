@@ -125,3 +125,4 @@ add_custom_target(System.Native.Browser-NpmInstall
 )
 
 install(FILES ${ROLLUP_OUTPUTS} DESTINATION sharedFramework COMPONENT runtime)
+install(FILES "${CLR_SRC_NATIVE_DIR}/package.json" DESTINATION sharedFramework COMPONENT runtime)
