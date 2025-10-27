@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Text;
 
 namespace System.IO.Compression
@@ -267,6 +268,11 @@ namespace System.IO.Compression
             return DoCreateEntry(entryName, null);
         }
 
+        public ZipArchiveEntry CreateEntry(string entryName, string password, ZipArchiveEntry.EncryptionMethod encryption)
+        {
+            return DoCreateEntry(entryName, null, password, encryption);
+        }
+
         /// <summary>
         /// Creates an empty entry in the Zip archive with the specified entry name. There are no restrictions on the names of entries. The last write time of the entry is set to the current time. If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.
         /// </summary>
@@ -280,6 +286,11 @@ namespace System.IO.Compression
         public ZipArchiveEntry CreateEntry(string entryName, CompressionLevel compressionLevel)
         {
             return DoCreateEntry(entryName, compressionLevel);
+        }
+
+        public ZipArchiveEntry CreateEntry(string entryName, CompressionLevel compressionLevel, string password, ZipArchiveEntry.EncryptionMethod encryption)
+        {
+            return DoCreateEntry(entryName, compressionLevel, password, encryption);
         }
 
         /// <summary>
@@ -379,7 +390,8 @@ namespace System.IO.Compression
         // New entries in the archive won't change its state.
         internal ChangeState Changed { get; private set; }
 
-        private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
+        private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel,
+            string? password = null, ZipArchiveEntry.EncryptionMethod encryption = ZipArchiveEntry.EncryptionMethod.None)
         {
             ArgumentException.ThrowIfNullOrEmpty(entryName);
 
@@ -389,10 +401,26 @@ namespace System.IO.Compression
             ThrowIfDisposed();
 
 
-            ZipArchiveEntry entry = compressionLevel.HasValue ?
-                new ZipArchiveEntry(this, entryName, compressionLevel.Value) :
-                new ZipArchiveEntry(this, entryName);
-
+            ZipArchiveEntry entry;
+            if (compressionLevel.HasValue)
+            {
+                if (password != null) {
+                    entry = new ZipArchiveEntry(this, entryName, compressionLevel.Value, password, encryption);
+                } else
+                {
+                    entry = new ZipArchiveEntry(this, entryName, compressionLevel.Value);
+                }
+            }
+            else
+            {
+                if (password != null)
+                {
+                    entry = new ZipArchiveEntry(this, entryName, password, encryption);
+                }
+                else {
+                    entry = new ZipArchiveEntry(this, entryName);
+                }
+            }
             AddEntry(entry);
 
             return entry;

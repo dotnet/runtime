@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,7 +48,8 @@ namespace System.IO.Compression
         private byte[]? _lhTrailingExtraFieldData;
         private byte[] _fileComment;
         private readonly CompressionLevel _compressionLevel;
-        //private ReadOnlyMemory<char> _password;
+        private string? _password;
+        private EncryptionMethod _encryptionMethod;
 
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -159,6 +161,58 @@ namespace System.IO.Compression
             }
 
             Changes = ZipArchive.ChangeState.Unchanged;
+        }
+
+        internal ZipArchiveEntry(ZipArchive archive, string entryName, CompressionLevel compressionLevel, string? password, EncryptionMethod encryptionMethod = EncryptionMethod.ZipCrypto)
+            : this(archive, entryName, compressionLevel)
+        {
+            _password = password;
+            _encryptionMethod = encryptionMethod;
+            _generalPurposeBitFlag = 0;
+
+            if (!string.IsNullOrEmpty(_password) && _encryptionMethod != EncryptionMethod.None)
+            {
+                _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
+                _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
+                _isEncrypted = true;
+            }
+            else
+            {
+                _generalPurposeBitFlag &= ~BitFlagValues.IsEncrypted;
+                _isEncrypted = false;
+            }
+        }
+
+        internal ZipArchiveEntry(ZipArchive archive, string entryName, string? password, EncryptionMethod encryptionMethod = EncryptionMethod.ZipCrypto)
+            : this(archive, entryName)
+        {
+            _password = password;
+            _encryptionMethod = encryptionMethod;
+            _generalPurposeBitFlag = 0;
+
+            if (!string.IsNullOrEmpty(_password) && _encryptionMethod != EncryptionMethod.None)
+            {
+                _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
+                _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
+                _isEncrypted = true;
+            }
+            else
+            {
+                _generalPurposeBitFlag &= ~BitFlagValues.IsEncrypted;
+                _isEncrypted = false;
+            }
+        }
+
+        internal string Password
+        {
+            get => _password ?? string.Empty;
+            set => _password = value;
+        }
+
+        internal EncryptionMethod Encryption
+        {
+            get => _encryptionMethod;
+            set => _encryptionMethod = value;
         }
 
         /// <summary>
@@ -377,6 +431,9 @@ namespace System.IO.Compression
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
+                    if (!_isEncrypted) {
+                        throw new InvalidDataException("Entry is not encrypted");
+                    }
                     return OpenInReadMode(checkOpenable: true, password.AsMemory());
                 case ZipArchiveMode.Create:
                     return OpenInWriteMode();
@@ -723,32 +780,179 @@ namespace System.IO.Compression
             }
         }
 
-        private CheckSumAndSizeWriteStream GetDataCompressor(Stream backingStream, bool leaveBackingStreamOpen, EventHandler? onClose)
+        //private CheckSumAndSizeWriteStream GetDataCompressor(Stream backingStream, bool leaveBackingStreamOpen, EventHandler? onClose)
+        //{
+        //    // stream stack: backingStream -> DeflateStream -> CheckSumWriteStream
+
+        //    // By default we compress with deflate, except if compression level is set to NoCompression then stored is used.
+        //    // Stored is also used for empty files, but we don't actually call through this function for that - we just write the stored value in the header
+        //    // Deflate64 is not supported on all platforms
+        //    Debug.Assert(CompressionMethod == CompressionMethodValues.Deflate
+        //        || CompressionMethod == CompressionMethodValues.Stored);
+
+        //    bool isIntermediateStream = true;
+        //    Stream compressorStream;
+        //    switch (CompressionMethod)
+        //    {
+        //        case CompressionMethodValues.Stored:
+        //            compressorStream = backingStream;
+        //            isIntermediateStream = false;
+        //            break;
+        //        case CompressionMethodValues.Deflate:
+        //        case CompressionMethodValues.Deflate64:
+        //        default:
+        //            compressorStream = new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
+        //            break;
+
+        //    }
+        //    bool leaveCompressorStreamOpenOnClose = leaveBackingStreamOpen && !isIntermediateStream;
+        //    var checkSumStream = new CheckSumAndSizeWriteStream(
+        //        compressorStream,
+        //        backingStream,
+        //        leaveCompressorStreamOpenOnClose,
+        //        this,
+        //        onClose,
+        //        (long initialPosition, long currentPosition, uint checkSum, Stream backing, ZipArchiveEntry thisRef, EventHandler? closeHandler) =>
+        //        {
+        //            thisRef._crc32 = checkSum;
+        //            thisRef._uncompressedSize = currentPosition;
+        //            thisRef._compressedSize = backing.Position - initialPosition;
+        //            closeHandler?.Invoke(thisRef, EventArgs.Empty);
+        //        });
+
+        //    return checkSumStream;
+        //}
+        //private CheckSumAndSizeWriteStream GetDataCompressor(Stream backingStream, bool leaveBackingStreamOpen, EventHandler? onClose)
+        //{
+        //    // final chain: backingStream <- ZipCrypto? <- Deflate/Stored <- CheckSumAndSizeWriteStream
+
+        //    Debug.Assert(CompressionMethod == CompressionMethodValues.Deflate
+        //              || CompressionMethod == CompressionMethodValues.Stored
+        //              || CompressionMethod == CompressionMethodValues.Deflate64);
+
+        //    bool isEncrypted = Encryption == _encryptionMethod;
+        //    string? pwd = _password;
+
+
+        //    // (A) Insert encrypting stream eagerly (ZipCrypto header is written NOW, before initialPosition capture)
+        //    Stream targetSink = backingStream;
+        //    if (isEncrypted)
+        //    {
+        //        if (string.IsNullOrEmpty(pwd))
+        //            throw new InvalidOperationException("Encrypted entry requires a non-empty password.");
+
+        //        // With streaming (GPBF bit 3), use DOS time low word for ZipCrypto header check bytes
+        //        ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
+
+        //        // Constructor writes 12-byte ZipCrypto header immediately
+        //        targetSink = new ZipCryptoStream(
+        //            baseStream: backingStream,
+        //            password: pwd.AsMemory(),
+        //            passwordVerifierLow2Bytes: verifierLow2Bytes,
+        //            crc32: null);
+        //    }
+
+        //    Stream compressorStream;
+        //    bool isIntermediateStream = true;
+
+        //    switch (CompressionMethod)
+        //    {
+        //        case CompressionMethodValues.Stored:
+        //            compressorStream = targetSink;
+        //            // If not encrypted, there is no intermediate layer; otherwise ZipCrypto is an intermediate
+        //            isIntermediateStream = isEncrypted;
+        //            break;
+
+        //        case CompressionMethodValues.Deflate:
+        //        case CompressionMethodValues.Deflate64:
+        //        default:
+        //            // NOTE: DeflateStream uses leaveBackingStreamOpen for its own inner stream,
+        //            // which here is targetSink (possibly encrypting stream)
+        //            compressorStream = new DeflateStream(targetSink, _compressionLevel, leaveBackingStreamOpen);
+        //            isIntermediateStream = true;
+        //            break;
+        //    }
+
+        //    bool leaveCompressorStreamOpenOnClose = leaveBackingStreamOpen && !isIntermediateStream;
+
+        //    // (C) Return the checksum/size wrapper; add encryption overhead (12 for ZipCrypto) to compressed size
+        //    var checkSumStream = new CheckSumAndSizeWriteStream(
+        //        compressorStream,
+        //        backingStream,
+        //        leaveCompressorStreamOpenOnClose,
+        //        this,
+        //        onClose,
+        //        (long initialPosition, long currentPosition, uint checkSum, Stream backing, ZipArchiveEntry thisRef, EventHandler? closeHandler) =>
+        //        {
+        //            // CRC is over plaintext (as your CheckSumAndSizeWriteStream computes)
+        //            thisRef._crc32 = checkSum;
+        //            thisRef._uncompressedSize = currentPosition;
+
+        //            long rawCompressed = backing.Position - initialPosition;
+
+        //            // Because ZipCrypto header was written BEFORE initialPosition was captured,
+        //            // we must add the overhead explicitly.
+        //            if (thisRef.Encryption == EncryptionMethod.ZipCrypto)
+        //            {
+        //                rawCompressed += 12; // 12 for ZipCrypto
+        //            }
+
+        //            thisRef._compressedSize = rawCompressed;
+        //            closeHandler?.Invoke(thisRef, EventArgs.Empty);
+        //        });
+
+        //    return checkSumStream;
+        //}
+        private CheckSumAndSizeWriteStream GetDataCompressor(
+    Stream backingStream, bool leaveBackingStreamOpen, EventHandler? onClose, string? password = null, EncryptionMethod encryption = EncryptionMethod.None)
         {
-            // stream stack: backingStream -> DeflateStream -> CheckSumWriteStream
+            // final chain: backingStream <- ZipCrypto? <- Deflate/Stored <- CheckSumAndSizeWriteStream
 
-            // By default we compress with deflate, except if compression level is set to NoCompression then stored is used.
-            // Stored is also used for empty files, but we don't actually call through this function for that - we just write the stored value in the header
-            // Deflate64 is not supported on all platforms
             Debug.Assert(CompressionMethod == CompressionMethodValues.Deflate
-                || CompressionMethod == CompressionMethodValues.Stored);
+                      || CompressionMethod == CompressionMethodValues.Stored
+                      || CompressionMethod == CompressionMethodValues.Deflate64);
 
-            bool isIntermediateStream = true;
+            bool isEncrypted = Encryption == encryption; // your internal property
+            string? pwd = password;
+
+            // Build target sink (encrypting layer if needed). Header will be emitted on the first write.
+            Stream targetSink = backingStream;
+            if (IsZipCryptoEncrypted())
+            {
+                if (string.IsNullOrEmpty(pwd))
+                    throw new InvalidOperationException("Encrypted entry requires a non-empty password.");
+
+                // For streaming (GPBF bit 3 set in LOCAL HEADER), verifier = DOS time low word of that header
+                ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
+
+                targetSink = new ZipCryptoStream(
+                    baseStream: backingStream,
+                    password: pwd.AsMemory(),
+                    passwordVerifierLow2Bytes: verifierLow2Bytes,
+                    crc32: null,
+                    leaveOpen: leaveBackingStreamOpen); // honor leaveOpen semantics
+            }
+
             Stream compressorStream;
+            bool isIntermediateStream = true;
+
             switch (CompressionMethod)
             {
                 case CompressionMethodValues.Stored:
-                    compressorStream = backingStream;
-                    isIntermediateStream = false;
+                    compressorStream = targetSink;
+                    isIntermediateStream = isEncrypted; // only intermediate if we added encryption
                     break;
+
                 case CompressionMethodValues.Deflate:
                 case CompressionMethodValues.Deflate64:
                 default:
-                    compressorStream = new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
+                    compressorStream = new DeflateStream(targetSink, _compressionLevel, leaveBackingStreamOpen);
+                    isIntermediateStream = true;
                     break;
-
             }
+
             bool leaveCompressorStreamOpenOnClose = leaveBackingStreamOpen && !isIntermediateStream;
+
             var checkSumStream = new CheckSumAndSizeWriteStream(
                 compressorStream,
                 backingStream,
@@ -757,9 +961,14 @@ namespace System.IO.Compression
                 onClose,
                 (long initialPosition, long currentPosition, uint checkSum, Stream backing, ZipArchiveEntry thisRef, EventHandler? closeHandler) =>
                 {
+                    // CRC over plaintext:
                     thisRef._crc32 = checkSum;
                     thisRef._uncompressedSize = currentPosition;
-                    thisRef._compressedSize = backing.Position - initialPosition;
+
+                    // No +12 needed anymore: the header was written after initialPosition was captured.
+                    long rawCompressed = backing.Position - initialPosition;
+
+                    thisRef._compressedSize = rawCompressed;
                     closeHandler?.Invoke(thisRef, EventArgs.Empty);
                 });
 
@@ -768,10 +977,8 @@ namespace System.IO.Compression
 
         private byte CalculateZipCryptoCheckByte()
         {
-            const ushort DataDescriptorFlag = 0x0008; // GPBF bit 3
-
             // If data descriptor NOT used, the check byte is the MSB of CRC32
-            if (((ushort)_generalPurposeBitFlag & DataDescriptorFlag) == 0)
+            if ((_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0)
                 return (byte)((_crc32 >> 24) & 0xFF);
 
             // If data descriptor IS used, the check byte is the MSB of the DOS time from the *local* header
@@ -857,6 +1064,31 @@ namespace System.IO.Compression
                 entry._archive.ReleaseArchiveStream(entry);
                 entry._outstandingWriteStream = null;
             });
+            _outstandingWriteStream = new DirectToArchiveWriterStream(crcSizeStream, this);
+
+            return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
+        }
+
+        private WrappedStream OpenInWriteMode(string? password = null, EncryptionMethod encryption = EncryptionMethod.None)
+        {
+            if (_everOpenedForWrite)
+                throw new IOException(SR.CreateModeWriteOnceAndOneEntryAtATime);
+
+            // we assume that if another entry grabbed the archive stream, that it set this entry's _everOpenedForWrite property to true by calling WriteLocalFileHeaderAndDataIfNeeded
+            _archive.DebugAssertIsStillArchiveStreamOwner(this);
+
+            _everOpenedForWrite = true;
+            Changes |= ZipArchive.ChangeState.StoredData;
+            CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(_archive.ArchiveStream, true, (object? o, EventArgs e) =>
+            {
+                // release the archive stream
+                var entry = (ZipArchiveEntry)o!;
+                entry._archive.ReleaseArchiveStream(entry);
+                entry._outstandingWriteStream = null;
+            },
+            password,
+            encryption
+            );
             _outstandingWriteStream = new DirectToArchiveWriterStream(crcSizeStream, this);
 
             return new WrappedStream(baseStream: _outstandingWriteStream, closeBaseStream: true);
@@ -1043,9 +1275,19 @@ namespace System.IO.Compression
             }
             else
             {
+
+                if (Encryption == EncryptionMethod.ZipCrypto)
+                {
+                    // Streaming mode for encryption: sizes and CRC unknown upfront
+                    _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
+                    _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
+                    compressedSizeTruncated = 0;
+                    uncompressedSizeTruncated = 0;
+                    Debug.Assert(_crc32 == 0);
+                }
                 // if we have a non-seekable stream, don't worry about sizes at all, and just set the right bit
                 // if we are using the data descriptor, then sizes and crc should be set to 0 in the header
-                if (_archive.Mode == ZipArchiveMode.Create && !_archive.ArchiveStream.CanSeek)
+                else if (_archive.Mode == ZipArchiveMode.Create && !_archive.ArchiveStream.CanSeek)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     compressedSizeTruncated = 0;

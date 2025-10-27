@@ -103,6 +103,8 @@ namespace System.IO.Compression
         public static System.Threading.Tasks.Task<System.IO.Compression.ZipArchive> CreateAsync(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, System.Text.Encoding? entryNameEncoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName) { throw null; }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, System.IO.Compression.CompressionLevel compressionLevel) { throw null; }
+        public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, System.IO.Compression.CompressionLevel compressionLevel, string password, System.IO.Compression.ZipArchiveEntry.EncryptionMethod encryption) { throw null; }
+        public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, string password, System.IO.Compression.ZipArchiveEntry.EncryptionMethod encryption) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }

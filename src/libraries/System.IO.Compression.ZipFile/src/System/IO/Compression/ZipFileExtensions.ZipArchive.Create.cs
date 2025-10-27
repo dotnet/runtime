@@ -78,9 +78,9 @@ namespace System.IO.Compression
             DoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel);
 
         internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
-                                                              string sourceFileName, string entryName, CompressionLevel? compressionLevel)
+                                                              string sourceFileName, string entryName, CompressionLevel? compressionLevel, string? password = null, ZipArchiveEntry.EncryptionMethod encryption = ZipArchiveEntry.EncryptionMethod.None)
         {
-            (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: true);
+            (FileStream fs, ZipArchiveEntry entry) = InitializeDoCreateEntryFromFile(destination, sourceFileName, entryName, compressionLevel, useAsync: true, password, encryption);
 
             using (fs)
             {
@@ -93,11 +93,17 @@ namespace System.IO.Compression
             return entry;
         }
 
-        private static (FileStream, ZipArchiveEntry) InitializeDoCreateEntryFromFile(ZipArchive destination, string sourceFileName, string entryName, CompressionLevel? compressionLevel, bool useAsync)
+        private static (FileStream, ZipArchiveEntry) InitializeDoCreateEntryFromFile(ZipArchive destination, string sourceFileName, string entryName, CompressionLevel? compressionLevel, bool useAsync,
+            string? password = null, ZipArchiveEntry.EncryptionMethod encryption = ZipArchiveEntry.EncryptionMethod.None)
         {
             ArgumentNullException.ThrowIfNull(destination);
             ArgumentNullException.ThrowIfNull(sourceFileName);
             ArgumentNullException.ThrowIfNull(entryName);
+
+            if (password != null && encryption == ZipArchiveEntry.EncryptionMethod.None)
+            {
+                throw new ArgumentException("password and encryption should both be set");
+            }
 
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
             // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
@@ -106,9 +112,12 @@ namespace System.IO.Compression
 
             FileStream fs = new FileStream(sourceFileName, FileMode.Open, FileAccess.Read, FileShare.Read, ZipFile.FileStreamBufferSize, useAsync);
 
-            ZipArchiveEntry entry = compressionLevel.HasValue ?
-                                    destination.CreateEntry(entryName, compressionLevel.Value) :
-                                    destination.CreateEntry(entryName);
+            ZipArchiveEntry entry = password is not null ? (compressionLevel.HasValue
+                            ? destination.CreateEntry(entryName, compressionLevel.Value, password, encryption)
+                            : destination.CreateEntry(entryName, password, encryption))
+                        : (compressionLevel.HasValue
+                            ? destination.CreateEntry(entryName, compressionLevel.Value)
+                            : destination.CreateEntry(entryName));
 
             DateTime lastWrite = File.GetLastWriteTime(sourceFileName);
 

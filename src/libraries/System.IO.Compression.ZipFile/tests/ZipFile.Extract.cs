@@ -13,6 +13,10 @@ namespace System.IO.Compression.Tests
 {
     public class ZipFile_Extract : ZipFileTestBase
     {
+
+        private const string DownloadsDir = @"C:\Users\spahontu\Downloads";
+        private static string NewPath(string file) => Path.Combine(DownloadsDir, file);
+
         public static IEnumerable<object[]> Get_ExtractToDirectoryNormal_Data()
         {
             foreach (bool async in _bools)
@@ -482,5 +486,235 @@ namespace System.IO.Compression.Tests
             }
         }
 
+
+
+        [Fact]
+        public async Task ZipCrypto_CreateEntry_ThenRead_Back_ContentMatches()
+        {
+            // Arrange
+            const string downloadsDir = @"C:\Users\spahontu\Downloads";
+            const string zipPath = $@"{downloadsDir}\zipcrypto_test.zip";
+            const string entryName = "hello.txt";
+            const string password = "P@ssw0rd!";
+            const string expectedContent = "hello zipcrypto";
+
+            // Ensure target directory exists
+            Directory.CreateDirectory(downloadsDir);
+
+            // Clean up any previous file
+            if (File.Exists(zipPath))
+                File.Delete(zipPath);
+
+            // ACT 1: Create the archive and write one encrypted entry
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                // Your custom overload that sets per-entry password & ZipCrypto
+                var entry = za.CreateEntry(entryName, password, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+
+                using var writer = new StreamWriter(entry.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                writer.Write(expectedContent);
+            }
+
+            // ACT 2: Open the archive for reading and read back the content using the password
+            string actualContent;
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                var entry = za.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                // Your custom entry decryption API: Open(password)
+                using var reader = new StreamReader(entry!.Open(password), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+                actualContent = await reader.ReadToEndAsync();
+            }
+
+            // Assert
+            Assert.Equal(expectedContent, actualContent);
+        }
+
+
+
+        [Fact]
+        public async Task ZipCrypto_MultipleEntries_SamePassword_AllRoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string zipPath = NewPath("zipcrypto_multi_samepw.zip");
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            var items = new (string Name, string Content)[]
+            {
+            ("a.txt", "alpha"),
+            ("b/config.json", "{\"k\":1}"),
+            ("c/readme.md", "# readme"),
+            };
+            const string password = "S@m3PW!";
+            const ZipArchiveEntry.EncryptionMethod enc = ZipArchiveEntry.EncryptionMethod.ZipCrypto;
+
+            // Act 1: Create with same password for all
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                foreach (var it in items)
+                {
+                    var entry = za.CreateEntry(it.Name, password, enc);
+                    using var w = new StreamWriter(entry.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                    await w.WriteAsync(it.Content);
+                }
+            }
+
+            // Act 2: Read back using same password for each entry
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                foreach (var it in items)
+                {
+                    var e = za.GetEntry(it.Name);
+                    Assert.NotNull(e);
+                    using var r = new StreamReader(e!.Open(password), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+                    string content = await r.ReadToEndAsync();
+                    Assert.Equal(it.Content, content);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ZipCrypto_MultipleEntries_DifferentPasswords_AllRoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string zipPath = NewPath("zipcrypto_multi_diffpw.zip");
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            var items = new (string Name, string Content, string Password)[]
+            {
+            ("d.txt", "delta", "pw-d"),
+            ("e/info.txt", "echo-info", "pw-e"),
+            ("f/sub/notes.txt", "foxtrot-notes", "pw-f"),
+            };
+            const ZipArchiveEntry.EncryptionMethod enc = ZipArchiveEntry.EncryptionMethod.ZipCrypto;
+
+            // Act 1: Create, each entry with its own password
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                foreach (var it in items)
+                {
+                    var entry = za.CreateEntry(it.Name, it.Password, enc);
+                    using var w = new StreamWriter(entry.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                    await w.WriteAsync(it.Content);
+                }
+            }
+
+            // Act 2: Read back with matching password per entry, and also verify a wrong password fails
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                foreach (var it in items)
+                {
+                    var e = za.GetEntry(it.Name);
+                    Assert.NotNull(e);
+
+                    // Correct password
+                    using (var r = new StreamReader(e!.Open(it.Password), Encoding.UTF8, detectEncodingFromByteOrderMarks: true))
+                    {
+                        string content = await r.ReadToEndAsync();
+                        Assert.Equal(it.Content, content);
+                    }
+
+                    // Wrong password should throw (ZipCrypto header check fails)
+                    Assert.ThrowsAny<Exception>(() =>
+                    {
+                        using var _ = e.Open("WRONG-PASSWORD");
+                    });
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ZipCrypto_Mixed_EncryptedAndPlainEntries_AllRoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string zipPath = NewPath("zipcrypto_mixed.zip");
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            const string encPw = "EncOnly123!";
+            const ZipArchiveEntry.EncryptionMethod enc = ZipArchiveEntry.EncryptionMethod.ZipCrypto;
+
+            var encryptedItems = new (string Name, string Content)[]
+            {
+            ("secure/one.txt", "top-secret-1"),
+            ("secure/two.txt", "top-secret-2"),
+            };
+
+            var plainItems = new (string Name, string Content)[]
+            {
+            ("public/a.txt", "visible-a"),
+            ("public/b.txt", "visible-b"),
+            };
+
+            // Act 1: Create archive with both encrypted and plain entries
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+            {
+                // Encrypted
+                foreach (var it in encryptedItems)
+                {
+                    var entry = za.CreateEntry(it.Name, encPw, enc);
+                    using var w = new StreamWriter(entry.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                    await w.WriteAsync(it.Content);
+                }
+
+                // Plain
+                foreach (var it in plainItems)
+                {
+                    var entry = za.CreateEntry(it.Name); // default: no encryption
+                    using var w = new StreamWriter(entry.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                    await w.WriteAsync(it.Content);
+                }
+            }
+
+            // Act 2: Read back—encrypted need password, plain do not
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                // Encrypted
+                foreach (var it in encryptedItems)
+                {
+                    var e = za.GetEntry(it.Name);
+                    Assert.NotNull(e);
+                    using var r = new StreamReader(e!.Open(encPw), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+                    string content = await r.ReadToEndAsync();
+                    Assert.Equal(it.Content, content);
+                }
+
+                // Plain
+                foreach (var it in plainItems)
+                {
+                    var e = za.GetEntry(it.Name);
+                    Assert.NotNull(e);
+                    using var r = new StreamReader(e!.Open(), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+                    string content = await r.ReadToEndAsync();
+                    Assert.Equal(it.Content, content);
+
+                    // Ensure opening a plain entry with a password is rejected (or simply ignored depending on API)
+                    Assert.ThrowsAny<Exception>(() =>
+                    {
+                        using var _ = e.Open("some-password");
+                    });
+                }
+            }
+        }
+
+
+            //[Fact]
+            //public void OpenEncryptedTxtFile()
+            //{
+            //    string zipPath = @"C:\Users\spahontu\Downloads\zipcrypto_test_wr.zip";
+            //    using var archive = ZipFile.OpenRead(zipPath);
+
+            //    var entry = archive.Entries.First(e => e.FullName.EndsWith("hello.txt"));
+            //    using var stream = entry.Open("P@ssw0rd!");
+            //    using var reader = new StreamReader(stream);
+            //    string content = reader.ReadToEnd();
+
+            //    Assert.Equal("hello zipcrypto", content);
+            //}
+
+
+        }
     }
-}
