@@ -3181,6 +3181,37 @@ private:
     }
 #endif // TARGET_ARM64
 
+#if defined(TARGET_S390X)
+    instrDescLclVarPair* emitAllocInstrLclVarPair(emitAttr attr)
+    {
+	    _ASSERTE(!"NYI");
+#if 0
+#if EMITTER_STATS
+        emitTotalIDescLclVarPairCnt++;
+#endif // EMITTER_STATS
+        instrDescLclVarPair* result = (instrDescLclVarPair*)emitAllocAnyInstr(sizeof(instrDescLclVarPair), attr);
+        result->idSetIsLclVarPair();
+        return result;
+#endif
+    }
+
+    instrDescLclVarPairCns* emitAllocInstrLclVarPairCns(emitAttr attr, cnsval_size_t cns)
+    {
+	    _ASSERTE(!"NYI");
+#if 0
+#if EMITTER_STATS
+        emitTotalIDescLclVarPairCnsCnt++;
+#endif // EMITTER_STATS
+        instrDescLclVarPairCns* result =
+            (instrDescLclVarPairCns*)emitAllocAnyInstr(sizeof(instrDescLclVarPairCns), attr);
+        result->idSetIsLargeCns();
+        result->idSetIsLclVarPair();
+        result->idcCnsVal = cns;
+        return result;
+#endif
+    }
+#endif // TARGET_S3990X
+
     instrDescCns* emitAllocInstrCns(emitAttr attr)
     {
 #if EMITTER_STATS
@@ -3263,7 +3294,7 @@ private:
 #endif // TARGET_ARM
     instrDescJmp* emitNewInstrJmp();
 
-#if !defined(TARGET_ARM64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_S390X)
     instrDescLbl* emitNewInstrLbl();
 #else
     instrDesc* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
@@ -3917,7 +3948,7 @@ inline emitter::instrDescAlign* emitter::emitNewInstrAlign()
 }
 #endif
 
-#if !defined(TARGET_ARM64)
+#if !defined(TARGET_ARM64) && !defined (TARGET_S390X)
 inline emitter::instrDescLbl* emitter::emitNewInstrLbl()
 {
     return emitAllocInstrLbl();

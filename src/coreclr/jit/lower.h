@@ -433,6 +433,9 @@ private:
     void LowerModPow2(GenTree* node);
     bool TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
     void StoreFFRValue(GenTreeHWIntrinsic* node);
+#elif defined(TARGET_S390X)
+    void LowerModPow2(GenTree* node);
+    bool TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
                                                  GenTree*    op1,
@@ -536,7 +539,7 @@ public:
 
     bool IsContainableLclAddr(GenTreeLclFld* lclAddr, unsigned accessSize) const;
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
     bool IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childNode) const;
 #endif // TARGET_ARM64
 

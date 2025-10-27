@@ -1622,6 +1622,7 @@ void emitIns_R_R_R_R_I(instruction ins,
                        ssize_t     imm,
                        insOpts     opt = INS_OPTS_NONE);
 
+/*
 void emitInsSve_R_R_R_R_I(instruction ins,
                           emitAttr    attr,
                           regNumber   reg1,
@@ -1630,6 +1631,7 @@ void emitInsSve_R_R_R_R_I(instruction ins,
                           regNumber   reg4,
                           ssize_t     imm,
                           insOpts     opt = INS_OPTS_NONE);
+*/
 
 void emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond);
 

@@ -286,6 +286,8 @@ protected:
                               ssize_t     imm,
                               regNumber   tmpReg,
                               bool        inUnwindRegion = false);
+    //void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
+    //void genPushCalleeSavedRegisters();
 #endif
 #if defined(TARGET_ARM64)
     bool genInstrWithConstant(instruction ins,

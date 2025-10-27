@@ -831,7 +831,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     {
         const char* clsName;
         const char* methName = getMethodName(comp, info->ftn, &clsName);
-#ifndef TARGET_S390X
+//#ifndef TARGET_S390X
         if (   !s_InterpretMeths.contains(methName, clsName, info->args.pSig)
             || s_InterpretMethsExclude.contains(methName, clsName, info->args.pSig))
         {
@@ -846,7 +846,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             TRACE_SKIPPED(clsName, methName, "hash not within range to interpret");
             return CORJIT_SKIPPED;
         }
-#endif
+//#endif
 
         MethodDesc* pMD = reinterpret_cast<MethodDesc*>(info->ftn);
 
@@ -859,25 +859,25 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         else
 #endif // !INTERP_ILSTUBS
 
-#ifndef TARGET_S390X
+//#ifndef TARGET_S390X
         if (!s_InterpreterDoLoopMethods && MethodMayHaveLoop(info->ILCode, info->ILCodeSize))
         {
             TRACE_SKIPPED(clsName, methName, "has loop, not interpreting loop methods.");
             return CORJIT_SKIPPED;
         }
-#endif
+//#endif
 
         s_interpreterStubNum++;
 
 #if INTERP_TRACING
-#ifndef TARGET_S390X
+//#ifndef TARGET_S390X
         if (s_interpreterStubNum < s_InterpreterStubMin.val(CLRConfig::INTERNAL_InterpreterStubMin)
                 || s_interpreterStubNum > s_InterpreterStubMax.val(CLRConfig::INTERNAL_InterpreterStubMax))
         {
             TRACE_SKIPPED(clsName, methName, "stub num not in range, not interpreting.");
             return CORJIT_SKIPPED;
         }
-#endif
+//#endif
 
         if (s_DumpInterpreterStubsFlag.val(CLRConfig::INTERNAL_DumpInterpreterStubs))
         {

@@ -12423,10 +12423,12 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     bool isInterpreterStub   = false;
     bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
     bool forceInterpreter    = (s_ForceInterpreter.val(CLRConfig::INTERNAL_ForceInterpreter) != 0);
+/*
 #ifdef TARGET_S390X
     interpreterFallback = false;
     forceInterpreter = true;
 #endif
+*/
 
     if (interpreterFallback == false)
     {
@@ -12820,7 +12822,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     timer.Start();
 
     EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
-#ifndef TARGET_S390X
+//#ifndef TARGET_S390X
     if (!jitMgr->LoadJIT())
     {
 #ifdef ALLOW_SXS_JIT
@@ -12839,7 +12841,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load JIT compiler"));
 #endif // ALLOW_SXS_JIT
     }
-#endif
+//#endif
 
 #ifdef _DEBUG
     // This is here so we can see the name and class easily in the debugger

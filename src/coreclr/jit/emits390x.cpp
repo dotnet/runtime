@@ -48,8 +48,11 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 /*static*/ instruction emitter::emitJumpKindToIns(emitJumpKind jumpKind)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((unsigned)jumpKind < ArrLen(emitJumpKindInstructions));
     return emitJumpKindInstructions[jumpKind];
+#endif
 }
 
 /*****************************************************************************
@@ -59,6 +62,8 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 /*static*/ emitJumpKind emitter::emitInsToJumpKind(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     for (unsigned i = 0; i < ArrLen(emitJumpKindInstructions); i++)
     {
         if (ins == emitJumpKindInstructions[i])
@@ -69,6 +74,7 @@ const emitJumpKind emitReverseJumpKinds[] = {
         }
     }
     unreached();
+#endif
 }
 
 /*****************************************************************************
@@ -77,8 +83,11 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 /*static*/ emitJumpKind emitter::emitReverseJumpKind(emitJumpKind jumpKind)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(jumpKind < EJ_COUNT);
     return emitReverseJumpKinds[jumpKind];
+#endif
 }
 
 /*****************************************************************************
@@ -88,6 +97,8 @@ const emitJumpKind emitReverseJumpKinds[] = {
 
 size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (emitIsSmallInsDsc(id))
         return SMALL_IDSC_SIZE;
 
@@ -162,6 +173,7 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
             return sizeof(instrDesc);
         }
     }
+#endif
 }
 
 #ifdef DEBUG
@@ -171,6 +183,8 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
  */
 void emitter::emitInsSanityCheck(instrDesc* id)
 {
+    _ASSERTE(!"NYI");
+#if 0
     /* What instruction format have we got? */
 
     switch (id->idInsFmt())
@@ -955,11 +969,14 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             emitInsSveSanityCheck(id);
             break;
     }
+#endif
 }
 #endif // DEBUG
 
 bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
 {
+    _ASSERTE(!"NYI");
+#if 0
     instruction ins = id->idIns();
     insFormat   fmt = id->idInsFmt();
 
@@ -1071,10 +1088,13 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         default:
             return false;
     }
+#endif
 }
 
 bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (!id->idIsLclVar())
         return false;
 
@@ -1095,10 +1115,13 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
         default:
             return false;
     }
+#endif
 }
 
 bool emitter::emitInsWritesToLclVarStackLocPair(instrDesc* id)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (!id->idIsLclVar())
         return false;
 
@@ -1115,10 +1138,13 @@ bool emitter::emitInsWritesToLclVarStackLocPair(instrDesc* id)
         default:
             return false;
     }
+#endif
 }
 
 bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
 {
+    _ASSERTE(!"NYI");
+#if 0
     instruction ins = id->idIns();
 
     switch (ins)
@@ -1130,6 +1156,7 @@ bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
         default:
             return false;
     }
+#endif
 }
 
 // Takes an instrDesc 'id' and uses the instruction 'ins' to determine the
@@ -1146,6 +1173,8 @@ bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
 //
 emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
 {
+    _ASSERTE(!"NYI");
+#if 0
     instruction ins    = id->idIns();
     emitAttr    result = EA_UNKNOWN;
 
@@ -1229,6 +1258,7 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
             break;
     }
     return result;
+#endif
 }
 
 // Takes an instrDesc and uses the instruction to determine the 'size' of the
@@ -1236,6 +1266,8 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
 //
 emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
 {
+    _ASSERTE(!"NYI");
+#if 0
     instruction ins    = id->idIns();
     emitAttr    result = EA_UNKNOWN;
 
@@ -1301,6 +1333,7 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
             break;
     }
     return result;
+#endif
 }
 
 /*****************************************************************************/
@@ -1377,6 +1410,8 @@ static const char * const  bRegNames[] =
 //
 const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) const
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(reg < REG_COUNT);
 
     const char* rn = nullptr;
@@ -1412,6 +1447,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
     assert(rn != nullptr);
 
     return rn;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1425,11 +1461,14 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
 //
 const char* emitter::emitVectorRegName(regNumber reg)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((reg >= REG_V0) && (reg <= REG_V31));
 
     int index = (int)reg - (int)REG_V0;
 
     return vRegNames[index];
+#endif
 }
 
 /*****************************************************************************
@@ -1439,6 +1478,8 @@ const char* emitter::emitVectorRegName(regNumber reg)
 
 emitter::insFormat emitter::emitInsFormat(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // clang-format off
     const static insFormat insFormats[] =
     {
@@ -1469,6 +1510,7 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
     assert((insFormats[ins] != IF_NONE));
 
     return insFormats[ins];
+#endif
 }
 
 #define LD  1
@@ -1511,11 +1553,14 @@ emitter::insFormat emitter::emitInsFormat(instruction ins)
 //
 bool emitter::emitInsIsCompare(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
         return (CodeGenInterface::instInfo[ins] & CMP) != 0;
     else
         return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1523,11 +1568,14 @@ bool emitter::emitInsIsCompare(instruction ins)
 //
 bool emitter::emitInsIsLoad(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
         return (CodeGenInterface::instInfo[ins] & LD) != 0;
     else
         return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1535,11 +1583,14 @@ bool emitter::emitInsIsLoad(instruction ins)
 //
 bool emitter::emitInsIsStore(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
         return (CodeGenInterface::instInfo[ins] & ST) != 0;
     else
         return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1547,11 +1598,14 @@ bool emitter::emitInsIsStore(instruction ins)
 //
 bool emitter::emitInsIsLoadOrStore(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
         return (CodeGenInterface::instInfo[ins] & (LD | ST)) != 0;
     else
         return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1559,11 +1613,14 @@ bool emitter::emitInsIsLoadOrStore(instruction ins)
 //
 bool emitter::emitInsIsVectorRightShift(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // We have pseudo ins like lea which are not included in emitInsLdStTab.
     if (ins < ArrLen(CodeGenInterface::instInfo))
         return (CodeGenInterface::instInfo[ins] & RSH) != 0;
     else
         return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1572,10 +1629,13 @@ bool emitter::emitInsIsVectorRightShift(instruction ins)
 //
 bool emitter::emitInsIsVectorLong(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (ins < ArrLen(CodeGenInterface::instInfo))
         return (CodeGenInterface::instInfo[ins] & LNG) != 0;
     else
         return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1584,10 +1644,13 @@ bool emitter::emitInsIsVectorLong(instruction ins)
 //
 bool emitter::emitInsIsVectorNarrow(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (ins < ArrLen(CodeGenInterface::instInfo))
         return (CodeGenInterface::instInfo[ins] & NRW) != 0;
     else
         return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1596,10 +1659,13 @@ bool emitter::emitInsIsVectorNarrow(instruction ins)
 //
 bool emitter::emitInsIsVectorWide(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (ins < ArrLen(CodeGenInterface::instInfo))
         return (CodeGenInterface::instInfo[ins] & WID) != 0;
     else
         return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -1609,10 +1675,13 @@ bool emitter::emitInsIsVectorWide(instruction ins)
 //
 bool emitter::emitInsDestIsOp2(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (ins < ArrLen(CodeGenInterface::instInfo))
         return (CodeGenInterface::instInfo[ins] & WR2) != 0;
     else
         return false;
+#endif
 }
 
 #undef LD
@@ -1631,6 +1700,8 @@ bool emitter::emitInsDestIsOp2(instruction ins)
 
 emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // clang-format off
     const static code_t insCodes1[] =
     {
@@ -2328,11 +2399,14 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     assert((code != BAD_CODE));
 
     return code;
+#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to a mov instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_mov(INT64 imm, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // Check for "MOV (wide immediate)".
     if (canEncodeHalfwordImm(imm, size))
         return true;
@@ -2348,11 +2422,14 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         return true;
 
     return false;
+#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to a vector movi instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_movi(INT64 imm, emitAttr elemsize)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (elemsize == EA_8BYTE)
     {
         UINT64 uimm = imm;
@@ -2383,52 +2460,70 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             return true;
     }
     return false;
+#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to a fmov instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_fmov(double immDbl)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (canEncodeFloatImm8(immDbl))
         return true;
 
     return false;
+#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to an add instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_add(INT64 imm, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (unsigned_abs(imm) <= 0x0fff)
         return true;
     else if (canEncodeWithShiftImmBy12(imm)) // Try the shifted by 12 encoding
         return true;
 
     return false;
+#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to an non-add/sub alu instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_cmp(INT64 imm, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     return emitIns_valid_imm_for_add(imm, size);
+#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to an non-add/sub alu instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_alu(INT64 imm, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (canEncodeBitMaskImm(imm, size))
         return true;
 
     return false;
+#endif
 }
 
 // true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_unscaled_ldst_offset(INT64 imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     return (imm >= -256) && (imm <= 255);
+#endif
 }
 
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr attr)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (imm == 0)
         return true; // Encodable using IF_LS_2A
 
@@ -2446,20 +2541,27 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         return true; // Encodable using IF_LS_2B
 
     return false; // not encodable
+#endif
 }
 
 // true if this 'imm' can be encoded as a input operand to a ccmp instruction
 /*static*/ bool emitter::emitIns_valid_imm_for_ccmp(INT64 imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     return ((imm & 0x01f) == imm);
+#endif
 }
 
 // true if 'imm' can be encoded as an offset in a ldp/stp instruction
 /*static*/ bool emitter::canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr attr)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((attr == EA_4BYTE) || (attr == EA_8BYTE) || (attr == EA_16BYTE));
     const int size = EA_SIZE_IN_BYTES(attr);
     return (imm % size == 0) && (imm >= -64 * size) && (imm < 64 * size);
+#endif
 }
 
 /************************************************************************
@@ -2469,8 +2571,11 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ unsigned emitter::NaturalScale_helper(emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(size == EA_1BYTE || size == EA_2BYTE || size == EA_4BYTE || size == EA_8BYTE || size == EA_16BYTE);
     return BitOperations::Log2((unsigned)size);
+#endif
 }
 
 /************************************************************************
@@ -2486,6 +2591,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ UINT64 emitter::ROR_helper(UINT64 value, unsigned sh, unsigned width)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(width <= 64);
     // Check that 'value' fits in 'width' bits
     assert((width == 64) || (value < (1ULL << width)));
@@ -2506,6 +2613,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         result &= ((1ULL << width) - 1);
     }
     return result;
+#endif
 }
 /************************************************************************
  *
@@ -2519,6 +2627,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ UINT64 emitter::NOT_helper(UINT64 value, unsigned width)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(width <= 64);
 
     UINT64 result = ~value;
@@ -2537,6 +2647,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     }
 
     return result;
+#endif
 }
 
 /************************************************************************
@@ -2553,6 +2664,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ UINT64 emitter::Replicate_helper(UINT64 value, unsigned width, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     unsigned immWidth = getBitWidth(size);
     assert(width <= immWidth);
 
@@ -2566,6 +2679,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         filledBits += width;
     }
     return result;
+#endif
 }
 
 /************************************************************************
@@ -2577,6 +2691,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ INT64 emitter::emitDecodeBitMaskImm(const emitter::bitMaskImm bmImm, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     unsigned N = bmImm.immN; // read the N,R and S values from the 'bitMaskImm' encoding
     unsigned R = bmImm.immR;
     unsigned S = bmImm.immS;
@@ -2626,6 +2742,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     wmask = Replicate_helper(wmask, elemWidth, size);
 
     return wmask;
+#endif
 }
 
 /*****************************************************************************
@@ -2635,6 +2752,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ bool emitter::canEncodeWithShiftImmBy12(INT64 imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (imm < 0)
     {
         imm = -imm; // convert to unsigned
@@ -2653,6 +2772,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     imm >>= 12; // shift right by 12 bits
 
     return (imm <= 0x0fff); // Does it fit in 12 bits
+#endif
 }
 
 /*****************************************************************************
@@ -2662,6 +2782,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ INT64 emitter::normalizeImm64(INT64 imm, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     unsigned immWidth = getBitWidth(size);
     INT64    result   = imm;
 
@@ -2679,6 +2801,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         result &= lowBitsMask;
     }
     return result;
+#endif
 }
 
 /************************************************************************
@@ -2692,6 +2815,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ bool emitter::canEncodeBitMaskImm(INT64 imm, emitAttr size, emitter::bitMaskImm* wbBMI)
 {
+    _ASSERTE(!"NYI");
+#if 0
     unsigned immWidth = getBitWidth(size);
     unsigned maxLen;
 
@@ -2903,6 +3028,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         }
     }
     return false;
+#endif
 }
 
 /************************************************************************
@@ -2914,6 +3040,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ INT64 emitter::emitDecodeHalfwordImm(const emitter::halfwordImm hwImm, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isValidGeneralDatasize(size)); // Only EA_4BYTE or EA_8BYTE forms
 
     unsigned hw  = hwImm.immHW;
@@ -2923,6 +3051,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
     INT64 result = val << (16 * hw);
     return result;
+#endif
 }
 
 /************************************************************************
@@ -2936,6 +3065,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ bool emitter::canEncodeHalfwordImm(INT64 imm, emitAttr size, emitter::halfwordImm* wbHWI)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isValidGeneralDatasize(size)); // Only EA_4BYTE or EA_8BYTE forms
 
     unsigned immWidth = (size == EA_8BYTE) ? 64 : 32;
@@ -2978,6 +3109,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         }
     }
     return false;
+#endif
 }
 
 /************************************************************************
@@ -2989,6 +3121,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ UINT32 emitter::emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     bool     onesShift = (bsImm.immOnes == 1);
     unsigned bySh      = bsImm.immBY;          // Num Bytes to shift 0,1,2,3
     UINT32   result    = (UINT32)bsImm.immVal; // 8-bit immediate
@@ -3013,6 +3147,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         }
     }
     return result;
+#endif
 }
 
 /************************************************************************
@@ -3029,6 +3164,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
                                                  bool                     allow_MSL,
                                                  emitter::byteShiftedImm* wbBSI)
 {
+    _ASSERTE(!"NYI");
+#if 0
     bool     canEncode = false;
     bool     onesShift = false; // true if we use the shifting ones variant
     unsigned bySh      = 0;     // number of bytes to shift: 0, 1, 2, 3
@@ -3118,6 +3255,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         return true;
     }
     return false;
+#endif
 }
 
 /************************************************************************
@@ -3128,6 +3266,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ double emitter::emitDecodeFloatImm8(const emitter::floatImm8 fpImm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     unsigned sign  = fpImm.immSign;
     unsigned exp   = fpImm.immExp ^ 0x4;
     unsigned mant  = fpImm.immMant + 16;
@@ -3146,6 +3286,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     }
 
     return result;
+#endif
 }
 
 /************************************************************************
@@ -3157,6 +3298,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ bool emitter::canEncodeFloatImm8(double immDbl, emitter::floatImm8* wbFPI)
 {
+    _ASSERTE(!"NYI");
+#if 0
     bool   canEncode = false;
     double val       = immDbl;
 
@@ -3203,6 +3346,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     }
 
     return canEncode;
+#endif
 }
 
 /*****************************************************************************
@@ -3213,6 +3357,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ instruction emitter::insReverse(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     switch (ins)
     {
         case INS_add:
@@ -3238,6 +3384,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         default:
             return INS_invalid;
     }
+#endif
 }
 
 /*****************************************************************************
@@ -3249,6 +3396,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 /*static*/ insOpts emitter::optMakeArrangement(emitAttr datasize, emitAttr elemsize)
 {
+    _ASSERTE(!"NYI");
+#if 0
     insOpts result = INS_OPTS_NONE;
 
     if (datasize == EA_8BYTE)
@@ -3294,6 +3443,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         }
     }
     return result;
+#endif
 }
 
 /*****************************************************************************
@@ -3303,6 +3453,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
  */
 /*static*/ bool emitter::isValidArrangement(emitAttr datasize, insOpts opt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (datasize == EA_8BYTE)
     {
         if ((opt == INS_OPTS_8B) || (opt == INS_OPTS_4H) || (opt == INS_OPTS_2S) || (opt == INS_OPTS_1D))
@@ -3318,6 +3470,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         }
     }
     return false;
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -3332,6 +3485,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 //
 /*static*/ unsigned emitter::insGetRegisterListSize(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     unsigned registerListSize = 0;
 
     switch (ins)
@@ -3380,6 +3535,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     }
 
     return registerListSize;
+#endif
 }
 
 //  For the given 'arrangement' returns the 'datasize' specified by the vector register arrangement
@@ -3387,6 +3543,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 //
 /*static*/ emitAttr emitter::optGetDatasize(insOpts arrangement)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if ((arrangement == INS_OPTS_8B) || (arrangement == INS_OPTS_4H) || (arrangement == INS_OPTS_2S) ||
         (arrangement == INS_OPTS_1D))
     {
@@ -3402,6 +3560,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         assert(!" invalid 'arrangement' value");
         return EA_UNKNOWN;
     }
+#endif
 }
 
 //  For the given 'arrangement' returns the 'elemsize' specified by the vector register arrangement
@@ -3409,6 +3568,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 //
 /*static*/ emitAttr emitter::optGetElemsize(insOpts arrangement)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if ((arrangement == INS_OPTS_8B) || (arrangement == INS_OPTS_16B))
     {
         return EA_1BYTE;
@@ -3430,10 +3591,13 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         assert(!" invalid 'arrangement' value");
         return EA_UNKNOWN;
     }
+#endif
 }
 
 /*static*/ insOpts emitter::optWidenElemsizeArrangement(insOpts arrangement)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if ((arrangement == INS_OPTS_8B) || (arrangement == INS_OPTS_16B))
     {
         return INS_OPTS_8H;
@@ -3451,10 +3615,13 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         assert(!" invalid 'arrangement' value");
         return INS_OPTS_NONE;
     }
+#endif
 }
 
 /*static*/ emitAttr emitter::widenDatasize(emitAttr datasize)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (datasize == EA_1BYTE)
     {
         return EA_2BYTE;
@@ -3472,6 +3639,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         assert(!" invalid 'datasize' value");
         return EA_UNKNOWN;
     }
+#endif
 }
 
 //  For the given 'srcArrangement' returns the "widen" 'dstArrangement' specifying the destination vector register
@@ -3480,6 +3648,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 //
 /*static*/ insOpts emitter::optWidenDstArrangement(insOpts srcArrangement)
 {
+    _ASSERTE(!"NYI");
+#if 0
     insOpts dstArrangement = INS_OPTS_NONE;
 
     switch (srcArrangement)
@@ -3514,11 +3684,14 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     }
 
     return dstArrangement;
+#endif
 }
 
 //  For the given 'conversion' returns the 'dstsize' specified by the conversion option
 /*static*/ emitAttr emitter::optGetDstsize(insOpts conversion)
 {
+    _ASSERTE(!"NYI");
+#if 0
     switch (conversion)
     {
         case INS_OPTS_S_TO_8BYTE:
@@ -3548,11 +3721,14 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             assert(!" invalid 'conversion' value");
             return EA_UNKNOWN;
     }
+#endif
 }
 
 //  For the given 'conversion' returns the 'srcsize' specified by the conversion option
 /*static*/ emitAttr emitter::optGetSrcsize(insOpts conversion)
 {
+    _ASSERTE(!"NYI");
+#if 0
     switch (conversion)
     {
         case INS_OPTS_D_TO_8BYTE:
@@ -3582,11 +3758,14 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             assert(!" invalid 'conversion' value");
             return EA_UNKNOWN;
     }
+#endif
 }
 
 //    For the given 'size' and 'index' returns true if it specifies a valid index for a vector register of 'size'
 /*static*/ bool emitter::isValidVectorIndex(emitAttr datasize, emitAttr elemsize, ssize_t index)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isValidVectorDatasize(datasize));
     assert(isValidVectorElemsize(elemsize));
 
@@ -3637,6 +3816,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         }
     }
     return result;
+#endif
 }
 
 /*****************************************************************************
@@ -3646,6 +3826,8 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 
 void emitter::emitIns(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
     insFormat  fmt = emitInsFormat(ins);
 
@@ -3659,6 +3841,7 @@ void emitter::emitIns(instruction ins)
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -3668,6 +3851,8 @@ void emitter::emitIns(instruction ins)
 
 void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     insFormat fmt = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
@@ -3696,6 +3881,7 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -3705,6 +3891,8 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts opt /* = INS_OPTS_NONE */)
 {
+    _ASSERTE(!"NYI");
+#if 0
     insFormat fmt = IF_NONE;
 
     /* Figure out the encoding format of the instruction */
@@ -3741,6 +3929,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -3760,6 +3949,8 @@ void emitter::emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
                                         regNumber   reg,
                                         ssize_t imm DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr size = EA_SIZE(attr);
 
     assert(emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
@@ -3819,6 +4010,7 @@ void emitter::emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -3834,6 +4026,8 @@ void emitter::emitIns_R_I(instruction ins,
                           insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */
                               DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr  size      = EA_SIZE(attr);
     emitAttr  elemsize  = EA_UNKNOWN;
     insFormat fmt       = IF_NONE;
@@ -4089,6 +4283,7 @@ void emitter::emitIns_R_I(instruction ins,
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -4100,6 +4295,8 @@ void emitter::emitIns_R_F(
     instruction ins, emitAttr attr, regNumber reg, double immDbl, insOpts opt /* = INS_OPTS_NONE */)
 
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr  size      = EA_SIZE(attr);
     emitAttr  elemsize  = EA_UNKNOWN;
     insFormat fmt       = IF_NONE;
@@ -4178,6 +4375,7 @@ void emitter::emitIns_R_F(
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -4194,6 +4392,8 @@ void emitter::emitIns_R_F(
 void emitter::emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt /* = INS_OPTS_NONE */)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(IsMovInstruction(ins));
 
     emitAttr  size     = EA_SIZE(attr);
@@ -4387,6 +4587,7 @@ void emitter::emitIns_Mov(
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -4401,6 +4602,8 @@ void emitter::emitIns_R_R(instruction     ins,
                           insOpts         opt /* = INS_OPTS_NONE */,
                           insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (IsMovInstruction(ins))
     {
         assert(!"Please use emitIns_Mov() to correctly handle move elision");
@@ -5063,6 +5266,7 @@ void emitter::emitIns_R_R(instruction     ins,
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -5078,6 +5282,8 @@ void emitter::emitIns_R_I_I(instruction ins,
                             insOpts opt /* = INS_OPTS_NONE */
                                 DEBUGARG(size_t targetHandle /* = 0 */) DEBUGARG(GenTreeFlags gtFlags /* = 0 */))
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr  size   = EA_SIZE(attr);
     insFormat fmt    = IF_NONE;
     size_t    immOut = 0; // composed from imm1 and imm2 and stored in the instrDesc
@@ -5171,6 +5377,7 @@ void emitter::emitIns_R_I_I(instruction ins,
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -5186,6 +5393,8 @@ void emitter::emitIns_R_R_I(instruction     ins,
                             insOpts         opt /* = INS_OPTS_NONE */,
                             insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr  size       = EA_SIZE(attr);
     emitAttr  elemsize   = EA_UNKNOWN;
     insFormat fmt        = IF_NONE;
@@ -5903,6 +6112,7 @@ void emitter::emitIns_R_R_I(instruction     ins,
     }
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -5913,8 +6123,11 @@ void emitter::emitIns_R_R_I(instruction     ins,
 void emitter::emitIns_R_R_F(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, double immDbl, insOpts opt /* = INS_OPTS_NONE */)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // Currently, only SVE instructions use this format.
     emitInsSve_R_R_F(ins, attr, reg1, reg2, immDbl, opt);
+#endif
 }
 
 /*****************************************************************************
@@ -5929,6 +6142,8 @@ void emitter::emitIns_R_R_F(
  */
 void emitter::emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isGeneralRegister(reg1));
     assert(reg1 != reg2);
 
@@ -5966,6 +6181,7 @@ void emitter::emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, re
         codeGen->instGen_Set_Reg_To_Imm(attr, reg1, imm);
         emitIns_R_R_R(ins, attr, reg1, reg2, reg1);
     }
+#endif
 }
 
 /*****************************************************************************
@@ -5981,6 +6197,8 @@ void emitter::emitIns_R_R_R(instruction     ins,
                             insOpts         opt /* = INS_OPTS_NONE */,
                             insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
     insFormat fmt      = IF_NONE;
@@ -6651,6 +6869,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 //-----------------------------------------------------------------------------------
@@ -6682,6 +6901,8 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
                                        int         offs1,
                                        int offs2   DEBUG_ARG(unsigned var1RefsOffs) DEBUG_ARG(unsigned var2RefsOffs))
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((ins == INS_stp) || (ins == INS_ldp));
     emitAttr  size  = EA_SIZE(attr);
     insFormat fmt   = IF_NONE;
@@ -6781,6 +7002,7 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
 #endif
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -6798,6 +7020,8 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
                               emitAttr        attrReg2 /* = EA_UNKNOWN */,
                               insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
     insFormat fmt      = IF_NONE;
@@ -7243,6 +7467,7 @@ void emitter::emitIns_R_R_R_I(instruction     ins,
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -7259,8 +7484,11 @@ void emitter::emitIns_R_R_R_I_I(instruction ins,
                                 ssize_t     imm2,
                                 insOpts     opt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // Currently, only SVE instructions use this format.
     emitInsSve_R_R_R_I_I(ins, attr, reg1, reg2, reg3, imm1, imm2, opt);
+#endif
 }
 
 /*****************************************************************************
@@ -7276,6 +7504,8 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
                                 insOpts     opt, /* = INS_OPTS_NONE */
                                 int         shiftAmount) /* = -1 -- unset   */
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr  size   = EA_SIZE(attr);
     insFormat fmt    = IF_NONE;
     bool      isSIMD = false;
@@ -7369,6 +7599,7 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -7379,6 +7610,8 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
 void emitter::emitIns_R_R_I_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr  size     = EA_SIZE(attr);
     emitAttr  elemsize = EA_UNKNOWN;
     insFormat fmt      = IF_NONE;
@@ -7499,6 +7732,7 @@ void emitter::emitIns_R_R_I_I(
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -7515,6 +7749,8 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
                               insOpts         opt /* = INS_OPTS_NONE*/,
                               insScalableOpts sopt /* = INS_SCALABLE_OPTS_NONE */)
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr  size = EA_SIZE(attr);
     insFormat fmt  = IF_NONE;
 
@@ -7573,6 +7809,7 @@ void emitter::emitIns_R_R_R_R(instruction     ins,
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -7589,8 +7826,11 @@ void emitter::emitIns_R_R_R_R_I(instruction ins,
                                 ssize_t     imm,
                                 insOpts     opt /* = INS_OPT_NONE*/)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // Currently, only SVE instructions use this format.
     emitInsSve_R_R_R_R_I(ins, attr, reg1, reg2, reg3, reg4, imm, opt);
+#endif
 }
 
 /*****************************************************************************
@@ -7600,6 +7840,8 @@ void emitter::emitIns_R_R_R_R_I(instruction ins,
 
 void emitter::emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond)
 {
+    _ASSERTE(!"NYI");
+#if 0
     insFormat    fmt = IF_NONE;
     condFlagsImm cfi;
     cfi.immCFVal = 0;
@@ -7633,6 +7875,7 @@ void emitter::emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insC
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -7642,6 +7885,8 @@ void emitter::emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insC
 
 void emitter::emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insCond cond)
 {
+    _ASSERTE(!"NYI");
+#if 0
     insFormat    fmt = IF_NONE;
     condFlagsImm cfi;
     cfi.immCFVal = 0;
@@ -7677,6 +7922,7 @@ void emitter::emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, r
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -7687,6 +7933,8 @@ void emitter::emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, r
 void emitter::emitIns_R_R_R_COND(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, insCond cond)
 {
+    _ASSERTE(!"NYI");
+#if 0
     insFormat    fmt = IF_NONE;
     condFlagsImm cfi;
     cfi.immCFVal = 0;
@@ -7727,6 +7975,7 @@ void emitter::emitIns_R_R_R_COND(
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -7737,6 +7986,8 @@ void emitter::emitIns_R_R_R_COND(
 void emitter::emitIns_R_R_FLAGS_COND(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insCflags flags, insCond cond)
 {
+    _ASSERTE(!"NYI");
+#if 0
     insFormat    fmt = IF_NONE;
     condFlagsImm cfi;
     cfi.immCFVal = 0;
@@ -7771,6 +8022,7 @@ void emitter::emitIns_R_R_FLAGS_COND(
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -7781,6 +8033,8 @@ void emitter::emitIns_R_R_FLAGS_COND(
 void emitter::emitIns_R_I_FLAGS_COND(
     instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insCflags flags, insCond cond)
 {
+    _ASSERTE(!"NYI");
+#if 0
     insFormat    fmt = IF_NONE;
     condFlagsImm cfi;
     cfi.immCFVal = 0;
@@ -7826,6 +8080,7 @@ void emitter::emitIns_R_I_FLAGS_COND(
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -7835,6 +8090,8 @@ void emitter::emitIns_R_I_FLAGS_COND(
 
 void emitter::emitIns_BARR(instruction ins, insBarrier barrier)
 {
+    _ASSERTE(!"NYI");
+#if 0
     insFormat fmt = IF_NONE;
     ssize_t   imm = 0;
 
@@ -7863,6 +8120,7 @@ void emitter::emitIns_BARR(instruction ins, insBarrier barrier)
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -7893,6 +8151,8 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
  */
 void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr  size         = EA_SIZE(attr);
     insFormat fmt          = IF_NONE;
     unsigned  scale        = 0;
@@ -8082,6 +8342,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -8091,6 +8352,8 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 void emitter::emitIns_R_R_S_S(
     instruction ins, emitAttr attr1, emitAttr attr2, regNumber reg1, regNumber reg2, int varx, int offs)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((ins == INS_ldp) || (ins == INS_ldnp));
     assert(EA_8BYTE == EA_SIZE(attr1));
     assert(EA_8BYTE == EA_SIZE(attr2));
@@ -8177,6 +8440,7 @@ void emitter::emitIns_R_R_S_S(
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -8185,6 +8449,8 @@ void emitter::emitIns_R_R_S_S(
  */
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(offs >= 0);
     emitAttr  size          = EA_SIZE(attr);
     insFormat fmt           = IF_NONE;
@@ -8362,6 +8628,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -8371,6 +8638,8 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 void emitter::emitIns_S_S_R_R(
     instruction ins, emitAttr attr1, emitAttr attr2, regNumber reg1, regNumber reg2, int varx, int offs)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((ins == INS_stp) || (ins == INS_stnp));
     assert(EA_8BYTE == EA_SIZE(attr1));
     assert(EA_8BYTE == EA_SIZE(attr2));
@@ -8458,6 +8727,7 @@ void emitter::emitIns_S_S_R_R(
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -8479,6 +8749,8 @@ void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, in
 void emitter::emitIns_R_C(
     instruction ins, emitAttr attr, regNumber reg, regNumber addrReg, CORINFO_FIELD_HANDLE fldHnd, int offs)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(offs >= 0);
     assert(instrDesc::fitsInSmallCns(offs));
 
@@ -8563,6 +8835,7 @@ void emitter::emitIns_R_C(
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -8596,6 +8869,8 @@ void emitter::emitIns_Adrp_Ldr_Add(emitAttr     attr,
                                    regNumber    reg2,
                                    ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
     assert(TargetOS::IsUnix);
     assert(EA_IS_RELOC(attr));
@@ -8643,6 +8918,7 @@ void emitter::emitIns_Adrp_Ldr_Add(emitAttr     attr,
 
     dispIns(addId);
     appendToCurIG(addId);
+#endif
 }
 
 // This computes address from the immediate which is relocatable.
@@ -8651,6 +8927,8 @@ void emitter::emitIns_R_AI(instruction  ins,
                            regNumber    ireg,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(EA_IS_RELOC(attr));
     emitAttr      size    = EA_SIZE(attr);
     insFormat     fmt     = IF_DI_1E;
@@ -8704,6 +8982,7 @@ void emitter::emitIns_R_AI(instruction  ins,
         dispIns(id);
         appendToCurIG(id);
     }
+#endif
 }
 
 void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs)
@@ -8734,6 +9013,8 @@ void emitter::emitIns_R_ARX(
  */
 void emitter::emitSetShortJump(instrDescJmp* id)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (id->idjKeepLong)
         return;
 
@@ -8770,6 +9051,7 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 
     id->idInsFmt(fmt);
     id->idjShort = true;
+#endif
 }
 
 /*****************************************************************************
@@ -8779,6 +9061,8 @@ void emitter::emitSetShortJump(instrDescJmp* id)
 
 void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(dst->HasFlag(BBF_HAS_LABEL));
 
     insFormat fmt = IF_NONE;
@@ -8832,6 +9116,7 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -8846,6 +9131,8 @@ void emitter::emitIns_R_D(instruction ins, emitAttr attr, unsigned offs, regNumb
 
 void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((ins == INS_cbz) || (ins == INS_cbnz));
 
     assert(dst != nullptr);
@@ -8880,10 +9167,13 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg, int imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((ins == INS_tbz) || (ins == INS_tbnz));
 
     assert(dst != nullptr);
@@ -8921,10 +9211,13 @@ void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, reg
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 {
+    _ASSERTE(!"NYI");
+#if 0
     insFormat fmt = IF_NONE;
 
     if (dst != nullptr)
@@ -9024,6 +9317,7 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
 
     dispIns(id);
     appendToCurIG(id);
+#endif
 }
 
 /*****************************************************************************
@@ -9065,6 +9359,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            bool             isJump /* = false */,
                            bool             noSafePoint /* = false */)
 {
+    _ASSERTE(!"NYI");
 #if 0
     /* Sanity check the arguments depending on callType */
 
@@ -9268,6 +9563,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ bool emitter::isValidImmCond(ssize_t imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // range check the ssize_t value, to make sure it is a small unsigned value
     // and that only the bits in the cfi.cond are set
     if ((imm < 0) || (imm > 0xF))
@@ -9277,6 +9574,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     cfi.immCFVal = (unsigned)imm;
 
     return (cfi.cond <= INS_COND_LE); // Don't allow 14 & 15 (AL & NV).
+#endif
 }
 
 /*****************************************************************************
@@ -9286,6 +9584,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ bool emitter::isValidImmCondFlags(ssize_t imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // range check the ssize_t value, to make sure it is a small unsigned value
     // and that only the bits in the cfi.cond or cfi.flags are set
     if ((imm < 0) || (imm > 0xFF))
@@ -9295,6 +9595,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     cfi.immCFVal = (unsigned)imm;
 
     return (cfi.cond <= INS_COND_LE); // Don't allow 14 & 15 (AL & NV).
+#endif
 }
 
 /*****************************************************************************
@@ -9304,6 +9605,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ bool emitter::isValidImmCondFlagsImm5(ssize_t imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // range check the ssize_t value, to make sure it is a small unsigned value
     // and that only the bits in the cfi.cond, cfi.flags or cfi.imm5 are set
     if ((imm < 0) || (imm > 0x1FFF))
@@ -9313,6 +9616,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     cfi.immCFVal = (unsigned)imm;
 
     return (cfi.cond <= INS_COND_LE); // Don't allow 14 & 15 (AL & NV).
+#endif
 }
 
 /*****************************************************************************
@@ -9323,12 +9627,15 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeReg_V_9_to_6_Times_Two(regNumber reg)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isVectorRegister(reg));
     emitter::code_t ureg = (emitter::code_t)reg - (emitter::code_t)REG_V0;
     assert(ureg % 2 == 0);
     ureg /= 2u;
     assert((ureg >= 0) && (ureg <= 31));
     return ureg << 6;
+#endif
 }
 
 /*****************************************************************************
@@ -9338,8 +9645,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeCond(insCond cond)
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitter::code_t uimm = (emitter::code_t)cond;
     return uimm << 12;
+#endif
 }
 
 /*****************************************************************************
@@ -9350,9 +9660,12 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeInvertedCond(insCond cond)
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitter::code_t uimm = (emitter::code_t)cond;
     uimm ^= 1; // invert the lowest bit
     return uimm << 12;
+#endif
 }
 
 /*****************************************************************************
@@ -9362,8 +9675,11 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeFlags(insCflags flags)
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitter::code_t uimm = (emitter::code_t)flags;
     return uimm;
+#endif
 }
 
 /*****************************************************************************
@@ -9373,10 +9689,13 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeShiftCount(ssize_t imm, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((imm & 0x003F) == imm);
     assert(((imm & 0x0020) == 0) || (size == EA_8BYTE));
 
     return (emitter::code_t)imm << 10;
+#endif
 }
 
 /*****************************************************************************
@@ -9386,6 +9705,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeDatasize(emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (size == EA_8BYTE)
     {
         return 0x80000000; // set the bit at location 31
@@ -9395,6 +9716,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         assert(size == EA_4BYTE);
         return 0;
     }
+#endif
 }
 
 /*****************************************************************************
@@ -9405,6 +9727,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeDatasizeLS(emitter::code_t code, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     bool exclusive = ((code & 0x35000000) == 0);
     bool atomic    = ((code & 0x31200C00) == 0x30200000);
 
@@ -9426,6 +9750,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         }
     }
     return 0;
+#endif
 }
 
 /*****************************************************************************
@@ -9436,6 +9761,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeDatasizeVLS(emitter::code_t code, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     code_t result = 0;
 
     // Check bit 29
@@ -9497,6 +9824,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     result |= 0x04000000;
 
     return result;
+#endif
 }
 
 /*****************************************************************************
@@ -9507,6 +9835,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeDatasizeVPLS(emitter::code_t code, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     code_t result = 0;
 
     if (size == EA_16BYTE)
@@ -9530,6 +9860,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     result |= 0x04000000;
 
     return result;
+#endif
 }
 
 /*****************************************************************************
@@ -9540,6 +9871,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeDatasizeBF(emitter::code_t code, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // is bit 30 equal to 0?
     if ((code & 0x40000000) == 0) // is the opcode one of extr, sxtb, sxth or sxtw
     {
@@ -9549,6 +9882,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         }
     }
     return 0; // don't set any bits
+#endif
 }
 
 /*****************************************************************************
@@ -9558,6 +9892,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeVectorsize(emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (size == EA_16BYTE)
     {
         return 0x40000000; // set the bit at location 30
@@ -9567,6 +9903,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         assert(size == EA_8BYTE);
         return 0;
     }
+#endif
 }
 
 /*****************************************************************************
@@ -9575,6 +9912,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
  */
 /*static*/ emitter::code_t emitter::insEncodeVectorIndex(emitAttr elemsize, ssize_t index)
 {
+    _ASSERTE(!"NYI");
+#if 0
     code_t bits = (code_t)index;
     if (elemsize == EA_1BYTE)
     {
@@ -9600,6 +9939,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert((bits >= 1) && (bits <= 0x1f));
 
     return (bits << 16); // bits at locations [20,19,18,17,16]
+#endif
 }
 
 /*****************************************************************************
@@ -9608,6 +9948,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
  */
 /*static*/ emitter::code_t emitter::insEncodeVectorIndex2(emitAttr elemsize, ssize_t index2)
 {
+    _ASSERTE(!"NYI");
+#if 0
     code_t bits = (code_t)index2;
     if (elemsize == EA_1BYTE)
     {
@@ -9629,6 +9971,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert((bits >= 0) && (bits <= 0xf));
 
     return (bits << 11); // bits at locations [14,13,12,11]
+#endif
 }
 
 /*****************************************************************************
@@ -9637,6 +9980,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
  */
 /*static*/ emitter::code_t emitter::insEncodeVectorIndexLMH(emitAttr elemsize, ssize_t index)
 {
+    _ASSERTE(!"NYI");
+#if 0
     code_t bits = 0;
 
     if (elemsize == EA_2BYTE)
@@ -9673,6 +10018,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 
     return bits;
+#endif
 }
 
 /*****************************************************************************
@@ -9681,6 +10027,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
  */
 /*static*/ emitter::code_t emitter::insEncodeShiftImmediate(emitAttr size, bool isRightShift, ssize_t shiftAmount)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (isRightShift)
     {
         // The right shift amount must be in the range 1 to the destination element width in bits.
@@ -9693,6 +10041,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         assert(shiftAmount < getBitWidth(size));
         return (code_t)(getBitWidth(size) + shiftAmount);
     }
+#endif
 }
 
 /*****************************************************************************
@@ -9702,6 +10051,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeElemsize(emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (size == EA_8BYTE)
     {
         return 0x00C00000; // set the bit at location 23 and 22
@@ -9716,6 +10067,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
     assert(size == EA_1BYTE);
     return 0x00000000;
+#endif
 }
 
 /*****************************************************************************
@@ -9725,17 +10077,22 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeFloatElemsize(emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (size == EA_8BYTE)
     {
         return 0x00400000; // set the bit at location 22
     }
     assert(size == EA_4BYTE);
     return 0x00000000;
+#endif
 }
 
 // Returns the encoding to select the index for an Arm64 float vector by element instruction
 /*static*/ emitter::code_t emitter::insEncodeFloatIndex(emitAttr elemsize, ssize_t index)
 {
+    _ASSERTE(!"NYI");
+#if 0
     code_t result = 0x00000000;
     if (elemsize == EA_8BYTE)
     {
@@ -9759,6 +10116,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         }
     }
     return result;
+#endif
 }
 
 /*****************************************************************************
@@ -9768,6 +10126,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeVLSElemsize(emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     code_t result = 0x00000000;
 
     switch (size)
@@ -9804,6 +10164,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 
     return result;
+#endif
 }
 
 /*****************************************************************************
@@ -9813,6 +10174,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeVLSIndex(emitAttr size, ssize_t index)
 {
+    _ASSERTE(!"NYI");
+#if 0
     code_t result = 0x00000000;
 
     switch (size)
@@ -9877,6 +10240,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     }
 
     return result;
+#endif
 }
 
 /*****************************************************************************
@@ -9885,6 +10249,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
  */
 /*static*/ emitter::code_t emitter::insEncodeConvertOpt(insFormat fmt, insOpts conversion)
 {
+    _ASSERTE(!"NYI");
+#if 0
     code_t result = 0;
     switch (conversion)
     {
@@ -9963,6 +10329,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             break;
     }
     return result;
+#endif
 }
 
 /*****************************************************************************
@@ -9973,6 +10340,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeIndexedOpt(insOpts opt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(emitter::insOptsNone(opt) || emitter::insOptsIndexed(opt));
 
     if (emitter::insOptsIndexed(opt))
@@ -9992,6 +10361,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         assert(emitter::insOptsNone(opt));
         return 0; // bits 10 and 11 are zero
     }
+#endif
 }
 
 /*****************************************************************************
@@ -10002,6 +10372,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodePairIndexedOpt(instruction ins, insOpts opt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(emitter::insOptsNone(opt) || emitter::insOptsIndexed(opt));
 
     if ((ins == INS_ldnp) || (ins == INS_stnp))
@@ -10029,6 +10401,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             return 0x01000000; // set the bit at location 24
         }
     }
+#endif
 }
 
 /*****************************************************************************
@@ -10038,6 +10411,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeShiftType(insOpts opt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (emitter::insOptsNone(opt))
     {
         // None implies the we encode LSL (with a zero immediate)
@@ -10049,6 +10424,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert(option <= 3);
 
     return option << 22; // bits 23, 22
+#endif
 }
 
 /*****************************************************************************
@@ -10058,11 +10434,14 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeShiftImm12(insOpts opt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (emitter::insOptsLSL12(opt))
     {
         return 0x00400000; // set the bit at location 22
     }
     return 0;
+#endif
 }
 
 /*****************************************************************************
@@ -10072,6 +10451,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeExtend(insOpts opt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (emitter::insOptsNone(opt) || (opt == INS_OPTS_LSL))
     {
         // None or LSL implies the we encode UXTX
@@ -10083,6 +10464,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     assert(option <= 7);
 
     return option << 13; // bits 15,14,13
+#endif
 }
 
 /*****************************************************************************
@@ -10093,9 +10475,12 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeExtendScale(ssize_t imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((imm >= 0) && (imm <= 4));
 
     return (emitter::code_t)imm << 10; // bits 12,11,10
+#endif
 }
 
 /*****************************************************************************
@@ -10105,6 +10490,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeReg3Scale(bool isScaled)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (isScaled)
     {
         return 0x00001000; // set the bit at location 12
@@ -10113,6 +10500,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         return 0;
     }
+#endif
 }
 
 /*****************************************************************************
@@ -10122,6 +10510,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeSimm9h9l_21_to_16_and_12_to_10(ssize_t imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isValidSimm<9>(imm));
 
     if (imm < 0)
@@ -10133,6 +10523,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     code_t l = (code_t)((imm & ~0x1F8) & 0x7) << 10; // encode low 3-bits at locations '12-10'
 
     return (h | l);
+#endif
 }
 
 /*****************************************************************************
@@ -10142,12 +10533,15 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeUimm3h3l_23_to_22_and_12(ssize_t imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isValidUimm<3>(imm));
 
     code_t h = (code_t)(imm & 0x6) << 21; // encode high 2-bits at locations '23-22'
     code_t l = (code_t)(imm & 0x1) << 12; // encode low 1-bit at locations '12'
 
     return (h | l);
+#endif
 }
 
 /*****************************************************************************
@@ -10157,12 +10551,17 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeImm8_12_to_5(ssize_t imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isValidSimm<8>(imm) || isValidUimm<8>(imm));
     return (code_t)((imm & 0xFF) << 5);
+#endif
 }
 
 BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id)
 {
+    _ASSERTE(!"NYI");
+#if 0
     instruction ins    = id->idIns();
     insFormat   fmt    = id->idInsFmt();
     regNumber   dstReg = id->idReg1();
@@ -10193,6 +10592,7 @@ BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, inst
         dst += emitOutput_Instr(dst, code);
     }
     return dst;
+#endif
 }
 
 /*****************************************************************************
@@ -10204,6 +10604,8 @@ BYTE* emitter::emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, inst
 
 BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 {
+    _ASSERTE(!"NYI");
+#if 0
     instrDescJmp* id = (instrDescJmp*)i;
 
     unsigned srcOffs;
@@ -10573,6 +10975,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
     }
 
     return dst;
+#endif
 }
 
 /*****************************************************************************
@@ -10581,6 +10984,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
  */
 BYTE* emitter::emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id)
 {
+    _ASSERTE(!"NYI");
+#if 0
     code_t code = emitInsCode(ins, fmt);
 
     ssize_t loBits = (distVal & 3);
@@ -10638,6 +11043,7 @@ BYTE* emitter::emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, 
     dst += emitOutput_Instr(dst, code);
 
     return dst;
+#endif
 }
 
 /*****************************************************************************
@@ -10646,6 +11052,8 @@ BYTE* emitter::emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, 
  */
 BYTE* emitter::emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg)
 {
+    _ASSERTE(!"NYI");
+#if 0
     ssize_t loBits = (distVal & 3);
     distVal >>= 2;
 
@@ -10668,6 +11076,7 @@ BYTE* emitter::emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt,
     dst += emitOutput_Instr(dst, code);
 
     return dst;
+#endif
 }
 
 /*****************************************************************************
@@ -10677,6 +11086,8 @@ BYTE* emitter::emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt,
 BYTE* emitter::emitOutputShortConstant(
     BYTE* dst, instruction ins, insFormat fmt, ssize_t imm, regNumber reg, emitAttr opSize)
 {
+    _ASSERTE(!"NYI");
+#if 0
     code_t code = emitInsCode(ins, fmt);
 
     if (fmt == IF_LS_1A)
@@ -10753,6 +11164,7 @@ BYTE* emitter::emitOutputShortConstant(
     dst += emitOutput_Instr(dst, code);
 
     return dst;
+#endif
 }
 
 /*****************************************************************************
@@ -10762,6 +11174,8 @@ BYTE* emitter::emitOutputShortConstant(
 BYTE* emitter::emitOutputVectorConstant(
     BYTE* dst, ssize_t imm, regNumber dstReg, regNumber addrReg, emitAttr opSize, emitAttr elemSize)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // add addrReg, addrReg, page offs -- compute address = page addr + page offs.
     code_t code = emitInsCode(INS_add, IF_DI_2A); // DI_2A  X0010001shiiiiii iiiiiinnnnnddddd   1100 0000   imm(i12, sh)
     code |= insEncodeDatasize(EA_8BYTE);          // X - use EA_8BYTE, as we are calculating 64-bit address
@@ -10779,6 +11193,7 @@ BYTE* emitter::emitOutputVectorConstant(
     dst += emitOutput_Instr(dst, code);
 
     return dst;
+#endif
 }
 
 /*****************************************************************************
@@ -10788,6 +11203,8 @@ BYTE* emitter::emitOutputVectorConstant(
 
 unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code)
 {
+    _ASSERTE(!"NYI");
+#if 0
     const unsigned char callInstrSize = sizeof(code_t); // 4 bytes
     regMaskTP           gcrefRegs;
     regMaskTP           byrefRegs;
@@ -10889,6 +11306,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         }
     }
     return callInstrSize;
+#endif
 }
 
 /*****************************************************************************
@@ -10898,11 +11316,14 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
 unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(sizeof(code_t) == 4);
     BYTE* dstRW       = dst + writeableOffset;
     *((code_t*)dstRW) = code;
 
     return sizeof(code_t);
+#endif
 }
 
 /*****************************************************************************
@@ -10916,6 +11337,8 @@ unsigned emitter::emitOutput_Instr(BYTE* dst, code_t code)
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
+    _ASSERTE(!"NYI");
+#if 0
     BYTE*       dst  = *dp;
     BYTE*       odst = dst;
     code_t      code = 0;
@@ -12371,6 +12794,7 @@ SKIP_GC_UPDATE:
     *dp = dst;
 
     return sz;
+#endif
 }
 
 /*****************************************************************************/
@@ -12414,6 +12838,8 @@ void emitter::emitDispInst(instruction ins)
  */
 void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false */, bool isAddrOffset /* =false */)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (isAddrOffset)
     {
         alwaysHex = true;
@@ -12470,6 +12896,7 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
 
     if (addComma)
         emitDispComma();
+#endif
 }
 
 /*****************************************************************************
@@ -12478,12 +12905,15 @@ void emitter::emitDispImm(ssize_t imm, bool addComma, bool alwaysHex /* =false *
  */
 void emitter::emitDispElementIndex(const ssize_t imm, const bool addComma)
 {
+    _ASSERTE(!"NYI");
+#if 0
     printf("[%d]", imm);
 
     if (addComma)
     {
         emitDispComma();
     }
+#endif
 }
 
 /*****************************************************************************
@@ -12492,11 +12922,14 @@ void emitter::emitDispElementIndex(const ssize_t imm, const bool addComma)
  */
 void emitter::emitDispFloatZero()
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (strictArmAsm)
     {
         printf("#");
     }
     printf("0.0");
+#endif
 }
 
 /*****************************************************************************
@@ -12505,6 +12938,8 @@ void emitter::emitDispFloatZero()
  */
 void emitter::emitDispFloatImm(ssize_t imm8)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((0 <= imm8) && (imm8 <= 0x0ff));
     if (strictArmAsm)
     {
@@ -12516,6 +12951,7 @@ void emitter::emitDispFloatImm(ssize_t imm8)
     double result   = emitDecodeFloatImm8(fpImm);
 
     printf("%.4f", result);
+#endif
 }
 
 /*****************************************************************************
@@ -12524,11 +12960,14 @@ void emitter::emitDispFloatImm(ssize_t imm8)
  */
 void emitter::emitDispSmallFloatImm(ssize_t imm, instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (strictArmAsm)
     {
         printf("#");
     }
     printf("%.4f", emitDecodeSmallFloatImm(imm, ins));
+#endif
 }
 
 /*****************************************************************************
@@ -12537,6 +12976,8 @@ void emitter::emitDispSmallFloatImm(ssize_t imm, instruction ins)
  */
 void emitter::emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmount)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (!strictArmAsm && hasShift)
     {
         imm <<= shiftAmount;
@@ -12546,6 +12987,7 @@ void emitter::emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmoun
     {
         printf(", LSL #%u", shiftAmount);
     }
+#endif
 }
 
 /*****************************************************************************
@@ -12554,11 +12996,14 @@ void emitter::emitDispImmOptsLSL(ssize_t imm, bool hasShift, unsigned shiftAmoun
  */
 void emitter::emitDispCond(insCond cond)
 {
+    _ASSERTE(!"NYI");
+#if 0
     const static char* armCond[16] = {"eq", "ne", "hs", "lo", "mi", "pl", "vs", "vc",
                                       "hi", "ls", "ge", "lt", "gt", "le", "AL", "NV"}; // The last two are invalid
     unsigned           imm         = (unsigned)cond;
     assert((0 <= imm) && (imm < ArrLen(armCond)));
     printf(armCond[imm]);
+#endif
 }
 
 /*****************************************************************************
@@ -12567,11 +13012,14 @@ void emitter::emitDispCond(insCond cond)
  */
 void emitter::emitDispFlags(insCflags flags)
 {
+    _ASSERTE(!"NYI");
+#if 0
     const static char* armFlags[16] = {"0", "v",  "c",  "cv",  "z",  "zv",  "zc",  "zcv",
                                        "n", "nv", "nc", "ncv", "nz", "nzv", "nzc", "nzcv"};
     unsigned           imm          = (unsigned)flags;
     assert((0 <= imm) && (imm < ArrLen(armFlags)));
     printf(armFlags[imm]);
+#endif
 }
 
 /*****************************************************************************
@@ -12580,11 +13028,14 @@ void emitter::emitDispFlags(insCflags flags)
  */
 void emitter::emitDispBarrier(insBarrier barrier)
 {
+    _ASSERTE(!"NYI");
+#if 0
     const static char* armBarriers[16] = {"#0", "oshld", "oshst", "osh", "#4",  "nshld", "nshst", "nsh",
                                           "#8", "ishld", "ishst", "ish", "#12", "ld",    "st",    "sy"};
     unsigned           imm             = (unsigned)barrier;
     assert((0 <= imm) && (imm < ArrLen(armBarriers)));
     printf(armBarriers[imm]);
+#endif
 }
 
 /*****************************************************************************
@@ -12594,6 +13045,8 @@ void emitter::emitDispBarrier(insBarrier barrier)
 
 void emitter::emitDispShiftOpts(insOpts opt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (opt == INS_OPTS_LSL)
         printf(" LSL ");
     else if (opt == INS_OPTS_LSR)
@@ -12606,6 +13059,7 @@ void emitter::emitDispShiftOpts(insOpts opt)
         printf(" MSL ");
     else
         assert(!"Bad value");
+#endif
 }
 
 /*****************************************************************************
@@ -12615,6 +13069,8 @@ void emitter::emitDispShiftOpts(insOpts opt)
 
 void emitter::emitDispExtendOpts(insOpts opt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (opt == INS_OPTS_UXTB)
         printf("UXTB");
     else if (opt == INS_OPTS_UXTH)
@@ -12633,6 +13089,7 @@ void emitter::emitDispExtendOpts(insOpts opt)
         printf("SXTX");
     else
         assert(!"Bad value");
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -12640,11 +13097,14 @@ void emitter::emitDispExtendOpts(insOpts opt)
 //
 void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr size = EA_SIZE(attr);
     printf(emitRegName(reg, size));
 
     if (addComma)
         emitDispComma();
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -12652,12 +13112,15 @@ void emitter::emitDispReg(regNumber reg, emitAttr attr, bool addComma)
 //
 void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isVectorRegister(reg));
     printf(emitVectorRegName(reg));
     emitDispArrangement(opt);
 
     if (addComma)
         emitDispComma();
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -12665,6 +13128,8 @@ void emitter::emitDispVectorReg(regNumber reg, insOpts opt, bool addComma)
 //
 void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t index, bool addComma)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isVectorRegister(reg));
     printf(emitVectorRegName(reg));
     emitDispElemsize(elemsize);
@@ -12672,6 +13137,7 @@ void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t i
 
     if (addComma)
         emitDispComma();
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -12679,6 +13145,8 @@ void emitter::emitDispVectorRegIndex(regNumber reg, emitAttr elemsize, ssize_t i
 //
 void emitter::emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOpts opt, bool addComma)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isVectorRegister(firstReg));
 
     regNumber currReg = firstReg;
@@ -12696,6 +13164,7 @@ void emitter::emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOp
     {
         emitDispComma();
     }
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -12704,6 +13173,8 @@ void emitter::emitDispVectorRegList(regNumber firstReg, unsigned listSize, insOp
 void emitter::emitDispVectorElemList(
     regNumber firstReg, unsigned listSize, emitAttr elemsize, unsigned index, bool addComma)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(isVectorRegister(firstReg));
 
     regNumber currReg = firstReg;
@@ -12727,6 +13198,7 @@ void emitter::emitDispVectorElemList(
     {
         emitDispComma();
     }
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -12734,6 +13206,8 @@ void emitter::emitDispVectorElemList(
 //
 void emitter::emitDispArrangement(insOpts opt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     const char* str = "???";
 
     switch (opt)
@@ -12787,6 +13261,7 @@ void emitter::emitDispArrangement(insOpts opt)
     }
     printf(".");
     printf(str);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -12794,6 +13269,8 @@ void emitter::emitDispArrangement(insOpts opt)
 //
 void emitter::emitDispElemsize(emitAttr elemsize)
 {
+    _ASSERTE(!"NYI");
+#if 0
     const char* str = "???";
 
     switch (elemsize)
@@ -12817,6 +13294,7 @@ void emitter::emitDispElemsize(emitAttr elemsize)
     }
 
     printf(str);
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -12824,6 +13302,8 @@ void emitter::emitDispElemsize(emitAttr elemsize)
 //
 void emitter::emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAttr attr)
 {
+    _ASSERTE(!"NYI");
+#if 0
     emitAttr size = EA_SIZE(attr);
     assert((imm & 0x003F) == imm);
     assert(((imm & 0x0020) == 0) || (size == EA_8BYTE));
@@ -12839,6 +13319,7 @@ void emitter::emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAt
         emitDispShiftOpts(opt);
         emitDispImm(imm, false);
     }
+#endif
 }
 
 /*****************************************************************************
@@ -12847,6 +13328,8 @@ void emitter::emitDispShiftedReg(regNumber reg, insOpts opt, ssize_t imm, emitAt
  */
 void emitter::emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((imm >= 0) && (imm <= 4));
     assert(insOptsNone(opt) || insOptsAnyExtend(opt) || (opt == INS_OPTS_LSL));
 
@@ -12898,6 +13381,7 @@ void emitter::emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm)
             emitDispImm(ssize_t{1} << imm, false);
         }
     }
+#endif
 }
 
 /*****************************************************************************
@@ -12906,6 +13390,8 @@ void emitter::emitDispExtendReg(regNumber reg, insOpts opt, ssize_t imm)
  */
 void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
 {
+    _ASSERTE(!"NYI");
+#if 0
     reg = encodingZRtoSP(reg); // ZR (R31) encodes the SP register
 
     if (strictArmAsm)
@@ -12965,6 +13451,7 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
         emitDispImm(imm, false, true, true);
         printf("]");
     }
+#endif
 }
 
 /*****************************************************************************
@@ -12973,6 +13460,8 @@ void emitter::emitDispAddrRI(regNumber reg, insOpts opt, ssize_t imm)
  */
 void emitter::emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, bool isScaled, emitAttr size)
 {
+    _ASSERTE(!"NYI");
+#if 0
     reg1 = encodingZRtoSP(reg1); // ZR (R31) encodes the SP register
 
     unsigned scale = 0;
@@ -12996,6 +13485,7 @@ void emitter::emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, boo
     }
 
     printf("]");
+#endif
 }
 
 /*****************************************************************************
@@ -13005,6 +13495,8 @@ void emitter::emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, boo
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (!emitComp->opts.disCodeBytes)
     {
         return;
@@ -13022,6 +13514,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
             printf("              ");
         }
     }
+#endif
 }
 
 /*****************************************************************************
@@ -13032,6 +13525,8 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 void emitter::emitDispLargeJmp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // Note: don't touch the actual instrDesc. If we accidentally messed it up, it would create a very
     // difficult-to-find bug.
 
@@ -13101,6 +13596,7 @@ void emitter::emitDispLargeJmp(
 
     const size_t brSizeOrZero = (pCode == NULL) ? 0 : 4; // Unconditional branch is 4 bytes.
     emitDispInsHelp(pidJmp, isNew, doffs, asmfm, offset, pCode, brSizeOrZero, ig);
+#endif
 }
 
 /*****************************************************************************
@@ -13112,6 +13608,8 @@ void emitter::emitDispLargeJmp(
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // Special case: IF_LARGEJMP
 
     if ((id->idInsFmt() == IF_LARGEJMP) && id->idIsBound())
@@ -13133,6 +13631,7 @@ void emitter::emitDispIns(
     {
         emitDispInsHelp(id, isNew, doffs, asmfm, offset, pCode, sz, ig);
     }
+#endif
 }
 
 //--------------------------------------------------------------------
@@ -13154,7 +13653,7 @@ void emitter::emitDispIns(
 void emitter::emitDispInsHelp(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-	assert("Entering emitDispInsHelp");
+    _ASSERTE(!"NYI");
 #if 0
 #ifdef DEBUG
     if (EMITVERBOSE)
@@ -14405,6 +14904,8 @@ void emitter::emitDispInsHelp(
 
 void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 {
+    _ASSERTE(!"NYI");
+#if 0
 #ifdef DEBUG
     printf("[");
 
@@ -14437,6 +14938,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
         }
     }
 #endif
+#endif
 }
 
 // Generate code for a load or store operation with a potentially complex addressing mode
@@ -14446,7 +14948,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 //
 void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTreeIndir* indir)
 {
-	assert ("Entering emitter::emitInsLoadStoreOp ");
+    _ASSERTE(!"NYI");
 #if 0
     GenTree* addr = indir->Addr();
 
@@ -14617,6 +15119,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
 regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // dst can only be a reg
     assert(!dst->isContained());
 
@@ -14640,6 +15144,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
         emitIns_R_R(ins, attr, dst->GetRegNum(), src->GetRegNum());
         return dst->GetRegNum();
     }
+#endif
 }
 
 // The callee must call genConsumeReg() for any non-contained srcs
@@ -14647,6 +15152,8 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
 regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2)
 {
+    _ASSERTE(!"NYI");
+#if 0
     // dst can only be a reg
     assert(!dst->isContained());
 
@@ -14792,13 +15299,14 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     }
 
     return dst->GetRegNum();
+#endif
 }
 
 #if defined(DEBUG) || defined(LATE_DISASM)
 
 void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess)
 {
-	assert ("emitter::getMemoryOperation");
+    _ASSERTE(!"NYI");
 #if 0
     unsigned    memAccessKind = PERFSCORE_MEMORY_NONE;
     bool        isLocalAccess = false;
@@ -14982,7 +15490,7 @@ void emitter::getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* 
 //
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    assert ("emitter::insExecutionCharacteristics");
+    _ASSERTE(!"NYI");
 #if 0
     insExecutionCharacteristics result;
     instruction                 ins    = id->idIns();
@@ -16673,6 +17181,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 //
 bool emitter::IsMovInstruction(instruction ins)
 {
+    _ASSERTE(!"NYI");
+#if 0
     switch (ins)
     {
         case INS_fmov:
@@ -16692,6 +17202,7 @@ bool emitter::IsMovInstruction(instruction ins)
             return false;
         }
     }
+#endif
 }
 
 //----------------------------------------------------------------------------------------
@@ -16731,6 +17242,8 @@ bool emitter::IsMovInstruction(instruction ins)
 
 bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((ins == INS_mov) || (ins == INS_sve_mov));
 
     if (canSkip && (dst == src))
@@ -16825,6 +17338,7 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
     }
 
     return false;
+#endif
 }
 
 //----------------------------------------------------------------------------------------
@@ -16859,6 +17373,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
 bool emitter::IsRedundantLdStr(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if ((ins != INS_ldr) && (ins != INS_str))
     {
         return false;
@@ -16919,6 +17435,7 @@ bool emitter::IsRedundantLdStr(
     }
 
     return false;
+#endif
 }
 
 //-----------------------------------------------------------------------------------
@@ -16952,6 +17469,8 @@ bool emitter::OptimizeLdrStr(instruction ins,
                              int         varx,
                              int offs    DEBUG_ARG(bool useRsvdReg))
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(ins == INS_ldr || ins == INS_str);
 
     if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins))
@@ -16984,6 +17503,7 @@ bool emitter::OptimizeLdrStr(instruction ins,
     }
 
     return false;
+#endif
 }
 
 //-----------------------------------------------------------------------------------
@@ -17016,6 +17536,8 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
                                          int         varx,
                                          int         offs)
 {
+    _ASSERTE(!"NYI");
+#if 0
     RegisterOrder optimizationOrder = IsOptimizableLdrStrWithPair(ins, reg1, reg2, imm, size, fmt);
 
     if (optimizationOrder == eRO_none)
@@ -17087,6 +17609,7 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     }
 
     return true;
+#endif
 }
 
 //-----------------------------------------------------------------------------------
@@ -17121,6 +17644,8 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
 emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     RegisterOrder optimisationOrder = eRO_none;
 
     if ((ins != INS_ldr) && (ins != INS_str))
@@ -17227,6 +17752,7 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     }
 
     return optimisationOrder;
+#endif
 }
 
 //-----------------------------------------------------------------------------------
@@ -17250,6 +17776,8 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
 bool emitter::IsOptimizableLdrToMov(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
+    _ASSERTE(!"NYI");
+#if 0
     if (ins != INS_ldr)
     {
         // This instruction is not an "ldr" instruction.
@@ -17306,6 +17834,7 @@ bool emitter::IsOptimizableLdrToMov(
     }
 
     return true;
+#endif
 }
 
 //-----------------------------------------------------------------------------------
@@ -17323,6 +17852,8 @@ bool emitter::IsOptimizableLdrToMov(
 //
 bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, emitAttr regAttr)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert((ins == INS_add) || (ins == INS_sub));
 
     if (!emitCanPeepholeLastIns() || !emitInsIsLoadOrStore(emitLastIns->idIns()))
@@ -17427,6 +17958,7 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
     dispIns(id);
     appendToCurIG(id);
     return true;
+#endif
 }
 
 #if defined(FEATURE_SIMD)
@@ -17441,6 +17973,8 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
 //
 void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider)
 {
+    _ASSERTE(!"NYI");
+#if 0
     assert(varNum != BAD_VAR_NUM);
     assert(isVectorRegister(dataReg));
 
@@ -17469,6 +18003,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNu
         // 4-byte write
         emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
     }
+#endif
 }
 #endif // FEATURE_SIMD
 
