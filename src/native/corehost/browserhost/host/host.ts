@@ -56,10 +56,10 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
     const ptrs: VoidPtr[] = [];
     try {
 
-        for (const arg of args) {
-            const ptr = dotnetBrowserUtilsExports.stringToUTF8Ptr(arg) as any;
+        for (let i = 0; i < args.length; i++) {
+            const ptr = dotnetBrowserUtilsExports.stringToUTF8Ptr(args[i]) as any;
             ptrs.push(ptr);
-            Module.HEAPU32.set(ptr, argsvPtr >>> 2);
+            Module.HEAPU32[(argsvPtr >>> 2) + i] = ptr;
         }
         const res = _BrowserHost_ExecuteAssembly(mainAssemblyNamePtr, args.length, argsvPtr);
         for (const ptr of ptrs) {
