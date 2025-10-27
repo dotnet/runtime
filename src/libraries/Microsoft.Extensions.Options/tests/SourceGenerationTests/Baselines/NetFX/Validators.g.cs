@@ -296,7 +296,7 @@ namespace Enumeration
                 var count = 0;
                 foreach (var o in options.P4)
                 {
-                    (builder ??= new()).AddResult(global::Enumeration.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"FirstModel.P4[{count++}] is null" : $"{name}.P4[{count++}] is null", o));
+                    (builder ??= new()).AddResult(global::Enumeration.__ThirdModelValidator__.Validate(string.IsNullOrEmpty(name) ? $"P4[{count++}] is null" : $"{name}.P4[{count++}] is null", o));
                 }
             }
 
