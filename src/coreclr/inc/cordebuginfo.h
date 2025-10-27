@@ -443,6 +443,9 @@ public:
 
     struct AsyncSuspensionPoint
     {
+        // Offset of IP stored in Continuation's resume info when we would
+        // resume at this suspension point.
+        uint32_t FinalResumeNativeOffset;
         // Count of AsyncContinuationVarInfo in array of locals starting where
         // the previous suspension point's locals end.
         uint32_t NumContinuationVars;

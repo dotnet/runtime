@@ -2128,6 +2128,7 @@ void AsyncTransformation::CreateDebugInfoForSuspensionPoint(GenTreeCall*        
     }
 
     ICorDebugInfo::AsyncSuspensionPoint suspensionPoint;
+    suspensionPoint.FinalResumeNativeOffset = 0;
     suspensionPoint.NumContinuationVars = numLocals;
     m_comp->compSuspensionPoints->push_back(suspensionPoint);
 

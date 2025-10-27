@@ -6762,6 +6762,14 @@ void CodeGen::genReportAsyncDebugInfo()
         return;
     }
 
+    assert(genAsyncResumeInfoTable != nullptr);
+    for (size_t i = 0; i < suspPoints->size(); i++)
+    {
+        emitLocation& emitLoc = ((emitLocation*)genAsyncResumeInfoTable->dsCont)[i];
+        UNATIVE_OFFSET finalResumeOffset = emitLoc.CodeOffset(GetEmitter());
+        (*suspPoints)[i].FinalResumeNativeOffset = finalResumeOffset;
+    }
+
     ICorDebugInfo::AsyncInfo asyncInfo;
     asyncInfo.NumSuspensionPoints = static_cast<uint32_t>(suspPoints->size());
 
