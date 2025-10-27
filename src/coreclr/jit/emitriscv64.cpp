@@ -1238,7 +1238,7 @@ void emitter::emitIns_R_AI(instruction  ins,
 {
     assert(EA_IS_RELOC(attr));
     assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
-    assert(emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg == addrReg && dataReg != REG_ZERO));
+    assert(emitInsIsStore(ins) || isFloatReg(dataReg) || dataReg == REG_ZERO || (dataReg == addrReg));
     assert(isGeneralRegister(addrReg));
     // 2-ins:
     //   auipc  addrReg, off-hi-20bits
@@ -5100,7 +5100,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 assert(memBase == indir->Addr());
                 ssize_t cns = addr->AsIntCon()->IconValue();
 
-                regNumber addrReg = (emitInsIsStore(ins) || isFloatReg(dataReg)) ? codeGen->rsGetRsvdReg() : dataReg;
+                bool      needTemp = emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg == REG_ZERO);
+                regNumber addrReg  = needTemp ? codeGen->rsGetRsvdReg() : dataReg;
                 if (addr->AsIntCon()->FitsInAddrBase(emitComp))
                 {
                     attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
