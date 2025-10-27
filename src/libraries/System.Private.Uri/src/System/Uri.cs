@@ -3888,6 +3888,14 @@ namespace System
             if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host) &&
                 IPv6AddressHelper.IsValid(pString, start + 1, ref end))
             {
+                if (end < length && pString[end] is not (':' or '/' or '?' or '#'))
+                {
+                    // A valid IPv6 address wasn't followed by a valid delimiter (e.g. http://[::]extra).
+                    flags |= Flags.UnknownHostType;
+                    err = ParsingError.BadHostName;
+                    return idx;
+                }
+
                 flags |= Flags.IPv6HostType;
 
                 if (hasUnicode)

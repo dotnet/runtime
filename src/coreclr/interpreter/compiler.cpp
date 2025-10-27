@@ -2154,7 +2154,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             ip++;
             if (opcode == CEE_RET)
             {
-                if (m_isSynchronized && m_currentILOffset < m_ILCodeSizeFromILHeader)
+                if (m_isSynchronized && insOffset < m_ILCodeSizeFromILHeader)
                 {
                     // This is a ret instruction coming from the initial IL of a synchronized method.
                     CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedPostFinallyOffset));
@@ -8734,6 +8734,10 @@ extern "C" void assertAbort(const char* why, const char* file, unsigned line)
 #ifdef _MSC_VER
     __debugbreak();
 #else // _MSC_VER
+#ifdef TARGET_APPLE
+    __builtin_debugtrap();
+#else // TARGET_APPLE
     __builtin_trap();
+#endif // TARGET_APPLE
 #endif // _MSC_VER
 }
