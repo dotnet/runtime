@@ -17,10 +17,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (t.IsFaulted)
                 {
-                    var inner= t.Exception.InnerException ?? t.Exception;
-                    var message = inner.GetType().Name + ": " + (inner.Message ?? "");
-                    var stackTrace = inner.StackTrace ?? "";
-                    SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
+                    RejectMainPromise(t.Exception);
                 }
                 else
                 {
@@ -36,16 +33,21 @@ namespace System.Runtime.CompilerServices
             {
                 if (t.IsFaulted)
                 {
-                    var inner= t.Exception.InnerException ?? t.Exception;
-                    var message = inner.GetType().Name + ": " + (inner.Message ?? "");
-                    var stackTrace = inner.StackTrace ?? "";
-                    SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
+                    RejectMainPromise(t.Exception);
                 }
                 else
                 {
                     SystemJS_ResolveMainPromise(0);
                 }
             }, TaskScheduler.Default);
+        }
+
+        private static void RejectMainPromise(Exception ex)
+        {
+            var inner= ex.InnerException ?? ex;
+            var message = inner.GetType().Name + ": " + (inner.Message ?? "");
+            var stackTrace = inner.StackTrace ?? "";
+            SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
         }
 
         [LibraryImport(RuntimeHelpers.QCall)]
