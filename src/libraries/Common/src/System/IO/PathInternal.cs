@@ -50,30 +50,26 @@ namespace System.IO
         /// <summary>
         /// Gets the count of common characters from the left optionally ignoring case
         /// </summary>
-        internal static unsafe int EqualStartingCharacterCount(string? first, string? second, bool ignoreCase)
+        internal static int EqualStartingCharacterCount(string? first, string? second, bool ignoreCase)
         {
             if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(second)) return 0;
 
-            int commonChars = 0;
-
-            fixed (char* f = first)
-            fixed (char* s = second)
+            for (int i = 0; i < first.Length; i++)
             {
-                char* l = f;
-                char* r = s;
-                char* leftEnd = l + first.Length;
-                char* rightEnd = r + second.Length;
-
-                while (l != leftEnd && r != rightEnd
-                    && (*l == *r || (ignoreCase && char.ToUpperInvariant(*l) == char.ToUpperInvariant(*r))))
+                // Reached the end of the second string
+                if (i >= second.Length) 
                 {
-                    commonChars++;
-                    l++;
-                    r++;
+                    return i;
+                }
+
+                // Check for character mismatch
+                if ((first[i] != second[i]) && 
+                    (!ignoreCase || char.ToUpperInvariant(first[i]) != char.ToUpperInvariant(second[i])))
+                {
+                    return i;
                 }
             }
-
-            return commonChars;
+            return first.Length;
         }
 
         /// <summary>
