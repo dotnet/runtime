@@ -2258,16 +2258,6 @@ void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
             BADCODE("Invalid handler region in EH clause");
         }
 
-        // Find and mark all basic blocks that are part of the try region.
-        for (uint32_t j = clause.TryOffset; j < (clause.TryOffset + clause.TryLength); j++)
-        {
-            InterpBasicBlock* pBB = m_ppOffsetToBB[j];
-            if (pBB != NULL && pBB->clauseType == BBClauseNone)
-            {
-                pBB->clauseType = BBClauseTry;
-            }
-        }
-
         InterpBasicBlock* pHandlerBB = GetBB(clause.HandlerOffset);
 
         // Find and mark all basic blocks that are part of the handler region.
@@ -7474,6 +7464,11 @@ retry_emit:
                     }
                     case CEE_LOCALLOC:
                         CHECK_STACK(1);
+                        if (m_pCBB->clauseType != BBClauseNone)
+                        {
+                            // Localloc inside a funclet is not allowed
+                            BADCODE("CEE_LOCALLOC inside funclet");
+                        }
 #if TARGET_64BIT
                         // Length is natural unsigned int
                         if (m_pStackPointer[-1].type == StackTypeI4)
