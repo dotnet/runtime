@@ -102,7 +102,7 @@ namespace Internal.Runtime.TypeLoader
             public override int GetHashCode()
                 => _handle.GetHashCode() ^ (_genericArgs == null
                 ? _declaringType.GetHashCode()
-                : TypeHashingAlgorithms.ComputeGenericInstanceHashCode(_declaringType.GetHashCode(), _genericArgs));
+                : VersionResilientHashCode.GenericInstanceHashCode(_declaringType.GetHashCode(), _genericArgs));
         }
 
         private LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle> _runtimeFieldHandles = new LowLevelDictionary<RuntimeFieldHandleKey, RuntimeFieldHandle>();

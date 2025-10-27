@@ -866,19 +866,13 @@ namespace System.Security.Cryptography
                 out CompositeMLDsa dsa)
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
-                AsnValueReader reader = new AsnValueReader(privateKeyContents.Span, AsnEncodingRules.BER);
 
-                if (!reader.TryReadPrimitiveOctetString(out ReadOnlySpan<byte> key) || reader.HasData)
-                {
-                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                }
-
-                if (!algorithm.IsValidPrivateKeySize(key.Length))
+                if (!algorithm.IsValidPrivateKeySize(privateKeyContents.Length))
                 {
                     throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                 }
 
-                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, key);
+                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, privateKeyContents.Span);
             }
         }
 
@@ -1863,9 +1857,7 @@ namespace System.Security.Cryptography
 
             ReadOnlySpan<byte> publicKey = buffer.AsSpan(0, written);
 
-            // TODO verify overhead
-
-            // TODO: The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is ___ bytes.
+            // The ASN.1 overhead of a SubjectPublicKeyInfo encoding a public key is around 24 bytes.
             // Round it off to 32. This checked operation should never throw because the inputs are not
             // user provided.
             int capacity = checked(32 + publicKey.Length);

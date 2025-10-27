@@ -954,17 +954,7 @@ inline SingleTypeRegSet genSingleTypeFloatMask(regNumber reg ARM_ARG(var_types t
 inline SingleTypeRegSet genSingleTypeRegMask(regNumber reg)
 {
     assert((unsigned)reg < ArrLen(regMasks));
-#ifdef TARGET_AMD64
-    // shift is faster than a L1 hit on modern x86
-    // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
-    // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
-    // and the result needs to be zero.
-    SingleTypeRegSet result = 1ULL << reg;
-    assert(result == regMasks[reg]);
-    return result;
-#else
     return regMasks[reg];
-#endif
 }
 
 //------------------------------------------------------------------------

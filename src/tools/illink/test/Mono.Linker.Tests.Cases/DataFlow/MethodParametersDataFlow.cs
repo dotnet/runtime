@@ -52,8 +52,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // Validate the error message when annotated parameter is passed to another annotated parameter
-    [ExpectedWarning("IL2067", "'sourceType'", "PublicParameterlessConstructorParameter(Type)", "'type'", nameof(DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)")]
-    [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresNonPublicConstructors))]
+        [ExpectedWarning("IL2067", "'sourceType'", "PublicParameterlessConstructorParameter(Type)", "'type'", nameof(DataFlowTypeExtensions.RequiresPublicConstructors) + "(Type)")]
+        [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresNonPublicConstructors))]
         private static void PublicParameterlessConstructorParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             Type sourceType)
@@ -73,8 +73,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             type.RequiresNonPublicConstructors();
         }
 
-    [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicParameterlessConstructor))]
-    [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicConstructors))]
+        [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicParameterlessConstructor))]
+        [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicConstructors))]
         private static void NonPublicConstructorsParameter(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type type)
@@ -84,7 +84,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             type.RequiresNonPublicConstructors();
         }
 
-    [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicConstructors))]
+        [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions) + "." + nameof(DataFlowTypeExtensions.RequiresPublicConstructors))]
         private void InstanceMethod(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
             Type type)
@@ -161,7 +161,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // Validate the error message for the case of unannotated method return value passed to an annotated parameter.
-    [ExpectedWarning("IL2067", "'type'", "NoAnnotation(Type)", "'type'", nameof(DataFlowTypeExtensions.RequiresPublicParameterlessConstructor) + "(Type)")]
+        [ExpectedWarning("IL2067", "'type'", "NoAnnotation(Type)", "'type'", nameof(DataFlowTypeExtensions.RequiresPublicParameterlessConstructor) + "(Type)")]
         private void NoAnnotation(Type type)
         {
             type.RequiresPublicParameterlessConstructor();

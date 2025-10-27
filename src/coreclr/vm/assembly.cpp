@@ -329,7 +329,10 @@ Assembly * Assembly::Create(
         PRECONDITION(pLoaderAllocator != NULL);
         PRECONDITION(pLoaderAllocator->IsCollectible() || pLoaderAllocator == SystemDomain::GetGlobalLoaderAllocator());
     }
-    CONTRACTL_END
+    CONTRACTL_END;
+
+    // Validate the assembly about to be created is suitable for execution.
+    pPEAssembly->ValidateForExecution();
 
     NewHolder<Assembly> pAssembly (new Assembly(pPEAssembly, pLoaderAllocator));
 
@@ -540,21 +543,16 @@ Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNamePar
     RETURN pRetVal;
 } // Assembly::CreateDynamic
 
-
-
 void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 {
     CONTRACTL
     {
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pDomainAssembly));
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
     GetModule()->SetDomainAssembly(pDomainAssembly);
-
 } // Assembly::SetDomainAssembly
 
 #endif // #ifndef DACCESS_COMPILE

@@ -4563,10 +4563,10 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
         case NI_System_Math_Sqrt:
             instr = is4 ? INS_fsqrt_s : INS_fsqrt_d;
             break;
-        case NI_System_Math_MinNumber:
+        case NI_System_Math_MinNative:
             instr = is4 ? INS_fmin_s : INS_fmin_d;
             break;
-        case NI_System_Math_MaxNumber:
+        case NI_System_Math_MaxNative:
             instr = is4 ? INS_fmax_s : INS_fmax_d;
             break;
         case NI_System_Math_Min:
@@ -5040,6 +5040,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         }
         else
         {
+            assert(isImmed(tree));
             instruction ins        = genGetInsForOper(tree);
             unsigned    shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal;
 

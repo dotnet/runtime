@@ -2021,6 +2021,10 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             break;
 
         case GT_COMMA:
+            if (tree->gtEffectiveVal()->OperIs(GT_FIELD_LIST))
+            {
+                return false;
+            }
             break;
 
         case GT_COLON:

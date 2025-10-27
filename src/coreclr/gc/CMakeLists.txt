@@ -35,9 +35,9 @@ else()
     windows/Native.rc)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64)
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   add_subdirectory(vxsort)
-endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 if (CLR_CMAKE_TARGET_WIN32)
   set(GC_HEADERS
@@ -93,11 +93,11 @@ set (GC_LINK_LIBRARIES
     gc_pal
     minipal)
 
-if(CLR_CMAKE_TARGET_ARCH_AMD64)
+if(CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
     list(APPEND GC_LINK_LIBRARIES
         gc_vxsort
     )
-endif(CLR_CMAKE_TARGET_ARCH_AMD64)
+endif(CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
 
 list(APPEND GC_SOURCES ${GC_HEADERS})
@@ -137,6 +137,7 @@ if(FEATURE_STANDALONE_GC)
 
   add_definitions(-DFX_VER_INTERNALNAME_STR=clrgc.dll)
   add_definitions(-DVERIFY_HEAP)
+  add_definitions(-DGC_CONFIG_DRIVEN)
   if(CLR_CMAKE_HOST_APPLE)
     # The implementation of GCToOSInterface on Apple platforms makes use of non-POSIX
     # pthreads APIs, which by default are not included in the pthreads header

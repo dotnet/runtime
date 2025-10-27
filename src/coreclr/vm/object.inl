@@ -46,14 +46,14 @@ inline SIZE_T Object::GetSize()
     return s;
 }
 
-__forceinline /*static*/ DWORD StringObject::GetBaseSize()
+FORCEINLINE /*static*/ DWORD StringObject::GetBaseSize()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     return OBJECT_BASESIZE + sizeof(DWORD) /* length */ + sizeof(WCHAR) /* null terminator */;
 }
 
-__forceinline /*static*/ SIZE_T StringObject::GetSize(DWORD strLen)
+FORCEINLINE /*static*/ SIZE_T StringObject::GetSize(DWORD strLen)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -231,7 +231,7 @@ inline TypeHandle ArrayBase::GetArrayElementTypeHandle() const
 //===============================================================================
 // Returns true if this pMT is Nullable<T> for T is equivalent to paramMT
 
-__forceinline BOOL Nullable::IsNullableForType(TypeHandle type, MethodTable* paramMT)
+FORCEINLINE BOOL Nullable::IsNullableForType(TypeHandle type, MethodTable* paramMT)
 {
     if (type.IsTypeDesc())
         return FALSE;

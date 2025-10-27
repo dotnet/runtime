@@ -107,8 +107,6 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT
         jmp         RhpWaitForGC
 NESTED_END RhpGcProbeHijack, _TEXT
 
-EXTERN RhpThrowHwEx : PROC
-
 NESTED_ENTRY RhpWaitForGC, _TEXT
         PUSH_PROBE_FRAME rdx, rax, rcx
         END_PROLOGUE
@@ -117,16 +115,8 @@ NESTED_ENTRY RhpWaitForGC, _TEXT
         mov         rcx, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
         call        RhpWaitForGC2
 
-        mov         rax, [rbx + OFFSETOF__Thread__m_pDeferredTransitionFrame]
-        test        dword ptr [rax + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
-        jnz         Abort
         POP_PROBE_FRAME
         ret
-Abort:
-        POP_PROBE_FRAME
-        mov         rcx, STATUS_NATIVEAOT_THREAD_ABORT
-        pop         rdx         ;; return address as exception RIP
-        jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
 
 NESTED_END RhpWaitForGC, _TEXT
 

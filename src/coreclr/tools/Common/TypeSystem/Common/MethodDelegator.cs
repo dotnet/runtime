@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 namespace Internal.TypeSystem
 {
     /// <summary>
@@ -26,7 +28,7 @@ namespace Internal.TypeSystem
         public override bool IsDefaultConstructor => _wrappedMethod.IsDefaultConstructor;
         public override bool IsStaticConstructor => _wrappedMethod.IsStaticConstructor;
 
-        public override string Name => _wrappedMethod.Name;
+        public override ReadOnlySpan<byte> Name => _wrappedMethod.Name;
 
         public override bool IsVirtual => _wrappedMethod.IsVirtual;
 

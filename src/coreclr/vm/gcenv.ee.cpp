@@ -45,18 +45,21 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 
     _ASSERTE(reason == SUSPEND_FOR_GC || reason == SUSPEND_FOR_GC_PREP);
 
-    g_pDebugInterface->SuspendForGarbageCollectionStarted();
+    if (g_pDebugInterface)
+        g_pDebugInterface->SuspendForGarbageCollectionStarted();
 
     ThreadSuspend::SuspendEE((ThreadSuspend::SUSPEND_REASON)reason);
 
-    g_pDebugInterface->SuspendForGarbageCollectionCompleted();
+    if (g_pDebugInterface)
+        g_pDebugInterface->SuspendForGarbageCollectionCompleted();
 }
 
 void GCToEEInterface::RestartEE(bool bFinishedGC)
 {
     WRAPPER_NO_CONTRACT;
 
-    g_pDebugInterface->ResumeForGarbageCollectionStarted();
+    if (g_pDebugInterface)
+        g_pDebugInterface->ResumeForGarbageCollectionStarted();
 
     ThreadSuspend::RestartEE(bFinishedGC, TRUE);
 }
@@ -1222,6 +1225,14 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
+#ifdef FEATURE_INTERPRETER
+    if (strcmp(privateKey, "gcConservative") == 0)
+    {
+        *value = true;
+        return true;
+    }
+#endif
+
     // these configuration values are given to us via startup flags.
     if (strcmp(privateKey, "gcServer") == 0)
     {
@@ -1716,18 +1727,8 @@ bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
         analysisTimer.Start();
     }
 
-    // Is the list active?
-    GcNotifications gn(g_pGcNotificationTable);
-    if (gn.IsActive())
-    {
-        GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
-        if (gn.GetNotification(gea) != 0)
-        {
-            return true;
-        }
-    }
-
-    return false;
+    GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
+    return GcNotifications::GetNotification(gea);
 }
 
 void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
@@ -1741,15 +1742,10 @@ void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGene
         elapsed = analysisTimer.Elapsed100nsTicks();
     }
 
-    // Is the list active?
-    GcNotifications gn(g_pGcNotificationTable);
-    if (gn.IsActive())
+    GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
+    if (GcNotifications::GetNotification(gea))
     {
-        GcEvtArgs gea = { GC_MARK_END, { (1<<condemnedGeneration) } };
-        if (gn.GetNotification(gea) != 0)
-        {
-            DACNotify::DoGCNotification(gea);
-        }
+        DACNotify::DoGCNotification(gea);
     }
 
     if (gcGenAnalysisState == GcGenAnalysisState::Enabled)

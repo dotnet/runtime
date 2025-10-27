@@ -98,7 +98,9 @@ DEFINE_DACVAR(PTR_StubLinkStubManager, StubLinkStubManager__g_pManager, StubLink
 DEFINE_DACVAR(PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, JumpStubStubManager::g_pManager)
 DEFINE_DACVAR(PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
 DEFINE_DACVAR(PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
+#ifdef FEATURE_TIERED_COMPILATION
 DEFINE_DACVAR(PTR_CallCountingStubManager, CallCountingStubManager__g_pManager, CallCountingStubManager::g_pManager)
+#endif // FEATURE_TIERED_COMPILATION
 
 DEFINE_DACVAR(PTR_ThreadStore, ThreadStore__s_pThreadStore, ThreadStore::s_pThreadStore)
 
@@ -130,7 +132,8 @@ DEFINE_DACVAR(BOOL, CodeVersionManager__s_HasNonDefaultILVersions, CodeVersionMa
 
 DEFINE_DACVAR(PTR_JITNotification, dac__g_pNotificationTable, ::g_pNotificationTable)
 DEFINE_DACVAR(ULONG32, dac__g_dacNotificationFlags, ::g_dacNotificationFlags)
-DEFINE_DACVAR(PTR_GcNotification, dac__g_pGcNotificationTable, ::g_pGcNotificationTable)
+
+DEFINE_DACVAR(DWORD, dac__g_gcNotificationFlags, g_gcNotificationFlags)
 
 DEFINE_DACVAR(PTR_EEConfig, dac__g_pConfig, ::g_pConfig)
 

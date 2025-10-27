@@ -6,8 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CS8500 // takes the address of, gets the size of, or declares a pointer to a managed type ('T')
-
 namespace System.Threading
 {
     /// <summary>Provides atomic operations for variables that are shared by multiple threads.</summary>

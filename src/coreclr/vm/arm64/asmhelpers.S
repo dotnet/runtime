@@ -579,6 +579,10 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG x9
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+#endif // FEATURE_TIERED_COMPILATION
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+
 NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -595,7 +599,7 @@ LEAF_ENTRY JIT_PatchpointForced, _TEXT
     b C_FUNC(JIT_Patchpoint)
 LEAF_END JIT_PatchpointForced, _TEXT
 
-#endif // FEATURE_TIERED_COMPILATION
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 LEAF_ENTRY JIT_ValidateIndirectCall, _TEXT
     ret lr
@@ -694,12 +698,14 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     mov x21, x0
 #endif
     INLINE_GETTHREAD x20 // thrashes x0 on Apple OSes (and possibly other arg registers on other Unixes)
+    cbz x20, LOCAL_LABEL(NoManagedThread)
 
     ldr x11, [x20, #OFFSETOF__Thread__m_pInterpThreadContext]
     cbnz x11, LOCAL_LABEL(HaveInterpThreadContext)
 
+LOCAL_LABEL(NoManagedThread):
 #ifdef TARGET_APPLE
-    // There Thread::GetInterpThreadContext can destroy all argument registers, so we
+    // GetInterpThreadContextWithPossiblyMissingThread can destroy all argument registers, so we
     // need to save them. For non-Apple, they have been already saved in the PROLOG_WITH_TRANSITION_BLOCK
     // Restore x0 thrashed by the INLINE_GETTHREAD
     mov x0, x21
@@ -708,7 +714,7 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 #endif
 
     mov x0, x20
-    bl C_FUNC(_ZN6Thread22GetInterpThreadContextEv) // Thread::GetInterpThreadContext
+    bl C_FUNC(GetInterpThreadContextWithPossiblyMissingThread)
     mov x11, x0
 
 #ifndef TARGET_APPLE

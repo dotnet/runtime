@@ -72,10 +72,11 @@ if (NOT CLR_CMAKE_HOST_ARCH_WASM)
     set_property(TARGET coreclr APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
     set(LIB_CORDBEE cordbee_wks)
     set(LIB_INTEROP interop)
-    set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
-    set(LIB_CDAC_GC_WKS_DESCRIPTOR gc_wks_descriptor)
-    set(LIB_CDAC_GC_SVR_DESCRIPTOR gc_svr_descriptor)
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
+
+set(LIB_CDAC_CONTRACT_DESCRIPTOR cdac_contract_descriptor)
+set(LIB_CDAC_GC_WKS_DESCRIPTOR gc_wks_descriptor)
+set(LIB_CDAC_GC_SVR_DESCRIPTOR gc_svr_descriptor)
 
 if (CLR_CMAKE_HOST_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
     set(LIB_UNWINDER unwinder_wks)
@@ -115,11 +116,11 @@ if (FEATURE_SVR_GC)
     )
 endif(FEATURE_SVR_GC)
 
-if(CLR_CMAKE_TARGET_ARCH_AMD64)
+if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
     list(APPEND CORECLR_LIBRARIES
         gc_vxsort
     )
-endif(CLR_CMAKE_TARGET_ARCH_AMD64)
+endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
@@ -187,7 +188,7 @@ if (FEATURE_STATICALLY_LINKED)
         set(CLRJIT_STATIC clrjit_static gcinfo)
     endif(FEATURE_JIT)
     if (FEATURE_INTERPRETER)
-        set(CLRINTERPRETER_STATIC clrinterpreter)
+        set(CLRINTERPRETER_STATIC clrinterpreter_objects dn-containers gcinfo)
     endif(FEATURE_INTERPRETER)
 endif(FEATURE_STATICALLY_LINKED)
 
@@ -209,7 +210,7 @@ if(NOT CLR_CMAKE_HOST_ARCH_WASM)
     target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} cee_wks_core cee_wks ${FOUNDATION})
 endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core ${CORECLR_STATIC_CLRJIT_STATIC} ${CEE_WKS_STATIC} ${FOUNDATION})
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core ${CORECLR_STATIC_CLRJIT_STATIC} ${CLRINTERPRETER_STATIC} ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if (CLR_CMAKE_HOST_ANDROID)

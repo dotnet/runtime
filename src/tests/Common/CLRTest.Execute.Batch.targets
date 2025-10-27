@@ -74,6 +74,14 @@ IF NOT "%RunInUnloadableContext%"=="" (
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
+      <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(InterpreterIncompatible)' == 'true'"><![CDATA[
+$(BatchCLRTestEnvironmentCompatibilityCheck)
+IF NOT "%RunInterpreter%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with the interpreter
+  popd
+  Exit /b 0
+)
+      ]]></BatchCLRTestEnvironmentCompatibilityCheck>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(TieringTestIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 IF NOT "%RunTieringTest%"=="" (

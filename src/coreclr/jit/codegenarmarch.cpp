@@ -1668,6 +1668,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     var_types   type      = tree->TypeGet();
     instruction ins       = ins_Load(type);
     regNumber   targetReg = tree->GetRegNum();
+    emitAttr    attr      = emitActualTypeSize(type);
 
     genConsumeAddress(tree->Addr());
 
@@ -1678,7 +1679,15 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
         ins = genGetVolatileLdStIns(ins, targetReg, tree, &emitBarrier);
     }
 
-    GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), targetReg, tree);
+#ifdef TARGET_ARM64
+    // Handle instances with a variable length load
+    if (varTypeUsesMaskReg(type))
+    {
+        attr = EA_SCALABLE;
+    }
+#endif // TARGET_ARM64
+
+    GetEmitter()->emitInsLoadStoreOp(ins, attr, targetReg, tree);
 
     if (emitBarrier)
     {

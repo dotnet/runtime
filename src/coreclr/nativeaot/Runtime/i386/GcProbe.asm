@@ -138,9 +138,6 @@ PopProbeFrame macro
         pop         eax
 endm
 
-RhpThrowHwEx equ @RhpThrowHwEx@8
-extern RhpThrowHwEx : proc
-
 ;;
 ;; Main worker for our GC probes.  Do not call directly!! This assumes that HijackFixupProlog has been done.
 ;; Instead, go through RhpGcProbeHijack* or RhpGcStressHijack*. This waits for the
@@ -161,23 +158,12 @@ RhpWaitForGC  proc
         mov         ecx, esp
         call        RhpWaitForGC2
 
-        mov         edx, [esp + OFFSETOF__PInvokeTransitionFrame__m_Flags]
         ;;
         ;; Restore preserved registers -- they may have been updated by GC
         ;;
         PopProbeFrame
 
-        test        edx, PTFF_THREAD_ABORT
-        jnz         Abort
-
         HijackFixupEpilog
-Abort:
-        mov         ecx, STATUS_NATIVEAOT_THREAD_ABORT
-        pop         edx
-        pop         eax         ;; ecx was pushed here, but we don't care for its value
-        pop         ebp
-        pop         edx         ;; return address as exception RIP
-        jmp         RhpThrowHwEx
 
 RhpWaitForGC  endp
 

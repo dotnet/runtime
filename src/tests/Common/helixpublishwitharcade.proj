@@ -687,7 +687,7 @@
   -->
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
-    <HelixPreCommand Include="taskkill.exe /f /im corerun.exe" />
+    <HelixPreCommand Include="taskkill.exe /f /im corerun.exe 2&gt;nul" />
     <HelixPreCommand Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
     <!-- Set _NT_SYMBOL_PATH so VM _ASSERTE() asserts can find the symbol files when doing stack walks -->
     <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB" />
@@ -722,7 +722,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
-    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
+    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe 2&gt;nul"/>
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(SuperPmiCollect)' == 'true' ">

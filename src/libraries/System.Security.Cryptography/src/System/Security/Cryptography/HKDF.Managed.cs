@@ -5,14 +5,13 @@ namespace System.Security.Cryptography
 {
     public static partial class HKDF
     {
-        private static void Extract(
+        private static void ExtractCore(
             HashAlgorithmName hashAlgorithmName,
-            int hashLength,
             ReadOnlySpan<byte> ikm,
             ReadOnlySpan<byte> salt,
             Span<byte> prk)
         {
-            HKDFManagedImplementation.Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
+            HKDFManagedImplementation.Extract(hashAlgorithmName, ikm, salt, prk);
         }
 
         private static void Expand(

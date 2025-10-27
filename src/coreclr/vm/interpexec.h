@@ -4,7 +4,7 @@
 #ifndef _INTERPEXEC_H_
 #define _INTERPEXEC_H_
 
-#include "../interpreter/interpretershared.h"
+#include <interpretershared.h>
 #include "interpframeallocator.h"
 
 #define INTERP_STACK_SIZE 1024*1024

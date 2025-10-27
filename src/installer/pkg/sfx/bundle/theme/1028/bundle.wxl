@@ -1,74 +1,79 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
-  <String Id="Caption">[WixBundleName] 安裝程式</String>
-  <String Id="Title">[BUNDLEMONIKER]</String>
-  <String Id="Motto">您只需要殼層、文字編輯器和 10 分鐘的時間。
+﻿<WixLocalization Culture="en-us" Language="1033" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="Caption" Value="[WixBundleName] 安裝程式"/>
+  <String Id="Title" Value="[BUNDLEMONIKER]"/>
+  <String Id="Motto" Value="您只需要殼層、文字編輯器和 10 分鐘的時間。
 
-準備好了嗎? 讓我們開始吧!</String>
-  <String Id="ConfirmCancelMessage">確定要取消嗎?</String>
-  <String Id="ExecuteUpgradeRelatedBundleMessage">前一版</String>
-  <String Id="HelpHeader">安裝說明</String>
-  <String Id="HelpText">/install | /repair | /uninstall | /layout [directory] - 在目錄中安裝、修復、解除安裝或
-   建立搭售方案的完整本機複本。預設為安裝。
+準備好了嗎?設定好了嗎?開始吧!"/>
+  <String Id="ConfirmCancelMessage" Value="您確定要取消嗎?"/>
+  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="先前的版本"/>
+  <String Id="HelpHeader" Value="安裝程式說明"/>
+  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [directory] - 安裝、修復、解除安裝或
+   在目錄中建立套件組合的完整本機複本。預設會進行安裝。
 
-/passive | /quiet -  顯示最少 UI 且不含提示，或者不顯示 UI，也
-   不顯示提示。預設會顯示 UI 和所有提示。
+/passive | /quiet - 顯示最基本的 UI 且不出現提示，或是不顯示任何 UI 且
+   不出現提示。預設會顯示 UI 及所有提示。
 
-/norestart   - 隱藏任何重新啟動嘗試。根據預設，UI 會在重新啟動之前提示。
-/log log.txt - 記錄至特定檔案。預設會在 %TEMP% 建立記錄檔。</String>
-  <String Id="HelpCloseButton">關閉(&amp;C)</String>
-  <String Id="InstallAcceptCheckbox">我同意授權條款及條件(&amp;A)</String>
-  <String Id="InstallOptionsButton">選項(&amp;O)</String>
-  <String Id="InstallInstallButton">安裝(&amp;I)</String>
-  <String Id="InstallCloseButton">關閉(&amp;C)</String>
-  <String Id="OptionsHeader">安裝選項</String>
-  <String Id="OptionsLocationLabel">安裝位置: </String>
-  <String Id="OptionsBrowseButton">瀏覽(&amp;B)</String>
-  <String Id="OptionsOkButton">確定(&amp;O)</String>
-  <String Id="OptionsCancelButton">取消(&amp;C)</String>
-  <String Id="ProgressHeader">安裝進度</String>
-  <String Id="ProgressLabel">處理中: </String>
-  <String Id="OverallProgressPackageText">正在初始化...</String>
-  <String Id="ProgressCancelButton">取消(&amp;C)</String>
-  <String Id="ModifyHeader">修改安裝</String>
-  <String Id="ModifyRepairButton">修復(&amp;R)</String>
-  <String Id="ModifyUninstallButton">解除安裝(&amp;U)</String>
-  <String Id="ModifyCloseButton">關閉(&amp;C)</String>
-  <String Id="SuccessRepairHeader">修復已成功完成</String>
-  <String Id="SuccessUninstallHeader">解除安裝已成功完成</String>
-  <String Id="SuccessInstallHeader">安裝成功</String>
-  <String Id="SuccessHeader">設定成功</String>
-  <String Id="SuccessLaunchButton">啟動(&amp;L)</String>
-  <String Id="SuccessRestartText">必須重新啟動電腦，才能使用此軟體。</String>
-  <String Id="SuccessRestartButton">重新啟動(&amp;R)</String>
-  <String Id="SuccessCloseButton">關閉(&amp;C)</String>
-  <String Id="FailureHeader">設定失敗</String>
-  <String Id="FailureInstallHeader">設定失敗</String>
-  <String Id="FailureUninstallHeader">解除安裝失敗</String>
-  <String Id="FailureRepairHeader">修復失敗</String>
-  <String Id="FailureHyperlinkLogText">有一個或多個問題導致安裝程式失敗。請解決問題，然後重試一次安裝。如需詳細資訊，請參閱&lt;a href="#"&gt;記錄檔&lt;/a&gt;。</String>
-  <String Id="FailureRestartText">必須重新啟動電腦，才能完成軟體的復原。</String>
-  <String Id="FailureRestartButton">重新啟動(&amp;R)</String>
-  <String Id="FailureCloseButton">關閉(&amp;C)</String>
-  <String Id="FailureNotSupportedCurrentOperatingSystem">此作業系統不支援 [PRODUCT_NAME]。如需詳細資訊，請參閱 [LINK_PREREQ_PAGE]。</String>
-  <String Id="FailureNotSupportedX86OperatingSystem">x86 作業系統不支援 [PRODUCT_NAME]。請使用對應的 x86 安裝程式來安裝。</String>
-  <String Id="FilesInUseHeader">使用中的檔案</String>
-  <String Id="FilesInUseLabel">以下應用程式正在使用需要進行更新的檔案:</String>
-  <String Id="FilesInUseCloseRadioButton">關閉應用程式並嘗試重新啟動(&amp;A)</String>
-  <String Id="FilesInUseDontCloseRadioButton">不關閉應用程式，需要重新啟動(&amp;D)</String>
-  <String Id="FilesInUseOkButton">確定(&amp;O)</String>
-  <String Id="FilesInUseCancelButton">取消(&amp;C)</String>
-  <String Id="WelcomeHeaderMessage">.NET 執行階段</String>
-  <String Id="WelcomeDescription">.NET Runtime 可用於在您的 Windows 電腦上執行 .NET 應用程式。.NET 為開放原始碼形式，且可跨平台運作，同時受到 Microsoft 支援。希望您會喜歡!</String>
-  <String Id="LearnMoreTitle">深入了解 .NET</String>
-  <String Id="SuccessInstallLocation">下列項目已安裝在 [DOTNETHOME]</String>
-  <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER]</String>
-  <String Id="ResourcesHeader">資源</String>
-  <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;文件&lt;/A&gt;</String>
-  <String Id="ReleaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;版本資訊&lt;/A&gt;</String>
-  <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;教學課程&lt;/A&gt;</String>
-  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET 遙測&lt;/A&gt;</String>
-  <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;隱私權聲明&lt;/A&gt;</String>
-  <String Id="EulaLink">&lt;A HREF="https://aka.ms/dotnet-license-windows"&gt;.NET 的授權資訊&lt;/A&gt;</String>
-  <String Id="LicenseAssent">按一下 [\[]安裝[\[] 即表示您同意下列條款。</String>
+/norestart - 抑制任何重新啟動嘗試。根據預設，UI 在重新啟動前會先提示。
+/log log.txt - 記錄到特定檔案。預設會在 %TEMP% 中建立記錄檔。"/>
+  <String Id="HelpCloseButton" Value="關閉(&amp;C)"/>
+  <String Id="InstallAcceptCheckbox" Value="我同意授權條款和條件(&amp;A)"/>
+  <String Id="InstallOptionsButton" Value="選項(&amp;O)"/>
+  <String Id="InstallInstallButton" Value="安裝(&amp;I)"/>
+  <String Id="InstallCloseButton" Value="關閉(&amp;C)"/>
+  <String Id="OptionsHeader" Value="安裝程式選項"/>
+  <String Id="OptionsLocationLabel" Value="安裝位置:"/>
+  <String Id="OptionsBrowseButton" Value="瀏覽(&amp;B)"/>
+  <String Id="OptionsOkButton" Value="確定(&amp;O)"/>
+  <String Id="OptionsCancelButton" Value="取消(&amp;C)"/>
+  <String Id="ProgressHeader" Value="安裝程式進度"/>
+  <String Id="ProgressLabel" Value="正在處理:"/>
+  <String Id="OverallProgressPackageText" Value="正在初始化..."/>
+  <String Id="ProgressCancelButton" Value="取消(&amp;C)"/>
+  <String Id="ModifyHeader" Value="修改安裝程式"/>
+  <String Id="ModifyRepairButton" Value="修復(&amp;R)"/>
+  <String Id="ModifyText" Value="選擇「修復」以重新安裝產品，或選擇「解除安裝」以移除產品。"/>
+  <String Id="ModifyUninstallButton" Value="解除安裝(&amp;U)"/>
+  <String Id="ModifyCloseButton" Value="關閉(&amp;C)"/>
+  <String Id="SuccessCacheHeader" Value="快取已成功完成"/>
+  <String Id="SuccessRepairHeader" Value="修復已成功完成"/>
+  <String Id="SuccessUninstallHeader" Value="解除安裝已成功完成"/>
+  <String Id="SuccessLayoutHeader" Value="配置已成功完成"/>
+  <String Id="SuccessModifyHeader" Value="修改已成功完成"/>
+  <String Id="SuccessUnsafeUninstallHeader" Value="解除安裝已成功完成"/>
+  <String Id="SuccessInstallHeader" Value="安裝成功"/>
+  <String Id="SuccessHeader" Value="安裝程式成功"/>
+  <String Id="SuccessLaunchButton" Value="啟動(&amp;L)"/>
+  <String Id="SuccessRestartText" Value="必須重新啟動電腦，才能使用此軟體。"/>
+  <String Id="SuccessUninstallRestartText" Value="您必須重新啟動電腦，才能完成軟體移除。"/>
+  <String Id="SuccessRestartButton" Value="重新啟動(&amp;R)"/>
+  <String Id="SuccessCloseButton" Value="關閉(&amp;C)"/>
+  <String Id="FailureHeader" Value="安裝程式失敗"/>
+  <String Id="FailureInstallHeader" Value="安裝程式失敗"/>
+  <String Id="FailureUninstallHeader" Value="解除安裝失敗"/>
+  <String Id="FailureRepairHeader" Value="修復失敗"/>
+  <String Id="FailureHyperlinkLogText" Value="一或多個問題導致設定失敗。請修正問題，然後重試安裝程式。如需詳細資訊，請參考&lt;a href=&quot;#&quot;&gt;記錄檔&lt;/a&gt;。"/>
+  <String Id="FailureRestartText" Value="必須重新啟動電腦，才能完成軟體的復原。"/>
+  <String Id="FailureRestartButton" Value="重新啟動(&amp;R)"/>
+  <String Id="FailureCloseButton" Value="關閉(&amp;C)"/>
+  <String Id="FailureNotSupportedCurrentOperatingSystem" Value="此作業系統不支援 [PRODUCT_NAME]。如需詳細資訊，請參閱 [LINK_PREREQ_PAGE]。"/>
+  <String Id="FailureNotSupportedX86OperatingSystem" Value="x86 作業系統不支援 [PRODUCT_NAME]。請使用對應的 x86 安裝程式來安裝。"/>
+  <String Id="FilesInUseHeader" Value="使用中的檔案"/>
+  <String Id="FilesInUseLabel" Value="以下應用程式正在使用需要進行更新的檔案:"/>
+  <String Id="FilesInUseCloseRadioButton" Value="請關閉應用程式然後嘗試重新啟動。(&amp;A)"/>
+  <String Id="FilesInUseDontCloseRadioButton" Value="不要關閉應用程式(&amp;D)。需要重新啟動。"/>
+  <String Id="FilesInUseOkButton" Value="確定(&amp;O)"/>
+  <String Id="FilesInUseCancelButton" Value="取消(&amp;C)"/>
+  <String Id="WelcomeHeaderMessage" Value=".NET 執行階段"/>
+  <String Id="WelcomeDescription" Value=".NET Runtime 可用於在您的 Windows 電腦上執行 .NET 應用程式。.NET 為開放原始碼形式，且可跨平台運作，同時受到 Microsoft 支援。希望您會喜歡!"/>
+  <String Id="LearnMoreTitle" Value="深入了解 .NET"/>
+  <String Id="SuccessInstallLocation" Value="下列項目已安裝在 [DOTNETHOME]"/>
+  <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
+  <String Id="ResourcesHeader" Value="資源"/>
+  <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;文件&lt;/A&gt;"/>
+  <String Id="ReleaseNotesLink" Value="&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;版本資訊&lt;/A&gt;"/>
+  <String Id="TutorialLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;教學課程&lt;/A&gt;"/>
+  <String Id="TelemetryLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;.NET 遙測&lt;/A&gt;"/>
+  <String Id="PrivacyStatementLink" Value="&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;隱私權聲明&lt;/A&gt;"/>
+  <String Id="EulaLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-license-windows&quot;&gt;.NET 授權資訊&lt;/A&gt;"/>
+  <String Id="LicenseAssent" Value="按一下 [\[]安裝[\[] 即表示您同意下列條款。"/>
 </WixLocalization>

@@ -51,7 +51,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_TARGET_WASI)
         set(HOST_WASI 1)
-        add_compile_options(-Wno-unused-variable)
         add_compile_options(-Wno-unused-parameter)
         add_compile_options(-Wno-gnu-statement-expression)
         add_compile_options(-DHOST_WASI)
@@ -59,9 +58,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-D_WASI_EMULATED_SIGNAL)
         add_compile_options(-D_WASI_EMULATED_MMAN)
         add_compile_options(-D_WASI_EMULATED_PTHREAD)
-        # keep in sync with src\mono\wasi\build\WasiApp.targets
-        # keep in sync with src\mono\wasi\wasi.proj
-        add_link_options(-Wl,-z,stack-size=1048576,--initial-memory=5242880,--max-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman,-lwasi-emulated-pthread)
     endif ()
 
     if (CLR_CMAKE_TARGET_ANDROID)
@@ -90,6 +86,8 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
                 # -O2 optimization generates faster/smaller code on Android
                 # TODO: This duplicates the settings in eng/native/configureoptimization.cmake, we should unify it
                 add_compile_options (-O2)
+            elseif (CLR_CMAKE_TARGET_BROWSER)
+                add_compile_options (-Oz)
             else()
                 add_compile_options (-O3)
             endif ()
@@ -111,6 +109,12 @@ else ()
 endif ()
 
 add_subdirectory(System.IO.Compression.Native)
+
+# Only when Browser for CoreCLR
+if (CLR_CMAKE_TARGET_BROWSER AND BUILD_LIBS_NATIVE_BROWSER)
+    add_subdirectory(System.Native.Browser)
+    add_subdirectory(System.Runtime.InteropServices.JavaScript.Native)
+endif ()
 
 if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     include(configure.cmake)

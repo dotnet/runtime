@@ -3696,9 +3696,14 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
         GenTreeOpCC* opCC = tree->AsOpCC();
         opCC->gtCondition = GenCondition::Reverse(opCC->gtCondition);
     }
+    else if (tree->IsIntegralConst())
+    {
+        GenTreeIntConCommon* con = tree->AsIntConCommon();
+        con->SetIntegralValue(con->IsIntegralConst(0) ? 1 : 0);
+    }
     else
     {
-        tree = gtNewOperNode(GT_NOT, TYP_INT, tree);
+        tree = gtNewOperNode(GT_EQ, TYP_INT, tree, gtNewZeroConNode(TYP_INT));
     }
 
     return tree;
@@ -5462,11 +5467,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Log10:
 #if defined(TARGET_RISCV64)
                         case NI_System_Math_Max:
-                        case NI_System_Math_MaxNumber:
                         case NI_System_Math_MaxUnsigned:
+                        case NI_System_Math_MaxNative:
                         case NI_System_Math_Min:
-                        case NI_System_Math_MinNumber:
                         case NI_System_Math_MinUnsigned:
+                        case NI_System_Math_MinNative:
 #endif // TARGET_RISCV64
                         case NI_System_Math_Pow:
                         case NI_System_Math_Round:
@@ -5817,11 +5822,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
 #if defined(TARGET_RISCV64)
                     case NI_System_Math_Max:
-                    case NI_System_Math_MaxNumber:
                     case NI_System_Math_MaxUnsigned:
+                    case NI_System_Math_MaxNative:
                     case NI_System_Math_Min:
-                    case NI_System_Math_MinNumber:
                     case NI_System_Math_MinUnsigned:
+                    case NI_System_Math_MinNative:
                     {
                         level++;
                         break;
@@ -6484,6 +6489,76 @@ bool Compiler::gtTreeHasLocalRead(GenTree* tree, unsigned lclNum)
                 if (m_lclDsc->lvPromoted && (node->AsLclVarCommon()->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
                     (node->AsLclVarCommon()->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
                 {
+                    return WALK_ABORT;
+                }
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(this, lclNum);
+    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+}
+
+//------------------------------------------------------------------------
+// gtTreeHasLocalStore: Check if a tree has a store that affects the specified local,
+// taking promotion into account.
+//
+// Parameters:
+//   tree   - The tree to check.
+//   lclNum - The local to look for.
+//
+// Returns:
+//   True if there is any GT_STORE_LCL_VAR or GT_STORE_LCL_FLD that affects "lclNum".
+//
+bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
+{
+    class Visitor final : public GenTreeVisitor<Visitor>
+    {
+    public:
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        unsigned   m_lclNum;
+        LclVarDsc* m_lclDsc;
+
+        Visitor(Compiler* compiler, unsigned lclNum)
+            : GenTreeVisitor(compiler)
+            , m_lclNum(lclNum)
+        {
+            m_lclDsc = compiler->lvaGetDesc(lclNum);
+            assert(!m_lclDsc->IsAddressExposed());
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & GTF_ASG) == 0)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (node->OperIsLocalStore())
+            {
+                if (node->AsLclVarCommon()->GetLclNum() == m_lclNum)
+                {
+                    return WALK_ABORT;
+                }
+
+                if (m_lclDsc->lvIsStructField && (node->AsLclVarCommon()->GetLclNum() == m_lclDsc->lvParentLcl))
+                {
+                    // Store to parent local also affects the field
+                    return WALK_ABORT;
+                }
+
+                if (m_lclDsc->lvPromoted && (node->AsLclVarCommon()->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
+                    (node->AsLclVarCommon()->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
+                {
+                    // Store to field also affects the parent
                     return WALK_ABORT;
                 }
             }
@@ -12747,8 +12822,8 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 case NI_System_Math_Max:
                     printf(" max");
                     break;
-                case NI_System_Math_MaxNumber:
-                    printf(" maxNumber");
+                case NI_System_Math_MaxNative:
+                    printf(" maxNative");
                     break;
                 case NI_System_Math_MaxUnsigned:
                     printf(" maxUnsigned");
@@ -12756,8 +12831,8 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 case NI_System_Math_Min:
                     printf(" min");
                     break;
-                case NI_System_Math_MinNumber:
-                    printf(" minNumber");
+                case NI_System_Math_MinNative:
+                    printf(" minNative");
                     break;
                 case NI_System_Math_MinUnsigned:
                     printf(" minUnsigned");
@@ -17162,6 +17237,18 @@ bool Compiler::gtSplitTree(BasicBlock* block,
             }
 #endif
 
+            if ((*use)->OperIs(GT_COMMA))
+            {
+                // We might as well get rid of the comma while we're at it. This avoids unnecessarily nested trees and
+                // also handles splitting some irregular nodes when nested under commas
+                // (like COMMA(op1, FIELD_LIST(...))).
+                SplitOutUse(UseInfo{&(*use)->AsOp()->gtOp1, *use}, false);
+                *use = (*use)->gtGetOp2();
+                SplitOutUse(useInf, userIsReturned);
+                MadeChanges = true;
+                return;
+            }
+
             if ((*use)->OperIs(GT_FIELD_LIST, GT_INIT_VAL))
             {
                 for (GenTree** operandUse : (*use)->UseEdges())
@@ -20508,7 +20595,10 @@ bool GenTree::isEmbeddedMaskingCompatible() const
 // Return Value:
 //   true if the node lowering instruction has a EVEX embedded masking support
 //
-bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, CorInfoType& tgtSimdBaseJitType) const
+bool GenTree::isEmbeddedMaskingCompatible(Compiler*    comp,
+                                          unsigned     tgtMaskSize,
+                                          CorInfoType& tgtSimdBaseJitType,
+                                          size_t*      broadcastOpIndex /* = nullptr */) const
 {
     if (!isEmbeddedMaskingCompatible())
     {
@@ -20578,8 +20668,16 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
 
                 if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins, node->Op(2)))
                 {
-                    // We cannot change the base type if we've already contained a broadcast
+                    // If we haven't contained a broadcast, we can change the base type freely
                     supportsMaskBaseSize2Or4 = true;
+                }
+                else if (maskBaseSize == 4)
+                {
+                    assert(broadcastOpIndex != nullptr);
+
+                    // If the contained broadcast is 4 bytes, we can change it to 8 bytes
+                    supportsMaskBaseSize2Or4 = true;
+                    *broadcastOpIndex        = 2;
                 }
                 break;
             }
@@ -20592,8 +20690,16 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, 
 
                 if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins, node->Op(3)))
                 {
-                    // We cannot change the base type if we've already contained a broadcast
+                    // If we haven't contained a broadcast, we can change the base type freely
                     supportsMaskBaseSize2Or4 = true;
+                }
+                else if (maskBaseSize == 4)
+                {
+                    assert(broadcastOpIndex != nullptr);
+
+                    // If the contained broadcast is 4 bytes, we can change it to 8 bytes
+                    supportsMaskBaseSize2Or4 = true;
+                    *broadcastOpIndex        = 3;
                 }
                 break;
             }
@@ -21172,17 +21278,103 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         case GT_DIV:
         {
-            if (simdBaseType == TYP_INT)
+            if (varTypeIsIntegral(simdBaseType))
             {
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-                assert(simdSize == 16 || simdSize == 32);
+                assert(!varTypeIsLong(simdBaseType));
+                if ((varTypeIsSmall(simdBaseType) && simdSize > 16) ||
+                    (varTypeIsInt(simdBaseType) && simdSize == 32 &&
+                     !compOpportunisticallyDependsOn(InstructionSet_AVX512)) ||
+                    simdSize == 64)
+                {
+                    var_types divType  = simdSize == 64 ? TYP_SIMD32 : TYP_SIMD16;
+                    GenTree*  op1Dup   = fgMakeMultiUse(&op1);
+                    GenTree*  op2Dup   = fgMakeMultiUse(&op2);
+                    GenTree*  op1Lower = gtNewSimdGetLowerNode(divType, op1, simdBaseJitType, simdSize);
+                    GenTree*  op2Lower = gtNewSimdGetLowerNode(divType, op2, simdBaseJitType, simdSize);
+                    GenTree*  divLower =
+                        gtNewSimdBinOpNode(GT_DIV, divType, op1Lower, op2Lower, simdBaseJitType, simdSize / 2);
+                    GenTree* op1Upper = gtNewSimdGetUpperNode(divType, op1Dup, simdBaseJitType, simdSize);
+                    GenTree* op2Upper = gtNewSimdGetUpperNode(divType, op2Dup, simdBaseJitType, simdSize);
+                    GenTree* divUpper =
+                        gtNewSimdBinOpNode(GT_DIV, divType, op1Upper, op2Upper, simdBaseJitType, simdSize / 2);
+                    GenTree* divResult = gtNewSimdWithUpperNode(type, divLower, divUpper, simdBaseJitType, simdSize);
+                    return divResult;
+                }
 
-                NamedIntrinsic divIntrinsic     = simdSize == 16 ? NI_Vector128_op_Division : NI_Vector256_op_Division;
-                unsigned int   divideOpSimdSize = simdSize * 2;
+                if (varTypeIsSmall(simdBaseType))
+                {
+                    assert(simdSize == 16);
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                    {
+                        CorInfoType cvtBaseType =
+                            varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
+                        NamedIntrinsic widenCvtIntrinsic =
+                            varTypeIsByte(simdBaseType)
+                                ? (varTypeIsSigned(simdBaseType) ? NI_AVX512_ConvertToVector512Int32
+                                                                 : NI_AVX512_ConvertToVector512UInt32)
+                                : NI_AVX2_ConvertToVector256Int32;
+                        NamedIntrinsic narrowCvtIntrinsic =
+                            varTypeIsByte(simdBaseType)
+                                ? (varTypeIsSigned(simdBaseType) ? NI_AVX512_ConvertToVector128SByte
+                                                                 : NI_AVX512_ConvertToVector128Byte)
+                                : (varTypeIsSigned(simdBaseType) ? NI_AVX512_ConvertToVector128Int16
+                                                                 : NI_AVX512_ConvertToVector128UInt16);
+                        var_types cvtType = varTypeIsByte(simdBaseType) ? TYP_SIMD64 : TYP_SIMD32;
+                        int       cvtSize = varTypeIsByte(simdBaseType) ? 64 : 32;
 
-                GenTree* divOp =
-                    gtNewSimdHWIntrinsicNode(op1->TypeGet(), op1, op2, divIntrinsic, simdBaseJitType, divideOpSimdSize);
-                return divOp;
+                        op1 = gtNewSimdHWIntrinsicNode(cvtType, op1, widenCvtIntrinsic, simdBaseJitType, cvtSize);
+                        op2 = gtNewSimdHWIntrinsicNode(cvtType, op2, widenCvtIntrinsic, simdBaseJitType, cvtSize);
+                        GenTree* div = gtNewSimdBinOpNode(GT_DIV, cvtType, op1, op2, cvtBaseType, cvtSize);
+                        return gtNewSimdHWIntrinsicNode(type, div, narrowCvtIntrinsic, cvtBaseType, cvtSize);
+                    }
+                    CorInfoType signedType    = varTypeIsShort(simdBaseType) ? CORINFO_TYPE_INT : CORINFO_TYPE_SHORT;
+                    CorInfoType unsignedType  = varTypeIsShort(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_USHORT;
+                    CorInfoType cvtType       = varTypeIsSigned(simdBaseType) ? signedType : unsignedType;
+                    GenTree*    op1Dup        = fgMakeMultiUse(&op1);
+                    GenTree*    op2Dup        = fgMakeMultiUse(&op2);
+                    GenTree*    op1LowerWiden = gtNewSimdWidenLowerNode(type, op1, simdBaseJitType, simdSize);
+                    GenTree*    op2LowerWiden = gtNewSimdWidenLowerNode(type, op2, simdBaseJitType, simdSize);
+                    GenTree*    divLower =
+                        gtNewSimdBinOpNode(GT_DIV, type, op1LowerWiden, op2LowerWiden, cvtType, simdSize);
+                    GenTree* op1UpperWiden = gtNewSimdWidenUpperNode(type, op1Dup, simdBaseJitType, simdSize);
+                    GenTree* op2UpperWiden = gtNewSimdWidenUpperNode(type, op2Dup, simdBaseJitType, simdSize);
+                    GenTree* divUpper =
+                        gtNewSimdBinOpNode(GT_DIV, type, op1UpperWiden, op2UpperWiden, cvtType, simdSize);
+                    return gtNewSimdNarrowNode(type, divLower, divUpper, simdBaseJitType, simdSize);
+                }
+
+                assert(varTypeIsInt(simdBaseType));
+
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512) && simdSize == 32)
+                {
+                    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Vector256_op_Division, simdBaseJitType,
+                                                    simdSize);
+                }
+
+                assert(simdSize == 16);
+
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Vector128_op_Division, simdBaseJitType,
+                                                    simdSize);
+                }
+
+                GenTree* op1Dup  = fgMakeMultiUse(&op1);
+                GenTree* op2Dup  = fgMakeMultiUse(&op2);
+                GenTree* op1Dup2 = fgMakeMultiUse(&op1Dup);
+                GenTree* op2Dup2 = fgMakeMultiUse(&op2Dup);
+                GenTree* op1Hi =
+                    gtNewSimdHWIntrinsicNode(type, op1, op1Dup, NI_X86Base_MoveHighToLow, CORINFO_TYPE_FLOAT, simdSize);
+                GenTree* op2Hi =
+                    gtNewSimdHWIntrinsicNode(type, op2, op2Dup, NI_X86Base_MoveHighToLow, CORINFO_TYPE_FLOAT, simdSize);
+                GenTree* divLo = gtNewSimdHWIntrinsicNode(type, op1Dup2, op2Dup2, NI_Vector128_op_Division,
+                                                          simdBaseJitType, simdSize);
+                GenTree* divHi =
+                    gtNewSimdHWIntrinsicNode(type, op1Hi, op2Hi, NI_Vector128_op_Division, simdBaseJitType, simdSize);
+                GenTree* div = gtNewSimdHWIntrinsicNode(type, divHi, divLo, NI_X86Base_MoveLowToHigh,
+                                                        CORINFO_TYPE_FLOAT, simdSize);
+                return gtNewSimdHWIntrinsicNode(type, div, gtNewIconNode(0x4E), NI_X86Base_Shuffle, simdBaseJitType,
+                                                simdSize);
             }
             unreached();
         }
@@ -29645,7 +29837,7 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
         case GT_DIV:
         {
 #if defined(TARGET_XARCH)
-            assert(varTypeIsFloating(simdBaseType) || varTypeIsInt(simdBaseType));
+            assert(varTypeIsFloating(simdBaseType) || !varTypeIsLong(simdBaseType));
 #else
             assert(varTypeIsFloating(simdBaseType));
 #endif

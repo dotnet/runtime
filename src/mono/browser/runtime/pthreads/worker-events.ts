@@ -23,22 +23,18 @@ export interface WorkerThreadEvent extends Event {
 
 export interface WorkerThreadEventTarget extends EventTarget {
     dispatchEvent(event: WorkerThreadEvent): boolean;
-
     addEventListener<K extends keyof WorkerThreadEventMap>(type: K, listener: ((this: WorkerThreadEventTarget, ev: WorkerThreadEventMap[K]) => any) | null, options?: boolean | AddEventListenerOptions): void;
     addEventListener(type: string, callback: EventListenerOrEventListenerObject | null, options?: boolean | AddEventListenerOptions): void;
 }
 
-let WorkerThreadEventClassConstructor: new (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => WorkerThreadEvent;
-export const makeWorkerThreadEvent: (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => WorkerThreadEvent = !WasmEnableThreads
-    ? (() => {
+export function makeWorkerThreadEvent (type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) : WorkerThreadEvent {
+    if (!WasmEnableThreads) {
         throw new Error("threads support disabled");
-    })
-    : ((type: keyof WorkerThreadEventMap, pthread_self: PThreadSelf) => {
-        if (!WorkerThreadEventClassConstructor) WorkerThreadEventClassConstructor = class WorkerThreadEventImpl extends Event implements WorkerThreadEvent {
-            constructor (type: keyof WorkerThreadEventMap, readonly pthread_self: PThreadSelf) {
-                super(type);
-            }
-        };
-        return new WorkerThreadEventClassConstructor(type, pthread_self);
-    });
-
+    }
+    class WorkerThreadEventImpl extends globalThis.Event implements WorkerThreadEvent {
+        constructor (type: keyof WorkerThreadEventMap, readonly pthread_self: PThreadSelf) {
+            super(type);
+        }
+    }
+    return new WorkerThreadEventImpl(type, pthread_self);
+}

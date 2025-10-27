@@ -1353,7 +1353,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
     // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
     // plus one slot for the target pointer and reallocated to the real size at the end.
     size_t tempStorageSize = ComputeTempStorageSize(sig);
-    PCODE *pRoutines = (PCODE*)alloca(ComputeTempStorageSize(sig));
+    PCODE *pRoutines = (PCODE*)alloca(tempStorageSize);
     memset(pRoutines, 0, tempStorageSize);
 
     m_interpreterToNative = true; // We always generate the interpreter to native call stub here

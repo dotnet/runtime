@@ -265,9 +265,6 @@ namespace System.Text.Json
 #else
             try
             {
-#if NET
-                s_utf8Encoding.GetCharCount(bytes);
-#else
                 if (!bytes.IsEmpty)
                 {
                     unsafe
@@ -278,7 +275,7 @@ namespace System.Text.Json
                         }
                     }
                 }
-#endif
+
                 return true;
             }
             catch (DecoderFallbackException)

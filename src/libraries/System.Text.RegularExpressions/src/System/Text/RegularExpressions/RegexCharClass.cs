@@ -1104,24 +1104,6 @@ namespace System.Text.RegularExpressions
             return false;
         }
 
-        /// <summary>Gets whether the specified span contains only ASCII.</summary>
-        public static bool IsAscii(ReadOnlySpan<char> s)
-        {
-#if NET
-            return Ascii.IsValid(s);
-#else
-            foreach (char c in s)
-            {
-                if (c >= 128)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-#endif
-        }
-
         /// <summary>Gets whether the set description string is for two ASCII letters that case to each other under OrdinalIgnoreCase rules.</summary>
         public static bool SetContainsAsciiOrdinalIgnoreCaseCharacter(string set, Span<char> twoChars)
         {
@@ -2001,7 +1983,9 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a set string.
         /// </summary>
-        public static string DescribeSet(string set)
+        /// <param name="set">The set string to describe.</param>
+        /// <param name="forceBrackets">Whether to force brackets around the description even for single characters.</param>
+        public static string DescribeSet(string set, bool forceBrackets = false)
         {
             int setLength = set[SetLengthIndex];
             int categoryLength = set[CategoryLengthIndex];
@@ -2010,7 +1994,8 @@ namespace System.Text.RegularExpressions
             Span<char> scratch = stackalloc char[32];
 
             // Special-case set of a single character to output that character without set square brackets.
-            if (!negated && // no negation
+            if (!forceBrackets && // brackets not forced
+                !negated && // no negation
                 categoryLength == 0 && // no categories
                 endPosition >= set.Length && // no subtraction
                 setLength == 2 && // don't bother handling the case of the single character being 0xFFFF, in which case setLength would be 1
@@ -2136,7 +2121,7 @@ namespace System.Text.RegularExpressions
 
             if (set.Length > endPosition)
             {
-                desc.Append('-').Append(DescribeSet(set.Substring(endPosition)));
+                desc.Append('-').Append(DescribeSet(set.Substring(endPosition), forceBrackets: true));
             }
 
             return desc.Append(']').ToString();

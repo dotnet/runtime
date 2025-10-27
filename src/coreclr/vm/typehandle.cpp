@@ -256,10 +256,7 @@ PTR_Module TypeHandle::GetLoaderModule() const
 
 PTR_LoaderAllocator TypeHandle::GetLoaderAllocator() const
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC;
+    LIMITED_METHOD_DAC_CONTRACT;
 
     if (IsTypeDesc())
     {
@@ -268,6 +265,20 @@ PTR_LoaderAllocator TypeHandle::GetLoaderAllocator() const
     else
     {
         return AsMethodTable()->GetLoaderAllocator();
+    }
+}
+
+bool TypeHandle::IsCollectible() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (IsTypeDesc())
+    {
+        return AsTypeDesc()->IsCollectible();
+    }
+    else
+    {
+        return AsMethodTable()->Collectible();
     }
 }
 

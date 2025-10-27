@@ -246,6 +246,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task NoCallback_RevokedCertificate_RevocationChecking_Fails()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
+            handler.CheckCertificateRevocationList = true;
             using (HttpClient client = CreateHttpClient(handler))
             {
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Configuration.Http.RevokedCertRemoteServer));
