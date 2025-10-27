@@ -13,6 +13,7 @@ namespace System
         public static int UnescapePercentEncodedUTF8Sequence(ReadOnlySpan<char> input, ref ValueStringBuilder dest, bool isQuery, bool iriParsing)
         {
             int length = input.Length;
+
             // The following assertions rely on the input not mutating mid-operation, as is the case currently since callers are working with strings
             // If we start accepting input such as spans, this method must be audited to ensure no buffer overruns/infinite loops could occur
 
@@ -87,8 +88,6 @@ namespace System
             Debug.Assert(bytesLeftInBuffer < 4 || (fourByteBuffer & (BitConverter.IsLittleEndian ? 0x80000000 : 0x00000080)) != 0);
 
             uint temp = fourByteBuffer; // make a copy so that the *copy* (not the original) is marked address-taken
-
-
 
             if (Rune.DecodeFromUtf8(MemoryMarshal.AsBytes(new ReadOnlySpan<uint>(ref temp))[..bytesLeftInBuffer], out Rune rune, out bytesConsumed) == OperationStatus.Done)
             {
