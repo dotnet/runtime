@@ -374,7 +374,7 @@ VOID StubLinkerCPU::X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg)
         Emit8(REX_PREFIX_BASE | rex);
 
     Emit16(0x280F);
-    Emit8(static_cast<UINT8>(0300 | (destXmmreg << 3) | srcXmmReg));    
+    Emit8(static_cast<UINT8>(0300 | (destXmmreg << 3) | srcXmmReg));
 }
 
 //---------------------------------------------------------------
@@ -846,7 +846,7 @@ static const X86Reg c_argRegs[] = {
 };
 #endif
 
-#ifdef TARGET_X86
+#if !defined(FEATURE_SHUFFLE_THUNKS)
 // This method unboxes the THIS pointer and then calls pRealMD
 // If it's shared code for a method in a generic value class, then also extract the vtable pointer
 // and pass it as an extra argument.  Thus this stub generator really covers both
@@ -877,7 +877,7 @@ VOID StubLinkerCPU::EmitUnboxMethodStub(MethodDesc* pUnboxMD)
     X86EmitAddReg(THIS_kREG, sizeof(void*));
     EmitTailJumpToMethod(pUnboxMD);
 }
-#endif //TARGET_X86
+#endif // !defined(FEATURE_SHUFFLE_THUNKS)
 
 #if defined(FEATURE_SHARE_GENERIC_CODE) && defined(TARGET_AMD64)
 VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg)

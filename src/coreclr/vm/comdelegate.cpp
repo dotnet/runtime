@@ -31,7 +31,7 @@
 
 #ifndef DACCESS_COMPILE
 
-#if defined(TARGET_X86)
+#if !defined(FEATURE_SHUFFLE_THUNKS)
 
 // Return an encoded shuffle entry describing a general register or stack offset that needs to be shuffled.
 static UINT16 ShuffleOfs(INT ofs, UINT stackSizeDelta = 0)
@@ -56,9 +56,7 @@ static UINT16 ShuffleOfs(INT ofs, UINT stackSizeDelta = 0)
 
     return static_cast<UINT16>(ofs);
 }
-#endif
-
-#ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
+#else // !defined(FEATURE_SHUFFLE_THUNKS)
 
 // Iterator for extracting shuffle entries for argument desribed by an ArgLocDesc.
 // Used when calculating shuffle array entries in GenerateShuffleArray below.
@@ -633,18 +631,18 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 
     return TRUE;
 }
-#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS
+#endif // !defined(FEATURE_SHUFFLE_THUNKS)
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
+#ifdef FEATURE_SHUFFLE_THUNKS
     // Portable default implementation
     if (!GenerateShuffleArrayPortable(pInvoke, pTargetMeth, pShuffleEntryArray, ShuffleComputationType::DelegateShuffleThunk))
         return FALSE;
-#elif defined(TARGET_X86)
+#elif defined(TARGET_X86) || defined(TARGET_ARM64) || defined(TARGET_AMD64)
     ShuffleEntry entry;
     ZeroMemory(&entry, sizeof(entry));
 

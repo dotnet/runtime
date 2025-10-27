@@ -197,9 +197,9 @@ class StubLinkerCPU : public StubLinker
 #endif
         }
 
-#ifdef TARGET_X86
+#if !defined(FEATURE_SHUFFLE_THUNKS)
         VOID EmitUnboxMethodStub(MethodDesc* pRealMD);
-#endif // TARGET_X86
+#endif // !defined(FEATURE_SHUFFLE_THUNKS)
         VOID EmitTailJumpToMethod(MethodDesc *pMD);
 #ifdef TARGET_AMD64
         VOID EmitLoadMethodAddressIntoAX(MethodDesc *pMD);

@@ -1382,5 +1382,38 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 #endif // FEATURE_STUBPRECODE_DYNAMIC_HELPERS
 #endif // FEATURE_READYTORUN
 
+#if !defined(FEATURE_SHUFFLE_THUNKS)
+//
+// This method unboxes the THIS pointer and then calls pRealMD
+// If it's shared code for a method in a generic value class, then also extract the vtable pointer
+// and pass it as an extra argument.  Thus this stub generator really covers both
+//   - Unboxing, non-instantiating stubs
+//   - Unboxing, method-table-instantiating stubs
+VOID StubLinkerCPU::EmitUnboxMethodStub(MethodDesc* pUnboxMD)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(!pUnboxMD->IsStatic());
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
+    _ASSERTE(!pUnboxMD->RequiresInstMethodTableArg());
+#else
+    if (pUnboxMD->RequiresInstMethodTableArg())
+    {
+        EmitComputedInstantiatingMethodStub(pUnboxMD, NULL, NULL);
+        return;
+    }
+#endif
+
+    //
+    // unboxing a value class simply means adding sizeof(void*) to the THIS pointer
+    //
+    EmitAddImm(IntReg(0), IntReg(0), sizeof(void*));
+    EmitCallManagedMethod(pUnboxMD, TRUE);
+}
+#endif // !defined(FEATURE_SHUFFLE_THUNKS)
 
 #endif // #ifndef DACCESS_COMPILE
