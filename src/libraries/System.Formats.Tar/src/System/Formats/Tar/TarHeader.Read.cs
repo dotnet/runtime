@@ -813,7 +813,7 @@ namespace System.Formats.Tar
         {
             if (buffer.Length < 2)
             {
-                throw new InvalidDataException("The file is not a valid TAR archive format.");
+                throw new InvalidDataException(SR.TarInvalidArchiveFormat);
             }
 
             byte firstByte = buffer[0];
@@ -823,7 +823,7 @@ namespace System.Formats.Tar
                     if (buffer.Length >= 4 &&
                         buffer[1] == 0xB5 && buffer[2] == 0x2F && buffer[3] == 0xFD)
                     {
-                        throw new InvalidDataException("The file appears to be a Zstandard archive. TAR format expected.");
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "Zstandard"));
                     }
                     break;
 
@@ -832,28 +832,28 @@ namespace System.Formats.Tar
                         buffer[1] == 0x7A && buffer[2] == 0xBC &&
                         buffer[3] == 0xAF && buffer[4] == 0x27 && buffer[5] == 0x1C)
                     {
-                        throw new InvalidDataException("The file appears to be a 7-Zip archive. TAR format expected.");
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "7-Zip"));
                     }
                     break;
 
                 case 0x50: // ZIP files start with "PK"
                     if (buffer.Length >= 2 && buffer[1] == 0x4B)
                     {
-                        throw new InvalidDataException("The file appears to be a ZIP archive. TAR format expected.");
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "ZIP"));
                     }
                     break;
 
                 case 0x1F: // GZIP
                     if (buffer.Length >= 2 && buffer[1] == 0x8B)
                     {
-                        throw new InvalidDataException("The file appears to be a GZIP archive. TAR format expected.");
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "GZIP"));
                     }
                     break;
 
                 case 0x42: // BZIP2 - "BZh"
                     if (buffer.Length >= 3 && buffer[1] == 0x5A && buffer[2] == 0x68)
                     {
-                        throw new InvalidDataException("The file appears to be a BZIP2 archive. TAR format expected.");
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "BZIP2"));
                     }
                     break;
 
@@ -862,7 +862,7 @@ namespace System.Formats.Tar
                         buffer[1] == 0x37 && buffer[2] == 0x7A &&
                         buffer[3] == 0x58 && buffer[4] == 0x5A && buffer[5] == 0x00)
                     {
-                        throw new InvalidDataException("The file appears to be an XZ archive. TAR format expected.");
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "XZ"));
                     }
                     break;
 
@@ -874,14 +874,14 @@ namespace System.Formats.Tar
                             secondByte == 0xDA || secondByte == 0x20 || secondByte == 0x7D ||
                             secondByte == 0xBB || secondByte == 0xF9)
                         {
-                            throw new InvalidDataException("The file appears to be a ZLIB archive. TAR format expected.");
+                            throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "ZLIB"));
                         }
                     }
                     break;
             }
 
             // If we can't identify the specific format, provide a generic message
-            throw new InvalidDataException("The file is not a valid TAR archive format.");
+            throw new InvalidDataException(SR.TarInvalidArchiveFormat);
         }
     }
 }
