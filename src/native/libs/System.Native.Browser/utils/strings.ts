@@ -41,8 +41,8 @@ export function stringToUTF8Ptr(str: string): CharPtr {
     const size = Module.lengthBytesUTF8(str) + 1;
     const ptr = Module._malloc(size) as any;
     Module.stringToUTF8Array(str, Module.HEAPU8, ptr, size);
-    Module.HEAPU8[ptr + size - 1] = 0;
     return ptr;
+}
 }
 
 export function utf16ToString(startPtr: number, endPtr: number): string {
