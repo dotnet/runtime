@@ -54,22 +54,15 @@ namespace System.IO
         {
             if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(second)) return 0;
 
+            int i = first.AsSpan().CommonPrefixLength(second);
             if (!ignoreCase)
             {
-                // We can use the existing accelerated API for case-sensitive comparison
-                return first.AsSpan().CommonPrefixLength(second);
+                return i;
             }
 
-            for (int i = 0; i < first.Length; i++)
+            for (; i < first.Length; i++)
             {
-                // Reached the end of the second string
-                if (i >= second.Length)
-                {
-                    return i;
-                }
-
-                // Check for character mismatch. first[i] != second[i] is a fast path for the common case.
-                if (first[i] != second[i] &&
+                if (i >= second.Length ||
                     char.ToUpperInvariant(first[i]) != char.ToUpperInvariant(second[i]))
                 {
                     return i;
