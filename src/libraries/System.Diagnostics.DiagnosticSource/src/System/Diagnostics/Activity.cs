@@ -54,6 +54,8 @@ namespace System.Diagnostics
     /// but the exception is suppressed, and the operation does something reasonable (typically
     /// doing nothing).
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplayString,nq}")]
+    [DebuggerTypeProxy(typeof(ActivityDebuggerProxy))]
     public partial class Activity : IDisposable
     {
 #pragma warning disable CA1825 // Array.Empty<T>() doesn't exist in all configurations
@@ -1839,6 +1841,15 @@ namespace System.Diagnostics
             }
         }
 
+        private string DebuggerDisplayString
+        {
+            get
+            {
+                string? id = Id;
+                return $"OperationName = {OperationName}, Id = {(id is not null ? id : "(null)")}";
+            }
+        }
+
         [Flags]
         private enum State : byte
         {
@@ -2167,5 +2178,31 @@ namespace System.Diagnostics
         {
             ActivityTraceId.SetSpanFromHexChars(ToHexString().AsSpan(), destination);
         }
+    }
+
+    internal sealed class ActivityDebuggerProxy(Activity activity)
+    {
+        public ActivityTraceFlags ActivityTraceFlags => activity.ActivityTraceFlags;
+        public List<KeyValuePair<string, string?>> Baggage => new List<KeyValuePair<string, string?>>(activity.Baggage);
+        public ActivityContext Context => activity.Context;
+        public string DisplayName => activity.DisplayName;
+        public TimeSpan Duration => activity.Duration;
+        public List<ActivityEvent> Events => new List<ActivityEvent>(activity.Events);
+        public bool HasRemoteParent => activity.HasRemoteParent;
+        public string? Id => activity.Id;
+        public ActivityKind Kind => activity.Kind;
+        public List<ActivityLink> Links => new List<ActivityLink>(activity.Links);
+        public string OperationName => activity.OperationName;
+        public Activity? Parent => activity.Parent;
+        public string? ParentId => activity.ParentId;
+        public ActivitySpanId ParentSpanId => activity.ParentSpanId;
+        public ActivitySource Source => activity.Source;
+        public ActivitySpanId SpanId => activity.SpanId;
+        public DateTime StartTimeUtc => activity.StartTimeUtc;
+        public ActivityStatusCode Status => activity.Status;
+        public string? StatusDescription => activity.StatusDescription;
+        public List<KeyValuePair<string, object?>> TagObjects => new List<KeyValuePair<string, object?>>(activity.TagObjects);
+        public ActivityTraceId TraceId => activity.TraceId;
+        public string? TraceStateString => activity.TraceStateString;
     }
 }

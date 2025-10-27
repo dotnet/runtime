@@ -111,7 +111,7 @@
     <DefaultCoreClrSubsets Condition="'$(TargetRid)' == 'linux-armel'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAndroid)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
-    <DefaultCoreClrSubsets Condition="'$(TargetsBrowser)' == 'true'">mono.emsdk+clr.native+clr.corelib+clr.tools+clr.packages+clr.crossarchtools</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(TargetsBrowser)' == 'true'">mono.emsdk+clr.native+clr.corelib+clr.tools+clr.packages+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
@@ -591,22 +591,6 @@
     <ProjectToBuild Include="$(MonoProjectRoot)\wasm\workloads.proj" Category="mono" />
   </ItemGroup>
 
-  <!-- Host sets -->
-  <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
-    <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" />
-    <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(TargetCxxLibraryProperties)" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
-    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" />
-    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
-    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" />
-    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Category="host" />
-  </ItemGroup>
-
   <!-- Libraries sets -->
   <ItemGroup Condition="$(_subset.Contains('+libs.native+'))">
     <ProjectToBuild Include="$(SharedNativeRoot)libs\build-native.proj" Category="libs" />
@@ -633,6 +617,23 @@
     <ProjectToBuild Include="$(WasiProjectRoot)wasi.proj" Category="mono" />
   </ItemGroup>
 
+  <!-- Host sets -->
+  <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
+    <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" AdditionalProperties="$(TargetCxxLibraryProperties)" Category="host" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
+    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" />
+    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Category="host" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+host.pkg+'))">
+    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" />
+    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Category="host" />
+  </ItemGroup>
+
+  <!-- Libraries test sets -->
   <ItemGroup Condition="$(_subset.Contains('+libs.pretest+'))">
     <ProjectToBuild Include="$(LibrariesProjectRoot)pretest.proj" Category="libs"  />
   </ItemGroup>
