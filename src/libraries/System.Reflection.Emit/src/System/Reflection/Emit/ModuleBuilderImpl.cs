@@ -690,6 +690,8 @@ namespace System.Reflection.Emit
 
         private EntityHandle GetTypeReferenceOrSpecificationHandle(Type type)
         {
+            type = type.UnderlyingSystemType;
+
             if (!_typeReferences.TryGetValue(type, out var typeHandle))
             {
                 if (type.HasElementType || type.IsGenericParameter ||
@@ -740,7 +742,12 @@ namespace System.Reflection.Emit
                             declaringType = declaringType.MakeGenericType(declaringType.GetGenericArguments());
                         }
 
-                        Type fieldType = ((FieldInfo)GetOriginalMemberIfConstructedType(field)).FieldType;
+                        FieldInfo originalField = (FieldInfo)GetOriginalMemberIfConstructedType(field);
+                        Type fieldType = originalField.FieldType;
+
+                        if (fieldType.IsUnmanagedFunctionPointer)
+                            fieldType = originalField.GetModifiedFieldType();
+
                         memberHandle = AddMemberReference(field.Name, GetTypeHandle(declaringType),
                             MetadataSignatureHelper.GetFieldSignature(fieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
 
@@ -790,9 +797,16 @@ namespace System.Reflection.Emit
             return memberHandle;
         }
 
-        private BlobBuilder GetMethodSignature(MethodInfo method, Type[]? optionalParameterTypes) =>
-            MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), method.ReturnType,
+        private BlobBuilder GetMethodSignature(MethodInfo method, Type[]? optionalParameterTypes)
+        {
+            Type returnType = method.ReturnType;
+
+            if (returnType.IsUnmanagedFunctionPointer)
+                returnType = method.ReturnParameter.GetModifiedParameterType();
+
+            return MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), returnType,
                 GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
+        }
 
         private BlobBuilder GetMethodArrayMethodSignature(ArrayMethod method) => MetadataSignatureHelper.GetMethodSignature(
             this, method.ParameterTypes, method.ReturnType, GetSignatureConvention(method.CallingConvention), isInstance: IsInstance(method.CallingConvention));
@@ -840,7 +854,12 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < parameterInfos.Length; i++)
             {
-                parameterTypes[i] = parameterInfos[i].ParameterType;
+                Type paramType = parameterInfos[i].ParameterType;
+
+                if (paramType.IsUnmanagedFunctionPointer)
+                    paramType = parameterInfos[i].GetModifiedParameterType();
+
+                parameterTypes[i] = paramType;
             }
 
             return parameterTypes;
