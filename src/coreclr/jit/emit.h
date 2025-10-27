@@ -3500,8 +3500,9 @@ public:
         sectionType    dsType;
         var_types      dsDataType;
 
-        // variable-sized array used to store the constant data
-        // or BasicBlock* array in the block cases.
+        // variable-sized array used to store the constant data, BasicBlock*
+        // array in the block cases, or emitLocation for the asyncResumeInfo
+        // case.
         BYTE dsCont[0];
     };
 

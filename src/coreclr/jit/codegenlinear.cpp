@@ -904,6 +904,13 @@ void CodeGen::genCodeForBBlist()
 #endif
 }
 
+//------------------------------------------------------------------------
+// genRecordAsyncResume:
+//   Record information about an async resume point in the async resume info tabl.e
+//
+// Arguments:
+//    asyncResume - GT_RECORD_ASYNC_RESUME node
+//
 void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
 {
     size_t index = asyncResume->gtVal1;
@@ -913,8 +920,7 @@ void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
     emitter::dataSection* asyncResumeInfo;
     genEmitAsyncResumeInfoTable(&asyncResumeInfo);
 
-    BYTE* addr = asyncResumeInfo->dsCont + index * sizeof(emitLocation);
-    new (addr, jitstd::placement_t()) emitLocation(GetEmitter());
+    ((emitLocation*)asyncResumeInfo->dsCont)[index] = emitLocation(GetEmitter());
 }
 
 /*
