@@ -60,5 +60,21 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(xslt, chain[5]);
             Assert.Equal(6, chain.Count);
         }
+
+        [Fact]
+        public void Enumerator()
+        {
+            TransformChain chain = new TransformChain();
+            chain.Add(new XmlDsigBase64Transform());
+            chain.Add(new XmlDsigC14NTransform());
+
+            int count = 0;
+            foreach (Transform transform in chain)
+            {
+                Assert.NotNull(transform);
+                count++;
+            }
+            Assert.Equal(2, count);
+        }
     }
 }

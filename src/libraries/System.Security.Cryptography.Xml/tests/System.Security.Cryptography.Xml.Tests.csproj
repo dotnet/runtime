@@ -10,6 +10,7 @@
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CngKeyWrapper.cs"
              Link="TestCommon\System\Security\Cryptography\CngKeyWrapper.cs" />
     <Compile Include="AssertCrypto.cs" />
+    <Compile Include="CanonicalXmlEntityReferenceTest.cs" />
     <Compile Include="CipherDataTests.cs" />
     <Compile Include="DataObjectTest.cs" />
     <Compile Include="DataObjectTests.cs" />
