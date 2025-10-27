@@ -1069,16 +1069,6 @@ PTR_BYTE CompressDebugInfo::Compress(
     {
         DecompressDelete(pNewVars);
     }
-
-    if (iAsyncVars > 0)
-    {
-        static DWORD s_asyncSize = 0;
-        static DWORD s_varsAsyncSize = 0;
-        s_asyncSize += cbAsyncInfo;
-        s_varsAsyncSize += cbVars;
-
-        printf("Async size: %u, vars async size: %u\n", s_asyncSize, s_varsAsyncSize);
-    }
 #endif // _DEBUG
 
     return ptrStart;

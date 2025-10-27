@@ -677,8 +677,6 @@ protected:
     // Send VariableLiveRanges as debug info to the debugger
     void genSetScopeInfoUsingVariableRanges();
 
-    void genDescribeAsyncContinuationLayouts(ArrayStack<Compiler::VarResultInfo>& vars);
-
 public:
     void siInit();
     void checkICodeDebugInfo();
