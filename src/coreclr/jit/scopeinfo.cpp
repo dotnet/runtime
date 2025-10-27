@@ -56,6 +56,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "emit.h"
 #include "codegen.h"
+#include "jitstd/algorithm.h"
 
 //============================================================================
 //           siVarLoc functions
@@ -1780,9 +1781,12 @@ void CodeGen::genSetScopeInfo()
     }
 #endif
 
-    unsigned varsLocationsCount = 0;
+    unsigned varsLocationsCount = (unsigned int)varLiveKeeper->getLiveRangesCount();
 
-    varsLocationsCount = (unsigned int)varLiveKeeper->getLiveRangesCount();
+    ArrayStack<Compiler::VarResultInfo> asyncVars(compiler->getAllocator(CMK_DebugInfo));
+    genDescribeAsyncContinuationLayouts(asyncVars);
+
+    varsLocationsCount += (unsigned)asyncVars.Height();
 
     if (varsLocationsCount == 0)
     {
@@ -1810,6 +1814,12 @@ void CodeGen::genSetScopeInfo()
     // intervals, and may not indicate the same variable location.
 
     genSetScopeInfoUsingVariableRanges();
+
+    for (int i = 0; i < asyncVars.Height(); i++)
+    {
+        assert(compiler->eeVarsCount < varsLocationsCount);
+        compiler->eeVars[compiler->eeVarsCount++] = asyncVars.BottomRef(i);
+    }
 
     compiler->eeSetLVdone();
 }
@@ -1905,6 +1915,67 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
     }
 
     compiler->eeVarsCount = liveRangeIndex;
+}
+
+void CodeGen::genDescribeAsyncContinuationLayouts(ArrayStack<Compiler::VarResultInfo>& asyncVars)
+{
+    if (compiler->compSuspensionPoints == nullptr)
+    {
+        return;
+    }
+
+    unsigned varIndex = 0;
+    for (size_t i = 0; i < compiler->compSuspensionPoints->size(); i++)
+    {
+        emitLocation& emitLoc = ((emitLocation*)genAsyncResumeInfoTable->dsCont)[i];
+        UNATIVE_OFFSET resumeOffs = emitLoc.CodeOffset(GetEmitter());
+
+        unsigned numContVars = (*compiler->compSuspensionPoints)[i].NumContinuationVars;
+        for (unsigned j = 0; j < numContVars; j++)
+        {
+            ICorDebugInfo::AsyncContinuationVarInfo& asyncVar = (*compiler->compAsyncVars)[varIndex + j];
+            Compiler::VarResultInfo varInfo;
+            varInfo.startOffset = resumeOffs;
+            varInfo.endOffset = resumeOffs + 1;
+            varInfo.varNumber = asyncVar.VarNumber;
+            varInfo.loc.vlType = VLT_STK;
+            varInfo.loc.vlStk.vlsBaseReg = (regNumber)ICorDebugInfo::REGNUM_CONTINUATION;
+            varInfo.loc.vlStk.vlsOffset = (int)asyncVar.Offset;
+            asyncVars.Push(varInfo);
+        }
+        varIndex += numContVars;
+    }
+
+    auto lt = [](const Compiler::VarResultInfo& a, const Compiler::VarResultInfo& b) {
+          if (a.varNumber != b.varNumber)
+          {
+              return a.varNumber < b.varNumber;
+          }
+          return a.startOffset < b.startOffset;
+        };
+
+    jitstd::sort(asyncVars.Data(), asyncVars.Data() + asyncVars.Height(), lt);
+
+    // Now coalesce subsequent entries if they have the same offset.
+    for (int i = 1; i < asyncVars.Height(); i++)
+    {
+        Compiler::VarResultInfo& prev = asyncVars.BottomRef(i - 1);
+        Compiler::VarResultInfo& cur = asyncVars.BottomRef(i);
+
+        if ((prev.varNumber != cur.varNumber) ||
+            (prev.loc.vlStk.vlsOffset != cur.loc.vlStk.vlsOffset))
+        {
+            continue;
+        }
+
+        // Make previous entry cover current one.
+        prev.endOffset = cur.endOffset;
+        // Remove current entry.
+        for (int j = i + 1; j < asyncVars.Height(); j++)
+            asyncVars.BottomRef(j - 1) = asyncVars.BottomRef(j);
+        asyncVars.Pop();
+        i--;
+    }
 }
 
 //------------------------------------------------------------------------

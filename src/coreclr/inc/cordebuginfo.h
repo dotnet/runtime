@@ -222,6 +222,7 @@ public:
         REGNUM_COUNT,
         REGNUM_AMBIENT_SP, // ambient SP support. Ambient SP is the original SP in the non-BP based frame.
                            // Ambient SP should not change even if there are push/pop operations in the method.
+        REGNUM_CONTINUATION, // Represents a Continuation instance for async methods
 
 #ifdef TARGET_X86
         REGNUM_FP = REGNUM_EBP,
