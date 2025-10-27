@@ -32,8 +32,6 @@ target_link_libraries(BrowserHost-Static PRIVATE
     hostmisc
 )
 
-install(TARGETS BrowserHost-Static DESTINATION corehost COMPONENT runtime)
-install(TARGETS BrowserHost-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 install(TARGETS BrowserHost-Static DESTINATION sharedFramework COMPONENT runtime)
 
 # the executable
@@ -53,30 +51,44 @@ add_executable(browserhost ${BROWSERHOST_SOURCES})
 set_target_properties(browserhost PROPERTIES OUTPUT_NAME dotnet.native)
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
 
+
+
+set(SHARED_LIB_DESTINATION
+    ${CLR_ARTIFACTS_BIN_DIR}/native/net${CMAKE_NET_CORE_APP_CURRENT_VERSION}-browser-${CMAKE_BUILD_LIBRARIES_CONFIGURATION}-wasm/sharedFramework)
+set(SHARED_CLR_DESTINATION
+    ${CLR_ARTIFACTS_BIN_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_RUNTIME_CONFIGURATION}/sharedFramework)
+
+# these dependencies assume that you built `libs.native+clr.runtime` subsets first
 LIST(APPEND NATIVE_LIBS
-    hostmisc
-    clrinterpreter
-    coreclr_static
-    System.Native.Browser-Static
-    System.Runtime.InteropServices.JavaScript.Native-Static
-    System.Native-Static
-    System.Globalization.Native-Static
-    System.IO.Compression.Native-Static
-    nativeresourcestring
-    gcinfo
+    ${SHARED_CLR_DESTINATION}/libcoreclr_static.a
+    ${SHARED_CLR_DESTINATION}/libclrinterpreter.a
+    ${SHARED_CLR_DESTINATION}/libnativeresourcestring.a
+    ${SHARED_CLR_DESTINATION}/libgcinfo_unix_wasm.a
+    ${SHARED_CLR_DESTINATION}/libcoreclrminipal.a
+    ${SHARED_CLR_DESTINATION}/libcoreclrpal.a
+    ${SHARED_CLR_DESTINATION}/libminipal.a
+    ${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.a
+    ${SHARED_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.a
+    ${SHARED_LIB_DESTINATION}/libSystem.Native.a
+    ${SHARED_LIB_DESTINATION}/libSystem.Globalization.Native.a
+    ${CMAKE_ICU_DIR}/lib/libicuuc.a
+    ${CMAKE_ICU_DIR}/lib/libicui18n.a
+    ${CMAKE_ICU_DIR}/lib/libicudata.a
+    ${SHARED_LIB_DESTINATION}/libSystem.IO.Compression.Native.a
+    ${SHARED_LIB_DESTINATION}/libz.a
     # WASM-TODO respect  $(InvariantTimezone)
-    # System.Native.TimeZoneData.Invariant
-    System.Native.TimeZoneData
+    # libSystem.Native.TimeZoneData.Invariant.a
+    ${SHARED_LIB_DESTINATION}/libSystem.Native.TimeZoneData.a
 )
 
 set(JS_SYSTEM_NATIVE_BROWSER
-    "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
+    "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.js")
 set(JS_SYSTEM_BROWSER_UTILS
-    "${STATIC_LIB_DESTINATION}/libSystem.Browser.Utils.js")
+    "${SHARED_LIB_DESTINATION}/libSystem.Browser.Utils.js")
 set(JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE
-    "${STATIC_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.js")
+    "${SHARED_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.js")
 set(JS_BROWSER_HOST
-    "${STATIC_LIB_DESTINATION}/libBrowserHost.js")
+    "${SHARED_LIB_DESTINATION}/libBrowserHost.js")
 set(JS_SYSTEM_NATIVE_BROWSER_EXPOST
     "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/System.Native.Browser/libSystem.Native.Browser.extpost.js")
 
@@ -130,7 +142,8 @@ target_link_libraries(browserhost PRIVATE
 )
 
 install(TARGETS browserhost DESTINATION corehost COMPONENT runtime)
+install(TARGETS browserhost DESTINATION sharedFramework COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
-install(FILES ${CLR_SRC_NATIVE_DIR}/package.json DESTINATION corehost COMPONENT runtime)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION sharedFramework COMPONENT runtime)
 
 add_subdirectory(sample)
