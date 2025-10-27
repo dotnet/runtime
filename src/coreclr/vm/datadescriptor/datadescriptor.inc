@@ -845,6 +845,26 @@ CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R9, offsetof(HijackArgs, R9))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R10, offsetof(HijackArgs, R10))
 CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, R11, offsetof(HijackArgs, R11))
 
+#elif defined(TARGET_RISCV64)
+
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Fp, offsetof(HijackArgs, Fp))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Ra, offsetof(HijackArgs, Ra))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S1, offsetof(HijackArgs, S1))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S2, offsetof(HijackArgs, S2))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S3, offsetof(HijackArgs, S3))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S4, offsetof(HijackArgs, S4))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S5, offsetof(HijackArgs, S5))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S6, offsetof(HijackArgs, S6))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S7, offsetof(HijackArgs, S7))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S8, offsetof(HijackArgs, S8))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S9, offsetof(HijackArgs, S9))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S10, offsetof(HijackArgs, S10))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, S11, offsetof(HijackArgs, S11))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Gp, offsetof(HijackArgs, Gp))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, Tp, offsetof(HijackArgs, Tp))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, A0, offsetof(HijackArgs, A0))
+CDAC_TYPE_FIELD(HijackArgs, /*pointer*/, A1, offsetof(HijackArgs, A1))
+
 #endif // Platform switch
 CDAC_TYPE_END(HijackArgs)
 #endif // FEATURE_HIJACK
@@ -913,6 +933,24 @@ CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X27, offsetof(CalleeSavedRegist
 CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, X28, offsetof(CalleeSavedRegisters, x28))
 CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Fp, offsetof(CalleeSavedRegisters, x29))
 CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Lr, offsetof(CalleeSavedRegisters, x30))
+
+#elif defined(TARGET_RISCV64)
+
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Fp, offsetof(CalleeSavedRegisters, fp))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Ra, offsetof(CalleeSavedRegisters, ra))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S1, offsetof(CalleeSavedRegisters, s1))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S2, offsetof(CalleeSavedRegisters, s2))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S3, offsetof(CalleeSavedRegisters, s3))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S4, offsetof(CalleeSavedRegisters, s4))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S5, offsetof(CalleeSavedRegisters, s5))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S6, offsetof(CalleeSavedRegisters, s6))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S7, offsetof(CalleeSavedRegisters, s7))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S8, offsetof(CalleeSavedRegisters, s8))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S9, offsetof(CalleeSavedRegisters, s9))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S10, offsetof(CalleeSavedRegisters, s10))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, S11, offsetof(CalleeSavedRegisters, s11))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Tp, offsetof(CalleeSavedRegisters, tp))
+CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, Gp, offsetof(CalleeSavedRegisters, gp))
 
 #endif // Platform switch
 CDAC_TYPE_END(CalleeSavedRegisters)

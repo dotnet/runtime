@@ -102,8 +102,22 @@ class CallStubGenerator
 #endif // TARGET_ARM64
     };
 
+    enum class RoutineType
+    {
+        None,
+        GPReg,
+        FPReg,
+#ifdef TARGET_ARM64
+        FPReg32,
+        FPReg128,
+#endif
+        Stack
+    };
+
     // When the m_r1, m_x1 or m_s1 are set to NoRange, it means that there is no active range of registers or stack arguments.
     static const int NoRange = -1;
+
+    RoutineType m_currentRoutineType = RoutineType::None;
 
     // Current sequential range of general purpose registers used to pass arguments.
     int m_r1 = NoRange;
@@ -133,6 +147,10 @@ class CallStubGenerator
     PCODE GetStackRoutine_4B();
 #endif // TARGET_APPLE && TARGET_ARM64
     PCODE GetFPRegRangeRoutine(int x1, int x2);
+#ifdef TARGET_ARM64
+    PCODE GetFPReg128RangeRoutine(int x1, int x2);
+    PCODE GetFPReg32RangeRoutine(int x1, int x2);
+#endif    
     PCODE GetGPRegRangeRoutine(int r1, int r2);
     ReturnType GetReturnType(ArgIterator *pArgIt);
     CallStubHeader::InvokeFunctionPtr GetInvokeFunctionPtr(ReturnType returnType);
@@ -155,14 +173,6 @@ private:
         return sizeof(CallStubHeader) + ((numArgs + 1) * 3 + 1) * sizeof(PCODE);
     }
     void ComputeCallStub(MetaSig &sig, PCODE *pRoutines);
-
-    enum class RoutineType
-    {
-        None,
-        GPReg,
-        FPReg,
-        Stack
-    };
 
     void TerminateCurrentRoutineIfNotOfNewType(RoutineType type, PCODE *pRoutines);
 };
