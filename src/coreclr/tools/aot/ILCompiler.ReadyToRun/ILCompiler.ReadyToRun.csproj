@@ -284,7 +284,6 @@
     <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
-    <Compile Include="JitInterface\UnboxingMethodDescFactory.cs" />
     <Compile Include="ObjectWriter\SectionBuilder.cs" />
     <Compile Include="ObjectWriter\R2RPEBuilder.cs" />
     <Compile Include="ObjectWriter\RelocationHelper.cs" />
@@ -336,6 +335,15 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\UnboxingMethodDesc.cs">
       <Link>JitInterface\UnboxingMethodDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\UnboxingMethodDescFactory.cs">
+      <Link>JitInterface\UnboxingMethodDescFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\AsyncMethodDesc.cs">
+      <Link>JitInterface\AsyncMethodDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\AsyncMethodDescFactory.cs">
+      <Link>JitInterface\AsyncMethodDesc.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>
