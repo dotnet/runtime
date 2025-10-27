@@ -77,7 +77,6 @@ export async function runMain(mainAssemblyName?: string, args?: string[]): Promi
         Module.stackRestore(sp);
     }
 }
-runMain["__deps"] = ["_BrowserHost_ExecuteAssembly"];
 
 export async function runMainAndExit(mainAssemblyName?: string, args?: string[]): Promise<number> {
     try {

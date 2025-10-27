@@ -77,7 +77,7 @@ export interface DotnetHostBuilder {
     /**
      * Runs the Main() method of the application and exits the runtime.
      * You can provide "command line" arguments for the Main() method using
-     * - dotnet.withApplicationArguments(["A", "B", "C"])
+     * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      * Note: after the runtime exits, it would reject all further calls to the API.
      * You can use runMain() if you want to keep the runtime alive.
@@ -666,38 +666,38 @@ export type DiagnosticsAPIType = {
      * creates diagnostic trace file. Default is 60 seconds.
      * It could be opened in PerfView or Visual Studio as is.
      */
-    collectCpuSamples: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    collectCpuSamples: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
      * creates diagnostic trace file. Default is 60 seconds.
      * It could be opened in PerfView or Visual Studio as is.
      * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
      */
-    collectMetrics: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    collectMetrics: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
      * creates diagnostic trace file.
      * It could be opened in PerfView as is.
      * It could be converted for Visual Studio using `dotnet-gcdump convert`.
      */
-    collectGcDump: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    collectGcDump: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
      * changes DOTNET_DiagnosticPorts and makes a new connection to WebSocket on that URL.
      */
-    connectDSRouter (url: string): void;
+    connectDSRouter(url: string): void;
 }
 
 export type DiagnosticCommandProviderV2 = {
-    keywords: [ number, number ],
+    keywords: [number, number],
     logLevel: number,
     provider_name: string,
-    arguments: string|null
+    arguments: string | null
 }
 
 export type DiagnosticCommandOptions = {
-    durationSeconds?:number,
-    intervalSeconds?:number,
-    skipDownload?:boolean,
-    circularBufferMB?:number,
-    extraProviders?:DiagnosticCommandProviderV2[],
+    durationSeconds?: number,
+    intervalSeconds?: number,
+    skipDownload?: boolean,
+    circularBufferMB?: number,
+    extraProviders?: DiagnosticCommandProviderV2[],
 }
 
 export type APIType = RunAPIType & MemoryAPIType & DiagnosticsAPIType;
