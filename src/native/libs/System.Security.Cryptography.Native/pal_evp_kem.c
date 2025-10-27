@@ -162,8 +162,6 @@ int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
         EVP_PKEY_CTX* ctx = NULL;
         ctx = EvpPKeyCtxCreateFromPKey(pKey, extraHandle);
         int32_t ret = 0;
-        size_t ciphertextLengthT;
-        size_t sharedSecretLengthT;
 
         if (ctx == NULL)
         {
@@ -175,8 +173,8 @@ int32_t CryptoNative_EvpKemEncapsulate(EVP_PKEY* pKey,
             goto done;
         }
 
-        ciphertextLengthT = Int32ToSizeT(ciphertextLength);
-        sharedSecretLengthT = Int32ToSizeT(sharedSecretLength);
+        size_t ciphertextLengthT = Int32ToSizeT(ciphertextLength);
+        size_t sharedSecretLengthT = Int32ToSizeT(sharedSecretLength);
 
         if (EVP_PKEY_encapsulate(ctx, ciphertext, &ciphertextLengthT, sharedSecret, &sharedSecretLengthT) != 1)
         {
@@ -230,8 +228,6 @@ int32_t CryptoNative_EvpKemDecapsulate(EVP_PKEY* pKey,
         EVP_PKEY_CTX* ctx = NULL;
         ctx = EvpPKeyCtxCreateFromPKey(pKey, extraHandle);
         int32_t ret = 0;
-        size_t ciphertextLengthT;
-        size_t sharedSecretLengthT;
 
         if (ctx == NULL)
         {
@@ -243,8 +239,8 @@ int32_t CryptoNative_EvpKemDecapsulate(EVP_PKEY* pKey,
             goto done;
         }
 
-        ciphertextLengthT = Int32ToSizeT(ciphertextLength);
-        sharedSecretLengthT = Int32ToSizeT(sharedSecretLength);
+        size_t ciphertextLengthT = Int32ToSizeT(ciphertextLength);
+        size_t sharedSecretLengthT = Int32ToSizeT(sharedSecretLength);
 
         if (EVP_PKEY_decapsulate(ctx, sharedSecret, &sharedSecretLengthT, ciphertext, ciphertextLengthT) != 1)
         {
