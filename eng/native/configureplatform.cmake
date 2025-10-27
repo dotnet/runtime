@@ -500,7 +500,7 @@ if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
 
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 else()
-    if(NOT CLR_CMAKE_RUNTIME_MONO)
+    if(CLR_CMAKE_RUNTIME_CORECLR)
         if(CLR_CMAKE_TARGET_BROWSER)
             add_link_options(-fwasm-exceptions)
             add_link_options(-Wno-unused-command-line-argument)
