@@ -800,7 +800,6 @@ namespace System.Reflection.Emit
         private BlobBuilder GetMethodSignature(MethodInfo method, Type[]? optionalParameterTypes)
         {
             Type returnType = method.ReturnType;
-
             if (returnType.IsUnmanagedFunctionPointer)
                 returnType = method.ReturnParameter.GetModifiedParameterType();
 
@@ -855,7 +854,6 @@ namespace System.Reflection.Emit
             for (int i = 0; i < parameterInfos.Length; i++)
             {
                 Type paramType = parameterInfos[i].ParameterType;
-
                 if (paramType.IsUnmanagedFunctionPointer)
                     paramType = parameterInfos[i].GetModifiedParameterType();
 
