@@ -57,13 +57,13 @@ namespace System.IO
             for (int i = 0; i < first.Length; i++)
             {
                 // Reached the end of the second string
-                if (i >= second.Length) 
+                if (i >= second.Length)
                 {
                     return i;
                 }
 
                 // Check for character mismatch
-                if ((first[i] != second[i]) && 
+                if ((first[i] != second[i]) &&
                     (!ignoreCase || char.ToUpperInvariant(first[i]) != char.ToUpperInvariant(second[i])))
                 {
                     return i;
