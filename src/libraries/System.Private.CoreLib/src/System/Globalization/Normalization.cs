@@ -11,7 +11,7 @@ namespace System.Globalization
         internal static bool IsNormalized(ReadOnlySpan<char> source, NormalizationForm normalizationForm = NormalizationForm.FormC)
         {
             CheckNormalizationForm(normalizationForm);
-
+            
             // In Invariant mode we assume all characters are normalized because we don't support any linguistic operations on strings.
             // If it's ASCII && one of the 4 main forms, then it's already normalized.
             if (GlobalizationMode.Invariant || Ascii.IsValid(source))
@@ -93,6 +93,21 @@ namespace System.Globalization
                 normalizationForm != NormalizationForm.FormKD)
             {
                 throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
+            }
+
+            ThrowIfCompatibilityFormUnsupported(normalizationForm);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ThrowIfCompatibilityFormUnsupported(NormalizationForm normalizationForm)
+        {
+            if ((normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD) &&
+                !GlobalizationMode.Invariant &&
+                !GlobalizationMode.UseNls &&
+                (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()))
+            {
+                // Browser/WASI builds ship without compatibility normalization data.
+                throw new PlatformNotSupportedException(SR.Argument_UnsupportedNormalizationFormInBrowser);
             }
         }
     }

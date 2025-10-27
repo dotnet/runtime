@@ -199,11 +199,7 @@ namespace System.Globalization
 
         private static void ValidateArguments(ReadOnlySpan<char> strInput, NormalizationForm normalizationForm, string paramName = "strInput")
         {
-            if ((OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
-            {
-                // Browser's ICU doesn't contain data needed for FormKC and FormKD
-                throw new PlatformNotSupportedException(SR.Argument_UnsupportedNormalizationFormInBrowser);
-            }
+            ThrowIfCompatibilityFormUnsupported(normalizationForm);
 
             if (HasInvalidUnicodeSequence(strInput))
             {
