@@ -7,5 +7,6 @@
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <!-- We need the library import generator when running android tests. -->
     <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
+    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
   </PropertyGroup>
 </Project>
