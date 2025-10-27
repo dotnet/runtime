@@ -60,7 +60,7 @@ namespace System.IO
             int commonLength = first.AsSpan().CommonPrefixLength(second);
             if (ignoreCase)
             {
-                for (; commonLength < first.Length; commonLength++)
+                for (; (uint)commonLength < (uint)first.Length; commonLength++)
                 {
                     if (commonLength >= second.Length ||
                         char.ToUpperInvariant(first[commonLength]) != char.ToUpperInvariant(second[commonLength]))
