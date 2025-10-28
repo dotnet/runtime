@@ -76,13 +76,77 @@ namespace <xsl:value-of select="@namespace" />
             ValueAsnReader collectionReader;</xsl:if><xsl:apply-templates mode="DefaultFieldVerify" />
         }
 #endif
-    }</xsl:if>
-    <xsl:call-template name="SequenceStructImplementation" />
-    <xsl:if test="@includeRef='true'">
-    <xsl:call-template name="SequenceStructImplementation">
-        <xsl:with-param name="asRef" select="true()" />
-    </xsl:call-template>
-    </xsl:if>
+    }
+</xsl:if>
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct <xsl:value-of select="@name" />
+    {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="FieldDef" />
+
+        internal readonly void Encode(AsnWriter writer)
+        {
+            Encode(writer, Asn1Tag.Sequence);
+        }
+
+        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
+        {
+            writer.PushSequence(tag);
+<xsl:apply-templates mode="Encode" />
+            writer.PopSequence(tag);
+        }
+
+        internal static <xsl:value-of select="@name" /> Decode(ReadOnlyMemory&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
+        {
+            return Decode(Asn1Tag.Sequence, encoded, ruleSet);
+        }
+
+        internal static <xsl:value-of select="@name" /> Decode(Asn1Tag expectedTag, ReadOnlyMemory&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
+        {
+            try
+            {
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
+
+                DecodeCore(ref reader, expectedTag, <xsl:if test="$hasRebind &gt; 0">encoded, </xsl:if>out <xsl:value-of select="@name" /> decoded);
+                reader.ThrowIfNotEmpty();
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        internal static void Decode(ref ValueAsnReader reader,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
+        {
+            Decode(ref reader, Asn1Tag.Sequence, <xsl:if test="$hasRebind &gt; 0">rebind, </xsl:if>out decoded);
+        }
+
+        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
+        {
+            try
+            {
+                DecodeCore(ref reader, expectedTag, <xsl:if test="$hasRebind &gt; 0">rebind, </xsl:if>out decoded);
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
+        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
+        {
+            decoded = default;
+            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);<xsl:if test="*[@explicitTag]">
+            ValueAsnReader explicitReader;</xsl:if><xsl:if test="*[@defaultDerInit]">
+            ValueAsnReader defaultReader;</xsl:if><xsl:if test="asn:SequenceOf | asn:SetOf">
+            ValueAsnReader collectionReader;</xsl:if><xsl:if test="$hasMemoryField &gt; 0">
+            ReadOnlySpan&lt;byte&gt; rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan&lt;byte&gt; tmpSpan;</xsl:if>
+<xsl:apply-templates mode="Decode" />
+
+            sequenceReader.ThrowIfNotEmpty();
+        }
+    }
 }
 </xsl:template>
 
@@ -888,77 +952,5 @@ namespace <xsl:value-of select="@namespace" />
           <xsl:otherwise><xsl:apply-templates select="." mode="DefaultTag"/></xsl:otherwise>
       </xsl:choose>
   </xsl:template>
-
-  <xsl:template name="SequenceStructImplementation" xml:space="default">
-  <xsl:param name="asRef" />[StructLayout(LayoutKind.Sequential)]
-    internal <xsl:if test="$asRef">ref </xsl:if>partial struct <xsl:if test="$asRef">Value</xsl:if><xsl:value-of select="@name" />
-    {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="FieldDef" />
-
-        internal readonly void Encode(AsnWriter writer)
-        {
-            Encode(writer, Asn1Tag.Sequence);
-        }
-
-        internal readonly void Encode(AsnWriter writer, Asn1Tag tag)
-        {
-            writer.PushSequence(tag);
-<xsl:apply-templates mode="Encode" />
-            writer.PopSequence(tag);
-        }
-
-        internal static <xsl:value-of select="@name" /> Decode(ReadOnlyMemory&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
-        {
-            return Decode(Asn1Tag.Sequence, encoded, ruleSet);
-        }
-
-        internal static <xsl:value-of select="@name" /> Decode(Asn1Tag expectedTag, ReadOnlyMemory&lt;byte&gt; encoded, AsnEncodingRules ruleSet)
-        {
-            try
-            {
-                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
-
-                DecodeCore(ref reader, expectedTag, <xsl:if test="$hasRebind &gt; 0">encoded, </xsl:if>out <xsl:value-of select="@name" /> decoded);
-                reader.ThrowIfNotEmpty();
-                return decoded;
-            }
-            catch (AsnContentException e)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-            }
-        }
-
-        internal static void Decode(ref ValueAsnReader reader,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
-        {
-            Decode(ref reader, Asn1Tag.Sequence, <xsl:if test="$hasRebind &gt; 0">rebind, </xsl:if>out decoded);
-        }
-
-        internal static void Decode(ref ValueAsnReader reader, Asn1Tag expectedTag,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
-        {
-            try
-            {
-                DecodeCore(ref reader, expectedTag, <xsl:if test="$hasRebind &gt; 0">rebind, </xsl:if>out decoded);
-            }
-            catch (AsnContentException e)
-            {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
-            }
-        }
-
-        private static void DecodeCore(ref ValueAsnReader reader, Asn1Tag expectedTag,<xsl:if test="$hasRebind &gt; 0"> ReadOnlyMemory&lt;byte&gt; rebind,</xsl:if> out <xsl:value-of select="@name" /> decoded)
-        {
-            decoded = default;
-            ValueAsnReader sequenceReader = reader.ReadSequence(expectedTag);<xsl:if test="*[@explicitTag]">
-            ValueAsnReader explicitReader;</xsl:if><xsl:if test="*[@defaultDerInit]">
-            ValueAsnReader defaultReader;</xsl:if><xsl:if test="asn:SequenceOf | asn:SetOf">
-            ValueAsnReader collectionReader;</xsl:if><xsl:if test="$hasMemoryField &gt; 0">
-            ReadOnlySpan&lt;byte&gt; rebindSpan = rebind.Span;
-            int offset;
-            ReadOnlySpan&lt;byte&gt; tmpSpan;</xsl:if>
-
-<xsl:apply-templates mode="Decode" />
-
-            sequenceReader.ThrowIfNotEmpty();
-        }
-    }</xsl:template>
 
 </xsl:stylesheet>
