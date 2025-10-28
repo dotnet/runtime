@@ -36,21 +36,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append($"__{NodeName}");
         }
 
-        public void OnNodeMarked(DependencyNodeCore<NodeFactory> node)
+        public void OnImportThunkMarked(ImportThunk thunk)
         {
-            if (node is ImportThunk thunk)
+            if (_startNode is null
+                || CompilerComparer.Instance.Compare(thunk, _startNode) <= 0)
             {
-                if (_startNode is null
-                    || CompilerComparer.Instance.Compare(thunk, _startNode) <= 0)
-                {
-                    _startNode = thunk;
-                }
+                _startNode = thunk;
+            }
 
-                if (_endNode is null
-                    || CompilerComparer.Instance.Compare(thunk, _endNode) > 0)
-                {
-                    _endNode = thunk;
-                }
+            if (_endNode is null
+                || CompilerComparer.Instance.Compare(thunk, _endNode) > 0)
+            {
+                _endNode = thunk;
             }
         }
 

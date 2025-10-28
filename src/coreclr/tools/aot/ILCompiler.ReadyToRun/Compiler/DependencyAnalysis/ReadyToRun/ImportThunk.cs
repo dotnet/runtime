@@ -115,5 +115,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dependencies.Add(factory.DelayLoadMethodCallThunks, "MethodCallThunksList");
             return dependencies;
         }
+
+        protected override void OnMarked(NodeFactory factory)
+        {
+            factory.DelayLoadMethodCallThunks.OnImportThunkMarked(this);
+        }
     }
 }
