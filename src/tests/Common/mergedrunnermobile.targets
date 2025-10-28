@@ -2,7 +2,7 @@
 <!-- Build infrastructure support to enable running merged test runner assemblies like regular tests on mobile platforms. -->
   <PropertyGroup>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
+    <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(TestBuildMode)' != 'nativeaot'">$(AssemblyName).dll</MainLibraryFileName>
     <WasmMainAssemblyFileName>$(AssemblyName).dll</WasmMainAssemblyFileName>
     <TestFramework>GeneratedRunner</TestFramework>
     <!-- Don't treat linker warnings as errors for our tests. -->
