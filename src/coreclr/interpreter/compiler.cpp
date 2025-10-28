@@ -2557,7 +2557,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 
     if (opBase == INTOP_SUB_I4 && type1 == StackTypeByRef && type2 == StackTypeByRef)
     {
-        // Don't bash this case to ByRef
+        // This case (byref - byref) should not be converted to StackTypeI.
     }
     else
     {
