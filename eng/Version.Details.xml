@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rtm.25523.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="9.0.0-rtm.25527.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>94d1af195259708ca45352e40975321326feffea</Sha>
+      <Sha>1b6beede0d6db956d0734affa82e3a1c367275b8</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="9.0.0-alpha.1.24167.3">
       <Uri>https://github.com/dotnet/msquic</Uri>
