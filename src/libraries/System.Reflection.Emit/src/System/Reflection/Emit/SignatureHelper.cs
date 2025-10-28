@@ -276,11 +276,7 @@ namespace System.Reflection.Emit
             if (returnType.GetRequiredCustomModifiers() is Type[] retModReqs)
                 WriteCustomModifiers(retModifiersEncoder, retModReqs, isOptional: false, module);
 
-            Type returnTypeToWrite = returnType;
-            if (!returnTypeToWrite.IsFunctionPointer)
-                returnTypeToWrite = returnTypeToWrite.UnderlyingSystemType;
-
-            WriteSignatureForType(retTypeEncoder.Type(), returnTypeToWrite, module);
+            WriteSignatureForType(retTypeEncoder.Type(), returnType, module);
 
             foreach (Type paramType in paramTypes)
             {
@@ -293,16 +289,13 @@ namespace System.Reflection.Emit
                 if (paramType.GetRequiredCustomModifiers() is Type[] paramModReqs)
                     WriteCustomModifiers(paramModifiersEncoder, paramModReqs, isOptional: false, module);
 
-                Type paramTypeToWrite = paramType;
-                if (!paramTypeToWrite.IsFunctionPointer)
-                    paramTypeToWrite = paramTypeToWrite.UnderlyingSystemType;
-
-                WriteSignatureForType(paramEncoder.Type(), paramTypeToWrite, module);
+                WriteSignatureForType(paramEncoder.Type(), paramType, module);
             }
         }
 
         private static void WriteSimpleSignature(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
         {
+            type = type.UnderlyingSystemType;
             CoreTypeId? typeId = module.GetTypeIdFromCoreTypes(type);
 
             switch (typeId)
