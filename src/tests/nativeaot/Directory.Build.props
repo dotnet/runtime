@@ -9,5 +9,6 @@
     <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
     <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
     <HasMergedInTests>true</HasMergedInTests>
+    <ExpectedExitCode>100</ExpectedExitCode>
   </PropertyGroup>
 </Project>
