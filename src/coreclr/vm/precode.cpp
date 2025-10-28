@@ -190,7 +190,7 @@ TADDR InterpreterPrecode::GetMethodDesc()
     LIMITED_METHOD_DAC_CONTRACT;
 
     InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(GetData()->ByteCodeAddr);
-    return (TADDR)pInterpreterCode->Method->methodHnd;
+    return dac_cast<TADDR>(pInterpreterCode->Method->methodDesc);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -213,6 +213,12 @@ BOOL Precode::IsPointingToPrestub(PCODE target)
 #endif
 
     return FALSE;
+}
+
+BOOL Precode::IsPointingToPrestub()
+{
+    WRAPPER_NO_CONTRACT;
+    return IsPointingToPrestub(GetTarget());
 }
 
 #ifndef DACCESS_COMPILE
@@ -380,12 +386,11 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!IsPointingToPrestub(target));
 
-    PCODE expected = GetTarget();
     BOOL ret = FALSE;
-
-    if (fOnlyRedirectFromPrestub && !IsPointingToPrestub(expected))
+    if (fOnlyRedirectFromPrestub && !IsPointingToPrestub())
         return FALSE;
 
+    PCODE expected = GetTarget();
     PrecodeType precodeType = GetType();
     switch (precodeType)
     {

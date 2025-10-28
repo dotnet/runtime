@@ -12,6 +12,24 @@ int32_t InterpCompiler::AllocVarOffset(int var, int32_t *pPos)
     offset = *pPos;
     size = m_pVars[var].size;
 
+    size_t align = INTERP_STACK_SLOT_SIZE;
+
+    if (size > INTERP_STACK_SLOT_SIZE)
+    {
+        assert(m_pVars[var].interpType == InterpTypeVT);
+        align = m_compHnd->getClassAlignmentRequirement(m_pVars[var].clsHnd);
+        if (align < INTERP_STACK_SLOT_SIZE)
+            align = INTERP_STACK_SLOT_SIZE;
+        if (align > INTERP_STACK_ALIGNMENT)
+            align = INTERP_STACK_ALIGNMENT;
+    }
+    else
+    {
+        assert(m_pVars[var].interpType != InterpTypeVT || m_compHnd->getClassAlignmentRequirement(m_pVars[var].clsHnd) <= INTERP_STACK_SLOT_SIZE);
+    }
+
+    offset = (int32_t)ALIGN_UP_TO(offset, align);
+
     m_pVars[var].offset = offset;
 
     *pPos = ALIGN_UP_TO(offset + size, INTERP_STACK_SLOT_SIZE);

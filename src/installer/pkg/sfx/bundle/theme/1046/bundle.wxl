@@ -66,7 +66,7 @@ Pronto? Preparar? Vamos lá!"/>
   <String Id="WelcomeHeaderMessage" Value="Runtime do .NET"/>
   <String Id="WelcomeDescription" Value="O Runtime do .NET é usado para executar aplicativos .NET no seu computador com Windows. O .NET é um software de código aberto, com plataforma cruzada e possui o suporte da Microsoft. Esperamos que você goste!"/>
   <String Id="LearnMoreTitle" Value="Saiba mais sobre o .NET"/>
-  <String Id="SuccessInstallLocation" Value="O seguinte foi instalado em [DOTNETHOME]"/>
+  <String Id="SuccessInstallLocation" Value="O seguinte foi instalado:"/>
   <String Id="SuccessInstallProductName" Value=" - [BUNDLEMONIKER] "/>
   <String Id="ResourcesHeader" Value="Recursos"/>
   <String Id="DocumentationLink" Value="&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Documentação&lt;/A&gt;"/>

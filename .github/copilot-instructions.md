@@ -2,6 +2,8 @@
 
 You MUST make your best effort to ensure your changes satisfy those criteria before committing. If for any reason you were unable to build or test the changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
 
+Do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
+
 You MUST refer to the [Building & Testing in dotnet/runtime](#building--testing-in-dotnetruntime) instructions and use the commands and approaches specified there before attempting your own suggestions.
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
@@ -186,6 +188,8 @@ From the repository root:
 - More info can be found in the dedicated workflow docs:
     - [Build Libraries](/docs/workflow/building/libraries/README.md)
     - [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
+
+When working on changes limited to a specific library, do not complete without at least running all tests for that library and confirming they pass. For example if you are working within "System.Text.RegularExpressions" then make sure after your last edits that all the test libraries under `src\libraries\System.Text.RegularExpressions\tests` pass. It is OK to filter to relevant specific tests during your work, but before returning, ensure that, at least, ALL tests for the library do pass.
 
 ### 5.1. How To: Identify Affected Libraries
 
