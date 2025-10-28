@@ -13,6 +13,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -22,17 +23,10 @@ namespace System.Threading
 {
     public static partial class Monitor
     {
-        #region Object->Lock/Condition mapping
-
-        private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = new ConditionalWeakTable<object, Condition>();
-        private static readonly Func<object, Condition> s_createCondition = (o) => new Condition(ObjectHeader.GetLockObject(o));
-
-        private static Condition GetCondition(object obj)
+        #region Object->Lock mapping
+        internal static Lock GetLockObject(object obj)
         {
-            Debug.Assert(
-                !(obj is Condition),
-                "Do not use Monitor.Pulse or Wait on a Condition instance; use the methods on Condition instead.");
-            return s_conditionTable.GetOrAdd(obj, s_createCondition);
+            return ObjectHeader.GetLockObject(obj);
         }
         #endregion
 
@@ -56,9 +50,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Enter(object obj, ref bool lockTaken)
         {
-            // we are inlining lockTaken check as the check is likely be optimized away
             if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
+                ThrowLockTakenException();
 
             Enter(obj);
             lockTaken = true;
@@ -133,45 +126,18 @@ namespace System.Threading
             ObjectHeader.Release(obj);
         }
 
+        // Marked no-inlining to prevent recursive inlining of IsAcquired.
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool IsEntered(object obj)
         {
             return ObjectHeader.IsAcquired(obj);
         }
 
-        #endregion
-
-        #region Public Wait/Pulse methods
-
-        [UnsupportedOSPlatform("browser")]
-        public static bool Wait(object obj, int millisecondsTimeout)
+        [DoesNotReturn]
+        private static void ThrowLockTakenException()
         {
-            return GetCondition(obj).Wait(millisecondsTimeout, obj);
+            throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
         }
-
-        public static void Pulse(object obj)
-        {
-            ArgumentNullException.ThrowIfNull(obj);
-
-            GetCondition(obj).SignalOne();
-        }
-
-        public static void PulseAll(object obj)
-        {
-            ArgumentNullException.ThrowIfNull(obj);
-
-            GetCondition(obj).SignalAll();
-        }
-
-        #endregion
-
-        #region Metrics
-
-        /// <summary>
-        /// Gets the number of times there was contention upon trying to take a <see cref="Monitor"/>'s lock so far.
-        /// </summary>
-        public static long LockContentionCount => Lock.ContentionCount;
-
         #endregion
     }
 }

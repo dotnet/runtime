@@ -129,9 +129,9 @@ namespace System.Threading
         public enum ObjectKind // may be used by debuggers
         {
             [Obsolete("Represents native Monitor locks, which have been removed", error: true)]
-            MonitorLock, // maps to DebugBlockingItemType::Legacy_DebugBlock_MonitorCriticalSection in coreclr
+            MonitorLock,
             [Obsolete("Represents native Monitor waits, which have been removed", error: true)]
-            MonitorWait, // maps to DebugBlockingItemType::Legacy_DebugBlock_MonitorEvent in coreclr
+            MonitorWait,
             Lock,
             Condition
         }

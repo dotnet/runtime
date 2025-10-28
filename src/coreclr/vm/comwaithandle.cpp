@@ -28,7 +28,7 @@ extern "C" INT32 QCALLTYPE WaitHandle_WaitOneCore(HANDLE handle, INT32 timeout, 
     WaitMode waitMode = (WaitMode)((!useTrivialWaits ? WaitMode_Alertable : WaitMode_None) | WaitMode_IgnoreSyncCtx);
     if (hasAssociatedObject)
     {
-        waitMode = (WaitMode)(waitMode | WaitMode_HasAssociatedObject);
+        waitMode = (WaitMode)(waitMode | WaitMode_DoNotSendWaitEvents);
     }
     retVal = pThread->DoAppropriateWait(1, &handle, TRUE, timeout, waitMode);
 
