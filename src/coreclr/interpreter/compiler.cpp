@@ -5959,18 +5959,18 @@ retry_emit:
 
 #ifdef TARGET_64BIT
                     // nint and int32 can be used interchangeably. Add implicit conversions.
-                    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
+                    if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
                         EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
 #endif
-                    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
+                    if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
                         EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
-                    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
+                    else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
                         EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
 
-                    if (m_pStackPointer[-1].type != g_stackTypeFromInterpType[retType])
+                    if (m_pStackPointer[-1].GetStackType() != g_stackTypeFromInterpType[retType])
                     {
                         StackType retStackType = g_stackTypeFromInterpType[retType];
-                        StackType stackType = m_pStackPointer[-1].type;
+                        StackType stackType = m_pStackPointer[-1].GetStackType();
 
                         if (stackType == StackTypeI && (retStackType == StackTypeO || retStackType == StackTypeByRef))
                         {
