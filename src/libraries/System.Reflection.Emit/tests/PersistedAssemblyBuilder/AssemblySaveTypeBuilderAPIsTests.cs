@@ -633,8 +633,8 @@ namespace System.Reflection.Emit.Tests
                     Type[] par0RequiredMods = allModMethod.GetParameters()[0].GetRequiredCustomModifiers();
                     Type[] par0OptionalMods = allModMethod.GetParameters()[0].GetOptionalCustomModifiers();
                     Assert.Equal(2, returnReqMods.Length);
-                    Assert.Equal(mlc.CoreAssembly.GetType(typeof(short).FullName), returnReqMods[0]);
-                    Assert.Equal(mlc.CoreAssembly.GetType(typeof(int).FullName), returnReqMods[1]);
+                    Assert.Equal(mlc.CoreAssembly.GetType(typeof(int).FullName), returnReqMods[0]);
+                    Assert.Equal(mlc.CoreAssembly.GetType(typeof(short).FullName), returnReqMods[1]);
                     Assert.Equal(1, returnOptMods.Length);
                     Assert.Equal(mlc.CoreAssembly.GetType(typeof(Version).FullName), returnOptMods[0]);
                     Assert.Equal(cmodsReq1.Length, par0RequiredMods.Length);

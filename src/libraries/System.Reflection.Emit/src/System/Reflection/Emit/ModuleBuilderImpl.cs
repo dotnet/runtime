@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
+using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -184,7 +185,8 @@ namespace System.Reflection.Emit
             }
 
             // Now write all generic parameters in order
-            genericParams.Sort((x, y) => {
+            genericParams.Sort((x, y) =>
+            {
                 int primary = CodedIndex.TypeOrMethodDef(x._parentHandle).CompareTo(CodedIndex.TypeOrMethodDef(y._parentHandle));
                 if (primary != 0)
                     return primary;
@@ -744,9 +746,11 @@ namespace System.Reflection.Emit
 
                         FieldInfo originalField = (FieldInfo)GetOriginalMemberIfConstructedType(field);
                         Type fieldType = originalField.FieldType;
-
-                        if (fieldType.IsUnmanagedFunctionPointer)
+                        try
+                        {
                             fieldType = originalField.GetModifiedFieldType();
+                        }
+                        catch { }
 
                         memberHandle = AddMemberReference(field.Name, GetTypeHandle(declaringType),
                             MetadataSignatureHelper.GetFieldSignature(fieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
@@ -800,8 +804,11 @@ namespace System.Reflection.Emit
         private BlobBuilder GetMethodSignature(MethodInfo method, Type[]? optionalParameterTypes)
         {
             Type returnType = method.ReturnType;
-            if (returnType.IsUnmanagedFunctionPointer)
+            try
+            {
                 returnType = method.ReturnParameter.GetModifiedParameterType();
+            }
+            catch { }
 
             return MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), returnType,
                 GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
@@ -842,7 +849,7 @@ namespace System.Reflection.Emit
             return memberInfo;
         }
 
-        private static Type[] ParameterTypes(ParameterInfo[] parameterInfos)
+        internal static Type[] ParameterTypes(ParameterInfo[] parameterInfos)
         {
             if (parameterInfos.Length == 0)
             {
@@ -854,8 +861,11 @@ namespace System.Reflection.Emit
             for (int i = 0; i < parameterInfos.Length; i++)
             {
                 Type paramType = parameterInfos[i].ParameterType;
-                if (paramType.IsUnmanagedFunctionPointer)
+                try
+                {
                     paramType = parameterInfos[i].GetModifiedParameterType();
+                }
+                catch { }
 
                 parameterTypes[i] = paramType;
             }
@@ -878,7 +888,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    publicKeyOrToken  = aName.GetPublicKeyToken();
+                    publicKeyOrToken = aName.GetPublicKeyToken();
                 }
                 handle = AddAssemblyReference(aName.Name, aName.Version, aName.CultureName, publicKeyOrToken, assemblyFlags);
                 _assemblyReferences.Add(assembly, handle);

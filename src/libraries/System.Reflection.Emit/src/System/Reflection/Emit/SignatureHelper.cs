@@ -48,7 +48,7 @@ namespace System.Reflection.Emit
 
             retType.Void();
 
-            WriteParametersSignature(module, Array.ConvertAll(parameters, p => p.ParameterType), parameterEncoder);
+            WriteParametersSignature(module, ModuleBuilderImpl.ParameterTypes(parameters), parameterEncoder);
 
             return constructorSignature;
         }
@@ -203,13 +203,13 @@ namespace System.Reflection.Emit
                     module.GetTypeHandle(type.GetGenericTypeDefinition()), genericArguments.Length, type.IsValueType);
                 foreach (Type gType in genericArguments)
                 {
-                    if (gType.IsGenericMethodParameter)
+                    if (gType.UnderlyingSystemType.IsGenericMethodParameter)
                     {
-                        encoder.AddArgument().GenericMethodTypeParameter(gType.GenericParameterPosition);
+                        encoder.AddArgument().GenericMethodTypeParameter(gType.UnderlyingSystemType.GenericParameterPosition);
                     }
-                    else if (gType.IsGenericParameter)
+                    else if (gType.UnderlyingSystemType.IsGenericParameter)
                     {
-                        encoder.AddArgument().GenericTypeParameter(gType.GenericParameterPosition);
+                        encoder.AddArgument().GenericTypeParameter(gType.UnderlyingSystemType.GenericParameterPosition);
                     }
                     else
                     {
@@ -217,13 +217,13 @@ namespace System.Reflection.Emit
                     }
                 }
             }
-            else if (type.IsGenericMethodParameter)
+            else if (type.UnderlyingSystemType.IsGenericMethodParameter)
             {
-                signature.GenericMethodTypeParameter(type.GenericParameterPosition);
+                signature.GenericMethodTypeParameter(type.UnderlyingSystemType.GenericParameterPosition);
             }
-            else if (type.IsGenericParameter)
+            else if (type.UnderlyingSystemType.IsGenericParameter)
             {
-                signature.GenericTypeParameter(type.GenericParameterPosition);
+                signature.GenericTypeParameter(type.UnderlyingSystemType.GenericParameterPosition);
             }
             else if (type.IsFunctionPointer)
             {
