@@ -975,7 +975,8 @@ void ValidateEmittedSequenceTermination(InterpInst *lastIns)
         (lastIns->opcode == INTOP_CALLVIRT_TAIL) ||
         (lastIns->opcode == INTOP_RETHROW) ||
         (lastIns->opcode == INTOP_LEAVE_FILTER) ||
-        (lastIns->opcode == INTOP_LEAVE_CATCH))
+        (lastIns->opcode == INTOP_LEAVE_CATCH) ||
+        (lastIns->opcode == INTOP_JMP))
     {
         // Valid terminating instruction
         return;
@@ -6936,7 +6937,7 @@ retry_emit:
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
                 AddIns(INTOP_JMP);
-                m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hMethod);
+                m_pLastNewIns->data[0] = GetMethodDataItemIndex(resolvedToken.hMethod);
                 m_ip += 5;
                 break;
             }
