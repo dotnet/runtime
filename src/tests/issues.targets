@@ -73,12 +73,6 @@
 
     <!-- All Unix targets on all runtimes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true'">
-         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg_TargetUnix/*">
-            <Issue>https://github.com/dotnet/runtime/issues/10478 </Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_57606/Runtime_57606/*">
-            <Issue>https://github.com/dotnet/runtime/issues/10478</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets  on CoreCLR Runtime -->
@@ -162,9 +156,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/eh/FinallyExec/nonlocalexitinroot/*">
             <Issue>times out</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg*/*">
-            <Issue>Needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/WindowsEventLog/WindowsEventLog_TargetUnix/*">
             <Issue>Needs triage</Issue>
         </ExcludeList>
@@ -240,12 +231,6 @@
 
     <!-- Windows x64 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetArchitecture)' == 'x64' and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport/*">
-            <Issue>Varargs supported on this platform</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
-            <Issue>Varargs supported on this platform</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x86 specific excludes -->
@@ -271,12 +256,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
             <Issue>https://github.com/dotnet/runtime/issues/44341 The test causes OutOfMemory exception in crossgen mode.</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport/*">
-            <Issue>Varargs supported on this platform</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
-            <Issue>Varargs supported on this platform</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
         </ExcludeList>
@@ -295,12 +274,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/NoGCRegion/NoGC/*">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
-            <Issue>Varargs supported on this platform</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport/*">
-            <Issue>Varargs supported on this platform</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/rngchk/RngchkStress3/*">
             <Issue>Needs Triage</Issue>
@@ -389,100 +362,6 @@
 
     <!-- OSX arm64 on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TargetArchitecture)' == 'arm64' and '$(RuntimeFlavor)' == 'coreclr' ">
-    </ItemGroup>
-
-    <!-- Tests that need to be triaged for vararg usage as that is not supported -->
-    <!-- Note these will only be excluded for unix platforms on all runtimes -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true' ">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/1/arglist*/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/2/arglist*/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/unaligned/4/arglist*/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/PREFIX/volatile/1/arglist*/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-    <!-- Tests that need to be triaged for vararg usage as that is not supported -->
-    <!-- Note these will only be excluded for unix platforms on CoreCLR only -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' != 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/gc/misc/funclet/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Coverage/arglist_pos/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_d/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/seq_r/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-EJIT/V1-M12-Beta2/b26323/b26323/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b16423/b16423/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324a/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b26324/b26324b/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b28901/b28901/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30838/b30838/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b30864/b30864/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b32374/b32374/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b35784/b35784/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b36472/b36472/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b37598/b37598/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b41391/b41391/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M11-Beta1/b46867/b46867/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b31745/b31745/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b31746/b31746/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b37646/b37646/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b41852/b41852/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b88793/b88793/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b91248/b91248/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b409748/b409748/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Failures while testing via ILLINK -->
@@ -682,9 +561,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/CopyCtor/CopyCtorTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: C++/CLI</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Varargs/VarargsTest/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: Varargs</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Variant/VariantTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: VARIANT marshalling</Issue>
         </ExcludeList>
@@ -708,9 +584,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/WinRT/WinRT/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/182</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg_TargetWindows/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: Varargs</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/forceinlining/NegativeCases/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/183</Issue>
@@ -775,9 +648,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/Serialization/Serialize/*">
             <Issue>Needs xunit.performance</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b71120/b71120/**">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: Varargs</Issue>
-        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b353858/b353858/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Thorough checking of invalid inputs</Issue>
         </ExcludeList>
@@ -795,9 +665,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_35384/GitHub_35384/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/198</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_71375/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: Varargs</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/**">
             <Issue>CoreCLR test</Issue>
@@ -864,9 +731,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection emit</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_57606/Runtime_57606/*">
-            <Issue>https://github.com/dotnet/runtimelab/issues/155: varargs</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76273/Runtime_76273/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>

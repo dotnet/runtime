@@ -3169,7 +3169,7 @@ namespace System.Text.RegularExpressions
                     curNode = curNode.Child(curChild);
                     curChild = 0;
 
-                    sb.Append(new string(' ', stack.Count * 2)).Append(curNode.Describe()).AppendLine();
+                    sb.Append(' ', stack.Count * 2).Append(curNode.Describe()).AppendLine();
                 }
                 else
                 {
