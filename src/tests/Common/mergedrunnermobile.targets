@@ -39,6 +39,16 @@
                       Lines=""
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
+    <!-- Write ExpectedExitCode to a file so helixpublishwitharcade.proj can read it back -->
+    <ItemGroup Condition="'$(ExpectedExitCode)' != ''">
+      <_ExpectedExitCodeFile Include="$(IntermediateOutputPath)/ExpectedExitCode.txt" />
+      <Content Include="@(_ExpectedExitCodeFile)" TargetPath="ExpectedExitCode.txt" CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+    <WriteLinesToFile Condition="'$(ExpectedExitCode)' != ''"
+                      File="@(_ExpectedExitCodeFile)"
+                      Lines="$(ExpectedExitCode)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
   </Target>
 
   <!-- Don't use the usual script generation, the scripts it generates are not useful for these tests. -->
