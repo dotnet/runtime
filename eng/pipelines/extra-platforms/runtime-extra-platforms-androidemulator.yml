@@ -124,7 +124,6 @@ jobs:
             creator: dotnet-bot
             testBuildArgs: nativeaot tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
-            buildAllTestsAsStandalone: true
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
