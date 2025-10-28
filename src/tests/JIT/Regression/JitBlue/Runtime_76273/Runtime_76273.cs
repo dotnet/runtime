@@ -25,6 +25,7 @@ public class Program
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.Load", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90372", TestRuntimes.Mono)]
     public static void TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();

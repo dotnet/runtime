@@ -33,7 +33,7 @@ public class Runtime_105479_A
         Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105479_A().Method0());
     }
 
-    [ConditionalFact(typeof(AdvSimd), nameof(Avx.IsSupported))]
+    [ConditionalFact(typeof(Avx), nameof(Avx.IsSupported))]
     public static void TestEntryPoint()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105479_A().Method1());

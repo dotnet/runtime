@@ -31,6 +31,7 @@ public unsafe class Runtime_62692
     static uint Problem6(uint crc, float data) => Sse42.Crc32(crc, (uint)data);
 
     [ConditionalFact(typeof(Sse42), nameof(Sse42.IsSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/100368", TestRuntimes.Mono)]
     public static int TestEntryPoint()
     {
         long a = long.MaxValue;

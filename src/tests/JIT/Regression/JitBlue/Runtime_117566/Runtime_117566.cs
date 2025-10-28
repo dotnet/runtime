@@ -13,17 +13,15 @@
 //    at System.Reflection.MethodBase.Invoke(System.Object, System.Object[])
 //    at Runtime_117566.TestEntryPoint()
 
-
-namespace Runtime_117566;
-
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.CompilerServices;
+using TestLibrary;
 using Xunit;
 
 public class Runtime_117566
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
     public static void TestEntryPoint()
     {
         var context = new AssemblyLoadContext("CollectibleALC", isCollectible: true);
