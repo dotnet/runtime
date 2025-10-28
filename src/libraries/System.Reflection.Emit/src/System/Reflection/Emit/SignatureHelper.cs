@@ -122,6 +122,8 @@ namespace System.Reflection.Emit
 
         private static void WriteCustomModifiers(CustomModifiersEncoder encoder, Type[] customModifiers, bool isOptional, ModuleBuilderImpl module)
         {
+            // GetOptionalCustomModifiers and GetRequiredCustomModifiers return modifiers in reverse order
+            Array.Reverse(customModifiers);
             foreach (Type modifier in customModifiers)
             {
                 encoder.AddModifier(module.GetTypeHandle(modifier), isOptional);
@@ -271,16 +273,10 @@ namespace System.Reflection.Emit
             CustomModifiersEncoder retModifiersEncoder = retTypeEncoder.CustomModifiers();
 
             if (returnType.GetOptionalCustomModifiers() is Type[] retModOpts)
-            {
-                Array.Reverse(retModOpts);
                 WriteCustomModifiers(retModifiersEncoder, retModOpts, isOptional: true, module);
-            }
 
             if (returnType.GetRequiredCustomModifiers() is Type[] retModReqs)
-            {
-                Array.Reverse(retModReqs);
                 WriteCustomModifiers(retModifiersEncoder, retModReqs, isOptional: false, module);
-            }
 
             WriteSignatureForType(retTypeEncoder.Type(), returnType, module);
 
@@ -290,16 +286,10 @@ namespace System.Reflection.Emit
                 CustomModifiersEncoder paramModifiersEncoder = paramEncoder.CustomModifiers();
 
                 if (paramType.GetOptionalCustomModifiers() is Type[] paramModOpts)
-                {
-                    Array.Reverse(paramModOpts);
                     WriteCustomModifiers(paramModifiersEncoder, paramModOpts, isOptional: true, module);
-                }
 
                 if (paramType.GetRequiredCustomModifiers() is Type[] paramModReqs)
-                {
-                    Array.Reverse(paramModReqs);
                     WriteCustomModifiers(paramModifiersEncoder, paramModReqs, isOptional: false, module);
-                }
 
                 WriteSignatureForType(paramEncoder.Type(), paramType, module);
             }
