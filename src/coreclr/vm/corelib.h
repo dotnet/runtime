@@ -987,7 +987,6 @@ DEFINE_CLASS(DIRECTONTHREADLOCALDATA, Threading, Thread+DirectOnThreadLocalData)
 DEFINE_CLASS(THREAD,                Threading,              Thread)
 DEFINE_METHOD(THREAD,               START_CALLBACK,                          StartCallback,                               IM_RetVoid)
 DEFINE_METHOD(THREAD,               POLLGC,                                  PollGC,                               NoSig)
-DEFINE_METHOD(THREAD,               PULSE_THREAD_OBJECT,                     PulseThreadObject,                          IM_RetVoid)
 
 #ifdef FEATURE_OBJCMARSHAL
 DEFINE_CLASS(AUTORELEASEPOOL,       Threading,              AutoreleasePool)

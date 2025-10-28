@@ -137,25 +137,6 @@ static void KickOffThread_Worker(LPVOID ptr)
     CALL_MANAGED_METHOD_NORET(args);
 }
 
-// Helper to avoid two EX_TRY/EX_CATCH blocks in one function
-static void PulseAllHelper(Thread* pThread)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        DISABLED(NOTHROW);
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    // GetExposedObject() will either throw, or we have a valid object.  Note
-    // that we re-acquire it each time, since it may move during calls.
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__THREAD__PULSE_THREAD_OBJECT);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(pThread->GetExposedObject());
-    CALL_MANAGED_METHOD_NORET(args);
-}
-
 // When an exposed thread is started by Win32, this is where it starts.
 static ULONG WINAPI KickOffThread(void* pass)
 {
@@ -195,8 +176,6 @@ static ULONG WINAPI KickOffThread(void* pass)
         _ASSERTE(GetThread() == pThread);        // Now that it's started
 
         ManagedThreadBase::KickOff(KickOffThread_Worker, NULL);
-
-        PulseAllHelper(pThread);
 
         GCX_PREEMP_NO_DTOR();
 
@@ -288,7 +267,6 @@ extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int thr
     {
         GCX_COOP();
 
-        PulseAllHelper(pNewThread);
         pNewThread->HandleThreadStartupFailure();
     }
 
