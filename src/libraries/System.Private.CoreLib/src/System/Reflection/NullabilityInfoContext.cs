@@ -501,14 +501,6 @@ namespace System.Reflection
             }
 
             var state = NullabilityState.Unknown;
-            // Special handling for KeyValuePair generic parameters that may be missing nullable attributes
-            if (IsKeyValuePairGenericParameter(genericParameter))
-            {
-                // KeyValuePair generic parameters should be treated as nullable by default
-                nullability.ReadState = NullabilityState.Nullable;
-                nullability.WriteState = NullabilityState.Nullable;
-                return true;
-            }
             if (CreateParser(genericParameter.GetCustomAttributesData()).ParseNullableState(0, ref state))
             {
                 nullability.ReadState = state;
@@ -524,17 +516,6 @@ namespace System.Reflection
             }
 
             return false;
-        }
-
-        private static bool IsKeyValuePairGenericParameter(Type genericParameter)
-        {
-            if (!genericParameter.IsGenericParameter)
-                return false;
-            var declaringType = genericParameter.DeclaringType;
-            return declaringType != null &&
-                   declaringType.IsGenericTypeDefinition &&
-                   declaringType.FullName == "System.Collections.Generic.KeyValuePair`2" &&
-                   (genericParameter.Name == "TKey" || genericParameter.Name == "TValue");
         }
 
         private bool TryUpdateGenericTypeParameterNullabilityFromReflectedType(NullabilityInfo nullability, Type genericParameter, Type context, Type reflectedType)
