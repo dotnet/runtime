@@ -294,7 +294,6 @@ enum InterpBBState
 enum InterpBBClauseType
 {
     BBClauseNone,
-    BBClauseTry,
     BBClauseCatch,
     BBClauseFinally,
     BBClauseFilter,
