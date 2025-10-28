@@ -2682,6 +2682,8 @@ CALL_INTERP_METHOD:
                         {
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             // Interpreter-FIXME: Implement tailcall via helpers, see https://github.com/dotnet/runtime/blob/main/docs/design/features/tailcalls-with-helpers.md
+                            // INTOP_JMP handles only managed targets
+                            _ASSERTE(*ip != INTOP_JMP);
                             InvokeManagedMethod(targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL);
                             break;
                         }
@@ -2698,6 +2700,10 @@ CALL_INTERP_METHOD:
                         memcpy(pFrame->pStack, callArgsAddress, pTargetMethod->argsSize);
                         // Reuse current stack frame. We discard the call insn's returnOffset because it's not important and tail calls are
                         //  required to be followed by a ret, so we know nothing is going to read from stack[returnOffset] after the call.
+                        pFrame->ReInit(pFrame->pParent, targetIp, pFrame->pRetVal, pFrame->pStack);
+                    }
+                    else if (*ip == INTOP_JMP)
+                    {
                         pFrame->ReInit(pFrame->pParent, targetIp, pFrame->pRetVal, pFrame->pStack);
                     }
                     else
@@ -2730,6 +2736,14 @@ CALL_INTERP_METHOD:
                     pThreadContext->pStackPointer = stack + pMethod->allocaSize;
                     break;
                 }
+                case INTOP_JMP:
+                    methodSlot = ip[1];
+                    targetMethod = (MethodDesc*)pMethod->pDataItems[methodSlot];
+                    // Set the offsets so that the code at CALL_INTERP_METHOD can compute the callArgsAddress and returnValueAddress
+                    // to be the same as the current frame's ones.
+                    callArgsOffset = 0;
+                    returnOffset = (int32_t)(pFrame->pRetVal - stack);
+                    goto CALL_INTERP_METHOD;
                 case INTOP_NEWOBJ_GENERIC:
                 {
                     isTailcall = false;

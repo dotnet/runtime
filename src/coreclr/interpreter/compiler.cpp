@@ -6929,6 +6929,17 @@ retry_emit:
                 EmitUnaryArithmeticOp(INTOP_NOT_I4);
                 m_ip++;
                 break;
+            case CEE_JMP:
+            {
+                CHECK_STACK(0);
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
+                AddIns(INTOP_JMP);
+                m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hMethod);
+                m_ip += 5;
+                break;
+            }
             case CEE_CALLVIRT:
             case CEE_CALL:
                 EmitCall(pConstrainedToken, readonly, tailcall, false /*newObj*/, false /*isCalli*/);
