@@ -154,10 +154,11 @@ enum StackType {
     StackTypeVT,
     StackTypeByRef,
     StackTypeF,
+    StackTypeTransientPointer, // Used to represent the concept of a pointer that matches the "transient" pointer concept. See section I.12.3.2.1 of ECMA-335
 #ifdef TARGET_64BIT
-    StackTypeI = StackTypeI8
+    StackTypeI = StackTypeI8,
 #else
-    StackTypeI = StackTypeI4
+    StackTypeI = StackTypeI4,
 #endif
 };
 
@@ -414,8 +415,48 @@ struct InterpVar
 
 struct StackInfo
 {
+private:
     StackType type;
+public:
+
     CORINFO_CLASS_HANDLE clsHnd;
+
+    StackType GetStackType()
+    {
+        if (type == StackTypeTransientPointer)
+        {
+            // Transient pointers are treated as byrefs for stack type purposes
+            return StackTypeByRef;
+        }
+        return type;
+    }
+
+    void SetAsTransientPointer()
+    {
+        assert(type == StackTypeByRef);
+        type = StackTypeTransientPointer;
+    }
+
+    bool IsTransientPointer()
+    {
+        return type == StackTypeTransientPointer;
+    }
+
+    void BashStackTypeToIIfPossible()
+    {
+        if (type == StackTypeTransientPointer)
+        {
+            type = StackTypeI;
+        }
+    }
+
+    void BashStackTypeToIForConvert()
+    {
+        if ((type == StackTypeTransientPointer) || (type == StackTypeByRef) || (type == StackTypeO))
+        {
+            type = StackTypeI;
+        }
+    }
 
     // The var associated with the value of this stack entry. Every time we push on
     // the stack a new var is created.
