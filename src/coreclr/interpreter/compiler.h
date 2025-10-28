@@ -452,7 +452,7 @@ public:
     }
 
     // Used before a conversion operation to ensure that transient pointers, byrefs, and object references are
-    // treated as integers for the purpose of the conversion. The Byref/O behavior here does not seems to have
+    // treated as integers for the purpose of the conversion. The Byref/O behavior here does not seem to have
     // justification in the ECMA-335 spec, but it is needed to match the behavior of the JIT.
     void BashStackTypeToIForConvert()
     {
