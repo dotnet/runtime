@@ -13530,14 +13530,15 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
     bool         hasOverflowCheck = tree->gtOverflowEx();
 
     // Ensure that the resultType is correct
-    assert(genActualType(castToType) == genActualType(tree->TypeGet())
 #ifdef TARGET_ARM64
-           // We can truncate scalable vectors to any SIMD type, and can zero
-           // extend SIMD types to a scalable vector.
-           || (tree->TypeGet() == TYP_SIMDSV && varTypeIsSIMD(castToType)) ||
-           (varTypeIsSIMD(tree->TypeGet()) && castToType == TYP_SIMDSV)
+    // We can truncate scalable vectors to any SIMD type, and can zero
+    // extend SIMD types to a scalable vector.
+    assert(genActualType(castToType) == genActualType(tree->TypeGet()) ||
+           (tree->TypeGet() == TYP_SIMDSV && varTypeIsSIMD(castToType)) ||
+           (varTypeIsSIMD(tree->TypeGet()) && castToType == TYP_SIMDSV));
+#else
+    assert(genActualType(castToType) == genActualType(tree->TypeGet()));
 #endif
-    );
 
     tree->gtVNPair = vnStore->VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 }
