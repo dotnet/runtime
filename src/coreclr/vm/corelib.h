@@ -663,7 +663,7 @@ DEFINE_FIELD(LOCK,                  OWNING_THREAD_ID,       _owningThreadId)
 DEFINE_FIELD(LOCK,                  STATE,                  _state)
 DEFINE_FIELD(LOCK,                  RECURSION_COUNT,        _recursionCount)
 DEFINE_METHOD(LOCK,                 CTOR,                   .ctor,                      IM_RetVoid)
-DEFINE_METHOD(LOCK,                 INITIALIZE_TO_LOCKED_WITH_NO_WAITERS, InitializeToLockedWithNoWaiters, NoSig)
+DEFINE_METHOD(LOCK,                 RESET_FOR_MONITOR,      ResetForMonitor, NoSig)
 
 DEFINE_CLASS(CONDITION,             Threading,              Condition)
 DEFINE_FIELD(CONDITION,             WAITERS_HEAD,           _waitersHead)
@@ -672,7 +672,7 @@ DEFINE_FIELD(CONDITION,             CURRENT_THREAD_WAITER,  t_waiterForCurrentTh
 DEFINE_CLASS(WAITER,                Threading,              Condition+Waiter)
 DEFINE_FIELD(WAITER,                NEXT,                   next)
 
-DEFINE_CLASS(THREADID,              Threading,              Lock+ThreadId)
+DEFINE_CLASS(THREADID,              Threading,              ManagedThreadId)
 
 DEFINE_CLASS(PARAMETER,             Reflection,             ParameterInfo)
 
