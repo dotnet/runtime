@@ -2088,7 +2088,7 @@ void CodeGen::instGen_Set_Reg_To_Base_Plus_Imm(emitAttr       size,
     {
         GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, dstReg, baseReg, imm);
     }
-    else if (-4095 <= imm < 0)
+    else if (-4095 <= imm && imm < 0)
     {
         GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, dstReg, baseReg, -imm);
     }
