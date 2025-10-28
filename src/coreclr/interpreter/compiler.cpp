@@ -5151,6 +5151,7 @@ bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* patte
                     // We are changing GC representation, so don't optimize this.
                     return false;
                 }
+                break;
 #endif
             case StackTypeR4:
             case StackTypeR8:
