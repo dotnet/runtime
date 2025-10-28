@@ -441,7 +441,9 @@ public:
         return type == StackTypeTransientPointer;
     }
 
-    void BashStackTypeToIIfPossible()
+    // Used before a use of a value where the value on the stack would be correctly handled if the type on the stack
+    // was of type I. This is in support of section I.12.3.2.1 of ECMA-335
+    void BashStackTypeToI_ForTransientPointerUse()
     {
         if (type == StackTypeTransientPointer)
         {
@@ -449,6 +451,9 @@ public:
         }
     }
 
+    // Used before a conversion operation to ensure that transient pointers, byrefs, and object references are
+    // treated as integers for the purpose of the conversion. The Byref/O behavior here does not seems to have
+    // justification in the ECMA-335 spec, but it is needed to match the behavior of the JIT.
     void BashStackTypeToIForConvert()
     {
         if ((type == StackTypeTransientPointer) || (type == StackTypeByRef) || (type == StackTypeO))

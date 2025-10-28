@@ -2563,12 +2563,12 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
     {
         if (type1 == StackTypeByRef)
         {
-            m_pStackPointer[-2].BashStackTypeToIIfPossible();
+            m_pStackPointer[-2].BashStackTypeToI_ForTransientPointerUse();
             type1 = m_pStackPointer[-2].GetStackType();
         }
         if (type2 == StackTypeByRef)
         {
-            m_pStackPointer[-1].BashStackTypeToIIfPossible();
+            m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
             type2 = m_pStackPointer[-1].GetStackType();
         }
     }
@@ -2687,7 +2687,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
 {
     CHECK_STACK(1);
-    m_pStackPointer[-1].BashStackTypeToIIfPossible();
+    m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
     StackType stackType = m_pStackPointer[-1].GetStackType();
     int32_t finalOpcode = opBase + (stackType - StackTypeI4);
 
@@ -2706,8 +2706,8 @@ void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
 void InterpCompiler::EmitShiftOp(int32_t opBase)
 {
     CHECK_STACK(2);
-    m_pStackPointer[-1].BashStackTypeToIIfPossible();
-    m_pStackPointer[-2].BashStackTypeToIIfPossible();
+    m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
+    m_pStackPointer[-2].BashStackTypeToI_ForTransientPointerUse();
     StackType stackType = m_pStackPointer[-2].GetStackType();
     StackType shiftAmountType = m_pStackPointer[-1].GetStackType();
     int32_t typeOffset = stackType - StackTypeI4;
@@ -4611,7 +4611,7 @@ void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 
 void InterpCompiler::EmitStelem(InterpType interpType)
 {
-    m_pStackPointer[-1].BashStackTypeToIIfPossible();
+    m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
     if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
@@ -5223,7 +5223,7 @@ void InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pa
         }
         else if (m_pStackPointer[-1].GetStackType() == StackTypeByRef && g_stackTypeFromInterpType[interpType] == StackTypeI)
         {
-            m_pStackPointer[-1].BashStackTypeToIIfPossible();
+            m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
             if (m_pStackPointer[-1].GetStackType() != StackTypeI)
             {
                 // We should have been able to convert ByRef to I
@@ -5907,7 +5907,7 @@ retry_emit:
                 if ((retType != InterpTypeVoid) && (retType != InterpTypeByRef))
                 {
                     CheckStackExact(1);
-                    m_pStackPointer[-1].BashStackTypeToIIfPossible();
+                    m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
                 }
 
                 if (m_isSynchronized && m_currentILOffset < m_ILCodeSizeFromILHeader)
@@ -7428,7 +7428,7 @@ retry_emit:
             case CEE_STIND_R8:
             case CEE_STIND_REF:
             {
-                m_pStackPointer[-1].BashStackTypeToIIfPossible();
+                m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
                 InterpType interpType = InterpTypeVoid;
                 switch(opcode)
                 {
