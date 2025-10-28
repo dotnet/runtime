@@ -64,13 +64,11 @@ using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 
 namespace <xsl:value-of select="@namespace" />
-{
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct <xsl:value-of select="@name" />
-    {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="DefaultFieldDef" /><xsl:apply-templates mode="FieldDef" />
-<xsl:if test="*[@defaultDerInit]">
+{<xsl:if test="*[@defaultDerInit]">
+    file static class Shared<xsl:value-of select="@name" />
+    {<xsl:apply-templates mode="DefaultFieldDef" />
 #if DEBUG
-        static <xsl:value-of select="@name" />()
+        static Shared<xsl:value-of select="@name" />()
         {
             <xsl:value-of select="@name" /> decoded = default;<xsl:if test="asn:AsnType[@defaultDerInit] | *[@defaultDerInit]/asn:AsnType">
             ReadOnlyMemory&lt;byte&gt; rebind = default;</xsl:if>
@@ -78,7 +76,12 @@ namespace <xsl:value-of select="@namespace" />
             ValueAsnReader collectionReader;</xsl:if><xsl:apply-templates mode="DefaultFieldVerify" />
         }
 #endif
+    }
 </xsl:if>
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct <xsl:value-of select="@name" />
+    {<xsl:apply-templates mode="Validate" /><xsl:apply-templates mode="FieldDef" />
+
         internal readonly void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
@@ -253,12 +256,12 @@ namespace <xsl:value-of select="@namespace" />
   </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldDef">
-        private static ReadOnlySpan&lt;byte&gt; <xsl:call-template name="DefaultValueField"/> =&gt; [<xsl:value-of select="@defaultDerInit"/>];
+        internal static ReadOnlySpan&lt;byte&gt; <xsl:call-template name="DefaultValueField"/> =&gt; [<xsl:value-of select="@defaultDerInit"/>];
 </xsl:template>
 
   <xsl:template match="*[@defaultDerInit]" mode="DefaultFieldVerify">
 
-            reader = new ValueAsnReader(<xsl:call-template name="DefaultValueField"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="DecodeSimpleValue"><xsl:with-param name="readerName" select="'reader'"/></xsl:apply-templates>
+            reader = new ValueAsnReader(<xsl:call-template name="DefaultValueFieldUsage"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="DecodeSimpleValue"><xsl:with-param name="readerName" select="'reader'"/></xsl:apply-templates>
             reader.ThrowIfNotEmpty();</xsl:template>
 
   <xsl:template match="*" mode="EnsureUniqueTag" xml:space="default">
@@ -284,7 +287,7 @@ namespace <xsl:value-of select="@namespace" />
                       <xsl:with-param name="indent" select="concat('    ', $indent)" />
                     </xsl:apply-templates>
 
-                if (!tmp.EncodedValueEquals(<xsl:call-template name="DefaultValueField"/>))
+                if (!tmp.EncodedValueEquals(<xsl:call-template name="DefaultValueFieldUsage"/>))
                 {
                     tmp.CopyTo(writer);
                 }
@@ -367,7 +370,7 @@ namespace <xsl:value-of select="@namespace" />
                   <xsl:with-param name="indent" select="concat('    ', $indent)" />
                 </xsl:apply-templates>
 
-                if (!tmp.EncodedValueEquals(<xsl:call-template name="DefaultValueField"/>))
+                if (!tmp.EncodedValueEquals(<xsl:call-template name="DefaultValueFieldUsage"/>))
                 {
                     writer.PushSequence(<xsl:call-template name="ContextTag" />);
                     tmp.CopyTo(writer);
@@ -529,7 +532,7 @@ namespace <xsl:value-of select="@namespace" />
     </xsl:choose>
   </xsl:template>
 
-  <xsl:template match="asn:AnyValue" mode="DefaultTag">new Asn1Tag(<xsl:call-template name="DefaultValueField"/>[0])</xsl:template>
+  <xsl:template match="asn:AnyValue" mode="DefaultTag">new Asn1Tag(<xsl:call-template name="DefaultValueFieldUsage"/>[0])</xsl:template>
 
   <xsl:template match="asn:AnyValue[@universalTagNumber]" mode="DefaultTag">new Asn1Tag((UniversalTagNumber)<xsl:value-of select="@universalTagNumber"/>)</xsl:template>
 
@@ -938,8 +941,10 @@ namespace <xsl:value-of select="@namespace" />
   <xsl:template name="DefaultValueDecoder"><xsl:if test="@defaultDerInit">
             else
             {
-                defaultReader = new ValueAsnReader(<xsl:call-template name="DefaultValueField"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="DecodeSimpleValue"><xsl:with-param name="readerName" select="'defaultReader'"/><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
+                defaultReader = new ValueAsnReader(<xsl:call-template name="DefaultValueFieldUsage"/>, AsnEncodingRules.DER);<xsl:apply-templates select="." mode="DecodeSimpleValue"><xsl:with-param name="readerName" select="'defaultReader'"/><xsl:with-param name="indent" select="'    '"/></xsl:apply-templates>
             }</xsl:if></xsl:template>
+
+  <xsl:template name="DefaultValueFieldUsage">Shared<xsl:value-of select="/*/@name"/>.Default<xsl:value-of select="@name"/></xsl:template>
 
   <xsl:template name="DefaultOrContextTag" xml:space="default">
       <xsl:choose>
