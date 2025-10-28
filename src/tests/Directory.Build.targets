@@ -423,9 +423,6 @@
       <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly" Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true'">
         <Type>MergedTestAssembly</Type>
       </MarkerFile>
-      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly" Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAndroid)' == 'true' and '$(BuildAllTestsAsStandalone)' == 'true' and '$(CLRTestKind)' == 'BuildAndRun'">
-        <Type>MergedTestAssembly</Type>
-      </MarkerFile>
       <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'">
         <Type>NoMonoAot</Type>
       </MarkerFile>
