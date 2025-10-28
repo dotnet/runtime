@@ -94,7 +94,7 @@ namespace System.Runtime.InteropServices
             // SysAllocString on Windows aligns the memory block size up
             const nuint WIN32_ALLOC_ALIGN = 15;
 
-            ulong cbNative = 2 * (ulong)(uint)length + (uint)sizeof(IntPtr) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
+            ulong cbNative = 2 * (ulong)(uint)length + (uint)sizeof(uint) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
 
             if (cbNative > uint.MaxValue)
             {
@@ -108,7 +108,7 @@ namespace System.Runtime.InteropServices
                 throw new OutOfMemoryException();
             }
 
-            void* s = (byte*)p + sizeof(nuint);
+            void* s = (byte*)p + sizeof(uint);
             *(((uint*)s) - 1) = (uint)(length * sizeof(char));
             ((char*)s)[length] = '\0';
 
@@ -120,7 +120,7 @@ namespace System.Runtime.InteropServices
             // SysAllocString on Windows aligns the memory block size up
             const nuint WIN32_ALLOC_ALIGN = 15;
 
-            ulong cbNative = (ulong)(uint)length + (uint)sizeof(IntPtr) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
+            ulong cbNative = (ulong)(uint)length + (uint)sizeof(uint) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
 
             if (cbNative > uint.MaxValue)
             {
@@ -134,7 +134,7 @@ namespace System.Runtime.InteropServices
                 throw new OutOfMemoryException();
             }
 
-            void* s = (byte*)p + sizeof(nuint);
+            void* s = (byte*)p + sizeof(uint);
             *(((uint*)s) - 1) = (uint)length;
 
             // NULL-terminate with both a narrow and wide zero.
@@ -150,7 +150,7 @@ namespace System.Runtime.InteropServices
 
             if (ptrNative != null)
             {
-                Interop.Sys.Free((byte*)ptr - sizeof(nuint));
+                Interop.Sys.Free((byte*)ptr - sizeof(uint));
             }
         }
 
