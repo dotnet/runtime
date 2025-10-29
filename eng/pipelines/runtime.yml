@@ -537,6 +537,7 @@ extends:
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
