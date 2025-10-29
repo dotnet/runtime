@@ -364,6 +364,8 @@ GVAL_DECL(DWORD,            g_debuggerWordTLSIndex);
 GVAL_DECL(DWORD,            g_TlsIndex);
 GVAL_DECL(DWORD,            g_offsetOfCurrentThreadInfo);
 GVAL_DECL(DWORD,            g_gcNotificationFlags);
+GVAL_DECL(DWORD,            g_vectorTByteLength);
+GVAL_DECL(BOOL,             g_vectorTIsScalable);
 
 #ifdef FEATURE_EH_FUNCLETS
 GPTR_DECL(MethodTable,      g_pEHClass);

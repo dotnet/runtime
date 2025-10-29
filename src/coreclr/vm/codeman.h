@@ -2188,20 +2188,6 @@ public:
         return m_CPUCompileFlags;
     }
 
-    inline bool UseScalableVectorT()
-    {
-        LIMITED_METHOD_CONTRACT;
-#ifdef TARGET_ARM64
-        // Vector length discovery is currently dependent on running directly on Arm64.
-        return CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitUseScalableVectorT)
-            && m_CPUCompileFlags.IsSet(InstructionSet_Sve_Arm64);
-#else
-        return false;
-#endif
-    }
-
-    uint32_t GetSizeOfVectorT();
-
 private :
     Crst                m_JitLoadLock;
 
@@ -2238,6 +2224,9 @@ public:
     HINSTANCE           m_AltJITCompiler;
     bool                m_AltJITRequired;
 #endif //ALLOW_SXS_JIT
+
+    uint32_t            m_vectorTByteLength;
+    bool                m_useScalableVectorT;
 
     friend struct ::cdac_data<EEJitManager>;
 };

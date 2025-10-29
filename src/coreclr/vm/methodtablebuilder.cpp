@@ -1185,7 +1185,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     if (strcmp(className, "Vector`1") != 0 || strcmp(nameSpace, "System.Numerics") != 0)
         return false;
 
-    uint32_t vectorTSize = ExecutionManager::GetEEJitManager()->GetSizeOfVectorT();
+    uint32_t vectorTSize = g_vectorTByteLength;
 
     if (vectorTSize > 0 && vectorTSize != 16)
     {
