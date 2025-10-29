@@ -714,6 +714,8 @@ namespace System.Linq
 
                 byte totalSize = (byte)(key1typeSize + packingSize);
 
+                int keyPadding = BitConverter.IsLittleEndian ? packingSize : key1typeSize;
+
                 if (totalSize <= sizeof(uint))
                 {
                     uint toggle = 0U;
@@ -728,7 +730,7 @@ namespace System.Linq
                     packedSorter = CreatePacked<uint, TKey1, TKey2>(
                         highKeySelector: keySelector,
                         lowKeySelector: next._keySelector,
-                        key2typeSize: packingSize,
+                        keyPadding: keyPadding,
                         totalSize: totalSize,
                         key1IsDescending: descending,
                         key2IsDescending: next._descending,
@@ -752,7 +754,7 @@ namespace System.Linq
                     packedSorter = CreatePacked<ulong, TKey1, TKey2>(
                         highKeySelector: keySelector,
                         lowKeySelector: next._keySelector,
-                        key2typeSize: packingSize,
+                        keyPadding: keyPadding,
                         totalSize: totalSize,
                         key1IsDescending: descending,
                         key2IsDescending: next._descending,
@@ -854,7 +856,7 @@ namespace System.Linq
             private static EnumerableSorter<TElement, TNewKey> CreatePacked<TNewKey, TKey1, TKey2>(
                 Func<TElement, TKey1> highKeySelector,
                 Func<TElement, TKey2> lowKeySelector,
-                int key2typeSize,
+                int keyPadding,
                 byte totalSize,
                 bool key1IsDescending,
                 bool key2IsDescending,
@@ -867,7 +869,7 @@ namespace System.Linq
                 if (key1IsDescending != key2IsDescending)
                 {
                     // make the parent order not apply to the child
-                    TNewKey toggleLowKeyOrder = (TNewKey.One << key2typeSize * 8) - TNewKey.One;
+                    TNewKey toggleLowKeyOrder = (TNewKey.One << keyPadding * 8) - TNewKey.One;
                     toggleSignBits ^= toggleLowKeyOrder;
                 }
 
@@ -881,10 +883,22 @@ namespace System.Linq
 
                         TNewKey result = default!;
 
-                        Unsafe.WriteUnaligned(ref Unsafe.As<TNewKey, byte>(ref result), lowKey);
+                        ref byte resultByteRef = ref Unsafe.As<TNewKey, byte>(ref result);
 
-                        ref byte dest = ref Unsafe.Add(ref Unsafe.As<TNewKey, byte>(ref result), key2typeSize);
-                        Unsafe.WriteUnaligned(ref dest, highKey);
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            Unsafe.WriteUnaligned(ref resultByteRef, lowKey);
+
+                            ref byte dest = ref Unsafe.Add(ref resultByteRef, keyPadding);
+                            Unsafe.WriteUnaligned(ref dest, highKey);
+                        }
+                        else
+                        {
+                            Unsafe.WriteUnaligned(ref resultByteRef, highKey);
+
+                            ref byte dest = ref Unsafe.Add(ref resultByteRef, keyPadding);
+                            Unsafe.WriteUnaligned(ref dest, lowKey);
+                        }
 
                         return result;
                     }, Comparer<TNewKey>.Default, key1IsDescending, next, totalSize);
@@ -900,27 +914,40 @@ namespace System.Linq
                     // result = 00000000_00000000
                     TNewKey result = default!;
 
-                    // WriteUnaligned will write the bits in the low end of result
-                    Unsafe.WriteUnaligned(ref Unsafe.As<TNewKey, byte>(ref result), lowKey);
-                    // result = 00000000_01111000
-                    //                   |--lo--|
+                    ref byte resultByteRef = ref Unsafe.As<TNewKey, byte>(ref result);
 
-                    // now we want to skip the size of the lowKey writted in the result
-                    ref byte dest = ref Unsafe.Add(ref Unsafe.As<TNewKey, byte>(ref result), key2typeSize);
-                    // |--hi--| |--lo--|
-                    // 00000000_01111000
-                    //        ^ now we are here
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        // WriteUnaligned will write the bits in the low end of result
+                        Unsafe.WriteUnaligned(ref resultByteRef, lowKey);
+                        // result = 00000000_01111000
+                        //                   |--lo--|
 
-                    // Write the highKey after lowKey
-                    Unsafe.WriteUnaligned(ref dest, highKey);
-                    // result = 11111111_01111000
-                    //          |--hi--| |--lo--|
-                    // toggle the sign bit, to safe convert to unsigned
-                    // (sbyte)0 in binary 00000000 will be 10000000, now (sbyte)0 is in the middle
-                    // basically doing this:
-                    //                  Middle
-                    // MinValue|----------|----------|MaxValue
-                    //                    0
+                        // now we want to skip the size of the lowKey writted in the result
+                        ref byte dest = ref Unsafe.Add(ref resultByteRef, keyPadding);
+                        // |--hi--| |--lo--|
+                        // 00000000_01111000
+                        //        ^ now we are here
+
+                        // Write the highKey after lowKey
+                        Unsafe.WriteUnaligned(ref dest, highKey);
+                        // result = 11111111_01111000
+                        //          |--hi--| |--lo--|
+                        // toggle the sign bit, to safe convert to unsigned
+                        // (sbyte)0 in binary 00000000 will be 10000000, now (sbyte)0 is in the middle
+                        // basically doing this:
+                        //                  Middle
+                        // MinValue|----------|----------|MaxValue
+                        //                    0
+                    }
+                    else
+                    {
+                        Unsafe.WriteUnaligned(ref resultByteRef, highKey);
+
+                        ref byte dest = ref Unsafe.Add(ref resultByteRef, keyPadding);
+                        Unsafe.WriteUnaligned(ref dest, lowKey);
+                    }
+
                     result ^= toggleSignBits;
 
                     return result;
