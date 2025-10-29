@@ -130,10 +130,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.NewMultiDimArr:
-                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers"u8, "NewObjArray"u8);
+                    methodDesc = context.SystemModule.GetKnownType("System"u8, "Array"u8).GetKnownMethod("NewObjArray"u8, null);
                     break;
                 case ReadyToRunHelper.NewMultiDimArrRare:
-                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers"u8, "NewObjArrayRare"u8);
+                    methodDesc = context.SystemModule.GetKnownType("System"u8, "Array"u8).GetKnownMethod("NewObjArrayRare"u8, null);
                     break;
 
                 case ReadyToRunHelper.NewArray:
