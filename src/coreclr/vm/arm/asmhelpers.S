@@ -1039,74 +1039,74 @@ LEAF_END Load_Stack_4B
 
 LEAF_ENTRY Store_Stack
     ldr r9, [r6], #4 // SP offset
-    ldr r10, [r6], #4 // number of stack slots
+    ldr r8, [r6], #4 // number of stack slots
     add r9, sp, r9
     add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
 LOCAL_LABEL(StoreCopyLoop):
     ldr r5, [r9], #4
     str r5, [r7], #8
-    subs r10, r10, #4
+    subs r8, r8, #4
     bne LOCAL_LABEL(StoreCopyLoop)
-    ldr r5, [r6], #8
+    ldr r5, [r6], #4
     EPILOG_BRANCH_REG r5
 LEAF_END Store_Stack
 
 LEAF_ENTRY Store_Stack_4B
     ldr r9, [r6], #4 // SP offset
-    ldr r10, [r6], #4 // number of stack slots
+    ldr r8, [r6], #4 // number of stack slots
     add r9, sp, r9
     add r9, r9, #__PWTB_TransitionBlock + SIZEOF__TransitionBlock
 LOCAL_LABEL(StoreCopyLoop_4B):
     ldr r5, [r9], #4
     str r5, [r7], #4
-    subs r10, r10, #4
+    subs r8, r8, #4
     bne LOCAL_LABEL(StoreCopyLoop_4B)
     ldr r5, [r6], #4
     EPILOG_BRANCH_REG r5
 LEAF_END Store_Stack_4B
 
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
-    PROLOG_PUSH "{r4-r9,lr}"
+    PROLOG_PUSH "{r4-r10,lr}"
     mov r4, sp
-    sub sp, sp, 4
     sub sp, sp, r3
     mov r6, r0
     mov r7, r1
     ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
     blx r5
     mov sp, r4
-    EPILOG_POP "{r4-r9,pc}"
+    EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetI4, _TEXT, NoHandler
-    PROLOG_PUSH "{r4-r9,lr}"
-    push { r2 }
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
     mov r4, sp
     sub sp, sp, r3
     mov r6, r0
     mov r7, r1
     ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
     blx r5
     mov sp, r4
-    pop { r2 }
-    str r0, [r2]
-    EPILOG_POP "{r4-r9,pc}"
+    str r0, [r10]
+    EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetI4, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
-    PROLOG_PUSH "{r4-r9,lr}"
-    push { r2 }
+    PROLOG_PUSH "{r4-r10,lr}"
+    mov r10, r2
     mov r4, sp
     sub sp, sp, r3
     mov r6, r0
     mov r7, r1
     ldr r5, [r6], #4
+    CHECK_STACK_ALIGNMENT
     blx r5
     mov sp, r4
-    pop { r2 }
-    str r0, [r2]
-    str r1, [r2, 4]
-    EPILOG_POP "{r4-r9,pc}"
+    str r0, [r10]
+    str r1, [r10, 4]
+    EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetI8, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
@@ -1118,31 +1118,31 @@ NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
 NESTED_END CallJittedMethodRetDouble, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetBuffR0, _TEXT, NoHandler
-    PROLOG_PUSH "{r4-r9,lr}"
+    PROLOG_PUSH "{r4-r10,lr}"
     mov r4, sp
-    sub sp, sp, 4
     sub sp, sp, r3
     mov r6, r0
     mov r7, r1
     ldr r5, [r6], #4
     mov r0, r2
+    CHECK_STACK_ALIGNMENT
     blx r5
     mov sp, r4
-    EPILOG_POP "{r4-r9,pc}"
+    EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetBuffR0, _TEXT
 
 NESTED_ENTRY CallJittedMethodRetBuffR1, _TEXT, NoHandler
-    PROLOG_PUSH "{r4-r9,lr}"
+    PROLOG_PUSH "{r4-r10,lr}"
     mov r4, sp
-    sub sp, sp, 4
     sub sp, sp, r3
     mov r6, r0
     mov r7, r1
     ldr r5, [r6], #4
     mov r1, r2
+    CHECK_STACK_ALIGNMENT
     blx r5
     mov sp, r4
-    EPILOG_POP "{r4-r9,pc}"
+    EPILOG_POP "{r4-r10,pc}"
 NESTED_END CallJittedMethodRetBuffR1, _TEXT
 
 
@@ -1152,7 +1152,7 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     // IR bytecode address
     mov r4, METHODDESC_REGISTER // InterpMethod
 
-    PROLOG_PUSH "{r0-r4}"
+    PROLOG_PUSH "{r0-r3}"
 
     INLINE_GET_TLS_VAR C_FUNC(t_CurrentThreadInfo)
     mov r6, r0
@@ -1163,16 +1163,13 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     cbnz r5, LOCAL_LABEL(HaveInterpThreadContext)
 
 LOCAL_LABEL(NoManagedThreadOrCallStub):
-    add r0, sp, #__PWTB_TransitionBlock + 20
+    add r0, sp, #__PWTB_TransitionBlock + 16
     mov r1, r4
+    CHECK_STACK_ALIGNMENT
     bl C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub);
     mov r5, r0
 
 LOCAL_LABEL(HaveInterpThreadContext):
-
-    # RESTORE_ARGUMENT_REGISTERS sp, __PWTB_ArgumentRegisters
-    EPILOG_POP "{r0-r4}"
-    # RESTORE_FLOAT_ARGUMENT_REGISTERS sp, __PWTB_FloatArgumentRegisters
 
     ldr r7, [r4] // InterpMethod*
     ldr r7, [r7, #OFFSETOF__InterpMethod__pCallStub]
@@ -1181,6 +1178,9 @@ LOCAL_LABEL(HaveInterpThreadContext):
     add r6, r7, #OFFSETOF__CallStubHeader__Routines
     ldr r7, [r5, #OFFSETOF__InterpThreadContext__pStackPointer] // HERE
     ldr r5, [r6], 4 // InterpThreadContext
+
+    EPILOG_POP "{r0-r3}"
+    CHECK_STACK_ALIGNMENT
     blx r5
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
@@ -1189,38 +1189,41 @@ NESTED_END InterpreterStub, _TEXT
 
 NESTED_ENTRY InterpreterStubRetVoid, _TEXT, NoHandler
     PROLOG_PUSH {lr}
-    sub sp, sp, 12
+    alloc_stack 12
     add r0, sp, #__PWTB_TransitionBlock + 16
     mov r1, r4
     mov r2, 0
+    CHECK_STACK_ALIGNMENT
     bl C_FUNC(ExecuteInterpretedMethod)
-    add sp, sp, 12
+    free_stack 12
     EPILOG_POP {pc}
 NESTED_END InterpreterStubRetVoid, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI4, _TEXT, NoHandler
     PROLOG_PUSH {lr}
-    sub sp, sp, 12
+    alloc_stack 12
     add r0, sp, #__PWTB_TransitionBlock + 16
     mov r1, r4
     mov r2, 0
+    CHECK_STACK_ALIGNMENT
     bl C_FUNC(ExecuteInterpretedMethod)
     ldr r0, [r0]
-    add sp, sp, 12
+    free_stack 12
     EPILOG_POP {pc}
 NESTED_END InterpreterStubRetI4, _TEXT
 
 NESTED_ENTRY InterpreterStubRetI8, _TEXT, NoHandler
     PROLOG_PUSH {lr}
-    sub sp, sp, 12
+    alloc_stack 12
     add r0, sp, #__PWTB_TransitionBlock + 16
     mov r1, r4
     mov r2, 0
+    CHECK_STACK_ALIGNMENT
     bl C_FUNC(ExecuteInterpretedMethod)
     ldr r2, [r0]
     ldr r1, [r0, 4]
     mov r0, r2
-    add sp, sp, 12
+    free_stack 12
     EPILOG_POP {pc}
 NESTED_END InterpreterStubRetI8, _TEXT
 
@@ -1234,25 +1237,27 @@ NESTED_END InterpreterStubRetDouble, _TEXT
 
 NESTED_ENTRY InterpreterStubRetBuffR0, _TEXT, NoHandler
     PROLOG_PUSH {lr}
-    sub sp, sp, 12
+    alloc_stack 12
     add r0, sp, #__PWTB_TransitionBlock + 16
     mov r1, r4
     ldr r2, [sp, #__PWTB_ArgumentRegisters + 16]
+    CHECK_STACK_ALIGNMENT
     bl C_FUNC(ExecuteInterpretedMethod)
     ldr r0, [r0]
-    add sp, sp, 12
+    free_stack 12
     EPILOG_POP {pc}
 NESTED_END InterpreterStubRetBuffR0, _TEXT
 
 NESTED_ENTRY InterpreterStubRetBuffR1, _TEXT, NoHandler
     PROLOG_PUSH {lr}
-    sub sp, sp, 12
+    alloc_stack 12
     add r0, sp, #__PWTB_TransitionBlock + 16
     mov r1, r4
-    ldr r2, [sp, #__PWTB_ArgumentRegisters + 20]
+    ldr r2, [sp, #__PWTB_ArgumentRegisters + 16]
+    CHECK_STACK_ALIGNMENT
     bl C_FUNC(ExecuteInterpretedMethod)
     ldr r1, [r0]
-    add sp, sp, 12
+    free_stack 12
     EPILOG_POP {pc}
 NESTED_END InterpreterStubRetBuffR1, _TEXT
 
