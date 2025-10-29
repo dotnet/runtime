@@ -2263,16 +2263,6 @@ void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
             BADCODE("Invalid handler region in EH clause");
         }
 
-        // Find and mark all basic blocks that are part of the try region.
-        for (uint32_t j = clause.TryOffset; j < (clause.TryOffset + clause.TryLength); j++)
-        {
-            InterpBasicBlock* pBB = m_ppOffsetToBB[j];
-            if (pBB != NULL && pBB->clauseType == BBClauseNone)
-            {
-                pBB->clauseType = BBClauseTry;
-            }
-        }
-
         InterpBasicBlock* pHandlerBB = GetBB(clause.HandlerOffset);
 
         // Find and mark all basic blocks that are part of the handler region.
@@ -2725,6 +2715,14 @@ void InterpCompiler::EmitCompareOp(int32_t opBase)
             EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
         if (m_pStackPointer[-1].type == StackTypeR8 && m_pStackPointer[-2].type == StackTypeR4)
             EmitConv(m_pStackPointer - 2, StackTypeR8, INTOP_CONV_R8_R4);
+
+#ifdef TARGET_64BIT
+        // Support comparisons between I and I4 by inserting an implicit conversion to I8
+        if (m_pStackPointer[-1].type == StackTypeI4 && m_pStackPointer[-2].type == StackTypeI8)
+            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+        if (m_pStackPointer[-1].type == StackTypeI8 && m_pStackPointer[-2].type == StackTypeI4)
+            EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
         AddIns(opBase + m_pStackPointer[-1].type - StackTypeI4);
     }
     m_pStackPointer -= 2;
@@ -4591,7 +4589,20 @@ void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 
 void InterpCompiler::EmitStelem(InterpType interpType)
 {
+#ifdef TARGET_64BIT
+    // nint and int32 can be used interchangeably. Add implicit conversions.
+    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
+        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+
+    // Handle floating point conversions
+    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
+        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
     m_pStackPointer -= 3;
+
     int32_t opcode = GetStelemForType(interpType);
     AddIns(opcode);
     m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
@@ -5841,6 +5852,36 @@ retry_emit:
                 else
                 {
                     CheckStackExact(1);
+
+#ifdef TARGET_64BIT
+                    // nint and int32 can be used interchangeably. Add implicit conversions.
+                    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
+                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+                    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
+                        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+                    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
+                        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
+                    if (m_pStackPointer[-1].type != g_stackTypeFromInterpType[retType])
+                    {
+                        StackType retStackType = g_stackTypeFromInterpType[retType];
+                        StackType stackType = m_pStackPointer[-1].type;
+
+                        if (stackType == StackTypeI && (retStackType == StackTypeO || retStackType == StackTypeByRef))
+                        {
+                            // Allow implicit conversion from nint to ref or byref
+                        }
+                        else if (retStackType == StackTypeI && (stackType == StackTypeO || stackType == StackTypeByRef))
+                        {
+                            // Allow implicit conversion from ref or byref to nint
+                        }
+                        else
+                        {
+                            BADCODE("return type mismatch");
+                        }
+                    }
+
                     AddIns(INTOP_RET);
                     m_pStackPointer--;
                     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
@@ -7488,6 +7529,11 @@ retry_emit:
                     }
                     case CEE_LOCALLOC:
                         CHECK_STACK(1);
+                        if (m_pCBB->clauseType != BBClauseNone)
+                        {
+                            // Localloc inside a funclet is not allowed
+                            BADCODE("CEE_LOCALLOC inside funclet");
+                        }
 #if TARGET_64BIT
                         // Length is natural unsigned int
                         if (m_pStackPointer[-1].type == StackTypeI4)
