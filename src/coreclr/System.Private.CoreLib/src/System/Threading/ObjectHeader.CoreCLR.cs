@@ -114,7 +114,7 @@ namespace System.Threading
 
         private static unsafe HeaderLockResult TryAcquireThinLockSpin(object obj)
         {
-            int currentThreadID = (int)Lock.ThreadId.Current_NoInitialize.Id;
+            int currentThreadID = ManagedThreadId.Current;
 
             // does thread ID fit?
             if (currentThreadID > SBLK_MASK_LOCK_THREADID)
@@ -221,7 +221,7 @@ namespace System.Threading
                 }
 
                 // if we own the lock
-                if ((oldBits & SBLK_MASK_LOCK_THREADID) == (int)Lock.ThreadId.Current_NoInitialize.Id)
+                if ((oldBits & SBLK_MASK_LOCK_THREADID) == ManagedThreadId.Current)
                 {
                     return HeaderLockResult.Success;
                 }
