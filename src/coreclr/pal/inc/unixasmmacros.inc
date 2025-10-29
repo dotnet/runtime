@@ -45,6 +45,8 @@
 
 #define G_FREE_OBJECT_METHOD_TABLE  g_pFreeObjectMethodTable
 
+#define FAST_OBJECT_ARRAY_ALLOCATION_THRESHOLD 0x40000000
+
 // Offset of ee_alloc_context relative to INLINE_GET_ALLOC_CONTEXT_BASE.
 //
 // Since we have a disparity on how thread locals are accessed on various platforms and

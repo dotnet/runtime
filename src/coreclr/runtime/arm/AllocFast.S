@@ -342,7 +342,7 @@ LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
         // Delegate overflow handling to the generic helper conservatively
 
-        mov         r2, #1 << 28 // 0x40000000 / sizeof(void*)
+        mov         r2, #1 << 28 // FAST_OBJECT_ARRAY_ALLOCATION_THRESHOLD / sizeof(void*)
         cmp         r1, r2
         bhs         LOCAL_LABEL(RhpNewPtrArrayFast_RarePath)
 

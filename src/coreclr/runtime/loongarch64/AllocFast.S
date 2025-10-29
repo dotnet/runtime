@@ -198,7 +198,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 
         // Delegate overflow handling to the generic helper conservatively
 
-        li.w  $a2, (0x40000000 / 8) // sizeof(void*)
+        li.w  $a2, (FAST_OBJECT_ARRAY_ALLOCATION_THRESHOLD / 8) // sizeof(void*)
         bgeu  $a1, $a2, C_FUNC(RhpNewArrayFast)
 
         // In this case we know the element size is sizeof(void *), or 8 for arm64

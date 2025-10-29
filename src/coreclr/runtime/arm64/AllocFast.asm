@@ -198,7 +198,7 @@ ArraySizeOverflow
 
         ; Delegate overflow handling to the generic helper conservatively
 
-        mov         x2, #(0x40000000 / 8) ; sizeof(void*)
+        mov         x2, #(FAST_OBJECT_ARRAY_ALLOCATION_THRESHOLD / 8) ; sizeof(void*)
         cmp         x1, x2
         bhs         RhpNewArrayFast
 

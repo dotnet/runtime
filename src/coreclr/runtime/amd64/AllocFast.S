@@ -233,11 +233,11 @@ LEAF_END RhpNewArrayFast, _TEXT
 LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
         // Delegate overflow handling to the generic helper conservatively
-        // The constant 0x8000000 is (0x40000000 / sizeof(void*))
+        // The constant 0x8000000 is (FAST_OBJECT_ARRAY_ALLOCATION_THRESHOLD / sizeof(void*))
         // Some assemblers don't like an expression here, so the
         // constant expression is reduced to it's simple form.
 
-        cmp         rsi, 0x8000000        // (0x40000000 / 8)
+        cmp         rsi, 0x8000000        // (FAST_OBJECT_ARRAY_ALLOCATION_THRESHOLD / 8)
         jae         C_FUNC(RhpNewArrayFast)
 
         // In this case we know the element size is sizeof(void *), or 8 for x64
