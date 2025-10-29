@@ -104,7 +104,7 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(sourceFileName);
             ArgumentNullException.ThrowIfNull(entryName);
 
-            if (password != null && encryption == ZipArchiveEntry.EncryptionMethod.None)
+            if (!string.IsNullOrEmpty(password) && encryption == ZipArchiveEntry.EncryptionMethod.None)
             {
                 throw new ArgumentException("password and encryption should both be set");
             }

@@ -83,7 +83,7 @@ namespace System.IO.Compression
 
             using (FileStream fs = new FileStream(destinationFileName, fileStreamOptions))
             {
-                if (password.Length > 0)
+                if (!string.IsNullOrEmpty(password))
                 {
                     using (Stream es = source.Open(password))
                         es.CopyTo(fs);

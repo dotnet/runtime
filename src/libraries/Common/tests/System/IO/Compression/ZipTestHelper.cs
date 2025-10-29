@@ -559,7 +559,7 @@ namespace System.IO.Compression.Tests
 
         public static async Task<Stream> OpenEntryStream(bool async, ZipArchiveEntry entry)
         {
-            return async ? await entry.OpenAsync(cancellationToken: default) : entry.Open();
+            return async ? await entry.OpenAsync() : entry.Open();
         }
 
         public static async Task DisposeStream(bool async, Stream stream)

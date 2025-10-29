@@ -270,7 +270,7 @@ namespace System.IO.Compression
             _defaultPassword = string.IsNullOrEmpty(defaultPassword) ? null : defaultPassword;
             _defaultEncryption = defaultEncryption;
 
-            // Optional guardrails: if user gives a default password but sets encryption None, allow it (password is simply unused);
+            // Optional guardrails: if user gives a default password but sets encryption None, allow it (password is simply unused) ??
             // if encryption is ZipCrypto but password is null/empty, you can either throw here or defer to CreateEntry validation.
             if (_defaultEncryption == ZipArchiveEntry.EncryptionMethod.ZipCrypto && _defaultPassword is null)
             {
@@ -487,25 +487,15 @@ namespace System.IO.Compression
             ZipArchiveEntry entry;
             if (compressionLevel.HasValue)
             {
-                if (password != null)
-                {
-                    entry = new ZipArchiveEntry(this, entryName, compressionLevel.Value, password, encryption);
-                }
-                else
-                {
-                    entry = new ZipArchiveEntry(this, entryName, compressionLevel.Value);
-                }
+                entry = !string.IsNullOrEmpty(password)
+                    ? new ZipArchiveEntry(this, entryName, compressionLevel.Value, password, encryption)
+                    : new ZipArchiveEntry(this, entryName, compressionLevel.Value);
             }
             else
             {
-                if (password != null)
-                {
-                    entry = new ZipArchiveEntry(this, entryName, password, encryption);
-                }
-                else
-                {
-                    entry = new ZipArchiveEntry(this, entryName);
-                }
+                entry = !string.IsNullOrEmpty(password)
+                    ? new ZipArchiveEntry(this, entryName, password, encryption)
+                    : new ZipArchiveEntry(this, entryName);
             }
             AddEntry(entry);
 

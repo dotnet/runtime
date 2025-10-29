@@ -375,7 +375,7 @@ namespace System.IO.Compression.Tests
             cts.Cancel(); // Cancel immediately
             await Assert.ThrowsAsync<OperationCanceledException>(async () =>
             {
-                await entry.ExtractToFileAsync(tempFile, overwrite: true, cts.Token, password: "123456789");
+                await entry.ExtractToFileAsync(tempFile, overwrite: true, password: "123456789", cts.Token);
             });
         }
 

@@ -86,10 +86,10 @@ public static partial class ZipFileExtensions
         ExtractToFileFinalize(source, destinationFileName);
     }
 
-    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, CancellationToken cancellationToken = default, string password = "") =>
-        await ExtractToFileAsync(source, destinationFileName, false, cancellationToken, password).ConfigureAwait(false);
+    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, string? password, CancellationToken cancellationToken = default) =>
+        await ExtractToFileAsync(source, destinationFileName, false, password, cancellationToken).ConfigureAwait(false);
 
-    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, bool overwrite, CancellationToken cancellationToken = default, string password = "")
+    public static async Task ExtractToFileAsync(this ZipArchiveEntry source, string destinationFileName, bool overwrite, string? password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
