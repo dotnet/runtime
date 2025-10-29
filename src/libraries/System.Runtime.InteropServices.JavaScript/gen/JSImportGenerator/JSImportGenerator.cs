@@ -27,6 +27,7 @@ namespace Microsoft.Interop.JavaScript
             ContainingSyntax StubMethodSyntaxTemplate,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSImportData JSImportData,
+            bool HasExistingPlatformAttributes,
             SequenceEqualImmutableArray<DiagnosticInfo> Diagnostics);
 
         public static class StepNames
@@ -110,13 +111,32 @@ namespace Microsoft.Interop.JavaScript
             ContainingSyntax userDeclaredMethod,
             JSSignatureContext stub,
             ContainingSyntaxContext containingSyntaxContext,
+            bool hasExistingPlatformAttributes,
             BlockSyntax stubCode)
         {
+            // Create attribute lists for the stub method
+            var attributeLists = new List<AttributeListSyntax>();
+
+            // Add DebuggerNonUserCode attribute
+            attributeLists.Add(AttributeList(SingletonSeparatedList(
+                Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute)))));
+
+            // Add SupportedOSPlatform("browser") attribute if user hasn't already specified platform attributes
+            if (!hasExistingPlatformAttributes)
+            {
+                attributeLists.Add(AttributeList(SingletonSeparatedList(
+                    Attribute(
+                        ParseName(Constants.SupportedOSPlatformAttribute),
+                        AttributeArgumentList(SingletonSeparatedList(
+                            AttributeArgument(LiteralExpression(
+                                SyntaxKind.StringLiteralExpression,
+                                Literal("browser")))))))));
+            }
+
             // Create stub function
             MethodDeclarationSyntax stubMethod = MethodDeclaration(stub.SignatureContext.StubReturnType, userDeclaredMethod.Identifier)
                 .AddAttributeLists(stub.SignatureContext.AdditionalAttributes.ToArray())
-                .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
-                    Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))))
+                .WithAttributeLists(List(attributeLists))
                 .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
                 .WithParameterList(ParameterList(SeparatedList(stub.SignatureContext.StubParameters)))
                 .WithBody(stubCode);
@@ -158,12 +178,21 @@ namespace Microsoft.Interop.JavaScript
             ct.ThrowIfCancellationRequested();
             // Get any attributes of interest on the method
             AttributeData? jsImportAttr = null;
+            bool hasExistingPlatformAttributes = false;
             foreach (AttributeData attr in symbol.GetAttributes())
             {
-                if (attr.AttributeClass is not null
-                    && attr.AttributeClass.ToDisplayString() == Constants.JSImportAttribute)
+                if (attr.AttributeClass is not null)
                 {
-                    jsImportAttr = attr;
+                    string attrName = attr.AttributeClass.ToDisplayString();
+                    if (attrName == Constants.JSImportAttribute)
+                    {
+                        jsImportAttr = attr;
+                    }
+                    else if (attrName == Constants.SupportedOSPlatformAttributeShort ||
+                             attrName == Constants.UnsupportedOSPlatformAttributeShort)
+                    {
+                        hasExistingPlatformAttributes = true;
+                    }
                 }
             }
 
@@ -193,6 +222,7 @@ namespace Microsoft.Interop.JavaScript
                 methodSyntaxTemplate,
                 locations,
                 jsImportData,
+                hasExistingPlatformAttributes,
                 new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
@@ -285,7 +315,7 @@ namespace Microsoft.Interop.JavaScript
 
             LocalFunctionStatementSyntax localFunction = GenerateInvokeFunction(LocalFunctionName, incrementalContext.SignatureContext, stubGenerator, hasReturn);
 
-            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, Block(bindStatement, code, localFunction)), incrementalContext.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, incrementalContext.HasExistingPlatformAttributes, Block(bindStatement, code, localFunction)), incrementalContext.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
         private static IfStatementSyntax GenerateBindSyntax(JSImportData jsImportData, JSSignatureContext signatureContext, ArgumentSyntax signaturesArgument)

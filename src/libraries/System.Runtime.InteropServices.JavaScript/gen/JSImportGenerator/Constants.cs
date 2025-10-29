@@ -39,5 +39,8 @@ namespace Microsoft.Interop.JavaScript
         public const string BindCSFunctionMethod = "BindManagedFunction";
         public const string JSMarshalerTypeGlobal = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerType";
         public const string JSMarshalerTypeGlobalDot = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerType.";
+        public const string SupportedOSPlatformAttribute = "global::System.Runtime.Versioning.SupportedOSPlatformAttribute";
+        public const string SupportedOSPlatformAttributeShort = "System.Runtime.Versioning.SupportedOSPlatformAttribute";
+        public const string UnsupportedOSPlatformAttributeShort = "System.Runtime.Versioning.UnsupportedOSPlatformAttribute";
     }
 }
