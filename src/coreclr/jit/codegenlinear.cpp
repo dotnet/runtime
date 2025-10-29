@@ -462,9 +462,6 @@ void CodeGen::genCodeForBBlist()
 
 #endif // DEBUG
             }
-            else if (node->OperIs(GT_RECORD_ASYNC_RESUME))
-            {
-            }
 
             genCodeForTreeNode(node);
             if (node->gtHasReg(compiler) && node->IsUnusedValue())

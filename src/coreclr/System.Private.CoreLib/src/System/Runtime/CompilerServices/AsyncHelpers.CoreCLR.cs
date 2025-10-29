@@ -82,8 +82,9 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct ResumeInfo
     {
         public delegate*<Continuation, ref byte, Continuation?> Resume;
-        // IP in final code
-        public void* FinalResumeIP;
+        // IP to use for diagnostics. Points into main code and maps to source
+        // in the same way as the call instruction does.
+        public void* DiagnosticIP;
     }
 
 #pragma warning disable CA1852 // "Type can be sealed" -- no it cannot because the runtime constructs subtypes dynamically

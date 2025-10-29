@@ -49,7 +49,8 @@ struct CallDefinitionInfo
 {
     GenTreeLclVarCommon* DefinitionNode = nullptr;
 
-    // Where to insert new IR for suspension checks.
+    // Where to insert new IR after the call in the original block, for
+    // suspension checks and for the async suspension for diagnostics purposes.
     GenTree* InsertAfter = nullptr;
 };
 
@@ -135,9 +136,9 @@ class AsyncTransformation
                                    var_types    storeType,
                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
-    void     CreateDebugInfoForSuspensionPoint(GenTreeCall*              asyncCall,
-                                               const ContinuationLayout& layout,
-                                               BasicBlock*               joinBB);
+    void     CreateDebugInfoForSuspensionPoint(BasicBlock*               asyncCallBlock,
+                                               const CallDefinitionInfo& callDefInfo,
+                                               const ContinuationLayout& layout);
     unsigned GetResultBaseVar();
     unsigned GetExceptionVar();
 
