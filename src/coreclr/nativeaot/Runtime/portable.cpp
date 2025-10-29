@@ -88,7 +88,7 @@ FCIMPL1(Object *, RhpNewFinalizable, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, int numElements)
+FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, intptr_t numElements)
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context * acontext = pCurThread->GetAllocContext();
@@ -221,7 +221,7 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, int numElements)
+FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numElements)
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
