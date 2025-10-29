@@ -179,7 +179,7 @@ bool IntegralRange::Contains(int64_t value) const
 
         case GT_OR:
         {
-            IntegralRange leftRange = IntegralRange::ForNode(node->gtGetOp1(), compiler);
+            IntegralRange leftRange  = IntegralRange::ForNode(node->gtGetOp1(), compiler);
             IntegralRange rightRange = IntegralRange::ForNode(node->gtGetOp2(), compiler);
 
             if (leftRange.IsNonNegative() && rightRange.IsNonNegative())
