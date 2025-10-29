@@ -297,6 +297,7 @@ internal sealed class Xcode
         }
         else
         {
+            // Interpreter is statically linked into the runtime already
             predefinedExcludes.Add("libclrjit.dylib");
             predefinedExcludes.Add("libclrinterpreter.dylib");
         }
