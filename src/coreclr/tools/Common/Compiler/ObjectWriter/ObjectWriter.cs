@@ -506,19 +506,7 @@ namespace ILCompiler.ObjectWriter
 
                 string rangeNodeName = GetMangledName(range);
 
-                if (!_definedSymbols.TryGetValue(startNodeName, out var startSymbol)
-                    || !_definedSymbols.TryGetValue(endNodeName, out var endSymbol))
-                {
-                    throw new InvalidOperationException("The symbols defined by a symbol range must be emitted into the same object.");
-                }
-
-                if (startSymbol.SectionIndex != endSymbol.SectionIndex)
-                {
-                    throw new InvalidOperationException("The symbols that define a symbol range must be in the same section.");
-                }
-
-                // Don't use SectionWriter here as it emits symbols relative to the current writing position.
-                EmitSymbolDefinition(startSymbol.SectionIndex, rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value)));
+                EmitSymbolRangeDefinition(rangeNodeName, startNodeName, endNodeName);
             }
 
             foreach (BlockToRelocate blockToRelocate in blocksToRelocate)
@@ -589,6 +577,22 @@ namespace ILCompiler.ObjectWriter
                     _outputInfoBuilder.AddSection(outputSection);
                 }
             }
+        }
+
+        private protected virtual void EmitSymbolRangeDefinition(string rangeNodeName, string startNodeName, string endNodeName)
+        {
+            if (!_definedSymbols.TryGetValue(startNodeName, out var startSymbol)
+                    || !_definedSymbols.TryGetValue(endNodeName, out var endSymbol))
+            {
+                throw new InvalidOperationException("The symbols defined by a symbol range must be emitted into the same object.");
+            }
+
+            if (startSymbol.SectionIndex != endSymbol.SectionIndex)
+            {
+                throw new InvalidOperationException("The symbols that define a symbol range must be in the same section.");
+            }
+            // Don't use SectionWriter here as it emits symbols relative to the current writing position.
+            EmitSymbolDefinition(startSymbol.SectionIndex, rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value)));
         }
 
         private static string GetNodeTypeName(Type nodeType)
