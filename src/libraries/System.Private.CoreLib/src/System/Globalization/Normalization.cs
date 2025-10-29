@@ -95,16 +95,10 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
             }
 
-            ThrowIfCompatibilityFormUnsupported(normalizationForm);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void ThrowIfCompatibilityFormUnsupported(NormalizationForm normalizationForm)
-        {
-            if ((normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD) &&
+            if ((OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) &&
                 !GlobalizationMode.Invariant &&
                 !GlobalizationMode.UseNls &&
-                (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()))
+                (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
             {
                 // Browser/WASI builds ship without compatibility normalization data.
                 throw new PlatformNotSupportedException(SR.Argument_UnsupportedNormalizationFormInBrowser);

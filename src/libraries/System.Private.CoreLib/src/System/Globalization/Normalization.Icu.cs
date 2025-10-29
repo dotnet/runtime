@@ -199,7 +199,7 @@ namespace System.Globalization
 
         private static void ValidateArguments(ReadOnlySpan<char> strInput, NormalizationForm normalizationForm, string paramName = "strInput")
         {
-            ThrowIfCompatibilityFormUnsupported(normalizationForm);
+            CheckNormalizationForm(normalizationForm);
 
             if (HasInvalidUnicodeSequence(strInput))
             {
