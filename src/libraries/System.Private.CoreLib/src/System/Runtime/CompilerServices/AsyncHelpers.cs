@@ -283,7 +283,7 @@ namespace System.Runtime.CompilerServices
 
         private static void RejectMainPromise(Exception ex)
         {
-            var inner= ex.InnerException ?? ex;
+            var inner = ex.InnerException ?? ex;
             var message = inner.GetType().Name + ": " + (inner.Message ?? "");
             var stackTrace = inner.StackTrace ?? "";
             SystemJS_RejectMainPromise(message, message.Length, stackTrace, stackTrace.Length);
