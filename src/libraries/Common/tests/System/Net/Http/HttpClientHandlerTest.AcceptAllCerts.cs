@@ -6,6 +6,7 @@ using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
+using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -48,6 +49,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.None, true)]
         public async Task SetDelegate_ConnectionSucceeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
+            var _ = new TestEventListener(_output, TestEventListener.NetworkingEvents);
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             // Overriding flag for the same reason we skip tests on Catalina
             // On OSX 10.13-10.14 we can override this flag to enable the scenario
