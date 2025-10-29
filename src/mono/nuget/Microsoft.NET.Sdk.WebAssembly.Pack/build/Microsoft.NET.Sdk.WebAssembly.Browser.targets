@@ -336,7 +336,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ItemGroup>
       <WasmFilesToIncludeInFileSystem Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' == ''">
-        <TargetPath>%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
+        <TargetPath>/%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
       </WasmFilesToIncludeInFileSystem>
     </ItemGroup>
     
@@ -349,6 +349,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="Assets" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAsset" />
     </DefineStaticWebAssets>
+
+    <Error
+      Text="Some of the 'WasmFilesToIncludeInFileSystem' where not found in StaticWebAssets. WasmFilesToIncludeInFileSystem: @(WasmFilesToIncludeInFileSystem), matched StaticWebAssets: @(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
+      Condition="'@(WasmFilesToIncludeInFileSystem->Count())' != '@(_WasmFilesToIncludeInFileSystemStaticWebAsset->Count())'" />
+
     <DefineStaticWebAssetEndpoints
       CandidateAssets="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
       ExistingEndpoints="@(StaticWebAssetEndpoint)"
