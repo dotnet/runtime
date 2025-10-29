@@ -1237,7 +1237,7 @@ static void RunMainInternal(Param* pParam)
                 ObjToArgSlot(exitCodeTask)
             };
 
-            MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__EXECUTE_ASYNC_ENTRYPOINT);
+            MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
             mainWrapper.Call(stackVarWrapper);
         }
         else if (pParam->EntryType == EntryManagedMainAsyncVoid)
@@ -1249,7 +1249,7 @@ static void RunMainInternal(Param* pParam)
                 ObjToArgSlot(exitCodeTask)
             };
 
-            MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__EXECUTE_ASYNC_ENTRYPOINT_VOID);
+            MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT_VOID);
             mainWrapper.Call(stackVarWrapper);
         }
         else
