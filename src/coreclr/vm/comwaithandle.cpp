@@ -13,7 +13,7 @@
 #include "common.h"
 #include "comwaithandle.h"
 
-extern "C" INT32 QCALLTYPE WaitHandle_WaitOneCore(HANDLE handle, INT32 timeout, BOOL useTrivialWaits, BOOL hasAssociatedObject)
+extern "C" INT32 QCALLTYPE WaitHandle_WaitOneCore(HANDLE handle, INT32 timeout, BOOL useTrivialWaits, BOOL doNotSendWaitEvents)
 {
     QCALL_CONTRACT;
 
@@ -26,7 +26,7 @@ extern "C" INT32 QCALLTYPE WaitHandle_WaitOneCore(HANDLE handle, INT32 timeout, 
 
     Thread* pThread = GET_THREAD();
     WaitMode waitMode = (WaitMode)((!useTrivialWaits ? WaitMode_Alertable : WaitMode_None) | WaitMode_IgnoreSyncCtx);
-    if (hasAssociatedObject)
+    if (doNotSendWaitEvents)
     {
         waitMode = (WaitMode)(waitMode | WaitMode_DoNotSendWaitEvents);
     }

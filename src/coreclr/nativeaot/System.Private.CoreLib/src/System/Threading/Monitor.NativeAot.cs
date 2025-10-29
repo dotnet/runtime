@@ -13,7 +13,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -47,16 +46,6 @@ namespace System.Threading
             lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Enter(object obj, ref bool lockTaken)
-        {
-            if (lockTaken)
-                ThrowLockTakenException();
-
-            Enter(obj);
-            lockTaken = true;
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj)
         {
@@ -76,16 +65,6 @@ namespace System.Threading
                 return true;
 
             return lck.TryEnterSlow(0, currentThreadID);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void TryEnter(object obj, ref bool lockTaken)
-        {
-            // we are inlining lockTaken check as the check is likely be optimized away
-            if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-
-            lockTaken = TryEnter(obj);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -108,16 +87,6 @@ namespace System.Threading
                 return true;
 
             return lck.TryEnterSlow(millisecondsTimeout, currentThreadID);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
-        {
-            // we are inlining lockTaken check as the check is likely be optimized away
-            if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-
-            lockTaken = TryEnter(obj, millisecondsTimeout);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

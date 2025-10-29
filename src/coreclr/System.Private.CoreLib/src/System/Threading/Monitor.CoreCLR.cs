@@ -13,7 +13,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -64,15 +63,6 @@ namespace System.Threading
             GetLockObject(obj).Enter();
         }
 
-        public static void Enter(object obj, ref bool lockTaken)
-        {
-            if (lockTaken)
-                ThrowLockTakenException();
-
-            Enter(obj);
-            lockTaken = true;
-        }
-
         public static bool TryEnter(object obj)
         {
             ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
@@ -85,15 +75,6 @@ namespace System.Threading
             return GetLockObject(obj).TryEnter();
         }
 
-        public static void TryEnter(object obj, ref bool lockTaken)
-        {
-            // we are inlining lockTaken check as the check is likely be optimized away
-            if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-
-            lockTaken = TryEnter(obj);
-        }
-
         public static bool TryEnter(object obj, int millisecondsTimeout)
         {
             ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, -1);
@@ -103,24 +84,6 @@ namespace System.Threading
                 return true;
 
             return GetLockObject(obj).TryEnter(millisecondsTimeout);
-        }
-
-        public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
-        {
-            // we are inlining lockTaken check as the check is likely be optimized away
-            if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-
-            lockTaken = TryEnter(obj, millisecondsTimeout);
-        }
-
-        internal static void ExitIfLockTaken(object obj, ref bool lockTaken)
-        {
-            if (!lockTaken)
-                return;
-
-            Exit(obj);
-            lockTaken = false;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -154,12 +117,6 @@ namespace System.Threading
                 return false;
 
             return GetLockObject(obj).IsHeldByCurrentThread;
-        }
-
-        [DoesNotReturn]
-        private static void ThrowLockTakenException()
-        {
-            throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
         }
         #endregion
     }

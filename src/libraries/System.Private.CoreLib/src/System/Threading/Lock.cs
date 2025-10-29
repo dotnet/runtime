@@ -16,7 +16,7 @@ namespace System.Threading
     /// that holds a lock may enter the lock repeatedly without exiting it, such as recursively, in which case the thread should
     /// eventually exit the lock the same number of times to fully exit the lock and allow other threads to enter the lock.
     /// </remarks>
-    public sealed partial class Lock
+    public sealed class Lock
     {
         private const short DefaultMaxSpinCount = 22;
         private const short DefaultAdaptiveSpinPeriod = 100;
@@ -880,7 +880,7 @@ namespace System.Threading
 
         // Used to transfer the state when inflating thin locks. The lock is considered unlocked if managedThreadId is zero, and
         // locked otherwise.
-        internal void ResetForMonitor(int managedThreadId, uint recursionCount)
+        internal void InitializeForMonitor(int managedThreadId, uint recursionCount)
         {
             Debug.Assert(recursionCount == 0 || managedThreadId != 0);
             Debug.Assert(!new State(this).UseTrivialWaits);

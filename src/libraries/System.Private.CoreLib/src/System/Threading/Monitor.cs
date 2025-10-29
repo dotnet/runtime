@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -40,6 +41,40 @@ namespace System.Threading
             => Wait(obj, WaitHandle.ToTimeoutMilliseconds(timeout));
 
 #if !MONO
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Enter(object obj, ref bool lockTaken)
+        {
+            if (lockTaken)
+                ThrowLockTakenException();
+
+            Enter(obj);
+            lockTaken = true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void TryEnter(object obj, ref bool lockTaken)
+        {
+            if (lockTaken)
+                ThrowLockTakenException();
+
+            lockTaken = TryEnter(obj);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
+        {
+            if (lockTaken)
+                ThrowLockTakenException();
+
+            lockTaken = TryEnter(obj, millisecondsTimeout);
+        }
+
+        [DoesNotReturn]
+        private static void ThrowLockTakenException()
+        {
+            throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
+        }
+
         #region Object->Condition mapping
 
         private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = [];
