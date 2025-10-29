@@ -1739,7 +1739,7 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
     {
         RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
     }
-#endif
+#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
     RETURN CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
 }
@@ -1795,7 +1795,7 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
     {
         RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
     }
-#endif
+#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
     RETURN CreateInstantiatingILStub(pSharedMD, extraArg);
 }

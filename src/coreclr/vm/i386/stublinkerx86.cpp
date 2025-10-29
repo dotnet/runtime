@@ -895,7 +895,7 @@ bool StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
 #ifdef UNIX_X86_ABI
     // Unix x86 ABI requires stack alignment
     return false;
-#else
+#else // UNIX_X86_ABI
     MetaSig msig(pMD);
     ArgIterator argit(&msig);
 
@@ -946,9 +946,9 @@ bool StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
     EmitTailJumpToMethod(pMD);
 
     return true;
-#endif
+#endif // UNIX_X86_ABI
 }
-#endif //TARGET_X86
+#endif // TARGET_X86
 
 #ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
 VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg)
