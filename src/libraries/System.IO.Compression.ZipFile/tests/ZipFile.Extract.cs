@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -669,7 +669,7 @@ namespace System.IO.Compression.Tests
                 }
             }
 
-            // Act 2: Read back�encrypted need password, plain do not
+            // Act 2: Read back—encrypted need password, plain do not
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
             {
                 // Encrypted
@@ -1218,6 +1218,133 @@ namespace System.IO.Compression.Tests
                 });
             }
         }
+
+
+
+
+        [Fact]
+        public void CreateEntry_UsesArchiveDefaults_WhenNotOverridden()
+        {
+            Directory.CreateDirectory(DownloadsDir);
+            var zipPath = NewPath("defaults_apply.zip");
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            const string defaultPassword = "archive-pw";
+            const string payload = "default encryption content";
+            const string entryName = "secure/default.txt";
+
+            using (var zipFs = File.Create(zipPath))
+            using (var za = new ZipArchive(zipFs,
+                                           ZipArchiveMode.Create,
+                                           leaveOpen: false,
+                                           entryNameEncoding: Encoding.UTF8,
+                                           defaultPassword: defaultPassword,
+                                           defaultEncryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto))
+            {
+                var e = za.CreateEntry(entryName);
+
+                // OPEN → WRITE → DISPOSE (single scope)
+                using (var es = e.Open())
+                {
+                    var bytes = Encoding.UTF8.GetBytes(payload);
+                    es.Write(bytes, 0, bytes.Length);
+                }
+                // no other entry opened while this one was open
+            }
+
+            // Verify with the archive default password
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                var e = za.GetEntry(entryName);
+                Assert.NotNull(e);
+                using var r = new StreamReader(e!.Open(defaultPassword), Encoding.UTF8);
+                Assert.Equal(payload, r.ReadToEnd());
+            }
+        }
+
+        [Fact]
+        public async Task CreateMode_DefaultPassword_AppliesToMultipleEntries()
+        {
+            string zipPath = NewPath("defaults_multiple.zip");
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            const string defaultPassword = "archive-pw";
+
+            using (var zipFs = File.Create(zipPath))
+            using (var za = new ZipArchive(zipFs,
+                                           ZipArchiveMode.Create,
+                                           leaveOpen: false,
+                                           entryNameEncoding: Encoding.UTF8,
+                                           defaultPassword: defaultPassword,
+                                           defaultEncryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto))
+            {
+                var e1 = za.CreateEntry("secure/one.txt");
+                using (var s1 = e1.Open())
+                {
+                    var b = Encoding.UTF8.GetBytes("ONE");
+                    s1.Write(b, 0, b.Length);
+                }
+
+                var e2 = za.CreateEntry("secure/two.txt");
+                using (var s2 = e2.Open())
+                {
+                    var b = Encoding.UTF8.GetBytes("TWO");
+                    s2.Write(b, 0, b.Length);
+                }
+            }
+
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                using (var r1 = new StreamReader(za.GetEntry("secure/one.txt")!.Open(defaultPassword), Encoding.UTF8))
+                    Assert.Equal("ONE", await r1.ReadToEndAsync());
+
+                using (var r2 = new StreamReader(za.GetEntry("secure/two.txt")!.Open(defaultPassword), Encoding.UTF8))
+                    Assert.Equal("TWO", await r2.ReadToEndAsync());
+            }
+        }
+
+        [Fact]
+        public async Task CreateEntry_WithExplicitPassword_OverridesDefaultPassword()
+        {
+            string zipPath = NewPath("override_default.zip");
+            if (File.Exists(zipPath)) File.Delete(zipPath);
+
+            const string archivePassword = "archive-pw";
+            const string entryPassword = "entry-pw";
+
+            using (var zipFs = File.Create(zipPath))
+            using (var za = new ZipArchive(zipFs,
+                                           ZipArchiveMode.Create,
+                                           leaveOpen: false,
+                                           entryNameEncoding: Encoding.UTF8,
+                                           defaultPassword: archivePassword,
+                                           defaultEncryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto))
+            {
+                var e = za.CreateEntry("secure/override.txt", entryPassword, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+                using (var s = e.Open())
+                {
+                    var b = Encoding.UTF8.GetBytes("OVERRIDE");
+                    s.Write(b, 0, b.Length);
+                }
+            }
+
+            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            {
+                var e = za.GetEntry("secure/override.txt");
+                Assert.NotNull(e);
+
+                // Should succeed with entry password
+                using (var rOk = new StreamReader(e!.Open(entryPassword), Encoding.UTF8))
+                    Assert.Equal("OVERRIDE", await rOk.ReadToEndAsync());
+
+                // Wrong: using archive default should fail
+                Assert.ThrowsAny<Exception>(() =>
+                {
+                    using var _ = e.Open(archivePassword);
+                });
+            }
+        }
+
     }
 
 

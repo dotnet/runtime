@@ -96,6 +96,7 @@ namespace System.IO.Compression
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode) { }
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen) { }
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, System.Text.Encoding? entryNameEncoding) { }
+        public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, System.Text.Encoding? entryNameEncoding, string? defaultPassword, System.IO.Compression.ZipArchiveEntry.EncryptionMethod defaultEncryption) { }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Comment { get { throw null; } set { } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.IO.Compression.ZipArchiveEntry> Entries { get { throw null; } }

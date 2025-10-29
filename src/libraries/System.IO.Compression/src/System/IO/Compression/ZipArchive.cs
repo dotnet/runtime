@@ -32,8 +32,10 @@ namespace System.IO.Compression
         private byte[] _archiveComment;
         private Encoding? _entryNameAndCommentEncoding;
         private long _firstDeletedEntryOffset;
-        //private string _defaultPassword = "";
-        //private ZipArchiveEntry.EncryptionMethod _defaultEncryption = ZipArchiveEntry.EncryptionMethod.None;
+        private readonly string? _defaultPassword;
+        private readonly ZipArchiveEntry.EncryptionMethod _defaultEncryption;
+
+
 
 #if DEBUG_FORCE_ZIP64
         public bool _forceZip64;
@@ -178,6 +180,66 @@ namespace System.IO.Compression
             }
         }
 
+
+        public ZipArchive(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding, string? defaultPassword, ZipArchiveEntry.EncryptionMethod defaultEncryption)
+            : this(mode, leaveOpen, entryNameEncoding, backingStream: null, archiveStream: DecideArchiveStream(mode, stream), defaultPassword: defaultPassword, defaultEncryption: defaultEncryption)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+
+            Stream? extraTempStream = null;
+
+            try
+            {
+                _backingStream = null;
+
+                if (ValidateMode(mode, stream))
+                {
+                    _backingStream = stream;
+                    extraTempStream = stream = new MemoryStream();
+                    _backingStream.CopyTo(stream);
+                    stream.Seek(0, SeekOrigin.Begin);
+                }
+
+                _archiveStream = DecideArchiveStream(mode, stream);
+
+                switch (mode)
+                {
+                    case ZipArchiveMode.Create:
+                        _readEntries = true;
+                        break;
+
+                    case ZipArchiveMode.Read:
+                        ReadEndOfCentralDirectory();
+                        break;
+
+                    case ZipArchiveMode.Update:
+                    default:
+                        Debug.Assert(mode == ZipArchiveMode.Update);
+                        if (_archiveStream.Length == 0)
+                        {
+                            _readEntries = true;
+                        }
+                        else
+                        {
+                            ReadEndOfCentralDirectory();
+                            EnsureCentralDirectoryRead();
+
+                            foreach (ZipArchiveEntry entry in _entries)
+                            {
+                                entry.ThrowIfNotOpenable(needToUncompress: false, needToLoadIntoMemory: true);
+                            }
+                        }
+                        break;
+                }
+            }
+            catch
+            {
+                extraTempStream?.Dispose();
+                throw;
+            }
+        }
+
+
         /// Helper constructor that initializes some of the essential ZipArchive
         /// information that other constructors initialize the same way.
         /// Validations, checks and entry collection need to be done outside this constructor.
@@ -200,6 +262,22 @@ namespace System.IO.Compression
             _archiveComment = Array.Empty<byte>();
             _firstDeletedEntryOffset = long.MaxValue;
         }
+
+
+        private ZipArchive(ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding, Stream? backingStream, Stream archiveStream, string? defaultPassword, ZipArchiveEntry.EncryptionMethod defaultEncryption)
+            : this(mode, leaveOpen, entryNameEncoding, backingStream, archiveStream)
+        {
+            _defaultPassword = string.IsNullOrEmpty(defaultPassword) ? null : defaultPassword;
+            _defaultEncryption = defaultEncryption;
+
+            // Optional guardrails: if user gives a default password but sets encryption None, allow it (password is simply unused);
+            // if encryption is ZipCrypto but password is null/empty, you can either throw here or defer to CreateEntry validation.
+            if (_defaultEncryption == ZipArchiveEntry.EncryptionMethod.ZipCrypto && _defaultPassword is null)
+            {
+                throw new ArgumentException("A default password must be provided when defaultEncryption is ZipCrypto.", nameof(defaultPassword));
+            }
+        }
+
 
         /// <summary>
         /// Gets or sets the optional archive comment.
@@ -356,6 +434,9 @@ namespace System.IO.Compression
 
         internal uint NumberOfThisDisk => _numberOfThisDisk;
 
+        internal string? DefaultPassword => _defaultPassword;
+        internal ZipArchiveEntry.EncryptionMethod DefaultEncryption => _defaultEncryption;
+
         internal Encoding? EntryNameAndCommentEncoding
         {
             get => _entryNameAndCommentEncoding;
@@ -406,9 +487,11 @@ namespace System.IO.Compression
             ZipArchiveEntry entry;
             if (compressionLevel.HasValue)
             {
-                if (password != null) {
+                if (password != null)
+                {
                     entry = new ZipArchiveEntry(this, entryName, compressionLevel.Value, password, encryption);
-                } else
+                }
+                else
                 {
                     entry = new ZipArchiveEntry(this, entryName, compressionLevel.Value);
                 }
@@ -419,7 +502,8 @@ namespace System.IO.Compression
                 {
                     entry = new ZipArchiveEntry(this, entryName, password, encryption);
                 }
-                else {
+                else
+                {
                     entry = new ZipArchiveEntry(this, entryName);
                 }
             }

@@ -98,6 +98,9 @@ namespace System.IO.Compression
             _fileComment = cd.FileComment;
 
             _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
+
+            _password = archive.DefaultPassword;
+            _encryptionMethod = archive.DefaultEncryption;
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
@@ -110,6 +113,8 @@ namespace System.IO.Compression
                 CompressionMethod = CompressionMethodValues.Stored;
             }
             _generalPurposeBitFlag = MapDeflateCompressionOption(_generalPurposeBitFlag, _compressionLevel, CompressionMethod);
+            _password = archive.DefaultPassword;
+            _encryptionMethod = archive.DefaultEncryption;
         }
 
         // Initializes a ZipArchiveEntry instance for a new archive entry.
@@ -161,6 +166,9 @@ namespace System.IO.Compression
             }
 
             Changes = ZipArchive.ChangeState.Unchanged;
+
+            _password = archive.DefaultPassword;
+            _encryptionMethod = archive.DefaultEncryption;
         }
 
         internal ZipArchiveEntry(ZipArchive archive, string entryName, CompressionLevel compressionLevel, string? password, EncryptionMethod encryptionMethod = EncryptionMethod.ZipCrypto)
@@ -404,10 +412,12 @@ namespace System.IO.Compression
         {
             ThrowIfInvalidArchive();
 
+            bool isEncrypted = !string.IsNullOrEmpty(_archive.DefaultPassword) && _archive.DefaultEncryption != EncryptionMethod.None;
+
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
-                    return OpenInReadMode(checkOpenable: true);
+                    return isEncrypted ? OpenInReadMode(checkOpenable: true, _archive.DefaultPassword.AsMemory()) : OpenInReadMode(checkOpenable: true);
                 case ZipArchiveMode.Create:
                     return OpenInWriteMode();
                 case ZipArchiveMode.Update:
@@ -801,17 +811,17 @@ namespace System.IO.Compression
         private CheckSumAndSizeWriteStream GetDataCompressor(
     Stream backingStream, bool leaveBackingStreamOpen, EventHandler? onClose)
         {
-            // final chain: backingStream <- ZipCrypto? <- Deflate/Stored <- CheckSumAndSizeWriteStream
+            // final chain: backingStream <- Encryption <- Deflate/Stored <- CheckSumAndSizeWriteStream
 
             Debug.Assert(CompressionMethod == CompressionMethodValues.Deflate
                       || CompressionMethod == CompressionMethodValues.Stored
                       || CompressionMethod == CompressionMethodValues.Deflate64);
 
-            string? pwd = _password;
+            string? pwd = string.IsNullOrEmpty(_password) ? _archive.DefaultPassword : _password;
 
-            // Build target sink (encrypting layer if needed). Header will be emitted on the first write.
+            // Build encrypting layer if needed. Header will be emitted on the first write.
             Stream targetSink = backingStream;
-            if (IsZipCryptoEncrypted())
+            if (IsZipCryptoEncrypted() || _archive.DefaultEncryption == EncryptionMethod.ZipCrypto)
             {
                 if (string.IsNullOrEmpty(pwd))
                     throw new InvalidOperationException("Encrypted entry requires a non-empty password.");
@@ -824,7 +834,7 @@ namespace System.IO.Compression
                     password: pwd.AsMemory(),
                     passwordVerifierLow2Bytes: verifierLow2Bytes,
                     crc32: null,
-                    leaveOpen: leaveBackingStreamOpen); // honor leaveOpen semantics
+                    leaveOpen: leaveBackingStreamOpen);
             }
 
             Stream compressorStream;
@@ -859,7 +869,6 @@ namespace System.IO.Compression
                     thisRef._crc32 = checkSum;
                     thisRef._uncompressedSize = currentPosition;
 
-                    // No +12 needed anymore: the header was written after initialPosition was captured.
                     long rawCompressed = backing.Position - initialPosition;
 
                     thisRef._compressedSize = rawCompressed;
@@ -902,7 +911,6 @@ namespace System.IO.Compression
 
                 byte expectedCheckByte = CalculateZipCryptoCheckByte();
 
-                // This stream will read & validate the 12-byte header and then yield plaintext compressed bytes.
                 toDecompress = new ZipCryptoStream(toDecompress, password, expectedCheckByte);
             }
 
