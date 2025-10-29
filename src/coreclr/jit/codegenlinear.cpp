@@ -443,7 +443,7 @@ void CodeGen::genCodeForBBlist()
                     // Normally we pick the latest, but for block joins we pick the earliest to ensure end up with
                     // a mapping to that IL offset. Async mappings should not participate in this -- they are
                     // internally produced and never fall on the join point in the IL.
-                    // See
+                    // See genIPmappingGen for the tiebreaker.
                     bool isLabel = !producedLabelMapping && !currentDI.GetLocation().IsAsync();
                     genIPmappingAdd(IPmappingDscKind::Normal, currentDI, isLabel);
                     producedLabelMapping |= isLabel;
