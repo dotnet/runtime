@@ -307,6 +307,7 @@ namespace System
         }
 
         /// <summary>
+        /// Implementation of CORINFO_HELP_NEW_MDARR
         /// Helper for array allocations via `newobj` IL instruction. Dimensions are passed in as block of integers.
         /// The content of the dimensions block may be modified by the helper.
         /// </summary>
@@ -337,6 +338,7 @@ namespace System
         }
 
         /// <summary>
+        /// Implementation of CORINFO_HELP_NEW_MDARR_RARE
         /// Helper for array allocations via `newobj` IL instruction. Dimensions are passed in as block of integers.
         /// The content of the dimensions block may be modified by the helper.
         /// </summary>
