@@ -58,14 +58,14 @@ namespace System
 
         // implementation of CORINFO_HELP_GETREFANY
         [StackTraceHidden]
-        internal static ref byte GetRefAny(IntPtr clsHnd, TypedReference typedByRef)
+        internal static ref byte GetRefAny(IntPtr type, TypedReference value)
         {
-            if (clsHnd != typedByRef._type)
+            if (type != value._type)
             {
                 ThrowInvalidCastException();
             }
 
-            return ref typedByRef._value;
+            return ref value._value;
 
             [DoesNotReturn]
             [StackTraceHidden]

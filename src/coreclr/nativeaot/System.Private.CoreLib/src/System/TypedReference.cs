@@ -76,14 +76,16 @@ namespace System
         }
 
          // implementation of CORINFO_HELP_GETREFANY
-        internal static ref byte GetRefAny(RuntimeTypeHandle type, TypedReference typedRef)
+        internal static ref byte GetRefAny(RuntimeTypeHandle type, TypedReference value)
         {
-            if (!typedRef._typeHandle.Equals(type))
+            if (!value._typeHandle.Equals(type))
             {
-                throw new InvalidCastException();
+                ThrowInvalidCastException();
             }
 
-            return ref typedRef.Value;
+            return ref value.Value;
+
+            static void ThrowInvalidCastException() => throw new InvalidCastException();
         }
     }
 }

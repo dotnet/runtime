@@ -36,16 +36,16 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CreateInstanceMDArray")]
-        private static unsafe partial void CreateInstanceMDArray(nint typeHandle, uint dwNumArgs, void* pArgList, ObjectHandleOnStack retArray);
+        private static unsafe partial void CtorAny(nint typeHandle, uint dwNumArgs, void* pArgList, ObjectHandleOnStack retArray);
 
         // implementation of CORINFO_HELP_NEW_MDARR and CORINFO_HELP_NEW_MDARR_RARE.
         [StackTraceHidden]
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal static unsafe object CreateInstanceMDArray(nint typeHandle, uint dwNumArgs, void* pArgList)
+        internal static unsafe object CtorAny(nint typeHandle, uint dwNumArgs, void* pArgList)
         {
             Array? arr = null;
-            CreateInstanceMDArray(typeHandle, dwNumArgs, pArgList, ObjectHandleOnStack.Create(ref arr));
+            CtorAny(typeHandle, dwNumArgs, pArgList, ObjectHandleOnStack.Create(ref arr));
             return arr!;
         }
 
