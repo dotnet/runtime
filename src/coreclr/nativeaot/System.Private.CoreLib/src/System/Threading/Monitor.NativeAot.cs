@@ -16,6 +16,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
+using Internal.Runtime;
+using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -101,12 +103,44 @@ namespace System.Threading
         {
             return ObjectHeader.IsAcquired(obj);
         }
-
-        [DoesNotReturn]
-        private static void ThrowLockTakenException()
-        {
-            throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
-        }
         #endregion
+
+        private static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
+        {
+            // Inlined Monitor.Enter with a few tweaks
+            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            int resultOrIndex = ObjectHeader.Acquire(obj, currentThreadID);
+            if (resultOrIndex < 0)
+            {
+                lockTaken = true;
+                return;
+            }
+
+            Lock lck = resultOrIndex == 0 ?
+                ObjectHeader.GetLockObject(obj) :
+                SyncTable.GetLockObject(resultOrIndex);
+
+            lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
+            lockTaken = true;
+        }
+
+        private static void SynchronizedMethodExit(object obj, ref bool lockTaken)
+        {
+            // Inlined Monitor.Exit with a few tweaks
+            if (!lockTaken)
+                return;
+
+            ObjectHeader.Release(obj);
+            lockTaken = false;
+        }
+
+        private static unsafe RuntimeType GetSyncObjectFromClassHandle(MethodTable* pMT) => Type.GetTypeFromMethodTable(pMT);
+
+        private static unsafe MethodTable* GetClassHandleFromMethodParam(IntPtr pDictionary)
+        {
+            bool success = RuntimeAugments.TypeLoaderCallbacks.TryGetOwningTypeForMethodDictionary(pDictionary, out RuntimeTypeHandle th);
+            Debug.Assert(success);
+            return th.ToMethodTable();
+        }
     }
 }

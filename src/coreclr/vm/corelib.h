@@ -653,17 +653,15 @@ END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
 DEFINE_FIELD(MONITOR,               CONDITION_TABLE,        s_conditionTable)
-
-DEFINE_CLASS(SYNCHRONIZEDMETHODHELPERS, Threading,          SynchronizedMethodHelpers)
-DEFINE_METHOD(SYNCHRONIZEDMETHODHELPERS, MONITOR_ENTER,     MonitorEnter,          SM_Obj_RefBool_RetVoid)
-DEFINE_METHOD(SYNCHRONIZEDMETHODHELPERS, MONITOR_EXIT,      MonitorExit,    SM_Obj_RefBool_RetVoid)
+DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_ENTER, SynchronizedMethodEnter, SM_Obj_RefBool_RetVoid)
+DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_EXIT,  SynchronizedMethodExit,  SM_Obj_RefBool_RetVoid)
 
 DEFINE_CLASS(LOCK,                  Threading,              Lock)
 DEFINE_FIELD(LOCK,                  OWNING_THREAD_ID,       _owningThreadId)
 DEFINE_FIELD(LOCK,                  STATE,                  _state)
 DEFINE_FIELD(LOCK,                  RECURSION_COUNT,        _recursionCount)
-DEFINE_METHOD(LOCK,                 CTOR,                   .ctor,                      IM_RetVoid)
-DEFINE_METHOD(LOCK,                 INITIALIZE_FOR_MONITOR,      InitializeForMonitor, NoSig)
+DEFINE_METHOD(LOCK,                 CTOR,                   .ctor,                IM_RetVoid)
+DEFINE_METHOD(LOCK,                 INITIALIZE_FOR_MONITOR, InitializeForMonitor, NoSig)
 
 DEFINE_CLASS(CONDITION,             Threading,              Condition)
 DEFINE_FIELD(CONDITION,             WAITERS_HEAD,           _waitersHead)

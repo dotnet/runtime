@@ -44,6 +44,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Enter(object obj, ref bool lockTaken)
         {
+            // Aggressively inline lockTaken check as it is likely to be optimized away
             if (lockTaken)
                 ThrowLockTakenException();
 
@@ -54,6 +55,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TryEnter(object obj, ref bool lockTaken)
         {
+            // Aggressively inline lockTaken check as it is likely to be optimized away
             if (lockTaken)
                 ThrowLockTakenException();
 
@@ -63,6 +65,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
         {
+            // Aggressively inline lockTaken check as it is likely to be optimized away
             if (lockTaken)
                 ThrowLockTakenException();
 

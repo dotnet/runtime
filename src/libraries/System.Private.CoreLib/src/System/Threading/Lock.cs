@@ -281,7 +281,7 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private void Exit(int currentThreadId)
+        internal void Exit(int currentThreadId)
         {
             Debug.Assert(currentThreadId != UninitializedThreadId);
             Debug.Assert(currentThreadId == ManagedThreadId.CurrentManagedThreadIdUnchecked);
@@ -345,7 +345,7 @@ namespace System.Threading
         private static bool IsAdaptiveSpinEnabled(short minSpinCountForAdaptiveSpin) => minSpinCountForAdaptiveSpin <= 0;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private int TryEnterSlow(int timeoutMs, int currentThreadId)
+        internal int TryEnterSlow(int timeoutMs, int currentThreadId)
         {
             Debug.Assert(timeoutMs >= -1);
 

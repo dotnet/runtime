@@ -119,5 +119,39 @@ namespace System.Threading
             return GetLockObject(obj).IsHeldByCurrentThread;
         }
         #endregion
+
+        internal static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
+        {
+            ObjectHeader.HeaderLockResult result = ObjectHeader.TryAcquireThinLock(obj);
+            if (result == ObjectHeader.HeaderLockResult.Success)
+            {
+                lockTaken = true;
+                return;
+            }
+
+            GetLockObject(obj).Enter();
+            lockTaken = true;
+        }
+
+        internal static void SynchronizedMethodExit(object obj, ref bool lockTaken)
+        {
+            // Inlined Monitor.Exit with a few tweaks
+            if (!lockTaken)
+                return;
+
+            ObjectHeader.HeaderLockResult result = ObjectHeader.Release(obj);
+
+            if (result == ObjectHeader.HeaderLockResult.Success)
+            {
+                return;
+            }
+
+            if (result == ObjectHeader.HeaderLockResult.Failure)
+            {
+                throw new SynchronizationLockException();
+            }
+
+            GetLockObject(obj).Exit();
+        }
     }
 }
