@@ -484,7 +484,9 @@ namespace ILCompiler
                     }
                 }
 
-                Debug.Assert(potentialMatchingInterfaces != 0);
+                Debug.Assert(potentialMatchingInterfaces != 0
+                    // We didn't consider default-implemented methods above and we're fine taking the !(potentialMatchingInterfaces > 1) path below.
+                    || (isStaticVirtualMethod && !interfaceMethod.IsAbstract));
 
                 if (potentialMatchingInterfaces > 1)
                 {
