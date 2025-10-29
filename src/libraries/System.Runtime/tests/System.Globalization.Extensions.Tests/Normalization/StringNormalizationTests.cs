@@ -154,8 +154,11 @@ namespace System.Globalization.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => value.AsSpan().IsNormalized(normalizationForm));
                 Assert.Throws<PlatformNotSupportedException>(() => value.Normalize(normalizationForm));
 
-                Span<char> destination = stackalloc char[32];
-                Assert.Throws<PlatformNotSupportedException>(() => value.AsSpan().TryNormalize(destination, out _, normalizationForm));
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                {
+                    Span<char> destination = stackalloc char[32];
+                    value.AsSpan().TryNormalize(destination, out _, normalizationForm);
+                });
                 Assert.Throws<PlatformNotSupportedException>(() => value.AsSpan().GetNormalizedLength(normalizationForm));
             }
         }
