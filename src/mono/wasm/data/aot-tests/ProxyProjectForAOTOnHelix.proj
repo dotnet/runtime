@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.WebAssembly" DefaultTargets="BundleTestWasmApp">
   <PropertyGroup>
-    <TargetFmramework>net10.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <Import Project="Directory.Build.props" />
   <PropertyGroup>
