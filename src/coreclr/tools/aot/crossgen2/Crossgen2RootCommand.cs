@@ -24,6 +24,8 @@ namespace ILCompiler
             new("--reference", "-r") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, false), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, false), Description = SR.ReferenceFiles };
         public Option<string> InstructionSet { get; } =
             new("--instruction-set") { Description = SR.InstructionSets };
+        public Option<bool> NoOptimisticInstructionSet { get; } =
+            new("--no-optimistic-instruction-set") { Description = SR.NoOptimisticInstructionSets };
         public Option<int> MaxVectorTBitWidth { get; } =
             new("--max-vectort-bitwidth") { Description = SR.MaxVectorTBitWidths };
         public Option<string[]> MibcFilePaths { get; } =
@@ -160,6 +162,7 @@ namespace ILCompiler
             Options.Add(UnrootedInputFilePaths);
             Options.Add(ReferenceFilePaths);
             Options.Add(InstructionSet);
+            Options.Add(NoOptimisticInstructionSet);
             Options.Add(MaxVectorTBitWidth);
             Options.Add(MibcFilePaths);
             Options.Add(OutputFilePath);

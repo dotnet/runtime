@@ -87,7 +87,7 @@ namespace ILCompiler
             TargetOS targetOS = Get(_command.TargetOS);
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
                 SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger,
-                optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize,
+                Get(_command.NoOptimisticInstructionSet), optimizingForSize: _command.OptimizationMode == OptimizationMode.PreferSize,
                 isReadyToRun: true);
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());

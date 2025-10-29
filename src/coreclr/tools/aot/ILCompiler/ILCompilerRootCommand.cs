@@ -116,6 +116,8 @@ namespace ILCompiler
             new("--parallelism") { CustomParser = MakeParallelism, DefaultValueFactory = MakeParallelism, Description = "Maximum number of threads to use during compilation" };
         public Option<string> InstructionSet { get; } =
             new("--instruction-set") { Description = "Instruction set to allow or disallow" };
+        public Option<bool> NoOptimisticInstructionSet { get; } =
+            new("--no-optimistic-instruction-set") { Description = "Disallow optimistic instruction set" };
         public Option<int> MaxVectorTBitWidth { get; } =
             new("--max-vectort-bitwidth") { Description = "Maximum width, in bits, that Vector<T> is allowed to be" };
         public Option<string> Guard { get; } =
@@ -240,6 +242,7 @@ namespace ILCompiler
             Options.Add(RuntimeKnobs);
             Options.Add(Parallelism);
             Options.Add(InstructionSet);
+            Options.Add(NoOptimisticInstructionSet);
             Options.Add(MaxVectorTBitWidth);
             Options.Add(Guard);
             Options.Add(Dehydrate);

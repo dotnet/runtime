@@ -17,7 +17,7 @@ namespace System.CommandLine
     internal static partial class Helpers
     {
         public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, int maxVectorTBitWidth, bool isVectorTOptimistic, TargetArchitecture targetArchitecture, TargetOS targetOS,
-            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool optimizingForSize, bool isReadyToRun)
+            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool noOptimisticInstructionSet, bool optimizingForSize, bool isReadyToRun)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
 
@@ -90,7 +90,7 @@ namespace System.CommandLine
             // Whether to allow optimistically expanding the instruction sets beyond what was specified.
             // We seed this from optimizingForSize - if we're size-optimizing, we don't want to unnecessarily
             // compile both branches of IsSupported checks.
-            bool allowOptimistic = !optimizingForSize;
+            bool allowOptimistic = !noOptimisticInstructionSet && !optimizingForSize;
 
             bool throttleAvx512 = false;
 
