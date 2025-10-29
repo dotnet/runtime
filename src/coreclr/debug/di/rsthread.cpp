@@ -783,7 +783,7 @@ CorDebugUserState CordbThread::GetUserState()
         m_userState = pDAC->GetUserState(m_vmThreadToken);
     }
 
-    return m_userState;
+    return (CorDebugUserState)m_userState;
 }
 
 
@@ -887,7 +887,7 @@ HRESULT CordbThread::CreateStepper(ICorDebugStepper ** ppStepper)
 //Returns true if current user state of a thread is USER_WAIT_SLEEP_JOIN
 bool CordbThread::IsThreadWaitingOrSleeping()
 {
-    CorDebugUserState userState = m_userState;
+    int userState = m_userState;
     if (userState == kInvalidUserState)
     {
         //If m_userState is not ready, we'll read from DAC only part of it which
