@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void BreadcrumbThreadFinishes()
         {
-            HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
                 .EnvironmentVariable(Constants.Breadcrumbs.EnvironmentVariable, sharedTestState.BreadcrumbLocation)
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void UnhandledException_BreadcrumbThreadDoesNotFinish()
         {
-            HostTestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "throw_exception")
+            TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll, "throw_exception")
                 .EnvironmentVariable(Constants.Breadcrumbs.EnvironmentVariable, sharedTestState.BreadcrumbLocation)
                 .EnableTracingAndCaptureOutputs()
                 .DisableDumps() // Expected to throw an exception

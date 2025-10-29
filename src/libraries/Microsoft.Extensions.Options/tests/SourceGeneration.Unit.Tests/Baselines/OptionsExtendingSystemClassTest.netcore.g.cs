@@ -22,8 +22,7 @@
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
             #if NET10_0_OR_GREATER
-            string displayName = string.IsNullOrEmpty(name) ? "EndPointsOptions.Validate" : $"{name}.Validate";
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, displayName, null, null);
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "EndPointsOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             #endif
@@ -31,7 +30,7 @@
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
 
             context.MemberName = "Host";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "EndPointsOptions.Host" : $"{name}.Host";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Host" : $"{name}.Host";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Host, context, validationResults, validationAttributes))
             {
@@ -39,7 +38,7 @@
             }
 
             context.MemberName = "Port";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "EndPointsOptions.Port" : $"{name}.Port";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Port" : $"{name}.Port";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
@@ -73,8 +72,7 @@ namespace Test
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
             #if NET10_0_OR_GREATER
-            string displayName = string.IsNullOrEmpty(name) ? "RedisClientOptions.Validate" : $"{name}.Validate";
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, displayName, null, null);
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RedisClientOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             #endif
@@ -82,7 +80,7 @@ namespace Test
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "EndPoints";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "RedisClientOptions.EndPoints" : $"{name}.EndPoints";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "EndPoints" : $"{name}.EndPoints";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.EndPoints, context, validationResults, validationAttributes))
             {
@@ -96,11 +94,11 @@ namespace Test
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::Test.__EndPointsOptionsValidator__.Validate(string.IsNullOrEmpty(name) ? $"RedisClientOptions.EndPoints[{count}]" : $"{name}.EndPoints[{count}]", o));
+                        (builder ??= new()).AddResult(global::Test.__EndPointsOptionsValidator__.Validate(string.IsNullOrEmpty(name) ? $"EndPoints[{count}]" : $"{name}.EndPoints[{count}]", o));
                     }
                     else
                     {
-                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"RedisClientOptions.EndPoints[{count}] is null" : $"{name}.EndPoints[{count}] is null");
+                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"EndPoints[{count}] is null" : $"{name}.EndPoints[{count}] is null");
                     }
                     count++;
                 }
@@ -129,8 +127,7 @@ namespace Test
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
             #if NET10_0_OR_GREATER
-            string displayName = string.IsNullOrEmpty(name) ? "RedisNamedClientOptions.Validate" : $"{name}.Validate";
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, displayName, null, null);
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "RedisNamedClientOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             #endif
@@ -138,7 +135,7 @@ namespace Test
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "RedisClientOptionsList";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "RedisNamedClientOptions.RedisClientOptionsList" : $"{name}.RedisClientOptionsList";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "RedisClientOptionsList" : $"{name}.RedisClientOptionsList";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.RedisClientOptionsList, context, validationResults, validationAttributes))
             {
@@ -152,11 +149,11 @@ namespace Test
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::Test.__RedisClientOptionsValidator__.Validate(string.IsNullOrEmpty(name) ? $"RedisNamedClientOptions.RedisClientOptionsList[{count}]" : $"{name}.RedisClientOptionsList[{count}]", o));
+                        (builder ??= new()).AddResult(global::Test.__RedisClientOptionsValidator__.Validate(string.IsNullOrEmpty(name) ? $"RedisClientOptionsList[{count}]" : $"{name}.RedisClientOptionsList[{count}]", o));
                     }
                     else
                     {
-                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"RedisNamedClientOptions.RedisClientOptionsList[{count}] is null" : $"{name}.RedisClientOptionsList[{count}] is null");
+                        (builder ??= new()).AddError(string.IsNullOrEmpty(name) ? $"RedisClientOptionsList[{count}] is null" : $"{name}.RedisClientOptionsList[{count}] is null");
                     }
                     count++;
                 }
@@ -268,7 +265,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 convertedValue = ConvertValue(value, formatProvider);
             }
-            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
             {
                 return false;
             }

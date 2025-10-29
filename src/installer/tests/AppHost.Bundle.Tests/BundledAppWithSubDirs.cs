@@ -24,7 +24,7 @@ namespace AppHost.Bundle.Tests
         {
             CommandResult result = Command.Create(path)
                 .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(selfContained ? null : HostTestContext.BuiltDotNet.BinPath)
+                .DotNetRoot(selfContained ? null : TestContext.BuiltDotNet.BinPath)
                 .MultilevelLookup(false)
                 .Execute();
             if (deleteApp)
@@ -142,7 +142,8 @@ namespace AppHost.Bundle.Tests
             }
         }
 
-        [Fact(Skip = "https://github.com/dotnet/runtime/issues/54234")]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54234")]
         // NOTE: when enabling this test take a look at commented code marked by "ACTIVE ISSUE:" in SharedTestState
         public void SelfContained_R2R_Composite()
         {

@@ -461,7 +461,10 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         if (newCapacity > prevCapacity)
         {
             InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
-            memcpy(newa, from->ppOutBBs, from->outCount * sizeof(InterpBasicBlock*));
+            if (from->outCount != 0) 
+            {
+                memcpy(newa, from->ppOutBBs, from->outCount * sizeof(InterpBasicBlock*));
+            }
             from->ppOutBBs = newa;
         }
         from->ppOutBBs [from->outCount] = to;
@@ -483,7 +486,9 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         int newCapacity = GetBBLinksCapacity(to->inCount + 1);
         if (newCapacity > prevCapacity) {
             InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
-            memcpy(newa, to->ppInBBs, to->inCount * sizeof(InterpBasicBlock*));
+            if (to->inCount != 0) {
+                memcpy(newa, to->ppInBBs, to->inCount * sizeof(InterpBasicBlock*));
+            }
             to->ppInBBs = newa;
         }
         to->ppInBBs [to->inCount] = from;
@@ -2154,7 +2159,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             ip++;
             if (opcode == CEE_RET)
             {
-                if (m_isSynchronized && m_currentILOffset < m_ILCodeSizeFromILHeader)
+                if (m_isSynchronized && insOffset < m_ILCodeSizeFromILHeader)
                 {
                     // This is a ret instruction coming from the initial IL of a synchronized method.
                     CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedPostFinallyOffset));
@@ -2256,16 +2261,6 @@ void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
                 (codeStart + clause.HandlerOffset + clause.HandlerLength) > codeEnd)
         {
             BADCODE("Invalid handler region in EH clause");
-        }
-
-        // Find and mark all basic blocks that are part of the try region.
-        for (uint32_t j = clause.TryOffset; j < (clause.TryOffset + clause.TryLength); j++)
-        {
-            InterpBasicBlock* pBB = m_ppOffsetToBB[j];
-            if (pBB != NULL && pBB->clauseType == BBClauseNone)
-            {
-                pBB->clauseType = BBClauseTry;
-            }
         }
 
         InterpBasicBlock* pHandlerBB = GetBB(clause.HandlerOffset);
@@ -2720,6 +2715,14 @@ void InterpCompiler::EmitCompareOp(int32_t opBase)
             EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
         if (m_pStackPointer[-1].type == StackTypeR8 && m_pStackPointer[-2].type == StackTypeR4)
             EmitConv(m_pStackPointer - 2, StackTypeR8, INTOP_CONV_R8_R4);
+
+#ifdef TARGET_64BIT
+        // Support comparisons between I and I4 by inserting an implicit conversion to I8
+        if (m_pStackPointer[-1].type == StackTypeI4 && m_pStackPointer[-2].type == StackTypeI8)
+            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+        if (m_pStackPointer[-1].type == StackTypeI8 && m_pStackPointer[-2].type == StackTypeI4)
+            EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
         AddIns(opBase + m_pStackPointer[-1].type - StackTypeI4);
     }
     m_pStackPointer -= 2;
@@ -4586,7 +4589,20 @@ void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 
 void InterpCompiler::EmitStelem(InterpType interpType)
 {
+#ifdef TARGET_64BIT
+    // nint and int32 can be used interchangeably. Add implicit conversions.
+    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
+        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+
+    // Handle floating point conversions
+    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
+        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
     m_pStackPointer -= 3;
+
     int32_t opcode = GetStelemForType(interpType);
     AddIns(opcode);
     m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
@@ -5300,7 +5316,10 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         // We need to realloc the IL code buffer to hold the extra opcodes
 
         uint8_t* newILCode = (uint8_t*)AllocMemPool(newILCodeSize);
-        memcpy(newILCode, m_pILCode, m_ILCodeSize);
+        if (m_ILCodeSize != 0)
+        {
+            memcpy(newILCode, m_pILCode, m_ILCodeSize);
+        }
         memcpy(newILCode + m_synchronizedFinallyStartOffset, opCodesForSynchronizedMethodFinally, sizeof(opCodesForSynchronizedMethodFinally));
         memcpy(newILCode + m_synchronizedPostFinallyOffset, opCodesForSynchronizedMethodEpilog, sizeof(opCodesForSynchronizedMethodEpilog));
         m_pILCode = newILCode;
@@ -5512,7 +5531,10 @@ retry_emit:
                 {
                     MergeStackTypeInfo(m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight);
                     // This is relevant only for copying the vars associated with the values on the stack
-                    memcpy(m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    if (pNewBB->stackHeight != 0)
+                    {
+                        memcpy(m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    }
                     m_pStackPointer = m_pStackBase + pNewBB->stackHeight;
                 }
                 else
@@ -5527,7 +5549,10 @@ retry_emit:
                 if (pNewBB->stackHeight >= 0)
                 {
                     // This is relevant only for copying the vars associated with the values on the stack
-                    memcpy (m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    if (pNewBB->stackHeight != 0)
+                    {
+                        memcpy (m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    }
                     m_pStackPointer = m_pStackBase + pNewBB->stackHeight;
                     pNewBB->emitState = BBStateEmitting;
                     emittedBBlocks = true;
@@ -5827,6 +5852,36 @@ retry_emit:
                 else
                 {
                     CheckStackExact(1);
+
+#ifdef TARGET_64BIT
+                    // nint and int32 can be used interchangeably. Add implicit conversions.
+                    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
+                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+                    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
+                        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+                    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
+                        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
+                    if (m_pStackPointer[-1].type != g_stackTypeFromInterpType[retType])
+                    {
+                        StackType retStackType = g_stackTypeFromInterpType[retType];
+                        StackType stackType = m_pStackPointer[-1].type;
+
+                        if (stackType == StackTypeI && (retStackType == StackTypeO || retStackType == StackTypeByRef))
+                        {
+                            // Allow implicit conversion from nint to ref or byref
+                        }
+                        else if (retStackType == StackTypeI && (stackType == StackTypeO || stackType == StackTypeByRef))
+                        {
+                            // Allow implicit conversion from ref or byref to nint
+                        }
+                        else
+                        {
+                            BADCODE("return type mismatch");
+                        }
+                    }
+
                     AddIns(INTOP_RET);
                     m_pStackPointer--;
                     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
@@ -7474,6 +7529,11 @@ retry_emit:
                     }
                     case CEE_LOCALLOC:
                         CHECK_STACK(1);
+                        if (m_pCBB->clauseType != BBClauseNone)
+                        {
+                            // Localloc inside a funclet is not allowed
+                            BADCODE("CEE_LOCALLOC inside funclet");
+                        }
 #if TARGET_64BIT
                         // Length is natural unsigned int
                         if (m_pStackPointer[-1].type == StackTypeI4)
@@ -8734,6 +8794,10 @@ extern "C" void assertAbort(const char* why, const char* file, unsigned line)
 #ifdef _MSC_VER
     __debugbreak();
 #else // _MSC_VER
+#ifdef TARGET_APPLE
+    __builtin_debugtrap();
+#else // TARGET_APPLE
     __builtin_trap();
+#endif // TARGET_APPLE
 #endif // _MSC_VER
 }

@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, JitOptimizationSensitive -->
+    <!-- Required for NativeAotIncompatible and to skip running crossgen (triggered by JitOptimizationSensitive) -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <GCStressIncompatible>true</GCStressIncompatible>
-    <CLRTestPriority>1</CLRTestPriority>
     <!-- Takes long time to compile and not interesting from AOT perspective -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>

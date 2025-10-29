@@ -15,8 +15,14 @@
   <ItemGroup>
       <NativeCMakeArg Condition="'$(_IcuDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_ICU_DIR=$(_IcuDir)&quot;" />
       <NativeCMakeArg Condition="'$(_TzdDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_TZD_DIR=$(_TzdDir)&quot;" />
+      <NativeCMakeArg Condition="'$(RuntimeFlavor)' == 'Mono'" Include="-cmakeargs &quot;-DCLR_CMAKE_RUNTIME_MONO=1&quot;" />
+      <NativeCMakeArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="-cmakeargs &quot;-DCLR_CMAKE_RUNTIME_CORECLR=1&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_PRODUCT_VERSION=$(ProductVersion)&quot;" />
       <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_CONTINUOUS_INTEGRATION_BUILD=$(ContinuousIntegrationBuild)&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_NET_CORE_APP_CURRENT_VERSION=$(NetCoreAppCurrentVersion)&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BUILD_LIBRARIES_CONFIGURATION=$(LibrariesConfiguration)&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BUILD_RUNTIME_CONFIGURATION=$(RuntimeConfiguration)&quot;" />
+      <NativeCMakeArg Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="-cmakeargs &quot;-DBUILD_LIBS_NATIVE_BROWSER=1&quot;" />
   </ItemGroup>
 
 </Project>

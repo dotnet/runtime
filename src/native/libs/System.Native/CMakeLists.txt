@@ -159,6 +159,7 @@ if (CLR_CMAKE_TARGET_ARCH_WASM AND DEFINED CMAKE_TZD_DIR)
     configure_file(pal_datetime_time_zone_data-config.h.in inc/pal_datetime_time_zone_data-config.h)
 
     add_library(System.Native.TimeZoneData STATIC pal_datetime_time_zone_data.c)
+    add_dependencies(System.Native-Static System.Native.TimeZoneData)
     target_compile_options(System.Native.TimeZoneData PRIVATE -Wno-overlength-strings)
     target_compile_definitions(System.Native.TimeZoneData PRIVATE TZ_DATA_ENABLED)
     target_include_directories(System.Native.TimeZoneData PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/inc")
@@ -167,6 +168,7 @@ if (CLR_CMAKE_TARGET_ARCH_WASM AND DEFINED CMAKE_TZD_DIR)
 
     # Also add a stub to support InvariantTimezone.
     add_library(System.Native.TimeZoneData.Invariant STATIC pal_datetime_time_zone_data.c)
+    add_dependencies(System.Native-Static System.Native.TimeZoneData.Invariant)
     install(TARGETS System.Native.TimeZoneData.Invariant DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
     install(TARGETS System.Native.TimeZoneData.Invariant DESTINATION sharedFramework COMPONENT runtime)
 endif ()

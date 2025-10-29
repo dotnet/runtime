@@ -12,14 +12,13 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
+    [PlatformSpecific(TestPlatforms.Windows)] // COM activation is only supported on Windows
     public class Comhost : IClassFixture<Comhost.SharedTestState>
     {
         private readonly SharedTestState sharedState;
 
         public Comhost(SharedTestState sharedTestState)
         {
-            Assert.SkipUnless(OperatingSystem.IsWindows(), "COM activation is only supported on Windows");
-
             sharedState = sharedTestState;
         }
 
@@ -36,7 +35,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 sharedState.ComHostPath,
                 sharedState.ClsidString
             };
-            CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
+            CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
                 .Execute();
 
             result.Should().Pass()
@@ -69,7 +68,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     comHost,
                     sharedState.ClsidString
                     };
-                CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
+                CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 result.Should().Pass()
@@ -102,7 +101,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     comHostWithAppLocalFxr,
                     sharedState.ClsidString
                 };
-                CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
+                CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 result.Should().Pass()
@@ -129,15 +128,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     sharedState.ComHostPath,
                     sharedState.ClsidString
                 };
-                sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
+                sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
                     .WorkingDirectory(cwd.Location)
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("New instance of Server created")
                     .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
-                    .And.ResolveHostFxr(HostTestContext.BuiltDotNet)
-                    .And.ResolveHostPolicy(HostTestContext.BuiltDotNet)
-                    .And.ResolveCoreClr(HostTestContext.BuiltDotNet);
+                    .And.ResolveHostFxr(TestContext.BuiltDotNet)
+                    .And.ResolveHostPolicy(TestContext.BuiltDotNet)
+                    .And.ResolveCoreClr(TestContext.BuiltDotNet);
             }
         }
 
@@ -156,7 +155,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     comHost,
                     sharedState.ClsidString
                 };
-                CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
+                CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
                     .Execute();
 
                 result.Should().Pass()
@@ -174,7 +173,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 sharedState.ComHostPath,
                 sharedState.ClsidString
             };
-            CommandResult result = sharedState.CreateNativeHostCommand(args, HostTestContext.BuiltDotNet.BinPath)
+            CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
                 .Execute();
 
             result.Should().Pass()
