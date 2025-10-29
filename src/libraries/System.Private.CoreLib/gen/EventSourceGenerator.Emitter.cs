@@ -57,12 +57,13 @@ namespace {ec.Namespace}
         private static void GenerateConstructor(EventSourceClass ec, StringBuilder sb)
         {
             sb.AppendLine($@"
-        private {ec.ClassName}() : base(new Guid({ec.Guid.ToString("x").Replace("{", "").Replace("}", "")}), ""{ec.SourceName}"") {{ }}");
+        private {ec.ClassName}() : base(""{ec.SourceName}"", new Guid({ec.Guid.ToString("x").Replace("{", "").Replace("}", "")})) {{ }}");
         }
 
         private static void GenerateProviderMetadata(string sourceName, StringBuilder sb)
         {
             sb.Append(@"
+#if SYSTEM_PRIVATE_CORELIB
         private protected override ReadOnlySpan<byte> ProviderMetadata => new byte[] { ");
 
             byte[] metadataBytes = MetadataForString(sourceName);
@@ -72,6 +73,7 @@ namespace {ec.Namespace}
             }
 
             sb.AppendLine(@"};");
+            sb.AppendLine("#endif");
         }
 
         // From System.Private.CoreLib

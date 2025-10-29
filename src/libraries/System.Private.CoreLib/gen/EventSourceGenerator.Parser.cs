@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Generators
@@ -38,6 +39,21 @@ namespace Generators
                     attribute.AttributeClass.ToDisplayString() != EventSourceAttribute)
                 {
                     continue;
+                }
+
+                foreach (MemberDeclarationSyntax member in classDef.Members)
+                {
+                    if (member is ConstructorDeclarationSyntax ctor)
+                    {
+                        foreach (SyntaxToken ctorModifier in ctor.Modifiers)
+                        {
+                            if (!ctorModifier.IsKind(SyntaxKind.StaticKeyword))
+                            {
+                                // Contains an explicit constructor, skip generation
+                                return null;
+                            }
+                        }
+                    }
                 }
 
                 nspace ??= ConstructNamespace(ns);
@@ -75,7 +91,7 @@ namespace Generators
             return eventSourceClass;
         }
 
-        private static string? ConstructNamespace(NamespaceDeclarationSyntax? ns)
+        private static string ConstructNamespace(NamespaceDeclarationSyntax? ns)
         {
             if (ns is null)
                 return string.Empty;
