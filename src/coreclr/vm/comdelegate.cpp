@@ -58,7 +58,7 @@ static UINT16 ShuffleOfs(INT ofs, UINT stackSizeDelta = 0)
 }
 #endif // defined(TARGET_X86)
 
-#if defined(FEATURE_SHUFFLE_THUNKS)
+#ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
 
 // Iterator for extracting shuffle entries for argument desribed by an ArgLocDesc.
 // Used when calculating shuffle array entries in GenerateShuffleArray below.
@@ -633,14 +633,14 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
 
     return TRUE;
 }
-#endif // !defined(FEATURE_SHUFFLE_THUNKS)
+#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS
 
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+#if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
 BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<ShuffleEntry> * pShuffleEntryArray)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef FEATURE_SHUFFLE_THUNKS
+#ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
     // Portable default implementation
     if (!GenerateShuffleArrayPortable(pInvoke, pTargetMeth, pShuffleEntryArray, ShuffleComputationType::DelegateShuffleThunk))
         return FALSE;
@@ -728,9 +728,6 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     entry.stacksizedelta = static_cast<UINT16>(stackSizeDelta);
     pShuffleEntryArray->Append(entry);
 
-#elif defined(TARGET_ARM64) || defined(TARGET_AMD64)
-    // Fall back to IL-based shuffle thunks
-    return FALSE;
 #else
 #error Unsupported architecture
 #endif
@@ -778,7 +775,7 @@ BOOL GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     return TRUE;
 }
 static ShuffleThunkCache* s_pShuffleThunkCache = NULL;
-#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
 // One time init.
 void COMDelegate::Init()
@@ -790,7 +787,7 @@ void COMDelegate::Init()
         MODE_ANY;
     }
     CONTRACTL_END;
-#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+#if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
     s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
 #endif
 }
