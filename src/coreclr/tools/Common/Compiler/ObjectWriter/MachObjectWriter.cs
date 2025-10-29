@@ -54,20 +54,12 @@ namespace ILCompiler.ObjectWriter
     /// The Apple linker is extremely picky in which relocation types are allowed
     /// inside the DWARF sections, both for debugging and exception handling.
     /// </remarks>
-    internal sealed class MachObjectWriter : UnixObjectWriter
+    internal sealed partial class MachObjectWriter : UnixObjectWriter
     {
-        private sealed record CompactUnwindCode(string PcStartSymbolName, uint PcLength, uint Code, string LsdaSymbolName = null, string PersonalitySymbolName = null);
-
         private readonly TargetOS _targetOS;
         private readonly uint _cpuType;
         private readonly uint _cpuSubType;
         private readonly List<MachSection> _sections = new();
-
-        // Exception handling sections
-        private MachSection _compactUnwindSection;
-        private MemoryStream _compactUnwindStream;
-        private readonly List<CompactUnwindCode> _compactUnwindCodes = new();
-        private readonly uint _compactUnwindDwarfCode;
 
         // Symbol table
         private readonly Dictionary<string, uint> _symbolNameToIndex = new();
@@ -82,12 +74,16 @@ namespace ILCompiler.ObjectWriter
                 case TargetArchitecture.ARM64:
                     _cpuType = CPU_TYPE_ARM64;
                     _cpuSubType = CPU_SUBTYPE_ARM64_ALL;
+#if !READYTORUN
                     _compactUnwindDwarfCode = 0x3_00_00_00u;
+#endif
                     break;
                 case TargetArchitecture.X64:
                     _cpuType = CPU_TYPE_X86_64;
                     _cpuSubType = CPU_SUBTYPE_X86_64_ALL;
+#if !READYTORUN
                     _compactUnwindDwarfCode = 0x4_00_00_00u;
+#endif
                     break;
                 default:
                     throw new NotSupportedException("Unsupported architecture");
@@ -96,12 +92,14 @@ namespace ILCompiler.ObjectWriter
             _targetOS = factory.Target.OperatingSystem;
         }
 
+        private protected override bool UsesSubsectionsViaSymbols => true;
+
         private protected override void EmitSectionsAndLayout()
         {
             // Layout sections. At this point we don't really care if the file offsets are correct
             // but we need to compute the virtual addresses to populate the symbol table.
             uint fileOffset = 0;
-            LayoutSections(ref fileOffset, out _, out _);
+            LayoutSections(recordFinalLayout: false, ref fileOffset, out _, out _);
 
             // Generate section base symbols. The section symbols are used for PC relative relocations
             // to subtract the base of the section, and in DWARF to emit section relative relocations.
@@ -122,7 +120,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void LayoutSections(ref uint fileOffset, out uint segmentFileSize, out ulong segmentSize)
+        private void LayoutSections(bool recordFinalLayout, ref uint fileOffset, out uint segmentFileSize, out ulong segmentSize)
         {
             ulong virtualAddress = 0;
             byte sectionIndex = 1;
@@ -155,6 +153,11 @@ namespace ILCompiler.ObjectWriter
                 sectionIndex++;
 
                 segmentSize = Math.Max(segmentSize, virtualAddress);
+
+                if (recordFinalLayout)
+                {
+                    _outputSectionLayout.Add(new OutputSection($"{section.SectionName}{section.SegmentName}", section.VirtualAddress, section.FileOffset, (ulong)section.Stream.Length));
+                }
             }
 
             // ...and the relocation tables
@@ -165,9 +168,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitObjectFile(string objectFilePath)
+        private protected override void EmitObjectFile(Stream outputFileStream)
         {
+#if !READYTORUN
             _sections.Add(_compactUnwindSection);
+#endif
 
             // Segment + sections
             uint loadCommandsCount = 1;
@@ -183,9 +188,7 @@ namespace ILCompiler.ObjectWriter
             // so re-run the layout and this time calculate with the correct file offsets.
             uint fileOffset = (uint)MachHeader64.HeaderSize + loadCommandsSize;
             uint segmentFileOffset = fileOffset;
-            LayoutSections(ref fileOffset, out uint segmentFileSize, out ulong segmentSize);
-
-            using var outputFileStream = new FileStream(objectFilePath, FileMode.Create);
+            LayoutSections(recordFinalLayout: true, ref fileOffset, out uint segmentFileSize, out ulong segmentSize);
 
             MachHeader64 machHeader = new MachHeader64
             {
@@ -301,7 +304,7 @@ namespace ILCompiler.ObjectWriter
             stringTable.Write(outputFileStream);
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
         {
             string segmentName = section.Name switch
             {
@@ -357,10 +360,9 @@ namespace ILCompiler.ObjectWriter
                 Flags = flags,
             };
 
-            int sectionIndex = _sections.Count;
             _sections.Add(machSection);
 
-            base.CreateSection(section, comdatName, symbolName ?? $"lsection{sectionIndex}", sectionStream);
+            base.CreateSection(section, comdatName, symbolName ?? $"lsection{sectionIndex}", sectionIndex, sectionStream);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -419,7 +421,7 @@ namespace ILCompiler.ObjectWriter
                     break;
 
                 case IMAGE_REL_BASED_RELPTR32:
-                    if (_cpuType == CPU_TYPE_ARM64 || sectionIndex == EhFrameSectionIndex)
+                    if (_cpuType == CPU_TYPE_ARM64 || IsEhFrameSection(sectionIndex))
                     {
                         // On ARM64 we need to represent PC relative relocations as
                         // subtraction and the PC offset is baked into the addend.
@@ -535,6 +537,10 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+#if READYTORUN
+        private bool IsEhFrameSection(int sectionIndex) => false;
+#endif
+
         private void EmitRelocationsX64(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             ICollection<MachRelocation> sectionRelocations = _sections[sectionIndex].Relocations;
@@ -558,7 +564,7 @@ namespace ILCompiler.ObjectWriter
                             IsPCRelative = false,
                         });
                 }
-                else if (symbolicRelocation.Type == IMAGE_REL_BASED_RELPTR32 && sectionIndex == EhFrameSectionIndex)
+                else if (symbolicRelocation.Type == IMAGE_REL_BASED_RELPTR32 && IsEhFrameSection(sectionIndex))
                 {
                     sectionRelocations.Add(
                         new MachRelocation
@@ -702,235 +708,9 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private void EmitCompactUnwindTable(IDictionary<string, SymbolDefinition> definedSymbols)
-        {
-            _compactUnwindStream = new MemoryStream(32 * _compactUnwindCodes.Count);
-            // Preset the size of the compact unwind section which is not generated yet
-            _compactUnwindStream.SetLength(32 * _compactUnwindCodes.Count);
-
-            _compactUnwindSection = new MachSection("__LD", "__compact_unwind", _compactUnwindStream)
-            {
-                Log2Alignment = 3,
-                Flags = S_REGULAR | S_ATTR_DEBUG,
-            };
-
-            IList<MachSymbol> symbols = _symbolTable;
-            Span<byte> tempBuffer = stackalloc byte[8];
-            foreach (var cu in _compactUnwindCodes)
-            {
-                EmitCompactUnwindSymbol(cu.PcStartSymbolName);
-                BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer, cu.PcLength);
-                BinaryPrimitives.WriteUInt32LittleEndian(tempBuffer.Slice(4), cu.Code);
-                _compactUnwindStream.Write(tempBuffer);
-                EmitCompactUnwindSymbol(cu.PersonalitySymbolName);
-                EmitCompactUnwindSymbol(cu.LsdaSymbolName);
-            }
-
-            void EmitCompactUnwindSymbol(string symbolName)
-            {
-                Span<byte> tempBuffer = stackalloc byte[8];
-                if (symbolName is not null)
-                {
-                    SymbolDefinition symbol = definedSymbols[symbolName];
-                    MachSection section = _sections[symbol.SectionIndex];
-                    BinaryPrimitives.WriteUInt64LittleEndian(tempBuffer, section.VirtualAddress + (ulong)symbol.Value);
-                    _compactUnwindSection.Relocations.Add(
-                        new MachRelocation
-                        {
-                            Address = (int)_compactUnwindStream.Position,
-                            SymbolOrSectionIndex = (byte)(1 + symbol.SectionIndex), // 1-based
-                            Length = 8,
-                            RelocationType = ARM64_RELOC_UNSIGNED,
-                            IsExternal = false,
-                            IsPCRelative = false,
-                        }
-                    );
-                }
-                _compactUnwindStream.Write(tempBuffer);
-            }
-        }
+        partial void EmitCompactUnwindTable(IDictionary<string, SymbolDefinition> definedSymbols);
 
         private protected override string ExternCName(string name) => "_" + name;
-
-        private static uint GetArm64CompactUnwindCode(byte[] blobData)
-        {
-            if (blobData == null || blobData.Length == 0)
-            {
-                return UNWIND_ARM64_MODE_FRAMELESS;
-            }
-
-            Debug.Assert(blobData.Length % 8 == 0);
-
-            short spReg = -1;
-
-            int codeOffset = 0;
-            short cfaRegister = spReg;
-            int cfaOffset = 0;
-            int spOffset = 0;
-
-            const int REG_DWARF_X19 = 19;
-            const int REG_DWARF_X30 = 30;
-            const int REG_DWARF_FP = 29;
-            const int REG_DWARF_D8 = 72;
-            const int REG_DWARF_D15 = 79;
-            const int REG_IDX_X19 = 0;
-            const int REG_IDX_X28 = 9;
-            const int REG_IDX_FP = 10;
-            const int REG_IDX_LR = 11;
-            const int REG_IDX_D8 = 12;
-            const int REG_IDX_D15 = 19;
-            Span<int> registerOffset = stackalloc int[20];
-
-            registerOffset.Fill(int.MinValue);
-
-            // First process all the CFI codes to figure out the layout of X19-X28, FP, LR, and
-            // D8-D15 on the stack.
-            int offset = 0;
-            while (offset < blobData.Length)
-            {
-                codeOffset = Math.Max(codeOffset, blobData[offset++]);
-                CFI_OPCODE opcode = (CFI_OPCODE)blobData[offset++];
-                short dwarfReg = BinaryPrimitives.ReadInt16LittleEndian(blobData.AsSpan(offset));
-                offset += sizeof(short);
-                int cfiOffset = BinaryPrimitives.ReadInt32LittleEndian(blobData.AsSpan(offset));
-                offset += sizeof(int);
-
-                switch (opcode)
-                {
-                    case CFI_OPCODE.CFI_DEF_CFA_REGISTER:
-                        cfaRegister = dwarfReg;
-
-                        if (spOffset != 0)
-                        {
-                            for (int i = 0; i < registerOffset.Length; i++)
-                                if (registerOffset[i] != int.MinValue)
-                                    registerOffset[i] -= spOffset;
-
-                            cfaOffset += spOffset;
-                            spOffset = 0;
-                        }
-
-                        break;
-
-                    case CFI_OPCODE.CFI_REL_OFFSET:
-                        Debug.Assert(cfaRegister == spReg);
-                        if (dwarfReg >= REG_DWARF_X19 && dwarfReg <= REG_DWARF_X30) // X19 - X28, FP, LR
-                        {
-                            registerOffset[dwarfReg - REG_DWARF_X19 + REG_IDX_X19] = cfiOffset;
-                        }
-                        else if (dwarfReg >= REG_DWARF_D8 && dwarfReg <= REG_DWARF_D15) // D8 - D15
-                        {
-                            registerOffset[dwarfReg - REG_DWARF_D8 + REG_IDX_D8] = cfiOffset;
-                        }
-                        else
-                        {
-                            // We cannot represent this register in the compact unwinding format,
-                            // fallback to DWARF immediately.
-                            return UNWIND_ARM64_MODE_DWARF;
-                        }
-                        break;
-
-                    case CFI_OPCODE.CFI_ADJUST_CFA_OFFSET:
-                        if (cfaRegister != spReg)
-                        {
-                            cfaOffset += cfiOffset;
-                        }
-                        else
-                        {
-                            spOffset += cfiOffset;
-
-                            for (int i = 0; i < registerOffset.Length; i++)
-                                if (registerOffset[i] != int.MinValue)
-                                    registerOffset[i] += cfiOffset;
-                        }
-                        break;
-                }
-            }
-
-            uint unwindCode;
-            int nextOffset;
-
-            if (cfaRegister == REG_DWARF_FP &&
-                cfaOffset == 16 &&
-                registerOffset[REG_IDX_FP] == -16 &&
-                registerOffset[REG_IDX_LR] == -8)
-            {
-                // Frame format - FP/LR are saved on the top. SP is restored to FP+16
-                unwindCode = UNWIND_ARM64_MODE_FRAME;
-                nextOffset = -24;
-            }
-            else if (cfaRegister == -1 && spOffset <= 65520 &&
-                     registerOffset[REG_IDX_FP] == int.MinValue && registerOffset[REG_IDX_LR] == int.MinValue)
-            {
-                // Frameless format - FP/LR are not saved, SP must fit within the representable range
-                uint encodedSpOffset = (uint)(spOffset / 16) << 12;
-                unwindCode = UNWIND_ARM64_MODE_FRAMELESS | encodedSpOffset;
-                nextOffset = spOffset - 8;
-            }
-            else
-            {
-                return UNWIND_ARM64_MODE_DWARF;
-            }
-
-            // Check that the integer register pairs are in the right order and mark
-            // a flag for each successive pair that is present.
-            for (int i = REG_IDX_X19; i < REG_IDX_X28; i += 2)
-            {
-                if (registerOffset[i] == int.MinValue)
-                {
-                    if (registerOffset[i + 1] != int.MinValue)
-                        return UNWIND_ARM64_MODE_DWARF;
-                }
-                else if (registerOffset[i] == nextOffset)
-                {
-                    if (registerOffset[i + 1] != nextOffset - 8)
-                        return UNWIND_ARM64_MODE_DWARF;
-                    nextOffset -= 16;
-                    unwindCode |= UNWIND_ARM64_FRAME_X19_X20_PAIR << (i >> 1);
-                }
-            }
-
-            // Check that the floating point register pairs are in the right order and mark
-            // a flag for each successive pair that is present.
-            for (int i = REG_IDX_D8; i < REG_IDX_D15; i += 2)
-            {
-                if (registerOffset[i] == int.MinValue)
-                {
-                    if (registerOffset[i + 1] != int.MinValue)
-                        return UNWIND_ARM64_MODE_DWARF;
-                }
-                else if (registerOffset[i] == nextOffset)
-                {
-                    if (registerOffset[i + 1] != nextOffset - 8)
-                        return UNWIND_ARM64_MODE_DWARF;
-                    nextOffset -= 16;
-                    unwindCode |= UNWIND_ARM64_FRAME_D8_D9_PAIR << (i >> 1);
-                }
-            }
-
-            return unwindCode;
-        }
-
-        private protected override bool EmitCompactUnwinding(string startSymbolName, ulong length, string lsdaSymbolName, byte[] blob)
-        {
-            uint encoding = _compactUnwindDwarfCode;
-
-            if (_cpuType == CPU_TYPE_ARM64)
-            {
-                encoding = GetArm64CompactUnwindCode(blob);
-            }
-
-            _compactUnwindCodes.Add(new CompactUnwindCode(
-                PcStartSymbolName: startSymbolName,
-                PcLength: (uint)length,
-                Code: encoding | (encoding != _compactUnwindDwarfCode && lsdaSymbolName is not null ? 0x40000000u : 0), // UNWIND_HAS_LSDA
-                LsdaSymbolName: encoding != _compactUnwindDwarfCode ? lsdaSymbolName : null
-            ));
-
-            return encoding != _compactUnwindDwarfCode;
-        }
-
-        private protected override bool UseFrameNames => true;
 
         private static bool IsSectionSymbolName(string symbolName) => symbolName.StartsWith('l');
 
@@ -946,7 +726,7 @@ namespace ILCompiler.ObjectWriter
 
             public static int HeaderSize => 32;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
@@ -977,7 +757,7 @@ namespace ILCompiler.ObjectWriter
 
             public static int HeaderSize => 72;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
@@ -1036,7 +816,7 @@ namespace ILCompiler.ObjectWriter
                 this.relocationCollection = null;
             }
 
-            public void WriteHeader(FileStream stream)
+            public void WriteHeader(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
@@ -1066,7 +846,7 @@ namespace ILCompiler.ObjectWriter
             public byte Length { get; init; }
             public byte RelocationType { get; init; }
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> relocationBuffer = stackalloc byte[8];
                 uint info = SymbolOrSectionIndex;
@@ -1088,7 +868,7 @@ namespace ILCompiler.ObjectWriter
             public ushort Descriptor { get; init; }
             public ulong Value { get; init; }
 
-            public void Write(FileStream stream, MachStringTable stringTable)
+            public void Write(Stream stream, MachStringTable stringTable)
             {
                 Span<byte> buffer = stackalloc byte[16];
                 uint nameIndex = stringTable.GetStringOffset(Name);
@@ -1112,7 +892,7 @@ namespace ILCompiler.ObjectWriter
 
             public static int HeaderSize => 24;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
@@ -1150,7 +930,7 @@ namespace ILCompiler.ObjectWriter
 
             public static int HeaderSize => 80;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
@@ -1187,7 +967,7 @@ namespace ILCompiler.ObjectWriter
 
             public static int HeaderSize => 24;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[HeaderSize];
 
