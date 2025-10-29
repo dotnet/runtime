@@ -311,7 +311,7 @@ namespace System
         /// Helper for array allocations via `newobj` IL instruction. Dimensions are passed in as block of integers.
         /// The content of the dimensions block may be modified by the helper.
         /// </summary>
-        internal static unsafe Array NewObjArray(MethodTable* pEEType, int nDimensions, int* pDimensions)
+        internal static unsafe Array Ctor(MethodTable* pEEType, int nDimensions, int* pDimensions)
         {
             Debug.Assert(pEEType->IsArray && !pEEType->IsSzArray);
             Debug.Assert(nDimensions > 0);
@@ -344,7 +344,7 @@ namespace System
         /// </summary>
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "The compiler ensures that if we have a TypeHandle of a Rank-1 MdArray, we also generated the SzArray.")]
-        internal static unsafe Array NewObjArrayRare(MethodTable* pEEType, int nDimensions, int* pDimensions)
+        internal static unsafe Array CtorRare(MethodTable* pEEType, int nDimensions, int* pDimensions)
         {
             Debug.Assert(pEEType->IsArray);
             Debug.Assert(nDimensions > 0);
@@ -363,7 +363,7 @@ namespace System
 
                     Array[] arrayOfArrays = (Array[])ret;
                     for (int i = 0; i < arrayOfArrays.Length; i++)
-                        arrayOfArrays[i] = NewObjArrayRare(elementType, nDimensions - 1, pDimensions + 1);
+                        arrayOfArrays[i] = CtorRare(elementType, nDimensions - 1, pDimensions + 1);
                 }
 
                 return ret;

@@ -130,10 +130,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.NewMultiDimArr:
-                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Array"u8, "NewObjArray"u8, null);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Array"u8, "Ctor"u8, null);
                     break;
                 case ReadyToRunHelper.NewMultiDimArrRare:
-                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Array"u8, "NewObjArrayRare"u8, null);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Array"u8, "CtorRare"u8, null);
                     break;
 
                 case ReadyToRunHelper.NewArray:
