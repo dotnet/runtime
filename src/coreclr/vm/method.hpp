@@ -732,6 +732,8 @@ public:
     inline bool IsILStub();
     inline bool IsLCGMethod();
 
+    inline bool IsDiagnosticsHidden();
+    
     inline DWORD IsPInvoke()
     {
         LIMITED_METHOD_DAC_CONTRACT;

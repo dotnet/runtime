@@ -17,7 +17,7 @@
     <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)Interpreter.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Content</OutputItemType>
