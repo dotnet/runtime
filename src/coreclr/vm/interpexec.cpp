@@ -2518,7 +2518,14 @@ MAIN_LOOP:
                     }
                     else
                     {
+#ifdef TARGET_ARM
+                        TADDR targetSP = pInterpreterFrame->GetInterpExecMethodSP();
+                        pInterpreterFrame->SetInterpExecMethodSP(targetSP - 8); // Pass two arguments via native stack for InvokeUnmanagedMethodWithTransition
+#endif // TARGET_ARM
                         InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget);
+#ifdef TARGET_ARM
+                        pInterpreterFrame->SetInterpExecMethodSP(targetSP); // Restore stack pointer
+#endif // TARGET_ARM
                     }
 
                     break;
