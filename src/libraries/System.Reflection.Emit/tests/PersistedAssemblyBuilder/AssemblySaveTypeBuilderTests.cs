@@ -1008,7 +1008,7 @@ namespace System.Reflection.Emit.Tests
         public static delegate* unmanaged<int> field2;
         public static delegate* unmanaged[Cdecl]<Guid> field3;
         public static delegate* unmanaged[Cdecl, SuppressGCTransition]<Vector<int>, Vector<int>> field4;
-        public static List<delegate* unmanaged[Stdcall]<long>*[]> field5;
+        public static List<delegate* unmanaged[Stdcall, MemberFunction, SuppressGCTransition]<long>*[]> field5;
 
         public static delegate*<int> Method1() => null;
         public static delegate* unmanaged<string> Method2() => null;

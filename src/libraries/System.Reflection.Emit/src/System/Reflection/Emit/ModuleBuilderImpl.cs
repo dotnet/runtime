@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
+using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
@@ -744,12 +745,7 @@ namespace System.Reflection.Emit
                         }
 
                         FieldInfo originalField = (FieldInfo)GetOriginalMemberIfConstructedType(field);
-                        Type fieldType = originalField.FieldType;
-                        try
-                        {
-                            fieldType = originalField.GetModifiedFieldType();
-                        }
-                        catch { }
+                        Type fieldType = GetFieldType(originalField);
 
                         memberHandle = AddMemberReference(field.Name, GetTypeHandle(declaringType),
                             MetadataSignatureHelper.GetFieldSignature(fieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
@@ -802,14 +798,7 @@ namespace System.Reflection.Emit
 
         private BlobBuilder GetMethodSignature(MethodInfo method, Type[]? optionalParameterTypes)
         {
-            Type returnType = method.ReturnType;
-            try
-            {
-                returnType = method.ReturnParameter.GetModifiedParameterType();
-            }
-            catch { }
-
-            return MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), returnType,
+            return MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), GetReturnType(method),
                 GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
         }
 
@@ -859,14 +848,7 @@ namespace System.Reflection.Emit
 
             for (int i = 0; i < parameterInfos.Length; i++)
             {
-                Type paramType = parameterInfos[i].ParameterType;
-                try
-                {
-                    paramType = parameterInfos[i].GetModifiedParameterType();
-                }
-                catch { }
-
-                parameterTypes[i] = paramType;
+                parameterTypes[i] = GetParameterType(parameterInfos[i]);
             }
 
             return parameterTypes;
@@ -1427,6 +1409,38 @@ namespace System.Reflection.Emit
             }
 
             return nestedTypes;
+        }
+
+        private static Type GetFieldType(FieldInfo field)
+        {
+            if (field.GetType().FullName == "System.Reflection.Emit.FieldBuilderImpl"
+                || field.GetType().FullName == "System.Reflection.Emit.FieldOnTypeBuilderInstantiation")
+            {
+                return field.FieldType;
+            }
+
+            return field.GetModifiedFieldType();
+        }
+
+        private static Type GetParameterType(ParameterInfo param)
+        {
+            if (param.GetType().FullName == "System.Reflection.Emit.ParameterBuilderImpl"
+                || param.GetType().FullName == "System.Reflection.Emit.ParameterInfoWrapper")
+            {
+                return param.ParameterType;
+            }
+
+            return param.GetModifiedParameterType();
+        }
+
+        private static Type GetReturnType(MethodInfo meth)
+        {
+            if (meth.GetType().FullName == "System.Reflection.Emit.MethodOnTypeBuilderInstantiation")
+            {
+                return meth.ReturnType;
+            }
+
+            return GetParameterType(meth.ReturnParameter);
         }
     }
 }
