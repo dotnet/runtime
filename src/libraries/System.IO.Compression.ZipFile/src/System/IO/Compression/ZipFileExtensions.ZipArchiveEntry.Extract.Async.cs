@@ -99,8 +99,8 @@ public static partial class ZipFileExtensions
         await using (fs)
         {
             Stream es;
-            if (password.Length > 1)
-                es = await source.OpenAsync(cancellationToken, password).ConfigureAwait(false);
+            if (!string.IsNullOrEmpty(password))
+                es = await source.OpenAsync(password, cancellationToken).ConfigureAwait(false);
             else
                 es = await source.OpenAsync(cancellationToken).ConfigureAwait(false);
             await using (es)

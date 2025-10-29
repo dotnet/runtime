@@ -37,7 +37,7 @@ public partial class ZipArchiveEntry
         }
     }
 
-    public async Task<Stream> OpenAsync(CancellationToken cancellationToken = default, string password = "")
+    public async Task<Stream> OpenAsync(string password, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         ThrowIfInvalidArchive();
