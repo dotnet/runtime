@@ -33,7 +33,7 @@ public class Runtime_57606
         return r;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
     public static int TestEntryPoint()
     {
         CompositeTypeMoreThan16Bytes r = ReturnsViaBuffer(1, 2, 3, 4, 5, 6, default(CompositeType16Bytes), __arglist());
