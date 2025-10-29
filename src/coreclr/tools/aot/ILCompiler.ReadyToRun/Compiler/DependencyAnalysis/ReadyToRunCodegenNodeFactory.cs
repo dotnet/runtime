@@ -72,6 +72,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public TargetDetails Target { get; }
 
+        public ReadyToRunContainerFormat Format { get; }
+
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
 
         public ProfileDataManager ProfileDataManager { get; }
@@ -199,10 +201,10 @@ namespace ILCompiler.DependencyAnalysis
             ResourceData win32Resources,
             ReadyToRunFlags flags,
             NodeFactoryOptimizationFlags nodeFactoryOptimizationFlags,
+            ReadyToRunContainerFormat format,
             ulong imageBase,
             EcmaModule associatedModule,
-            int genericCycleDepthCutoff,
-            int genericCycleBreadthCutoff)
+            int genericCycleDepthCutoff, int genericCycleBreadthCutoff)
         {
             OptimizationFlags = nodeFactoryOptimizationFlags;
             TypeSystemContext = context;
