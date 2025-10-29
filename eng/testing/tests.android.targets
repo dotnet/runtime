@@ -21,7 +21,7 @@
     <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TestNativeAOT)' == 'true' and ('$(OutputType)' == 'Exe' or '$(ReferenceXUnitWrapperGenerator)' == 'true')">
+  <ItemGroup Condition="'$(TestNativeAOT)' == 'true'">
     <Compile Include="$(RepoTasksDir)AndroidAppBuilder\Templates\monodroid-nativeaot.cs" />
   </ItemGroup>
   <PropertyGroup Condition="'$(TestNativeAOT)' == 'true'">
