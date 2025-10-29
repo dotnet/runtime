@@ -74,6 +74,7 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser'" >
     <!-- https://github.com/dotnet/runtime/issues/103524 -->
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-bench\Console\Wasm.Console.Bench.Sample.csproj" />
   </ItemGroup>
 
   <!-- wasm EAT/AOT -->
