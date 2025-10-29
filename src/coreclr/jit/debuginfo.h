@@ -37,6 +37,11 @@ public:
         return (m_sourceTypes & ICorDebugInfo::CALL_INSTRUCTION) != 0;
     }
 
+    bool IsAsync() const
+    {
+        return (m_sourceTypes & ICorDebugInfo::ASYNC) != 0;
+    }
+
     bool IsValid() const
     {
         return m_offset != BAD_IL_OFFSET;

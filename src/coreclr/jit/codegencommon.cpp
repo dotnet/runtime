@@ -6441,7 +6441,7 @@ void CodeGen::genIPmappingGen()
         }
 
         // Otherwise report the higher offset unless the previous mapping is a
-        // label.
+        // label coming from IL.
         if (prev->ipmdIsLabel)
         {
             it = compiler->genIPmappings.erase(it);
