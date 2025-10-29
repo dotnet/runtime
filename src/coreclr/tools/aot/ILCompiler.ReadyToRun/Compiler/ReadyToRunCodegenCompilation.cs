@@ -469,6 +469,21 @@ namespace ILCompiler
 
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
 
+            bool isNativeCompositeImage = false;
+            if (NodeFactory.Target.IsWindows && NodeFactory.Format == ReadyToRunContainerFormat.PE)
+            {
+                isNativeCompositeImage = true;
+            }
+            else if (NodeFactory.Target.IsApplePlatform && NodeFactory.Format == ReadyToRunContainerFormat.MachO)
+            {
+                isNativeCompositeImage = true;
+            }
+
+            if (isNativeCompositeImage)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNativeImage;
+            }
+
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             // Re-written components shouldn't have any additional diagnostic information - only information about the forwards.
             // Even with all of this, we might be modifying the image in a silly manner - adding a directory when if didn't have one.
