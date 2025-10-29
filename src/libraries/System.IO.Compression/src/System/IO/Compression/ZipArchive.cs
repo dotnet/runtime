@@ -32,6 +32,8 @@ namespace System.IO.Compression
         private byte[] _archiveComment;
         private Encoding? _entryNameAndCommentEncoding;
         private long _firstDeletedEntryOffset;
+        //private string _defaultPassword = "";
+        //private ZipArchiveEntry.EncryptionMethod _defaultEncryption = ZipArchiveEntry.EncryptionMethod.None;
 
 #if DEBUG_FORCE_ZIP64
         public bool _forceZip64;
