@@ -75,7 +75,7 @@ namespace System
             }
         }
 
-        // Helper for CORINFO_HELP_GETREFANY
+         // implementation of CORINFO_HELP_GETREFANY
         internal static ref byte GetRefAny(RuntimeTypeHandle type, TypedReference typedRef)
         {
             if (!typedRef._typeHandle.Equals(type))
