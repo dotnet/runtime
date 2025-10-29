@@ -130,10 +130,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.NewMultiDimArr:
-                    methodDesc = context.SystemModule.GetKnownType("System"u8, "Array"u8).GetKnownMethod("NewObjArray"u8, null);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Array"u8, "NewObjArray"u8, null);
                     break;
                 case ReadyToRunHelper.NewMultiDimArrRare:
-                    methodDesc = context.SystemModule.GetKnownType("System"u8, "Array"u8).GetKnownMethod("NewObjArrayRare"u8, null);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Array"u8, "NewObjArrayRare"u8, null);
                     break;
 
                 case ReadyToRunHelper.NewArray:
@@ -322,13 +322,13 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.TypeHandleToRuntimeType:
-                    methodDesc = context.SystemModule.GetKnownType("System"u8, "RuntimeTypeHandle"u8).GetKnownMethod("TypeHandleToRuntimeTypeMaybeNull"u8, null);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "RuntimeTypeHandle"u8, "TypeHandleToRuntimeTypeMaybeNull"u8, null);
                     break;
                 case ReadyToRunHelper.GetRefAny:
-                    methodDesc = context.SystemModule.GetKnownType("System"u8, "TypedReference"u8).GetKnownMethod("GetRefAny"u8, null);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "TypedReference"u8, "GetRefAny"u8, null);
                     break;
                 case ReadyToRunHelper.TypeHandleToRuntimeTypeHandle:
-                    methodDesc = context.SystemModule.GetKnownType("System"u8, "RuntimeTypeHandle"u8).GetKnownMethod("TypeHandleToRuntimeTypeHandleMaybeNull"u8, null);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "RuntimeTypeHandle"u8, "TypeHandleToRuntimeTypeHandleMaybeNull"u8, null);
                     break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:
