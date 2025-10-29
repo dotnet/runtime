@@ -79,5 +79,16 @@ namespace System
                 return ref _value;
             }
         }
+
+        // Helper for CORINFO_HELP_GETREFANY
+        internal static ref byte GetRefAny(RuntimeTypeHandle type, TypedReference typedRef)
+        {
+            if (!RawTargetTypeToken(typedRef).Equals(type))
+            {
+                throw new InvalidCastException();
+            }
+
+            return ref typedRef.Value;
+        }
     }
 }

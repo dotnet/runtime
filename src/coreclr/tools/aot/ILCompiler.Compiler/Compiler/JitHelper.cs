@@ -322,13 +322,13 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.TypeHandleToRuntimeType:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers"u8, "TypeHandleToRuntimeTypeMaybeNull"u8);
+                    methodDesc = context.SystemModule.GetKnownType("System"u8, "RuntimeTypeHandle"u8).GetKnownMethod("TypeHandleToRuntimeTypeMaybeNull"u8, null);
                     break;
                 case ReadyToRunHelper.GetRefAny:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers"u8, "GetRefAny"u8);
+                    methodDesc = context.SystemModule.GetKnownType("System"u8, "TypedReference"u8).GetKnownMethod("GetRefAny"u8, null);
                     break;
                 case ReadyToRunHelper.TypeHandleToRuntimeTypeHandle:
-                    methodDesc = context.GetHelperEntryPoint("TypedReferenceHelpers"u8, "TypeHandleToRuntimeTypeHandleMaybeNull"u8);
+                    methodDesc = context.SystemModule.GetKnownType("System"u8, "RuntimeTypeHandle"u8).GetKnownMethod("TypeHandleToRuntimeTypeHandleMaybeNull"u8, null);
                     break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:

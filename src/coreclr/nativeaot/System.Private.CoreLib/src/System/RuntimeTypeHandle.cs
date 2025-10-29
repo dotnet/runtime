@@ -110,5 +110,18 @@ namespace System
                 return _value == new IntPtr(0);
             }
         }
+
+        // Helper methods used by TypedReference-related instructions
+        internal static Type? TypeHandleToRuntimeTypeMaybeNull(RuntimeTypeHandle typeHandle)
+        {
+            if (typeHandle.IsNull)
+                return null;
+            return Type.GetTypeFromHandle(typeHandle);
+        }
+
+        internal static RuntimeTypeHandle TypeHandleToRuntimeTypeHandleMaybeNull(RuntimeTypeHandle typeHandle)
+        {
+            return typeHandle;
+        }
     }
 }
