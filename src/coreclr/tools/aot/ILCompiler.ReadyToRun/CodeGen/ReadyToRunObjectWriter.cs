@@ -193,11 +193,28 @@ namespace ILCompiler.DependencyAnalysis
                     timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
                 }
 
-                PEObjectWriter objectWriter = new(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder, _objectFilePath, _customPESectionAlignment, timeDateStamp);
+                ObjectWriter.ObjectWriter objectWriter;
 
-                if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
+                if (format == ReadyToRunContainerFormat.PE)
                 {
-                    objectWriter.AddExportedSymbol("RTR_HEADER");
+                    PEObjectWriter peWriter = new(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder, _objectFilePath, _customPESectionAlignment, timeDateStamp);
+
+                    if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
+                    {
+                        peWriter.AddExportedSymbol("RTR_HEADER");
+                    }
+                    objectWriter = peWriter;
+                }
+                else if (format == ReadyToRunContainerFormat.MachO)
+                {
+                    // Use the base symbol name emitted into .dylib files,
+                    // with the expectation that the R2R object will be linked into
+                    // a dylib.
+                    objectWriter = new MachObjectWriter(_nodeFactory, ObjectWritingOptions.None, _outputInfoBuilder, baseSymbolName: "__mh_dylib_header");
+                }
+                else
+                {
+                    throw new UnreachableException();
                 }
 
                 using FileStream stream = new FileStream(_objectFilePath, FileMode.Create);

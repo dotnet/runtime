@@ -72,8 +72,8 @@ namespace ILCompiler.ObjectWriter
         /// </summary>
         private readonly string _baseSymbolName;
 
-        public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options)
-            : base(factory, options)
+        public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
+            : base(factory, options, outputInfoBuilder)
         {
             switch (factory.Target.Architecture)
             {
@@ -98,8 +98,8 @@ namespace ILCompiler.ObjectWriter
             _targetOS = factory.Target.OperatingSystem;
         }
 
-        public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options, string baseSymbolName)
-            : this(factory, options)
+        public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder, string baseSymbolName)
+            : this(factory, options, outputInfoBuilder)
         {
             _baseSymbolName = baseSymbolName;
         }
