@@ -145,9 +145,9 @@
 
   <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.props"
-          Condition="'$(BuildAOTTestsOn)' == 'local'" />
+          Condition="'$(BuildAOTTestsOn)' == 'local' and '$(IsWasmProject)' != 'false'" />
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets"
-          Condition="'$(BuildAOTTestsOn)' == 'local'" />
+          Condition="'$(BuildAOTTestsOn)' == 'local' and '$(IsWasmProject)' != 'false'" />
 
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
     <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->

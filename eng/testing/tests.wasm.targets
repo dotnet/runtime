@@ -96,7 +96,7 @@
     <Content Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppPrevious)\WasmSymbolicator.dll" Link="wwwroot\WasmSymbolicator.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" >
+  <Target Name="BundleTestWasmApp" DependsOnTargets="$(BundleTestWasmAppDependsOn)" Condition="'$(IsWasmProject)' != 'false'">
     <ForceMSBuildGC />
   </Target>
 

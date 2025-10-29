@@ -5,7 +5,7 @@
         <IsTestProject>false</IsTestProject>
         <IsFunctionalTest>false</IsFunctionalTest>
         <AndroidGenerateAppBundle>false</AndroidGenerateAppBundle>
-        <IsOutputTypeLibrary>true</IsOutputTypeLibrary>
+        <IsWasmProject>false</IsWasmProject>
     </PropertyGroup>
 
     <ItemGroup>
