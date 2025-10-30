@@ -232,7 +232,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 
         // Delegate overflow handling to the generic helper conservatively
 
-        li          t0, (FAST_OBJECT_ARRAY_ALLOCATION_THRESHOLD / 8) // sizeof(void*)
+        li          t0, 0x7FFFFFFF        // max signed 32-bit int
         bgeu        a1, t0, C_FUNC(RhpNewArrayFast)
 
         // In this case we know the element size is sizeof(void *), or 8 for arm64
