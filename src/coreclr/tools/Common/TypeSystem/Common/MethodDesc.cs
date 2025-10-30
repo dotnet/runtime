@@ -230,11 +230,29 @@ namespace Internal.TypeSystem
             return ret.ToArray();
         }
 
+        public bool ReturnsTaskOrValueTask()
+        {
+            TypeDesc ret = this.ReturnType;
+
+            if (ret is MetadataType md
+                && md.Module == this.Context.SystemModule
+                && md.Namespace.SequenceEqual("System.Threading.Tasks"u8))
+            {
+                ReadOnlySpan<byte> name = md.Name;
+                if (name.SequenceEqual("Task"u8) || name.SequenceEqual("Task`1"u8)
+                    || name.SequenceEqual("ValueTask"u8) || name.SequenceEqual("ValueTask`1"u8))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public MethodSignature CreateAsyncSignature()
         {
             Debug.Assert(!IsAsyncCallConv);
+            Debug.Assert(ReturnsTaskOrValueTask());
             MetadataType md = (MetadataType)this.ReturnType;
-            Debug.Assert(md.DiagnosticName is "Task" or "ValueTask" or "Task`1" or "ValueTask`1");
             MethodSignatureBuilder builder = new MethodSignatureBuilder(this);
             builder.ReturnType = md.HasInstantiation ? md.Instantiation[0] : this.Context.GetWellKnownType(WellKnownType.Void);
             builder.Flags = this.Flags | MethodSignatureFlags.AsyncCallConv;

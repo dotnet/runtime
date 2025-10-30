@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
+using System.Threading;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -13,6 +13,9 @@ namespace Internal.TypeSystem
         private readonly InstantiatedType _instantiatedType;
 
         private MethodSignature _signature;
+
+        private MethodDesc _asyncOtherVariant;
+        private AsyncMethodData _asyncMethodData;
 
         internal MethodForInstantiatedType(MethodDesc typicalMethodDef, InstantiatedType instantiatedType)
         {
@@ -51,21 +54,69 @@ namespace Internal.TypeSystem
             return type.InstantiateSignature(_instantiatedType.Instantiation, default(Instantiation));
         }
 
+        private MethodSignature InstantiateSignature(MethodSignature template)
+        {
+            MethodSignatureBuilder builder = new MethodSignatureBuilder(template);
+            builder.ReturnType = Instantiate(template.ReturnType);
+            for (int i = 0; i < template.Length; i++)
+                builder[i] = Instantiate(template[i]);
+
+            return builder.ToSignature();
+        }
+
+        private void InitializeSignature()
+        {
+            MethodSignature template = _typicalMethodDef.Signature;
+            _signature = InstantiateSignature(template);
+
+        }
+
+        public override AsyncMethodData AsyncMethodData
+        {
+            get
+            {
+                if (!_asyncMethodData.Equals(default(AsyncMethodData)))
+                    return _asyncMethodData;
+
+                if (Signature.ReturnsTaskOrValueTask())
+                {
+                    if (IsAsync)
+                    {
+                        // The signature should already have been updated to reflect the AsyncCallConv
+                        // No need to convert to AsyncCallConv signature
+                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.AsyncVariantImpl, Signature = Signature };
+                    }
+                    else
+                    {
+                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.TaskReturning, Signature = Signature };
+                    }
+                }
+                else
+                {
+                    _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.NotAsync, Signature = Signature };
+                }
+
+                return _asyncMethodData;
+            }
+        }
+
+        public override MethodDesc GetAsyncOtherVariant()
+        {
+            if (_asyncOtherVariant is null)
+            {
+                MethodDesc otherVariant = IsAsync ? new TaskReturningAsyncThunk(this, InstantiateSignature(_typicalMethodDef.GetAsyncOtherVariant().Signature)) : new AsyncMethodThunk(this);
+                Interlocked.CompareExchange(ref _asyncOtherVariant, otherVariant, null);
+            }
+
+            return _asyncOtherVariant;
+        }
+
         public override MethodSignature Signature
         {
             get
             {
                 if (_signature == null)
-                {
-                    MethodSignature template = _typicalMethodDef.Signature;
-                    MethodSignatureBuilder builder = new MethodSignatureBuilder(template);
-
-                    builder.ReturnType = Instantiate(template.ReturnType);
-                    for (int i = 0; i < template.Length; i++)
-                        builder[i] = Instantiate(template[i]);
-
-                    _signature = builder.ToSignature();
-                }
+                    InitializeSignature();
 
                 return _signature;
             }

@@ -85,7 +85,7 @@ namespace Internal.TypeSystem.Ecma
             EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader, NotFoundBehavior.Throw);
             var signature = parser.ParseMethodSignature();
 
-            bool returnsTask = ReturnsTaskOrValueTask(signature);
+            bool returnsTask = signature.ReturnsTaskOrValueTask();
             if (!returnsTask && !IsAsync)
             {
                 _asyncMethodData = new AsyncMethodData
@@ -122,24 +122,6 @@ namespace Internal.TypeSystem.Ecma
 
             _metadataSignature = signature;
             return (_metadataSignature = signature);
-            bool ReturnsTaskOrValueTask(MethodSignature signature)
-            {
-                TypeDesc ret = signature.ReturnType;
-
-                if (ret is MetadataType md
-                    && md.Module == this.Context.SystemModule
-                    && md.Namespace.SequenceEqual("System.Threading.Tasks"u8))
-                {
-                    ReadOnlySpan<byte> name = md.Name;
-                    if (name.SequenceEqual("Task"u8) || name.SequenceEqual("Task`1"u8)
-                        || name.SequenceEqual("ValueTask"u8) || name.SequenceEqual("ValueTask`1"u8))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-
         }
 
         public override MethodSignature Signature
@@ -468,23 +450,13 @@ namespace Internal.TypeSystem.Ecma
 
         public override MethodDesc GetAsyncOtherVariant()
         {
-            Debug.Assert(IsTaskReturning);
+            Debug.Assert(_asyncMethodData.Kind is AsyncMethodKind.TaskReturning or AsyncMethodKind.AsyncVariantImpl);
             if (_asyncOtherVariant is null)
             {
-                if (AsyncMethodData.Kind == AsyncMethodKind.AsyncVariantImpl)
-                {
-                    MethodDesc syncVariant = new TaskReturningAsyncThunk(this);
-                    Interlocked.CompareExchange(ref _asyncOtherVariant, syncVariant, null);
-                }
-                else if (AsyncMethodData.Kind == AsyncMethodKind.TaskReturning)
-                {
-                    MethodDesc asyncVariant = new AsyncMethodThunk(this);
-                    Interlocked.CompareExchange(ref _asyncOtherVariant, asyncVariant, null);
-                }
-                else
-                {
-                    Debug.Fail("GetAsyncOtherVariant called on non-async method");
-                }
+                MethodDesc otherVariant = IsAsync ?
+                    new TaskReturningAsyncThunk(this, _metadataSignature) :
+                    new AsyncMethodThunk(this);
+                Interlocked.CompareExchange(ref _asyncOtherVariant, otherVariant, null);
             }
             return _asyncOtherVariant;
         }

@@ -18,18 +18,9 @@ namespace Internal.TypeSystem
     {
         private readonly AsyncMethodData _asyncMethodData;
 
-        public TaskReturningAsyncThunk(MethodDesc asyncMethodImplVariant) : base(asyncMethodImplVariant)
+        public TaskReturningAsyncThunk(MethodDesc asyncMethodImplVariant, MethodSignature signature) : base(asyncMethodImplVariant)
         {
             Debug.Assert(asyncMethodImplVariant.IsTaskReturning);
-            MethodSignature signature;
-            if (asyncMethodImplVariant.HasInstantiation)
-            {
-                signature = ((EcmaMethod)asyncMethodImplVariant.GetTypicalMethodDefinition()).MetadataSignature.ApplySubstitution(asyncMethodImplVariant.Instantiation);
-            }
-            else
-            {
-                signature = ((EcmaMethod)asyncMethodImplVariant).MetadataSignature;
-            }
             _asyncMethodData = new() { Kind = AsyncMethodKind.RuntimeAsync, Signature = signature };
         }
 
