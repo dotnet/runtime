@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -53,7 +54,7 @@ namespace System
         //  "Printing Floating-Point Numbers Quickly and Accurately"
         //    Burger and Dybvig
         //    http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.72.4656&rep=rep1&type=pdf
-        private static unsafe uint Dragon4(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits, Span<byte> buffer, out int decimalExponent)
+        private static uint Dragon4(ulong mantissa, int exponent, uint mantissaHighBitIdx, bool hasUnequalMargins, int cutoffNumber, bool isSignificantDigits, Span<byte> buffer, out int decimalExponent)
         {
             int curDigit = 0;
 
@@ -76,7 +77,7 @@ namespace System
 
             // For normalized IEEE floating-point values, each time the exponent is incremented the margin also doubles.
             // That creates a subset of transition numbers where the high margin is twice the size of the low margin.
-            BigInteger* pScaledMarginHigh;
+            scoped ref BigInteger scaledMarginHigh = ref Unsafe.NullRef<BigInteger>();
             BigInteger optionalMarginHigh;
 
             if (hasUnequalMargins)
@@ -119,7 +120,7 @@ namespace System
                 }
 
                 // The high and low margins are different
-                pScaledMarginHigh = &optionalMarginHigh;
+                scaledMarginHigh = ref optionalMarginHigh;
             }
             else
             {
@@ -155,7 +156,7 @@ namespace System
                 }
 
                 // The high and low margins are equal
-                pScaledMarginHigh = &scaledMarginLow;
+                scaledMarginHigh = ref scaledMarginLow;
             }
 
             // Compute an estimate for digitExponent that will be correct or undershoot by one.
@@ -191,9 +192,9 @@ namespace System
                 scaledValue.Multiply(ref pow10);
                 scaledMarginLow.Multiply(ref pow10);
 
-                if (pScaledMarginHigh != &scaledMarginLow)
+                if (!Unsafe.AreSame(ref scaledMarginHigh, ref scaledMarginLow))
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out scaledMarginHigh);
                 }
             }
 
@@ -206,7 +207,7 @@ namespace System
                 // take IEEE unbiased rounding into account so we can return
                 // shorter strings for various edge case values like 1.23E+22
 
-                BigInteger.Add(ref scaledValue, ref *pScaledMarginHigh, out BigInteger scaledValueHigh);
+                BigInteger.Add(ref scaledValue, ref scaledMarginHigh, out BigInteger scaledValueHigh);
                 int cmpHigh = BigInteger.Compare(ref scaledValueHigh, ref scale);
                 estimateTooLow = isEven ? (cmpHigh >= 0) : (cmpHigh > 0);
             }
@@ -229,9 +230,9 @@ namespace System
                 scaledValue.Multiply10();
                 scaledMarginLow.Multiply10();
 
-                if (pScaledMarginHigh != &scaledMarginLow)
+                if (!Unsafe.AreSame(ref scaledMarginHigh, ref scaledMarginLow))
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out scaledMarginHigh);
                 }
             }
 
@@ -288,9 +289,9 @@ namespace System
                 scaledValue.ShiftLeft(shift);
                 scaledMarginLow.ShiftLeft(shift);
 
-                if (pScaledMarginHigh != &scaledMarginLow)
+                if (!Unsafe.AreSame(ref scaledMarginHigh, ref scaledMarginLow))
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out scaledMarginHigh);
                 }
             }
 
@@ -314,7 +315,7 @@ namespace System
                     Debug.Assert(outputDigit < 10);
 
                     // update the high end of the value
-                    BigInteger.Add(ref scaledValue, ref *pScaledMarginHigh, out BigInteger scaledValueHigh);
+                    BigInteger.Add(ref scaledValue, ref scaledMarginHigh, out BigInteger scaledValueHigh);
 
                     // stop looping if we are far enough away from our neighboring values or if we have reached the cutoff digit
                     int cmpLow = BigInteger.Compare(ref scaledValue, ref scaledMarginLow);
@@ -344,9 +345,9 @@ namespace System
                     scaledValue.Multiply10();
                     scaledMarginLow.Multiply10();
 
-                    if (pScaledMarginHigh != &scaledMarginLow)
+                    if (!Unsafe.AreSame(ref scaledMarginHigh, ref scaledMarginLow))
                     {
-                        BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
+                        BigInteger.Multiply(ref scaledMarginLow, 2, out scaledMarginHigh);
                     }
 
                     digitExponent--;
