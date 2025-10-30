@@ -187,9 +187,10 @@ LEAF_END RhpNewArrayFast, _TEXT
 ;;  RDX == element count
 LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
-        ; we want to limit the element count to the non-negative 32-bit int range
-        cmp         rdx, 07FFFFFFFh
-        ja          ArraySizeOverflow
+        ; Delegate overflow handling to the generic helper conservatively
+
+        cmp         rdx, (40000000h / 8) ; sizeof(void*)
+        jae         RhpNewArrayFast
 
         ; In this case we know the element size is sizeof(void *), or 8 for x64
         ; This helps us in two ways - we can shift instead of multiplying, and
