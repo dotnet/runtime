@@ -225,7 +225,7 @@ namespace System
                     MethodTable* elementType = pEEType->RelatedParameterType;
                     Debug.Assert(elementType->IsSzArray);
 
-                    Array[] arrayOfArrays = (Array[])ret;
+                    Array[] arrayOfArrays = Unsafe.As<Array[]>(ret);
                     for (int i = 0; i < arrayOfArrays.Length; i++)
                         arrayOfArrays[i] = CtorRare(elementType, nDimensions - 1, pDimensions + 1);
                 }
