@@ -15,7 +15,6 @@ using System.Text;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
-using Internal.TypeSystem.TypesDebugInfo;
 using static ILCompiler.DependencyAnalysis.RelocType;
 using static ILCompiler.ObjectWriter.CoffObjectWriter.CoffRelocationType;
 
@@ -45,12 +44,12 @@ namespace ILCompiler.ObjectWriter
     /// the number of sections exceeds 2^16 the same file format is still used.
     /// The linker treats the CodeView relocations symbolically.
     /// </remarks>
-    internal sealed class CoffObjectWriter : ObjectWriter
+    internal partial class CoffObjectWriter : ObjectWriter
     {
-        private sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName, string SymbolName);
+        protected sealed record SectionDefinition(CoffSectionHeader Header, Stream Stream, List<CoffRelocation> Relocations, string ComdatName, string SymbolName);
 
-        private readonly Machine _machine;
-        private readonly List<SectionDefinition> _sections = new();
+        protected readonly Machine _machine;
+        protected readonly List<SectionDefinition> _sections = new();
 
         // Symbol table
         private readonly List<CoffSymbolRecord> _symbols = new();
@@ -58,34 +57,26 @@ namespace ILCompiler.ObjectWriter
         private readonly Dictionary<int, CoffSectionSymbol> _sectionNumberToComdatAuxRecord = new();
         private readonly HashSet<string> _referencedMethods = new();
 
-        // Exception handling
-        private SectionWriter _pdataSectionWriter;
-
-        // Debugging
-        private SectionWriter _debugTypesSectionWriter;
-        private SectionWriter _debugSymbolSectionWriter;
-        private CodeViewFileTableBuilder _debugFileTableBuilder;
-        private CodeViewSymbolsBuilder _debugSymbolsBuilder;
-        private CodeViewTypesBuilder _debugTypesBuilder;
-
-        private static readonly ObjectNodeSection PDataSection = new ObjectNodeSection("pdata", SectionType.ReadOnly);
         private static readonly ObjectNodeSection GfidsSection = new ObjectNodeSection(".gfids$y", SectionType.ReadOnly);
         private static readonly ObjectNodeSection DebugTypesSection = new ObjectNodeSection(".debug$T", SectionType.ReadOnly);
         private static readonly ObjectNodeSection DebugSymbolSection = new ObjectNodeSection(".debug$S", SectionType.ReadOnly);
 
-        public CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options)
-            : base(factory, options)
+        public CoffObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
+            : base(factory, options, outputInfoBuilder)
         {
             _machine = factory.Target.Architecture switch
             {
                 TargetArchitecture.X86 => Machine.I386,
                 TargetArchitecture.X64 => Machine.Amd64,
                 TargetArchitecture.ARM64 => Machine.Arm64,
+                TargetArchitecture.ARM => Machine.ArmThumb2,
+                TargetArchitecture.LoongArch64 => Machine.LoongArch64,
+                TargetArchitecture.RiscV64 => Machine.RiscV64,
                 _ => throw new NotSupportedException("Unsupported architecture")
             };
         }
 
-        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, Stream sectionStream)
+        private protected override void CreateSection(ObjectNodeSection section, string comdatName, string symbolName, int sectionIndex, Stream sectionStream)
         {
             var sectionHeader = new CoffSectionHeader
             {
@@ -110,7 +101,7 @@ namespace ILCompiler.ObjectWriter
                 }
             };
 
-            if (section == DebugTypesSection)
+            if (section == DebugTypesSection || section == ObjectNodeSection.DebugDirectorySection)
             {
                 sectionHeader.SectionCharacteristics =
                     SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData |
@@ -124,8 +115,8 @@ namespace ILCompiler.ObjectWriter
                 // We find the defining section of the COMDAT symbol. That one is marked
                 // as "ANY" selection type. All the other ones are marked as associated.
                 bool isPrimary = Equals(comdatName, symbolName);
-                uint sectionIndex = (uint)_sections.Count + 1u;
-                uint definingSectionIndex = isPrimary ? sectionIndex : ((CoffSymbol)_symbols[(int)_symbolNameToIndex[comdatName]]).SectionIndex;
+                uint coffSectionIndex = (uint)sectionIndex + 1u; // COFF section index is 1-based
+                uint definingSectionIndex = isPrimary ? coffSectionIndex : ((CoffSymbol)_symbols[(int)_symbolNameToIndex[comdatName]]).SectionIndex;
 
                 var auxRecord = new CoffSectionSymbol
                 {
@@ -143,7 +134,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     Name = sectionHeader.Name,
                     Value = 0,
-                    SectionIndex = sectionIndex,
+                    SectionIndex = coffSectionIndex,
                     StorageClass = CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
                     NumberOfAuxiliaryRecords = 1,
                 });
@@ -156,7 +147,7 @@ namespace ILCompiler.ObjectWriter
                     {
                         Name = symbolName,
                         Value = 0,
-                        SectionIndex = sectionIndex,
+                        SectionIndex = coffSectionIndex,
                         StorageClass = isPrimary ? CoffSymbolClass.IMAGE_SYM_CLASS_EXTERNAL : CoffSymbolClass.IMAGE_SYM_CLASS_STATIC,
                     });
                 }
@@ -179,6 +170,17 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        protected static uint GetSectionAlignment(CoffSectionHeader header)
+        {
+            SectionCharacteristics alignmentFlag = (header.SectionCharacteristics & SectionCharacteristics.AlignMask);
+            if (alignmentFlag == 0)
+            {
+                return 1;
+            }
+            uint alignment = (uint)(1 << (((int)alignmentFlag >> 20) - 1));
+            return alignment;
+        }
+
         protected internal override unsafe void EmitRelocation(
             int sectionIndex,
             long offset,
@@ -194,7 +196,7 @@ namespace ILCompiler.ObjectWriter
 
             if (addend != 0)
             {
-                fixed (byte *pData = data)
+                fixed (byte* pData = data)
                 {
                     long inlineValue = Relocation.ReadValue(relocType, (void*)pData);
                     Relocation.WriteValue(relocType, (void*)pData, inlineValue + addend);
@@ -370,105 +372,8 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitUnwindInfo(
-            SectionWriter sectionWriter,
-            INodeWithCodeInfo nodeWithCodeInfo,
-            string currentSymbolName)
+        private protected override void EmitObjectFile(Stream outputFileStream)
         {
-            if (nodeWithCodeInfo.FrameInfos is FrameInfo[] frameInfos &&
-                nodeWithCodeInfo is ISymbolDefinitionNode)
-            {
-                SectionWriter xdataSectionWriter;
-                SectionWriter pdataSectionWriter;
-                bool shareSymbol = ShouldShareSymbol((ObjectNode)nodeWithCodeInfo);
-
-                for (int i = 0; i < frameInfos.Length; i++)
-                {
-                    FrameInfo frameInfo = frameInfos[i];
-
-                    int start = frameInfo.StartOffset;
-                    int end = frameInfo.EndOffset;
-                    byte[] blob = frameInfo.BlobData;
-
-                    string unwindSymbolName = $"_unwind{i}{currentSymbolName}";
-
-                    if (shareSymbol)
-                    {
-                        // Produce an associative COMDAT symbol.
-                        xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection, currentSymbolName, unwindSymbolName);
-                        pdataSectionWriter = GetOrCreateSection(PDataSection, currentSymbolName, null);
-                    }
-                    else
-                    {
-                        // Produce a COMDAT section for each unwind symbol and let linker
-                        // do the deduplication across the ones with identical content.
-                        xdataSectionWriter = GetOrCreateSection(ObjectNodeSection.XDataSection, unwindSymbolName, unwindSymbolName);
-                        pdataSectionWriter = _pdataSectionWriter;
-                    }
-
-                    // Need to emit the UNWIND_INFO at 4-byte alignment to ensure that the
-                    // pointer has the lower two bits in .pdata section set to zero. On ARM64
-                    // non-zero bits would mean a compact encoding.
-                    xdataSectionWriter.EmitAlignment(4);
-
-                    xdataSectionWriter.EmitSymbolDefinition(unwindSymbolName);
-
-                    // Emit UNWIND_INFO
-                    xdataSectionWriter.Write(blob);
-
-                    FrameInfoFlags flags = frameInfo.Flags;
-
-                    if (i != 0)
-                    {
-                        xdataSectionWriter.WriteByte((byte)flags);
-                    }
-                    else
-                    {
-                        MethodExceptionHandlingInfoNode ehInfo = nodeWithCodeInfo.EHInfo;
-                        ISymbolNode associatedDataNode = nodeWithCodeInfo.GetAssociatedDataNode(_nodeFactory) as ISymbolNode;
-
-                        flags |= ehInfo is not null ? FrameInfoFlags.HasEHInfo : 0;
-                        flags |= associatedDataNode is not null ? FrameInfoFlags.HasAssociatedData : 0;
-
-                        xdataSectionWriter.WriteByte((byte)flags);
-
-                        if (associatedDataNode is not null)
-                        {
-                            xdataSectionWriter.EmitSymbolReference(
-                                IMAGE_REL_BASED_ADDR32NB,
-                                GetMangledName(associatedDataNode));
-                        }
-
-                        if (ehInfo is not null)
-                        {
-                            xdataSectionWriter.EmitSymbolReference(
-                                IMAGE_REL_BASED_ADDR32NB,
-                                GetMangledName(ehInfo));
-                        }
-
-                        if (nodeWithCodeInfo.GCInfo is not null)
-                        {
-                            xdataSectionWriter.Write(nodeWithCodeInfo.GCInfo);
-                        }
-                    }
-
-                    // Emit RUNTIME_FUNCTION
-                    pdataSectionWriter.EmitAlignment(4);
-                    pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, currentSymbolName, start);
-                    // Only x86/x64 has the End symbol
-                    if (_machine is Machine.I386 or Machine.Amd64)
-                    {
-                        pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, currentSymbolName, end);
-                    }
-                    // Unwind info pointer
-                    pdataSectionWriter.EmitSymbolReference(IMAGE_REL_BASED_ADDR32NB, unwindSymbolName, 0);
-                }
-            }
-        }
-
-        private protected override void EmitObjectFile(string objectFilePath)
-        {
-            using var outputFileStream = new FileStream(objectFilePath, FileMode.Create);
             var stringTable = new CoffStringTable();
             var coffHeader = new CoffHeader
             {
@@ -498,6 +403,9 @@ namespace ILCompiler.ObjectWriter
                 // Section relocations
                 section.Header.PointerToRelocations = section.Relocations.Count > 0 ? dataOffset : 0;
                 dataOffset += (uint)(section.Relocations.Count * CoffRelocation.Size);
+
+                // Record the section layout
+                _outputSectionLayout.Add(new OutputSection(section.Header.Name, section.Header.PointerToRawData, section.Header.VirtualAddress, section.Header.SizeOfRawData));
 
                 sectionIndex++;
             }
@@ -530,7 +438,7 @@ namespace ILCompiler.ObjectWriter
                 sectionIndex++;
             }
 
-            // Writer section content and relocations
+            // Write section content and relocations
             foreach (SectionDefinition section in _sections)
             {
                 if (!section.Header.SectionCharacteristics.HasFlag(SectionCharacteristics.ContainsUninitializedData))
@@ -569,110 +477,7 @@ namespace ILCompiler.ObjectWriter
             stringTable.Write(outputFileStream);
         }
 
-        private protected override void CreateEhSections()
-        {
-            // Create .pdata
-            _pdataSectionWriter = GetOrCreateSection(PDataSection);
-        }
-
-        private protected override ITypesDebugInfoWriter CreateDebugInfoBuilder()
-        {
-            _debugFileTableBuilder = new CodeViewFileTableBuilder();
-
-            _debugSymbolSectionWriter = GetOrCreateSection(DebugSymbolSection);
-            _debugSymbolSectionWriter.EmitAlignment(4);
-            _debugSymbolsBuilder = new CodeViewSymbolsBuilder(
-                _nodeFactory.Target.Architecture,
-                _debugSymbolSectionWriter);
-
-            _debugTypesSectionWriter = GetOrCreateSection(DebugTypesSection);
-            _debugTypesSectionWriter.EmitAlignment(4);
-            _debugTypesBuilder = new CodeViewTypesBuilder(
-                _nodeFactory.NameMangler, _nodeFactory.Target.PointerSize,
-                _debugTypesSectionWriter);
-            return _debugTypesBuilder;
-        }
-
-        private protected override void EmitDebugFunctionInfo(
-            uint methodTypeIndex,
-            string methodName,
-            SymbolDefinition methodSymbol,
-            INodeWithDebugInfo debugNode,
-            bool hasSequencePoints)
-        {
-            DebugEHClauseInfo[] clauses = null;
-            CodeViewSymbolsBuilder debugSymbolsBuilder;
-
-            if (debugNode is INodeWithCodeInfo nodeWithCodeInfo)
-            {
-                clauses = nodeWithCodeInfo.DebugEHClauseInfos;
-            }
-
-            if (ShouldShareSymbol((ObjectNode)debugNode))
-            {
-                // If the method is emitted in COMDAT section then we need to create an
-                // associated COMDAT section for the debugging symbols.
-                var sectionWriter = GetOrCreateSection(DebugSymbolSection, methodName, null);
-                debugSymbolsBuilder = new CodeViewSymbolsBuilder(_nodeFactory.Target.Architecture, sectionWriter);
-            }
-            else
-            {
-                debugSymbolsBuilder = _debugSymbolsBuilder;
-            }
-
-            debugSymbolsBuilder.EmitSubprogramInfo(
-                methodName,
-                methodSymbol.Size,
-                methodTypeIndex,
-                debugNode.GetDebugVars().Select(debugVar => (debugVar, GetVarTypeIndex(debugNode.IsStateMachineMoveNextMethod, debugVar))),
-                clauses ?? Array.Empty<DebugEHClauseInfo>());
-
-            if (hasSequencePoints)
-            {
-                debugSymbolsBuilder.EmitLineInfo(
-                    _debugFileTableBuilder,
-                    methodName,
-                    methodSymbol.Size,
-                    debugNode.GetNativeSequencePoints());
-            }
-        }
-
-        private protected override void EmitDebugThunkInfo(
-            string methodName,
-            SymbolDefinition methodSymbol,
-            INodeWithDebugInfo debugNode)
-        {
-            if (!debugNode.GetNativeSequencePoints().Any())
-                return;
-
-            CodeViewSymbolsBuilder debugSymbolsBuilder;
-
-            if (ShouldShareSymbol((ObjectNode)debugNode))
-            {
-                // If the method is emitted in COMDAT section then we need to create an
-                // associated COMDAT section for the debugging symbols.
-                var sectionWriter = GetOrCreateSection(DebugSymbolSection, methodName, null);
-                debugSymbolsBuilder = new CodeViewSymbolsBuilder(_nodeFactory.Target.Architecture, sectionWriter);
-            }
-            else
-            {
-                debugSymbolsBuilder = _debugSymbolsBuilder;
-            }
-
-            debugSymbolsBuilder.EmitLineInfo(
-                _debugFileTableBuilder,
-                methodName,
-                methodSymbol.Size,
-                debugNode.GetNativeSequencePoints());
-        }
-
-        private protected override void EmitDebugSections(IDictionary<string, SymbolDefinition> definedSymbols)
-        {
-            _debugSymbolsBuilder.WriteUserDefinedTypes(_debugTypesBuilder.UserDefinedTypes);
-            _debugFileTableBuilder.Write(_debugSymbolSectionWriter);
-        }
-
-        private struct CoffHeader
+        protected struct CoffHeader
         {
             public Machine Machine { get; set; }
             public uint NumberOfSections { get; set; }
@@ -680,18 +485,23 @@ namespace ILCompiler.ObjectWriter
             public uint PointerToSymbolTable { get; set; }
             public uint NumberOfSymbols { get; set; }
             public ushort SizeOfOptionalHeader { get; set; }
-            public ushort Characteristics { get; set; }
+            public Characteristics Characteristics { get; set; }
 
             // Maximum number of section that can be handled Microsoft linker
             // before it bails out. We automatically switch to big object file
             // layout after that.
-            public bool IsBigObj => NumberOfSections > 65279;
+            public readonly bool IsBigObj => NumberOfSections > 65279;
 
-            private static ReadOnlySpan<byte> BigObjMagic => new byte[]
-            {
+            private static ReadOnlySpan<byte> BigObjMagic =>
+            [
                 0xC7, 0xA1, 0xBA, 0xD1, 0xEE, 0xBA, 0xA9, 0x4B,
                 0xAF, 0x20, 0xFA, 0xF6, 0x6A, 0xA4, 0xDC, 0xB8,
-            };
+            ];
+
+            public static int TimeDateStampOffset(bool bigObj)
+            {
+                return bigObj ? 8 : 4;
+            }
 
             private const int RegularSize =
                 sizeof(ushort) + // Machine
@@ -719,7 +529,7 @@ namespace ILCompiler.ObjectWriter
 
             public int Size => IsBigObj ? BigObjSize : RegularSize;
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 if (!IsBigObj)
                 {
@@ -731,7 +541,7 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(8), PointerToSymbolTable);
                     BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(12), NumberOfSymbols);
                     BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(16), SizeOfOptionalHeader);
-                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(18), Characteristics);
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(18), (ushort)Characteristics);
 
                     stream.Write(buffer);
                 }
@@ -757,7 +567,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private sealed class CoffSectionHeader
+        protected sealed class CoffSectionHeader
         {
             public string Name { get; set; }
             public uint VirtualSize { get; set; }
@@ -784,7 +594,7 @@ namespace ILCompiler.ObjectWriter
                 sizeof(ushort) + // NumberOfLineNumbers
                 sizeof(uint);    // SectionCharacteristics
 
-            public void Write(FileStream stream, CoffStringTable stringTable)
+            public void Write(Stream stream, CoffStringTable stringTable)
             {
                 Span<byte> buffer = stackalloc byte[Size];
 
@@ -886,7 +696,7 @@ namespace ILCompiler.ObjectWriter
             IMAGE_REL_ARM64_REL32 = 17,
         }
 
-        private sealed class CoffRelocation
+        protected sealed class CoffRelocation
         {
             public uint VirtualAddress { get; set; }
             public uint SymbolTableIndex { get; set; }
@@ -897,7 +707,7 @@ namespace ILCompiler.ObjectWriter
                 sizeof(uint) +  // SymbolTableIndex
                 sizeof(ushort); // Type
 
-            public void Write(FileStream stream)
+            public void Write(Stream stream)
             {
                 Span<byte> buffer = stackalloc byte[Size];
 
@@ -1038,7 +848,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private sealed class CoffStringTable : StringTableBuilder
+        protected sealed class CoffStringTable : StringTableBuilder
         {
             public new uint Size => (uint)(base.Size + 4);
 
@@ -1047,7 +857,7 @@ namespace ILCompiler.ObjectWriter
                 return base.GetStringOffset(text) + 4;
             }
 
-            public new void Write(FileStream stream)
+            public new void Write(Stream stream)
             {
                 Span<byte> stringTableSize = stackalloc byte[4];
                 BinaryPrimitives.WriteUInt32LittleEndian(stringTableSize, Size);
