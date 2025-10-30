@@ -217,7 +217,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 
         // Delegate overflow handling to the generic helper conservatively
 
-        mov         x2, #(FAST_OBJECT_ARRAY_ALLOCATION_THRESHOLD / 8) // sizeof(void*)
+        mov         x2, #0x7FFFFFFF  // max signed 32-bit int
         cmp         x1, x2
 #if defined(__APPLE__)
         bhs         1f
