@@ -36,13 +36,13 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CtorAny")]
-        private static unsafe partial void CtorAny(nint typeHandle, uint dwNumArgs, void* pArgList, ObjectHandleOnStack retArray);
+        private static unsafe partial void CtorAny(MethodTable* typeHandle, uint dwNumArgs, void* pArgList, ObjectHandleOnStack retArray);
 
         // implementation of CORINFO_HELP_NEW_MDARR and CORINFO_HELP_NEW_MDARR_RARE.
         [StackTraceHidden]
         [DebuggerStepThrough]
         [DebuggerHidden]
-        internal static unsafe object CtorAny(nint typeHandle, uint dwNumArgs, void* pArgList)
+        internal static unsafe object CtorAny(MethodTable* typeHandle, uint dwNumArgs, void* pArgList)
         {
             Array? arr = null;
             CtorAny(typeHandle, dwNumArgs, pArgList, ObjectHandleOnStack.Create(ref arr));
