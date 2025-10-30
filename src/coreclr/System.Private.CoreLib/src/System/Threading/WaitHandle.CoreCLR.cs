@@ -9,7 +9,7 @@ namespace System.Threading
     public abstract partial class WaitHandle
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WaitHandle_WaitOneCore")]
-        private static partial int WaitOneCore(IntPtr waitHandle, int millisecondsTimeout, [MarshalAs(UnmanagedType.Bool)] bool useTrivialWaits);
+        private static partial int WaitOneCore(IntPtr waitHandle, int millisecondsTimeout, [MarshalAs(UnmanagedType.Bool)] bool useTrivialWaits, [MarshalAs(UnmanagedType.Bool)] bool doNotSendWaitEvents);
 
         private static int WaitMultipleIgnoringSyncContextCore(ReadOnlySpan<IntPtr> waitHandles, bool waitAll, int millisecondsTimeout)
             => WaitMultipleIgnoringSyncContext(waitHandles, waitHandles.Length, waitAll, millisecondsTimeout);
