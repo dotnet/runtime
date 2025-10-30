@@ -35,7 +35,7 @@ namespace System
             return retArray!;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CreateInstanceMDArray")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CtorAny")]
         private static unsafe partial void CtorAny(nint typeHandle, uint dwNumArgs, void* pArgList, ObjectHandleOnStack retArray);
 
         // implementation of CORINFO_HELP_NEW_MDARR and CORINFO_HELP_NEW_MDARR_RARE.

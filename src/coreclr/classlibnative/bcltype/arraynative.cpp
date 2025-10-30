@@ -206,7 +206,7 @@ Done: ;
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE Array_CreateInstanceMDArray(EnregisteredTypeHandle typeHandle, UINT32 dwNumArgs, INT32* pArgList, QCall::ObjectHandleOnStack retArray)
+extern "C" void QCALLTYPE Array_CtorAny(EnregisteredTypeHandle typeHandle, UINT32 dwNumArgs, INT32* pArgList, QCall::ObjectHandleOnStack retArray)
 {
     QCALL_CONTRACT;
 
