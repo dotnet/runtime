@@ -333,7 +333,7 @@ namespace System
                 EETypeElementType sourceElementType = sourceElementEEType->ElementType;
                 EETypeElementType destElementType = destinationElementEEType->ElementType;
 
-                if (System.Runtime.TypeCast.GetNormalizedIntegralArrayElementType(sourceElementType) == System.Runtime.TypeCast.GetNormalizedIntegralArrayElementType(destElementType))
+                if (TypeCast.GetNormalizedIntegralArrayElementType(sourceElementType) == TypeCast.GetNormalizedIntegralArrayElementType(destElementType))
                     return ArrayAssignType.SimpleCopy;
                 else if (InvokeUtils.CanPrimitiveWiden(destElementType, sourceElementType))
                     return ArrayAssignType.PrimitiveWiden;
