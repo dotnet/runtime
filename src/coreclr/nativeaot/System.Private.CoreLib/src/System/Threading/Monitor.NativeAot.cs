@@ -134,8 +134,6 @@ namespace System.Threading
             lockTaken = false;
         }
 
-        private static unsafe RuntimeType GetSyncObjectFromClassHandle(MethodTable* pMT) => Type.GetTypeFromMethodTable(pMT);
-
         private static unsafe MethodTable* GetClassHandleFromMethodParam(IntPtr pDictionary)
         {
             bool success = RuntimeAugments.TypeLoaderCallbacks.TryGetOwningTypeForMethodDictionary(pDictionary, out RuntimeTypeHandle th);
