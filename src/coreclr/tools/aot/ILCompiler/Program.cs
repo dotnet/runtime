@@ -715,7 +715,6 @@ namespace ILCompiler
 
             // If errors were produced (including warnings treated as errors), delete the output file
             // to avoid misleading build systems into thinking the compilation succeeded.
-            // This catches any errors logged after object writing (e.g., from typeSystemContext.LogWarnings).
             if (logger.HasLoggedErrors)
             {
                 try

@@ -653,10 +653,8 @@ namespace ILCompiler.ObjectWriter
                 factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
                 new ElfObjectWriter(factory, options);
 
-            using (Stream outputFileStream = new FileStream(objectFilePath, FileMode.Create))
-            {
-                objectWriter.EmitObject(outputFileStream, nodes, dumper, logger);
-            }
+            using Stream outputFileStream = new FileStream(objectFilePath, FileMode.Create);
+            objectWriter.EmitObject(outputFileStream, nodes, dumper, logger);
 
             stopwatch.Stop();
             if (logger.IsVerbose)

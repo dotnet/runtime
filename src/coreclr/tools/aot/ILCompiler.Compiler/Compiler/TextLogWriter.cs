@@ -26,6 +26,7 @@ namespace ILCompiler
             // Warnings treated as errors should also set the error flag
             if (warning.Category == MessageCategory.WarningAsError)
                 _hasLoggedErrors = true;
+
             _writer.WriteLine(warning.ToMSBuildString());
         }
 
