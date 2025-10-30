@@ -10,6 +10,5 @@ namespace ILCompiler
         void WriteMessage(MessageContainer message);
         void WriteWarning(MessageContainer warning);
         void WriteError(MessageContainer error);
-        bool HasLoggedErrors { get; }
     }
 }

@@ -37,11 +37,13 @@ namespace ILCompiler
         private readonly bool _treatWarningsAsErrors;
         private readonly Dictionary<int, bool> _warningsAsErrors;
 
+        private bool _hasLoggedErrors;
+
         public static Logger Null = new Logger(new TextLogWriter(TextWriter.Null), null, false, true);
 
         public bool IsVerbose { get; }
 
-        public bool HasLoggedErrors => _logWriter.HasLoggedErrors;
+        public bool HasLoggedErrors => _hasLoggedErrors;
 
         public Logger(
             ILogWriter writer,
@@ -95,14 +97,22 @@ namespace ILCompiler
         {
             MessageContainer? warning = MessageContainer.CreateWarningMessage(this, text, code, origin, subcategory);
             if (warning.HasValue)
+            {
+                if (warning.Value.Category == MessageCategory.WarningAsError)
+                    _hasLoggedErrors = true;
                 _logWriter.WriteWarning(warning.Value);
+            }
         }
 
         public void LogWarning(MessageOrigin origin, DiagnosticId id, params string[] args)
         {
             MessageContainer? warning = MessageContainer.CreateWarningMessage(this, origin, id, args);
             if (warning.HasValue)
+            {
+                if (warning.Value.Category == MessageCategory.WarningAsError)
+                    _hasLoggedErrors = true;
                 _logWriter.WriteWarning(warning.Value);
+            }
         }
 
         public void LogWarning(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>
@@ -139,14 +149,20 @@ namespace ILCompiler
         {
             MessageContainer? error = MessageContainer.CreateErrorMessage(text, code, subcategory, origin);
             if (error.HasValue)
+            {
+                _hasLoggedErrors = true;
                 _logWriter.WriteError(error.Value);
+            }
         }
 
         public void LogError(MessageOrigin? origin, DiagnosticId id, params string[] args)
         {
             MessageContainer? error = MessageContainer.CreateErrorMessage(origin, id, args);
             if (error.HasValue)
+            {
+                _hasLoggedErrors = true;
                 _logWriter.WriteError(error.Value);
+            }
         }
 
         public void LogError(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>

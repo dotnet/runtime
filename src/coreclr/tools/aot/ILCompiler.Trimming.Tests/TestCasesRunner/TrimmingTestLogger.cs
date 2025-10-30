@@ -15,7 +15,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
         private readonly TextWriter _infoWriter;
 
         private readonly List<MessageContainer> _messageContainers;
-        private bool _hasLoggedErrors;
 
         public TrimmingTestLogger()
         {
@@ -26,8 +25,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         public TextWriter Writer => _infoWriter;
 
-        public bool HasLoggedErrors => _hasLoggedErrors;
-
         public ImmutableArray<MessageContainer> GetLoggedMessages()
         {
             return _messageContainers.ToImmutableArray();
@@ -35,7 +32,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         public void WriteError(MessageContainer error)
         {
-            _hasLoggedErrors = true;
             lock (_messageContainers)
             {
                 _messageContainers.Add(error);
@@ -52,10 +48,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         public void WriteWarning(MessageContainer warning)
         {
-            // Warnings treated as errors should also set the error flag
-            if (warning.Category == MessageCategory.WarningAsError)
-                _hasLoggedErrors = true;
-
             lock (_messageContainers)
             {
                 _messageContainers.Add(warning);

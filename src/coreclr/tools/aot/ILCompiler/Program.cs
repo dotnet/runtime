@@ -719,8 +719,7 @@ namespace ILCompiler
             {
                 try
                 {
-                    if (File.Exists(outputFilePath))
-                        File.Delete(outputFilePath);
+                    File.Delete(outputFilePath);
                 }
                 catch
                 {
