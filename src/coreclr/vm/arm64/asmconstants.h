@@ -306,9 +306,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod
 
 #ifdef TARGET_UNIX
 #ifdef _DEBUG
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xb78
-#else
 #define OFFSETOF__Thread__m_pInterpThreadContext 0xb30
+#else // _DEBUG
+#define OFFSETOF__Thread__m_pInterpThreadContext 0x2c8
 #endif // _DEBUG
 #else // TARGET_UNIX
 #define OFFSETOF__Thread__m_pInterpThreadContext 0xb58
