@@ -345,7 +345,7 @@ namespace Microsoft.NET.Build.Tasks
 
             if (!string.IsNullOrEmpty(Crossgen2ContainerFormat))
             {
-                result.AppendLine($"--obj-format {Crossgen2ContainerFormat}");
+                result.AppendLine($"--obj-format:{Crossgen2ContainerFormat}");
             }
 
             if (!string.IsNullOrEmpty(Crossgen2ExtraCommandLineArgs))
