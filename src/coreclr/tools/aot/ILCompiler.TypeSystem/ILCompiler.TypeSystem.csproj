@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>Internal.TypeSystem</RootNamespace>
@@ -381,6 +381,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDelegator.Diagnostic.cs">
       <Link>TypeSystem\Common\MethodDelegator.Diagnostic.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\AsyncMethodThunk.cs">
+      <Link>TypeSystem\Common\AsyncMethodThunk.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.cs">
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
     </Compile>
@@ -389,6 +392,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.ToString.cs">
       <Link>TypeSystem\Common\MethodDesc.ToString.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TaskReturningAsyncThunk.cs">
+      <Link>TypeSystem\Common\TaskReturningAsyncThunk.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MetadataVirtualMethodAlgorithm.cs">
       <Link>TypeSystem\Common\StandardVirtualMethodAlgorithm.cs</Link>

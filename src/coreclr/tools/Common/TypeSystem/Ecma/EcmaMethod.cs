@@ -42,8 +42,10 @@ namespace Internal.TypeSystem.Ecma
         private unsafe volatile byte* _namePointer;
         private int _nameLength;
         private ThreadSafeFlags _methodFlags;
-        private MethodSignature _signature;
+        private MethodSignature _metadataSignature;
         private TypeDesc[] _genericParameters; // TODO: Optional field?
+        private AsyncMethodData _asyncMethodData;
+        private MethodDesc _asyncOtherVariant;
 
         internal EcmaMethod(EcmaType type, MethodDefinitionHandle handle)
         {
@@ -82,16 +84,89 @@ namespace Internal.TypeSystem.Ecma
 
             EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader, NotFoundBehavior.Throw);
             var signature = parser.ParseMethodSignature();
-            return (_signature = signature);
+
+            bool returnsTask = ReturnsTaskOrValueTask(signature);
+            if (!returnsTask && !IsAsync)
+            {
+                _asyncMethodData = new AsyncMethodData
+                {
+                    Kind = AsyncMethodKind.NotAsync,
+                    Signature = signature
+                };
+            }
+            else if (returnsTask && IsAsync)
+            {
+                _asyncMethodData = new AsyncMethodData
+                {
+                    Kind = AsyncMethodKind.AsyncVariantImpl,
+                    Signature = signature.CreateAsyncSignature()
+                };
+            }
+            else if (returnsTask && !IsAsync)
+            {
+                _asyncMethodData = new AsyncMethodData
+                {
+                    Kind = AsyncMethodKind.TaskReturning,
+                    Signature = signature
+                };
+            }
+            else
+            {
+                Debug.Assert(IsAsync && !returnsTask);
+                _asyncMethodData = new AsyncMethodData
+                {
+                    Kind = AsyncMethodKind.AsyncExplicitImpl,
+                    Signature = signature
+                };
+            }
+
+            _metadataSignature = signature;
+            return (_metadataSignature = signature);
+            bool ReturnsTaskOrValueTask(MethodSignature signature)
+            {
+                TypeDesc ret = signature.ReturnType;
+
+                if (ret is MetadataType md
+                    && md.Module == this.Context.SystemModule
+                    && md.Namespace.SequenceEqual("System.Threading.Tasks"u8))
+                {
+                    ReadOnlySpan<byte> name = md.Name;
+                    if (name.SequenceEqual("Task"u8) || name.SequenceEqual("Task`1"u8)
+                        || name.SequenceEqual("ValueTask"u8) || name.SequenceEqual("ValueTask`1"u8))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
         }
 
         public override MethodSignature Signature
         {
             get
             {
-                if (_signature == null)
+                if (_metadataSignature == null)
                     return InitializeSignature();
-                return _signature;
+                if (AsyncMethodData.IsAsyncVariant)
+                {
+                    Debug.Assert(_asyncMethodData.Kind == AsyncMethodKind.AsyncVariantImpl && _asyncMethodData.Signature is not null);
+                    return _asyncMethodData.Signature;
+                }
+                return _metadataSignature;
+            }
+        }
+
+        /// <summary>
+        /// The method signature as defined in metadata, without any adjustments for async methods.
+        /// </summary>
+        public MethodSignature MetadataSignature
+        {
+            get
+            {
+                if (_metadataSignature == null)
+                    return InitializeSignature();
+                return _metadataSignature;
             }
         }
 
@@ -377,6 +452,41 @@ namespace Internal.TypeSystem.Ecma
             {
                 return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Async) & MethodFlags.Async) != 0;
             }
+        }
+
+        public override AsyncMethodData AsyncMethodData
+        {
+            get
+            {
+                if (_asyncMethodData.Equals(default(AsyncMethodData)))
+                    InitializeSignature();
+
+                Debug.Assert(!_asyncMethodData.Equals(default(AsyncMethodData)));
+                return _asyncMethodData;
+            }
+        }
+
+        public override MethodDesc GetAsyncOtherVariant()
+        {
+            Debug.Assert(IsTaskReturning);
+            if (_asyncOtherVariant is null)
+            {
+                if (AsyncMethodData.Kind == AsyncMethodKind.AsyncVariantImpl)
+                {
+                    MethodDesc syncVariant = new TaskReturningAsyncThunk(this);
+                    Interlocked.CompareExchange(ref _asyncOtherVariant, syncVariant, null);
+                }
+                else if (AsyncMethodData.Kind == AsyncMethodKind.TaskReturning)
+                {
+                    MethodDesc asyncVariant = new AsyncMethodThunk(this);
+                    Interlocked.CompareExchange(ref _asyncOtherVariant, asyncVariant, null);
+                }
+                else
+                {
+                    Debug.Fail("GetAsyncOtherVariant called on non-async method");
+                }
+            }
+            return _asyncOtherVariant;
         }
 
         public MethodAttributes Attributes
