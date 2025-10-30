@@ -110,6 +110,11 @@ namespace System.Threading
             _startHelper = null;
 
             startHelper.Run();
+
+            // When this thread is about to exit, inform any subsystems that need to know.
+            // For external threads that have been attached to the runtime, we'll call this
+            // after the thread has been detached as it won't come through this path.
+            OnThreadExiting();
         }
 
         // Max iterations to be done in SpinWait without switching GC modes.
