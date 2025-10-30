@@ -1564,10 +1564,6 @@ MethodDesc* Assembly::GetEntryPoint()
     }
     else
     {
-#if defined(TARGET_BROWSER)
-        // we only support IL entrypoints in browser
-        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-#else // !TARGET_BROWSER
         m_pEntryPoint = pModule->FindMethod(mdEntry);
 #endif // TARGET_BROWSER
     }
