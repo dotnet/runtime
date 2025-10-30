@@ -20,6 +20,7 @@ namespace Microsoft.NET.Build.Tasks
         public bool EmitSymbols { get; set; }
         public bool ReadyToRunUseCrossgen2 { get; set; }
         public bool Crossgen2Composite { get; set; }
+        public string Crossgen2ContainerFormat { get; set; }
 
         [Required]
         public string OutputPath { get; set; }
@@ -278,6 +279,12 @@ namespace Microsoft.NET.Build.Tasks
 
                 var compositeR2RImageRelativePath = MainAssembly.GetMetadata(MetadataKeys.RelativePath);
                 compositeR2RImageRelativePath = Path.ChangeExtension(compositeR2RImageRelativePath, "r2r" + Path.GetExtension(compositeR2RImageRelativePath));
+
+                if (Crossgen2ContainerFormat == "macho")
+                {
+                    compositeR2RImageRelativePath = Path.ChangeExtension(compositeR2RImageRelativePath, ".dylib");
+                }
+
                 var compositeR2RImage = Path.Combine(OutputPath, compositeR2RImageRelativePath);
 
                 TaskItem r2rCompilationEntry = new(MainAssembly)
@@ -337,6 +344,13 @@ namespace Microsoft.NET.Build.Tasks
                 };
                 compositeR2RFileToPublish.RemoveMetadata(MetadataKeys.OriginalItemSpec);
                 compositeR2RFileToPublish.SetMetadata(MetadataKeys.RelativePath, compositeR2RImageRelativePath);
+
+                if (Crossgen2ContainerFormat != "pe")
+                {
+                    compositeR2RFileToPublish.SetMetadata(MetadataKeys.RequiresNativeLink, "true");
+                    compositeR2RFileToPublish.SetMetadata(MetadataKeys.NativeLinkerInputPath, Path.ChangeExtension(compositeR2RImage, ".o"));
+                }
+
                 r2rFilesPublishList.Add(compositeR2RFileToPublish);
             }
         }

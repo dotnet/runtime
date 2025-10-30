@@ -24,6 +24,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunUseCrossgen2)' != 'true' or '$(SelfContained)' != 'true'">false</PublishReadyToRunComposite>
     <PublishReadyToRunUseRuntimePackOptimizationData Condition="'$(PublishReadyToRunUseRuntimePackOptimizationData)' == ''">true</PublishReadyToRunUseRuntimePackOptimizationData>
     <PublishReadyToRunPerfmapFormatVersion Condition="'$(PublishReadyToRunPerfmapFormatVersion)' == ''">1</PublishReadyToRunPerfmapFormatVersion>
+    <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == ''">pe</PublishReadyToRunContainerFormat>
   </PropertyGroup>
 
   <!--
@@ -341,9 +342,11 @@ Copyright (c) .NET Foundation. All rights reserved.
           Condition="'$(_TargetFrameworkVersionWithoutV)' >= '3.0' And '$(PublishReadyToRun)' == 'true' And '$(TargetFrameworkIdentifier)' == '.NETCoreApp'"
           DependsOnTargets="_PrepareForReadyToRunCompilation;
                             _CreateR2RImages;
-                            _CreateR2RSymbols">
+                            _CreateR2RSymbols;
+                            _LinkReadyToRunMachO">
     <ItemGroup>
       <R2RTelemetry Include="PublishReadyToRunUseCrossgen2" Value="$(PublishReadyToRunUseCrossgen2)" />
+      <R2RTelemetry Include="PublishReadyToRunContainerFormat" Value="$(PublishReadyToRunContainerFormat)" />
       <R2RTelemetry Include="Crossgen2PackVersion" Value="%(ResolvedCrossgen2Pack.NuGetPackageVersion)" />
       <R2RTelemetry Include="CompileListCount" Value="@(_ReadyToRunCompileList->Count())" />
       <R2RTelemetry Include="FailedCount" Value="@(_ReadyToRunCompilationFailures->Count())" />
@@ -421,6 +424,7 @@ Copyright (c) .NET Foundation. All rights reserved.
                                      IncludeSymbolsInSingleFile="$(IncludeSymbolsInSingleFile)"
                                      ReadyToRunUseCrossgen2="$(PublishReadyToRunUseCrossgen2)"
                                      Crossgen2Composite="$(PublishReadyToRunComposite)"
+                                     Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
                                      PublishReadyToRunCompositeExclusions="@(PublishReadyToRunCompositeExclusions)"
                                      PublishReadyToRunCompositeRoots="@(PublishReadyToRunCompositeRoots)">
 
@@ -434,6 +438,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       <Output TaskParameter="ReadyToRunCompositeUnrootedBuildInput" ItemName="_ReadyToRunCompositeUnrootedBuildInput" />
 
     </PrepareForReadyToRunCompilation>
+
+    <ItemGroup>
+      <_ReadyToRunNativeObjectOutputs Include="@(_ReadyToRunFilesToPublish->WithMetadataValue('RequiresNativeLink', 'true'))" />
+    </ItemGroup>
   </Target>
 
   <UsingTask Condition="'$(Crossgen2TasksOverriden)' != 'true'" TaskName="ResolveReadyToRunCompilers" AssemblyFile="$(MicrosoftNETBuildTasksAssembly)" />
@@ -468,6 +476,7 @@ Copyright (c) .NET Foundation. All rights reserved.
                            Crossgen2Tool="@(Crossgen2Tool)"
                            UseCrossgen2="$(PublishReadyToRunUseCrossgen2)"
                            Crossgen2PgoFiles="@(_ReadyToRunPgoFiles)"
+                           Crossgen2ContainerFormat="$(PublishReadyToRunContainerFormat)"
                            Crossgen2ExtraCommandLineArgs="$(PublishReadyToRunCrossgen2ExtraArgs)"
                            ImplementationAssemblyReferences="@(_ReadyToRunAssembliesToReference)"
                            ShowCompilerWarnings="$(PublishReadyToRunShowWarnings)"
@@ -523,5 +532,127 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_ReadyToRunCompilationFailures Condition="'$(_ReadyToRunCompilerExitCode)' != '' And $(_ReadyToRunCompilerExitCode) != 0"
                                       Include="@(_ReadyToRunSymbolsCompileList)" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="_FindMachOToolchain">
+    <PropertyGroup>
+      <_AppleTargetOS Condition="$(RuntimeIdentifier.StartsWith('ios-'))">ios</_AppleTargetOS>
+      <_AppleTargetOS Condition="$(RuntimeIdentifier.StartsWith('tvos-'))">tvos</_AppleTargetOS>
+      <_AppleTargetOS Condition="$(RuntimeIdentifier.StartsWith('iossimulator-'))">iossimulator</_AppleTargetOS>
+      <_AppleTargetOS Condition="$(RuntimeIdentifier.StartsWith('tvossimulator-'))">tvossimulator</_AppleTargetOS>
+      <_AppleTargetOS Condition="$(RuntimeIdentifier.StartsWith('maccatalyst-'))">maccatalyst</_AppleTargetOS>
+      <_AppleTargetOS Condition="$(RuntimeIdentifier.StartsWith('osx-'))">osx</_AppleTargetOS>
+
+      <_AppleTargetArchitecture Condition="$(RuntimeIdentifier.EndsWith('-x64'))">x86_64</_AppleTargetArchitecture>
+      <_AppleTargetArchitecture Condition="$(RuntimeIdentifier.EndsWith('-arm64'))">arm64</_AppleTargetArchitecture>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_appleTargetOS)' == 'osx'">12.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_appleTargetOS)' == 'maccatalyst'">15.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_appleTargetOS.StartsWith('ios')) or $(_appleTargetOS.StartsWith('tvos')))">12.2</AppleMinOSVersion>
+
+      <_AppleSdkName Condition="'$(_appleTargetOS)' == 'ios'">iphoneos</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_appleTargetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_appleTargetOS)' == 'tvos'">appletvos</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_appleTargetOS)' == 'tvossimulator'">appletvsimulator</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_appleTargetOS)' == 'maccatalyst' or '$(_appleTargetOS)' == 'osx'">macosx</_AppleSdkName>
+
+      <_AppleTripleOS Condition=" and '$(_appleTargetOS)' == 'osx'">macos</_AppleTripleOS>
+      <_AppleTripleOS Condition="'$(_appleTargetOS)' == 'maccatalyst' or $(_appleTargetOS.StartsWith('ios'))">ios</_AppleTripleOS>
+      <_AppleTripleOS Condition="$(_appleTargetOS.StartsWith('tvos'))">tvos</_AppleTripleOS>
+
+      <_AppleTripleAbi Condition="'$(_appleTargetOS)' == 'ios' or '$(_appleTargetOS)' == 'tvos'">macho</_AppleTripleAbi>
+      <_AppleTripleAbi Condition="'$(_appleTargetOS)' == 'maccatalyst'">macabi</_AppleTripleAbi>
+      <_AppleTripleAbi Condition="$(_appleTargetOS.EndsWith('simulator'))">simulator</_AppleTripleAbi>
+
+      <TargetTriple Condition="'$(_AppleTripleAbi)' == ''">$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)</TargetTriple>
+      <TargetTriple>$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)-$(_AppleTripleAbi)</TargetTriple>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <Xcrun Condition="'$(Xcrun)' == ''">xcrun</Xcrun>
+      <_WhereXcrun>0</_WhereXcrun>
+    </PropertyGroup>
+
+    <Exec Command="command -v &quot;$(Xcrun)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereXcrun" />
+    </Exec>
+    <Error Condition="'$(_WhereXcrun)' != '0'"
+      Text="'$(Xcrun)' not found in PATH. Make sure '$(Xcrun)' is available in PATH." />
+
+    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(SysRoot)' == ''" ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="SysRoot" />
+    </Exec>
+
+    <Error Condition="!Exists('$(SysRoot)')"
+      Text="Apple SDK was not found in: '$(SysRoot)'" />
+
+    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --find clang" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_AppleClang" />
+    </Exec>
+
+    <Error Condition="!Exists('$(_AppleClang)')"
+      Text="Apple Clang was not found at: '$(_AppleClang)'" />
+
+    <Exec Command="dsymutil --help" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(StripSymbols)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="_DsymUtilOutput" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(StripSymbols)' == 'true' and $(_DsymUtilOutput.Contains('--minimize'))">
+      <DsymUtilOptions>$(DsymUtilOptions) --minimize</DsymUtilOptions>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MachLinkerArg Include="-gz=zlib" Condition="'$(CompressSymbols)' != 'false'" />
+      <_MachLinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != ''" />
+      <_MachLinkerArg Include="--target=$(TargetTriple)" />
+      <_MachLinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
+      <_MachLinkerArg Include="-dynamiclib" />
+      <_MachLinkerArg Include="-Wl,-dead_strip" />
+    </ItemGroup>
+
+    <Exec Command="&quot;$(_AppleClang)&quot; --version" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
+    </Exec>
+
+    <PropertyGroup Condition="('$(_XcodeVersionStringExitCode)' == '0' or '$(_XcodeVersionStringExitCode)' == '1') and '$(_XcodeVersionString)' != ''">
+      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '[1-9]\d*'))</_XcodeVersion>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false'">
+      <_MachLinkerArg Condition="'$(UseLdClassicXCodeLinker)' == 'true' or '$(_XcodeVersion)' == '15' or '$(_XcodeVersion)' == '16'" Include="-ld_classic" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Crossgen2 will produce a Mach-O object file. This target will link it into a dylib that can be consumed by the runtime. -->
+  <Target Name="_LinkReadyToRunMachO"
+    DependsOnTargets="_FindMachOToolchain"
+    Inputs="@(_ReadyToRunNativeObjectOutputs->'%(NativeLinkerInputPath)')"
+    Outputs="@(_ReadyToRunNativeObjectOutputs->'%(Identity)')"
+    Condition="'$(PublishReadyToRunContainerFormat)' == 'macho'">
+
+    <PropertyGroup>
+      <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == ''">@rpath/%(Filename)%(Extension)</SharedLibraryInstallName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MachLinkerArg Include="-Wl,-install_name,&quot;$(SharedLibraryInstallName)&quot;" />
+      <_MachLinkerArg Include="%(NativeLinkerInputPath)" />
+      <_MachLinkerArg Include="-o %(Identity)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName(%(Identity)))" />
+
+    <Exec Command="&quot;$(_AppleClang)&quot; @(_MachLinkerArg, ' ')" />
+
+    <!-- remove executable flag -->
+    <Exec Command="chmod 644 &quot;%(Identity)&quot;" />
+
+    <Exec Condition="'$(StripSymbols)' == 'true'"
+      Command="
+        dsymutil $(DsymUtilOptions) &quot;%(Identity)&quot; &amp;&amp;
+        strip -no_code_signature_warning -x &quot;%(Identity)&quot;" />
   </Target>
 </Project>
