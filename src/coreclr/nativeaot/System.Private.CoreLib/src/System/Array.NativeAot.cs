@@ -126,142 +126,6 @@ namespace System
             }
         }
 
-        public unsafe void Initialize()
-        {
-            MethodTable* pElementEEType = ElementMethodTable;
-            if (!pElementEEType->IsValueType)
-                return;
-
-            IntPtr constructorEntryPoint = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(pElementEEType));
-            if (constructorEntryPoint == IntPtr.Zero)
-                return;
-
-            IntPtr constructorFtn = RuntimeAugments.TypeLoaderCallbacks.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(constructorEntryPoint, new RuntimeTypeHandle(pElementEEType));
-
-            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
-            nuint elementSize = ElementSize;
-
-            for (nuint i = 0; i < NativeLength; i++)
-            {
-                RawCalliHelper.CallDefaultStructConstructor(constructorFtn, ref arrayRef);
-                arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe ref int GetMultiDimensionalArrayBounds()
-        {
-            Debug.Assert(!this.GetMethodTable()->IsSzArray);
-            return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(this).Data);
-        }
-
-        private unsafe int GetMultiDimensionalArrayRank()
-        {
-            return this.GetMethodTable()->MultiDimensionalArrayRank;
-        }
-
-        private static bool SupportsNonZeroLowerBound => false;
-
-        private static unsafe ArrayAssignType CanAssignArrayType(Array sourceArray, Array destinationArray)
-        {
-            MethodTable* sourceElementEEType = sourceArray.ElementMethodTable;
-            MethodTable* destinationElementEEType = destinationArray.ElementMethodTable;
-
-            if (sourceElementEEType == destinationElementEEType) // This check kicks for different array kind or dimensions
-                return ArrayAssignType.SimpleCopy;
-
-            if (sourceElementEEType->IsPointer || sourceElementEEType->IsFunctionPointer
-                || destinationElementEEType->IsPointer || destinationElementEEType->IsFunctionPointer)
-            {
-                // Compatible pointers
-                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
-                    return ArrayAssignType.SimpleCopy;
-                else
-                    return ArrayAssignType.WrongType;
-            }
-
-            // Value class boxing
-            if (sourceElementEEType->IsValueType && !destinationElementEEType->IsValueType)
-            {
-                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
-                    return ArrayAssignType.BoxValueClassOrPrimitive;
-                else
-                    return ArrayAssignType.WrongType;
-            }
-
-            // Value class unboxing.
-            if (!sourceElementEEType->IsValueType && destinationElementEEType->IsValueType)
-            {
-                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
-                    return ArrayAssignType.UnboxValueClass;
-                else if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))   // V extends IV. Copying from IV to V, or Object to V.
-                    return ArrayAssignType.UnboxValueClass;
-                else
-                    return ArrayAssignType.WrongType;
-            }
-
-            // Copying primitives from one type to another
-            if (sourceElementEEType->IsPrimitive && destinationElementEEType->IsPrimitive)
-            {
-                EETypeElementType sourceElementType = sourceElementEEType->ElementType;
-                EETypeElementType destElementType = destinationElementEEType->ElementType;
-
-                if (GetNormalizedIntegralArrayElementType(sourceElementType) == GetNormalizedIntegralArrayElementType(destElementType))
-                    return ArrayAssignType.SimpleCopy;
-                else if (InvokeUtils.CanPrimitiveWiden(destElementType, sourceElementType))
-                    return ArrayAssignType.PrimitiveWiden;
-                else
-                    return ArrayAssignType.WrongType;
-            }
-
-            // Different value types
-            if (sourceElementEEType->IsValueType && destinationElementEEType->IsValueType)
-            {
-                // Different from CanCastTo in coreclr, AreTypesAssignable also allows T -> Nullable<T> conversion.
-                // Kick for this path explicitly.
-                return ArrayAssignType.WrongType;
-            }
-
-            // src Object extends dest
-            if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
-                return ArrayAssignType.SimpleCopy;
-
-            // dest Object extends src
-            if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))
-                return ArrayAssignType.MustCast;
-
-            // class X extends/implements src and implements dest.
-            if (destinationElementEEType->IsInterface)
-                return ArrayAssignType.MustCast;
-
-            // class X implements src and extends/implements dest
-            if (sourceElementEEType->IsInterface)
-                return ArrayAssignType.MustCast;
-
-            return ArrayAssignType.WrongType;
-        }
-
-        private static EETypeElementType GetNormalizedIntegralArrayElementType(EETypeElementType elementType)
-        {
-            Debug.Assert(elementType >= EETypeElementType.Boolean && elementType <= EETypeElementType.Double);
-
-            // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-            // Enums with interchangeable underlying types are interchangeable
-            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
-
-            // U1/U2/U4/U8/U
-            int shift = (0b0010_1010_1010_0000 >> (int)elementType) & 1;
-            return (EETypeElementType)((int)elementType - shift);
-        }
-
-        public unsafe int Rank
-        {
-            get
-            {
-                return this.GetMethodTable()->ArrayRank;
-            }
-        }
-
         // Allocate new multidimensional array of given dimensions. Assumes that pLengths is immutable.
         internal static unsafe Array NewMultiDimArray(MethodTable* eeType, int* pLengths, int rank)
         {
@@ -386,6 +250,129 @@ namespace System
                 // as an SzArray. SzArray is castable to MdArray rank 1.
                 Type elementType = Type.GetTypeFromHandle(new RuntimeTypeHandle(pEEType->RelatedParameterType))!;
                 return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToMethodTable(), pDimensions[0]);
+            }
+        }
+
+        public unsafe void Initialize()
+        {
+            MethodTable* pElementEEType = ElementMethodTable;
+            if (!pElementEEType->IsValueType)
+                return;
+
+            IntPtr constructorEntryPoint = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(pElementEEType));
+            if (constructorEntryPoint == IntPtr.Zero)
+                return;
+
+            IntPtr constructorFtn = RuntimeAugments.TypeLoaderCallbacks.ConvertUnboxingFunctionPointerToUnderlyingNonUnboxingPointer(constructorEntryPoint, new RuntimeTypeHandle(pElementEEType));
+
+            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(this);
+            nuint elementSize = ElementSize;
+
+            for (nuint i = 0; i < NativeLength; i++)
+            {
+                RawCalliHelper.CallDefaultStructConstructor(constructorFtn, ref arrayRef);
+                arrayRef = ref Unsafe.Add(ref arrayRef, elementSize);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe ref int GetMultiDimensionalArrayBounds()
+        {
+            Debug.Assert(!this.GetMethodTable()->IsSzArray);
+            return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(this).Data);
+        }
+
+        private unsafe int GetMultiDimensionalArrayRank()
+        {
+            return this.GetMethodTable()->MultiDimensionalArrayRank;
+        }
+
+        private static bool SupportsNonZeroLowerBound => false;
+
+        private static unsafe ArrayAssignType CanAssignArrayType(Array sourceArray, Array destinationArray)
+        {
+            MethodTable* sourceElementEEType = sourceArray.ElementMethodTable;
+            MethodTable* destinationElementEEType = destinationArray.ElementMethodTable;
+
+            if (sourceElementEEType == destinationElementEEType) // This check kicks for different array kind or dimensions
+                return ArrayAssignType.SimpleCopy;
+
+            if (sourceElementEEType->IsPointer || sourceElementEEType->IsFunctionPointer
+                || destinationElementEEType->IsPointer || destinationElementEEType->IsFunctionPointer)
+            {
+                // Compatible pointers
+                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                    return ArrayAssignType.SimpleCopy;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // Value class boxing
+            if (sourceElementEEType->IsValueType && !destinationElementEEType->IsValueType)
+            {
+                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                    return ArrayAssignType.BoxValueClassOrPrimitive;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // Value class unboxing.
+            if (!sourceElementEEType->IsValueType && destinationElementEEType->IsValueType)
+            {
+                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                    return ArrayAssignType.UnboxValueClass;
+                else if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))   // V extends IV. Copying from IV to V, or Object to V.
+                    return ArrayAssignType.UnboxValueClass;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // Copying primitives from one type to another
+            if (sourceElementEEType->IsPrimitive && destinationElementEEType->IsPrimitive)
+            {
+                EETypeElementType sourceElementType = sourceElementEEType->ElementType;
+                EETypeElementType destElementType = destinationElementEEType->ElementType;
+
+                if (System.Runtime.TypeCast.GetNormalizedIntegralArrayElementType(sourceElementType) == System.Runtime.TypeCast.GetNormalizedIntegralArrayElementType(destElementType))
+                    return ArrayAssignType.SimpleCopy;
+                else if (InvokeUtils.CanPrimitiveWiden(destElementType, sourceElementType))
+                    return ArrayAssignType.PrimitiveWiden;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // Different value types
+            if (sourceElementEEType->IsValueType && destinationElementEEType->IsValueType)
+            {
+                // Different from CanCastTo in coreclr, AreTypesAssignable also allows T -> Nullable<T> conversion.
+                // Kick for this path explicitly.
+                return ArrayAssignType.WrongType;
+            }
+
+            // src Object extends dest
+            if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                return ArrayAssignType.SimpleCopy;
+
+            // dest Object extends src
+            if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))
+                return ArrayAssignType.MustCast;
+
+            // class X extends/implements src and implements dest.
+            if (destinationElementEEType->IsInterface)
+                return ArrayAssignType.MustCast;
+
+            // class X implements src and extends/implements dest
+            if (sourceElementEEType->IsInterface)
+                return ArrayAssignType.MustCast;
+
+            return ArrayAssignType.WrongType;
+        }
+
+        public unsafe int Rank
+        {
+            get
+            {
+                return this.GetMethodTable()->ArrayRank;
             }
         }
 

@@ -939,6 +939,19 @@ namespace System.Runtime
             return elementType;
         }
 
+        internal static EETypeElementType GetNormalizedIntegralArrayElementType(EETypeElementType elementType)
+        {
+            Debug.Assert(elementType >= EETypeElementType.Boolean && elementType <= EETypeElementType.Double);
+
+            // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
+            // Enums with interchangeable underlying types are interchangeable
+            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
+
+            // U1/U2/U4/U8/U
+            int shift = (0b0010_1010_1010_0000 >> (int)elementType) & 1;
+            return (EETypeElementType)((int)elementType - shift);
+        }
+
         // Would not be inlined, but still need to mark NoInlining so that it doesn't throw off tail calls
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe object ThrowInvalidCastException(MethodTable* pMT)

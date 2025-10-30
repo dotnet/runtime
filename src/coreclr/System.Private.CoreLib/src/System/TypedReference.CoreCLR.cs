@@ -56,7 +56,7 @@ namespace System
             return result;
         }
 
-        // implementation of CORINFO_HELP_GETREFANY
+        // Implementation of CORINFO_HELP_GETREFANY
         [StackTraceHidden]
         internal static ref byte GetRefAny(IntPtr type, TypedReference value)
         {
