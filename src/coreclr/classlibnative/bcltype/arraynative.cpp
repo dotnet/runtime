@@ -217,7 +217,7 @@ extern "C" void QCALLTYPE Array_CtorAny(MethodTable* pArrayMT, UINT32 dwNumArgs,
     _ASSERTE(pArrayMT->IsFullyLoaded());
     _ASSERTE(pArrayMT->IsArray());
 
-    retArray.Set(AllocateArrayEx(TypeHandle(pArrayMT), pArgList, dwNumArgs));
+    retArray.Set(AllocateArrayEx(pArrayMT, pArgList, dwNumArgs));
 
     END_QCALL;
 }
