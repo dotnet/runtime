@@ -25,9 +25,7 @@ namespace System
         // implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL
         internal static unsafe Type? GetTypeFromMethodTableMaybeNull(MethodTable* pMT)
         {
-            if (pMT == null)
-                return null;
-            return GetTypeFromMethodTable(pMT);
+            return (pMT == null) ? null : GetTypeFromMethodTable(pMT);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
