@@ -37,13 +37,11 @@ namespace ILCompiler
         private readonly bool _treatWarningsAsErrors;
         private readonly Dictionary<int, bool> _warningsAsErrors;
 
-        private bool _hasLoggedErrors;
-
         public static Logger Null = new Logger(new TextLogWriter(TextWriter.Null), null, false, true);
 
         public bool IsVerbose { get; }
 
-        public bool HasLoggedErrors => _hasLoggedErrors;
+        public bool HasLoggedErrors { get; private set; }
 
         public Logger(
             ILogWriter writer,
@@ -99,7 +97,7 @@ namespace ILCompiler
             if (warning.HasValue)
             {
                 if (warning.Value.Category == MessageCategory.WarningAsError)
-                    _hasLoggedErrors = true;
+                    HasLoggedErrors = true;
                 _logWriter.WriteWarning(warning.Value);
             }
         }
@@ -110,7 +108,7 @@ namespace ILCompiler
             if (warning.HasValue)
             {
                 if (warning.Value.Category == MessageCategory.WarningAsError)
-                    _hasLoggedErrors = true;
+                    HasLoggedErrors = true;
                 _logWriter.WriteWarning(warning.Value);
             }
         }
@@ -150,7 +148,7 @@ namespace ILCompiler
             MessageContainer? error = MessageContainer.CreateErrorMessage(text, code, subcategory, origin);
             if (error.HasValue)
             {
-                _hasLoggedErrors = true;
+                HasLoggedErrors = true;
                 _logWriter.WriteError(error.Value);
             }
         }
@@ -160,7 +158,7 @@ namespace ILCompiler
             MessageContainer? error = MessageContainer.CreateErrorMessage(origin, id, args);
             if (error.HasValue)
             {
-                _hasLoggedErrors = true;
+                HasLoggedErrors = true;
                 _logWriter.WriteError(error.Value);
             }
         }
