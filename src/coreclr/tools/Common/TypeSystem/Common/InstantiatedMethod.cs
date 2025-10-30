@@ -94,18 +94,15 @@ namespace Internal.TypeSystem
                 if (!_asyncMethodData.Equals(default(AsyncMethodData)))
                     return _asyncMethodData;
 
-                if (Signature.ReturnsTaskOrValueTask())
+                if (IsAsync)
                 {
-                    if (IsAsync)
-                    {
-                        // If the method is already async, the template signature should already have been updated to reflect the AsyncCallConv
-                        Debug.Assert(!Signature.ReturnsTaskOrValueTask() && Signature.IsAsyncCallConv);
-                        _asyncMethodData = new AsyncMethodData() { Kind = AsyncMethodKind.AsyncVariantImpl, Signature = Signature };
-                    }
-                    else
-                    {
-                        _asyncMethodData = new AsyncMethodData() { Kind = AsyncMethodKind.TaskReturning, Signature = Signature };
-                    }
+                    // If the method is already async, the template signature should already have been updated to reflect the AsyncCallConv
+                    Debug.Assert(!Signature.ReturnsTaskOrValueTask() && Signature.IsAsyncCallConv);
+                    _asyncMethodData = new AsyncMethodData() { Kind = AsyncMethodKind.AsyncVariantImpl, Signature = Signature };
+                }
+                else if (Signature.ReturnsTaskOrValueTask())
+                {
+                    _asyncMethodData = new AsyncMethodData() { Kind = AsyncMethodKind.TaskReturning, Signature = Signature };
                 }
                 else
                 {

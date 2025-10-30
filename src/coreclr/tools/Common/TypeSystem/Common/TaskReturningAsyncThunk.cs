@@ -1,18 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
-using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem
 {
     /// <summary>
-    /// Represents the async-callable (CORINFO_CALLCONV_ASYNCCALL) variant of a Task/ValueTask returning method.
-    /// The wrapper should be short‑lived and only used while interacting with the JIT interface.
-    /// NOPE: These things aren't short lived in R2R scenarios. Please make a normal method, and give them normal, long lifetimes
+    /// Represents the Task-returning variant of an async call convention method.
     /// </summary>
     public sealed class TaskReturningAsyncThunk : MethodDelegator
     {
@@ -65,7 +59,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        protected internal override int ClassCode => 0x554d08b9;
+        protected internal override int ClassCode => 0x6d7dcbcb;
 
         public override string DiagnosticName => "TaskReturningVariant: " + _wrappedMethod.DiagnosticName;
 

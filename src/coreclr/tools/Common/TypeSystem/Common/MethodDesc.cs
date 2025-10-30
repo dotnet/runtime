@@ -397,7 +397,7 @@ namespace Internal.TypeSystem
     }
 
     /// <summary>
-    /// Information about the runtime async implementation of the method. For runtime async methods, the signature may differ from what is in the
+    /// Information about the runtime async implementation of the method. For runtime async methods, the signature may differ from what is in the metadata, as async call convention implies a Task-returning method returns void/T.
     /// </summary>
     public struct AsyncMethodData
     {
@@ -408,11 +408,18 @@ namespace Internal.TypeSystem
         /// Is this an Async variant method?
         /// If yes, the method has another Task-returning variant.
         /// </summary>
-        public bool IsAsyncVariant => Kind is
+        public bool IsAsyncVariant
+        {
+            get
+            {
+                return Kind is
                 AsyncMethodKind.AsyncVariantImpl or
                 AsyncMethodKind.AsyncVariantThunk;
+            }
+        }
+
         /// <summary>
-        /// Is this a small(ish) synthetic Task/async adapter to an async/Task implementation?
+        /// Is this synthetic Task/async adapter to an async/Task implementation?
         /// If yes, the method has another variant, which has the actual user-defined method body.
         /// </summary>
         public bool IsThunk
@@ -424,13 +431,20 @@ namespace Internal.TypeSystem
                     AsyncMethodKind.RuntimeAsync;
             }
         }
+
         /// <summary>
         /// Is this method callable as an async method? (i.e. uses Async calling convention)
         /// </summary>
-        public bool IsAsyncCallConv => Kind is
+        public bool IsAsyncCallConv
+        {
+            get
+            {
+                return Kind is
                 AsyncMethodKind.AsyncVariantImpl or
                 AsyncMethodKind.AsyncVariantThunk or
                 AsyncMethodKind.AsyncExplicitImpl;
+            }
+        }
     }
 
     public enum AsyncMethodKind
@@ -442,7 +456,7 @@ namespace Internal.TypeSystem
 
         // Regular methods that return Task/ValueTask
         // Such method has its actual IL body and there also a synthetic variant that is an
-        // Async-callable think. (AsyncVariantThunk)
+        // Async-callable thunk. (AsyncVariantThunk)
         TaskReturning,
 
         // Task-returning methods marked as MethodImpl::Async in metadata.
@@ -453,7 +467,7 @@ namespace Internal.TypeSystem
         //=============================================================
         // On {TaskReturning, AsyncVariantThunk} and {RuntimeAsync, AsyncVariantImpl} pairs:
         //
-        // When we see a Task-returning method we create 2 method varaints that logically match the same method definition.
+        // When we see a Task-returning method we create 2 method variants that logically match the same method definition.
         // One variant has the same signature/callconv as the defining method and another is a matching Async variant.
         // Depending on whether the definition was a runtime async method or an ordinary Task-returning method,
         // the IL body belongs to one of the variants and another variant is a synthetic thunk.
