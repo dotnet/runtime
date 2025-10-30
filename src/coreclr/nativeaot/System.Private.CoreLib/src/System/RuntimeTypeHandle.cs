@@ -111,18 +111,10 @@ namespace System
             }
         }
 
-        // implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL
-        internal static Type? TypeHandleToRuntimeTypeMaybeNull(RuntimeTypeHandle typeHandle)
-        {
-            if (typeHandle.IsNull)
-                return null;
-            return Type.GetTypeFromHandle(typeHandle);
-        }
-
         // implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL
-        internal static RuntimeTypeHandle TypeHandleToRuntimeTypeHandleMaybeNull(RuntimeTypeHandle typeHandle)
+        internal static unsafe RuntimeTypeHandle TypeHandleToRuntimeTypeHandleMaybeNull(MethodTable* pMT)
         {
-            return typeHandle;
+            return new RuntimeTypeHandle(pMT);
         }
     }
 }

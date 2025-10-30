@@ -322,7 +322,7 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.TypeHandleToRuntimeType:
-                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "RuntimeTypeHandle"u8, "TypeHandleToRuntimeTypeMaybeNull"u8, null);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTableMaybeNull"u8, null);
                     break;
                 case ReadyToRunHelper.GetRefAny:
                     methodDesc = context.GetCoreLibEntryPoint("System"u8, "TypedReference"u8, "GetRefAny"u8, null);
