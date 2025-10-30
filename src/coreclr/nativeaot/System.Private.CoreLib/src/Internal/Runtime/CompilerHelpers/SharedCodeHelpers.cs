@@ -22,5 +22,12 @@ namespace Internal.Runtime.CompilerHelpers
         {
             return (MethodTable*)RuntimeImports.GetCurrentInteropThunkContext();
         }
+
+        public static unsafe MethodTable* GetClassHandleFromMethodParam(IntPtr pDictionary)
+        {
+            bool success = RuntimeAugments.TypeLoaderCallbacks.TryGetOwningTypeForMethodDictionary(pDictionary, out RuntimeTypeHandle th);
+            Debug.Assert(success);
+            return th.ToMethodTable();
+        }
     }
 }

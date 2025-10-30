@@ -925,18 +925,7 @@ namespace System.Runtime
 
         private static unsafe EETypeElementType GetNormalizedIntegralArrayElementType(MethodTable* type)
         {
-            EETypeElementType elementType = type->ElementType;
-            switch (elementType)
-            {
-                case EETypeElementType.Byte:
-                case EETypeElementType.UInt16:
-                case EETypeElementType.UInt32:
-                case EETypeElementType.UInt64:
-                case EETypeElementType.UIntPtr:
-                    return elementType - 1;
-            }
-
-            return elementType;
+            return GetNormalizedIntegralArrayElementType(type->ElementType);
         }
 
         internal static EETypeElementType GetNormalizedIntegralArrayElementType(EETypeElementType elementType)
