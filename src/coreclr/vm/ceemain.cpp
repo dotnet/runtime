@@ -753,7 +753,6 @@ void EEStartupHelper()
 #ifndef TARGET_UNIX
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
-        InitEventStore();
 
         UnwindInfoTable::Initialize();
 
@@ -789,7 +788,7 @@ void EEStartupHelper()
         }
 #endif // USE_DISASSEMBLER
 
-        // Monitors, Crsts, and SimpleRWLocks all use the same spin heuristics
+        // Crsts and SimpleRWLocks all use the same spin heuristics
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
 
