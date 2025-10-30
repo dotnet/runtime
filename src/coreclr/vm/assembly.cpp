@@ -1223,42 +1223,39 @@ static void RunMainInternal(Param* pParam)
         *pParam->piRetVal = 0;
         threadStart.Call(&stackVar);
     }
-    else
-    {
 // WASM-TODO: remove this
 // https://github.com/dotnet/runtime/issues/121064
 #if defined(TARGET_BROWSER)
-        if (pParam->EntryType == EntryManagedMainAsync)
+    else if (pParam->EntryType == EntryManagedMainAsync)
+    {
+        *pParam->piRetVal = 0;
+        OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
+        ARG_SLOT stackVarWrapper[] =
         {
-            *pParam->piRetVal = 0;
-            OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
-            ARG_SLOT stackVarWrapper[] =
-            {
-                ObjToArgSlot(exitCodeTask)
-            };
+            ObjToArgSlot(exitCodeTask)
+        };
 
-            MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
-            mainWrapper.Call(stackVarWrapper);
-        }
-        else if (pParam->EntryType == EntryManagedMainAsyncVoid)
+        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
+        mainWrapper.Call(stackVarWrapper);
+    }
+    else if (pParam->EntryType == EntryManagedMainAsyncVoid)
+    {
+        *pParam->piRetVal = 0;
+        OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
+        ARG_SLOT stackVarWrapper[] =
         {
-            *pParam->piRetVal = 0;
-            OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
-            ARG_SLOT stackVarWrapper[] =
-            {
-                ObjToArgSlot(exitCodeTask)
-            };
+            ObjToArgSlot(exitCodeTask)
+        };
 
-            MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT_VOID);
-            mainWrapper.Call(stackVarWrapper);
-        }
-        else
+        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT_VOID);
+        mainWrapper.Call(stackVarWrapper);
+    }
 #endif // TARGET_BROWSER
-        {
-            // Call the main method
-            *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
-            SetLatchedExitCode(*pParam->piRetVal);
-        }
+    else
+    {
+        // Call the main method
+        *pParam->piRetVal = (INT32)threadStart.Call_RetArgSlot(&stackVar);
+        SetLatchedExitCode(*pParam->piRetVal);
     }
 
     GCPROTECT_END();
@@ -1452,6 +1449,8 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
             hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
 
+// Keep the thread attached, because in the browser we keep the runtime alive.
+// Even after main returns. Both synchronous and asynchronous.
 #if !defined(TARGET_BROWSER)
             Thread::CleanUpForManagedThreadInNative(pThread);
 #endif // !TARGET_BROWSER
