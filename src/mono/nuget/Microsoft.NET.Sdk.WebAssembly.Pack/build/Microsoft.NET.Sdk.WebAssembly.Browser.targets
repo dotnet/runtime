@@ -94,19 +94,19 @@ Copyright (c) .NET Foundation. All rights reserved.
   </ItemGroup>
 
   <!-- Wire-up static web assets -->
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <!-- Static Web Assets -->
     <ResolveStaticWebAssetsInputsDependsOn>
       $(ResolveStaticWebAssetsInputsDependsOn);
       _AddWasmStaticWebAssets;
     </ResolveStaticWebAssetsInputsDependsOn>
-    <ResolvePublishStaticWebAssetsDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <ResolvePublishStaticWebAssetsDependsOn>
       $(ResolvePublishStaticWebAssetsDependsOn);
       ProcessPublishFilesForWasm;
       ComputeWasmExtensions;
       _AddPublishWasmBootJsonToStaticWebAssets;
     </ResolvePublishStaticWebAssetsDependsOn>
-    <GenerateStaticWebAssetsPublishManifestDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <GenerateStaticWebAssetsPublishManifestDependsOn>
       $(GenerateStaticWebAssetsPublishManifestDependsOn);
       GeneratePublishWasmBootJson;
     </GenerateStaticWebAssetsPublishManifestDependsOn>
@@ -119,7 +119,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       _AddWasmStaticWebAssets;
       _AddWasmPreloadBuildProperties;
     </ResolveCompressedFilesDependsOn>
-    <ResolveCompressedFilesForPublishDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <ResolveCompressedFilesForPublishDependsOn>
       $(ResolveCompressedFilesForPublishDependsOn);
       ProcessPublishFilesForWasm;
       ComputeWasmExtensions;
@@ -127,7 +127,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       _AddPublishWasmBootJsonToStaticWebAssets;
       _AddWasmPreloadPublishProperties;
     </ResolveCompressedFilesForPublishDependsOn>
-    <CompressFilesForPublishDependsOn Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
+    <CompressFilesForPublishDependsOn>
       $(CompressFilesForPublishDependsOn);
       GeneratePublishWasmBootJson;
     </CompressFilesForPublishDependsOn>
