@@ -43,7 +43,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 1 => Http11LoopbackServerFactory.Singleton,
                 2 => Http2LoopbackServerFactory.Singleton,
+#if NET
                 3 => Http3LoopbackServerFactory.Singleton,
+#endif
                 _ => throw new InvalidOperationException($"Unexpected HTTP version: {useVersion}")
             };
         }
