@@ -334,11 +334,11 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
         }
 #else // !defined(STATIC_ICU)
 
-#if HAVE_UCOL_CLONE
+#if HAVE_UCOL_CLONE || (defined(U_ICU_VERSION_MAJOR_NUM) && U_ICU_VERSION_MAJOR_NUM >= 72)
         pClonedCollator = ucol_clone(pCollator, pErr);
 #else
         pClonedCollator = ucol_safeClone(pCollator, NULL, NULL, pErr);
-#endif // HAVE_UCOL_CLONE
+#endif // HAVE_UCOL_CLONE || ICU version >= 72
 
 #endif // !defined(STATIC_ICU)
     }
