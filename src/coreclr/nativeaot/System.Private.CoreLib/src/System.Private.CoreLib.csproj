@@ -105,7 +105,6 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\InteropHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.cs" />
-    <Compile Include="Internal\Runtime\CompilerHelpers\SynchronizedMethodHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\IntrinsicSupport\ComparerHelpers.cs" />
@@ -224,8 +223,6 @@
     <Compile Include="System\RuntimeFieldHandle.cs" />
     <Compile Include="System\Text\StringBuilder.NativeAot.cs" />
     <Compile Include="System\Threading\ManagedThreadId.cs" />
-    <Compile Include="System\Threading\Lock.NativeAot.cs" />
-    <Compile Include="System\Threading\Condition.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\Monitor.NativeAot.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" />
