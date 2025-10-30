@@ -248,7 +248,7 @@ namespace System
 
                 // Multidimensional array of rank 1 with 0 lower bounds gets actually allocated
                 // as an SzArray. SzArray is castable to MdArray rank 1.
-                Type elementType = Type.GetTypeFromMethodTable(pEEType->RelatedParameterType);
+                RuntimeType elementType = Type.GetTypeFromMethodTable(pEEType->RelatedParameterType);
                 return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToMethodTable(), pDimensions[0]);
             }
         }
