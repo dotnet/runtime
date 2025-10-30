@@ -111,7 +111,7 @@ namespace System
             }
         }
 
-        // implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL
+        // implementation of CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE. CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL
         internal static unsafe RuntimeTypeHandle TypeHandleToRuntimeTypeHandleMaybeNull(MethodTable* pMT)
         {
             return new RuntimeTypeHandle(pMT);
