@@ -658,23 +658,6 @@ namespace ILCompiler.ObjectWriter
                 objectWriter.EmitObject(outputFileStream, nodes, dumper, logger);
             }
 
-#if !READYTORUN
-            // If errors were produced (including warnings treated as errors), delete the output file
-            // to avoid misleading build systems into thinking the compilation succeeded.
-            if (logger.HasLoggedErrors)
-            {
-                try
-                {
-                    File.Delete(objectFilePath);
-                }
-                catch
-                {
-                    // If we can't delete the file, there's not much we can do.
-                    // The compilation will still fail due to logged errors.
-                }
-            }
-#endif
-
             stopwatch.Stop();
             if (logger.IsVerbose)
                 logger.LogMessage($"Done writing object file in {stopwatch.Elapsed}");

@@ -728,6 +728,8 @@ namespace ILCompiler
                     // If we can't delete the file, there's not much we can do.
                     // The compilation will still fail due to logged errors.
                 }
+
+                return 1;
             }
 
             return 0;
