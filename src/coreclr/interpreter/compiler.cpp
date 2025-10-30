@@ -2234,7 +2234,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
         default:
             assert(0);
         }
-        if (opcode == CEE_THROW || opcode == CEE_ENDFINALLY || opcode == CEE_RETHROW)
+        if (opcode == CEE_THROW || opcode == CEE_ENDFINALLY || opcode == CEE_RETHROW || opcode == CEE_JMP)
             GetBB((int32_t)(ip - codeStart));
     }
 }
@@ -3901,6 +3901,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     bool isVirtual = (*m_ip == CEE_CALLVIRT);
     bool isDelegateInvoke = false;
+    bool isJmp = (*m_ip == CEE_JMP);
 
     CORINFO_RESOLVED_TOKEN resolvedCallToken;
     CORINFO_CALL_INFO callInfo;
@@ -4032,6 +4033,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     CORINFO_ARG_LIST_HANDLE args;
     args = callInfo.sig.args;
 
+    if (isJmp)
+    {
+        assert(tailcall);
+        // CEE_JMP is simulated as a tail call, so we need to load the current method's args
+        for (int i = 0; i < numArgsFromStack; i++)
+        {
+            EmitLoadVar(i);
+        }
+    }
+
     for (int iActualArg = 0, iLogicalArg = 0; iActualArg < numArgs; iActualArg++)
     {
         if (iActualArg == extraParamArgLocation)
@@ -4047,6 +4058,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         else
         {
             int iCurrentStackArg = iLogicalArg - numArgsFromStack;
+
             if (iLogicalArg != 0 || !callInfo.sig.hasThis() || newObj)
             {
                 CORINFO_CLASS_HANDLE classHandle;
@@ -6933,12 +6945,8 @@ retry_emit:
             case CEE_JMP:
             {
                 CHECK_STACK(0);
-                uint32_t token = getU4LittleEndian(m_ip + 1);
-                CORINFO_RESOLVED_TOKEN resolvedToken;
-                ResolveToken(token, CORINFO_TOKENKIND_Method, &resolvedToken);
-                AddIns(INTOP_JMP);
-                m_pLastNewIns->data[0] = GetMethodDataItemIndex(resolvedToken.hMethod);
-                m_ip += 5;
+                EmitCall(pConstrainedToken, readonly, true /* tailcall */, false /*newObj*/, false /*isCalli*/);
+                linkBBlocks = false;
                 break;
             }
             case CEE_CALLVIRT:
