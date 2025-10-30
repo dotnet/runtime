@@ -32,14 +32,6 @@ public:
     BOOL CreateAutoEventNoThrow(BOOL bInitialState);
     BOOL CreateManualEventNoThrow(BOOL bInitialState);
 
-    // Create an Event that is not host aware
-    void CreateOSAutoEvent (BOOL bInitialState);
-    void CreateOSManualEvent (BOOL bInitialState);
-
-    // Non-throwing variants of the functions above
-    BOOL CreateOSAutoEventNoThrow (BOOL bInitialState);
-    BOOL CreateOSManualEventNoThrow (BOOL bInitialState);
-
     void CloseEvent();
 
     BOOL IsValid() const
@@ -67,7 +59,6 @@ private:
     enum
     {
         CLREVENT_FLAGS_AUTO_EVENT = 0x0001,
-        CLREVENT_FLAGS_OS_EVENT = 0x0002,
 
         CLREVENT_FLAGS_STATIC = 0x0020,
 
@@ -82,13 +73,6 @@ private:
         LIMITED_METHOD_CONTRACT;
         // cannot use `|=' operator on `Volatile<DWORD>'
         m_dwFlags = m_dwFlags | CLREVENT_FLAGS_AUTO_EVENT;
-    }
-    BOOL IsOSEvent() { LIMITED_METHOD_CONTRACT; return m_dwFlags & CLREVENT_FLAGS_OS_EVENT; }
-    void SetOSEvent ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        // cannot use `|=' operator on `Volatile<DWORD>'
-        m_dwFlags = m_dwFlags | CLREVENT_FLAGS_OS_EVENT;
     }
 };
 
