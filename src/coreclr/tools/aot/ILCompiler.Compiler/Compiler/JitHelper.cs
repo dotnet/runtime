@@ -164,10 +164,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.GetRuntimeTypeHandle:
-                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers"u8, "GetRuntimeTypeHandle"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "RuntimeTypeHandle"u8, "GetRuntimeTypeHandleFromMethodTable"u8, null);
                     break;
                 case ReadyToRunHelper.GetRuntimeType:
-                    methodDesc = context.GetHelperEntryPoint("LdTokenHelpers"u8, "GetRuntimeType"u8);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTableMaybeNull"u8, null);
                     break;
                 case ReadyToRunHelper.GetRuntimeMethodHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers"u8, "GetRuntimeMethodHandle"u8);
@@ -328,7 +328,7 @@ namespace ILCompiler
                     methodDesc = context.GetCoreLibEntryPoint("System"u8, "TypedReference"u8, "GetRefAny"u8, null);
                     break;
                 case ReadyToRunHelper.TypeHandleToRuntimeTypeHandle:
-                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "RuntimeTypeHandle"u8, "TypeHandleToRuntimeTypeHandleMaybeNull"u8, null);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "RuntimeTypeHandle"u8, "GetRuntimeTypeHandleFromMethodTable"u8, null);
                     break;
 
                 case ReadyToRunHelper.GetCurrentManagedThreadId:
