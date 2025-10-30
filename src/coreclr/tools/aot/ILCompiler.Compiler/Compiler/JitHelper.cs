@@ -167,7 +167,7 @@ namespace ILCompiler
                     methodDesc = context.GetCoreLibEntryPoint("System"u8, "RuntimeTypeHandle"u8, "GetRuntimeTypeHandleFromMethodTable"u8, null);
                     break;
                 case ReadyToRunHelper.GetRuntimeType:
-                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTableMaybeNull"u8, null);
+                    methodDesc = context.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTable"u8, null);
                     break;
                 case ReadyToRunHelper.GetRuntimeMethodHandle:
                     methodDesc = context.GetHelperEntryPoint("LdTokenHelpers"u8, "GetRuntimeMethodHandle"u8);
