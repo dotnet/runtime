@@ -104,7 +104,6 @@ nativeStringResourceTable_mscorrc
 #RaiseException
 #RaiseFailFastException
 #ReadFile
-#ReleaseMutex
 #ReleaseSemaphore
 #ResetEvent
 #ResumeThread
