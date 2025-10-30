@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
@@ -11,8 +12,6 @@ namespace System.Threading
     /// </summary>
     internal sealed partial class LowLevelLifoSemaphore : IDisposable
     {
-        // Declared nullable even though it is initialized in Create
-        // as Roslyn doesn't see that it's set in Create and Create is called from all constructors.
         private WaitSubsystem.WaitableObject _semaphore;
 
         [MemberNotNull(nameof(_semaphore))]
