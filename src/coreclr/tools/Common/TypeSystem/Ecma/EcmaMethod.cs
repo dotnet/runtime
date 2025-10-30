@@ -15,24 +15,24 @@ namespace Internal.TypeSystem.Ecma
     {
         private static class MethodFlags
         {
-            public const int BasicMetadataCache     = 0x00001;
-            public const int Virtual                = 0x00002;
-            public const int NewSlot                = 0x00004;
-            public const int Abstract               = 0x00008;
-            public const int Final                  = 0x00010;
-            public const int NoInlining             = 0x00020;
-            public const int AggressiveInlining     = 0x00040;
-            public const int RuntimeImplemented     = 0x00080;
-            public const int InternalCall           = 0x00100;
-            public const int Synchronized           = 0x00200;
+            public const int BasicMetadataCache = 0x00001;
+            public const int Virtual = 0x00002;
+            public const int NewSlot = 0x00004;
+            public const int Abstract = 0x00008;
+            public const int Final = 0x00010;
+            public const int NoInlining = 0x00020;
+            public const int AggressiveInlining = 0x00040;
+            public const int RuntimeImplemented = 0x00080;
+            public const int InternalCall = 0x00100;
+            public const int Synchronized = 0x00200;
             public const int AggressiveOptimization = 0x00400;
-            public const int NoOptimization         = 0x00800;
-            public const int RequireSecObject       = 0x01000;
+            public const int NoOptimization = 0x00800;
+            public const int RequireSecObject = 0x01000;
 
             public const int AttributeMetadataCache = 0x02000;
-            public const int Intrinsic              = 0x04000;
-            public const int UnmanagedCallersOnly   = 0x08000;
-            public const int Async                  = 0x10000;
+            public const int Intrinsic = 0x04000;
+            public const int UnmanagedCallersOnly = 0x08000;
+            public const int Async = 0x10000;
         };
 
         private EcmaType _type;
@@ -85,43 +85,8 @@ namespace Internal.TypeSystem.Ecma
             EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader, NotFoundBehavior.Throw);
             var signature = parser.ParseMethodSignature();
 
-            bool returnsTask = signature.ReturnsTaskOrValueTask();
-            if (!returnsTask && !IsAsync)
-            {
-                _asyncMethodData = new AsyncMethodData
-                {
-                    Kind = AsyncMethodKind.NotAsync,
-                    Signature = signature
-                };
-            }
-            else if (returnsTask && IsAsync)
-            {
-                _asyncMethodData = new AsyncMethodData
-                {
-                    Kind = AsyncMethodKind.AsyncVariantImpl,
-                    Signature = signature.CreateAsyncSignature()
-                };
-            }
-            else if (returnsTask && !IsAsync)
-            {
-                _asyncMethodData = new AsyncMethodData
-                {
-                    Kind = AsyncMethodKind.TaskReturning,
-                    Signature = signature
-                };
-            }
-            else
-            {
-                Debug.Assert(IsAsync && !returnsTask);
-                _asyncMethodData = new AsyncMethodData
-                {
-                    Kind = AsyncMethodKind.AsyncExplicitImpl,
-                    Signature = signature
-                };
-            }
-
             _metadataSignature = signature;
-            return (_metadataSignature = signature);
+            return _metadataSignature;
         }
 
         public override MethodSignature Signature
@@ -135,19 +100,6 @@ namespace Internal.TypeSystem.Ecma
                     Debug.Assert(_asyncMethodData.Kind == AsyncMethodKind.AsyncVariantImpl && _asyncMethodData.Signature is not null);
                     return _asyncMethodData.Signature;
                 }
-                return _metadataSignature;
-            }
-        }
-
-        /// <summary>
-        /// The method signature as defined in metadata, without any adjustments for async methods.
-        /// </summary>
-        public MethodSignature MetadataSignature
-        {
-            get
-            {
-                if (_metadataSignature == null)
-                    return InitializeSignature();
                 return _metadataSignature;
             }
         }
@@ -441,7 +393,28 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 if (_asyncMethodData.Equals(default(AsyncMethodData)))
+                {
                     InitializeSignature();
+                    bool returnsTask = _metadataSignature.ReturnsTaskOrValueTask();
+                    if (!returnsTask && !IsAsync)
+                    {
+                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.NotAsync, Signature = _metadataSignature };
+                    }
+                    else if (returnsTask && IsAsync)
+                    {
+                        var asyncSignature = _metadataSignature.CreateAsyncSignature();
+                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.AsyncVariantImpl, Signature = asyncSignature };
+                    }
+                    else if (returnsTask && !IsAsync)
+                    {
+                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.TaskReturning, Signature = _metadataSignature };
+                    }
+                    else
+                    {
+                        Debug.Assert(IsAsync && !returnsTask);
+                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.AsyncExplicitImpl, Signature = _metadataSignature };
+                    }
+                }
 
                 Debug.Assert(!_asyncMethodData.Equals(default(AsyncMethodData)));
                 return _asyncMethodData;

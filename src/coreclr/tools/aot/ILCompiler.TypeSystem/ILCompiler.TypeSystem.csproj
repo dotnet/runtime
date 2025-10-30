@@ -720,9 +720,6 @@
     <Compile Include="..\..\Common\TypeSystem\Sorting\TypeSystemComparer.cs">
       <Link>TypeSystem\Sorting\TypeSystemComparer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\AsyncMethodHelpers.cs">
-      <Link>TypeSystem\Common\AsyncMethodHelpers.cs</Link>
-    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -734,9 +731,5 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="tools\aot\Common\TypeSystem\Common\" />
   </ItemGroup>
 </Project>

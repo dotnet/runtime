@@ -51,7 +51,10 @@ namespace Internal.TypeSystem
             return _wrappedMethod.GetTypicalMethodDefinition();
         }
 
-        public override MethodDesc GetAsyncOtherVariant() => _wrappedMethod;
+        public override MethodDesc GetAsyncOtherVariant()
+        {
+            return _wrappedMethod;
+        }
 
         public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
@@ -67,9 +70,21 @@ namespace Internal.TypeSystem
             }
         }
 
-        public override string DiagnosticName => "Async thunk: " + _wrappedMethod.DiagnosticName;
+        public override string DiagnosticName
+        {
+            get
+            {
+                return "Async thunk: " + _wrappedMethod.DiagnosticName;
+            }
+        }
 
-        protected internal override int ClassCode => 0x554d08b9;
+        protected internal override int ClassCode
+        {
+            get
+            {
+                return 0x554d08b9;
+            }
+        }
 
         protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
