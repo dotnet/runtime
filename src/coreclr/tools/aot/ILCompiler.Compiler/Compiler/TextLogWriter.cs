@@ -9,6 +9,7 @@ namespace ILCompiler
     public class TextLogWriter : ILogWriter
     {
         private TextWriter _writer;
+        private bool _hasLoggedErrors;
 
         public TextLogWriter(TextWriter writer)
         {
@@ -27,7 +28,10 @@ namespace ILCompiler
 
         public void WriteError(MessageContainer error)
         {
+            _hasLoggedErrors = true;
             _writer.WriteLine(error.ToMSBuildString());
         }
+
+        public bool HasLoggedErrors => _hasLoggedErrors;
     }
 }

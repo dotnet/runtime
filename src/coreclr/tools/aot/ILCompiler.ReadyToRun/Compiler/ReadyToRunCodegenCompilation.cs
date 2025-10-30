@@ -400,6 +400,11 @@ namespace ILCompiler
 
             nodes = _fileLayoutOptimizer.ApplyProfilerGuidedMethodSort(nodes);
 
+            // If errors were produced (including warnings treated as errors), don't write the output file
+            // to avoid misleading build systems into thinking the compilation succeeded.
+            if (Logger.HasLoggedErrors)
+                return;
+
             using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
                 NodeFactory.SetMarkingComplete();

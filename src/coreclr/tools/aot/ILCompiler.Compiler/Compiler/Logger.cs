@@ -41,6 +41,8 @@ namespace ILCompiler
 
         public bool IsVerbose { get; }
 
+        public bool HasLoggedErrors => _logWriter.HasLoggedErrors;
+
         public Logger(
             ILogWriter writer,
             ILProvider ilProvider,
