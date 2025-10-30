@@ -16,7 +16,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 
 .class public auto ansi arglist_pos extends [mscorlib]System.Object
@@ -29,18 +28,29 @@
     arglist
     call       instance void [mscorlib]System.ArgIterator::.ctor(value class [mscorlib]System.RuntimeArgumentHandle)
     ldloca.s   args
-	call       instance int32 [mscorlib]System.ArgIterator::GetRemainingCount()
+    call       instance int32 [mscorlib]System.ArgIterator::GetRemainingCount()
     call       void [System.Console]System.Console::WriteLine(int32)
     ret
   }
 
   .method public hidebysig static int32 Main() il managed
   {
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
-        type([TestLibrary]TestLibrary.PlatformDetection)
-        string[1] ('IsVarArgSupported')
-    }
-	.entrypoint
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+    )
+    .entrypoint
+    call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsVarArgSupported()
+    brtrue.s   DoTest
+    ldc.i4     100
+    ret
+
+  DoTest:
+    call       int32 arglist_pos::TestEntry()
+    ret
+  }
+
+  .method public hidebysig static int32 TestEntry() il managed
+  {
 	.try
 	{
 		call       vararg void arglist_pos::Test()

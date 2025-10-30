@@ -13,17 +13,28 @@
 .assembly ASSEMBLY_NAME
 { }
 .assembly extern xunit.core {}
-.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 .class public auto ansi Test_u_array_merge_Target_32BIT extends [mscorlib]System.Object
 {
 .method public hidebysig static int32 Main() il managed
 {
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
-        type([TestLibrary]TestLibrary.PlatformDetection)
-        string[1] ('Is32BitProcess')
-    }
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		01 00 00 00
+	)
 	.entrypoint
+	.maxstack  1
+	call       bool [TestLibrary]TestLibrary.PlatformDetection::get_Is32BitProcess()
+	brtrue.s   DoTest
+	ldc.i4     100
+	ret
+
+DoTest:
+	call       int32 Test_u_array_merge_Target_32BIT::Test()
+	ret
+}
+
+.method public hidebysig static int32 Test() il managed
+{
 	.maxstack  8
 	.locals (unsigned int32[0...], native unsigned int[0...], native unsigned int, native unsigned int)
 	ldc.i4 16
@@ -110,7 +121,7 @@ end_c:
 	
 	ldc.i4 0x64
 	ret
-} // end of method 'Test::Main'
+} // end of method 'Test::Test'
 
 .method public hidebysig specialname rtspecialname 
         instance void .ctor() il managed

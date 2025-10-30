@@ -4,7 +4,6 @@
 .assembly extern legacy library mscorlib {}
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern xunit.core {}
-.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern System.Console
 {
@@ -27,13 +26,25 @@
 } // end of global method 'foo'
 
 .class public auto ansi Test_b30838 extends [mscorlib] System.Object {
-.method public static int32 main() il managed
+.method public static int32 Main() il managed
 {
-  .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
-      type([TestLibrary]TestLibrary.PlatformDetection)
-      string[1] ('IsVarArgSupported')
-  }
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+  )
   .entrypoint
+  .maxstack  1
+  call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsVarArgSupported()
+  brtrue.s   DoTest
+  ldc.i4     100
+  ret
+
+DoTest:
+  call       int32 Test_b30838::Test()
+  ret
+}
+
+.method public static int32 Test() il managed
+{
   // Code size       19 (0x13)
   .maxstack  8
   IL_0000:  ldnull
@@ -45,7 +56,7 @@
 ldc.i4 100
 add
   IL_0012:  ret
-} // end of global method 'main'
+} // end of global method 'Test'
 }
 
 //*********** DISASSEMBLY COMPLETE ***********************

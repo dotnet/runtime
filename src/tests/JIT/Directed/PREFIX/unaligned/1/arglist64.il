@@ -92,12 +92,25 @@ REALLYDONE:
 // Entry point - Main     -
 //-------------------------
 .class public auto ansi arglist64 {
-.method public static int32 main() {
-.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
-    type([TestLibrary]TestLibrary.PlatformDetection)
-    string[2] ('IsVarArgSupported' 'Is64BitProcess')
-}
+.method public static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
+.maxstack	2
+	call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsVarArgSupported()
+	call       bool [TestLibrary]TestLibrary.PlatformDetection::get_Is64BitProcess()
+	and
+	brtrue.s   DoTest
+	ldc.i4     100
+	ret
+
+DoTest:
+	call       int32 arglist64::Test()
+	ret
+}
+
+.method public static int32 Test() {
 .locals	()
 .maxstack	10
 

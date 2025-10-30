@@ -6,7 +6,6 @@
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
-.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
 .namespace JitTest_sizeof32_Target_32Bit_x86_il
@@ -39,11 +38,24 @@
     .method public hidebysig static int32
             Main() cil managed
     {
-      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
-          type([TestLibrary]TestLibrary.PlatformDetection)
-          string[1] ('IsX86Process')
-      }
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+      )
       .entrypoint
+      .maxstack 1
+      call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsX86Process()
+      brtrue.s   DoTest
+      ldc.i4     100
+      ret
+
+DoTest:
+      call       int32 JitTest_sizeof32_Target_32Bit_x86_il.Test::Test()
+      ret
+    }
+
+    .method public hidebysig static int32
+            Test() cil managed
+    {
       .maxstack  4
       .locals (int32 V_0,
                int32 V_1,

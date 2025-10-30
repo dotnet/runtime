@@ -5,7 +5,6 @@
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern xunit.core {}
 .assembly 'b409748' { }
-.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 
 .method public static vararg void Foo(int32)
@@ -13,14 +12,25 @@
    ret
 }
 .class public auto ansi Test_b409748 extends [mscorlib] System.Object {
-.method public static int32 Exec()
+.method public static int32 Main()
 {
-   .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
-       type([TestLibrary]TestLibrary.PlatformDetection)
-       string[1] ('IsVarArgSupported')
-   }
+   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+   )
    .entrypoint
+   .maxstack  1
+   call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsVarArgSupported()
+   brtrue.s   DoTest
+   ldc.i4     100
+   ret
 
+DoTest:
+   call       int32 Test_b409748::Test()
+   ret
+}
+
+.method public static int32 Test() il managed
+{
    ldc.i4 1
    call mdtoken(0x06000001)
 

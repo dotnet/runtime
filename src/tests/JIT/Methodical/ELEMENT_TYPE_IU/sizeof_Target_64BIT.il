@@ -18,7 +18,6 @@
 {
 }
 .assembly extern xunit.core {}
-.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 // MVID: {BCA6096F-DF11-4FA3-BF16-EEDA01729535}
 .namespace AvgTest_sizeof_Target_64BIT
@@ -28,13 +27,25 @@
   {
     .method public hidebysig static int32 Main() il managed
     {
-        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
-            type([TestLibrary]TestLibrary.PlatformDetection)
-            string[1] ('Is64BitProcess')
-        }
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+			01 00 00 00
+		)
 		.entrypoint
-		// Code size       48 (0x30)
+		.maxstack  1
+		call       bool [TestLibrary]TestLibrary.PlatformDetection::get_Is64BitProcess()
+		brtrue.s   DoTest
+		ldc.i4     100
+		ret
+
+	DoTest:
+		call       int32 AvgTest_sizeof_Target_64BIT.Test::Test()
+		ret
+	}
+
+    .method public hidebysig static int32 Test() il managed
+    {
 		.maxstack  5
+		.locals (int32[0...], native int[0...], native int, native int)
 		ldc.i4.8
 		ldc.i4.8
 		ldc.i4.8
@@ -63,7 +74,7 @@
 		ldc.i4.1
 	return:		
 		ret
-    } // end of method 'Test::Main'
+    } // end of method 'Test::Test'
 
     .method public hidebysig specialname rtspecialname 
             instance void .ctor() il managed

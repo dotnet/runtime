@@ -16,7 +16,6 @@
 {
 }
 .assembly extern xunit.core {}
-.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace JitTest_seq_refany_il
 {
@@ -116,11 +115,22 @@
 
     .method public hidebysig static int32 Main() il managed
     {
-        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
-            type([TestLibrary]TestLibrary.PlatformDetection)
-            string[1] ('IsVarArgSupported')
-        }
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+			01 00 00 00
+		)
 		.entrypoint
+		.maxstack  1
+		call       bool [TestLibrary]TestLibrary.PlatformDetection::get_IsVarArgSupported()
+		brtrue.s   DoTest
+		ldc.i4     100
+		ret
+
+DoTest:
+		call       int32 JitTest_seq_refany_il.Test::Test()
+		ret
+	}
+
+	.method public static int32 Test() {
 		.maxstack  8
 		.locals (unsigned int64)
 		ldc.i4.0
@@ -128,7 +138,7 @@
 		dup
 		tail. call vararg native unsigned int JitTest_seq_refany_il.Test::TestFunc(unsigned int64, ..., unsigned int64)
 		ret
-    } // end of method Test::Main
+    } // end of method Test::Test
 
     .method public hidebysig specialname rtspecialname instance void .ctor() il managed
     {
