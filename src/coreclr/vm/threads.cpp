@@ -2973,11 +2973,7 @@ DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout
     }
     CONTRACTL_END;
 
-    DWORD ret = 0;
-
-    DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
-
-    return ret;
+    return DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
 }
 
 
