@@ -44,9 +44,8 @@
     <EnabledGenerators Include="EventSourceGenerator"
                        Condition="'$(IsSourceProject)' == 'true' and
                                  '$(MSBuildProjectExtension)' == '.csproj' and
-                                 (
-                                     '$(DisableImplicitFrameworkReferences)' == 'true'
-                                 )" />
+                                 '$(DisableImplicitFrameworkReferences)' == 'true'
+                                 " />
   </ItemGroup>
 
   <ItemGroup Condition="'@(EnabledGenerators)' != '' and
