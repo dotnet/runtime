@@ -504,6 +504,7 @@ class StubLinkStubManager : public StubManager
 #endif
 } ;
 
+#if defined(TARGET_IA64) || defined(TARGET_AMD64)
 //
 // Stub manager for jump stubs created by ExecutionManager::jumpStub()
 // These are currently used only on the 64-bit targets IA64 and AMD64
@@ -542,6 +543,7 @@ class JumpStubStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("JumpStub"); }
 #endif
 };
+#endif // TARGET_IA64 || TARGET_AMD64
 
 //
 // Stub manager for code sections. It forwards the query to the more appropriate

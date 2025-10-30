@@ -129,13 +129,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
     return true;
 }
 
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    PORTABILITY_ASSERT("decodeBackToBackJump is not implemented on wasm");
-    return 0;
-}
-
 FORCEINLINE int64_t PalInterlockedCompareExchange64(_Inout_ int64_t volatile *pDst, int64_t iValue, int64_t iComparand)
 {
     int64_t result = __sync_val_compare_and_swap(pDst, iComparand, iValue);
