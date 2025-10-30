@@ -975,8 +975,7 @@ void ValidateEmittedSequenceTermination(InterpInst *lastIns)
         (lastIns->opcode == INTOP_CALLVIRT_TAIL) ||
         (lastIns->opcode == INTOP_RETHROW) ||
         (lastIns->opcode == INTOP_LEAVE_FILTER) ||
-        (lastIns->opcode == INTOP_LEAVE_CATCH) ||
-        (lastIns->opcode == INTOP_JMP))
+        (lastIns->opcode == INTOP_LEAVE_CATCH))
     {
         // Valid terminating instruction
         return;
