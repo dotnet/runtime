@@ -31,6 +31,7 @@ endianness.  The types `nint`, `nuint` and `pointer` have target architecture po
 The data descriptor consists of:
 * a collection of type structure descriptors
 * a collection of global value descriptors
+* an optional collection of pointers to sub-descriptors
 
 ## Types
 
@@ -92,6 +93,15 @@ The value must be an integral constant within the range of its type.  Signed val
 natural encoding.  Pointer values need not be aligned and need not point to addressable target
 memory.
 
+## Sub-descriptor descriptors
+
+Each sub-descriptor descriptor is effectively a global with a type of `pointer`. They will consist of:
+* a name
+* a pointer value
+
+If the value is non-null, the pointer points to another [contract descriptor](contract-descriptor.md#contract-descriptor-1).
+
+When parsing a data descriptor with sub-descriptors each sub-descriptor should be parsed then its type, global, and contract values should be merged in. If any conflicts arise when merging in sub-descriptor data, this is an error and behavior is undefined.
 
 ## Physical descriptors
 
@@ -129,6 +139,7 @@ The toplevel dictionary will contain:
 * optional `"baseline": "BASELINE_ID"` see below
 * `"types": TYPES_DESCRIPTOR` see below
 * `"globals": GLOBALS_DESCRIPTOR` see below
+* optional `"sub-descriptors": SUB_DESCRIPTORS_DESCRIPTOR` see below
 
 Additional toplevel keys may be present. For example, the in-memory data descriptor will contain a
 `"contracts"` key (see [contract descriptor](./contract_descriptor.md#Compatible_contracts)) for the
@@ -233,7 +244,9 @@ Note that a two element array is unambiguously "type and value", whereas a one-e
 unambiguously "indirect value".
 
 
-**Both formats**
+### Sub-descriptor Values
+
+Sub-descriptor values will be an additional array, with the same specification as [global values](#Global-values) with the exception that the only valid value type is a `pointer`.
 
 #### Specification Appendix
 
@@ -284,7 +297,7 @@ string.  For pointers, the address can be stored at a known offset in an in-proc
 array of pointers and the offset written into the constant JSON string.
 
 The indirection array is not part of the data descriptor spec.  It is part of the [contract
-descriptor](./contract_descriptor.md#Contract_descriptor).
+descriptor](./contract-descriptor.md#Contract_descriptor).
 
 
 ## Example
@@ -345,6 +358,10 @@ The following is an example of an in-memory descriptor that references the above
     "FEATURE_COMINTEROP": 0,
     "s_pThreadStore": [ 0 ], // indirect from aux data offset 0
     "RuntimeID": "windows-x64"
+  },
+  "sub-descriptors": 
+  {
+    "GC": [ 1 ] // indirect from aux data offset 1
   }
 }
 ```

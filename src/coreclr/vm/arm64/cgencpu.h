@@ -501,9 +501,7 @@ public:
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
-#if defined(FEATURE_SHARE_GENERIC_CODE)
     void EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
-#endif // FEATURE_SHARE_GENERIC_CODE
 
     void EmitMovConstant(IntReg target, UINT64 constant);
     void EmitJumpRegister(IntReg regTarget);
