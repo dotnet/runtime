@@ -653,8 +653,27 @@ namespace ILCompiler.ObjectWriter
                 factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
                 new ElfObjectWriter(factory, options);
 
-            using Stream outputFileStream = new FileStream(objectFilePath, FileMode.Create);
-            objectWriter.EmitObject(outputFileStream, nodes, dumper, logger);
+            using (Stream outputFileStream = new FileStream(objectFilePath, FileMode.Create))
+            {
+                objectWriter.EmitObject(outputFileStream, nodes, dumper, logger);
+            }
+
+#if !READYTORUN
+            // If errors were produced (including warnings treated as errors), delete the output file
+            // to avoid misleading build systems into thinking the compilation succeeded.
+            if (logger.HasLoggedErrors)
+            {
+                try
+                {
+                    File.Delete(objectFilePath);
+                }
+                catch
+                {
+                    // If we can't delete the file, there's not much we can do.
+                    // The compilation will still fail due to logged errors.
+                }
+            }
+#endif
 
             stopwatch.Stop();
             if (logger.IsVerbose)

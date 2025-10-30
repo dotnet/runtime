@@ -713,6 +713,23 @@ namespace ILCompiler
 
             preinitManager.LogStatistics(logger);
 
+            // If errors were produced (including warnings treated as errors), delete the output file
+            // to avoid misleading build systems into thinking the compilation succeeded.
+            // This catches any errors logged after object writing (e.g., from typeSystemContext.LogWarnings).
+            if (logger.HasLoggedErrors)
+            {
+                try
+                {
+                    if (File.Exists(outputFilePath))
+                        File.Delete(outputFilePath);
+                }
+                catch
+                {
+                    // If we can't delete the file, there's not much we can do.
+                    // The compilation will still fail due to logged errors.
+                }
+            }
+
             return 0;
         }
 

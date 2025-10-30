@@ -106,11 +106,6 @@ namespace ILCompiler
 
             NodeFactory.SetMarkingComplete();
 
-            // If errors were produced (including warnings treated as errors), don't write the output file
-            // to avoid misleading build systems into thinking the compilation succeeded.
-            if (Logger.HasLoggedErrors)
-                return;
-
             ObjectWritingOptions options = ObjectWritingOptions.GenerateUnwindInfo;
             if ((_compilationOptions & RyuJitCompilationOptions.UseDwarf5) != 0)
                 options |= ObjectWritingOptions.UseDwarf5;
