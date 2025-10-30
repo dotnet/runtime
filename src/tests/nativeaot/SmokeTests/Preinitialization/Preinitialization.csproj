@@ -4,6 +4,8 @@
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- Test infra doesn't bundle libc++_shared.so in apk: https://github.com/dotnet/runtime/issues/121210 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
 
     <!--
       We rely on reflection metadata for .cctor to detect if a type was preinitialized

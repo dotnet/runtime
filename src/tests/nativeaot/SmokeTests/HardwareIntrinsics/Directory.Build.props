@@ -1,0 +1,8 @@
+<Project>
+  <Import Project="..\..\Directory.Build.props" />
+  
+  <PropertyGroup>
+    <!-- Environment.ProcessPath is app_process64 on android -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+</Project>
