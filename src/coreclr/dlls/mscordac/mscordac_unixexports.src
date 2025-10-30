@@ -77,7 +77,6 @@ nativeStringResourceTable_mscorrc
 #FormatMessageW
 #FreeEnvironmentStringsW
 #FreeLibrary
-#FileTimeToSystemTime
 #GetCurrentProcess
 #GetCurrentProcessId
 #GetCurrentThreadId
@@ -91,8 +90,6 @@ nativeStringResourceTable_mscorrc
 #GetProcAddress
 #GetStdHandle
 #GetSystemInfo
-#GetSystemTime
-#GetSystemTimeAsFileTime
 #GetTempPathA
 #GetTempPathW
 #LoadLibraryExA

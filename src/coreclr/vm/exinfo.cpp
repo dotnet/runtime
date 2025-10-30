@@ -324,8 +324,7 @@ ExInfo::ExInfo(Thread *pThread, EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pEx
     m_propagateExceptionContext(NULL),
 #endif // HOST_UNIX
     m_CurrentClause({}),
-    m_pMDToReportFunctionLeave(NULL),
-    m_lastReportedFunclet({0, 0, 0})
+    m_pMDToReportFunctionLeave(NULL)
 #ifdef HOST_WINDOWS
     , m_pLongJmpBuf(NULL),
     m_longJmpReturnValue(0)
@@ -464,7 +463,7 @@ void ExInfo::MakeCallbacksRelatedToHandler(
         }
         m_EHClauseInfo.SetInfo(COR_PRF_CLAUSE_NONE, (UINT_PTR)dwHandlerStartPC, sfToStore);
 
-        if (pMD->IsILStub())
+        if (pMD->IsDiagnosticsHidden())
         {
             return;
         }
@@ -499,7 +498,7 @@ void ExInfo::MakeCallbacksRelatedToHandler(
     }
     else
     {
-        if (pMD->IsILStub())
+        if (pMD->IsDiagnosticsHidden())
         {
             return;
         }

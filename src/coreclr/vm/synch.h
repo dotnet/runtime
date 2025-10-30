@@ -14,9 +14,6 @@ enum WaitMode
     WaitMode_Alertable = 0x1,         // Can be waken by APC.  May pumping message.
 };
 
-
-struct PendingSync;
-
 class CLREventBase
 {
 public:
@@ -35,9 +32,6 @@ public:
     BOOL CreateAutoEventNoThrow(BOOL bInitialState);
     BOOL CreateManualEventNoThrow(BOOL bInitialState);
 
-    void CreateMonitorEvent(SIZE_T Cookie); // robust against initialization races - for exclusive use by AwareLock
-
-
     // Create an Event that is not host aware
     void CreateOSAutoEvent (BOOL bInitialState);
     void CreateOSManualEvent (BOOL bInitialState);
@@ -54,12 +48,6 @@ public:
         return m_handle != INVALID_HANDLE_VALUE;
     }
 
-    BOOL IsMonitorEventAllocated()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwFlags & CLREVENT_FLAGS_MONITOREVENT_ALLOCATED;
-    }
-
 #ifndef DACCESS_COMPILE
     HANDLE GetHandleUNHOSTED() {
         LIMITED_METHOD_CONTRACT;
@@ -68,10 +56,9 @@ public:
 #endif // DACCESS_COMPILE
 
     BOOL Set();
-    void SetMonitorEvent(); // robust against races - for exclusive use by AwareLock
     BOOL Reset();
-    DWORD Wait(DWORD dwMilliseconds, BOOL bAlertable, PendingSync *syncState=NULL);
-    DWORD WaitEx(DWORD dwMilliseconds, WaitMode mode, PendingSync *syncState=NULL);
+    DWORD Wait(DWORD dwMilliseconds, BOOL bAlertable);
+    DWORD WaitEx(DWORD dwMilliseconds, WaitMode mode);
 
 protected:
     HANDLE m_handle;
@@ -81,10 +68,6 @@ private:
     {
         CLREVENT_FLAGS_AUTO_EVENT = 0x0001,
         CLREVENT_FLAGS_OS_EVENT = 0x0002,
-        CLREVENT_FLAGS_IN_DEADLOCK_DETECTION = 0x0004,
-
-        CLREVENT_FLAGS_MONITOREVENT_ALLOCATED = 0x0008,
-        CLREVENT_FLAGS_MONITOREVENT_SIGNALLED = 0x0010,
 
         CLREVENT_FLAGS_STATIC = 0x0020,
 
@@ -106,13 +89,6 @@ private:
         LIMITED_METHOD_CONTRACT;
         // cannot use `|=' operator on `Volatile<DWORD>'
         m_dwFlags = m_dwFlags | CLREVENT_FLAGS_OS_EVENT;
-    }
-    BOOL IsInDeadlockDetection() { LIMITED_METHOD_CONTRACT; return m_dwFlags & CLREVENT_FLAGS_IN_DEADLOCK_DETECTION; }
-    void SetInDeadlockDetection ()
-    {
-        LIMITED_METHOD_CONTRACT;
-        // cannot use `|=' operator on `Volatile<DWORD>'
-        m_dwFlags = m_dwFlags | CLREVENT_FLAGS_IN_DEADLOCK_DETECTION;
     }
 };
 

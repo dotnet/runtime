@@ -26,6 +26,15 @@ namespace Internal.Runtime.CompilerServices
             return Reader.GetString(method.Name);
         }
 
+        public ReadOnlySpan<byte> Name
+        {
+            get
+            {
+                Method method = Reader.GetMethod(Handle);
+                return Reader.ReadStringAsBytes(method.Name);
+            }
+        }
+
         public override bool Equals(object? compare)
         {
             if (compare == null)

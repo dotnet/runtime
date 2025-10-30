@@ -538,6 +538,7 @@ ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecode
 #define StubPrecodeData__SecretParam 0x00
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
+#ifdef FEATURE_TIERED_COMPILATION
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
 
@@ -546,6 +547,7 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x10
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+#endif // FEATURE_TIERED_COMPILATION
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 #define OFFSETOF__InterfaceDispatchCache__m_rgEntries 0x20
@@ -567,9 +569,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadLocalInfo__m_pThread == offsetof(ThreadLoc
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterpMethod__pCallStub == offsetof(InterpMethod, pCallStub))
 
 #ifdef TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xb50
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xb08
 #else // TARGET_UNIX
-#define OFFSETOF__Thread__m_pInterpThreadContext 0xba8
+#define OFFSETOF__Thread__m_pInterpThreadContext 0xb60
 #endif // TARGET_UNIX
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pInterpThreadContext == offsetof(Thread, m_pInterpThreadContext))
 

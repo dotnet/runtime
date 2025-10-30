@@ -133,10 +133,7 @@ namespace System.Data.OleDb
         internal override void SetConnectionPoolGroup(DbConnection outerConnection, DbConnectionPoolGroup poolGroup)
         {
             OleDbConnection? c = (outerConnection as OleDbConnection);
-            if (null != c)
-            {
-                c.PoolGroup = poolGroup;
-            }
+            c?.PoolGroup = poolGroup;
         }
 
         internal override void SetInnerConnectionEvent(DbConnection owningObject, DbConnectionInternal to)

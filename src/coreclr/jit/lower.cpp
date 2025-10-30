@@ -2030,6 +2030,7 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
         // The this parameter is always passed in registers, so we can ignore it.
         unsigned argIndex = call->gtArgs.CountUserArgs() - 1;
         assert(call->gtArgs.CountUserArgs() == comp->info.compILargsCount);
+        bool checkForUnmanagedThisArg = call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall;
         for (CallArg& arg : call->gtArgs.Args())
         {
             if (!arg.IsUserArg())
@@ -2037,10 +2038,10 @@ void Lowering::LowerSpecialCopyArgs(GenTreeCall* call)
                 continue;
             }
 
-            if (call->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall &&
-                argIndex == call->gtArgs.CountUserArgs() - 1)
+            if (checkForUnmanagedThisArg && argIndex == call->gtArgs.CountUserArgs() - 1)
             {
                 assert(arg.GetNode()->OperIs(GT_PUTARG_REG));
+                checkForUnmanagedThisArg = false;
                 continue;
             }
 
@@ -2126,7 +2127,7 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
 
     // Finally move all GT_PUTARG_* nodes
     // Re-use the existing logic for CFG call args here
-    MoveCFGCallArgs(call);
+    MovePutArgNodesUpToCall(call);
 
     BlockRange().Remove(destPlaceholder);
     BlockRange().Remove(srcPlaceholder);
@@ -2898,13 +2899,24 @@ GenTree* Lowering::LowerCall(GenTree* node)
     if (call->IsTailCallViaJitHelper())
     {
         // Either controlExpr or gtCallAddr must contain real call target.
-        if (controlExpr == nullptr)
+        if (controlExpr != nullptr)
         {
+            // Link controlExpr into the IR before the call.
+            // The callTarget tree needs to be sequenced.
+            LIR::Range callTargetRange = LIR::SeqTree(comp, controlExpr);
+            ContainCheckRange(callTargetRange);
+            BlockRange().InsertBefore(call, std::move(callTargetRange));
+        }
+        else
+        {
+            // gtCallAddr is already sequenced and just before the call.
             assert(call->gtCallType == CT_INDIRECT);
             assert(call->gtCallAddr != nullptr);
             controlExpr = call->gtCallAddr;
         }
 
+        // LowerTailCallViaJitHelper will turn the control expr
+        // into an arg and produce a new control expr for the helper call.
         controlExpr = LowerTailCallViaJitHelper(call, controlExpr);
     }
 
@@ -3175,10 +3187,6 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     assert(!comp->opts.IsReversePInvoke());                  // tail calls reverse pinvoke
     assert(!call->IsUnmanaged());                            // tail calls to unamanaged methods
     assert(!comp->compLocallocUsed);                         // tail call from methods that also do localloc
-
-#ifdef TARGET_AMD64
-    assert(!comp->getNeedsGSSecurityCookie()); // jit64 compat: tail calls from methods that need GS check
-#endif                                         // TARGET_AMD64
 
     // We expect to see a call that meets the following conditions
     assert(call->IsFastTailCall());
@@ -3471,21 +3479,6 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(call));
     }
 
-    // Remove gtCallAddr from execution order if present.
-    if (call->gtCallType == CT_INDIRECT)
-    {
-        assert(call->gtCallAddr != nullptr);
-
-        bool               isClosed;
-        LIR::ReadOnlyRange callAddrRange = BlockRange().GetTreeRange(call->gtCallAddr, &isClosed);
-        assert(isClosed);
-
-        BlockRange().Remove(std::move(callAddrRange));
-    }
-
-    // The callTarget tree needs to be sequenced.
-    LIR::Range callTargetRange = LIR::SeqTree(comp, callTarget);
-
     // Verify the special args are what we expect, and replace the dummy args with real values.
     // We need to figure out the size of the outgoing stack arguments, not including the special args.
     // The number of 4-byte words is passed to the helper for the incoming and outgoing argument sizes.
@@ -3502,9 +3495,6 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     CallArg* argEntry = call->gtArgs.GetArgByIndex(numArgs - 1);
     assert(argEntry != nullptr);
     GenTree* arg0 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
-
-    ContainCheckRange(callTargetRange);
-    BlockRange().InsertAfter(arg0, std::move(callTargetRange));
 
     bool               isClosed;
     LIR::ReadOnlyRange secondArgRange = BlockRange().GetTreeRange(arg0, &isClosed);
@@ -3538,6 +3528,9 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     GenTree* arg3 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
     assert(arg3->OperIs(GT_CNS_INT));
 #endif // DEBUG
+
+    // Now reorder so all the putargs are just before the call.
+    MovePutArgNodesUpToCall(call);
 
     // Transform this call node into a call to Jit tail call helper.
     call->gtCallType    = CT_HELPER;
@@ -3707,7 +3700,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             LowerNode(regNode);
 
             // Finally move all GT_PUTARG_* nodes
-            MoveCFGCallArgs(call);
+            MovePutArgNodesUpToCall(call);
             break;
         }
         case CFGCallKind::Dispatch:
@@ -3803,12 +3796,12 @@ bool Lowering::IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive
 }
 
 //------------------------------------------------------------------------
-// MoveCFGCallArg: Given a call that will be CFG transformed using the
-// validate+call scheme, and an argument GT_PUTARG_* or GT_FIELD_LIST node,
+// MovePutArgUpToCall: Given a call that will be transformed using the
+// CFG validate+call or similar scheme, and an argument GT_PUTARG_* or GT_FIELD_LIST node,
 // move that node right before the call.
 //
 // Arguments:
-//    call - The call that is being CFG transformed
+//    call - The call that is being transformed
 //    node - The argument node
 //
 // Remarks:
@@ -3817,7 +3810,7 @@ bool Lowering::IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive
 //    are not always safe to move further ahead; for invariant operands, we
 //    move them ahead as well to shorten the lifetime of these values.
 //
-void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
+void Lowering::MovePutArgUpToCall(GenTreeCall* call, GenTree* node)
 {
     assert(node->OperIsPutArg() || node->OperIsFieldList());
 
@@ -3827,7 +3820,7 @@ void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
         for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
         {
             assert(operand.GetNode()->OperIsPutArg());
-            MoveCFGCallArg(call, operand.GetNode());
+            MovePutArgUpToCall(call, operand.GetNode());
         }
     }
     else
@@ -3855,30 +3848,29 @@ void Lowering::MoveCFGCallArg(GenTreeCall* call, GenTree* node)
 }
 
 //------------------------------------------------------------------------
-// MoveCFGCallArgs: Given a call that will be CFG transformed using the
-// validate+call scheme, move all GT_PUTARG_* or GT_FIELD_LIST nodes right before the call.
+// MovePutArgNodesUpToCall: Move all GT_PUTARG_* or GT_FIELD_LIST nodes right before the call.
 //
 // Arguments:
-//    call - The call that is being CFG transformed
+//    call - The call that is being transformed
 //
 // Remarks:
-//    See comments in MoveCFGCallArg for more details.
+//    See comments in MovePutArgUpToCall for more details.
 //
-void Lowering::MoveCFGCallArgs(GenTreeCall* call)
+void Lowering::MovePutArgNodesUpToCall(GenTreeCall* call)
 {
     // Finally move all GT_PUTARG_* nodes
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* node = arg.GetEarlyNode();
         assert(node->OperIsPutArg() || node->OperIsFieldList());
-        MoveCFGCallArg(call, node);
+        MovePutArgUpToCall(call, node);
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         GenTree* node = arg.GetLateNode();
         assert(node->OperIsPutArg() || node->OperIsFieldList());
-        MoveCFGCallArg(call, node);
+        MovePutArgUpToCall(call, node);
     }
 }
 
@@ -4127,7 +4119,37 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     GenTree*       op1 = cmp->gtGetOp1();
     GenTreeIntCon* op2 = cmp->gtGetOp2()->AsIntCon();
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+
+    // If 'test' is a single bit test, leaves the tested expr in the left op, the bit index in the right op, and returns
+    // true. Otherwise, returns false.
+    auto tryReduceSingleBitTestOps = [this](GenTreeOp* test) -> bool {
+        assert(test->OperIs(GT_AND, GT_TEST_EQ, GT_TEST_NE));
+        GenTree* testedOp = test->gtOp1;
+        GenTree* bitOp    = test->gtOp2;
+#ifdef TARGET_RISCV64
+        if (bitOp->IsIntegralConstUnsignedPow2())
+        {
+            INT64 bit  = bitOp->AsIntConCommon()->IntegralValue();
+            int   log2 = BitOperations::Log2((UINT64)bit);
+            bitOp->AsIntConCommon()->SetIntegralValue(log2);
+            return true;
+        }
+#endif
+        if (!bitOp->OperIs(GT_LSH))
+            std::swap(bitOp, testedOp);
+
+        if (bitOp->OperIs(GT_LSH) && varTypeIsIntOrI(bitOp) && bitOp->gtGetOp1()->IsIntegralConst(1))
+        {
+            BlockRange().Remove(bitOp->gtGetOp1());
+            BlockRange().Remove(bitOp);
+            test->gtOp1 = testedOp;
+            test->gtOp2 = bitOp->gtGetOp2();
+            return true;
+        }
+        return false;
+    };
+
     ssize_t op2Value = op2->IconValue();
 
 #ifdef TARGET_XARCH
@@ -4165,6 +4187,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             bool removeCast =
 #ifdef TARGET_ARM64
                 (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) && !castOp->isContained() &&
+#elif defined(TARGET_RISCV64)
+                false && // disable, comparisons and bit operations are full-register only
 #endif
                 (castOp->OperIs(GT_LCL_VAR, GT_CALL, GT_OR, GT_XOR, GT_AND)
 #ifdef TARGET_XARCH
@@ -4222,6 +4246,52 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
         }
 
+#ifdef TARGET_RISCV64
+        if (op2Value == 0 && !andOp2->isContained() && tryReduceSingleBitTestOps(op1->AsOp()))
+        {
+            GenTree* testedOp   = op1->gtGetOp1();
+            GenTree* bitIndexOp = op1->gtGetOp2();
+
+            if (bitIndexOp->IsIntegralConst())
+            {
+                // Shift the tested bit into the sign bit, then check if negative/positive.
+                // Work on whole registers because comparisons and compressed shifts are full-register only.
+                INT64 bitIndex     = bitIndexOp->AsIntConCommon()->IntegralValue();
+                INT64 signBitIndex = genTypeSize(TYP_I_IMPL) * 8 - 1;
+                if (bitIndex < signBitIndex)
+                {
+                    bitIndexOp->AsIntConCommon()->SetIntegralValue(signBitIndex - bitIndex);
+                    bitIndexOp->SetContained();
+                    op1->SetOperRaw(GT_LSH);
+                    op1->gtType = TYP_I_IMPL;
+                }
+                else
+                {
+                    // The tested bit is the sign bit, remove "AND bitIndex" and only check if negative/positive
+                    assert(bitIndex == signBitIndex);
+                    assert(genActualType(testedOp) == TYP_I_IMPL);
+                    BlockRange().Remove(bitIndexOp);
+                    BlockRange().Remove(op1);
+                    cmp->AsOp()->gtOp1 = testedOp;
+                }
+
+                op2->gtType = TYP_I_IMPL;
+                cmp->SetOperRaw(cmp->OperIs(GT_NE) ? GT_LT : GT_GE);
+                cmp->ClearUnsigned();
+
+                return cmp;
+            }
+
+            // Shift the tested bit into the lowest bit, then AND with 1.
+            // The "EQ|NE 0" comparison is folded below as necessary.
+            var_types type     = genActualType(testedOp);
+            op1->AsOp()->gtOp1 = andOp1 = comp->gtNewOperNode(GT_RSH, type, testedOp, bitIndexOp);
+            op1->AsOp()->gtOp2 = andOp2 = comp->gtNewIconNode(1, type);
+            BlockRange().InsertBefore(op1, andOp1, andOp2);
+            andOp2->SetContained();
+        }
+#endif // TARGET_RISCV64
+
         // Optimizes (X & 1) != 0 to (X & 1)
         // Optimizes (X & 1) == 0 to ((NOT X) & 1)
         // (== 1 or != 1) cases are transformed to (!= 0 or == 0) above
@@ -4257,6 +4327,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         if (op2Value == 0)
         {
+#ifndef TARGET_RISCV64
             BlockRange().Remove(op1);
             BlockRange().Remove(op2);
 
@@ -4300,6 +4371,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 }
             }
 #endif
+#endif // !TARGET_RISCV64
         }
         else if (andOp2->IsIntegralConst() && GenTree::Compare(andOp2, op2))
         {
@@ -4328,31 +4400,15 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         // Note that BT has the same behavior as LSH when the bit index exceeds the
         // operand bit size - it uses (bit_index MOD bit_size).
         //
-
-        GenTree* lsh = cmp->AsOp()->gtOp1;
-        GenTree* op  = cmp->AsOp()->gtOp2;
-
-        if (!lsh->OperIs(GT_LSH))
-        {
-            std::swap(lsh, op);
-        }
-
-        if (lsh->OperIs(GT_LSH) && varTypeIsIntOrI(lsh) && lsh->gtGetOp1()->IsIntegralConst(1))
+        if (tryReduceSingleBitTestOps(cmp->AsOp()))
         {
             cmp->SetOper(cmp->OperIs(GT_TEST_EQ) ? GT_BITTEST_EQ : GT_BITTEST_NE);
-
-            BlockRange().Remove(lsh->gtGetOp1());
-            BlockRange().Remove(lsh);
-
-            cmp->AsOp()->gtOp1 = op;
-            cmp->AsOp()->gtOp2 = lsh->gtGetOp2();
             cmp->gtGetOp2()->ClearContained();
-
             return cmp->gtNext;
         }
     }
 #endif // TARGET_XARCH
-#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 
     // Optimize EQ/NE(relop/SETCC, 0) into (maybe reversed) cond.
     if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && (op1->OperIsCompare() || op1->OperIs(GT_SETCC)))
@@ -4378,9 +4434,12 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         }
     }
 
-    // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
+    // Optimize EQ/NE/GT/GE/LT/LE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
+    // For GT/GE/LT/LE don't allow ADD/SUB, runtime has to check for overflow.
     LIR::Use use;
-    if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag() &&
+    if (((cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag()) ||
+         (cmp->OperIs(GT_GT, GT_GE, GT_LT, GT_LE) && op2->IsIntegralConst(0) && !op1->OperIs(GT_ADD, GT_SUB) &&
+          op1->SupportsSettingResultFlags())) &&
         BlockRange().TryGetUse(cmp, &use) && IsProfitableToSetZeroFlag(op1))
     {
         op1->gtFlags |= GTF_SET_FLAGS;
@@ -4446,7 +4505,18 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
             cmp->gtFlags |= GTF_UNSIGNED;
         }
     }
-#endif // TARGET_XARCH
+#elif defined(TARGET_RISCV64)
+    if (varTypeUsesIntReg(cmp->gtGetOp1()))
+    {
+        if (GenTree* next = LowerSavedIntegerCompare(cmp); next != cmp)
+            return next;
+
+        // Integer comparisons are full-register only.
+        SignExtendIfNecessary(&cmp->AsOp()->gtOp1);
+        SignExtendIfNecessary(&cmp->AsOp()->gtOp2);
+    }
+#endif // TARGET_RISCV64
+
     ContainCheckCompare(cmp->AsOp());
     return cmp->gtNext;
 }
@@ -7724,7 +7794,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         {
             divMod->ChangeOper(GT_GE);
             divMod->gtFlags |= GTF_UNSIGNED;
-            ContainCheckNode(divMod);
+            LowerNode(divMod);
             return true;
         }
     }
@@ -9711,7 +9781,7 @@ bool Lowering::TryLowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 
     // Finally move all GT_PUTARG_* nodes
     // Re-use the existing logic for CFG call args here
-    MoveCFGCallArgs(call);
+    MovePutArgNodesUpToCall(call);
 
     BlockRange().Remove(destPlaceholder);
     BlockRange().Remove(sizePlaceholder);
@@ -9847,7 +9917,7 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
 
     // Finally move all GT_PUTARG_* nodes
     // Re-use the existing logic for CFG call args here
-    MoveCFGCallArgs(call);
+    MovePutArgNodesUpToCall(call);
 
     BlockRange().Remove(destPlaceholder);
     BlockRange().Remove(sizePlaceholder);

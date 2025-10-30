@@ -1,12 +1,18 @@
+import { mono_log_warn } from "./logging";
 import { isSharedArrayBuffer, localHeapViewU8 } from "./memory";
 
 // batchedQuotaMax is the max number of bytes as specified by the api spec.
 // If the byteLength of array is greater than 65536, throw a QuotaExceededError and terminate the algorithm.
 // https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues
 const batchedQuotaMax = 65536;
+let warnOnce = true;
 
-export function mono_wasm_browser_entropy (bufferPtr: number, bufferLength: number): number {
+export function SystemJS_RandomBytes (bufferPtr: number, bufferLength: number): number {
     if (!globalThis.crypto || !globalThis.crypto.getRandomValues) {
+        if (warnOnce) {
+            mono_log_warn("This engine doesn't support crypto.getRandomValues. Please use a modern version or provide polyfill for 'globalThis.crypto.getRandomValues'.");
+            warnOnce = false;
+        }
         return -1;
     }
 

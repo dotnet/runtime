@@ -177,8 +177,8 @@ namespace System
                         Debug.Assert(offset.Path >= offset.Host);
                     }
 
-                    Debug.Assert(offset.Query == 0);
-                    Debug.Assert(offset.Fragment == 0);
+                    // We can't check that Query and Fragment offsets are 0 here as a different thread may have called
+                    // ParseRemaining after we've checked InFact(Flags.AllUriInfoSet).
                 }
             }
             else
@@ -252,7 +252,7 @@ namespace System
             {
                 // For built-in (simple) parsers, it is safe to do an Interlocked update here
                 Debug.Assert(sizeof(Flags) == sizeof(ulong));
-                Interlocked.Or(ref Unsafe.As<Flags, ulong>(ref _flags), (ulong)flags);
+                Interlocked.Or(ref _flags, flags);
             }
             else
             {
@@ -3888,6 +3888,14 @@ namespace System
             if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host) &&
                 IPv6AddressHelper.IsValid(pString, start + 1, ref end))
             {
+                if (end < length && pString[end] is not (':' or '/' or '?' or '#'))
+                {
+                    // A valid IPv6 address wasn't followed by a valid delimiter (e.g. http://[::]extra).
+                    flags |= Flags.UnknownHostType;
+                    err = ParsingError.BadHostName;
+                    return idx;
+                }
+
                 flags |= Flags.IPv6HostType;
 
                 if (hasUnicode)

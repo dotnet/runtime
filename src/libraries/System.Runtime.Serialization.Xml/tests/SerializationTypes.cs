@@ -1121,6 +1121,38 @@ public class TypeWithDateTimeOffsetProperties
     public DateTimeOffset? NullableDTOWithDefault { get; set; }
 }
 
+public class TypeWithDateAndTimeOnlyProperties
+{
+    public const string DefaultDateString = "1969-07-20";
+    public const string DefaultTimeString = "20:17:40";
+
+    public DateOnly Today { get; set; }
+    [XmlElement(ElementName = "MyDate")]
+    public DateOnly CustomDate { get; set; }
+    [DefaultValue(typeof(DateOnly), DefaultDateString)]
+    public DateOnly DefaultDate { get; set; } = DateOnly.Parse(DefaultDateString);
+    public DateOnly? NullableDate { get; set; }
+    public DateOnly? NullableDateWithValue { get; set; }
+    [DefaultValue(typeof(DateOnly?), DefaultDateString)]
+    public DateOnly? NullableDefaultDate { get; set; }
+
+    public TimeOnly Now { get; set; }
+    [XmlElement(ElementName = "MyTime")]
+    public TimeOnly CustomTime { get; set; }
+    [DefaultValue(typeof(TimeOnly), DefaultTimeString)]
+    public TimeOnly DefaultTime { get; set; } = TimeOnly.Parse(DefaultTimeString);
+    public TimeOnly? NullableTime { get; set; }
+    public TimeOnly? NullableTimeWithValue { get; set; }
+    [DefaultValue(typeof(TimeOnly), DefaultTimeString)]
+    public TimeOnly? NullableDefaultTime { get; set; }
+}
+
+public class DateOnlyWrapper { public DateOnly TestValue { get; set; } }
+public class TimeOnlyWrapper { public TimeOnly TestValue { get; set; } }
+public class TimeOnlyAsXsdTimeWrapper { [XmlElement(DataType = "time")] public TimeOnly TestValue { get; set; } }
+public class DateTimeDateWrapper { [XmlElement(DataType = "date")] public DateTime TestValue { get; set; } }
+public class DateTimeTimeWrapper { [XmlElement(DataType = "time")] public DateTime TestValue { get; set; } }
+
 public class TypeWithTimeSpanProperty
 {
     public TimeSpan TimeSpanProperty;
@@ -1654,4 +1686,28 @@ public struct XElementStruct
 public class XElementArrayWrapper
 {
     public XElement[] xelements;
+}
+
+// Container used by tests to validate DateTimeOffset round-tripping when
+// serialized inside an IXmlSerializable type that internally leverages
+// DataContractSerializer (regression coverage).
+public class DateTimeOffsetIXmlSerializableContainer : IXmlSerializable
+{
+    public DateTimeOffset Date { get; set; }
+
+    public XmlSchema GetSchema() => null;
+
+    public void WriteXml(XmlWriter writer)
+    {
+        var innerSerializer = new DataContractSerializer(typeof(DateTimeOffset));
+        innerSerializer.WriteObject(writer, Date);
+    }
+
+    public void ReadXml(XmlReader reader)
+    {
+        var innerSerializer = new DataContractSerializer(typeof(DateTimeOffset));
+        reader.ReadStartElement();
+        Date = (DateTimeOffset)innerSerializer.ReadObject(reader);
+        reader.ReadEndElement();
+    }
 }
