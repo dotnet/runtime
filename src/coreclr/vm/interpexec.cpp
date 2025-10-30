@@ -725,6 +725,40 @@ static void CallPreStub(MethodDesc *pMD)
     PAL_ENDTRY
 }
 
+MethodDesc* CallGetMethodDescOfVirtualizedCode(MethodDesc *pMD, OBJECTREF *orThis)
+{
+    STATIC_STANDARD_VM_CONTRACT;
+    _ASSERTE(pMD != NULL);
+
+    struct Param
+    {
+        MethodDesc *pMD;
+        OBJECTREF *orThis;
+        MethodDesc *pRetMD;
+    }
+    param = { pMD, orThis, NULL };
+
+    PAL_TRY(Param *, pParam, &param)
+    {
+        pParam->pRetMD = pParam->pMD->GetMethodDescOfVirtualizedCode(pParam->orThis, pParam->pMD->GetMethodTable());
+    }
+    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    {
+        // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
+        // from the GetMethodDescOfVirtualizedCode call chain.
+        // We need to process only managed ones here, the C++ ones are handled by the
+        // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
+        // The managed ones are represented by SEH exception, which cannot be handled there
+        // because it is not possible to handle both SEH and C++ exceptions in the same frame.
+        GCX_COOP_NO_DTOR();
+        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
+        DispatchManagedException(ohThrowable);
+    }
+    PAL_ENDTRY
+
+    return param.pRetMD;
+}
+
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
     CONTRACTL
@@ -2419,7 +2453,7 @@ MAIN_LOOP:
                     // Interpreter-TODO
                     // This needs to be optimized, not operating at MethodDesc level, rather with ftnptr
                     // slots containing the interpreter IR pointer
-                    targetMethod = pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
+                    targetMethod = CallGetMethodDescOfVirtualizedCode(pMD, pThisArg);
                     ip += 4;
                     goto CALL_INTERP_METHOD;
                 }
@@ -2560,7 +2594,7 @@ MAIN_LOOP:
                         if (isOpenVirtual)
                         {
                             targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
-                            targetMethod = targetMethod->GetMethodDescOfVirtualizedCode(LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF), targetMethod->GetMethodTable());
+                            targetMethod = CallGetMethodDescOfVirtualizedCode(targetMethod, LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF));
                         }
                         else
                         {
