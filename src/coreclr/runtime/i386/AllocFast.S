@@ -218,7 +218,7 @@ LEAF_END RhpNewArrayFast, _TEXT
 LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
         // Delegate overflow handling to the generic helper conservatively
 
-        cmp         edx, (FAST_OBJECT_ARRAY_ALLOCATION_THRESHOLD / 4) // sizeof(void*)
+        cmp         edx, (0x40000000 / 4) // sizeof(void*)
         jae         RhpNewArrayFast
 
         // In this case we know the element size is sizeof(void *), or 4 for x86
