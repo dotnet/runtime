@@ -2600,7 +2600,7 @@ MAIN_LOOP:
 #ifndef TARGET_WASM
                                     // Save the lowest SP in the current method so that we can identify it by that during stackwalk
                                     pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
-#endif // TARGET_WASM
+#endif // !TARGET_WASM
                                 }
                                 pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
                                 pFrame = pChildFrame;
@@ -2720,7 +2720,7 @@ CALL_INTERP_METHOD:
 #ifndef TARGET_WASM
                                 // Save the lowest SP in the current method so that we can identify it by that during stackwalk
                                 pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
-#endif // TARGET_WASM
+#endif // !TARGET_WASM
                             }
                             pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, callArgsAddress);
                             pFrame = pChildFrame;
@@ -3539,7 +3539,7 @@ do                                                                      \
 #ifndef TARGET_WASM
                             // Save the lowest SP in the current method so that we can identify it by that during stackwalk
                             pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
-#endif // TARGET_WASM
+#endif // !TARGET_WASM
                         }
                         // Set the frame to the same values as the caller frame.
                         pChildFrame->ReInit(pFrame, pFrame->startIp, pFrame->pRetVal, pFrame->pStack);
