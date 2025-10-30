@@ -3,14 +3,17 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
 {
     internal static class PercentEncodingHelper
     {
-        public static unsafe int UnescapePercentEncodedUTF8Sequence(char* input, int length, ref ValueStringBuilder dest, bool isQuery, bool iriParsing)
+        public static int UnescapePercentEncodedUTF8Sequence(ReadOnlySpan<char> input, ref ValueStringBuilder dest, bool isQuery, bool iriParsing)
         {
+            int length = input.Length;
+
             // The following assertions rely on the input not mutating mid-operation, as is the case currently since callers are working with strings
             // If we start accepting input such as spans, this method must be audited to ensure no buffer overruns/infinite loops could occur
 
@@ -85,7 +88,8 @@ namespace System
             Debug.Assert(bytesLeftInBuffer < 4 || (fourByteBuffer & (BitConverter.IsLittleEndian ? 0x80000000 : 0x00000080)) != 0);
 
             uint temp = fourByteBuffer; // make a copy so that the *copy* (not the original) is marked address-taken
-            if (Rune.DecodeFromUtf8(new ReadOnlySpan<byte>(&temp, bytesLeftInBuffer), out Rune rune, out bytesConsumed) == OperationStatus.Done)
+
+            if (Rune.DecodeFromUtf8(MemoryMarshal.AsBytes(new ReadOnlySpan<uint>(ref temp))[..bytesLeftInBuffer], out Rune rune, out bytesConsumed) == OperationStatus.Done)
             {
                 Debug.Assert(bytesConsumed >= 2, $"Rune.DecodeFromUtf8 consumed {bytesConsumed} bytes, likely indicating input was modified concurrently during UnescapePercentEncodedUTF8Sequence's execution");
 
@@ -93,7 +97,7 @@ namespace System
                 {
                     if (charsToCopy != 0)
                     {
-                        dest.Append(new ReadOnlySpan<char>(input + totalCharsConsumed - charsToCopy, charsToCopy));
+                        dest.Append(input.Slice(totalCharsConsumed - charsToCopy, charsToCopy));
                         charsToCopy = 0;
                     }
 
@@ -167,7 +171,8 @@ namespace System
                 return totalCharsConsumed;
 
             bytesLeftInBuffer *= 3;
-            dest.Append(new ReadOnlySpan<char>(input + totalCharsConsumed - charsToCopy, charsToCopy + bytesLeftInBuffer));
+
+            dest.Append(input.Slice(totalCharsConsumed - charsToCopy, charsToCopy + bytesLeftInBuffer));
             return totalCharsConsumed + bytesLeftInBuffer;
         }
     }

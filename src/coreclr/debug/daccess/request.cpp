@@ -1245,7 +1245,7 @@ HRESULT ClrDataAccess::GetTieredVersions(
             TADDR pNativeCode = PCODEToPINSTR((*iter).GetNativeCode());
             nativeCodeAddrs[count].NativeCodeAddr = pNativeCode;
             PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
-            nativeCodeAddrs[count].NativeCodeVersionNodePtr = TO_CDADDR(PTR_TO_TADDR(pNode));
+            nativeCodeAddrs[count].NativeCodeVersionNodePtr = PTR_CDADDR(pNode);
 
             if (r2rImageBase <= pNativeCode && pNativeCode < r2rImageEnd)
             {
@@ -3801,9 +3801,13 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
                 }
 #endif // FEATURE_COMINTEROP
 
-                pSyncBlockData->MonitorHeld = pBlock->m_Monitor.GetMonitorHeldStateVolatile();
-                pSyncBlockData->Recursion = pBlock->m_Monitor.GetRecursionLevel();
-                pSyncBlockData->HoldingThread = HOST_CDADDR(pBlock->m_Monitor.GetHoldingThread());
+                DWORD holdingThread = 0;
+                DWORD recursionCount = 0;
+                BOOL monitorHeld = pBlock->TryGetLockInfo(&holdingThread, &recursionCount);
+
+                pSyncBlockData->MonitorHeld = monitorHeld == TRUE ? 1 : 0;
+                pSyncBlockData->Recursion = recursionCount + 1; // The runtime tracks recursion count starting at 0, but diagnostics users expect it to start at 1.
+                pSyncBlockData->HoldingThread = PTR_HOST_TO_TADDR(g_pThinLockThreadIdDispenser->IdToThread(holdingThread));
                 pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain());
 
                 // TODO: Microsoft, implement the wait list
@@ -4658,6 +4662,8 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     SOSDacEnter();
 
     *pRejitId = -1;
+    hr = S_FALSE;
+#ifdef FEATURE_CODE_VERSIONING
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
@@ -4670,12 +4676,9 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     else if (ilVersion.GetRejitState() == RejitFlags::kStateRequested)
     {
         *pRejitId = (int)ilVersion.GetVersionId();
+        hr = S_OK;
     }
-    else
-    {
-        hr = S_FALSE;
-    }
-
+#endif // FEATURE_CODE_VERSIONING
     SOSDacLeave();
 
     return hr;
@@ -4691,7 +4694,7 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
     SOSDacEnter();
 
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
-
+#ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetILCodeVersion(pMD, rejitId);
@@ -4719,10 +4722,16 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
             break;
         }
 
-        pReJitData->il = TO_CDADDR(PTR_TO_TADDR(ilVersion.GetIL()));
+        pReJitData->il = PTR_CDADDR(ilVersion.GetIL());
         PTR_ILCodeVersionNode nodePtr = ilVersion.IsDefaultVersion() ? NULL : ilVersion.AsNode();
-        pReJitData->ilCodeVersionNodePtr = TO_CDADDR(PTR_TO_TADDR(nodePtr));
+        pReJitData->ilCodeVersionNodePtr = PTR_CDADDR(nodePtr);
     }
+#else
+    pReJitData->rejitID = rejitId;
+    pReJitData->flags = DacpReJitData2::kActive;
+    pReJitData->il = HOST_CDADDR(pMD->GetILHeader());
+    pReJitData->ilCodeVersionNodePtr = 0;
+#endif // FEATURE_CODE_VERSIONING
 
     SOSDacLeave();
 
@@ -4744,6 +4753,7 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
     pILData->il = (CLRDATA_ADDRESS)NULL;
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
+#ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
@@ -4752,6 +4762,7 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
         pILData->type = DacpProfilerILData::ReJITModified;
         pILData->rejitID = static_cast<ULONG>(pCodeVersionManager->GetActiveILCodeVersion(pMD).GetVersionId());
     }
+#endif // FEATURE_CODE_VERSIONING
 
     TADDR pDynamicIL = pMD->GetModule()->GetDynamicIL(pMD->GetMemberDef());
     if (pDynamicIL != (TADDR)NULL)
@@ -4776,6 +4787,7 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
 
     *pcMethodDescs = 0;
 
+#ifdef FEATURE_CODE_VERSIONING
     PTR_Module pModule = PTR_Module(TO_TADDR(mod));
     CodeVersionManager* pCodeVersionManager = pModule->GetCodeVersionManager();
     CodeVersionManager::LockHolder codeVersioningLockHolder;
@@ -4810,7 +4822,7 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
             }
         }
     }
-
+#endif // FEATURE_CODE_VERSIONING
     SOSDacLeave();
 
     return hr;

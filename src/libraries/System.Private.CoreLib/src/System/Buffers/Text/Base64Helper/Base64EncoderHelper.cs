@@ -291,7 +291,7 @@ namespace System.Buffers.Text
                 // e f d e
                 // b c a b
 
-                Vector256<sbyte> t0 = Avx2.And(str, maskAC);
+                Vector256<sbyte> t0 = str & maskAC;
                 // bits, upper case are most significant bits, lower case are least significant bits.
                 // 0000wwww XX000000 VVVVVV00 00000000
                 // 0000tttt UU000000 SSSSSS00 00000000
@@ -302,7 +302,7 @@ namespace System.Buffers.Text
                 // 0000eeee FF000000 DDDDDD00 00000000
                 // 0000bbbb CC000000 AAAAAA00 00000000
 
-                Vector256<sbyte> t2 = Avx2.And(str, maskBB);
+                Vector256<sbyte> t2 = str & maskBB;
                 // 00000000 00xxxxxx 000000vv WWWW0000
                 // 00000000 00uuuuuu 000000ss TTTT0000
                 // 00000000 00rrrrrr 000000pp QQQQ0000
@@ -322,7 +322,7 @@ namespace System.Buffers.Text
                 // 00000000 00eeeeFF 00000000 00DDDDDD
                 // 00000000 00bbbbCC 00000000 00AAAAAA
 
-                Vector256<short> t3 = Avx2.MultiplyLow(t2.AsInt16(), shiftBB);
+                Vector256<short> t3 = t2.AsInt16() * shiftBB;
                 // 00xxxxxx 00000000 00vvWWWW 00000000
                 // 00uuuuuu 00000000 00ssTTTT 00000000
                 // 00rrrrrr 00000000 00ppQQQQ 00000000
@@ -332,7 +332,7 @@ namespace System.Buffers.Text
                 // 00ffffff 00000000 00ddEEEE 00000000
                 // 00cccccc 00000000 00aaBBBB 00000000
 
-                str = Avx2.Or(t1.AsSByte(), t3.AsSByte());
+                str = t1.AsSByte() | t3.AsSByte();
                 // 00xxxxxx 00wwwwXX 00vvWWWW 00VVVVVV
                 // 00uuuuuu 00ttttUU 00ssTTTT 00SSSSSS
                 // 00rrrrrr 00qqqqRR 00ppQQQQ 00PPPPPP
@@ -360,10 +360,10 @@ namespace System.Buffers.Text
                 Vector256<sbyte> mask = Avx2.CompareGreaterThan(str, const25);
 
                 // subtract -1, so add 1 to indices for range #[1..4], All indices are now correct:
-                Vector256<sbyte> tmp = Avx2.Subtract(indices.AsSByte(), mask);
+                Vector256<sbyte> tmp = indices.AsSByte() - mask;
 
                 // Add offsets to input values:
-                str = Avx2.Add(str, Avx2.Shuffle(lut, tmp));
+                str += Avx2.Shuffle(lut, tmp);
 
                 encoder.StoreVector256ToDestination(dest, destStart, destLength, str.AsByte());
 
@@ -412,9 +412,9 @@ namespace System.Buffers.Text
                 (str1, str2, str3) = AdvSimd.Arm64.Load3xVector128AndUnzip(src);
 
                 // Divide bits of three input bytes over four output bytes:
-                res1 = AdvSimd.ShiftRightLogical(str1, 2);
-                res2 = AdvSimd.ShiftRightLogical(str2, 4);
-                res3 = AdvSimd.ShiftRightLogical(str3, 6);
+                res1 = str1 >>> 2;
+                res2 = str2 >>> 4;
+                res3 = str3 >>> 6;
                 res2 = AdvSimd.ShiftLeftAndInsert(res2, str1, 4);
                 res3 = AdvSimd.ShiftLeftAndInsert(res3, str2, 2);
 

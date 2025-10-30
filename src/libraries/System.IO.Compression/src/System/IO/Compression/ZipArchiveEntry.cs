@@ -702,30 +702,40 @@ namespace System.IO.Compression
         {
             // stream stack: backingStream -> DeflateStream -> CheckSumWriteStream
 
-            // By default we compress with deflate, except if compression level is set to NoCompression then stored is used.
-            // Stored is also used for empty files, but we don't actually call through this function for that - we just write the stored value in the header
-            // Deflate64 is not supported on all platforms
+            // By default we compress with deflate, except if compression level
+            // is set to NoCompression then stored is used.
+            //
+            // Stored is also used for empty files, but we can't know at this
+            // point if user will write anything to the stream or not. For that
+            // reason, we defer the instantiation of the compression stream
+            // until the first write to the CheckSumAndSizeWriteStream happens.
+            // If the user never writes anything, this will be detected during
+            // saving and the compression method in the file header will be
+            // changed to Stored.
+            //
+            // Note: Deflate64 is not supported on all platforms
             Debug.Assert(CompressionMethod == CompressionMethodValues.Deflate
                 || CompressionMethod == CompressionMethodValues.Stored);
+            Func<Stream> compressorStreamFactory;
 
             bool isIntermediateStream = true;
-            Stream compressorStream;
+
             switch (CompressionMethod)
             {
                 case CompressionMethodValues.Stored:
-                    compressorStream = backingStream;
+                    compressorStreamFactory = () => backingStream;
                     isIntermediateStream = false;
                     break;
                 case CompressionMethodValues.Deflate:
                 case CompressionMethodValues.Deflate64:
                 default:
-                    compressorStream = new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
+                    compressorStreamFactory = () => new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
                     break;
 
             }
             bool leaveCompressorStreamOpenOnClose = leaveBackingStreamOpen && !isIntermediateStream;
             var checkSumStream = new CheckSumAndSizeWriteStream(
-                compressorStream,
+                compressorStreamFactory,
                 backingStream,
                 leaveCompressorStreamOpenOnClose,
                 this,
@@ -975,7 +985,6 @@ namespace System.IO.Compression
                 CompressionMethod = CompressionMethodValues.Stored;
                 compressedSizeTruncated = 0;
                 uncompressedSizeTruncated = 0;
-                Debug.Assert(_compressedSize == 0);
                 Debug.Assert(_uncompressedSize == 0);
                 Debug.Assert(_crc32 == 0);
             }

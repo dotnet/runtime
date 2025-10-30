@@ -34,9 +34,9 @@ public class AA
 	{
 		GC.Collect();
 	}
-	
-	[Fact]
-	public static void TestEntryPoint()
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
+    public static void TestEntryPoint()
 	{
 		DoThings();
 		new AA().CheckHeap();
