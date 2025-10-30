@@ -7,6 +7,7 @@
 
 #include "stublink.h"
 #include "utilcode.h"
+#include <emscripten/stack.h>
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
@@ -32,8 +33,8 @@ struct HijackArgs
 
 inline LPVOID STDCALL GetCurrentSP()
 {
-    _ASSERTE("The function is not implemented on wasm, it lacks registers");
-    return nullptr;
+    WRAPPER_NO_CONTRACT;
+    return (LPVOID)emscripten_stack_get_current();
 }
 
 extern PCODE GetPreStubEntryPoint();
@@ -138,13 +139,13 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 //------------------------------------------------------------------------
 inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
-    _ASSERTE("emitBackToBackJump is not implemented on wasm");
+    PORTABILITY_ASSERT("emitBackToBackJump is not implemented on wasm");
 }
 
 //------------------------------------------------------------------------
 inline PCODE decodeBackToBackJump(PCODE pBuffer)
 {
-    _ASSERTE("decodeBackToBackJump is not implemented on wasm");
+    PORTABILITY_ASSERT("decodeBackToBackJump is not implemented on wasm");
     return 0;
 }
 
