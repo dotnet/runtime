@@ -1564,7 +1564,6 @@ MethodDesc* Assembly::GetEntryPoint()
     else
     {
         m_pEntryPoint = pModule->FindMethod(mdEntry);
-#endif // TARGET_BROWSER
     }
 
 #if defined(TARGET_BROWSER)
