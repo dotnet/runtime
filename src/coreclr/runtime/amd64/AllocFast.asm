@@ -188,7 +188,7 @@ LEAF_END RhpNewArrayFast, _TEXT
 LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
         ; we want to limit the element count to the non-negative 32-bit int range
-        cmp         rdx, 07fffffffh
+        cmp         rdx, 07FFFFFFFh
         ja          LOCAL_LABEL(ArraySizeOverflow)
 
         ; In this case we know the element size is sizeof(void *), or 8 for x64
