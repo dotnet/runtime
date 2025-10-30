@@ -410,6 +410,9 @@ namespace System.Threading
         /// </summary>
         public void Interrupt()
         {
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+            WaitSubsystem.Interrupt(this);
+#endif
             Interrupt(GetNativeHandle());
             GC.KeepAlive(this);
         }
