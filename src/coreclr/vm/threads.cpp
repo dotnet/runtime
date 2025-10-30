@@ -3262,53 +3262,6 @@ WaitCompleted:
     return ret;
 }
 
-// Return whether or not a timeout occurred.  TRUE=>we waited successfully
-DWORD Thread::Wait(HANDLE *objs, int cntObjs, INT32 timeOut)
-{
-    WRAPPER_NO_CONTRACT;
-
-    DWORD   dwResult;
-    DWORD   dwTimeOut32;
-
-    _ASSERTE(timeOut >= 0 || timeOut == INFINITE_TIMEOUT);
-
-    dwTimeOut32 = (timeOut == INFINITE_TIMEOUT
-                   ? INFINITE
-                   : (DWORD) timeOut);
-
-    dwResult = DoAppropriateWait(cntObjs, objs, FALSE /*=waitAll*/, dwTimeOut32,
-                                 WaitMode_Alertable /*alertable*/);
-
-    // Either we succeeded in the wait, or we timed out
-    _ASSERTE((dwResult >= WAIT_OBJECT_0 && dwResult < (DWORD)(WAIT_OBJECT_0 + cntObjs)) ||
-             (dwResult == WAIT_TIMEOUT));
-
-    return dwResult;
-}
-
-// Return whether or not a timeout occurred.  TRUE=>we waited successfully
-DWORD Thread::Wait(CLREvent *pEvent, INT32 timeOut)
-{
-    WRAPPER_NO_CONTRACT;
-
-    DWORD   dwResult;
-    DWORD   dwTimeOut32;
-
-    _ASSERTE(timeOut >= 0 || timeOut == INFINITE_TIMEOUT);
-
-    dwTimeOut32 = (timeOut == INFINITE_TIMEOUT
-                   ? INFINITE
-                   : (DWORD) timeOut);
-
-    dwResult = pEvent->Wait(dwTimeOut32, TRUE /*alertable*/);
-
-    // Either we succeeded in the wait, or we timed out
-    _ASSERTE((dwResult == WAIT_OBJECT_0) ||
-             (dwResult == WAIT_TIMEOUT));
-
-    return dwResult;
-}
-
 #define WAIT_INTERRUPT_THREADABORT 0x1
 #define WAIT_INTERRUPT_INTERRUPT 0x2
 #define WAIT_INTERRUPT_OTHEREXCEPTION 0x4

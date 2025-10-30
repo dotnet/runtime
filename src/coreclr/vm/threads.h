@@ -2559,10 +2559,6 @@ private:
 
 #endif // FEATURE_HIJACK
 
-    // Support for Wait/Notify
-    DWORD       Wait(HANDLE *objs, int cntObjs, INT32 timeOut);
-    DWORD       Wait(CLREvent* pEvent, INT32 timeOut);
-
     // support for Thread.Interrupt() which breaks out of Waits, Sleeps, Joins
     LONG        m_UserInterrupt;
     DWORD       IsUserInterrupted()
