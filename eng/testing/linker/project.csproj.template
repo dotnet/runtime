@@ -44,6 +44,8 @@
     <_WebAssemblyPropsFile>{WasmSdkPackBuildPath}Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
     <_WebAssemblyTargetsFile>{WasmSdkPackBuildPath}Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
     <_WebAssemblySdkToolsDirectory>{WasmSdkPackTasksPath}</_WebAssemblySdkToolsDirectory>
+    <UsingBrowserRuntimeWorkload>true</UsingBrowserRuntimeWorkload>
+    <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
 
     <!-- Needed for targetingpacks.targets -->
     <ProductVersion>{ProductVersion}</ProductVersion>

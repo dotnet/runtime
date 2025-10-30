@@ -14,7 +14,7 @@
   <!-- NativeAOT (needs configuration of additional feeds to properly restore packages) -->
   <PropertyGroup Condition="'$(UsingNativeAOT)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
-    <PublishDir>$(MSBuildThisFileDirectory)/bin/$(Configuration)/AppBundle</PublishDir>
+    <PublishDir>$(MSBuildThisFileDirectory)/bin/$(Configuration)/publish/wwwroot</PublishDir>
     <DebugType>none</DebugType>
     <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
     <UsingWasiRuntimeWorkload>false</UsingWasiRuntimeWorkload>
@@ -110,7 +110,7 @@
 
     <Copy
         SourceFiles="@(BlazorSourceFiles)"
-        DestinationFolder="$(MSBuildThisFileDirectory)/bin/$(Configuration)/AppBundle/blazor-template/%(RecursiveDir)" />
+        DestinationFolder="$(MSBuildThisFileDirectory)/bin/$(Configuration)/wwwroot/blazor-template/%(RecursiveDir)" />
   </Target>
 
   <Target Name="PrepareBrowserTemplate" Condition="!Exists('$(MonoProjectRoot)sample/wasm/browser-frame/browser-frame')" DependsOnTargets="SetWBTSdksPath;SetNugetConfigContent">
@@ -147,6 +147,6 @@
 
     <Copy
         SourceFiles="@(BrowserSourceFiles)"
-        DestinationFolder="$(MSBuildThisFileDirectory)/bin/$(Configuration)/AppBundle/browser-template/%(RecursiveDir)" />
+        DestinationFolder="$(MSBuildThisFileDirectory)/bin/$(Configuration)/wwwroot/browser-template/%(RecursiveDir)" />
   </Target>
 </Project>

@@ -17,7 +17,9 @@
 
   <PropertyGroup>
     <OutputPath>bin</OutputPath>
-    <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
+    <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\wwwroot\</WasmAppDir>
+    <CompressionEnabled>false</CompressionEnabled>
+    <DisableBuildCompression>true</DisableBuildCompression>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
