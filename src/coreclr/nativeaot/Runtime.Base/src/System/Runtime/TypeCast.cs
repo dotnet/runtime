@@ -923,7 +923,7 @@ namespace System.Runtime
             return obj;
         }
 
-        private static unsafe EETypeElementType GetNormalizedIntegralArrayElementType(MethodTable* type)
+        internal static unsafe EETypeElementType GetNormalizedIntegralArrayElementType(MethodTable* type)
         {
             return GetNormalizedIntegralArrayElementType(type->ElementType);
         }
