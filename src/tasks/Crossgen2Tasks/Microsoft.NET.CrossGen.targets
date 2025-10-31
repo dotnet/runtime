@@ -558,7 +558,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_AppleSdkName Condition="'$(_appleTargetOS)' == 'tvossimulator'">appletvsimulator</_AppleSdkName>
       <_AppleSdkName Condition="'$(_appleTargetOS)' == 'maccatalyst' or '$(_appleTargetOS)' == 'osx'">macosx</_AppleSdkName>
 
-      <_AppleTripleOS Condition=" and '$(_appleTargetOS)' == 'osx'">macos</_AppleTripleOS>
+      <_AppleTripleOS Condition="'$(_appleTargetOS)' == 'osx'">macos</_AppleTripleOS>
       <_AppleTripleOS Condition="'$(_appleTargetOS)' == 'maccatalyst' or $(_appleTargetOS.StartsWith('ios'))">ios</_AppleTripleOS>
       <_AppleTripleOS Condition="$(_appleTargetOS.StartsWith('tvos'))">tvos</_AppleTripleOS>
 
