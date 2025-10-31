@@ -34,7 +34,7 @@ static const InterpType g_interpTypeFromStackType[] =
     InterpTypeVT,       // VT,
     InterpTypeByRef,    // MP,
     InterpTypeI,        // F
-    InterpTypeByRef,    // TransientPointer, See section I.12.3.2.1 in Ecma 335
+    InterpTypeByRef,    // LocalVariableAddress, The result of ldloca or ldarga is a byref per spec, but is also permitted to be treated as a nint in some cases. Keep track of that here.
 };
 
 // Used by assertAbort
@@ -2563,12 +2563,12 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
     {
         if (type1 == StackTypeByRef)
         {
-            m_pStackPointer[-2].BashStackTypeToI_ForTransientPointerUse();
+            m_pStackPointer[-2].BashStackTypeToI_ForLocalVariableAddress();
             type1 = m_pStackPointer[-2].GetStackType();
         }
         if (type2 == StackTypeByRef)
         {
-            m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
+            m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
             type2 = m_pStackPointer[-1].GetStackType();
         }
     }
@@ -2687,7 +2687,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
 {
     CHECK_STACK(1);
-    m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
+    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
     StackType stackType = m_pStackPointer[-1].GetStackType();
     int32_t finalOpcode = opBase + (stackType - StackTypeI4);
 
@@ -2706,8 +2706,8 @@ void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
 void InterpCompiler::EmitShiftOp(int32_t opBase)
 {
     CHECK_STACK(2);
-    m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
-    m_pStackPointer[-2].BashStackTypeToI_ForTransientPointerUse();
+    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+    m_pStackPointer[-2].BashStackTypeToI_ForLocalVariableAddress();
     StackType stackType = m_pStackPointer[-2].GetStackType();
     StackType shiftAmountType = m_pStackPointer[-1].GetStackType();
     int32_t typeOffset = stackType - StackTypeI4;
@@ -4632,7 +4632,7 @@ void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 
 void InterpCompiler::EmitStelem(InterpType interpType)
 {
-    m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
+    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
     if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
@@ -4826,7 +4826,7 @@ void InterpCompiler::EmitLdLocA(int32_t var)
         m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
         m_pStackPointer--;
         PushInterpType(InterpTypeByRef, NULL);
-        m_pStackPointer[-1].SetAsTransientPointer();
+        m_pStackPointer[-1].SetAsLocalVariableAddress();
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
         return;
     }
@@ -4834,7 +4834,7 @@ void InterpCompiler::EmitLdLocA(int32_t var)
     AddIns(INTOP_LDLOCA);
     m_pLastNewIns->SetSVar(var);
     PushInterpType(InterpTypeByRef, NULL);
-    m_pStackPointer[-1].SetAsTransientPointer();
+    m_pStackPointer[-1].SetAsLocalVariableAddress();
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
@@ -5146,7 +5146,7 @@ bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* patte
                 }
                 else
                 {
-                    if (m_pStackPointer[-1].IsTransientPointer())
+                    if (m_pStackPointer[-1].IsLocalVariableAddress())
                     {
                         // Transient pointers can be treated as I
                     }
@@ -5163,7 +5163,7 @@ bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* patte
             case StackTypeI8:
                 return false;
             case StackTypeI4:
-                if (m_pStackPointer[-1].IsTransientPointer())
+                if (m_pStackPointer[-1].IsLocalVariableAddress())
                 {
                     // Transient pointers can be treated as I
                 }
@@ -5245,7 +5245,7 @@ void InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pa
         }
         else if (m_pStackPointer[-1].GetStackType() == StackTypeByRef && g_stackTypeFromInterpType[interpType] == StackTypeI)
         {
-            m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
+            m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
             if (m_pStackPointer[-1].GetStackType() != StackTypeI)
             {
                 // We should have been able to convert ByRef to I
@@ -5929,7 +5929,7 @@ retry_emit:
                 if ((retType != InterpTypeVoid) && (retType != InterpTypeByRef))
                 {
                     CheckStackExact(1);
-                    m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
+                    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
                 }
 
                 if (m_isSynchronized && m_currentILOffset < m_ILCodeSizeFromILHeader)
@@ -6051,7 +6051,7 @@ retry_emit:
 
             case CEE_CONV_U1:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6073,7 +6073,7 @@ retry_emit:
                 break;
             case CEE_CONV_I1:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6095,7 +6095,7 @@ retry_emit:
                 break;
             case CEE_CONV_U2:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6117,7 +6117,7 @@ retry_emit:
                 break;
             case CEE_CONV_I2:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6139,7 +6139,7 @@ retry_emit:
                 break;
             case CEE_CONV_U:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR8:
@@ -6177,7 +6177,7 @@ retry_emit:
                 break;
             case CEE_CONV_I:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR8:
@@ -6215,7 +6215,7 @@ retry_emit:
                 break;
             case CEE_CONV_U4:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6239,7 +6239,7 @@ retry_emit:
                 break;
             case CEE_CONV_I4:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6263,7 +6263,7 @@ retry_emit:
                 break;
             case CEE_CONV_I8:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6292,7 +6292,7 @@ retry_emit:
                 break;
             case CEE_CONV_R4:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR8:
@@ -6313,7 +6313,7 @@ retry_emit:
                 break;
             case CEE_CONV_R8:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeI4:
@@ -6334,7 +6334,7 @@ retry_emit:
                 break;
             case CEE_CONV_U8:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeI4:
@@ -6362,7 +6362,7 @@ retry_emit:
                 break;
             case CEE_CONV_R_UN:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6384,7 +6384,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I1:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6407,7 +6407,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U1:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6429,7 +6429,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I2:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6451,7 +6451,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U2:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6473,7 +6473,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I4:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6494,7 +6494,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U4:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6516,7 +6516,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I8:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6537,7 +6537,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U8:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6559,7 +6559,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6597,7 +6597,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6638,7 +6638,7 @@ retry_emit:
             //  does the equivalent by manually duplicating the conversions from the non-.un opcodes.
             case CEE_CONV_OVF_I1_UN:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6660,7 +6660,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U1_UN:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6682,7 +6682,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I2_UN:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6704,7 +6704,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U2_UN:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6726,7 +6726,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I4_UN:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6748,7 +6748,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U4_UN:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6769,7 +6769,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I8_UN:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6791,7 +6791,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U8_UN:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6812,7 +6812,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I_UN:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -6850,7 +6850,7 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U_UN:
                 CHECK_STACK(1);
-                m_pStackPointer[-1].BashStackTypeToIForConvert();
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
                 switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
@@ -7469,7 +7469,7 @@ retry_emit:
             case CEE_STIND_R8:
             case CEE_STIND_REF:
             {
-                m_pStackPointer[-1].BashStackTypeToI_ForTransientPointerUse();
+                m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
                 InterpType interpType = InterpTypeVoid;
                 switch(opcode)
                 {

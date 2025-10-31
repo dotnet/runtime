@@ -154,7 +154,7 @@ enum StackType {
     StackTypeVT,
     StackTypeByRef,
     StackTypeF,
-    StackTypeTransientPointer, // Used to represent the concept of a pointer that matches the "transient" pointer concept. See section I.12.3.2.1 of ECMA-335
+    StackTypeLocalVariableAddress, // LocalVariableAddress, The result of ldloca or ldarga is a byref per spec, but is also permitted to be treated as a nint in some cases. Keep track of that here.
 #ifdef TARGET_64BIT
     StackTypeI = StackTypeI8,
 #else
@@ -422,7 +422,7 @@ public:
 
     StackType GetStackType()
     {
-        if (type == StackTypeTransientPointer)
+        if (type == StackTypeLocalVariableAddress)
         {
             // Transient pointers are treated as byrefs for stack type purposes
             return StackTypeByRef;
@@ -430,22 +430,23 @@ public:
         return type;
     }
 
-    void SetAsTransientPointer()
+    void SetAsLocalVariableAddress()
     {
         assert(type == StackTypeByRef);
-        type = StackTypeTransientPointer;
+        type = StackTypeLocalVariableAddress;
     }
 
-    bool IsTransientPointer()
+    bool IsLocalVariableAddress()
     {
-        return type == StackTypeTransientPointer;
+        return type == StackTypeLocalVariableAddress;
     }
 
     // Used before a use of a value where the value on the stack would be correctly handled if the type on the stack
-    // was of type I. This is in support of section I.12.3.2.1 of ECMA-335
-    void BashStackTypeToI_ForTransientPointerUse()
+    // was of type I. This is done to allow the use of the address of a local variable as a pointer which is common
+    // in older IL testing.
+    void BashStackTypeToI_ForLocalVariableAddress()
     {
-        if (type == StackTypeTransientPointer)
+        if (type == StackTypeLocalVariableAddress)
         {
             type = StackTypeI;
         }
@@ -454,9 +455,9 @@ public:
     // Used before a conversion operation to ensure that transient pointers, byrefs, and object references are
     // treated as integers for the purpose of the conversion. The Byref/O behavior here does not seem to have
     // justification in the ECMA-335 spec, but it is needed to match the behavior of the JIT.
-    void BashStackTypeToIForConvert()
+    void BashStackTypeToI_ForConvert()
     {
-        if ((type == StackTypeTransientPointer) || (type == StackTypeByRef) || (type == StackTypeO))
+        if ((type == StackTypeLocalVariableAddress) || (type == StackTypeByRef) || (type == StackTypeO))
         {
             type = StackTypeI;
         }
