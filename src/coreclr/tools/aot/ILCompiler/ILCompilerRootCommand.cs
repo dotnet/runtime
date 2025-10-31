@@ -354,7 +354,9 @@ namespace ILCompiler
             Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
 
             Console.WriteLine("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
-                "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx,aes,apx'");
+                "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. Instruction set 'native' expand to " +
+                "specific host chip architecture instructions sets. In order to forced allow or disallow optimistic preset of instructions sets for target architecture, " +
+                "'optimistic' value could be used. For example 'native', 'avx,aes,apx' or 'avx,aes,apx,-optimistic'");
 
             foreach (string arch in ValidArchitectures)
             {

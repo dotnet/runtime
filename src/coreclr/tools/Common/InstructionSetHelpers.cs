@@ -188,6 +188,12 @@ namespace System.CommandLine
                         continue;
                     }
 
+                    if (instructionSet == "+optimistic")
+                    {
+                        allowOptimistic = true;
+                        continue;
+                    }
+
                     instructionSetParams.Add(instructionSet);
                 }
 
