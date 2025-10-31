@@ -49,6 +49,11 @@ internal static unsafe partial class MonoDroidExports
     [LibraryImport("System.Security.Cryptography.Native.Android")]
     internal static partial int AndroidCryptoNative_InitLibraryOnLoad(JavaVM* vm, void* reserved);
 
+#if !SINGLE_FILE_TEST_RUNNER
+    [DllImport("*", EntryPoint = "__managed__Main")]
+    static extern int ManagedMain(int argc, void** argv);
+#endif
+
     // int Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args);
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_execEntryPoint", CallConvs = [typeof(CallConvCdecl)])]
     public static int ExecEntryPoint(JNIEnv* env, JObject thiz, JString j_entryPointLibName, JObjectArray j_args)
@@ -73,8 +78,27 @@ internal static unsafe partial class MonoDroidExports
         // SingleFile unit tests
         return SingleFileTestRunner.Main(args);
 #else
-        // Functional tests
-        return Program.Main(args);
+        string entryPointName = env->GetStringUTFChars(j_entryPointLibName);
+        IntPtr[] managedMainArgs = new IntPtr[argc + 1];
+        managedMainArgs[0] = Marshal.StringToCoTaskMemUTF8(entryPointName);
+        for (int i = 0; i < argc; i++)
+        {
+            managedMainArgs[i + 1] = Marshal.StringToCoTaskMemUTF8(args[i]);
+        }
+
+        int ret;
+        fixed (IntPtr* argvPtrs = managedMainArgs)
+        {
+            void** argv = (void**)argvPtrs;
+            ret = ManagedMain(argc + 1, argv);
+        }
+
+        for (int i = 0; i < managedMainArgs.Length; i++)
+        {
+            Marshal.FreeCoTaskMem(managedMainArgs[i]);
+        }
+
+        return ret;
 #endif
     }
 
