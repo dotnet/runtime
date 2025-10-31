@@ -59,7 +59,7 @@ namespace System.Net
             throw new FormatException(SR.dns_bad_ip_address, new SocketException(SocketError.InvalidArgument));
         }
 
-        private static unsafe bool TryParseIpv4<TChar>(ReadOnlySpan<TChar> ipSpan, out long address)
+        private static bool TryParseIpv4<TChar>(ReadOnlySpan<TChar> ipSpan, out long address)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             long tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, out int end, notImplicitFile: true);
@@ -77,7 +77,7 @@ namespace System.Net
             return false;
         }
 
-        private static unsafe bool TryParseIPv6<TChar>(ReadOnlySpan<TChar> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
+        private static bool TryParseIPv6<TChar>(ReadOnlySpan<TChar> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));

@@ -112,17 +112,6 @@ namespace System.Net
             }
         }
 
-        // IsValid wrapper for unsafe pointer use (TODO: remove when callers are migrated to Span)
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe bool IsValid<TChar>(TChar* name, int start, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
-            where TChar : unmanaged, IBinaryInteger<TChar>
-        {
-            ReadOnlySpan<TChar> span = new ReadOnlySpan<TChar>(name + start, end - start);
-            bool result = IsValid(span, out int localEnd, allowIPv6, notImplicitFile, unknownScheme);
-            end = start + localEnd;
-            return result;
-        }
-
         //
         // IsValidCanonical
         //
