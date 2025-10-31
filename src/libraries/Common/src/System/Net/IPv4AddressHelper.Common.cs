@@ -129,13 +129,12 @@ namespace System.Net
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-            end = name.Length;
-            int start = 0;
-
+            end = 0;
             int dots = 0;
             long number = 0;
             bool haveNumber = false;
             bool firstCharIsZero = false;
+            int start = 0;
 
             while (start < name.Length)
             {
@@ -202,10 +201,7 @@ namespace System.Net
                 ++start;
             }
             bool res = (dots == 3) && haveNumber;
-            if (res)
-            {
-                end = start;
-            }
+            end = res ? start : 0;
             return res;
         }
 

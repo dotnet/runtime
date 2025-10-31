@@ -146,8 +146,7 @@ namespace System.Net
         //           start must be next to '[' position, or error is reported
         private static bool InternalIsValid(ReadOnlySpan<char> name, out int end, bool validateStrictAddress)
         {
-            int start = 0;
-            end = name.Length;
+            end = 0;
             int sequenceCount = 0;
             int sequenceLength = 0;
             bool haveCompressor = false;
@@ -157,13 +156,14 @@ namespace System.Net
             int lastSequence = 1;
 
             // Starting with a colon character is only valid if another colon follows.
-            if (name[start] == ':' && (start + 1 >= name.Length || name[start + 1] != ':'))
+            if (name[0] == ':' && (name.Length <= 1 || name[1] != ':'))
             {
                 return false;
             }
 
+            int start = 0;
             int i;
-            for (i = start; i < name.Length; ++i)
+            for (i = 0; i < name.Length; ++i)
             {
                 if (havePrefix ? char.IsAsciiDigit(name[i]) : char.IsAsciiHexDigit(name[i]))
                 {
