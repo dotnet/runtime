@@ -288,6 +288,9 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Ecma\EcmaMethod.cs">
       <Link>Ecma\EcmaMethod.cs</Link>
     </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Ecma\EcmaMethod.Dummy.Async.cs">
+      <Link>Ecma\EcmaMethod.Dummy.Async.cs</Link>
+    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Ecma\EcmaModule.cs">
       <Link>Ecma\EcmaModule.cs</Link>
     </Compile>

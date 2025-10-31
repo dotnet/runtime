@@ -46,8 +46,6 @@ namespace Internal.TypeSystem.Ecma
         private ThreadSafeFlags _methodFlags;
         private MethodSignature _metadataSignature;
         private TypeDesc[] _genericParameters; // TODO: Optional field?
-        private AsyncMethodData _asyncMethodData;
-        private MethodDesc _asyncOtherVariant;
 
         internal EcmaMethod(EcmaType type, MethodDefinitionHandle handle)
         {
@@ -79,32 +77,16 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private MethodSignature InitializeSignature()
+        private void InitializeSignature()
         {
             var metadataReader = MetadataReader;
             BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetMethodDefinition(_handle).Signature);
-
             EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader, NotFoundBehavior.Throw);
             var signature = parser.ParseMethodSignature();
-
             _metadataSignature = signature;
-            return _metadataSignature;
         }
 
-        public override MethodSignature Signature
-        {
-            get
-            {
-                if (_metadataSignature == null)
-                    return InitializeSignature();
-                if (AsyncMethodData.IsAsyncVariant)
-                {
-                    Debug.Assert(_asyncMethodData.Kind == AsyncMethodKind.AsyncVariantImpl && _asyncMethodData.Signature is not null);
-                    return _asyncMethodData.Signature;
-                }
-                return _metadataSignature;
-            }
-        }
+        // Signature requires AsyncInfo for EcmaMethod and is in EcmaMethod.Async.cs or EcmaMethod.Dummy.Async.cs
 
         public EcmaModule Module
         {
@@ -388,52 +370,6 @@ namespace Internal.TypeSystem.Ecma
             {
                 return (GetMethodFlags(MethodFlags.BasicMetadataCache | MethodFlags.Async) & MethodFlags.Async) != 0;
             }
-        }
-
-        public override AsyncMethodData AsyncMethodData
-        {
-            get
-            {
-                if (_asyncMethodData.Equals(default(AsyncMethodData)))
-                {
-                    InitializeSignature();
-                    bool returnsTask = _metadataSignature.ReturnsTaskOrValueTask();
-                    if (!returnsTask && !IsAsync)
-                    {
-                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.NotAsync, Signature = _metadataSignature };
-                    }
-                    else if (returnsTask && IsAsync)
-                    {
-                        var asyncSignature = _metadataSignature.CreateAsyncSignature();
-                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.AsyncVariantImpl, Signature = asyncSignature };
-                    }
-                    else if (returnsTask && !IsAsync)
-                    {
-                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.TaskReturning, Signature = _metadataSignature };
-                    }
-                    else
-                    {
-                        Debug.Assert(IsAsync && !returnsTask);
-                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.AsyncExplicitImpl, Signature = _metadataSignature };
-                    }
-                }
-
-                Debug.Assert(!_asyncMethodData.Equals(default(AsyncMethodData)));
-                return _asyncMethodData;
-            }
-        }
-
-        public override MethodDesc GetAsyncOtherVariant()
-        {
-            Debug.Assert(_asyncMethodData.Kind is AsyncMethodKind.TaskReturning or AsyncMethodKind.AsyncVariantImpl);
-            if (_asyncOtherVariant is null)
-            {
-                MethodDesc otherVariant = IsAsync ?
-                    new TaskReturningAsyncThunk(this, _metadataSignature) :
-                    new AsyncMethodThunk(this);
-                Interlocked.CompareExchange(ref _asyncOtherVariant, otherVariant, null);
-            }
-            return _asyncOtherVariant;
         }
 
         public MethodAttributes Attributes

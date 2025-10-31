@@ -8,7 +8,7 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents the async-callable (CORINFO_CALLCONV_ASYNCCALL) variant of a Task/ValueTask returning method.
     /// </summary>
-    public sealed class AsyncMethodThunk : MethodDelegator
+    public sealed partial class AsyncMethodThunk : MethodDelegator
     {
         private readonly AsyncMethodData _asyncMethodData;
 
@@ -30,11 +30,6 @@ namespace Internal.TypeSystem
             {
                 return _asyncMethodData;
             }
-        }
-
-        public override MethodDesc GetCanonMethodTarget(CanonicalFormKind kind)
-        {
-            return _wrappedMethod.GetCanonMethodTarget(kind).GetAsyncOtherVariant();
         }
 
         public override MethodDesc GetMethodDefinition()
@@ -64,31 +59,6 @@ namespace Internal.TypeSystem
             {
                 return _asyncMethodData.Signature;
             }
-        }
-
-        public override string DiagnosticName
-        {
-            get
-            {
-                return "Async thunk: " + _wrappedMethod.DiagnosticName;
-            }
-        }
-
-        protected internal override int ClassCode
-        {
-            get
-            {
-                return 0x554d08b9;
-            }
-        }
-
-        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-        {
-            if (other is AsyncMethodThunk otherAsync)
-            {
-                return comparer.Compare(_wrappedMethod, otherAsync._wrappedMethod);
-            }
-            return -1;
         }
 
         public override string ToString()

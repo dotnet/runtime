@@ -8,13 +8,13 @@ namespace Internal.TypeSystem
     /// <summary>
     /// Represents the Task-returning variant of an async call convention method.
     /// </summary>
-    public sealed class TaskReturningAsyncThunk : MethodDelegator
+    public sealed partial class TaskReturningAsyncThunk : MethodDelegator
     {
         private readonly AsyncMethodData _asyncMethodData;
 
         public TaskReturningAsyncThunk(MethodDesc asyncMethodImplVariant, MethodSignature signature) : base(asyncMethodImplVariant)
         {
-            Debug.Assert(asyncMethodImplVariant.IsTaskReturning);
+            Debug.Assert(asyncMethodImplVariant.IsAsync);
             _asyncMethodData = new() { Kind = AsyncMethodKind.RuntimeAsync, Signature = signature };
         }
 
@@ -26,11 +26,6 @@ namespace Internal.TypeSystem
             {
                 return _asyncMethodData;
             }
-        }
-
-        public override MethodDesc GetCanonMethodTarget(CanonicalFormKind kind)
-        {
-            return _wrappedMethod.GetCanonMethodTarget(kind).GetAsyncOtherVariant();
         }
 
         public override MethodDesc GetMethodDefinition()
@@ -57,19 +52,6 @@ namespace Internal.TypeSystem
             {
                 return _asyncMethodData.Signature;
             }
-        }
-
-        protected internal override int ClassCode => 0x6d7dcbcb;
-
-        public override string DiagnosticName => "TaskReturningVariant: " + _wrappedMethod.DiagnosticName;
-
-        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-        {
-            if (other is TaskReturningAsyncThunk otherAsync)
-            {
-                return comparer.Compare(_wrappedMethod, otherAsync._wrappedMethod);
-            }
-            return -1;
         }
 
         public override string ToString()
