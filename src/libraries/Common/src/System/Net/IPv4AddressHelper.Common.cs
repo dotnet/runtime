@@ -97,18 +97,30 @@ namespace System.Net
         //
 
         //Remark: MUST NOT be used unless all input indexes are verified and trusted.
-        internal static unsafe bool IsValid<TChar>(TChar* name, int start, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsValid<TChar>(ReadOnlySpan<TChar> name, out int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // IPv6 can only have canonical IPv4 embedded. Unknown schemes will not attempt parsing of non-canonical IPv4 addresses.
             if (allowIPv6 || unknownScheme)
             {
-                return IsValidCanonical(name, start, ref end, allowIPv6, notImplicitFile);
+                return IsValidCanonical(name, out end, allowIPv6, notImplicitFile);
             }
             else
             {
-                return ParseNonCanonical(name, start, ref end, notImplicitFile) != Invalid;
+                return ParseNonCanonical(name, out end, notImplicitFile) != Invalid;
             }
+        }
+
+        // IsValid wrapper for unsafe pointer use (TODO: remove when callers are migrated to Span)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool IsValid<TChar>(TChar* name, int start, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+            where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            ReadOnlySpan<TChar> span = new ReadOnlySpan<TChar>(name + start, end - start);
+            bool result = IsValid(span, out int localEnd, allowIPv6, notImplicitFile, unknownScheme);
+            end = start + localEnd;
+            return result;
         }
 
         //
@@ -124,17 +136,20 @@ namespace System.Net
         //                 / "2" %x30-34 DIGIT     ; 200-249
         //                 / "25" %x30-35          ; 250-255
         //
-        internal static unsafe bool IsValidCanonical<TChar>(TChar* name, int start, ref int end, bool allowIPv6, bool notImplicitFile)
+        internal static bool IsValidCanonical<TChar>(ReadOnlySpan<TChar> name, out int end, bool allowIPv6, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            end = name.Length;
+            int start = 0;
 
             int dots = 0;
             long number = 0;
             bool haveNumber = false;
             bool firstCharIsZero = false;
 
-            while (start < end)
+            while (start < name.Length)
             {
                 int ch = ToUShort(name[start]);
 
@@ -162,7 +177,7 @@ namespace System.Net
                     // A number starting with zero should be interpreted in base 8 / octal
                     if (!haveNumber && parsedCharacter == 0)
                     {
-                        if ((start + 1 < end) && name[start + 1] == TChar.CreateTruncating('0'))
+                        if ((start + 1 < name.Length) && name[start + 1] == TChar.CreateTruncating('0'))
                         {
                             // 00 is not allowed as a prefix.
                             return false;
@@ -210,11 +225,12 @@ namespace System.Net
         // Return Invalid (-1) for failures.
         // If the address has less than three dots, only the rightmost section is assumed to contain the combined value for
         // the missing sections: 0xFF00FFFF == 0xFF.0x00.0xFF.0xFF == 0xFF.0xFFFF
-        internal static unsafe long ParseNonCanonical<TChar>(TChar* name, int start, ref int end, bool notImplicitFile)
+        internal static long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, out int end, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
+            end = name.Length;
             int numberBase = IPv4AddressHelper.Decimal;
             int ch = 0;
             Span<long> parts = stackalloc long[3]; // One part per octet. Final octet doesn't have a terminator, so is stored in currentValue.
@@ -223,9 +239,9 @@ namespace System.Net
 
             // Parse one dotted section at a time
             int dotCount = 0; // Limit 3
-            int current = start;
+            int current = 0;
 
-            for (; current < end; current++)
+            for (; current < name.Length; current++)
             {
                 ch = ToUShort(name[current]);
                 currentValue = 0;
@@ -239,7 +255,7 @@ namespace System.Net
                 {
                     current++;
                     atLeastOneChar = true;
-                    if (current < end)
+                    if (current < name.Length)
                     {
                         ch = ToUShort(name[current]);
 
@@ -258,7 +274,7 @@ namespace System.Net
                 }
 
                 // Parse this section
-                for (; current < end; current++)
+                for (; current < name.Length; current++)
                 {
                     ch = ToUShort(name[current]);
                     int digitValue = HexConverter.FromChar(ch);
@@ -277,7 +293,7 @@ namespace System.Net
                     atLeastOneChar = true;
                 }
 
-                if (current < end && ch == '.')
+                if (current < name.Length && ch == '.')
                 {
                     if (dotCount >= 3 // Max of 3 dots and 4 segments
                         || !atLeastOneChar // No empty segments: 1...1
@@ -300,7 +316,7 @@ namespace System.Net
             {
                 return Invalid;  // Empty trailing segment: 1.1.1.
             }
-            else if (current >= end)
+            else if (current >= name.Length)
             {
                 // end of string, allowed
             }
