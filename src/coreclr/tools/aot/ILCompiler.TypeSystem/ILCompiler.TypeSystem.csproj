@@ -270,6 +270,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedMethod.cs">
       <Link>TypeSystem\Common\InstantiatedMethod.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedMethod.Async.cs">
+      <Link>TypeSystem\Common\InstantiatedMethod.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedMethod.Diagnostic.cs">
       <Link>TypeSystem\Common\InstantiatedMethod.Diagnostic.cs</Link>
     </Compile>
