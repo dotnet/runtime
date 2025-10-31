@@ -96,6 +96,11 @@ typedef struct {
 	// Count of colors that list this color in their other_colors
 	unsigned incoming_colors : INCOMING_COLORS_BITS;
 	unsigned visited : 1;
+	// color_visible_to_client for a ColorData* can change over the course of bridge processing which
+	// is problematic. We fix this by setting this flag when a color is detected as visible to client.
+	// Once the flag is set, the color is pinned to being visible to client, even though it could lose
+	// some xrefs, making it not satisfy the bridgeless_color_is_heavy condition.
+	unsigned visible_to_client : 1;
 } ColorData;
 
 // Represents one managed object. Equivalent of new/old bridge "HashEntry"
@@ -140,8 +145,17 @@ bridgeless_color_is_heavy (ColorData *data) {
 
 // Should color be made visible to client?
 static gboolean
-color_visible_to_client (ColorData *data) {
-	return dyn_array_ptr_size (&data->bridges) || bridgeless_color_is_heavy (data);
+color_visible_to_client (ColorData *data)
+{
+	if (data->visible_to_client)
+		return TRUE;
+
+	if (dyn_array_ptr_size (&data->bridges) || bridgeless_color_is_heavy (data)) {
+		data->visible_to_client = TRUE;
+		return TRUE;
+	} else {
+		return FALSE;
+	}
 }
 
 // Stacks of ScanData objects used for tarjan algorithm.
