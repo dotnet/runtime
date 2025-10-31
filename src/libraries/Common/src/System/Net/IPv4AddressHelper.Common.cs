@@ -220,9 +220,9 @@ namespace System.Net
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             end = name.Length;
-            int numberBase = IPv4AddressHelper.Decimal;
+            int numberBase;
             int ch = 0;
-            Span<long> parts = stackalloc long[3]; // One part per octet. Final octet doesn't have a terminator, so is stored in currentValue.
+            Span<long> parts = [0, 0, 0]; // One part per octet. Final octet doesn't have a terminator, so is stored in currentValue.
             long currentValue = 0;
             bool atLeastOneChar = false;
 
