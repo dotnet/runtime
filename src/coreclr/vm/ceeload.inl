@@ -274,6 +274,7 @@ inline PTR_MethodDesc Module::LookupMethodDef(mdMethodDef token)
     return m_MethodDefToDescMap.GetElement(RidFromToken(token));
 }
 
+#ifdef FEATURE_CODE_VERSIONING
 inline PTR_ILCodeVersioningState Module::LookupILCodeVersioningState(mdMethodDef token)
 {
     CONTRACTL
@@ -288,6 +289,7 @@ inline PTR_ILCodeVersioningState Module::LookupILCodeVersioningState(mdMethodDef
     _ASSERTE(TypeFromToken(token) == mdtMethodDef);
     return m_ILCodeVersioningStateMap.GetElement(RidFromToken(token));
 }
+#endif // FEATURE_CODE_VERSIONING
 
 inline MethodDesc *Module::LookupMemberRefAsMethod(mdMemberRef token)
 {

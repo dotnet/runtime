@@ -29,7 +29,7 @@ namespace ILCompiler
             if (ecmaType == null)
                 return true;
 
-            if (!IsModuleInCompilationGroup(ecmaType.EcmaModule))
+            if (!IsModuleInCompilationGroup(ecmaType.Module))
             {
                 return false;
             }

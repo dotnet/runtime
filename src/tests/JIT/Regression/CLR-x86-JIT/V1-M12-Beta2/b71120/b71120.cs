@@ -35,7 +35,8 @@ namespace Test
             }
             return new double[] { 42.0 };
         }
-        [Fact]
+
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
         public static int TestEntryPoint()
         {
             try
