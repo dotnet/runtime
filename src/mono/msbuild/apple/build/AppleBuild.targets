@@ -308,13 +308,13 @@
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
-      <MainLibraryFileName></MainLibraryFileName>
     </ItemGroup>
 
     <PropertyGroup>
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseNativeAOTRuntime)' == 'true'">NativeAOT</AppleAppBuilderRuntime>
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseMonoRuntime)' == 'false'">CoreCLR</AppleAppBuilderRuntime>
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == ''">MonoVM</AppleAppBuilderRuntime>
+      <MainLibraryFileName Condition="'$(UseNativeAOTRuntime)' == 'true'"></MainLibraryFileName>
     </PropertyGroup>
 
     <AppleAppBuilderTask
