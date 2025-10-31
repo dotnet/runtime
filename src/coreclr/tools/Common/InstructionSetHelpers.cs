@@ -182,7 +182,8 @@ namespace System.CommandLine
                     {
                         instructionSet = "+" + instructionSet;
                     }
-                    else if (instructionSet == "-optimistic")
+
+                    if (instructionSet == "-optimistic")
                     {
                         allowOptimistic = false;
                         continue;
