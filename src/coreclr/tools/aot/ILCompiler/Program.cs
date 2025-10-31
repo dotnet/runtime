@@ -715,22 +715,11 @@ namespace ILCompiler
 
             preinitManager.LogStatistics(logger);
 
-            // If errors were produced (including warnings treated as errors), delete the temporary file
-            // and return error code to avoid misleading build systems into thinking the compilation succeeded.
+            // If errors were produced (including warnings treated as errors), return error code
+            // to avoid misleading build systems into thinking the compilation succeeded.
+            // The temporary file will be overwritten on the next compilation attempt.
             if (logger.HasLoggedErrors)
-            {
-                try
-                {
-                    File.Delete(tempOutputFilePath);
-                }
-                catch
-                {
-                    // If we can't delete the temp file, there's not much we can do.
-                    // The compilation will still fail due to logged errors.
-                }
-
                 return 1;
-            }
 
             // Rename the temporary file to the final output file
             try
