@@ -13,7 +13,6 @@ using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 [assembly:
@@ -148,13 +147,9 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/121209", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsAndroid))]
         public void GetEntryAssembly()
         {
-            if (PlatformDetection.IsNativeAot && PlatformDetection.IsAndroid)
-            {
-                throw new SkipTestException("Disabled on NativeAOT Android: https://github.com/dotnet/runtime/issues/121209");
-            }
-
             Assert.NotNull(Assembly.GetEntryAssembly());
             string assembly = Assembly.GetEntryAssembly().ToString();
 

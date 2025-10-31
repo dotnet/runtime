@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -232,7 +231,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal("value3", config["key2"]);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
         public void CanConfigureAppConfigurationFromFile(CreateBuilderFunc createBuilder)
         {
@@ -495,7 +494,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CreateBuilderSettingsFuncs))]
         public void RelativeContentRootIsResolved(CreateBuilderSettingsFunc createBuilder)
         {

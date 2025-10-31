@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -149,14 +148,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void CanConfigureAppConfigurationFromFile()
         {
-            if (PlatformDetection.IsNativeAot && PlatformDetection.IsAndroid)
-            {
-                throw new SkipTestException("Disabled on NativeAOT Android: https://github.com/dotnet/runtime/issues/120715");
-            }
-
             var hostBuilder = new HostBuilder()
                 .UseContentRoot(AppContext.BaseDirectory)
                 .ConfigureAppConfiguration((context, configBuilder) =>
@@ -313,14 +307,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public void RelativeContentRootIsResolved()
         {
-            if (PlatformDetection.IsNativeAot && PlatformDetection.IsAndroid)
-            {
-                throw new SkipTestException("Disabled on NativeAOT Android: https://github.com/dotnet/runtime/issues/120715");
-            }
-
             using (var host = new HostBuilder()
                 .UseContentRoot("testroot")
                 .Build())

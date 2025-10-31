@@ -12,7 +12,6 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
-using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.DependencyInjection;
@@ -151,14 +150,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             });
         }
 
-        [ConditionalFact]
+        [Fact]
         public void CreateDefaultBuilder_IncludesCommandLineArguments()
         {
-            if (PlatformDetection.IsNativeAot && PlatformDetection.IsAndroid)
-            {
-                throw new SkipTestException("Disabled on NativeAOT Android: https://github.com/dotnet/runtime/issues/120715");
-            }
-
             var expected = Directory.GetParent(Directory.GetCurrentDirectory()).FullName; // It must exist
             var builder = Host.CreateDefaultBuilder(new string[] { "--contentroot", expected });
             using var host = builder.Build();

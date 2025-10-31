@@ -607,7 +607,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(TestNativeAOT)' == 'true'">
-    <!-- https://github.com/dotnet/runtime/issues/120722 -->
+    <!-- https://github.com/dotnet/runtime/issues/121255 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Diagnostics.Debug.Tests\System.Diagnostics.Debug.Tests.csproj" />
 
     <!-- https://github.com/dotnet/runtime/issues/120725 -->
