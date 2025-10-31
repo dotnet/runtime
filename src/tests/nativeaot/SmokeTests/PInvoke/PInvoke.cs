@@ -12,16 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-#if GLOBAL_PROGRAM_MAIN
-public class Program
-{
-    public static int Main(string[] args)
-    {
-        return PInvokeTests.Program.Main(args);
-    }
-}
-#endif
-
 // Name of namespace matches the name of the assembly on purpose to
 // ensure that we can handle this (mostly an issue for C++ code generation).
 namespace PInvokeTests
@@ -325,7 +315,7 @@ namespace PInvokeTests
             MagicResult = 42,
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             TestBlittableType();
             TestBoolean();

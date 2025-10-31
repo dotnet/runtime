@@ -4,36 +4,30 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program
+bool success = RunTest(BasicThreading.Run);
+success &= RunTest(Delegates.Run);
+success &= RunTest(Generics.Run);
+success &= RunTest(Interfaces.Run);
+success &= RunTest(Threading.Run);
+success &= RunTest(Devirtualization.Run);
+success &= RunTest(StackTraces.Run);
+success &= RunTest(Ordering.Run);
+
+return success ? 100 : 1;
+
+static bool RunTest(Func<int> t, [CallerArgumentExpression(nameof(t))] string name = null)
 {
-    public static int Main(string[] args)
+    Console.WriteLine($"===== Running test {name} =====");
+    bool success = true;
+    try
     {
-        bool success = RunTest(BasicThreading.Run);
-        success &= RunTest(Delegates.Run);
-        success &= RunTest(Generics.Run);
-        success &= RunTest(Interfaces.Run);
-        success &= RunTest(Threading.Run);
-        success &= RunTest(Devirtualization.Run);
-        success &= RunTest(StackTraces.Run);
-        success &= RunTest(Ordering.Run);
-
-        return success? 100 : 1;
-
-        static bool RunTest(Func<int> t, [CallerArgumentExpression(nameof(t))] string name = null)
-        {
-            Console.WriteLine($"===== Running test {name} =====");
-            bool success = true;
-            try
-            {
-                success = t() == 100;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                success = false;
-            }
-            Console.WriteLine($"===== Test {name} {(success ? "succeeded" : "failed")} =====");
-            return success;
-        }
+        success = t() == 100;
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.ToString());
+        success = false;
+    }
+    Console.WriteLine($"===== Test {name} {(success ? "succeeded" : "failed")} =====");
+    return success;
 }

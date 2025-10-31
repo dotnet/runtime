@@ -30,7 +30,7 @@ unsafe class ControlFlowGuardTests
 
     static bool s_armed;
 
-    public static int Main(string[] args)
+    static int Main(string[] args)
     {
         // Are we running the control program?
         if (args.Length == 0)

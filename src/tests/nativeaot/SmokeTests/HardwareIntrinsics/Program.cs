@@ -9,7 +9,7 @@ using System.Runtime.Intrinsics.X86;
 
 unsafe class Program
 {
-    public static int Main(string[] args)
+    static int Main()
     {
         s_success = true;
 
