@@ -2602,6 +2602,7 @@ public:
     virtual
     HRESULT GetMDStructuresVersion(ULONG32* pMDStructuresVersion) = 0;
 
+#ifdef FEATURE_CODE_VERSIONING
     // Retrieves the active rejit ILCodeVersionNode for a given module/methodDef, if it exists.
     //     Active is defined as after GetReJitParameters returns from the profiler dll and
     //     no call to Revert has completed yet.
@@ -2666,6 +2667,7 @@ public:
     //
     virtual
         HRESULT GetILCodeVersionNodeData(VMPTR_ILCodeVersionNode ilCodeVersionNode, DacSharedReJitInfo* pData) = 0;
+#endif // FEATURE_CODE_VERSIONING
 
     // Enable or disable the GC notification events. The GC notification events are turned off by default
     // They will be delivered through ICorDebugManagedCallback4

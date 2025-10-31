@@ -16,7 +16,7 @@ namespace Test
             Method1(__arglist(Method1(__arglist())));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
         public static void TestEntryPoint()
         {
             uint u = 0;

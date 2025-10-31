@@ -1124,6 +1124,40 @@ namespace System.Text.RegularExpressions.Tests
             yield return (@"a?(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
             yield return (@"(a|())*(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
             yield return (@"(\b|a)*", "a", RegexOptions.None, 0, 1, true, "");
+
+            // Tests for patterns with both beginning and end anchors with fixed length (optimization for early fail-fast)
+            yield return (@"^1234\z", "1234", RegexOptions.None, 0, 4, true, "1234");
+            yield return (@"^1234\z", "12345", RegexOptions.None, 0, 5, false, "");
+            yield return (@"^1234\z", "123", RegexOptions.None, 0, 3, false, "");
+            yield return (@"^1234\z", "x1234", RegexOptions.None, 0, 5, false, "");
+            yield return (@"\Aabc\z", "abc", RegexOptions.None, 0, 3, true, "abc");
+            yield return (@"\Aabc\z", "abcd", RegexOptions.None, 0, 4, false, "");
+
+            // Test variations without starting anchor (should not trigger optimization)
+            yield return (@"1234\z", "1234", RegexOptions.None, 0, 4, true, "1234");
+            yield return (@"1234\z", "x1234", RegexOptions.None, 0, 5, true, "1234");
+
+            // Test with ^ anchor but with Multiline (should not trigger optimization as ^ matches line start in Multiline)
+            yield return (@"^1234\z", "1234", RegexOptions.Multiline, 0, 4, true, "1234");
+            yield return (@"^1234\z", "x\n1234", RegexOptions.Multiline, 0, 6, true, "1234");
+
+            // Test with \Z anchor (allows optional \n, so should not trigger optimization)
+            yield return (@"^1234\Z", "1234", RegexOptions.None, 0, 4, true, "1234");
+            yield return (@"^1234\Z", "1234\n", RegexOptions.None, 0, 5, true, "1234");
+            yield return (@"^1234\Z", "12345", RegexOptions.None, 0, 5, false, "");
+
+            // Test with $ anchor (should not trigger optimization as $ allows optional \n)
+            yield return (@"^1234$", "1234", RegexOptions.None, 0, 4, true, "1234");
+            yield return (@"^1234$", "1234\n", RegexOptions.None, 0, 5, true, "1234");
+            yield return (@"^1234$", "12345", RegexOptions.None, 0, 5, false, "");
+
+            // Test with something before the ^ starting anchor
+            yield return (@"x^1234\z", "1234", RegexOptions.None, 0, 4, false, "");
+            yield return (@"x^1234\z", "x1234", RegexOptions.None, 0, 5, false, "");
+
+            // Test with something after the \z trailing anchor
+            yield return (@"^1234\zx", "1234", RegexOptions.None, 0, 4, false, "");
+            yield return (@"^1234\zx", "1234x", RegexOptions.None, 0, 5, false, "");
         }
 
         [OuterLoop("Takes several seconds to run")]
@@ -1889,6 +1923,61 @@ namespace System.Text.RegularExpressions.Tests
                         new CaptureData[]
                         {
                             new CaptureData("bbb", 0, 3)
+                        }
+                    };
+                }
+
+                // Lookbehind assertions with captures - regression test for https://github.com/dotnet/runtime/issues/117605
+                // Verify that captures in positive lookbehind assertions are preserved correctly in compiled mode
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(abc)+?123)a", "abcabc123a", RegexOptions.None, 0, 10,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 9, 1),
+                            new CaptureData("abc", 3, 3, new CaptureData[] { new CaptureData("abc", 3, 3) })
+                        }
+                    };
+
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(abc){2,}?123)a", "abcabc123a", RegexOptions.None, 0, 10,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 9, 1),
+                            new CaptureData("abc", 0, 3, new CaptureData[]
+                            {
+                                new CaptureData("abc", 3, 3),
+                                new CaptureData("abc", 0, 3)
+                            })
+                        }
+                    };
+
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(abc)+?)a", "abca", RegexOptions.None, 0, 4,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 3, 1),
+                            new CaptureData("abc", 0, 3, new CaptureData[] { new CaptureData("abc", 0, 3) })
+                        }
+                    };
+
+                    // Multiple groups in lookbehind
+                    yield return new object[]
+                    {
+                        engine,
+                        @"(?<=(?'1'abc)+?(?'2')123)a", "abcabc123a", RegexOptions.None, 0, 10,
+                        new CaptureData[]
+                        {
+                            new CaptureData("a", 9, 1),
+                            new CaptureData("abc", 3, 3, new CaptureData[] { new CaptureData("abc", 3, 3) }),
+                            new CaptureData(string.Empty, 6, 0, new CaptureData[] { new CaptureData(string.Empty, 6, 0) })
                         }
                     };
                 }

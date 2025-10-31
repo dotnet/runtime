@@ -465,6 +465,8 @@
                              $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj;
                              $(CoreClrProjectRoot)tools\PdbChecker\PdbChecker.csproj;
                              $(CoreClrProjectRoot)tools\AssemblyChecker\AssemblyChecker.csproj;
+                             $(CoreClrProjectRoot)tools\ILVerify\ILVerify.csproj;
+                             $(CoreClrProjectRoot)tools\ILVerification\ILVerification.csproj;
                              $(ToolsProjectRoot)StressLogAnalyzer\src\StressLogAnalyzer.csproj" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <!--
       Always build the in-build variants of these tools. They run on the host machine, which we always have LKG packs for.
