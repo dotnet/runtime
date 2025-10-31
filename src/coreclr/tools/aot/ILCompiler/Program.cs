@@ -733,23 +733,7 @@ namespace ILCompiler
             }
 
             // Rename the temporary file to the final output file
-            try
-            {
-                File.Move(tempOutputFilePath, outputFilePath, overwrite: true);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Failed to create output file: {ex.Message}");
-                try
-                {
-                    File.Delete(tempOutputFilePath);
-                }
-                catch
-                {
-                    // Ignore cleanup errors
-                }
-                return 1;
-            }
+            File.Move(tempOutputFilePath, outputFilePath, overwrite: true);
 
             return 0;
         }
