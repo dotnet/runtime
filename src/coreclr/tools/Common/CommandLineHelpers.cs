@@ -321,7 +321,8 @@ namespace System.CommandLine
                             // The compiler probes for .pdb files next to input assemblies. For simplicity, just try to look
                             // for PDB next to any file we package.
                             string originalPdbPath = Path.ChangeExtension(originalPath, "pdb");
-                            if (File.Exists(originalPdbPath))
+                            if (!string.Equals(originalPath, originalPdbPath, StringComparison.InvariantCultureIgnoreCase)
+                                && File.Exists(originalPdbPath))
                             {
                                 archive.CreateEntryFromFile(originalPdbPath, Path.ChangeExtension(reproPackagePath, "pdb"));
                             }
