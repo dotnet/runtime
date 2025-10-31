@@ -338,7 +338,7 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
         pClonedCollator = ucol_clone(pCollator, pErr);
 #else
         pClonedCollator = ucol_safeClone(pCollator, NULL, NULL, pErr);
-#endif
+#endif // HAVE_UCOL_CLONE
 
 #endif // !defined(STATIC_ICU)
     }
