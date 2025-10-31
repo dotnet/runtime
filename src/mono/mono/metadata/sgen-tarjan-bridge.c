@@ -1105,9 +1105,9 @@ processing_build_callback_data (int generation)
 	for (cur = root_color_bucket; cur; cur = cur->next) {
 		ColorData *cd;
 		for (cd = &cur->data [0]; cd < cur->next_data; ++cd) {
-			int bridges = dyn_array_ptr_size (&cd->bridges);
-			if (!(bridges || bridgeless_color_is_heavy (cd)))
+			if (!color_visible_to_client (cd))
 				continue;
+			int bridges = dyn_array_ptr_size (&cd->bridges);
 
 			api_sccs [api_index] = (MonoGCBridgeSCC *)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC) + sizeof (MonoObject*) * bridges, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 			api_sccs [api_index]->is_alive = FALSE;
