@@ -41,16 +41,24 @@ The runtime will be updated to handle platform-native R2R images during assembly
 The [`host_runtime_contract`](/src/native/corehost/host_runtime_contract.h) will be updated with a new callback for getting native code information.
 
 ```c
-enum data_type
+struct native_code_context
 {
-   r2r_header_ptr,
-}
+    size_t size;                       // size of this struct
+    const char* assembly_path;         // component assembly path
+    const char* owner_composite_name;  // name from component R2R header
+};
 
-// The requested data type determines what is included in the request_context and what is expected in the out data
+struct native_code_data
+{
+   size_t size;           // size of this struct
+   void* r2r_header_ptr;  // ReadyToRun header
+   size_t image_size;     // size of the image
+   void* image_base;      // base address where the image was loaded
+};
+
 bool get_native_code_data(
-   data_type type,
-   const void* request_context,
-   /*out*/ void** data,
+   const struct native_code_context* context,
+   /*out*/ struct native_code_data* data
 );
 ```
 
