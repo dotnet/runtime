@@ -347,7 +347,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/121254", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsAndroid))]
         public void GetHashCode_MultipleSubClasses_ShouldBeUnique()
         {
             var numberOfCollisions = 0;
