@@ -6002,6 +6002,13 @@ retry_emit:
                         {
                             // Allow implicit conversion from ref or byref to nint
                         }
+#ifdef TARGET_64BIT
+                        else if (retStackType == StackTypeI4 && stackType == StackTypeI8)
+                        {
+                            // nint and int32 can be used interchangeably. Add implicit conversions.
+                            // Allow implicit conversion from int64 to int32 which is just a truncation
+                        }
+#endif
                         else
                         {
                             BADCODE("return type mismatch");
