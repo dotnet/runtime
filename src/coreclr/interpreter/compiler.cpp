@@ -462,7 +462,7 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         if (newCapacity > prevCapacity)
         {
             InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
-            if (from->outCount != 0) 
+            if (from->outCount != 0)
             {
                 memcpy(newa, from->ppOutBBs, from->outCount * sizeof(InterpBasicBlock*));
             }
@@ -1879,8 +1879,8 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
         if (align < INTERP_STACK_SLOT_SIZE)
             align = INTERP_STACK_SLOT_SIZE;
 
-        // We do not align beyond the stack alignment 
-        // (This is relevant for structs with very high alignment requirements, 
+        // We do not align beyond the stack alignment
+        // (This is relevant for structs with very high alignment requirements,
         // where we align within struct layout, but the structs are not actually
         // aligned on the stack)
         if (align > INTERP_STACK_ALIGNMENT)
@@ -2234,7 +2234,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
         default:
             assert(0);
         }
-        if (opcode == CEE_THROW || opcode == CEE_ENDFINALLY || opcode == CEE_RETHROW)
+        if (opcode == CEE_THROW || opcode == CEE_ENDFINALLY || opcode == CEE_RETHROW || opcode == CEE_JMP)
             GetBB((int32_t)(ip - codeStart));
     }
 }
@@ -3920,6 +3920,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     bool isVirtual = (*m_ip == CEE_CALLVIRT);
     bool isDelegateInvoke = false;
+    bool isJmp = (*m_ip == CEE_JMP);
 
     CORINFO_RESOLVED_TOKEN resolvedCallToken;
     CORINFO_CALL_INFO callInfo;
@@ -3961,6 +3962,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         if (callInfo.sig.isVarArg())
         {
             BADCODE("Vararg methods are not supported in interpreted code");
+        }
+
+        if (isJmp)
+        {
+            if (callInfo.sig.numArgs != m_methodInfo->args.numArgs ||
+                callInfo.sig.retType != m_methodInfo->args.retType ||
+                callInfo.sig.callConv != m_methodInfo->args.callConv)
+            {
+                BADCODE("Incompatible target for CEE_JMP");
+            }
         }
 
         // Inject call to callsite callout helper
@@ -4050,6 +4061,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     int *callArgs = (int*) AllocMemPool((numArgs + 1) * sizeof(int));
     CORINFO_ARG_LIST_HANDLE args;
     args = callInfo.sig.args;
+
+    if (isJmp)
+    {
+        assert(tailcall);
+        // CEE_JMP is simulated as a tail call, so we need to load the current method's args
+        for (int i = 0; i < numArgsFromStack; i++)
+        {
+            EmitLoadVar(i);
+        }
+    }
 
     for (int iActualArg = 0, iLogicalArg = 0; iActualArg < numArgs; iActualArg++)
     {
@@ -4911,7 +4932,7 @@ public:
     OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
 
 public:
-    OpcodePeep* Peeps[10] = { 
+    OpcodePeep* Peeps[10] = {
         &peepTypeEqualityCheck,
         &peepStoreLoad,
         &peepStoreLoad1,
@@ -4926,7 +4947,7 @@ public:
     bool FindAndApplyPeep(InterpCompiler* compiler)
     {
         const uint8_t* ip = compiler->m_ip;
-        
+
         for (int i = 0; Peeps[i] != NULL; i++)
         {
             OpcodePeep *peep = Peeps[i];
@@ -5052,7 +5073,7 @@ bool InterpCompiler::IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElemen
         *ppComputedInfo = (void*)(size_t)((ni == NI_System_Type_op_Equality) ? 0 : 1);
         return true;
     }
-    else 
+    else
     {
         assert(compareResult == TypeCompareState::Must);
         // The types are definitely equal, so we can optimize this to a constant result
@@ -5711,7 +5732,7 @@ retry_emit:
 #endif
 
         // Check for IL opcode peephole optimizations
-        
+
         if (ILOpcodePeeps.FindAndApplyPeep(this))
             continue;
 
@@ -7109,6 +7130,18 @@ retry_emit:
                 EmitUnaryArithmeticOp(INTOP_NOT_I4);
                 m_ip++;
                 break;
+            case CEE_JMP:
+            {
+                CHECK_STACK(0);
+                if (m_pCBB->clauseType != BBClauseNone)
+                {
+                    // CEE_JMP inside a funclet is not allowed
+                    BADCODE("CEE_JMP inside funclet");
+                }
+                EmitCall(pConstrainedToken, readonly, true /* tailcall */, false /*newObj*/, false /*isCalli*/);
+                linkBBlocks = false;
+                break;
+            }
             case CEE_CALLVIRT:
             case CEE_CALL:
                 EmitCall(pConstrainedToken, readonly, tailcall, false /*newObj*/, false /*isCalli*/);
@@ -8394,7 +8427,7 @@ DO_LDFTN:
                 m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
                 m_pStackPointer--;
                 DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
-                EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[*m_ip == CEE_CASTCLASS ? InterpTypeO : InterpTypeI], NULL);
+                EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[InterpTypeO], NULL);
                 m_ip += 5;
                 break;
             }
