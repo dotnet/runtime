@@ -214,7 +214,7 @@ namespace System.Net
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-            end = name.Length;
+            end = 0;
             int numberBase;
             int ch = 0;
             Span<long> parts = [0, 0, 0]; // One part per octet. Final octet doesn't have a terminator, so is stored in currentValue.
