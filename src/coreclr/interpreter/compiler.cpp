@@ -3944,6 +3944,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             BADCODE("Vararg methods are not supported in interpreted code");
         }
 
+        if (isJmp)
+        {
+            if (callInfo.sig.numArgs != m_methodInfo->args.numArgs ||
+                callInfo.sig.retType != m_methodInfo->args.retType ||
+                callInfo.sig.callConv != m_methodInfo->args.callConv)
+            {
+                BADCODE("Incompatible target for CEE_JMP");
+            }
+        }
+
         // Inject call to callsite callout helper
         EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
 
@@ -4057,7 +4067,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         else
         {
             int iCurrentStackArg = iLogicalArg - numArgsFromStack;
-
             if (iLogicalArg != 0 || !callInfo.sig.hasThis() || newObj)
             {
                 CORINFO_CLASS_HANDLE classHandle;
@@ -6944,6 +6953,11 @@ retry_emit:
             case CEE_JMP:
             {
                 CHECK_STACK(0);
+                if (m_pCBB->clauseType != BBClauseNone)
+                {
+                    // CEE_JMP inside a funclet is not allowed
+                    BADCODE("CEE_JMP inside funclet");
+                }
                 EmitCall(pConstrainedToken, readonly, true /* tailcall */, false /*newObj*/, false /*isCalli*/);
                 linkBBlocks = false;
                 break;
