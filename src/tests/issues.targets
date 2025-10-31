@@ -2838,6 +2838,13 @@
         </ExcludeList>
     </ItemGroup>
 
+    <!-- Android mobile NativeAOT -->
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsAndroid)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">
+        <ExcludeList Include = "$(XunitTestBinBase)/nativeaot/SmokeTests/UnitTests/**">
+            <Issue>https://github.com/dotnet/runtime/issues/121216</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandled/**">
             <Issue>System.Diagnostics.Process is not supported</Issue>

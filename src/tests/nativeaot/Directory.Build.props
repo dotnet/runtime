@@ -5,8 +5,12 @@
   <PropertyGroup>
     <!-- We expect trimming to be fully enabled in these tests -->
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
     <!-- We need the library import generator when running android tests. -->
     <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
+    <!-- Treat as merged runners so that each assembly gets its own apk -->
     <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
     <HasMergedInTests>true</HasMergedInTests>
     <ExpectedExitCode>100</ExpectedExitCode>
