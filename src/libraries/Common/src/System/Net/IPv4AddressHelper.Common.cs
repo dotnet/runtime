@@ -97,7 +97,6 @@ namespace System.Net
         //
 
         //Remark: MUST NOT be used unless all input indexes are verified and trusted.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsValid<TChar>(ReadOnlySpan<TChar> name, out int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
