@@ -1,0 +1,141 @@
+trigger: none
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/pipelines/**
+    - src/coreclr/jit/**
+    - src/tests/Common/GenerateHWIntrinsicTests/**
+    - src/tests/JIT/HardwareIntrinsics/**
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    isOfficialBuild: false
+    stages:
+    - stage: Build
+      jobs:
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
+          platforms:
+            - windows_x86
+            - windows_x64
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
+          jobParameters:
+            testGroup: outerloop
+            nameSuffix: CoreCLR
+            buildArgs: -s clr+libs -c $(_BuildConfig)
+            timeoutInMinutes: 360
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: 'tree JIT/HardwareIntrinsics'
+                  testRunNamePrefixSuffix: CoreCLR
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: outerloop
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
+          platforms:
+            - linux_arm
+            - linux_x64
+            - osx_arm64
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
+          jobParameters:
+            testGroup: outerloop
+            nameSuffix: CoreCLR
+            buildArgs: -s clr+libs -c $(_BuildConfig)
+            timeoutInMinutes: 360
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: '-tree:JIT/HardwareIntrinsics'
+                  testRunNamePrefixSuffix: CoreCLR
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: outerloop
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
+          platforms:
+            - windows_x86
+            - windows_x64
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
+          jobParameters:
+            testGroup: outerloop
+            nameSuffix: NativeAOT
+            buildArgs: -s clr.aot+libs.native+libs.sfx -c $(_BuildConfig)
+            timeoutInMinutes: 360
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: 'tree JIT/HardwareIntrinsics'
+                  testRunNamePrefixSuffix: NativeAOT
+                  nativeAotTest: true
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: outerloop
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
+          platforms:
+            - linux_arm
+            - linux_x64
+            - osx_arm64
+          variables:
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
+          jobParameters:
+            testGroup: outerloop
+            nameSuffix: NativeAOT
+            buildArgs: -s clr.aot+libs.native+libs.sfx -c $(_BuildConfig)
+            timeoutInMinutes: 360
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: '-tree:JIT/HardwareIntrinsics'
+                  testRunNamePrefixSuffix: NativeAOT
+                  nativeAotTest: true
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: outerloop

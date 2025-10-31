@@ -18,7 +18,7 @@ namespace Test
         {
             return null;
         }
-        [Fact]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
         public static int TestEntryPoint()
         {
             return (int)BB.Method1(__arglist()) + 100;

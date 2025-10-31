@@ -118,5 +118,53 @@ namespace System.Formats.Tar.Tests
                 Assert.Null(reader.GetNextEntry());
             }
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void TarReader_InvalidChecksum_ThrowsException(bool corrupted)
+        {
+            // Create a simple tar file in memory
+            using MemoryStream ms = new MemoryStream();
+            using (TarWriter writer = new TarWriter(ms, TarEntryFormat.Ustar, leaveOpen: true))
+            {
+                UstarTarEntry entry = new UstarTarEntry(TarEntryType.RegularFile, "test.txt");
+                writer.WriteEntry(entry);
+            }
+
+            // Reset position and get the bytes
+            ms.Position = 0;
+            byte[] tarData = ms.ToArray();
+
+            // Corrupt the checksum field (starting at byte 148)
+            // The checksum is written as an octal number in ASCII
+            if (corrupted)
+            {
+                tarData[150] = (byte)'9'; // invalid digit
+            }
+            else
+            {
+                // increment the digit at position 150, wrapping around if necessary
+                byte digit = (byte)(tarData[150] - (byte)'0');
+                digit = (byte)((digit + 1) % 8);
+                tarData[150] = (byte)('0' + digit);
+            }
+
+            // Create a new stream with corrupted data
+            using MemoryStream corruptedStream = new MemoryStream(tarData);
+
+            // Verify that reading the corrupted tar file throws an InvalidDataException
+            using TarReader reader = new TarReader(corruptedStream);
+            InvalidDataException exception = Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
+
+            if (corrupted)
+            {
+                Assert.Contains("parse", exception.Message);
+            }
+            else
+            {
+                Assert.Contains("Checksum", exception.Message);
+            }
+        }
     }
 }
