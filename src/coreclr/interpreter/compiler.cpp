@@ -461,7 +461,7 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         if (newCapacity > prevCapacity)
         {
             InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
-            if (from->outCount != 0) 
+            if (from->outCount != 0)
             {
                 memcpy(newa, from->ppOutBBs, from->outCount * sizeof(InterpBasicBlock*));
             }
@@ -1878,8 +1878,8 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
         if (align < INTERP_STACK_SLOT_SIZE)
             align = INTERP_STACK_SLOT_SIZE;
 
-        // We do not align beyond the stack alignment 
-        // (This is relevant for structs with very high alignment requirements, 
+        // We do not align beyond the stack alignment
+        // (This is relevant for structs with very high alignment requirements,
         // where we align within struct layout, but the structs are not actually
         // aligned on the stack)
         if (align > INTERP_STACK_ALIGNMENT)
@@ -4886,7 +4886,7 @@ public:
     OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
 
 public:
-    OpcodePeep* Peeps[10] = { 
+    OpcodePeep* Peeps[10] = {
         &peepTypeEqualityCheck,
         &peepStoreLoad,
         &peepStoreLoad1,
@@ -4901,7 +4901,7 @@ public:
     bool FindAndApplyPeep(InterpCompiler* compiler)
     {
         const uint8_t* ip = compiler->m_ip;
-        
+
         for (int i = 0; Peeps[i] != NULL; i++)
         {
             OpcodePeep *peep = Peeps[i];
@@ -5027,7 +5027,7 @@ bool InterpCompiler::IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElemen
         *ppComputedInfo = (void*)(size_t)((ni == NI_System_Type_op_Equality) ? 0 : 1);
         return true;
     }
-    else 
+    else
     {
         assert(compareResult == TypeCompareState::Must);
         // The types are definitely equal, so we can optimize this to a constant result
@@ -5612,7 +5612,7 @@ retry_emit:
 #endif
 
         // Check for IL opcode peephole optimizations
-        
+
         if (ILOpcodePeeps.FindAndApplyPeep(this))
             continue;
 
@@ -8254,7 +8254,7 @@ DO_LDFTN:
                 m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
                 m_pStackPointer--;
                 DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
-                EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[*m_ip == CEE_CASTCLASS ? InterpTypeO : InterpTypeI], NULL);
+                EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[InterpTypeO], NULL);
                 m_ip += 5;
                 break;
             }
