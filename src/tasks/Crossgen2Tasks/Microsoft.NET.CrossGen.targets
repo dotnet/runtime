@@ -441,6 +441,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ItemGroup>
       <_ReadyToRunNativeObjectOutputs Include="@(_ReadyToRunFilesToPublish->WithMetadataValue('RequiresNativeLink', 'true'))" />
+      <_ReadyToRunNativeObjectOutputs OutputPath="%(Identity)" />
     </ItemGroup>
   </Target>
 
@@ -630,29 +631,29 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_LinkReadyToRunMachO"
     DependsOnTargets="_FindMachOToolchain"
     Inputs="@(_ReadyToRunNativeObjectOutputs->'%(NativeLinkerInputPath)')"
-    Outputs="@(_ReadyToRunNativeObjectOutputs->'%(Identity)')"
+    Outputs="%(_ReadyToRunNativeObjectOutputs.Identity)"
     Condition="'$(PublishReadyToRunContainerFormat)' == 'macho'">
 
     <PropertyGroup>
-      <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == ''">@rpath/%(Filename)%(Extension)</SharedLibraryInstallName>
+      <SharedLibraryInstallName Condition="'$(SharedLibraryInstallName)' == ''">@rpath/%(_ReadyToRunNativeObjectOutputs.Filename)%(_ReadyToRunNativeObjectOutputs.Extension)</SharedLibraryInstallName>
     </PropertyGroup>
 
     <ItemGroup>
       <_MachLinkerArg Include="-Wl,-install_name,&quot;$(SharedLibraryInstallName)&quot;" />
-      <_MachLinkerArg Include="%(NativeLinkerInputPath)" />
-      <_MachLinkerArg Include="-o %(Identity)" />
+      <_MachLinkerArg Include="%(_ReadyToRunNativeObjectOutputs.NativeLinkerInputPath)" />
+      <_MachLinkerArg Include="-o %(_ReadyToRunNativeObjectOutputs.Identity)" />
     </ItemGroup>
 
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName(%(Identity)))" />
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName(%(_ReadyToRunNativeObjectOutputs.Identity)))" />
 
     <Exec Command="&quot;$(_AppleClang)&quot; @(_MachLinkerArg, ' ')" />
 
     <!-- remove executable flag -->
-    <Exec Command="chmod 644 &quot;%(Identity)&quot;" />
+    <Exec Command="chmod 644 &quot;%(_ReadyToRunNativeObjectOutputs.Identity)&quot;" />
 
     <Exec Condition="'$(StripSymbols)' == 'true'"
       Command="
-        dsymutil $(DsymUtilOptions) &quot;%(Identity)&quot; &amp;&amp;
-        strip -no_code_signature_warning -x &quot;%(Identity)&quot;" />
+        dsymutil $(DsymUtilOptions) &quot;%(_ReadyToRunNativeObjectOutputs.Identity)&quot; &amp;&amp;
+        strip -no_code_signature_warning -x &quot;%(_ReadyToRunNativeObjectOutputs.Identity)&quot;" />
   </Target>
 </Project>
