@@ -1449,11 +1449,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
 
             hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
 
-// Keep the thread attached, because in the browser we keep the runtime alive.
-// Even after main returns. Both synchronous and asynchronous.
-#if !defined(TARGET_BROWSER)
             Thread::CleanUpForManagedThreadInNative(pThread);
-#endif // !TARGET_BROWSER
         }
     }
 
