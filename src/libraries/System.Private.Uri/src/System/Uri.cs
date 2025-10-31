@@ -1318,33 +1318,34 @@ namespace System
                 return UriHostNameType.Unknown;
             }
 
+            int end;
             if (name.StartsWith('[') && name.EndsWith(']'))
             {
                 // we require that _entire_ name is recognized as ipv6 address
-                if (IPv6AddressHelper.IsValid(name.AsSpan(1), out int endSeq) && endSeq == name.Length)
+                if (IPv6AddressHelper.IsValid(name.AsSpan(1), out end) && end == name.Length - 1)
                 {
                     return UriHostNameType.IPv6;
                 }
             }
 
-            if (IPv4AddressHelper.IsValid(name.AsSpan(), out int ipv4End, false, false, false) && ipv4End == name.Length)
+            if (IPv4AddressHelper.IsValid(name.AsSpan(), out end, false, false, false) && end == name.Length)
             {
                 return UriHostNameType.IPv4;
             }
 
-            if (DomainNameHelper.IsValid(name, iri: false, notImplicitFile: false, out int length) && length == name.Length)
+            if (DomainNameHelper.IsValid(name, iri: false, notImplicitFile: false, out end) && end == name.Length)
             {
                 return UriHostNameType.Dns;
             }
 
-            if (DomainNameHelper.IsValid(name, iri: true, notImplicitFile: false, out length) && length == name.Length)
+            if (DomainNameHelper.IsValid(name, iri: true, notImplicitFile: false, out end) && end == name.Length)
             {
                 return UriHostNameType.Dns;
             }
 
-            //This checks the form without []
+            // This checks the form without []
             // we require that _entire_ name is recognized as ipv6 address
-            if (IPv6AddressHelper.IsValid(name.AsSpan(1), out int ipv6End) && ipv6End == name.Length)
+            if (IPv6AddressHelper.IsValid(name + "]", out end) && end - 1 == name.Length)
             {
                 return UriHostNameType.IPv6;
             }
