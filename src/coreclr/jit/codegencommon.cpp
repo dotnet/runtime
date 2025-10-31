@@ -2529,8 +2529,16 @@ regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
     // Otherwise on x64 (win-x64, SysV and Swift) r9 is never used for return values
     return RBM_R9;
 #elif TARGET_X86
-    assert(!tailCall);
-    // On x86 it's more difficult: we have only eax, ecx and edx available as volatile
+    if (tailCall)
+    {
+        // For tailcall we may need ecx and edx for args. We could use eax, but
+        // leave it free in case the tailcall needs something for the target.
+        // Since this is only for explicit tailcalls or CEE_JMP we can just use
+        // a callee save.
+        return RBM_ESI;
+    }
+
+    // For regular calls we have only eax, ecx and edx available as volatile
     // registers, and all of them may be used for return values (longs + async continuation).
     if (compiler->compIsAsync())
     {
