@@ -146,7 +146,7 @@ namespace System.Net
         //           start must be next to '[' position, or error is reported
         private static bool InternalIsValid(ReadOnlySpan<char> name, out int end, bool validateStrictAddress)
         {
-            end = 0;
+            end = 0; // Default value in case of failure
             int sequenceCount = 0;
             int sequenceLength = 0;
             bool haveCompressor = false;

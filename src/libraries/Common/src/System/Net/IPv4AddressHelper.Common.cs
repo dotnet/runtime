@@ -129,7 +129,7 @@ namespace System.Net
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-            end = 0;
+            end = 0; // Default value in case of failure
             int dots = 0;
             long number = 0;
             bool haveNumber = false;
@@ -214,7 +214,7 @@ namespace System.Net
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-            end = 0;
+            end = 0; // Default value in case of failure
             int numberBase;
             int ch = 0;
             Span<long> parts = [0, 0, 0]; // One part per octet. Final octet doesn't have a terminator, so is stored in currentValue.
