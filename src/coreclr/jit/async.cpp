@@ -823,7 +823,7 @@ void AsyncTransformation::Transform(
 
     m_resumptionBBs.push_back(resumeBB);
 
-    CreateDebugInfoForSuspensionPoint(block, callDefInfo, layout);
+    CreateDebugInfoForSuspensionPoint(layout);
 }
 
 //------------------------------------------------------------------------
@@ -1420,6 +1420,9 @@ BasicBlock* AsyncTransformation::CreateSuspension(
         m_comp->gtNewILOffsetNode(call->GetAsyncInfo().CallAsyncDebugInfo DEBUGARG(BAD_IL_OFFSET));
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, ilOffsetNode));
+
+    GenTree* recordOffset = new (m_comp, GT_RECORD_ASYNC_RESUME) GenTreeVal(GT_RECORD_ASYNC_RESUME, TYP_VOID, stateNum);
+    LIR::AsRange(suspendBB).InsertAtEnd(recordOffset);
 
     // Allocate continuation
     GenTree* returnedContinuation = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
@@ -2103,13 +2106,9 @@ GenTreeStoreInd* AsyncTransformation::StoreAtOffset(
 //   Create debug info for the specific suspension point we just created.
 //
 // Parameters:
-//   asyncCallBlock - Block that has the async call
-//   callDefInfo    - Information about the call def
 //   layout         - Layout of continuation
 //
-void AsyncTransformation::CreateDebugInfoForSuspensionPoint(BasicBlock*               asyncCallBlock,
-                                                            const CallDefinitionInfo& callDefInfo,
-                                                            const ContinuationLayout& layout)
+void AsyncTransformation::CreateDebugInfoForSuspensionPoint(const ContinuationLayout& layout)
 {
     uint32_t numLocals = 0;
     for (const LiveLocalInfo& local : layout.Locals)
@@ -2131,10 +2130,6 @@ void AsyncTransformation::CreateDebugInfoForSuspensionPoint(BasicBlock*         
     suspensionPoint.DiagnosticNativeOffset = 0;
     suspensionPoint.NumContinuationVars    = numLocals;
     m_comp->compSuspensionPoints->push_back(suspensionPoint);
-
-    GenTree* recordOffset = new (m_comp, GT_RECORD_ASYNC_RESUME)
-        GenTreeVal(GT_RECORD_ASYNC_RESUME, TYP_VOID, (int)(m_comp->compSuspensionPoints->size() - 1));
-    LIR::AsRange(asyncCallBlock).InsertAfter(callDefInfo.InsertAfter, recordOffset);
 }
 
 // AsyncTransformation::GetResultBaseVar:

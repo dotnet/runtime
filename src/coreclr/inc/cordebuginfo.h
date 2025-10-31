@@ -444,9 +444,9 @@ public:
     struct AsyncSuspensionPoint
     {
         // Offset of IP stored in Continuation.DiagnosticIP. This IP maps to
-        // source in the same way as the call instruction does, and it can be
-        // used as a unique key for debug information about the suspension
-        // point.
+        // the IL call that resulted in the suspension point through an ASYNC
+        // mapping. Also used as a unique key for debug information about the
+        // suspension point.
         uint32_t DiagnosticNativeOffset;
         // Count of AsyncContinuationVarInfo in array of locals starting where
         // the previous suspension point's locals end.

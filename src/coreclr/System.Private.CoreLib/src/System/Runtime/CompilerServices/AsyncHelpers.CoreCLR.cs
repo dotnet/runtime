@@ -82,8 +82,8 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct ResumeInfo
     {
         public delegate*<Continuation, ref byte, Continuation?> Resume;
-        // IP to use for diagnostics. Points into main code and maps to source
-        // in the same way as the call instruction does.
+        // IP to use for diagnostics. Points into main code and maps to the
+        // call that resulted in suspension.
         public void* DiagnosticIP;
     }
 
