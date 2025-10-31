@@ -357,7 +357,7 @@ namespace ILCompiler
                 "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. By default other instruction sets not " +
                 "specified may light-up optimistically via dynamic checks. Individual instruction sets can be disallowed from such light-up by prefixing them with '-'. " +
                 "All such light-up can be disallowed by specifying '-optimistic'. The instruction sets supported by the machine invoking the tool can be targeted by " +
-                "specifying 'native'. For example 'native', 'avx,aes', 'avx,aes,-avx2', or 'avx,aes,-optimistic'</value>
+                "specifying 'native'. For example 'native', 'avx,aes', 'avx,aes,-avx2', or 'avx,aes,-optimistic'");
 
             foreach (string arch in ValidArchitectures)
             {
