@@ -303,12 +303,12 @@ namespace System.Net
             else if (current >= name.Length)
             {
                 // end of string, allowed
+                end = name.Length;
             }
             else if (ch == '/' || ch == '\\' || (notImplicitFile && (ch == ':' || ch == '?' || ch == '#')))
             {
                 // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
                 // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
-
                 end = current;
             }
             else
