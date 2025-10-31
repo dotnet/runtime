@@ -1305,6 +1305,44 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     appendToCurIG(id);
 }
 
+//------------------------------------------------------------------------
+// emitIns_R_R_Addr: emit instruction sequence for a long (address pointer) immediate
+//
+// If the address is approximately in range, emits a PC-relative combo with a relocation:
+//     auipc regAddr, offset_hi20
+//     ins   regData, regAddr, offset_lo12
+// Otherwise, synthesizes an absolute address combo:
+//     li regAddr, (addr - lo12)
+//     ins regData, regAddr, lo12
+//
+// Arguments:
+//    ins     - an instruction that is a 64-bit adder with 12-bit immediate (addi/load/store)
+//    attr    - attribute
+//    regData - destination register for addi/load, source for stores
+//    regAddr - temporary register to synthesize the address into (pass same as regData if possible)
+//    addr    - the address
+//
+void emitter::emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regData, regNumber regAddr, void* addr)
+{
+    assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
+    assert(!EA_IS_RELOC(attr) && EA_SIZE(attr) == EA_PTRSIZE);
+
+    if (emitComp->opts.compReloc ||
+        (INDEBUG(emitComp->opts.compEnablePCRelAddr&&)(IMAGE_REL_BASED_REL32 == emitComp->eeGetRelocTypeHint(addr))))
+    {
+        attr = EA_SET_FLG(attr, EA_PTR_DSP_RELOC);
+        emitIns_R_AI(ins, attr, regData, regAddr, (ssize_t)addr);
+    }
+    else
+    {
+        ssize_t imm  = (ssize_t)addr;
+        ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
+        imm -= lo12;
+        emitLoadImmediate(attr, regAddr, imm);
+        emitIns_R_R_I(ins, attr, regData, regAddr, lo12);
+    }
+}
+
 void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg)
 {
     NYI_RISCV64("emitIns_J_R-----unimplemented/unused on RISCV64 yet----");

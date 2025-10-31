@@ -12027,7 +12027,7 @@ void CEEJitInfo::recordRelocation(void * location,
             {
                 PutRiscV64AuipcCombo((UINT32 *)locationRW, lo12, hi20);
             }
-            else
+            else // out of 32-bit range
             {
                 // TODO: emit a stub if it's a jump
                 m_fJumpStubOverflow = TRUE;

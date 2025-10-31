@@ -345,6 +345,8 @@ void emitIns_R_C(instruction ins, emitAttr attr, regNumber destReg, regNumber ad
 
 void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
 
+void emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regDest, regNumber regAddr, void* addr);
+
 void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);

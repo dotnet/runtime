@@ -2738,8 +2738,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
         params.addr     = nullptr;
         params.callType = EC_INDIR_R;
         params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
-
-        GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, params.ireg, params.ireg, (ssize_t)helperFunction.addr);
+        GetEmitter()->emitIns_R_R_Addr(INS_ld, EA_PTRSIZE, params.ireg, params.ireg, helperFunction.addr);
         regSet.verifyRegUsed(params.ireg);
     }
 
@@ -3377,7 +3376,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     if (helperFunction.accessType == IAT_VALUE)
     {
-        params.addr = (void*)helperFunction.addr;
+        params.addr = helperFunction.addr;
     }
     else
     {
@@ -3402,7 +3401,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // assert that all registers in callTargetMask are in the callKillSet
         noway_assert((callTargetMask & killSet) == callTargetMask);
 
-        GetEmitter()->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, callTargetReg, callTargetReg, (ssize_t)pAddr);
+        GetEmitter()->emitIns_R_R_Addr(INS_ld, EA_PTRSIZE, callTargetReg, callTargetReg, pAddr);
         regSet.verifyRegUsed(callTargetReg);
 
         params.callType = EC_INDIR_R;
