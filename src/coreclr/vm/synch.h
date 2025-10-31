@@ -24,7 +24,6 @@ public:
         m_dwFlags = 0;
     }
 
-    // Create an Event that is host aware
     void CreateAutoEvent(BOOL bInitialState);
     void CreateManualEvent(BOOL bInitialState);
 

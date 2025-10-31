@@ -146,12 +146,6 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
     }
 
-    if (Thread::m_DetachCount > 0
-        || Thread::CleanupNeededForFinalizedThread())
-    {
-        Thread::CleanupDetachedThreads();
-    }
-
     if (YieldProcessorNormalization::IsMeasurementScheduled())
     {
         GCX_PREEMP();
@@ -163,8 +157,6 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         GCX_PREEMP();
         CleanupDelayedDynamicMethods();
     }
-
-    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
 }
 
 OBJECTREF FinalizerThread::GetNextFinalizableObject()
