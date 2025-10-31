@@ -74,12 +74,16 @@ else()
                 -sMAXIMUM_MEMORY=2147483648
                 -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
-                -sWASM_BIGINT=1
                 -sEXPORTED_FUNCTIONS=_main,_GetDotNetRuntimeContractDescriptor
                 -sENVIRONMENT=node,shell,web
                 -Wl,-error-limit=0)
 
             if (CORERUN_IN_BROWSER)
+                # Node.js doesn't have good support for WASM_BIGINT
+                # so it only is added when running in the browser.
+                target_link_options(corerun PRIVATE
+                    -sWASM_BIGINT=1)
+
                 # Include the virtual file system data for the
                 # browser scenario.
                 set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")
