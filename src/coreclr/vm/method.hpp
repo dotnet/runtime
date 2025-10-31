@@ -1968,19 +1968,6 @@ public:
             asyncKind == AsyncMethodKind::TaskReturning;
     }
 
-    inline bool IsStructMethodOperatingOnCopy()
-    {
-        if (!GetMethodTable()->IsValueType() || IsStatic())
-            return false;
-
-        if (!HasAsyncMethodData())
-            return false;
-
-        // Only async methods backed by actual user code operate on copies.
-        // Thunks with runtime-supplied implementation do not.
-        return GetAddrOfAsyncMethodData()->kind == AsyncMethodKind::AsyncVariantImpl;
-    }
-
     inline bool HasAsyncMethodData() const
     {
         return (m_wFlags & mdfHasAsyncMethodData) != 0;
