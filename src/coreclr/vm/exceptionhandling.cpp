@@ -3974,7 +3974,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             _ASSERTE(pThis->m_crawl.GetFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
             if (ExecutionManager::IsManagedCode(returnAddress))
             {
-                // The caller of the interpreted code is a managed code
+                // The caller of the interpreted code is managed code. Advance the stack frame iterator to that frame.
                 retVal = pThis->Next();
                 _ASSERTE(retVal != SWA_FAILED);
                 _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD);
