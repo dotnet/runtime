@@ -156,7 +156,7 @@ namespace System.Net
             int lastSequence = 1;
 
             // Starting with a colon character is only valid if another colon follows.
-            if ((name.Length == 0) || (name[0] == ':' && (name.Length <= 1 || name[1] != ':')))
+            if (name.Length < 2 || (name[0] == ':' && name[1] != ':'))
             {
                 return false;
             }
