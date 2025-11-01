@@ -362,13 +362,37 @@ namespace System.Runtime.InteropServices
         {
             string? path = Path.GetDirectoryName(callingAssembly.Location);
 
+#if CORECLR
             // Bundled assembly/NativeAOT - path will be empty, path to load should point to the single-file bundle
-            if (string.IsNullOrEmpty(path))
+            bool isBundledAssembly = string.IsNullOrEmpty(path) && !callingAssembly.IsDynamic;
+#else
+            bool isBundledAssembly = true;
+#endif
+            if (isBundledAssembly)
             {
                 path = AppContext.BaseDirectory;
             }
 
+            if (string.IsNullOrEmpty(path))
+            {
+                return IntPtr.Zero;
+            }
+
             IntPtr ret = LoadLibraryHelper(Path.Combine(path, libraryName), flags, ref errorTracker);
+
+#if CORECLR
+            // Bundle with additional files extracted - also treat the extraction path as the assembly directory for native library load
+            if (ret == IntPtr.Zero && isBundledAssembly)
+            {
+                string? extractionPath = null;
+                if (TryGetBundleInformation(out bool isExtracted, new StringHandleOnStack(ref extractionPath)) &&
+                    isExtracted && !string.IsNullOrEmpty(extractionPath))
+                {
+                    ret = LoadLibraryHelper(Path.Combine(extractionPath, libraryName), flags, ref errorTracker);
+                }
+            }
+#endif
+
             return ret;
         }
 

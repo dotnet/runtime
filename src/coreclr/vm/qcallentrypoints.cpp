@@ -118,6 +118,7 @@ static const Entry s_QCall[] =
     DllImportEntry(TypeHandle_GetCorElementType)
     DllImportEntry(ValueType_GetHashCodeStrategy)
     DllImportEntry(Stream_HasOverriddenSlow)
+    DllImportEntry(BundleNative_TryGetBundleInformation)
     DllImportEntry(RuntimeTypeHandle_MakePointer)
     DllImportEntry(RuntimeTypeHandle_MakeByRef)
     DllImportEntry(RuntimeTypeHandle_MakeSZArray)

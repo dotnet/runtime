@@ -1941,3 +1941,27 @@ extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead
 
     return isRead ? readOverride : writeOverride;
 }
+
+extern "C" BOOL QCALLTYPE BundleNative_TryGetBundleInformation(BOOL* isExtracted, QCall::StringHandleOnStack extractPath)
+{
+    QCALL_CONTRACT;
+    _ASSERTE(isExtracted != NULL);
+
+    BOOL isBundled = FALSE;
+
+    BEGIN_QCALL;
+
+    isBundled = Bundle::AppIsBundle();
+    if (isBundled)
+    {
+        *isExtracted = Bundle::AppBundle->HasExtractedFiles();
+        if (*isExtracted)
+        {
+            extractPath.Set(Bundle::AppBundle->ExtractionPath());
+        }
+    }
+
+    END_QCALL;
+
+    return isBundled;
+}
