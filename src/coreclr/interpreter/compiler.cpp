@@ -3744,7 +3744,7 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 }
 
-bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig)
+static bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig)
 {
     // We allow only the return value types to differ between caller and callee as long as their stack types are the same.
     // In principle we could allow more differences (e.g. I8 coercion to I4, or O to I) but for now we keep it simple.
@@ -3752,13 +3752,11 @@ bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig)
     {
         if (g_stackTypeFromInterpType[GetInterpType(callerSig->retType)] != g_stackTypeFromInterpType[GetInterpType(calleeSig->retType)])
         {
-            // Return type mismatch for tail call
             return true;
         }
     }
     else if (callerSig->retType == CORINFO_TYPE_VALUECLASS && callerSig->retTypeClass != calleeSig->retTypeClass)
     {
-        // Return type mismatch for tail call
         return true;
     }
     return false;
