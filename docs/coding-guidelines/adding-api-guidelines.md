@@ -44,7 +44,7 @@ should be added to `net10.0`. [More Information on TargetFrameworks](https://lea
 
 New public APIs must be documented with triple-slash comments on top of them. Visual Studio automatically generates the structure for you when you type `///`.
 
-[API writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki)) has information about language and proper style for writing API documentation.
+[API writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) has information about language and proper style for writing API documentation.
 If your new API or the APIs it calls throw any exceptions, those need to be manually documented by adding the `<exception></exception>` elements.
 
 After your change is merged, we will eventually port them to the [dotnet-api-docs](https://github.com/dotnet/dotnet-api-docs) repo. Once the dotnet-api-docs change
