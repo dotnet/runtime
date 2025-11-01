@@ -123,9 +123,9 @@ namespace System.Reflection.Emit
         private static void WriteCustomModifiers(CustomModifiersEncoder encoder, Type[] customModifiers, bool isOptional, ModuleBuilderImpl module)
         {
             // GetOptionalCustomModifiers and GetRequiredCustomModifiers return modifiers in reverse order
-            Array.Reverse(customModifiers);
-            foreach (Type modifier in customModifiers)
+            for (int i = customModifiers.Length - 1; i >= 0; i--)
             {
+                Type modifier = customModifiers[i];
                 encoder.AddModifier(module.GetTypeHandle(modifier), isOptional);
             }
         }
@@ -203,13 +203,13 @@ namespace System.Reflection.Emit
                     module.GetTypeHandle(type.GetGenericTypeDefinition()), genericArguments.Length, type.IsValueType);
                 foreach (Type gType in genericArguments)
                 {
-                    if (gType.UnderlyingSystemType.IsGenericMethodParameter)
+                    if (gType.IsGenericMethodParameter)
                     {
-                        encoder.AddArgument().GenericMethodTypeParameter(gType.UnderlyingSystemType.GenericParameterPosition);
+                        encoder.AddArgument().GenericMethodTypeParameter(gType.GenericParameterPosition);
                     }
-                    else if (gType.UnderlyingSystemType.IsGenericParameter)
+                    else if (gType.IsGenericParameter)
                     {
-                        encoder.AddArgument().GenericTypeParameter(gType.UnderlyingSystemType.GenericParameterPosition);
+                        encoder.AddArgument().GenericTypeParameter(gType.GenericParameterPosition);
                     }
                     else
                     {
@@ -217,13 +217,13 @@ namespace System.Reflection.Emit
                     }
                 }
             }
-            else if (type.UnderlyingSystemType.IsGenericMethodParameter)
+            else if (type.IsGenericMethodParameter)
             {
-                signature.GenericMethodTypeParameter(type.UnderlyingSystemType.GenericParameterPosition);
+                signature.GenericMethodTypeParameter(type.GenericParameterPosition);
             }
-            else if (type.UnderlyingSystemType.IsGenericParameter)
+            else if (type.IsGenericParameter)
             {
-                signature.GenericTypeParameter(type.UnderlyingSystemType.GenericParameterPosition);
+                signature.GenericTypeParameter(type.GenericParameterPosition);
             }
             else if (type.IsFunctionPointer)
             {
