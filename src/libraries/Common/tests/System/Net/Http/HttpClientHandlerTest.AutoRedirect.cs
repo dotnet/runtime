@@ -269,5 +269,37 @@ namespace System.Net.Http.Functional.Tests
                 });
             }
         }
+
+        [Theory]
+        [InlineData("ftp://ftp.example.com/file.txt")]
+        [InlineData("file:///etc/passwd")]
+        [InlineData("gopher://gopher.example.com")]
+        [InlineData("telnet://telnet.example.com")]
+        public async Task GetAsync_AllowAutoRedirectTrue_UnsupportedRedirectScheme_ReturnsOriginalResponse(string redirectLocation)
+        {
+            if (IsWinHttpHandler)
+            {
+                // WinHttpHandler may have different behavior for unsupported schemes
+                return;
+            }
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.AllowAutoRedirect = true;
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    Task<HttpResponseMessage> getTask = client.GetAsync(url);
+                    Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Found, $"Location: {redirectLocation}\r\n");
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getTask, serverTask);
+
+                    using (HttpResponseMessage response = await getTask)
+                    {
+                        Assert.Equal(302, (int)response.StatusCode);
+                        Assert.Equal(url, response.RequestMessage.RequestUri);
+                    }
+                });
+            }
+        }
     }
 }
