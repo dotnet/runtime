@@ -34,12 +34,13 @@ static const InterpType g_interpTypeFromStackType[] =
     InterpTypeVT,       // VT,
     InterpTypeByRef,    // MP,
     InterpTypeI,        // F
+    InterpTypeByRef,    // LocalVariableAddress, The result of ldloca or ldarga is a byref per spec, but is also permitted to be treated as a nint in some cases. Keep track of that here.
 };
 
 // Used by assertAbort
 thread_local ICorJitInfo* t_InterpJitInfoTls = nullptr;
 
-static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
+static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F ", "TP" };
 
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
@@ -2380,7 +2381,7 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
 void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
     CHECK_STACK(1);
-    StackType argType = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].type;
+    StackType argType = (m_pStackPointer[-1].GetStackType() == StackTypeO || m_pStackPointer[-1].GetStackType() == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].GetStackType();
     // offset the opcode to obtain the type specific I4/I8/R4/R8 variant.
     InterpOpcode opcodeArgType = (InterpOpcode)(opcode + argType - StackTypeI4);
     m_pStackPointer--;
@@ -2398,8 +2399,8 @@ void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int
 void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
     CHECK_STACK(2);
-    StackType argType1 = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].type;
-    StackType argType2 = (m_pStackPointer[-2].type == StackTypeO || m_pStackPointer[-2].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-2].type;
+    StackType argType1 = (m_pStackPointer[-1].GetStackType() == StackTypeO || m_pStackPointer[-1].GetStackType() == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].GetStackType();
+    StackType argType2 = (m_pStackPointer[-2].GetStackType() == StackTypeO || m_pStackPointer[-2].GetStackType() == StackTypeByRef) ? StackTypeI : m_pStackPointer[-2].GetStackType();
 
     // Since branch opcodes only compare args of the same type, handle implicit conversions before
     // emitting the conditional branch
@@ -2492,12 +2493,12 @@ void InterpCompiler::EmitStoreVar(int32_t var)
 
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
-    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
+    if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
         EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
 #endif
-    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
+    if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
         EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
-    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
+    else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
         EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
 
     m_pStackPointer--;
@@ -2551,8 +2552,26 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
 void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 {
     CHECK_STACK(2);
-    StackType type1 = m_pStackPointer[-2].type;
-    StackType type2 = m_pStackPointer[-1].type;
+    StackType type1 = m_pStackPointer[-2].GetStackType();
+    StackType type2 = m_pStackPointer[-1].GetStackType();
+
+    if (opBase == INTOP_SUB_I4 && type1 == StackTypeByRef && type2 == StackTypeByRef)
+    {
+        // This case (byref - byref) should not be converted to StackTypeI.
+    }
+    else
+    {
+        if (type1 == StackTypeByRef)
+        {
+            m_pStackPointer[-2].BashStackTypeToI_ForLocalVariableAddress();
+            type1 = m_pStackPointer[-2].GetStackType();
+        }
+        if (type2 == StackTypeByRef)
+        {
+            m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+            type2 = m_pStackPointer[-1].GetStackType();
+        }
+    }
 
     StackType typeRes;
 
@@ -2668,7 +2687,8 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
 {
     CHECK_STACK(1);
-    StackType stackType = m_pStackPointer[-1].type;
+    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+    StackType stackType = m_pStackPointer[-1].GetStackType();
     int32_t finalOpcode = opBase + (stackType - StackTypeI4);
 
     if (stackType == StackTypeByRef || stackType == StackTypeO)
@@ -2686,8 +2706,10 @@ void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
 void InterpCompiler::EmitShiftOp(int32_t opBase)
 {
     CHECK_STACK(2);
-    StackType stackType = m_pStackPointer[-2].type;
-    StackType shiftAmountType = m_pStackPointer[-1].type;
+    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+    m_pStackPointer[-2].BashStackTypeToI_ForLocalVariableAddress();
+    StackType stackType = m_pStackPointer[-2].GetStackType();
+    StackType shiftAmountType = m_pStackPointer[-1].GetStackType();
     int32_t typeOffset = stackType - StackTypeI4;
     int32_t finalOpcode = opBase + typeOffset;
 
@@ -2705,25 +2727,25 @@ void InterpCompiler::EmitShiftOp(int32_t opBase)
 void InterpCompiler::EmitCompareOp(int32_t opBase)
 {
     CHECK_STACK(2);
-    if (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef)
+    if (m_pStackPointer[-1].GetStackType() == StackTypeO || m_pStackPointer[-1].GetStackType() == StackTypeByRef)
     {
         AddIns(opBase + StackTypeI - StackTypeI4);
     }
     else
     {
-        if (m_pStackPointer[-1].type == StackTypeR4 && m_pStackPointer[-2].type == StackTypeR8)
+        if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && m_pStackPointer[-2].GetStackType() == StackTypeR8)
             EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
-        if (m_pStackPointer[-1].type == StackTypeR8 && m_pStackPointer[-2].type == StackTypeR4)
+        if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && m_pStackPointer[-2].GetStackType() == StackTypeR4)
             EmitConv(m_pStackPointer - 2, StackTypeR8, INTOP_CONV_R8_R4);
 
 #ifdef TARGET_64BIT
         // Support comparisons between I and I4 by inserting an implicit conversion to I8
-        if (m_pStackPointer[-1].type == StackTypeI4 && m_pStackPointer[-2].type == StackTypeI8)
+        if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && m_pStackPointer[-2].GetStackType() == StackTypeI8)
             EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
-        if (m_pStackPointer[-1].type == StackTypeI8 && m_pStackPointer[-2].type == StackTypeI4)
+        if (m_pStackPointer[-1].GetStackType() == StackTypeI8 && m_pStackPointer[-2].GetStackType() == StackTypeI4)
             EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
 #endif
-        AddIns(opBase + m_pStackPointer[-1].type - StackTypeI4);
+        AddIns(opBase + m_pStackPointer[-1].GetStackType() - StackTypeI4);
     }
     m_pStackPointer -= 2;
     m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
@@ -2828,16 +2850,16 @@ static bool DoesValueTypeContainGCRefs(COMP_HANDLE compHnd, CORINFO_CLASS_HANDLE
 
 void InterpCompiler::ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type)
 {
-    if (entry->type != type)
+    if (entry->GetStackType() != type)
     {
-        if (entry->type != StackTypeR4 && entry->type != StackTypeR8)
+        if (entry->GetStackType() != StackTypeR4 && entry->GetStackType() != StackTypeR8)
             NO_WAY("ConvertFloatingPointStackEntryToStackType: entry is not floating point");
 
-        if (type == StackTypeR8 && entry->type == StackTypeR4)
+        if (type == StackTypeR8 && entry->GetStackType() == StackTypeR4)
         {
             EmitConv(entry, StackTypeR8, INTOP_CONV_R8_R4);
         }
-        else if (type == StackTypeR4 && entry->type == StackTypeR8)
+        else if (type == StackTypeR4 && entry->GetStackType() == StackTypeR8)
         {
             EmitConv(entry, StackTypeR4, INTOP_CONV_R4_R8);
         }
@@ -4070,7 +4092,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 CORINFO_CLASS_HANDLE classHandle;
 
                 // Implement the implicit argument conversion rules of III.1.6
-                switch (m_pStackPointer[iCurrentStackArg].type)
+                switch (m_pStackPointer[iCurrentStackArg].GetStackType())
                 {
                 case StackTypeR4:
                     if (strip(m_compHnd->getArgType(&callInfo.sig, args, &classHandle)) == CORINFO_TYPE_DOUBLE)
@@ -4560,15 +4582,15 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
         stackIndexValue = -2;
     }
 
-    if (interpType == InterpTypeR4 && m_pStackPointer[stackIndexValue].type == StackTypeR8)
+    if (interpType == InterpTypeR4 && m_pStackPointer[stackIndexValue].GetStackType() == StackTypeR8)
     {
         EmitConv(m_pStackPointer + stackIndexValue, StackTypeR4, INTOP_CONV_R4_R8);
     }
-    else if (interpType == InterpTypeR8 && m_pStackPointer[stackIndexValue].type == StackTypeR4)
+    else if (interpType == InterpTypeR8 && m_pStackPointer[stackIndexValue].GetStackType() == StackTypeR4)
     {
         EmitConv(m_pStackPointer + stackIndexValue, StackTypeR8, INTOP_CONV_R8_R4);
     }
-    else if (enableImplicitArgConversionRules && interpType == InterpTypeI8 && m_pStackPointer[stackIndexValue].type == StackTypeI4) // This subtly differs from the published ECMA spec for section III.1.6, and is what is defined in the Ecma-335-Augments.md document
+    else if (enableImplicitArgConversionRules && interpType == InterpTypeI8 && m_pStackPointer[stackIndexValue].GetStackType() == StackTypeI4) // This subtly differs from the published ECMA spec for section III.1.6, and is what is defined in the Ecma-335-Augments.md document
     {
         EmitConv(m_pStackPointer + stackIndexValue, StackTypeI8, INTOP_CONV_I8_I4);
     }
@@ -4610,16 +4632,17 @@ void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 
 void InterpCompiler::EmitStelem(InterpType interpType)
 {
+    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
-    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
+    if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
         EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
 #endif
 
     // Handle floating point conversions
-    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
+    if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
         EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
-    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
+    else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
         EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
 
     m_pStackPointer -= 3;
@@ -4803,6 +4826,7 @@ void InterpCompiler::EmitLdLocA(int32_t var)
         m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
         m_pStackPointer--;
         PushInterpType(InterpTypeByRef, NULL);
+        m_pStackPointer[-1].SetAsLocalVariableAddress();
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
         return;
     }
@@ -4810,6 +4834,7 @@ void InterpCompiler::EmitLdLocA(int32_t var)
     AddIns(INTOP_LDLOCA);
     m_pLastNewIns->SetSVar(var);
     PushInterpType(InterpTypeByRef, NULL);
+    m_pStackPointer[-1].SetAsLocalVariableAddress();
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
@@ -5101,6 +5126,71 @@ bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* patte
             return false;
     }
 
+    int numArgs = m_methodInfo->args.totalILArgs();
+    int varsArg = numArgs + localVar; // Adjust for args
+    InterpType interpType = m_pVars[varsArg].interpType;
+
+    if (m_pStackPointer[-1].GetStackType() != g_stackTypeFromInterpType[interpType])
+    {
+        switch (g_stackTypeFromInterpType[interpType])
+        {
+            case StackTypeO:
+            case StackTypeByRef:
+                return false; // We may be changing GC representation, so don't optimize this.
+
+#ifdef TARGET_64BIT
+            case StackTypeI8:
+                if (m_pStackPointer[-1].GetStackType() == StackTypeI4)
+                {
+                    // This is actually permitted due to implicit conversion rules
+                }
+                else
+                {
+                    if (m_pStackPointer[-1].IsLocalVariableAddress())
+                    {
+                        // Transient pointers can be treated as I
+                    }
+                    else
+                    {
+                        // We are changing GC representation, so don't optimize this.
+                        return false;
+                    }
+                }
+                break;
+            case StackTypeI4:
+                return false;
+#else
+            case StackTypeI8:
+                return false;
+            case StackTypeI4:
+                if (m_pStackPointer[-1].IsLocalVariableAddress())
+                {
+                    // Transient pointers can be treated as I
+                }
+                else
+                {
+                    // We are changing GC representation, so don't optimize this.
+                    return false;
+                }
+                break;
+#endif
+            case StackTypeR4:
+            case StackTypeR8:
+                switch (m_pStackPointer[-1].GetStackType())
+                {
+                    case StackTypeR4:
+                    case StackTypeR8:
+                        // Floating point conversions are ok
+                        break;
+                    default:
+                        return false; // We may be changing representation, so don't optimize this.
+                }
+                break;
+            default:
+                return false; // We may be changing representation, so don't optimize this.
+        }
+    }
+
     *ppComputedInfo = (void*)(size_t)localVar;
     return localVar == secondLocalVar;
 }
@@ -5117,14 +5207,14 @@ void InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pa
     // Convert var on top of stack to the type of the local variable if needed
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
-    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
+    if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
         EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
 #endif
 
     // Handle floating point conversions
-    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
+    if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
         EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
-    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
+    else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
         EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
 
     // stloc/ldloc is not a no-op if the InterpType is different as it may cause truncation/sign-extension for I1/U1/I2/U2 types
@@ -5147,11 +5237,20 @@ void InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pa
             break;
     }
 
-    if (m_pStackPointer[-1].type != g_stackTypeFromInterpType[interpType])
+    if (m_pStackPointer[-1].GetStackType() != g_stackTypeFromInterpType[interpType])
     {
-        if (m_pStackPointer[-1].type == StackTypeI && (interpType == InterpTypeByRef || interpType == InterpTypeO))
+        if (m_pStackPointer[-1].GetStackType() == StackTypeI && (interpType == InterpTypeByRef || interpType == InterpTypeO))
         {
             // Sometime we have a pointer instead of a ByRef or object reference. That's ok.
+        }
+        else if (m_pStackPointer[-1].GetStackType() == StackTypeByRef && g_stackTypeFromInterpType[interpType] == StackTypeI)
+        {
+            m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+            if (m_pStackPointer[-1].GetStackType() != StackTypeI)
+            {
+                // We should have been able to convert ByRef to I
+                BADCODE("Incompatible types in store/load peep");
+            }
         }
         else
         {
@@ -5623,9 +5722,9 @@ retry_emit:
             printf("IL_%04x %-10s, sp %d, %s",
                 (int32_t)(m_ip - m_pILCode),
                 CEEOpName(CEEDecodeOpcode(&ip)), (int32_t)(m_pStackPointer - m_pStackBase),
-                m_pStackPointer > m_pStackBase ? g_stackTypeString[m_pStackPointer[-1].type] : "  ");
+                m_pStackPointer > m_pStackBase ? g_stackTypeString[m_pStackPointer[-1].GetStackType()] : "  ");
             if (m_pStackPointer > m_pStackBase &&
-                    (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeVT) &&
+                    (m_pStackPointer[-1].GetStackType() == StackTypeO || m_pStackPointer[-1].GetStackType() == StackTypeVT) &&
                     m_pStackPointer[-1].clsHnd != NULL)
                 PrintClassName(m_pStackPointer[-1].clsHnd);
             printf("\n");
@@ -5827,6 +5926,12 @@ retry_emit:
                 CORINFO_SIG_INFO sig = methodInfo->args;
                 InterpType retType = GetInterpType(sig.retType);
 
+                if ((retType != InterpTypeVoid) && (retType != InterpTypeByRef))
+                {
+                    CheckStackExact(1);
+                    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+                }
+
                 if (m_isSynchronized && m_currentILOffset < m_ILCodeSizeFromILHeader)
                 {
                     // We are in a synchronized method, but we need to go through the finally first
@@ -5876,18 +5981,18 @@ retry_emit:
 
 #ifdef TARGET_64BIT
                     // nint and int32 can be used interchangeably. Add implicit conversions.
-                    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
+                    if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
                         EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
 #endif
-                    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
+                    if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
                         EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
-                    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
+                    else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
                         EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
 
-                    if (m_pStackPointer[-1].type != g_stackTypeFromInterpType[retType])
+                    if (m_pStackPointer[-1].GetStackType() != g_stackTypeFromInterpType[retType])
                     {
                         StackType retStackType = g_stackTypeFromInterpType[retType];
-                        StackType stackType = m_pStackPointer[-1].type;
+                        StackType stackType = m_pStackPointer[-1].GetStackType();
 
                         if (stackType == StackTypeI && (retStackType == StackTypeO || retStackType == StackTypeByRef))
                         {
@@ -5897,6 +6002,13 @@ retry_emit:
                         {
                             // Allow implicit conversion from ref or byref to nint
                         }
+#ifdef TARGET_64BIT
+                        else if (retStackType == StackTypeI4 && stackType == StackTypeI8)
+                        {
+                            // nint and int32 can be used interchangeably. Add implicit conversions.
+                            // Allow implicit conversion from int64 to int32 which is just a truncation
+                        }
+#endif
                         else
                         {
                             BADCODE("return type mismatch");
@@ -5916,7 +6028,7 @@ retry_emit:
             {
                 CHECK_STACK(1);
                 int sVar = m_pStackPointer[-1].var;
-                StackType argType = m_pStackPointer[-1].type;
+                StackType argType = m_pStackPointer[-1].GetStackType();
                 switch (argType)
                 {
                     case StackTypeR4:
@@ -5939,7 +6051,8 @@ retry_emit:
 
             case CEE_CONV_U1:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_R4);
@@ -5960,7 +6073,8 @@ retry_emit:
                 break;
             case CEE_CONV_I1:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_R4);
@@ -5981,7 +6095,8 @@ retry_emit:
                 break;
             case CEE_CONV_U2:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_R4);
@@ -6002,7 +6117,8 @@ retry_emit:
                 break;
             case CEE_CONV_I2:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_R4);
@@ -6023,7 +6139,8 @@ retry_emit:
                 break;
             case CEE_CONV_U:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR8:
 #ifdef TARGET_64BIT
@@ -6060,7 +6177,8 @@ retry_emit:
                 break;
             case CEE_CONV_I:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR8:
 #ifdef TARGET_64BIT
@@ -6097,7 +6215,8 @@ retry_emit:
                 break;
             case CEE_CONV_U4:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U4_R4);
@@ -6120,7 +6239,8 @@ retry_emit:
                 break;
             case CEE_CONV_I4:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I4_R4);
@@ -6143,7 +6263,8 @@ retry_emit:
                 break;
             case CEE_CONV_I8:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_R4);
@@ -6171,7 +6292,8 @@ retry_emit:
                 break;
             case CEE_CONV_R4:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR8:
                     EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
@@ -6191,7 +6313,8 @@ retry_emit:
                 break;
             case CEE_CONV_R8:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_I4);
@@ -6211,7 +6334,8 @@ retry_emit:
                 break;
             case CEE_CONV_U8:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
@@ -6237,7 +6361,9 @@ retry_emit:
                 m_ip++;
                 break;
             case CEE_CONV_R_UN:
-                switch (m_pStackPointer[-1].type)
+                CHECK_STACK(1);
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
@@ -6258,7 +6384,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I1:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R4);
@@ -6280,7 +6407,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U1:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R4);
@@ -6301,7 +6429,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I2:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R4);
@@ -6322,7 +6451,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U2:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R4);
@@ -6343,7 +6473,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I4:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R4);
@@ -6363,7 +6494,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U4:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R4);
@@ -6384,7 +6516,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I8:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R4);
@@ -6404,7 +6537,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U8:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R4);
@@ -6425,7 +6559,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
@@ -6462,7 +6597,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
@@ -6502,7 +6638,8 @@ retry_emit:
             //  does the equivalent by manually duplicating the conversions from the non-.un opcodes.
             case CEE_CONV_OVF_I1_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R4);
@@ -6523,7 +6660,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U1_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R4);
@@ -6544,7 +6682,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I2_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R4);
@@ -6565,7 +6704,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U2_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R4);
@@ -6586,7 +6726,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I4_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R4);
@@ -6607,7 +6748,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U4_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R4);
@@ -6627,7 +6769,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I8_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R4);
@@ -6648,7 +6791,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U8_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R4);
@@ -6668,7 +6812,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_I_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
@@ -6705,7 +6850,8 @@ retry_emit:
                 break;
             case CEE_CONV_OVF_U_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
@@ -7114,7 +7260,7 @@ retry_emit:
                     assert(fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE);
                     m_pStackPointer--;
                     int sizeDataIndexOffset = 0;
-                    if (m_pStackPointer[0].type == StackTypeVT)
+                    if (m_pStackPointer[0].GetStackType() == StackTypeVT)
                     {
                         sizeDataIndexOffset = 1;
                         AddIns(INTOP_MOV_SRC_OFF);
@@ -7323,6 +7469,7 @@ retry_emit:
             case CEE_STIND_R8:
             case CEE_STIND_REF:
             {
+                m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
                 InterpType interpType = InterpTypeVoid;
                 switch(opcode)
                 {
@@ -7569,12 +7716,12 @@ retry_emit:
                         }
 #if TARGET_64BIT
                         // Length is natural unsigned int
-                        if (m_pStackPointer[-1].type == StackTypeI4)
+                        if (m_pStackPointer[-1].GetStackType() == StackTypeI4)
                         {
                             // The localloc instruction allocates size (type native unsigned int or U4) bytes from the local dynamic memory pool ...
                             // So the size is currently U4 and needs to be promoted to U8
                             EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_U4);
-                            m_pStackPointer[-1].type = StackTypeI8;
+                            assert(m_pStackPointer[-1].GetStackType() == StackTypeI8);
                         }
 #endif
                         AddIns(INTOP_LOCALLOC);
