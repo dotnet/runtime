@@ -63,7 +63,7 @@ The rest of the documentation workflow depends on whether the assembly has the `
 - Triple-slash comments in source code are synced to dotnet-api-docs **only once** for newly introduced APIs. After the initial sync, all subsequent documentation
 updates must be made directly in the dotnet-api-docs repo.
 - It's fine to make updates to the triple-slash comments later, they just won't automatically flow into the official docs. Copilot can help with porting the changes
-in triple slash-comments to dotnet-api-docs.
+in triple-slash comments to dotnet-api-docs.
 - Older libraries typically follow this workflow.
 
 ## FAQ
