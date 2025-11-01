@@ -94,6 +94,15 @@ namespace System.Globalization
             {
                 throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
             }
+
+            if ((OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()) &&
+                !GlobalizationMode.Invariant &&
+                !GlobalizationMode.UseNls &&
+                (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))
+            {
+                // Browser/WASI builds ship without compatibility normalization data.
+                throw new PlatformNotSupportedException(SR.Argument_UnsupportedNormalizationFormInBrowser);
+            }
         }
     }
 }

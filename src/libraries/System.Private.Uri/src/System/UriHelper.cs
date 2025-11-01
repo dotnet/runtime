@@ -56,8 +56,7 @@ namespace System
         // ASSUMES that strings like http://host/Path/Path/MoreDir/../../  have been canonicalized before going to this method.
         // ASSUMES that back slashes already have been converted if applicable.
         //
-        internal static unsafe bool TestForSubPath(char* selfPtr, int selfLength, char* otherPtr, int otherLength,
-            bool ignoreCase)
+        internal static bool TestForSubPath(ReadOnlySpan<char> self, ReadOnlySpan<char> other, bool ignoreCase)
         {
             int i = 0;
             char chSelf;
@@ -65,10 +64,10 @@ namespace System
 
             bool AllSameBeforeSlash = true;
 
-            for (; i < selfLength && i < otherLength; ++i)
+            for (; i < self.Length && i < other.Length; ++i)
             {
-                chSelf = *(selfPtr + i);
-                chOther = *(otherPtr + i);
+                chSelf = self[i];
+                chOther = other[i];
 
                 if (chSelf == '?' || chSelf == '#')
                 {
@@ -118,9 +117,9 @@ namespace System
             }
 
             // If self is longer then it must not have any more path segments
-            for (; i < selfLength; ++i)
+            for (; i < self.Length; ++i)
             {
-                if ((chSelf = *(selfPtr + i)) == '?' || chSelf == '#')
+                if ((chSelf = self[i]) == '?' || chSelf == '#')
                 {
                     return true;
                 }
@@ -507,8 +506,7 @@ namespace System
                     {
                         // Unicode
                         int charactersRead = PercentEncodingHelper.UnescapePercentEncodedUTF8Sequence(
-                            pStr + next,
-                            end - next,
+                            new ReadOnlySpan<char>(pStr + next, end - next),
                             ref dest,
                             isQuery,
                             iriParsing);
