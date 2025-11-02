@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -705,7 +706,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (property.Order != 0)
                     {
-                        writer.WriteLine($"properties[{i}].Order = {property.Order};");
+                        writer.WriteLine($"properties[{i}].Order = {property.Order.ToString(CultureInfo.InvariantCulture)};");
                     }
 
                     if (property.IsGetterNonNullableAnnotation)
