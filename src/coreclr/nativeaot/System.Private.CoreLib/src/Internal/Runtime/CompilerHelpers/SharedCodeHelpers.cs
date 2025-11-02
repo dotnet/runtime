@@ -4,6 +4,8 @@
 using System;
 using System.Runtime;
 
+using Internal.Runtime.Augments;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.Runtime.CompilerHelpers
