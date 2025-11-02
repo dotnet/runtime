@@ -209,7 +209,7 @@ namespace System.Net.Security.Tests
                 testName: testName,
                 intermediateAuthorityCount: noIntermediates ? 0 : 1,
                 subjectName: serverName,
-                keySize: 2048,
+                keyFactory: CertificateAuthority.KeyFactory.RSASize(2048),
                 extensions: Configuration.Certificates.BuildTlsServerCertExtensions(serverName));
 
             CertificateAuthority issuingAuthority = noIntermediates ? rootAuthority : intermediateAuthorities[0];
@@ -242,7 +242,7 @@ namespace System.Net.Security.Tests
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                X509Certificate2 temp = new X509Certificate2(serverCert.Export(X509ContentType.Pkcs12));
+                X509Certificate2 temp = X509CertificateLoader.LoadPkcs12(serverCert.Export(X509ContentType.Pkcs12), (string?)null);
                 serverCert.Dispose();
                 serverCert = temp;
             }

@@ -58,7 +58,7 @@ namespace System.Reflection.Emit
         /// </summary>
         public override Guid GUID => m_typeBuilder.GUID;
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(
             string name,
             BindingFlags invokeAttr,

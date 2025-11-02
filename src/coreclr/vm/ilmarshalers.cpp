@@ -1093,7 +1093,7 @@ void ILValueClassMarshaler::EmitClearNative(ILCodeStream * pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
@@ -1108,7 +1108,7 @@ void ILValueClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
@@ -1122,7 +1122,7 @@ void ILValueClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEm
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedHomeAddr(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);
@@ -1477,25 +1477,19 @@ LocalDesc ILOleColorMarshaler::GetManagedType()
 {
     STANDARD_VM_CONTRACT;
 
-    LoaderAllocator* pLoader = m_pargs->m_pMarshalInfo->GetModule()->GetLoaderAllocator();
-    TypeHandle  hndColorType = pLoader->GetMarshalingData()->GetOleColorMarshalingInfo()->GetColorType();
-
     //
     // value class
     //
-    return LocalDesc(hndColorType); // System.Drawing.Color
+    return LocalDesc(m_pargs->color.m_pColorType);
 }
 
 void ILOleColorMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    LoaderAllocator* pLoader = m_pargs->m_pMarshalInfo->GetModule()->GetLoaderAllocator();
-    MethodDesc* pConvertMD = pLoader->GetMarshalingData()->GetOleColorMarshalingInfo()->GetSystemColorToOleColorMD();
-
     EmitLoadManagedValue(pslILEmit);
-    // int System.Drawing.ColorTranslator.ToOle(System.Drawing.Color c)
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertMD), 1, 1);
+    pslILEmit->EmitBOX(pslILEmit->GetToken(m_pargs->color.m_pColorType));
+    pslILEmit->EmitCALL(METHOD__COLORMARSHALER__CONVERT_TO_NATIVE, 1, 1);
     EmitStoreNativeValue(pslILEmit);
 }
 
@@ -1503,12 +1497,9 @@ void ILOleColorMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit
 {
     STANDARD_VM_CONTRACT;
 
-    LoaderAllocator* pLoader = m_pargs->m_pMarshalInfo->GetModule()->GetLoaderAllocator();
-    MethodDesc* pConvertMD = pLoader->GetMarshalingData()->GetOleColorMarshalingInfo()->GetOleColorToSystemColorMD();
-
     EmitLoadNativeValue(pslILEmit);
-    // System.Drawing.Color System.Drawing.ColorTranslator.FromOle(int oleColor)
-    pslILEmit->EmitCALL(pslILEmit->GetToken(pConvertMD), 1, 1);
+    pslILEmit->EmitCALL(METHOD__COLORMARSHALER__CONVERT_TO_MANAGED, 1, 1);
+    pslILEmit->EmitUNBOX_ANY(pslILEmit->GetToken(m_pargs->color.m_pColorType));
     EmitStoreManagedValue(pslILEmit);
 }
 
@@ -2322,7 +2313,7 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
     ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
     bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
-    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
@@ -2358,7 +2349,7 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* psl
     ILCodeLabel* isNotMatchingTypeLabel = pslILEmit->NewCodeLabel();
     bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
-    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
@@ -2387,7 +2378,7 @@ void ILLayoutClassPtrMarshaler::EmitClearNativeContents(ILCodeStream * pslILEmit
     ILCodeLabel* cleanedUpLabel = pslILEmit->NewCodeLabel();
     bool emittedTypeCheck = EmitExactTypeCheck(pslILEmit, isNotMatchingTypeLabel);
 
-    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
@@ -2538,7 +2529,7 @@ void ILLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     pslILEmit->EmitBRFALSE(pNullRefLabel);
 
 
-    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
@@ -2562,7 +2553,7 @@ void ILLayoutClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILE
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
@@ -2577,7 +2568,7 @@ void ILLayoutClassMarshaler::EmitClearNativeContents(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc* pStructMarshalStub = NDirect::CreateStructMarshalILStub(m_pargs->m_pMT);
+    MethodDesc* pStructMarshalStub = PInvoke::CreateStructMarshalILStub(m_pargs->m_pMT);
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitCALL(METHOD__RUNTIME_HELPERS__GET_RAW_DATA, 1, 1);
@@ -2638,7 +2629,7 @@ void ILBlittableLayoutClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStrea
     pslILEmit->EmitCPBLK();
 }
 
-MarshalerOverrideStatus ILHandleRefMarshaler::ArgumentOverride(NDirectStubLinker* psl,
+MarshalerOverrideStatus ILHandleRefMarshaler::ArgumentOverride(PInvokeStubLinker* psl,
                                                 BOOL               byref,
                                                 BOOL               fin,
                                                 BOOL               fout,
@@ -2684,7 +2675,7 @@ MarshalerOverrideStatus ILHandleRefMarshaler::ArgumentOverride(NDirectStubLinker
     }
 }
 
-MarshalerOverrideStatus ILHandleRefMarshaler::ReturnOverride(NDirectStubLinker* psl,
+MarshalerOverrideStatus ILHandleRefMarshaler::ReturnOverride(PInvokeStubLinker* psl,
                                               BOOL               fManagedToNative,
                                               BOOL               fHresultSwap,
                                               OverrideProcArgs*  pargs,
@@ -2730,7 +2721,7 @@ void ILSafeHandleMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEm
     pslILEmit->EmitLabel(successLabel);
 }
 
-MarshalerOverrideStatus ILSafeHandleMarshaler::ArgumentOverride(NDirectStubLinker* psl,
+MarshalerOverrideStatus ILSafeHandleMarshaler::ArgumentOverride(PInvokeStubLinker* psl,
                                                 BOOL               byref,
                                                 BOOL               fin,
                                                 BOOL               fout,
@@ -2863,7 +2854,7 @@ MarshalerOverrideStatus ILSafeHandleMarshaler::ArgumentOverride(NDirectStubLinke
             if (fout)
             {
                 // We will use cleanup stream to avoid leaking the handle on thread abort.
-                psl->EmitSetArgMarshalIndex(pslIL, NDirectStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + argidx);
+                psl->EmitSetArgMarshalIndex(pslIL, PInvokeStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + argidx);
 
                 psl->SetCleanupNeeded();
                 ILCodeStream *pslCleanupIL = psl->GetCleanupCodeStream();
@@ -2871,8 +2862,8 @@ MarshalerOverrideStatus ILSafeHandleMarshaler::ArgumentOverride(NDirectStubLinke
                 ILCodeLabel *pDoneLabel = pslCleanupIL->NewCodeLabel();
 
                 psl->EmitCheckForArgCleanup(pslCleanupIL,
-                                            NDirectStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + argidx,
-                                            NDirectStubLinker::BranchIfNotMarshaled,
+                                            PInvokeStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + argidx,
+                                            PInvokeStubLinker::BranchIfNotMarshaled,
                                             pDoneLabel);
 
                 // If this is an [in, out] handle check if the native handles have changed. If not we're finished.
@@ -2940,7 +2931,7 @@ MarshalerOverrideStatus ILSafeHandleMarshaler::ArgumentOverride(NDirectStubLinke
 //
 MarshalerOverrideStatus
 ILSafeHandleMarshaler::ReturnOverride(
-    NDirectStubLinker * psl,
+    PInvokeStubLinker * psl,
     BOOL                fManagedToNative,
     BOOL                fHresultSwap,
     OverrideProcArgs *  pargs,
@@ -3022,15 +3013,15 @@ ILSafeHandleMarshaler::ReturnOverride(
         EmitLoadNativeLocalAddrForByRefDispatch(pslILDispatch, dwReturnNativeHandleLocal);
 
         // We will use cleanup stream to avoid leaking the handle on thread abort.
-        psl->EmitSetArgMarshalIndex(pslIL, NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL);
+        psl->EmitSetArgMarshalIndex(pslIL, PInvokeStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL);
 
         psl->SetCleanupNeeded();
         ILCodeStream *pslCleanupIL = psl->GetCleanupCodeStream();
         ILCodeLabel *pDoneLabel = pslCleanupIL->NewCodeLabel();
 
         psl->EmitCheckForArgCleanup(pslCleanupIL,
-                                    NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL,
-                                    NDirectStubLinker::BranchIfNotMarshaled,
+                                    PInvokeStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL,
+                                    PInvokeStubLinker::BranchIfNotMarshaled,
                                     pDoneLabel);
 
         // 6) store return value in safehandle
@@ -3087,7 +3078,7 @@ void ILCriticalHandleMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* psl
 
 //---------------------------------------------------------------------------------------
 //
-MarshalerOverrideStatus ILCriticalHandleMarshaler::ArgumentOverride(NDirectStubLinker* psl,
+MarshalerOverrideStatus ILCriticalHandleMarshaler::ArgumentOverride(PInvokeStubLinker* psl,
                                                 BOOL               byref,
                                                 BOOL               fin,
                                                 BOOL               fout,
@@ -3216,7 +3207,7 @@ MarshalerOverrideStatus ILCriticalHandleMarshaler::ArgumentOverride(NDirectStubL
             if (fout)
             {
                 // We will use cleanup stream to avoid leaking the handle on thread abort.
-                psl->EmitSetArgMarshalIndex(pslIL, NDirectStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + argidx);
+                psl->EmitSetArgMarshalIndex(pslIL, PInvokeStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + argidx);
 
                 psl->SetCleanupNeeded();
                 ILCodeStream *pslCleanupIL = psl->GetCleanupCodeStream();
@@ -3224,8 +3215,8 @@ MarshalerOverrideStatus ILCriticalHandleMarshaler::ArgumentOverride(NDirectStubL
                 ILCodeLabel *pDoneLabel = pslCleanupIL->NewCodeLabel();
 
                 psl->EmitCheckForArgCleanup(pslCleanupIL,
-                                            NDirectStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + argidx,
-                                            NDirectStubLinker::BranchIfNotMarshaled,
+                                            PInvokeStubLinker::CLEANUP_INDEX_ARG0_MARSHAL + argidx,
+                                            PInvokeStubLinker::BranchIfNotMarshaled,
                                             pDoneLabel);
 
                 // If this is an [in, out] handle check if the native handles have changed. If not we're finished.
@@ -3273,7 +3264,7 @@ MarshalerOverrideStatus ILCriticalHandleMarshaler::ArgumentOverride(NDirectStubL
 //
 MarshalerOverrideStatus
 ILCriticalHandleMarshaler::ReturnOverride(
-    NDirectStubLinker * psl,
+    PInvokeStubLinker * psl,
     BOOL                fManagedToNative,
     BOOL                fHresultSwap,
     OverrideProcArgs *  pargs,
@@ -3356,7 +3347,7 @@ ILCriticalHandleMarshaler::ReturnOverride(
         EmitLoadNativeLocalAddrForByRefDispatch(pslILDispatch, dwReturnNativeHandleLocal);
 
         // We will use cleanup stream to avoid leaking the handle on thread abort.
-        psl->EmitSetArgMarshalIndex(pslIL, NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL);
+        psl->EmitSetArgMarshalIndex(pslIL, PInvokeStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL);
 
         psl->SetCleanupNeeded();
         ILCodeStream *pslCleanupIL = psl->GetCleanupCodeStream();
@@ -3364,8 +3355,8 @@ ILCriticalHandleMarshaler::ReturnOverride(
 
         // 6) store return value in criticalhandle
         psl->EmitCheckForArgCleanup(pslCleanupIL,
-                                    NDirectStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL,
-                                    NDirectStubLinker::BranchIfNotMarshaled,
+                                    PInvokeStubLinker::CLEANUP_INDEX_RETVAL_UNMARSHAL,
+                                    PInvokeStubLinker::BranchIfNotMarshaled,
                                     pDoneLabel);
 
         pslCleanupIL->EmitLDLOC(dwReturnHandleLocal);
@@ -3393,7 +3384,7 @@ ILCriticalHandleMarshaler::ReturnOverride(
 } // ILCriticalHandleMarshaler::ReturnOverride
 
 #if defined(FEATURE_IJW)
-MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOverride(NDirectStubLinker* psl,
+MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOverride(PInvokeStubLinker* psl,
                                                 BOOL               byref,
                                                 BOOL               fin,
                                                 BOOL               fout,
@@ -3903,7 +3894,7 @@ void ILNativeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     if (mops.elementType == VT_RECORD && !mops.methodTable->IsBlittable())
     {
-        pslILEmit->EmitLDFTN(pslILEmit->GetToken(NDirect::CreateStructMarshalILStub(mops.methodTable)));
+        pslILEmit->EmitLDFTN(pslILEmit->GetToken(PInvoke::CreateStructMarshalILStub(mops.methodTable)));
     }
     else
     {
@@ -3994,7 +3985,7 @@ BOOL ILNativeArrayMarshaler::CheckSizeParamIndexArg(
     Module *pModule = m_pargs->m_pMarshalInfo->GetModule();
     _ASSERT(pModule);
 
-    SigTypeContext emptyTypeContext;  // this is an empty type context: ndirect and COM calls are guaranteed to not be generics.
+    SigTypeContext emptyTypeContext;  // this is an empty type context: PInvoke and COM calls are guaranteed to not be generics.
     MetaSig msig(pMD->GetSignature(),
                  pModule,
                  &emptyTypeContext);
@@ -4344,7 +4335,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToNative(MngdN
             if ( (!ClrSafeInt<SIZE_T>::multiply(cElements, OleVariant::GetElementSizeForVarType(pThis->m_vt, pThis->m_pElementMT), cElements)) || cElements > MAX_SIZE_FOR_INTEROP)
                 COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
 
-            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
+            _ASSERTE(!OleVariant::GetTypeHandleForVarType(pThis->m_vt).GetMethodTable()->ContainsGCPointers());
             memcpyNoGCRefs(*pNativeHome, arrayRef->GetDataPtr(), cElements);
         }
         else
@@ -4413,7 +4404,7 @@ extern "C" void QCALLTYPE MngdNativeArrayMarshaler_ConvertContentsToManaged(Mngd
                 COMPlusThrow(kArgumentException, IDS_EE_STRUCTARRAYTOOLARGE);
 
                 // If we are copying variants, strings, etc, we need to use write barrier
-            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
+            _ASSERTE(!OleVariant::GetTypeHandleForVarType(pThis->m_vt).GetMethodTable()->ContainsGCPointers());
             memcpyNoGCRefs(arrayRef->GetDataPtr(), *pNativeHome, cElements);
         }
         else
@@ -4473,7 +4464,7 @@ void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     if (mops.elementType == VT_RECORD && !mops.methodTable->IsBlittable())
     {
-        pslILEmit->EmitLDFTN(pslILEmit->GetToken(NDirect::CreateStructMarshalILStub(mops.methodTable)));
+        pslILEmit->EmitLDFTN(pslILEmit->GetToken(PInvoke::CreateStructMarshalILStub(mops.methodTable)));
     }
     else
     {
@@ -4528,7 +4519,7 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToNative(MngdFi
             SIZE_T cElements = arrayRef->GetNumComponents();
             if (pMarshaler == NULL || pMarshaler->ComToOleArray == NULL)
             {
-                _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
+                _ASSERTE(!OleVariant::GetTypeHandleForVarType(pThis->m_vt).GetMethodTable()->ContainsGCPointers());
                 memcpyNoGCRefs(pNativeHome, arrayRef->GetDataPtr(), nativeSize);
             }
             else
@@ -4602,7 +4593,7 @@ extern "C" void QCALLTYPE MngdFixedArrayMarshaler_ConvertContentsToManaged(MngdF
         if (pMarshaler == NULL || pMarshaler->OleToComArray == NULL)
         {
             // If we are copying variants, strings, etc, we need to use write barrier
-            _ASSERTE(!GetTypeHandleForCVType(OleVariant::GetCVTypeForVarType(pThis->m_vt)).GetMethodTable()->ContainsGCPointers());
+            _ASSERTE(!OleVariant::GetTypeHandleForVarType(pThis->m_vt).GetMethodTable()->ContainsGCPointers());
             memcpyNoGCRefs(arrayRef->GetDataPtr(), pNativeHome, nativeSize);
         }
         else
@@ -4671,7 +4662,7 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     if (mops.elementType == VT_RECORD && !mops.methodTable->IsBlittable())
     {
-        pslILEmit->EmitLDFTN(pslILEmit->GetToken(NDirect::CreateStructMarshalILStub(mops.methodTable)));
+        pslILEmit->EmitLDFTN(pslILEmit->GetToken(PInvoke::CreateStructMarshalILStub(mops.methodTable)));
     }
     else
     {
@@ -4935,7 +4926,7 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(LocalDesc(CoreLibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)));
 
     //
-    // call CreateCustomMarshalerHelper
+    // call CreateCustomMarshaler
     //
 
     pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(m_pargs->rcm.m_pMD));
@@ -4946,10 +4937,7 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
     pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(TypeHandle::FromPtr(m_pargs->rcm.m_hndManagedType)));
     pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__TO_INTPTR, 1, 1);
 
-    pslILEmit->EmitCALL(METHOD__STUBHELPERS__CREATE_CUSTOM_MARSHALER_HELPER, 3, 1);  // Create the CustomMarshalerHelper
-
-    // Get the managed ICustomMarshaler object from the helper
-    pslILEmit->EmitCALL(METHOD__MNGD_REF_CUSTOM_MARSHALER__GET_MARSHALER, 1, 1);
+    pslILEmit->EmitCALL(METHOD__STUBHELPERS__CREATE_CUSTOM_MARSHALER, 3, 1);  // Create the ICustomMarshaler
 
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum); // Store the ICustomMarshaler as our marshaler state
 }

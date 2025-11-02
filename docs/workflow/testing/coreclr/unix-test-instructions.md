@@ -6,7 +6,7 @@ CoreCLR tests
 
 ## Building
 
-Build CoreCLR on [Unix](../../building/coreclr/linux-instructions.md).
+Build CoreCLR following the instructions in its [main doc](/docs/workflow/building/coreclr/README.md).
 
 ## Building the Tests
 

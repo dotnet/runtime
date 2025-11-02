@@ -10,11 +10,8 @@ using static System.Runtime.InteropServices.ComWrappers;
 
 namespace System.Runtime.InteropServices
 {
-    internal static class TrackerObjectManager
+    internal static partial class TrackerObjectManager
     {
-        internal static readonly IntPtr s_findReferencesTargetCallback = FindReferenceTargetsCallback.CreateFindReferenceTargetsCallback();
-        internal static readonly IntPtr s_globalHostServices = CreateHostServices();
-
         internal static volatile IntPtr s_trackerManager;
         internal static volatile bool s_hasTrackingStarted;
         internal static volatile bool s_isGlobalPeggingOn = true;
@@ -27,49 +24,6 @@ namespace System.Runtime.InteropServices
         public static bool ShouldWalkExternalObjects()
         {
             return s_trackerManager != IntPtr.Zero;
-        }
-
-        // Called when an IReferenceTracker instance is found.
-        public static void OnIReferenceTrackerFound(IntPtr referenceTracker)
-        {
-            Debug.Assert(referenceTracker != IntPtr.Zero);
-            if (s_trackerManager != IntPtr.Zero)
-            {
-                return;
-            }
-
-            IReferenceTracker.GetReferenceTrackerManager(referenceTracker, out IntPtr referenceTrackerManager);
-
-            // Attempt to set the tracker instance.
-            // If set, the ownership of referenceTrackerManager has been transferred
-            if (Interlocked.CompareExchange(ref s_trackerManager, referenceTrackerManager, IntPtr.Zero) == IntPtr.Zero)
-            {
-                IReferenceTrackerManager.SetReferenceTrackerHost(s_trackerManager, s_globalHostServices);
-
-                // Our GC callbacks are used only for reference walk of tracker objects, so register it here
-                // when we find our first tracker object.
-                RegisterGCCallbacks();
-            }
-            else
-            {
-                Marshal.Release(referenceTrackerManager);
-            }
-        }
-
-        // Called after wrapper has been created.
-        public static void AfterWrapperCreated(IntPtr referenceTracker)
-        {
-            Debug.Assert(referenceTracker != IntPtr.Zero);
-
-            // Notify tracker runtime that we've created a new wrapper for this object.
-            // To avoid surprises, we should notify them before we fire the first AddRefFromTrackerSource.
-            IReferenceTracker.ConnectFromTrackerSource(referenceTracker);
-
-            // Send out AddRefFromTrackerSource callbacks to notify tracker runtime we've done AddRef()
-            // for certain interfaces. We should do this *after* we made a AddRef() because we should never
-            // be in a state where report refs > actual refs
-            IReferenceTracker.AddRefFromTrackerSource(referenceTracker); // IUnknown
-            IReferenceTracker.AddRefFromTrackerSource(referenceTracker); // IReferenceTracker
         }
 
         // Used during GC callback
@@ -134,24 +88,36 @@ namespace System.Runtime.InteropServices
             s_isGlobalPeggingOn = true;
             s_hasTrackingStarted = false;
         }
-
-        public static unsafe void RegisterGCCallbacks()
-        {
-            delegate* unmanaged<int, void> gcStartCallback = &GCStartCollection;
-            delegate* unmanaged<int, void> gcStopCallback = &GCStopCollection;
-            delegate* unmanaged<int, void> gcAfterMarkCallback = &GCAfterMarkPhase;
-
-            if (!RuntimeImports.RhRegisterGcCallout(RuntimeImports.GcRestrictedCalloutKind.StartCollection, (IntPtr)gcStartCallback) ||
-                !RuntimeImports.RhRegisterGcCallout(RuntimeImports.GcRestrictedCalloutKind.EndCollection, (IntPtr)gcStopCallback) ||
-                !RuntimeImports.RhRegisterGcCallout(RuntimeImports.GcRestrictedCalloutKind.AfterMarkPhase, (IntPtr)gcAfterMarkCallback))
-            {
-                throw new OutOfMemoryException();
-            }
-        }
-
         public static bool AddReferencePath(object target, object foundReference)
         {
             return s_referenceCache.AddDependentHandle(target, foundReference);
+        }
+
+        private static bool HasReferenceTrackerManager
+            => s_trackerManager != IntPtr.Zero;
+
+        private static bool TryRegisterReferenceTrackerManager(IntPtr referenceTrackerManager)
+        {
+            return Interlocked.CompareExchange(ref s_trackerManager, referenceTrackerManager, IntPtr.Zero) == IntPtr.Zero;
+        }
+
+        internal static bool IsGlobalPeggingEnabled => s_isGlobalPeggingOn;
+
+        private static void RegisterGCCallbacks()
+        {
+            unsafe
+            {
+                delegate* unmanaged<int, void> gcStartCallback = &GCStartCollection;
+                delegate* unmanaged<int, void> gcStopCallback = &GCStopCollection;
+                delegate* unmanaged<int, void> gcAfterMarkCallback = &GCAfterMarkPhase;
+
+                if (!RuntimeImports.RhRegisterGcCallout(RuntimeImports.GcRestrictedCalloutKind.StartCollection, (IntPtr)gcStartCallback) ||
+                    !RuntimeImports.RhRegisterGcCallout(RuntimeImports.GcRestrictedCalloutKind.EndCollection, (IntPtr)gcStopCallback) ||
+                    !RuntimeImports.RhRegisterGcCallout(RuntimeImports.GcRestrictedCalloutKind.AfterMarkPhase, (IntPtr)gcAfterMarkCallback))
+                {
+                    throw new OutOfMemoryException();
+                }
+            }
         }
 
         // Used during GC callback
@@ -183,89 +149,73 @@ namespace System.Runtime.InteropServices
             DetachNonPromotedObjects();
         }
 
-        private static unsafe IntPtr CreateHostServices()
-        {
-            IntPtr* wrapperMem = (IntPtr*)NativeMemory.Alloc((nuint)sizeof(IntPtr));
-            wrapperMem[0] = CreateDefaultIReferenceTrackerHostVftbl();
-            return (IntPtr)wrapperMem;
-        }
-    }
-
-    // Wrapper for IReferenceTrackerManager
-    internal static unsafe class IReferenceTrackerManager
-    {
         // Used during GC callback
-        public static int ReferenceTrackingStarted(IntPtr pThis)
+        internal static unsafe void WalkExternalTrackerObjects()
         {
-            return (*(delegate* unmanaged<IntPtr, int>**)pThis)[3](pThis);
-        }
+            bool walkFailed = false;
 
-        // Used during GC callback
-        public static int FindTrackerTargetsCompleted(IntPtr pThis, bool walkFailed)
-        {
-            return (*(delegate* unmanaged<IntPtr, bool, int>**)pThis)[4](pThis, walkFailed);
-        }
+            foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
+            {
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
+                if (nativeObjectWrapper != null &&
+                    nativeObjectWrapper.TrackerObject != IntPtr.Zero)
+                {
+                    FindReferenceTargetsCallback.Instance callback = new(nativeObjectWrapper.ProxyHandle);
+                    int hr = IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, (IntPtr)(void*)&callback);
+                    if (hr < 0)
+                    {
+                        walkFailed = true;
+                        break;
+                    }
+                }
+            }
 
-        // Used during GC callback
-        public static int ReferenceTrackingCompleted(IntPtr pThis)
-        {
-            return (*(delegate* unmanaged<IntPtr, int>**)pThis)[5](pThis);
-        }
-
-        public static void SetReferenceTrackerHost(IntPtr pThis, IntPtr referenceTrackerHost)
-        {
-            Marshal.ThrowExceptionForHR((*(delegate* unmanaged<IntPtr, IntPtr, int>**)pThis)[6](pThis, referenceTrackerHost));
-        }
-    }
-
-    // Wrapper for IReferenceTracker
-    internal static unsafe class IReferenceTracker
-    {
-        public static void ConnectFromTrackerSource(IntPtr pThis)
-        {
-            Marshal.ThrowExceptionForHR((*(delegate* unmanaged<IntPtr, int>**)pThis)[3](pThis));
+            // Report whether walking failed or not.
+            if (walkFailed)
+            {
+                s_isGlobalPeggingOn = true;
+            }
+            IReferenceTrackerManager.FindTrackerTargetsCompleted(s_trackerManager, walkFailed);
         }
 
         // Used during GC callback
-        public static int DisconnectFromTrackerSource(IntPtr pThis)
+        internal static void DetachNonPromotedObjects()
         {
-            return (*(delegate* unmanaged<IntPtr, int>**)pThis)[4](pThis);
-        }
-
-        // Used during GC callback
-        public static int FindTrackerTargets(IntPtr pThis, IntPtr findReferenceTargetsCallback)
-        {
-            return (*(delegate* unmanaged<IntPtr, IntPtr, int>**)pThis)[5](pThis, findReferenceTargetsCallback);
-        }
-
-        public static void GetReferenceTrackerManager(IntPtr pThis, out IntPtr referenceTrackerManager)
-        {
-            fixed (IntPtr* ptr = &referenceTrackerManager)
-                Marshal.ThrowExceptionForHR((*(delegate* unmanaged<IntPtr, IntPtr*, int>**)pThis)[6](pThis, ptr));
-        }
-
-        public static void AddRefFromTrackerSource(IntPtr pThis)
-        {
-            Marshal.ThrowExceptionForHR((*(delegate* unmanaged<IntPtr, int>**)pThis)[7](pThis));
-        }
-
-        public static void ReleaseFromTrackerSource(IntPtr pThis)
-        {
-            Marshal.ThrowExceptionForHR((*(delegate* unmanaged<IntPtr, int>**)pThis)[8](pThis));
-        }
-
-        public static void PegFromTrackerSource(IntPtr pThis)
-        {
-            Marshal.ThrowExceptionForHR((*(delegate* unmanaged<IntPtr, int>**)pThis)[9](pThis));
+            foreach (GCHandle weakNativeObjectWrapperHandle in s_referenceTrackerNativeObjectWrapperCache)
+            {
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
+                if (nativeObjectWrapper != null &&
+                    nativeObjectWrapper.TrackerObject != IntPtr.Zero &&
+                    !RuntimeImports.RhIsPromoted(nativeObjectWrapper.ProxyHandle.Target))
+                {
+                    // Notify the wrapper it was not promoted and is being collected.
+                    BeforeWrapperFinalized(nativeObjectWrapper.TrackerObject);
+                }
+            }
         }
     }
 
     // Callback implementation of IFindReferenceTargetsCallback
     internal static unsafe class FindReferenceTargetsCallback
     {
-        internal static GCHandle s_currentRootObjectHandle;
+        // Define an on-stack compatible COM instance to avoid allocating
+        // a temporary instance.
+        [StructLayout(LayoutKind.Sequential)]
+        internal ref struct Instance
+        {
+            private readonly IntPtr _vtable; // First field is IUnknown based vtable.
+            public GCHandle RootObject;
 
-        [UnmanagedCallersOnly]
+            public Instance(GCHandle handle)
+            {
+                _vtable = (IntPtr)Unsafe.AsPointer(in FindReferenceTargetsCallback.Vftbl);
+                RootObject = handle;
+            }
+        }
+
+#pragma warning disable CS3016
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+#pragma warning restore CS3016
         private static unsafe int IFindReferenceTargetsCallback_QueryInterface(IntPtr pThis, Guid* guid, IntPtr* ppObject)
         {
             if (*guid == IID_IFindReferenceTargetsCallback || *guid == IID_IUnknown)
@@ -279,55 +229,51 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        [UnmanagedCallersOnly]
+#pragma warning disable CS3016
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
+#pragma warning restore CS3016
         private static unsafe int IFindReferenceTargetsCallback_FoundTrackerTarget(IntPtr pThis, IntPtr referenceTrackerTarget)
         {
             if (referenceTrackerTarget == IntPtr.Zero)
             {
-                return HResults.E_INVALIDARG;
+                return HResults.E_POINTER;
             }
 
-            if (TryGetObject(referenceTrackerTarget, out object? foundObject))
+            object sourceObject = ((FindReferenceTargetsCallback.Instance*)pThis)->RootObject.Target!;
+
+            if (!TryGetObject(referenceTrackerTarget, out object? targetObject))
             {
-                // Notify the runtime a reference path was found.
-                return TrackerObjectManager.AddReferencePath(s_currentRootObjectHandle.Target, foundObject) ? HResults.S_OK : HResults.S_FALSE;
+                return HResults.S_FALSE;
             }
 
-            return HResults.S_OK;
+            if (sourceObject == targetObject)
+            {
+                return HResults.S_FALSE;
+            }
+
+            // Notify the runtime a reference path was found.
+            return TrackerObjectManager.AddReferencePath(sourceObject, targetObject) ? HResults.S_OK : HResults.S_FALSE;
         }
 
-        private static unsafe IntPtr CreateDefaultIFindReferenceTargetsCallbackVftbl()
+        internal struct ReferenceTargetsVftbl
         {
-            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(FindReferenceTargetsCallback), 4 * sizeof(IntPtr));
-            vftbl[0] = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&IFindReferenceTargetsCallback_QueryInterface;
-            vftbl[1] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.Untracked_AddRef;
-            vftbl[2] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.Untracked_Release;
-            vftbl[3] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&IFindReferenceTargetsCallback_FoundTrackerTarget;
-            return (IntPtr)vftbl;
+            public delegate* unmanaged[MemberFunction]<IntPtr, Guid*, IntPtr*, int> QueryInterface;
+            public delegate* unmanaged[MemberFunction]<IntPtr, uint> AddRef;
+            public delegate* unmanaged[MemberFunction]<IntPtr, uint> Release;
+            public delegate* unmanaged[MemberFunction]<IntPtr, IntPtr, int> FoundTrackerTarget;
         }
 
-        internal static unsafe IntPtr CreateFindReferenceTargetsCallback()
+        [FixedAddressValueType]
+        internal static readonly ReferenceTargetsVftbl Vftbl;
+
+#pragma warning disable CA1810 // Initialize reference type static fields inline
+        // We want this to be explicitly written out to ensure we match the "pre-inited vtable" pattern.
+        static FindReferenceTargetsCallback()
+#pragma warning restore CA1810 // Initialize reference type static fields inline
         {
-            IntPtr* wrapperMem = (IntPtr*)NativeMemory.Alloc((nuint)sizeof(IntPtr));
-            wrapperMem[0] = CreateDefaultIFindReferenceTargetsCallbackVftbl();
-            return (IntPtr)wrapperMem;
-        }
-    }
-
-    internal readonly struct ComHolder : IDisposable
-    {
-        private readonly IntPtr _ptr;
-
-        internal readonly IntPtr Ptr => _ptr;
-
-        public ComHolder(IntPtr ptr)
-        {
-            _ptr = ptr;
-        }
-
-        public readonly void Dispose()
-        {
-            Marshal.Release(_ptr);
+            ComWrappers.GetUntrackedIUnknownImpl(out Vftbl.AddRef, out Vftbl.Release);
+            Vftbl.QueryInterface = &IFindReferenceTargetsCallback_QueryInterface;
+            Vftbl.FoundTrackerTarget = &IFindReferenceTargetsCallback_FoundTrackerTarget;
         }
     }
 

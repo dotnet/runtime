@@ -7,6 +7,7 @@ using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
+using System.Text;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -1134,17 +1135,21 @@ namespace System.Security.Cryptography
         {
 #if NET || NETSTANDARD2_1_OR_GREATER || NET472_OR_GREATER
 #pragma warning disable CA5379
+#pragma warning disable SYSLIB0060
             return new Rfc2898DeriveBytes(
                 password,
                 salt,
                 iterationCount,
                 prf);
+#pragma warning restore SYSLIB0060
 #pragma warning restore CA5379
 #else
             if (prf == HashAlgorithmName.SHA1)
             {
 #pragma warning disable CA5379
+#pragma warning disable SYSLIB0060
                 return new Rfc2898DeriveBytes(password, salt, iterationCount);
+#pragma warning restore SYSLIB0060
 #pragma warning restore CA5379
             }
 

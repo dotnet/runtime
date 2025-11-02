@@ -40,11 +40,7 @@ if [%XHARNESS_COMMAND%] == [] (
 
 if /I [%XHARNESS_COMMAND%] == [test] (
     if [%JS_ENGINE%] == [] (
-        if /I [%SCENARIO%] == [WasmTestOnNodeJS] (
-            set "JS_ENGINE=--engine^=NodeJS"
-        ) else (
-            set "JS_ENGINE=--engine^=V8"
-        )
+        set "JS_ENGINE=--engine^=V8"
     )
     if [%MAIN_JS%] == [] (
         set "MAIN_JS=--js-file^=test-main.js"
@@ -52,11 +48,9 @@ if /I [%XHARNESS_COMMAND%] == [test] (
 
     if [%JS_ENGINE_ARGS%] == [] (
         set "JS_ENGINE_ARGS=--engine-arg^=--stack-trace-limit^=1000"
-        if /I NOT [%SCENARIO%] == [WasmTestOnNodeJS] (
-            set "JS_ENGINE_ARGS=%JS_ENGINE_ARGS% --engine-arg^=--module"
-        )
-        if /I [%SCENARIO%] == [WasmTestOnNodeJS] (
-            set "JS_ENGINE_ARGS=%JS_ENGINE_ARGS% --engine-arg^=--experimental-wasm-eh"
+
+        if [!JS_ENGINE!] == [--engine^=V8] (
+            set "JS_ENGINE_ARGS=!JS_ENGINE_ARGS! --engine-arg^=--module"
         )
     )
 ) else (
@@ -65,7 +59,7 @@ if /I [%XHARNESS_COMMAND%] == [test] (
             set "BROWSER_PATH=--browser-path^=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe"
         )
         if [%JS_ENGINE_ARGS%] == [] (
-            set "JS_ENGINE_ARGS=--browser-arg^=--js-flags^=--stack-trace-limit^=1000"
+            set "JS_ENGINE_ARGS=--browser-arg^=--js-flags^=--stack-trace-limit^=1000 --browser-arg^=--disable-gpu --pageLoadStrategy=none"
         )
     ) else (
         if /I [%SCENARIO%] == [WasmTestOnFirefox] (

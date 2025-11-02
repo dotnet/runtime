@@ -12,26 +12,19 @@
     //
     // RhCommonStub
     //
-    //  INPUT: tp: thunk's data block
+    //  INPUT: t7: thunk's data block
     //
-    //  TRASHES: t0, t1, tp
+    //  TRASHES: t0, t1, t7
     //
     LEAF_ENTRY RhCommonStub, _TEXT
         // There are arbitrary callers passing arguments with arbitrary signatures.
         // Custom calling convention:
-        //      tp pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
+        //      t7 pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
 
-#ifdef FEATURE_EMULATED_TLS
-        // This doesn't save and restore the floating point argument registers. If we encounter a
-        // target system that uses TLS emulation and modify these registers during this call we
-        // need to save and restore them, too
-        GETTHUNKDATA_ETLS_9
-#else
         INLINE_GET_TLS_VAR  $t0, C_FUNC(tls_thunkData)
-#endif
 
         // t0  = base address of TLS data
-        // tp = address of context cell in thunk's data
+        // t7 = address of context cell in thunk's data
 
         // store thunk address in thread static
         ld.d  $t1, $t7, 0

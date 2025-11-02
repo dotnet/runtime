@@ -56,7 +56,7 @@ public class XUnitLogChecker
 
     private static LogCheckerConfigParameters s_configuration;
 
-    static int Main(string[] args)
+    public static int Main(string[] args)
     {
         s_configuration = new LogCheckerConfigParameters();
 
@@ -512,8 +512,8 @@ public class XUnitLogChecker
                 WriteLineTimestamp($"Reading crash dump '{dumpPath}'...");
                 WriteLineTimestamp("Stack Trace Found:\n");
 
-                CoreclrTestWrapperLib.TryPrintStackTraceFromDmp(dumpPath,
-                                                                Console.Out);
+                CoreclrTestWrapperLib.TryPrintStackTraceFromWindowsDmp(dumpPath,
+                                                                       Console.Out);
             }
             else
             {

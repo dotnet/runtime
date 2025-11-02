@@ -4,7 +4,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <UnicodeUcdVersion>15.0</UnicodeUcdVersion>
+    <UnicodeUcdVersion>16.0</UnicodeUcdVersion>
 
      <!-- some tests require full ICU data, force it -->
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>

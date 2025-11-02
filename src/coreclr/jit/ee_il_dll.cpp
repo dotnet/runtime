@@ -29,6 +29,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define DLLEXPORT
 #endif // !DLLEXPORT
 
+#include "minipal/log.h"
+
 /*****************************************************************************/
 
 ICorJitHost* g_jitHost        = nullptr;
@@ -78,11 +80,11 @@ static FILE* volatile s_jitstdout;
 
 static FILE* jitstdoutInit()
 {
-    const WCHAR* jitStdOutFile = JitConfig.JitStdOutFile();
-    FILE*        file          = nullptr;
+    const char* jitStdOutFile = JitConfig.JitStdOutFile();
+    FILE*       file          = nullptr;
     if (jitStdOutFile != nullptr)
     {
-        file = _wfopen(jitStdOutFile, W("a"));
+        file = fopen_utf8(jitStdOutFile, "a");
         assert(file != nullptr);
     }
 
@@ -146,10 +148,19 @@ FILE* jitstdout()
 // Like printf/logf, but only outputs to jitstdout -- skips call back into EE.
 int jitprintf(const char* fmt, ...)
 {
+    int     status;
     va_list vl;
     va_start(vl, fmt);
-    int status = vfprintf(jitstdout(), fmt, vl);
+    if (jitstdout() == procstdout())
+    {
+        status = minipal_log_vprint_verbose(fmt, vl);
+    }
+    else
+    {
+        status = vfprintf(jitstdout(), fmt, vl);
+    }
     va_end(vl);
+
     return status;
 }
 
@@ -262,7 +273,7 @@ void JitTls::SetCompiler(Compiler* compiler)
 #endif // !defined(DEBUG)
 
 //****************************************************************************
-// The main JIT function for the 32 bit JIT.  See code:ICorJitCompiler#EEToJitInterface for more on the EE-JIT
+// The main JIT function for the JIT.  See code:ICorJitCompiler#EEToJitInterface for more on the EE-JIT
 // interface. Things really don't get going inside the JIT until the code:Compiler::compCompile#Phases
 // method.  Usually that is where you want to go.
 
@@ -312,7 +323,7 @@ void CILJit::ProcessShutdownWork(ICorStaticInfo* statInfo)
 void CILJit::getVersionIdentifier(GUID* versionIdentifier)
 {
     assert(versionIdentifier != nullptr);
-    memcpy(versionIdentifier, &JITEEVersionIdentifier, sizeof(GUID));
+    *versionIdentifier = JITEEVersionIdentifier;
 }
 
 #ifdef TARGET_OS_RUNTIMEDETERMINED

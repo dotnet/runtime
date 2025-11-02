@@ -28,7 +28,7 @@ public class TestClass
     static Vector128<int> s_v128_int_32 = Vector128.CreateScalar(2);
     static Vector128<uint> s_v128_uint_33 = Vector128.Create((uint)1, 1, 1, 2);
     static Vector128<long> s_v128_long_34 = Vector128.Create(-2, 2);
-    static Vector128<ulong> s_v128_ulong_35 = Vector128.Create((ulong)1);
+    static Vector128<ulong> s_v128_ulong_35 = Vector128<ulong>.One;
     static Vector128<float> s_v128_float_36 = Vector128.CreateScalar(0.1f);
     static Vector128<double> s_v128_double_37 = Vector128.Create(1.0235294117647058, 2);
     static Vector256<byte> s_v256_byte_38 = Vector256.CreateScalar((byte)5);
@@ -41,7 +41,7 @@ public class TestClass
     static Vector256<ulong> s_v256_ulong_45 = Vector256<ulong>.Zero;
     static Vector256<float> s_v256_float_46 = Vector256.CreateScalar(-4.969697f);
     static Vector256<double> s_v256_double_47 = Vector256.Create(97.03448275862068);
-    static Vector512<byte> s_v512_byte_48 = Vector512.Create((byte)1);
+    static Vector512<byte> s_v512_byte_48 = Vector512<byte>.One;
     static Vector512<sbyte> s_v512_sbyte_49 = Vector512.Create((sbyte)5);
     static Vector512<short> s_v512_short_50 = Vector512<short>.AllBitsSet;
     static Vector512<ushort> s_v512_ushort_51 = Vector512<ushort>.AllBitsSet;
@@ -75,7 +75,7 @@ public class TestClass
     public Vector256<int> Method31()
     {
             byte byte_929 = 2;
-            return s_v256_int_42 += v256_int_101 | v256_int_101 ^ v256_int_101 | 
+            return s_v256_int_42 += v256_int_101 | v256_int_101 ^ v256_int_101 |
                 Vector256<int>.AllBitsSet & s_v256_int_42 ^ (s_v256_int_42 *= v256_int_101) - (v256_int_101 ^ Vector256<int>.Zero) & (v256_int_101 *= v256_int_101) - Avx2.ShiftRightLogical(v256_int_101, byte_929);
     }
 

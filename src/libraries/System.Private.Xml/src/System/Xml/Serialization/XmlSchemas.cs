@@ -21,10 +21,8 @@ namespace System.Xml.Serialization
     public class XmlSchemas : CollectionBase, IEnumerable<XmlSchema>
     {
         private XmlSchemaSet? _schemaSet;
-        private Hashtable? _references;
         private SchemaObjectCache? _cache; // cached schema top-level items
         private bool _shareTypes;
-        private Hashtable? _mergedSchemas;
         internal Hashtable delayedSchemas = new Hashtable();
         private bool _isCompiled;
         private static volatile XmlSchema? s_xsd;
@@ -57,9 +55,9 @@ namespace System.Xml.Serialization
 
         internal SchemaObjectCache Cache => _cache ??= new SchemaObjectCache();
 
-        internal Hashtable MergedSchemas => _mergedSchemas ??= new Hashtable();
+        internal Hashtable MergedSchemas => field ??= new Hashtable();
 
-        internal Hashtable References => _references ??= new Hashtable();
+        internal Hashtable References => field ??= new Hashtable();
 
         internal XmlSchemaSet SchemaSet
         {
@@ -319,6 +317,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls Merge")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void Merge(XmlSchema schema)
         {
             if (MergedSchemas[schema] != null)
@@ -359,6 +358,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("Calls MergeFailedMessage")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private void Merge(IList originals, XmlSchema schema)
         {
             foreach (XmlSchema s in originals)
@@ -568,6 +568,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("Creates XmlSerializer")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private static string Dump(XmlSchemaObject o)
         {
             XmlWriterSettings settings = new XmlWriterSettings();
@@ -583,6 +584,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls Dump")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         private static string MergeFailedMessage(XmlSchemaObject src, XmlSchemaObject dest, string? ns)
         {
             string err = SR.Format(SR.XmlSerializableMergeItem, ns, GetSchemaItem(src, ns, null));
@@ -617,6 +619,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         public void Compile(ValidationEventHandler? handler, bool fullCompile)
         {
             if (_isCompiled)
@@ -739,6 +742,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateSchemaGraph")]
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void SetCache(SchemaObjectCache cache, bool shareTypes)
         {
             _shareTypes = shareTypes;

@@ -65,10 +65,7 @@ namespace System.ServiceProcess
             if (!CheckMachineName(machineName))
                 throw new ArgumentException(SR.Format(SR.BadMachineName, machineName));
 
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidParameter, nameof(name), name), nameof(name));
@@ -709,7 +706,7 @@ namespace System.ServiceProcess
 
         /// <summary>
         /// Gets the services (not including device-driver services) on the given machine name.
-        /// /// </summary>
+        /// </summary>
         /// <param name="machineName">Name of the machine</param>
         /// <returns></returns>
         public static ServiceController[] GetServices(string machineName)

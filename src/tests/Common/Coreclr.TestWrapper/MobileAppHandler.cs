@@ -63,8 +63,8 @@ namespace CoreclrTestLib
                 if (platformValueFlag && actionValueFlag)
                 {
                     int timeout = 240000; // Set timeout to 4 mins, because the installation on Android arm64/32 devices could take up to 10 mins on CI
-                    string dotnetCmd_raw = System.Environment.GetEnvironmentVariable("__TestDotNetCmd");
-                    string xharnessCmd_raw = System.Environment.GetEnvironmentVariable("XHARNESS_CLI_PATH");
+                    string? dotnetCmd_raw = System.Environment.GetEnvironmentVariable("__TestDotNetCmd");
+                    string? xharnessCmd_raw = System.Environment.GetEnvironmentVariable("XHARNESS_CLI_PATH");
                     string dotnetCmd = string.IsNullOrEmpty(dotnetCmd_raw) ? "dotnet" : dotnetCmd_raw;
                     string xharnessCmd = string.IsNullOrEmpty(xharnessCmd_raw) ? "xharness" : $"exec {xharnessCmd_raw}";
                     string appExtension = platform == "android" ? "apk" : "app";
@@ -194,9 +194,9 @@ namespace CoreclrTestLib
 
         private static void CreateRetryFile(string fileName, int exitCode, string appName)
         {
-            using (StreamWriter writer = new StreamWriter(fileName))  
+            using (StreamWriter writer = new StreamWriter(fileName))
             {
-                writer.WriteLine($"appName: {appName}; exitCode: {exitCode}"); 
+                writer.WriteLine($"appName: {appName}; exitCode: {exitCode}");
             }
         }
 

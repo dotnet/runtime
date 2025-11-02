@@ -6,7 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeInternalObsoleteAttribute>true</IncludeInternalObsoleteAttribute>
     <NoWarn>$(NoWarn);IDE0059;IDE0060;CA1822;CA1865</NoWarn>
-    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>

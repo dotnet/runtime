@@ -67,7 +67,6 @@
       <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == 'net7.0' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
       <!-- Overrides for wasm threads support -->
       <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablethreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
-      <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTracing)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.perftrace.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
   </ItemGroup>
 </Project>

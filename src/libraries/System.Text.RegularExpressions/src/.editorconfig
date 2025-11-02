@@ -1,0 +1,4 @@
+# C# files
+[*.cs]
+
+spelling_exclusion_path = spell.dic

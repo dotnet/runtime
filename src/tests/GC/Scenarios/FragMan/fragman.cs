@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 /* FragMan
  *
  * This test creates an array of FragNodes, then reorganizes them into a tree.
@@ -19,7 +20,8 @@ namespace DefaultNamespace {
         internal FragNode fnM = null;
         internal FragNode [] CvA_FNodes;
 
-        public static int Main ()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Console.WriteLine("Test should return with ExitCode 100 ...");
             FragMan test = new FragMan( );

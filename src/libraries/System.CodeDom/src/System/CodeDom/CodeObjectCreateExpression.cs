@@ -5,8 +5,6 @@ namespace System.CodeDom
 {
     public class CodeObjectCreateExpression : CodeExpression
     {
-        private CodeTypeReference _createType;
-
         public CodeObjectCreateExpression() { }
 
         public CodeObjectCreateExpression(CodeTypeReference createType, params CodeExpression[] parameters)
@@ -29,8 +27,8 @@ namespace System.CodeDom
 
         public CodeTypeReference CreateType
         {
-            get => _createType ??= new CodeTypeReference("");
-            set => _createType = value;
+            get => field ??= new CodeTypeReference("");
+            set => field = value;
         }
 
         public CodeExpressionCollection Parameters { get; } = new CodeExpressionCollection();

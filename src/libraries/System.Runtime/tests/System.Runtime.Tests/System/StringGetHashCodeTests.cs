@@ -56,6 +56,7 @@ namespace System.Tests
             () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.IgnoreNonSpace); },
             () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.IgnoreSymbols); },
             () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.IgnoreWidth); },
+            () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.NumericOrdering); },
             () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.None); },
             () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.Ordinal); },
             () => { return CultureInfo.CurrentCulture.CompareInfo.GetHashCode("abc", CompareOptions.OrdinalIgnoreCase); }
@@ -90,7 +91,7 @@ namespace System.Tests
                 yield return new object[] { "AaBbCcDdEeFfGgHh".Insert(i, "\u00E9" /* LATIN SMALL LETTER E WITH ACUTE */) };
                 yield return new object[] { "AaBbCcDdEeFfGgHh".Insert(i, "\u044D" /* CYRILLIC SMALL LETTER E */) };
                 // https://github.com/dotnet/runtime/issues/95503
-                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform && PlatformDetection.IsNotHybridGlobalizationOnBrowser)
+                if (PlatformDetection.IsNotHybridGlobalizationOnApplePlatform)
                     yield return new object[] { "AaBbCcDdEeFfGgHh".Insert(i, "\u0131" /* LATIN SMALL LETTER DOTLESS I */) };
             }
 

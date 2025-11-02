@@ -56,26 +56,30 @@ namespace System.Net.Http
         protected void MarkConnectionAsEstablished(Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
         {
             ConnectionSetupActivity = connectionSetupActivity;
-            Debug.Assert(_pool.Settings._metrics is not null);
-
-            SocketsHttpHandlerMetrics metrics = _pool.Settings._metrics;
-            if (metrics.OpenConnections.Enabled || metrics.ConnectionDuration.Enabled)
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
             {
-                // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
-                string protocol =
-                    this is HttpConnection ? "1.1" :
-                    this is Http2Connection ? "2" :
-                    "3";
+                Debug.Assert(_pool.Settings._metrics is not null);
 
-                _connectionMetrics = new ConnectionMetrics(
-                    metrics,
-                    protocol,
-                    _pool.IsSecure ? "https" : "http",
-                    _pool.OriginAuthority.HostValue,
-                    _pool.OriginAuthority.Port,
-                    remoteEndPoint?.Address?.ToString());
+                SocketsHttpHandlerMetrics metrics = _pool.Settings._metrics!;
+                if (metrics.OpenConnections.Enabled || metrics.ConnectionDuration.Enabled)
+                {
+                    // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
+                    string protocol =
+                        this is HttpConnection ? "1.1" :
+                        this is Http2Connection ? "2" :
+                        "3";
 
-                _connectionMetrics.ConnectionEstablished();
+                    Debug.Assert(_pool.TelemetryServerAddress is not null, "TelemetryServerAddress should not be null when System.Diagnostics.Metrics.Meter.IsSupported is true.");
+                    _connectionMetrics = new ConnectionMetrics(
+                        metrics,
+                        protocol,
+                        _pool.IsSecure ? "https" : "http",
+                        _pool.TelemetryServerAddress,
+                        _pool.OriginAuthority.Port,
+                        remoteEndPoint?.Address?.ToString());
+
+                    _connectionMetrics.ConnectionEstablished();
+                }
             }
 
             _idleSinceTickCount = _creationTickCount;
@@ -96,7 +100,7 @@ namespace System.Net.Http
 
         public void MarkConnectionAsClosed()
         {
-            _connectionMetrics?.ConnectionClosed(durationMs: Environment.TickCount64 - _creationTickCount);
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled) _connectionMetrics?.ConnectionClosed(durationMs: Environment.TickCount64 - _creationTickCount);
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -113,13 +117,13 @@ namespace System.Net.Http
         public void MarkConnectionAsIdle()
         {
             _idleSinceTickCount = Environment.TickCount64;
-            _connectionMetrics?.IdleStateChanged(idle: true);
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled) _connectionMetrics?.IdleStateChanged(idle: true);
         }
 
         public void MarkConnectionAsNotIdle()
         {
             _idleSinceTickCount = null;
-            _connectionMetrics?.IdleStateChanged(idle: false);
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled) _connectionMetrics?.IdleStateChanged(idle: false);
         }
 
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>
@@ -148,6 +152,7 @@ namespace System.Net.Http
         {
             if (stream is SslStream sslStream)
             {
+#pragma warning disable SYSLIB0058 // Use NegotiatedCipherSuite.
                 Trace(
                     $"{this}. Id:{Id}, " +
                     $"SslProtocol:{sslStream.SslProtocol}, NegotiatedApplicationProtocol:{sslStream.NegotiatedApplicationProtocol}, " +
@@ -155,6 +160,7 @@ namespace System.Net.Http
                     $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
                     $"KeyExchangeAlgorithm:{sslStream.KeyExchangeAlgorithm}, KeyExchangeStrength:{sslStream.KeyExchangeStrength}, " +
                     $"LocalCertificate:{sslStream.LocalCertificate}, RemoteCertificate:{sslStream.RemoteCertificate}");
+#pragma warning restore SYSLIB0058 // Use NegotiatedCipherSuite.
             }
             else
             {

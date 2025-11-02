@@ -5,7 +5,6 @@ include <AsmMacros.inc>
 include AsmConstants.inc
 
     extern  ExternalMethodFixupWorker:proc
-    extern  ProcessCLRException:proc
 
 ifdef FEATURE_READYTORUN
     extern DynamicHelperWorker:proc
@@ -24,7 +23,6 @@ NESTED_ENTRY DelayLoad_MethodCall, _TEXT
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
 
-PATCH_LABEL ExternalMethodFixupPatchLabel
         TAILJMP_RAX
 
 NESTED_END DelayLoad_MethodCall, _TEXT

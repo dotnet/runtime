@@ -40,7 +40,7 @@ namespace System.Net.Sockets.Tests
             new object[] { SocketType.Unknown, ProtocolType.Udp },
         };
 
-        private static bool SupportsRawSockets => Environment.IsPrivilegedProcess;
+        private static bool SupportsRawSockets => Environment.IsPrivilegedProcess && !OperatingSystem.IsWasi();
         private static bool NotSupportsRawSockets => !SupportsRawSockets;
 
         [OuterLoop]
@@ -118,6 +118,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(AddressFamily.InterNetworkV6, ProtocolType.Udp)]
         [InlineData(AddressFamily.InterNetworkV6, ProtocolType.IcmpV6)]
         [ConditionalTheory(nameof(NotSupportsRawSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public void Ctor_Raw_NotSupported_ExpectedError(AddressFamily addressFamily, ProtocolType protocolType)
         {
             SocketException e = Assert.Throws<SocketException>(() => new Socket(addressFamily, SocketType.Raw, protocolType));
@@ -277,6 +278,17 @@ namespace System.Net.Sockets.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Ctor_SafeHandle_BasicPropertiesPropagate_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
+            if(OperatingSystem.IsWasi() && addressFamily == AddressFamily.Unix)
+            {
+                // WASI doesn't support Unix domain sockets.
+                return;
+            }
+            if(OperatingSystem.IsWasi() && socketType == SocketType.Raw)
+            {
+                // WASI doesn't support Raw sockets.
+                return;
+            }
+
             bool isRawPacket = (addressFamily == AddressFamily.Packet) &&
                                (socketType == SocketType.Raw);
             if (isRawPacket)
@@ -357,8 +369,8 @@ namespace System.Net.Sockets.Tests
             }
             Assert.Equal(expectedProtocolType, copy.ProtocolType);
 
-            Assert.True(orig.Blocking);
-            Assert.True(copy.Blocking);
+            if (!OperatingSystem.IsWasi()) Assert.True(orig.Blocking);
+            if (!OperatingSystem.IsWasi()) Assert.True(copy.Blocking);
 
             if (orig.AddressFamily == copy.AddressFamily)
             {
@@ -372,13 +384,16 @@ namespace System.Net.Sockets.Tests
             AssertEqualOrSameException(() => orig.LingerState.LingerTime, () => copy.LingerState.LingerTime);
             AssertEqualOrSameException(() => orig.NoDelay, () => copy.NoDelay);
 
-            Assert.Equal(orig.Available, copy.Available);
-            Assert.Equal(orig.ExclusiveAddressUse, copy.ExclusiveAddressUse);
+            if (!OperatingSystem.IsWasi()) Assert.Equal(orig.Available, copy.Available);
+            if (!OperatingSystem.IsWasi() || protocolType != ProtocolType.Udp)
+            {
+                Assert.Equal(orig.ExclusiveAddressUse, copy.ExclusiveAddressUse);
+            }
             Assert.Equal(orig.Handle, copy.Handle);
             Assert.Equal(orig.ReceiveBufferSize, copy.ReceiveBufferSize);
-            Assert.Equal(orig.ReceiveTimeout, copy.ReceiveTimeout);
+            if (!OperatingSystem.IsWasi()) Assert.Equal(orig.ReceiveTimeout, copy.ReceiveTimeout);
             Assert.Equal(orig.SendBufferSize, copy.SendBufferSize);
-            Assert.Equal(orig.SendTimeout, copy.SendTimeout);
+            if (!OperatingSystem.IsWasi()) Assert.Equal(orig.SendTimeout, copy.SendTimeout);
 #pragma warning disable 0618
             Assert.Equal(orig.UseOnlyOverlappedIO, copy.UseOnlyOverlappedIO);
 #pragma warning restore 0618
@@ -409,27 +424,29 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(orig.RemoteEndPoint, client.RemoteEndPoint);
 
             // Validating accessing other properties
-            Assert.Equal(orig.Available, client.Available);
-            Assert.True(orig.Blocking);
-            Assert.True(client.Blocking);
+            if (!OperatingSystem.IsWasi()) // https://github.com/WebAssembly/wasi-libc/issues/538
+                Assert.Equal(orig.Available, client.Available);
+            if (!OperatingSystem.IsWasi()) Assert.True(orig.Blocking);
+            if (!OperatingSystem.IsWasi()) Assert.True(client.Blocking);
             AssertEqualOrSameException(() => orig.DontFragment, () => client.DontFragment);
             AssertEqualOrSameException(() => orig.EnableBroadcast, () => client.EnableBroadcast);
             Assert.Equal(orig.ExclusiveAddressUse, client.ExclusiveAddressUse);
             Assert.Equal(orig.Handle, client.Handle);
             Assert.Equal(orig.IsBound, client.IsBound);
-            Assert.Equal(orig.LingerState.Enabled, client.LingerState.Enabled);
-            Assert.Equal(orig.LingerState.LingerTime, client.LingerState.LingerTime);
-            AssertEqualOrSameException(() => orig.MulticastLoopback, () => client.MulticastLoopback);
+            if (!OperatingSystem.IsWasi()) Assert.Equal(orig.LingerState.Enabled, client.LingerState.Enabled);
+            if (!OperatingSystem.IsWasi()) Assert.Equal(orig.LingerState.LingerTime, client.LingerState.LingerTime);
+            if (!OperatingSystem.IsWasi()) AssertEqualOrSameException(() => orig.MulticastLoopback, () => client.MulticastLoopback);
             Assert.Equal(orig.NoDelay, client.NoDelay);
             Assert.Equal(orig.ReceiveBufferSize, client.ReceiveBufferSize);
-            Assert.Equal(orig.ReceiveTimeout, client.ReceiveTimeout);
+            if (!OperatingSystem.IsWasi()) Assert.Equal(orig.ReceiveTimeout, client.ReceiveTimeout);
             Assert.Equal(orig.SendBufferSize, client.SendBufferSize);
-            Assert.Equal(orig.SendTimeout, client.SendTimeout);
+            if (!OperatingSystem.IsWasi()) Assert.Equal(orig.SendTimeout, client.SendTimeout);
             Assert.Equal(orig.Ttl, client.Ttl);
 
             // Validate setting various properties on the new instance and seeing them roundtrip back to the original.
-            client.ReceiveTimeout = 42;
-            Assert.Equal(client.ReceiveTimeout, orig.ReceiveTimeout);
+            if (!OperatingSystem.IsWasi()) // https://github.com/WebAssembly/wasi-libc/issues/539
+                client.ReceiveTimeout = 42;
+            if (!OperatingSystem.IsWasi()) Assert.Equal(client.ReceiveTimeout, orig.ReceiveTimeout);
 
             // Validate sending and receiving
             Assert.Equal(1, await client.SendAsync(new byte[1] { 42 }, SocketFlags.None));
@@ -443,7 +460,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(42, buffer[0]);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
@@ -660,6 +677,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public unsafe void Ctor_SafeHandle_SocketPair_Success()
         {
             // This is platform dependent but it seems like this is same on all supported platforms.

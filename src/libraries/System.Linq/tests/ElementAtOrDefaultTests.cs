@@ -32,18 +32,18 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> TestData()
         {
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(9, 1), 0, 1, 9 };
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(9, 10), 9, 1, 18 };
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(-4, 10), 3, 7, -1 };
+            yield return [NumberRangeGuaranteedNotCollectionType(9, 1), 0, 1, 9];
+            yield return [NumberRangeGuaranteedNotCollectionType(9, 10), 9, 1, 18];
+            yield return [NumberRangeGuaranteedNotCollectionType(-4, 10), 3, 7, -1];
 
-            yield return new object[] { new int[] { 1, 2, 3, 4 }, 4, 0, 0 };
-            yield return new object[] { new int[0], 0, 0, 0 };
-            yield return new object[] { new int[] { -4 }, 0, 1, -4 };
-            yield return new object[] { new int[] { 9, 8, 0, -5, 10 }, 4, 1, 10 };
+            yield return [new int[] { 1, 2, 3, 4 }, 4, 0, 0];
+            yield return [new int[0], 0, 0, 0];
+            yield return [new int[] { -4 }, 0, 1, -4];
+            yield return [new int[] { 9, 8, 0, -5, 10 }, 4, 1, 10];
 
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(-4, 5), -1, 6, 0 };
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(5, 5), 5, 0, 0 };
-            yield return new object[] { NumberRangeGuaranteedNotCollectionType(0, 0), 0, 0, 0 };
+            yield return [NumberRangeGuaranteedNotCollectionType(-4, 5), -1, 6, 0];
+            yield return [NumberRangeGuaranteedNotCollectionType(5, 5), 5, 0, 0];
+            yield return [NumberRangeGuaranteedNotCollectionType(0, 0), 0, 0, 0];
         }
 
         [Theory]
@@ -77,7 +77,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullableArray_InvalidIndex_ReturnsNull()
         {
-            int?[] source = { 9, 8 };
+            int?[] source = [9, 8];
             Assert.Null(source.ElementAtOrDefault(-1));
             Assert.Null(source.ElementAtOrDefault(3));
             Assert.Null(source.ElementAtOrDefault(int.MaxValue));
@@ -92,7 +92,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NullableArray_ValidIndex_ReturnsCorrectObject()
         {
-            int?[] source = { 9, 8, null, -5, 10 };
+            int?[] source = [9, 8, null, -5, 10];
 
             Assert.Null(source.ElementAtOrDefault(2));
             Assert.Equal(-5, source.ElementAtOrDefault(3));
@@ -120,7 +120,7 @@ namespace System.Linq.Tests
             Assert.Equal(2, source.ElementAtOrDefault(new Index(2)));
             Assert.Equal(2, source.ElementAtOrDefault(^3));
 
-            source.InsertRange(3, new[] { -1, -2 });
+            source.InsertRange(3, [-1, -2]);
             source.RemoveAt(0);
             Assert.Equal(-1, source.ElementAtOrDefault(2));
             Assert.Equal(-1, source.ElementAtOrDefault(new Index(2)));
@@ -137,7 +137,7 @@ namespace System.Linq.Tests
             Assert.Equal(2, query1[2].ElementAtOrDefault(^3));
 
             var query2 = Repeat(_ => ForceNotCollection(source).Select(i => i), 3);
-            source.InsertRange(3, new[] { -1, -2 });
+            source.InsertRange(3, [-1, -2]);
             source.RemoveAt(0);
             Assert.Equal(-1, query2[0].ElementAtOrDefault(2));
             Assert.Equal(-1, query2[1].ElementAtOrDefault(new Index(2)));
@@ -186,7 +186,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_Consistency()
         {
-            int?[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int?[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Equal(5, source.ElementAtOrDefault(5));
             Assert.Equal(5, source.ElementAtOrDefault(new Index(5)));
@@ -217,7 +217,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_Consistency_NotList()
         {
-            int?[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int?[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Equal(5, ForceNotCollection(source).ElementAtOrDefault(5));
             Assert.Equal(5, ForceNotCollection(source).ElementAtOrDefault(new Index(5)));
@@ -268,7 +268,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_Consistency_ListPartition()
         {
-            int?[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int?[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Equal(5, ListPartitionOrEmpty(source).ElementAtOrDefault(5));
             Assert.Equal(5, ListPartitionOrEmpty(source).ElementAtOrDefault(new Index(5)));
@@ -299,7 +299,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonEmptySource_Consistency_EnumerablePartition()
         {
-            int?[] source = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            int?[] source = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
             Assert.Equal(5, EnumerablePartitionOrEmpty(source).ElementAtOrDefault(5));
             Assert.Equal(5, EnumerablePartitionOrEmpty(source).ElementAtOrDefault(new Index(5)));
@@ -330,7 +330,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_Consistency()
         {
-            int?[] source = { };
+            int?[] source = [];
 
             Assert.Null(source.ElementAtOrDefault(1));
             Assert.Null(source.ElementAtOrDefault(-1));
@@ -351,7 +351,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_Consistency_NotList()
         {
-            int?[] source = { };
+            int?[] source = [];
 
             Assert.Null(ForceNotCollection(source).ElementAtOrDefault(1));
             Assert.Null(ForceNotCollection(source).ElementAtOrDefault(-1));
@@ -372,7 +372,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_Consistency_ListPartition()
         {
-            int?[] source = { };
+            int?[] source = [];
 
             Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(1));
             Assert.Null(ListPartitionOrEmpty(source).ElementAtOrDefault(-1));
@@ -393,7 +393,7 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource_Consistency_EnumerablePartition()
         {
-            int?[] source = { };
+            int?[] source = [];
 
             Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(1));
             Assert.Null(EnumerablePartitionOrEmpty(source).ElementAtOrDefault(-1));

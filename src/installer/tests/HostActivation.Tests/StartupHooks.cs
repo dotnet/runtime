@@ -96,7 +96,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .EnvironmentVariable("TEST_STARTUPHOOK_USE_DEPENDENCY", true.ToString())
                 .CaptureStdOut()
                 .CaptureStdErr()
-                .Execute(expectedToFail: true)
+                .DisableDumps() // Expected to throw an exception
+                .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining("System.IO.FileNotFoundException: Could not load file or assembly 'SharedLibrary");
         }

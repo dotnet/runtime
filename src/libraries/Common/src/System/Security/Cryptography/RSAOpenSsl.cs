@@ -654,7 +654,6 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(_key))]
         private void SetKey(SafeEvpPKeyHandle newKey)
         {
-            Debug.Assert(!newKey.IsInvalid);
             FreeKey();
             _key = new Lazy<SafeEvpPKeyHandle>(newKey);
 

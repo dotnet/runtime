@@ -11,9 +11,13 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Security")]
+    [EventSource(Name = NetEventSourceName)]
     internal sealed partial class NetEventSource
     {
+        private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.Security";
+
+        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
+
 #if WINDOWS
         // More events are defined in NetEventSource.Security.Windows.cs
         private const int LocatingPrivateKeyId = OperationReturnedSomethingId + 1;
@@ -189,6 +193,7 @@ namespace System.Net
         private void UsingCachedCredential(int sslStreamHash) =>
             WriteEvent(UsingCachedCredentialId, sslStreamHash);
 
+#pragma warning disable SYSLIB0058 // Use NegotiatedCipherSuite.
         [Event(SspiSelectedCipherSuitId, Keywords = Keywords.Default, Level = EventLevel.Informational)]
         public void SspiSelectedCipherSuite(
             string process,
@@ -204,6 +209,7 @@ namespace System.Net
                 process, (int)sslProtocol, (int)cipherAlgorithm, cipherStrength,
                 (int)hashAlgorithm, hashStrength, (int)keyExchangeAlgorithm, keyExchangeStrength);
         }
+#pragma warning restore SYSLIB0058 // Use NegotiatedCipherSuite.
 
         [NonEvent]
         public void RemoteCertificateError(SslStream SslStream, string message) =>

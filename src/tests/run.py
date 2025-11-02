@@ -105,6 +105,7 @@ parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action=
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
+parser.add_argument("--interpreter", dest="interpreter", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
@@ -607,7 +608,7 @@ def setup_coredump_generation(host_os):
     """
     global coredump_pattern
 
-    if host_os == "osx":
+    if host_os == "osx" or "freebsd":
         coredump_pattern = subprocess.check_output("sysctl -n kern.corefile", shell=True).rstrip()
     elif host_os == "linux":
         with open("/proc/sys/kernel/core_pattern", "r") as f:
@@ -683,7 +684,7 @@ def print_info_from_coredump_file(host_os, arch, coredump_name, executable_name)
 
     command = ""
 
-    if host_os == "osx":
+    if host_os == "osx" or "freebsd":
         command = "lldb -c %s -b -o 'bt all' -o 'disassemble -b -p'" % coredump_name
     elif host_os == "linux":
         command = "gdb --batch -ex \"thread apply all bt full\" -ex \"disassemble /r $pc\" -ex \"quit\" %s %s" % (executable_name, coredump_name)
@@ -856,6 +857,11 @@ def run_tests(args,
         print("Running tests NativeAOT")
         os.environ["CLRCustomTestLauncher"] = args.nativeaottest_script_path
 
+    if args.interpreter:
+        print("Running tests with the interpreter")
+        print("Setting RunInterpreter=1")
+        os.environ["RunInterpreter"] = "1"
+
     if gc_stress:
         per_test_timeout *= 8
         print("Running GCStress, extending test timeout to cater for slower runtime.")
@@ -1009,6 +1015,11 @@ def setup_args(args):
                               "run_nativeaot_tests",
                               lambda arg: True,
                               "Error setting run_nativeaot_tests")
+
+    coreclr_setup_args.verify(args,
+                              "interpreter",
+                              lambda arg: True,
+                              "Error setting interpreter")
 
     if coreclr_setup_args.sequential and coreclr_setup_args.parallel:
         print("Error: don't specify both --sequential and -parallel")

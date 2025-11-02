@@ -9,9 +9,16 @@ using System.Threading;
 
 namespace System.Net
 {
-    [EventSource(Name = "System.Net.NameResolution")]
+    [EventSource(Name = NameResolutionTelemetryName)]
     internal sealed class NameResolutionTelemetry : EventSource
     {
+        private const string NameResolutionTelemetryName = "System.Net.NameResolution";
+
+        public NameResolutionTelemetry()
+            : base(NameResolutionTelemetryName, EventSourceSettings.EtwManifestEventFormat)
+        {
+        }
+
         public static readonly NameResolutionTelemetry Log = new NameResolutionTelemetry();
 
         private const int ResolutionStartEventId = 1;
@@ -59,7 +66,7 @@ namespace System.Net
         private void ResolutionFailed() => WriteEvent(ResolutionFailedEventId);
 
         [NonEvent]
-        public static bool AnyDiagnosticsEnabled() => Log.IsEnabled() || NameResolutionMetrics.IsEnabled() || NameResolutionActivity.IsTracingEnabled();
+        public static bool AnyDiagnosticsEnabled() => !OperatingSystem.IsWasi() && (Log.IsEnabled() || NameResolutionMetrics.IsEnabled() || NameResolutionActivity.IsTracingEnabled());
 
         [NonEvent]
         public NameResolutionActivity BeforeResolution(object hostNameOrAddress, long startingTimestamp = 0)
@@ -91,6 +98,8 @@ namespace System.Net
         [NonEvent]
         public void AfterResolution(object hostNameOrAddress, in NameResolutionActivity activity, object? answer, Exception? exception = null)
         {
+            if (OperatingSystem.IsWasi()) return;
+
             if (!activity.Stop(answer, exception, out TimeSpan duration))
             {
                 // We stopped the System.Diagnostics.Activity at this point and neither metrics nor EventSource is enabled.

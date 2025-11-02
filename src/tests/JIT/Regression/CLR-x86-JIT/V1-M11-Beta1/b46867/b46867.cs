@@ -13,7 +13,7 @@ namespace Test
         {
             param3 = (double)param4;
         }
-        [Fact]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
         public static void TestEntryPoint()
         {
             Method2(1.0d, 1, __arglist());

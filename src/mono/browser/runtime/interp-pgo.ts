@@ -3,9 +3,9 @@
 import ProductVersion from "consts:productVersion";
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { ENVIRONMENT_IS_WEB, Module, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_error, mono_log_warn } from "./logging";
-import { localHeapViewU8 } from "./memory";
+import { free, localHeapViewU8, malloc } from "./memory";
 import cwraps from "./cwraps";
 import { MonoConfigInternal } from "./types/internal";
 
@@ -31,7 +31,7 @@ export async function interp_pgo_save_data () {
             return;
         }
 
-        const pData = <any>Module._malloc(expectedSize);
+        const pData = <any>malloc(expectedSize);
         const saved = cwraps.mono_interp_pgo_save_table(pData, expectedSize) === 0;
         if (!saved) {
             mono_log_error("Failed to save interp_pgo table (Unknown error)");
@@ -47,7 +47,7 @@ export async function interp_pgo_save_data () {
 
         cleanupCache(tablePrefix, cacheKey); // no await
 
-        Module._free(pData);
+        free(pData);
     } catch (exc) {
         mono_log_error(`Failed to save interp_pgo table: ${exc}`);
     }
@@ -66,14 +66,14 @@ export async function interp_pgo_load_data () {
         return;
     }
 
-    const pData = <any>Module._malloc(data.byteLength);
+    const pData = <any>malloc(data.byteLength);
     const u8 = localHeapViewU8();
     u8.set(new Uint8Array(data), pData);
 
     if (cwraps.mono_interp_pgo_load_table(pData, data.byteLength))
         mono_log_error("Failed to load interp_pgo table (Unknown error)");
 
-    Module._free(pData);
+    free(pData);
 }
 
 async function openCache (): Promise<Cache | null> {
@@ -130,7 +130,7 @@ export async function getCacheEntry (cacheKey: string): Promise<ArrayBuffer | un
     }
 }
 
-export async function storeCacheEntry (cacheKey: string, memory: ArrayBuffer, mimeType: string): Promise<boolean> {
+export async function storeCacheEntry (cacheKey: string, memory: Uint8Array, mimeType: string): Promise<boolean> {
     try {
         const cache = await openCache();
         if (!cache) {
@@ -141,7 +141,7 @@ export async function storeCacheEntry (cacheKey: string, memory: ArrayBuffer, mi
             ? (new Uint8Array(memory)).slice(0)
             : memory;
 
-        const responseToCache = new Response(copy, {
+        const responseToCache = new Response(copy as BodyInit, {
             headers: {
                 "content-type": mimeType,
                 "content-length": memory.byteLength.toString(),
@@ -176,7 +176,7 @@ export async function cleanupCache (prefix: string, protectKey: string) {
 
 // calculate hash of things which affect config hash
 export async function getCacheKey (prefix: string): Promise<string | null> {
-    if (!runtimeHelpers.subtle) {
+    if (!globalThis.crypto?.subtle) {
         return null;
     }
     const inputs = Object.assign({}, runtimeHelpers.config) as MonoConfigInternal;
@@ -211,7 +211,7 @@ export async function getCacheKey (prefix: string): Promise<string | null> {
     inputs.ProductVersion = ProductVersion;
 
     const inputsJson = JSON.stringify(inputs);
-    const sha256Buffer = await runtimeHelpers.subtle.digest("SHA-256", new TextEncoder().encode(inputsJson));
+    const sha256Buffer = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(inputsJson));
     const uint8ViewOfHash = new Uint8Array(sha256Buffer);
     const hashAsString = Array.from(uint8ViewOfHash).map((b) => b.toString(16).padStart(2, "0")).join("");
     return `${prefix}-${hashAsString}`;

@@ -11,6 +11,14 @@ using Xunit;
 
 struct Struct { }
 
+interface I1 { }
+
+interface I2<M> { }
+
+class ClassWithI1 : I1 { }
+
+class ClassWithI1I2 : I1, I2<ClassWithI1I2> { }
+
 public static unsafe class UnsafeAccessorsTestsGenerics
 {
     class ClassWithEnum<T>
@@ -173,21 +181,76 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         }
     }
 
-    class Base
+    class AmbiguousMethodName
     {
-        protected virtual string CreateMessageGeneric<T>(T t) => $"{nameof(Base)}:{t}";
+        private void M() { }
+        private void M<T>() { }
+        private void N() { }
+
+        private static void SM() { }
+        private static void SM<U>() { }
+        private static void SN() { }
     }
 
-    class GenericBase<T> : Base
+    static class AccessorsAmbiguousMethodName
     {
-        protected virtual string CreateMessage(T t) => $"{nameof(GenericBase<T>)}:{t}";
-        protected override string CreateMessageGeneric<U>(U u) => $"{nameof(GenericBase<T>)}:{u}";
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        public extern static void CallM(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        public extern static void CallM<T>(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "N")]
+        public extern static void CallN_MissingMethod<T>(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        public extern static void CallSM(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        public extern static void CallSM<U>(AmbiguousMethodName a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SN")]
+        public extern static void CallSN_MissingMethod<T>(AmbiguousMethodName a);
+    }
+
+    [Fact]
+    public static void Verify_Generic_AmbiguousMethodName()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_AmbiguousMethodName)}");
+
+        {
+            AmbiguousMethodName a = new();
+            AccessorsAmbiguousMethodName.CallM(a);
+            AccessorsAmbiguousMethodName.CallM<int>(a);
+            AccessorsAmbiguousMethodName.CallM<string>(a);
+            AccessorsAmbiguousMethodName.CallM<Guid>(a);
+            Assert.Throws<MissingMethodException>(() => AccessorsAmbiguousMethodName.CallN_MissingMethod<int>(a));
+        }
+
+        {
+            AccessorsAmbiguousMethodName.CallSM(null);
+            AccessorsAmbiguousMethodName.CallSM<int>(null);
+            AccessorsAmbiguousMethodName.CallSM<string>(null);
+            AccessorsAmbiguousMethodName.CallSM<Guid>(null);
+            Assert.Throws<MissingMethodException>(() => AccessorsAmbiguousMethodName.CallSN_MissingMethod<int>(null));
+        }
+    }
+
+    class Base
+    {
+        protected virtual string CreateMessage<T>(T t) => $"{nameof(Base)}<>:{t}";
+    }
+
+    class GenericBase<U> : Base
+    {
+        protected virtual string CreateMessage(U u) => $"{nameof(GenericBase<U>)}:{u}";
+        protected override string CreateMessage<V>(V v) => $"{nameof(GenericBase<U>)}<>:{v}";
     }
 
     sealed class Derived1 : GenericBase<string>
     {
         protected override string CreateMessage(string u) => $"{nameof(Derived1)}:{u}";
-        protected override string CreateMessageGeneric<U>(U t) => $"{nameof(Derived1)}:{t}";
+        protected override string CreateMessage<W>(W w) => $"{nameof(Derived1)}<>:{w}";
     }
 
     sealed class Derived2 : GenericBase<string>
@@ -201,33 +264,33 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         Console.WriteLine($"Running {nameof(Verify_Generic_InheritanceMethodResolution)}");
         {
             Base a = new();
-            Assert.Equal($"{nameof(Base)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(Base)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(Base)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(Base)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(Base)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(Base)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             GenericBase<int> a = new();
-            Assert.Equal($"{nameof(GenericBase<int>)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(GenericBase<int>)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(GenericBase<int>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(GenericBase<int>)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<int>)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<int>)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             GenericBase<string> a = new();
-            Assert.Equal($"{nameof(GenericBase<string>)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(GenericBase<string>)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(GenericBase<string>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(GenericBase<string>)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<string>)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<string>)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             GenericBase<Struct> a = new();
-            Assert.Equal($"{nameof(GenericBase<Struct>)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(GenericBase<Struct>)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(GenericBase<Struct>)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(GenericBase<Struct>)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(GenericBase<Struct>)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(GenericBase<Struct>)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             Derived1 a = new();
-            Assert.Equal($"{nameof(Derived1)}:1", CreateMessage<int>(a, 1));
-            Assert.Equal($"{nameof(Derived1)}:{expect}", CreateMessage<string>(a, expect));
-            Assert.Equal($"{nameof(Derived1)}:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
+            Assert.Equal($"{nameof(Derived1)}<>:1", CreateMessage<int>(a, 1));
+            Assert.Equal($"{nameof(Derived1)}<>:{expect}", CreateMessage<string>(a, expect));
+            Assert.Equal($"{nameof(Derived1)}<>:{nameof(Struct)}", CreateMessage<Struct>(a, new Struct()));
         }
         {
             // Verify resolution of generic override logic.
@@ -237,7 +300,7 @@ public static unsafe class UnsafeAccessorsTestsGenerics
             Assert.Equal($"{nameof(GenericBase<string>)}:{expect}", Accessors<string>.CreateMessage(a2, expect));
         }
 
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessageGeneric")]
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "CreateMessage")]
         extern static string CreateMessage<W>(Base b, W w);
     }
 
@@ -396,45 +459,91 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         }
     }
 
-    class ClassWithConstraints
+    class MethodWithConstraints
     {
-        private string M<T, U>() where T : U, IEquatable<T>
+        private string M<T, U>() where T : U, I2<T>
             => $"{typeof(T)}|{typeof(U)}";
 
-        private static string SM<T, U>() where T : U, IEquatable<T>
+        private static string SM<T, U>() where T : U, I2<T>
             => $"{typeof(T)}|{typeof(U)}";
     }
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/102942", TestRuntimes.Mono)]
-    public static void Verify_Generic_ConstraintEnforcement()
+    public static void Verify_Generic_MethodConstraintEnforcement()
     {
-        Console.WriteLine($"Running {nameof(Verify_Generic_ConstraintEnforcement)}");
+        Console.WriteLine($"Running {nameof(Verify_Generic_MethodConstraintEnforcement)}");
 
-        Assert.Equal($"{typeof(string)}|{typeof(object)}", CallMethod<string, object>(new ClassWithConstraints()));
-        Assert.Equal($"{typeof(string)}|{typeof(object)}", CallStaticMethod<string, object>(null));
-        Assert.Throws<InvalidProgramException>(() => CallMethod_NoConstraints<string, object>(new ClassWithConstraints()));
-        Assert.Throws<InvalidProgramException>(() => CallMethod_MissingConstraint<string, object>(new ClassWithConstraints()));
-        Assert.Throws<InvalidProgramException>(() => CallStaticMethod_NoConstraints<string, object>(null));
-        Assert.Throws<InvalidProgramException>(() => CallStaticMethod_MissingConstraint<string, object>(null));
+        Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}", CallMethod<ClassWithI1I2, I1>(new MethodWithConstraints()));
+        Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}", CallStaticMethod<ClassWithI1I2, I1>(null));
+
+        // Skip validating error cases on Mono runtime
+        if (TestLibrary.Utilities.IsNotMonoRuntime)
+        {
+            Assert.Throws<InvalidProgramException>(() => CallMethod_NoConstraints<ClassWithI1I2, I1>(new MethodWithConstraints()));
+            Assert.Throws<InvalidProgramException>(() => CallMethod_MissingConstraint<ClassWithI1I2, I1>(new MethodWithConstraints()));
+            Assert.Throws<InvalidProgramException>(() => CallStaticMethod_NoConstraints<ClassWithI1I2, I1>(null));
+            Assert.Throws<InvalidProgramException>(() => CallStaticMethod_MissingConstraint<ClassWithI1I2, I1>(null));
+        }
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
-        extern static string CallMethod<V,W>(ClassWithConstraints c) where V : W, IEquatable<V>;
+        extern static string CallMethod<V,W>(MethodWithConstraints c) where V : W, I2<V>;
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
-        extern static string CallMethod_NoConstraints<V,W>(ClassWithConstraints c);
+        extern static string CallMethod_NoConstraints<V,W>(MethodWithConstraints c);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
-        extern static string CallMethod_MissingConstraint<V,W>(ClassWithConstraints c) where V : W;
+        extern static string CallMethod_MissingConstraint<V,W>(MethodWithConstraints c) where V : W;
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
-        extern static string CallStaticMethod<V,W>(ClassWithConstraints c) where V : W, IEquatable<V>;
+        extern static string CallStaticMethod<V,W>(MethodWithConstraints c) where V : W, I2<V>;
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
-        extern static string CallStaticMethod_NoConstraints<V,W>(ClassWithConstraints c);
+        extern static string CallStaticMethod_NoConstraints<V,W>(MethodWithConstraints c);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
-        extern static string CallStaticMethod_MissingConstraint<V,W>(ClassWithConstraints c) where V : W;
+        extern static string CallStaticMethod_MissingConstraint<V,W>(MethodWithConstraints c) where V : W;
+    }
+
+    class ClassWithConstraints<T, U> where T : U, I2<T>
+    {
+        private string M<W>() where W : I1
+            => $"{typeof(T)}|{typeof(U)}|{typeof(W)}";
+
+        private static string SM<X>() where X : I1
+            => $"{typeof(T)}|{typeof(U)}|{typeof(X)}";
+    }
+
+    class AccessorsWithConstraints<A, B> where A : B, I2<A>
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        public extern static string CallMethod<C>(ClassWithConstraints<A, B> c) where C: I1;
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        public extern static string CallStaticMethod<D>(ClassWithConstraints<A, B> c) where D: I1;
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
+        public extern static string CallMethod_MissingMethodConstraint<E>(ClassWithConstraints<A, B> c);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "SM")]
+        public extern static string CallStaticMethod_MissingMethodConstraint<F>(ClassWithConstraints<A, B> c);
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/102942", TestRuntimes.Mono)]
+    public static void Verify_Generic_ClassConstraintEnforcement()
+    {
+        Console.WriteLine($"Running {nameof(Verify_Generic_ClassConstraintEnforcement)}");
+
+        Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}|{typeof(ClassWithI1)}", AccessorsWithConstraints<ClassWithI1I2, I1>.CallMethod<ClassWithI1>(new ClassWithConstraints<ClassWithI1I2, I1>()));
+        Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}|{typeof(ClassWithI1)}", AccessorsWithConstraints<ClassWithI1I2, I1>.CallStaticMethod<ClassWithI1>(null));
+
+        // Skip validating error cases on Mono runtime
+        if (TestLibrary.Utilities.IsNotMonoRuntime)
+        {
+            Assert.Throws<InvalidProgramException>(() => AccessorsWithConstraints<ClassWithI1I2, I1>.CallMethod_MissingMethodConstraint<ClassWithI1>(new ClassWithConstraints<ClassWithI1I2, I1>()));
+            Assert.Throws<InvalidProgramException>(() => AccessorsWithConstraints<ClassWithI1I2, I1>.CallStaticMethod_MissingMethodConstraint<ClassWithI1>(null));
+        }
     }
 
     class Invalid

@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Threading;
 
 namespace System.Net.ServerSentEvents
 {
@@ -17,7 +15,7 @@ namespace System.Net.ServerSentEvents
         /// <summary>Creates a parser for parsing a <paramref name="sseStream"/> of server-sent events into a sequence of <see cref="SseItem{String}"/> values.</summary>
         /// <param name="sseStream">The stream containing the data to parse.</param>
         /// <returns>
-        /// The enumerable of strings, which may be enumerated synchronously or asynchronously. The strings
+        /// The enumerable of strings, which can be enumerated synchronously or asynchronously. The strings
         /// are decoded from the UTF8-encoded bytes of the payload of each event.
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> is null.</exception>
@@ -26,33 +24,27 @@ namespace System.Net.ServerSentEvents
         /// that decodes the data of each event using <see cref="Encoding.UTF8"/>'s GetString method.
         /// </remarks>
         public static SseParser<string> Create(Stream sseStream) =>
-            Create(sseStream, static (_, bytes) => Utf8GetString(bytes));
+            Create(sseStream, static (_, bytes) => Encoding.UTF8.GetString(bytes));
 
         /// <summary>Creates a parser for parsing a <paramref name="sseStream"/> of server-sent events into a sequence of <see cref="SseItem{T}"/> values.</summary>
         /// <typeparam name="T">Specifies the type of data in each event.</typeparam>
         /// <param name="sseStream">The stream containing the data to parse.</param>
         /// <param name="itemParser">The parser to use to transform each payload of bytes into a data element.</param>
-        /// <returns>The enumerable, which may be enumerated synchronously or asynchronously.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> is null.</exception>
-        /// <exception cref="ArgumentNullException"><paramref name="itemParser"/> is null.</exception>
-        public static SseParser<T> Create<T>(Stream sseStream, SseItemParser<T> itemParser) =>
-            new SseParser<T>(
-                sseStream ?? throw new ArgumentNullException(nameof(sseStream)),
-                itemParser ?? throw new ArgumentNullException(nameof(itemParser)));
-
-        /// <summary>Encoding.UTF8.GetString(bytes)</summary>
-        internal static unsafe string Utf8GetString(ReadOnlySpan<byte> bytes)
+        /// <returns>The enumerable, which can be enumerated synchronously or asynchronously.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> or <paramref name="itemParser"/> is null.</exception>
+        public static SseParser<T> Create<T>(Stream sseStream, SseItemParser<T> itemParser)
         {
-#if NET
-            return Encoding.UTF8.GetString(bytes);
-#else
-            fixed (byte* ptr = bytes)
+            if (sseStream is null)
             {
-                return ptr is null ?
-                    string.Empty :
-                    Encoding.UTF8.GetString(ptr, bytes.Length);
+                ThrowHelper.ThrowArgumentNullException(nameof(sseStream));
             }
-#endif
+
+            if (itemParser is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(itemParser));
+            }
+
+            return new SseParser<T>(sseStream, itemParser);
         }
     }
 }

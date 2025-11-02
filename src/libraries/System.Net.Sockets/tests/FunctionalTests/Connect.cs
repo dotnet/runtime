@@ -9,6 +9,7 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Sockets.Tests
 {
@@ -17,7 +18,7 @@ namespace System.Net.Sockets.Tests
         public Connect(ITestOutputHelper output) : base(output) {}
 
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_Success(IPAddress listenAt)
         {
@@ -45,7 +46,7 @@ namespace System.Net.Sockets.Tests
             Assert.True(client.Connected);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_Dns_Success(IPAddress listenAt)
         {
@@ -68,7 +69,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         [MemberData(nameof(Loopbacks))]
         public async Task Connect_MultipleIPAddresses_Success(IPAddress listenAt)
         {
@@ -85,7 +86,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_OnConnectedSocket_Fails()
         {
             int port;
@@ -102,7 +103,7 @@ namespace System.Net.Sockets.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)] // Unix currently does not support Disconnect
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_AfterDisconnect_Fails()
         {
             int port;
@@ -205,6 +206,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop("Connection failure takes long on Windows.")]
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
         public async Task Connect_WithoutListener_ThrowSocketExceptionWithAppropriateInfo()
         {
             using PortBlocker portBlocker = new PortBlocker(() =>
@@ -227,6 +229,7 @@ namespace System.Net.Sockets.Tests
 
         [Theory]
         [MemberData(nameof(LoopbacksAndAny))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/107981", TestPlatforms.Wasi)]
         public async Task Connect_DatagramSockets_DontThrowConnectedException_OnSecondAttempt(IPAddress listenAt, IPAddress secondConnection)
         {
             using Socket listener = new Socket(listenAt.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -239,18 +242,259 @@ namespace System.Net.Sockets.Tests
             await ConnectAsync(s, new IPEndPoint(secondConnection, PlatformDetection.IsApplePlatform ? 1 : 0));
             Assert.True(s.Connected);
         }
+
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        public Task MultiConnect_KeepAliveOptionsPreserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
+            c =>
+            {
+                c.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                c.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 5);
+                c.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, 4);
+                c.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3);
+            },
+            c =>
+            {
+                int keepAlive = (int)c.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive)!;
+                int keepAliveTime = (int)c.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime)!;
+                int keepAliveInterval = (int)c.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval)!;
+                int keepAliveRetryCount = (int)c.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount)!;
+
+                Assert.True(keepAlive is not 0);
+                Assert.Equal(5, keepAliveTime);
+                Assert.Equal(4, keepAliveInterval);
+                Assert.Equal(3, keepAliveRetryCount);
+            });
+
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        public Task MultiConnect_LingerState_Preserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
+            c =>
+            {
+                c.LingerState = new LingerOption(true, 42);
+            },
+            c =>
+            {
+                Assert.True(c.LingerState.Enabled);
+                Assert.Equal(42, c.LingerState.LingerTime);
+            });
+
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        public Task MultiConnect_MiscProperties_Preserved(bool dnsConnect) => MultiConnectTestImpl(dnsConnect,
+            c =>
+            {
+                c.ReceiveTimeout = 4321;
+                c.NoDelay = true;
+            },
+            c =>
+            {
+                Assert.Equal(4321, c.ReceiveTimeout);
+                Assert.True(c.NoDelay);
+            });
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory]
+        [InlineData("single")]
+        [InlineData("multi")]
+        [InlineData("dns")]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        public async Task Connect_ExposeHandle_FirstAttemptSucceeds(string connectMode)
+        {
+            if (UsesEap && connectMode is "multi")
+            {
+                throw new SkipTestException("EAP does not support IPAddress[] connect");
+            }
+
+            IPAddress address = (await Dns.GetHostAddressesAsync("localhost"))[0];
+
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket s = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                port = s.BindToAnonymousPort(address);
+                return s;
+            });
+            Socket listeningSocket = portBlocker.MainSocket;
+            listeningSocket.Listen();
+            _ = listeningSocket.AcceptAsync();
+
+            using Socket c = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            _ = c.SafeHandle; // Expose the handle.
+
+            await (connectMode switch
+            {
+                "single" => ConnectAsync(c, listeningSocket.LocalEndPoint),
+                "multi" => MultiConnectAsync(c, [address], port),
+                _ => ConnectAsync(c, new DnsEndPoint("localhost", port))
+            });
+            Assert.True(c.Connected);
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        public async Task MultiConnect_ExposeHandle_TerminatesAtFirstFailure(bool dnsConnect)
+        {
+            if (UsesEap && !dnsConnect)
+            {
+                throw new SkipTestException("EAP does not support IPAddress[] connect");
+            }
+
+            IPAddress[] addresses = await Dns.GetHostAddressesAsync("localhost");
+            
+            // While most Unix environments are configured to resolve 'localhost' only to the ipv4 loopback address,
+            // on some CI machines it resolves to both ::1 and 127.0.0.1. This test is valid in those environments only.
+            bool testFailingConnect = addresses.Length > 1;
+            if (!testFailingConnect)
+            {
+                throw new SkipTestException("'localhost' should resolve to both IPv6 and IPv4 for this test to be valid.");
+            }
+
+            // PortBlocker's "shadow socket" will be the one addresses[0] is pointing to. The test will fail to connect to that socket.
+            IPAddress successAddress = addresses[1];
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket s = new Socket(successAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                port = s.BindToAnonymousPort(successAddress);
+                return s;
+            });
+            Socket listeningSocket = portBlocker.MainSocket;
+
+            listeningSocket.Listen();
+            _ = listeningSocket.AcceptAsync();
+
+            using Socket c = new Socket(SocketType.Stream, ProtocolType.Tcp);
+
+            _ = c.SafeHandle; // Expose the handle.
+
+            SocketException ex = await Assert.ThrowsAsync<SocketException>(
+                async() => await (dnsConnect ? ConnectAsync(c, new DnsEndPoint("localhost", port)) : MultiConnectAsync(c, addresses, port)));
+            Assert.True(ex.SocketErrorCode is SocketError.ConnectionRefused
+                or SocketError.TimedOut); // Some Mac OS 12 machines produce SocketError.TimedOut here.
+        }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        public async Task SingleConnect_ExposeHandle_SecondAttemptThrowsPNSEOnUnix()
+        {
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                port = s.BindToAnonymousPort(IPAddress.Loopback);
+                return s;
+            });
+
+            using Socket c = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            _ = c.SafeHandle; // Expose the handle.
+
+            IPEndPoint ep = new IPEndPoint(IPAddress.Loopback, port);
+
+            // No listeners, the first connect should fail.
+            await Assert.ThrowsAsync<SocketException>(() => ConnectAsync(c, ep));
+
+            // Start listening so connecting should be possible.
+            Socket listeningSocket = portBlocker.MainSocket;
+            listeningSocket.Listen();
+            _ = listeningSocket.AcceptAsync();
+
+            // The second attempt throws PNSE on Unix.
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => ConnectAsync(c, ep));
+        }
+
+        [ConditionalFact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support PortBlocker")]
+        public async Task MultiConnect_DualMode_Preserved()
+        {
+            if (UsesEap) throw new SkipTestException("EAP does not support IPAddress[] connect");
+
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket l = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                port = l.BindToAnonymousPort(IPAddress.IPv6Loopback);
+                return l;
+            });
+
+            Socket l = portBlocker.MainSocket;
+            l.Listen();
+            _ = l.AcceptAsync();
+
+            using Socket c = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp)
+            {
+                DualMode = false
+            };
+
+            IPAddress[] addresses = [IPAddress.Parse("fc00:1:2:3:4:5:6:7"), IPAddress.IPv6Loopback]; // No listeners on the first address.
+            await c.ConnectAsync(addresses, port);
+            Assert.False(c.DualMode);
+        }
+
+        private async Task MultiConnectTestImpl(bool dnsConnect, Action<Socket> setupSocket, Action<Socket> validateSocket)
+        {
+            if (UsesEap && !dnsConnect)
+            {
+                throw new SkipTestException("EAP does not support IPAddress[] connect");
+            }
+
+            IPAddress[] addresses = await Dns.GetHostAddressesAsync("localhost");
+            Assert.NotEmpty(addresses);
+
+            // While most Unix environments are configured to resolve 'localhost' only to the ipv4 loopback address, on some CI machines it resolves to both ::1 and 127.0.0.1.
+            // In such environments this test stresses the socket option tracking feature implemented in the Unix PAL by forcing the first connect attempt to fail.
+            bool testFailingConnect = addresses.Length > 1;
+            _output.WriteLine($"dnsConnect={dnsConnect}, testFailingConnect={testFailingConnect}, 'loopback' resolved to {string.Join(',', addresses)}.");
+
+            // In case testFailingConnect == true, PortBlocker's "shadow socket" will be the one addresses[0] is pointing to.
+            // The test will fail to connect to that socket.
+            IPAddress successAddress = testFailingConnect ? addresses[1] : addresses[0];
+            int port = -1;
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket s = new Socket(successAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                port = s.BindToAnonymousPort(successAddress);
+                return s;
+            });
+            Socket listeningSocket = portBlocker.MainSocket;
+
+            listeningSocket.Listen();
+            _ = listeningSocket.AcceptAsync();
+
+            using Socket c = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            setupSocket(c);
+
+            await (dnsConnect ? ConnectAsync(c, new DnsEndPoint("localhost", port)) : MultiConnectAsync(c, addresses, port));
+
+            validateSocket(c);
+        }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ConnectSync : Connect<SocketHelperArraySync>
     {
         public ConnectSync(ITestOutputHelper output) : base(output) {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking>
     {
         public ConnectSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ConnectApm : Connect<SocketHelperApm>
     {
         public ConnectApm(ITestOutputHelper output) : base(output) {}
@@ -265,7 +509,7 @@ namespace System.Net.Sockets.Tests
     {
         public ConnectEap(ITestOutputHelper output) : base(output) {}
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectAsync_WithData_DataReceived(bool useArrayApi)
@@ -484,7 +728,7 @@ namespace System.Net.Sockets.Tests
         {
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_DualMode_MultiAddressFamilyConnect_RetrievedEndPoints_Success()
         {
             if (!SupportsMultiConnect)
@@ -503,7 +747,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // async SocketTestServer requires threads
         public async Task Connect_DualMode_DnsConnect_RetrievedEndPoints_Success()
         {
             var localhostAddresses = Dns.GetHostAddresses("localhost");
@@ -539,11 +783,13 @@ namespace System.Net.Sockets.Tests
         public ConnectSync_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ConnectSyncForceNonBlocking_NonParallel : Connect_NonParallel<SocketHelperSyncForceNonBlocking>
     {
         public ConnectSyncForceNonBlocking_NonParallel(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public sealed class ConnectApm_NonParallel : Connect_NonParallel<SocketHelperApm>
     {
         public ConnectApm_NonParallel(ITestOutputHelper output) : base(output) { }

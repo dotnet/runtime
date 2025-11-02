@@ -132,10 +132,12 @@ void GCScan::GcWeakPtrScanBySingleThread( int condemned, int max_gen, ScanContex
     GCToEEInterface::SyncBlockCacheWeakPtrScan(&CheckPromoted, (uintptr_t)sc, 0);
 }
 
+#ifdef FEATURE_SIZED_REF_HANDLES
 void GCScan::GcScanSizedRefs(promote_func* fn, int condemned, int max_gen, ScanContext* sc)
 {
     Ref_ScanSizedRefHandles(condemned, max_gen, sc, fn);
 }
+#endif // FEATURE_SIZED_REF_HANDLES
 
 void GCScan::GcShortWeakPtrScan(int condemned, int max_gen, ScanContext* sc)
 {
@@ -174,6 +176,19 @@ void GCScan::GcScanHandles (promote_func* fn,  int condemned, int max_gen,
         Ref_ScanWeakInteriorPointersForRelocation(condemned, max_gen, sc, fn);
     }
 }
+
+#ifdef FEATURE_JAVAMARSHAL
+uint8_t** GCScan::GcProcessBridgeObjects (int condemned, int max_gen, ScanContext* sc, size_t* numObjs)
+{
+    uint8_t** bridgeObjectsToPromote = 0;
+
+    // This is only called during mark phase.
+    _ASSERTE (sc->promotion);
+    bridgeObjectsToPromote = Ref_ScanBridgeObjects (condemned, max_gen, sc, numObjs);
+
+    return bridgeObjectsToPromote;
+}
+#endif //FEATURE_JAVAMARSHAL
 
 /*
  * Scan all handle roots in this 'namespace' for profiling

@@ -7,20 +7,30 @@ namespace Microsoft.DotNet.CoreSetup.Test
     {
         public static readonly RepoDirectoriesProvider Default = new RepoDirectoriesProvider();
 
-        // Paths computed by looking for the repo root
+        // Paths computed by looking for the repo root or helix correlation payload
         public string BaseArtifactsFolder { get; }
         public string HostArtifacts { get; }
         public string HostTestArtifacts { get; }
 
         private RepoDirectoriesProvider()
         {
-            string repoRoot = GetRepoRootDirectory();
-            BaseArtifactsFolder = Path.Combine(repoRoot, "artifacts");
+            string helixPayload = Environment.GetEnvironmentVariable("HELIX_CORRELATION_PAYLOAD");
+            if (helixPayload != null)
+            {
+                // See src/installer/tests/helixpublish.proj
+                HostArtifacts = Path.Combine(helixPayload, "host_bin");
+                HostTestArtifacts = Path.Combine(helixPayload, "host_test_bin");
+            }
+            else
+            {
+                string repoRoot = GetRepoRootDirectory();
+                BaseArtifactsFolder = Path.Combine(repoRoot, "artifacts");
 
-            string osPlatformConfig = $"{TestContext.BuildRID}.{TestContext.Configuration}";
-            string artifacts = Path.Combine(BaseArtifactsFolder, "bin", osPlatformConfig);
-            HostArtifacts = Path.Combine(artifacts, "corehost");
-            HostTestArtifacts = Path.Combine(artifacts, "corehost_test");
+                string osPlatformConfig = $"{TestContext.BuildRID}.{TestContext.Configuration}";
+                string artifacts = Path.Combine(BaseArtifactsFolder, "bin", osPlatformConfig);
+                HostArtifacts = Path.Combine(artifacts, "corehost");
+                HostTestArtifacts = Path.Combine(artifacts, "corehost_test");
+            }
         }
 
         private static string GetRepoRootDirectory()

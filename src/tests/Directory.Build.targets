@@ -9,33 +9,10 @@
   <Import Project="$(MSBuildThisFileDirectory)/Common/disableversioncheck.targets"
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
-  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono'">
-    <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
-    <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
-    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
-    <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
-
-    <PublishTestAsSelfContainedDependsOn>BuildMonoiOSApp</PublishTestAsSelfContainedDependsOn>
-    <PublishTestAsSelfContainedAfterTargets>BuildMonoiOSApp</PublishTestAsSelfContainedAfterTargets>
-    <BundleTestAppleAppDependsOn>GenerateRunScript</BundleTestAppleAppDependsOn>
-
-    <IsRuntimeTests>true</IsRuntimeTests>
-  </PropertyGroup>
-
-  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets"
-          Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono'" />
-
-  <Target Name="_SetRunScriptOutputDirectory" Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono' and '$(IsRuntimeTests)' == 'true'" BeforeTargets="GenerateRunScript">
-    <PropertyGroup>
-      <RunScriptOutputDirectory>$(ArtifactsDir)/tests/coreclr/obj/$(TargetOS).$(Platform).$(Configuration)/Managed/build/iOSApps/$(TestProjectName)/AppBundle</RunScriptOutputDirectory>
-    </PropertyGroup>
-  </Target>
-
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' == 'true' and '$(HasMergedInTests)' != 'true'">true</DisableProjectBuild>
-    <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true') or ('$(RequiresProcessIsolation)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary')">Exe</OutputType>
+    <OutputType Condition="'$(SkipInferOutputType)' != 'true' and (('$(IsMergedTestRunnerAssembly)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true') or ('$(RequiresProcessIsolation)' == 'true' and '$(CLRTestKind)' != 'SharedLibrary'))">Exe</OutputType>
 
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">SharedLibrary</CLRTestKind>
@@ -121,6 +98,7 @@
     <_WillCLRTestProjectBuild Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(CLRTestTargetUnsupported)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(NativeAotIncompatible)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(IsGCSimulatorTest)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' And '$(AlwaysUseCrossgen2)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(EnableNativeSanitizers)' != '' And '$(AlwaysUseCrossgen2)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot' And '$(AlwaysUseCrossgen2)' == 'true'">false</_WillCLRTestProjectBuild>
@@ -464,7 +442,7 @@
 
     <!-- We don't want the out-of-process test marker file to be included in referencing projects, so we don't include it as content. -->
     <WriteLinesToFile
-        Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAsStandalone)' != 'true'"
+        Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAllTestsAsStandalone)' != 'true'"
         File="$(OutputPath)\$(AssemblyName).OutOfProcessTest"
         Lines="OutOfProcessTest"
         Overwrite="true"
@@ -527,6 +505,7 @@
 
   <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
+  <Import Project="$(RepositoryEngineeringDir)toolAot.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
   <Import Project="$(RepoRoot)/src/tests/Common/mergedrunner.targets" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'" />
 
@@ -546,11 +525,6 @@
          variables is horribly slow (seeing 1.4 seconds on a 11th gen Intel Core i7) -->
     <IlcUseEnvironmentalTools>true</IlcUseEnvironmentalTools>
 
-    <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to tweak
-         rpath so that the test can load its native library dependencies if there's any -->
-    <IlcRPath Condition="'$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true'">@executable_path/..</IlcRPath>
-    <IlcRPath Condition="'$(IlcRPath)' == ''">$ORIGIN/..</IlcRPath>
-
     <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only" -->
     <DisableUnsupportedError>true</DisableUnsupportedError>
 
@@ -563,15 +537,13 @@
 
     <IlcTreatWarningsAsErrors>false</IlcTreatWarningsAsErrors>
 
-    <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(TargetOS)' != '$(HostOS)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
-    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
 
-    <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <BuildNativeAotFrameworkObjects Condition="'$(IlcMultiModule)' == 'true'">true</BuildNativeAotFrameworkObjects>
     <DisableFrameworkLibGeneration Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">true</DisableFrameworkLibGeneration>
     <FrameworkLibPath Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(IlcSdkPath)</FrameworkLibPath>
@@ -583,11 +555,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
     <IlcReference Include="$(TargetingPackPath)/*.dll" />
-
-    <!-- xunit calls MakeGenericType to check if something is IEquatable -->
-    <IlcArg Condition="'$(EagerlyValidateTypeConstruction)' != 'false'" Include="--feature:System.Reflection.IsTypeConstructionEagerlyValidated=false" />
 
     <!-- Bump the generic cycle tolerance. There's at least one test with a cycle that is reachable at runtime to depth 6 -->
     <IlcArg Include="--maxgenericcycle:7" />
@@ -601,6 +569,11 @@
     <IlcArg Include="--trim:xunit.core" />
     <IlcArg Include="--trim:xunit.execution.dotnet" />
     <IlcArg Include="--trim:xunit.abstractions" />
+
+    <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to set
+         rpath so that the test can load its native library dependencies if there's any -->
+    <LinkerArg Include="-Wl,-rpath,'@executable_path/..'" Condition="'$(SetIlcRPath)' != 'false' and ('$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true')" />
+    <LinkerArg Include="-Wl,-rpath,'$ORIGIN/..'" Condition="'$(SetIlcRPath)' != 'false' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetsAppleMobile)' != 'true'" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
@@ -618,26 +591,5 @@
   <Target Name="LinkNativeIfBuildAndRun"
           Condition="'$(_WillCLRTestProjectBuild)' == 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
           DependsOnTargets="ComputeResolvedFilesToPublishList;LinkNative" />
-
-  <Target Name="LocateNativeCompiler"
-          Condition="'$(TestBuildMode)' == 'nativeaot' and '$(HostOS)' != 'windows'"
-          BeforeTargets="SetupOSSpecificProps">
-    <PropertyGroup>
-      <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
-    </PropertyGroup>
-
-    <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo &quot;$CC;$LDFLAGS&quot;' 2>/dev/null"
-          EchoOff="true"
-          ConsoleToMsBuild="true"
-          StandardOutputImportance="Low">
-      <Output TaskParameter="ConsoleOutput" PropertyName="_CC_LDFLAGS" />
-    </Exec>
-
-    <PropertyGroup>
-      <CppLinker>$(_CC_LDFLAGS.SubString(0, $(_CC_LDFLAGS.IndexOf(';'))))</CppLinker>
-      <_LDFLAGS>$(_CC_LDFLAGS.SubString($([MSBuild]::Add($(_CC_LDFLAGS.IndexOf(';')), 1))))</_LDFLAGS>
-      <LinkerFlavor Condition="$(_LDFLAGS.Contains('lld'))">lld</LinkerFlavor>
-    </PropertyGroup>
-  </Target>
 
 </Project>

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
@@ -8,7 +9,7 @@
     <Compile Include="Handles.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
     <ProjectReference Include="GCUtil_HeapExpansion.csproj" />
   </ItemGroup>
 </Project>

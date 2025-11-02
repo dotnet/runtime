@@ -1,17 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "common.h"
-#ifdef HOST_WINDOWS
-#include <windows.h>
-#endif
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
@@ -28,6 +24,7 @@
 #include "RestrictedCallouts.h"
 #include "yieldprocessornormalized.h"
 #include <minipal/cpufeatures.h>
+#include <minipal/time.h>
 
 #ifdef FEATURE_PERFTRACING
 #include "EventPipeInterface.h"
@@ -40,7 +37,7 @@ uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 #endif // PROFILE_STARTUP
 
 #ifdef HOST_WINDOWS
-EXTERN_C LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
+LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 #else
 int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 #endif
@@ -95,7 +92,7 @@ static bool InitDLL(HANDLE hPalInstance)
     //
     // Initialize interface dispatch.
     //
-    if (!InitializeInterfaceDispatch())
+    if (!InterfaceDispatch_Initialize())
         return false;
 #endif
 
@@ -125,13 +122,13 @@ static bool InitDLL(HANDLE hPalInstance)
         return false;
 
     // Note: The global exception handler uses RuntimeInstance
-#if !defined(USE_PORTABLE_HELPERS)
+#if !defined(FEATURE_PORTABLE_HELPERS)
 #ifdef HOST_WINDOWS
     AddVectoredExceptionHandler(1, RhpVectoredExceptionHandler);
 #else
     PalSetHardwareExceptionHandler(RhpHardwareExceptionHandler);
 #endif
-#endif // !USE_PORTABLE_HELPERS
+#endif // !FEATURE_PORTABLE_HELPERS
 
 #ifdef STRESS_LOG
     uint32_t dwTotalStressLogSize = (uint32_t)g_pRhConfig->GetTotalStressLogSize();
@@ -161,7 +158,7 @@ static bool InitDLL(HANDLE hPalInstance)
     EventPipe_FinishInitialize();
 #endif
 
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
     if (!DetectCPUFeatures())
         return false;
 #endif
@@ -174,23 +171,42 @@ static bool InitDLL(HANDLE hPalInstance)
     return true;
 }
 
-#ifndef USE_PORTABLE_HELPERS
+#ifndef FEATURE_PORTABLE_HELPERS
 
 bool DetectCPUFeatures()
 {
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
-    g_cpuFeatures = minipal_getcpufeatures();
+    int cpuFeatures = minipal_getcpufeatures();
 
-    if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
+    if ((cpuFeatures & IntrinsicConstants_Invalid) != 0)
     {
-        PalPrintFatalError("\nThe required instruction sets are not supported by the current CPU.\n");
+#if defined(HOST_X86) || defined(HOST_AMD64)
+        PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, POPCNT\n");
+#elif defined(HOST_ARM64) && (defined(HOST_WINDOWS) || defined(HOST_OSX) || defined(HOST_MACCATALYST))
+        PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd, LSE\n");
+#elif defined(HOST_ARM64)
+        PalPrintFatalError("\nThe current CPU is missing one or more of the following instruction sets: AdvSimd\n");
+#else
+        PalPrintFatalError("\nThe current CPU is missing one or more of the baseline instruction sets.\n");
+#endif
+
         RhFailFast();
     }
+
+    int missingCpuFeatures = g_requiredCpuFeatures & ~cpuFeatures;
+
+    if (missingCpuFeatures != 0)
+    {
+        PalPrintFatalError("\nThe current CPU is missing one or more of the required instruction sets.\n");
+        RhFailFast();
+    }
+
+    g_cpuFeatures = cpuFeatures;
 #endif // HOST_X86|| HOST_AMD64 || HOST_ARM64
 
     return true;
 }
-#endif // !USE_PORTABLE_HELPERS
+#endif // !FEATURE_PORTABLE_HELPERS
 
 #ifdef TARGET_UNIX
 inline
@@ -209,7 +225,7 @@ bool InitGSCookie()
 #endif
 
     // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)PalGetTickCount64();
+    GSCookie val = (GSCookie)minipal_lowres_ticks();
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie
@@ -227,19 +243,6 @@ bool InitGSCookie()
 #endif // TARGET_UNIX
 
 #ifdef PROFILE_STARTUP
-#define STD_OUTPUT_HANDLE ((uint32_t)-11)
-
-struct RegisterModuleTrace
-{
-    LARGE_INTEGER Begin;
-    LARGE_INTEGER End;
-};
-
-const int NUM_REGISTER_MODULE_TRACES = 16;
-int g_registerModuleCount = 0;
-
-RegisterModuleTrace g_registerModuleTraces[NUM_REGISTER_MODULE_TRACES] = { 0 };
-
 static void AppendInt64(char * pBuffer, uint32_t* pLen, uint64_t value)
 {
     char localBuffer[20];
@@ -272,12 +275,6 @@ static void UninitDLL()
     AppendInt64(buffer, &len, g_startupTimelineEvents[NONGC_INIT_COMPLETE]);
     AppendInt64(buffer, &len, g_startupTimelineEvents[GC_INIT_COMPLETE]);
     AppendInt64(buffer, &len, g_startupTimelineEvents[PROCESS_ATTACH_COMPLETE]);
-
-    for (int i = 0; i < g_registerModuleCount; i++)
-    {
-        AppendInt64(buffer, &len, g_registerModuleTraces[i].Begin.QuadPart);
-        AppendInt64(buffer, &len, g_registerModuleTraces[i].End.QuadPart);
-    }
 
     buffer[len++] = '\n';
 

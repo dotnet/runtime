@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -11,33 +11,12 @@ namespace System.Reflection.Metadata
 {
     internal static class TypeNameParserHelpers
     {
-        internal const sbyte SZArray = -1;
-        internal const sbyte Pointer = -2;
-        internal const sbyte ByRef = -3;
+        internal const int SZArray = -1;
+        internal const int Pointer = -2;
+        internal const int ByRef = -3;
         private const char EscapeCharacter = '\\';
-#if NET8_0_OR_GREATER
-        private static readonly SearchValues<char> s_endOfFullTypeNameDelimitersSearchValues = SearchValues.Create("[]&*,+\\");
-#endif
 
-        internal static string GetGenericTypeFullName(ReadOnlySpan<char> fullTypeName, ReadOnlySpan<TypeName> genericArgs)
-        {
-            Debug.Assert(genericArgs.Length > 0);
-
-            ValueStringBuilder result = new(stackalloc char[128]);
-            result.Append(fullTypeName);
-
-            result.Append('[');
-            foreach (TypeName genericArg in genericArgs)
-            {
-                result.Append('[');
-                result.Append(genericArg.AssemblyQualifiedName);
-                result.Append(']');
-                result.Append(',');
-            }
-            result[result.Length - 1] = ']'; // replace ',' with ']'
-
-            return result.ToString();
-        }
+        private static readonly SearchValues<char> s_endOfFullTypeNameDelimiterChars = SearchValues.Create("[]&*,+\\");
 
         /// <returns>Positive length or negative value for invalid name</returns>
         internal static int GetFullTypeNameLength(ReadOnlySpan<char> input, out bool isNestedType)
@@ -55,9 +34,7 @@ namespace System.Reflection.Metadata
             // the search space. Since we're running this in a loop over untrusted user
             // input, that makes the total loop complexity potentially O(m * n^2), where
             // 'n' is adversary-controlled. To avoid DoS issues here, we'll loop manually.
-
-#if NET8_0_OR_GREATER
-            int offset = input.IndexOfAny(s_endOfFullTypeNameDelimitersSearchValues);
+            int offset = input.IndexOfAny(s_endOfFullTypeNameDelimiterChars);
             if (offset < 0)
             {
                 return input.Length; // no type name end chars were found, the whole input is the type name
@@ -67,9 +44,7 @@ namespace System.Reflection.Metadata
             {
                 offset = GetUnescapedOffset(input, startOffset: offset); // this is slower, but very rare so acceptable
             }
-#else
-            int offset = GetUnescapedOffset(input, startOffset: 0);
-#endif
+
             isNestedType = offset > 0 && offset < input.Length && input[offset] == '+';
             return offset;
 
@@ -84,48 +59,70 @@ namespace System.Reflection.Metadata
                         offset++; // skip the escaped char
 
                         if (offset == input.Length || // invalid name that ends with escape character
-                            !NeedsEscaping(input[offset])) // invalid name, escapes a char that does not need escaping
+                            !s_endOfFullTypeNameDelimiterChars.Contains(input[offset])) // invalid name, escapes a char that does not need escaping
                         {
                             return -1;
                         }
                     }
-                    else if (NeedsEscaping(c))
+                    else if (s_endOfFullTypeNameDelimiterChars.Contains(c))
                     {
                         break;
                     }
                 }
                 return offset;
             }
-
-            static bool NeedsEscaping(char c) => c is '[' or ']' or '&' or '*' or ',' or '+' or EscapeCharacter;
         }
 
-        internal static ReadOnlySpan<char> GetName(ReadOnlySpan<char> fullName)
+        internal static int IndexOfNamespaceDelimiter(ReadOnlySpan<char> fullName)
         {
-            int offset = fullName.LastIndexOfAny('.', '+');
+            // Matches algorithm from ns::FindSep in src\coreclr\utilcode\namespaceutil.cpp
+            // This could result in the type name beginning with a '.' character.
+            int index = fullName.LastIndexOf('.');
 
-            if (offset > 0 && fullName[offset - 1] == EscapeCharacter) // this should be very rare (IL Emit & pure IL)
+            if (index > 0 && fullName[index - 1] == '.')
             {
-                offset = GetUnescapedOffset(fullName, startIndex: offset);
+                index--;
             }
 
-            return offset < 0 ? fullName : fullName.Slice(offset + 1);
+            return index;
+        }
 
-            static int GetUnescapedOffset(ReadOnlySpan<char> fullName, int startIndex)
+        internal static string Unescape(string input)
+        {
+            int indexOfEscapeCharacter = input.IndexOf(EscapeCharacter);
+            if (indexOfEscapeCharacter < 0)
             {
-                int offset = startIndex;
-                for (; offset >= 0; offset--)
+                // Nothing to escape, just return the original value.
+                return input;
+            }
+
+            return UnescapeToBuilder(input, indexOfEscapeCharacter);
+
+            static string UnescapeToBuilder(string name, int indexOfEscapeCharacter)
+            {
+                // This code path is executed very rarely (IL Emit or pure IL with chars not allowed in C# or F#).
+                var sb = new ValueStringBuilder(stackalloc char[64]);
+                sb.EnsureCapacity(name.Length);
+                sb.Append(name.AsSpan(0, indexOfEscapeCharacter));
+
+                for (int i = indexOfEscapeCharacter; i < name.Length;)
                 {
-                    if (fullName[offset] is '.' or '+')
+                    char c = name[i++];
+
+                    if (c != EscapeCharacter || i == name.Length)
                     {
-                        if (offset == 0 || fullName[offset - 1] != EscapeCharacter)
-                        {
-                            break;
-                        }
-                        offset--; // skip the escaping character
+                        sb.Append(c);
+                    }
+                    else if (name[i] == EscapeCharacter) // escaped escape character ;)
+                    {
+                        sb.Append(c);
+                        // Consume the escaped escape character, it's important for edge cases
+                        // like escaped escape character followed by another escaped char (example: "\\\\\\+")
+                        i++;
                     }
                 }
-                return offset;
+
+                return sb.ToString();
             }
         }
 
@@ -160,7 +157,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        internal static string GetRankOrModifierStringRepresentation(int rankOrModifier, ref ValueStringBuilder builder)
+        internal static void AppendRankOrModifierStringRepresentation(int rankOrModifier, ref ValueStringBuilder builder)
         {
             if (rankOrModifier == ByRef)
             {
@@ -182,12 +179,17 @@ namespace System.Reflection.Metadata
             {
                 Debug.Assert(rankOrModifier >= 2);
 
+                // O(rank) work, so we have to assume the rank is trusted. We don't put a hard cap on this,
+                // but within the TypeName parser, we do require the input string to contain the correct number
+                // of commas. This forces the input string to have at least O(rank) length, so there's no
+                // alg. complexity attack possible here. Callers can of course pass any arbitrary value to
+                // TypeName.MakeArrayTypeName, but per first sentence in this comment, we have to assume any
+                // such arbitrary value which is programmatically fed in originates from a trustworthy source.
+
                 builder.Append('[');
                 builder.Append(',', rankOrModifier - 1);
                 builder.Append(']');
             }
-
-            return builder.ToString();
         }
 
         /// <summary>
@@ -220,7 +222,8 @@ namespace System.Reflection.Metadata
             return false;
         }
 
-        internal static bool TryGetTypeNameInfo(ref ReadOnlySpan<char> input, ref List<int>? nestedNameLengths, out int totalLength)
+        internal static bool TryGetTypeNameInfo(TypeNameParseOptions options, ref ReadOnlySpan<char> input,
+            ref List<int>? nestedNameLengths, ref int recursiveDepth, out int totalLength)
         {
             bool isNestedType;
             totalLength = 0;
@@ -248,6 +251,11 @@ namespace System.Reflection.Metadata
 #endif
                 if (isNestedType)
                 {
+                    if (!TryDive(options, ref recursiveDepth))
+                    {
+                        return false;
+                    }
+
                     (nestedNameLengths ??= new()).Add(length);
                     totalLength += 1; // skip the '+' sign in next search
                 }
@@ -304,6 +312,9 @@ namespace System.Reflection.Metadata
                     else if (TryStripFirstCharAndTrailingSpaces(ref input, ','))
                     {
                         // [,,, ...]
+                        // The runtime restricts arrays to rank 32, but we don't enforce that here.
+                        // Instead, the max rank is controlled by the total number of commas present
+                        // in the array decorator.
                         checked { rank++; }
                         goto ReadNextArrayToken;
                     }
@@ -326,6 +337,12 @@ namespace System.Reflection.Metadata
                 return true;
             }
             return false;
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentNullException(string paramName)
+        {
+            throw new ArgumentNullException(paramName);
         }
 
         [DoesNotReturn]
@@ -387,6 +404,30 @@ namespace System.Reflection.Metadata
             Debug.Fail("Expected to be unreachable");
             throw new InvalidOperationException();
 #endif
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowInvalidOperation_NestedTypeNamespace()
+        {
+#if SYSTEM_REFLECTION_METADATA
+            throw new InvalidOperationException(SR.InvalidOperation_NestedTypeNamespace);
+#else
+            Debug.Fail("Expected to be unreachable");
+            throw new InvalidOperationException();
+#endif
+        }
+
+        internal static bool IsMaxDepthExceeded(TypeNameParseOptions options, int depth)
+#if SYSTEM_PRIVATE_CORELIB
+            => false; // CoreLib does not enforce any limits
+#else
+            => depth > options.MaxNodes;
+#endif
+
+        internal static bool TryDive(TypeNameParseOptions options, ref int depth)
+        {
+            depth++;
+            return !IsMaxDepthExceeded(options, depth);
         }
 
 #if SYSTEM_REFLECTION_METADATA

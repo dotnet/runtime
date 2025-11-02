@@ -9,6 +9,29 @@ namespace System.Buffers.Text.Tests
 {
     public class Base64ValidationUnitTests : Base64TestBase
     {
+        [Theory]
+        [InlineData("=   ")]
+        [InlineData("=  =")]
+        [InlineData("+ +=")]
+        [InlineData("A=")]
+        [InlineData("A==")]
+        [InlineData("44==")]
+        [InlineData(" A==")]
+        [InlineData("AAAAA ==")]
+        [InlineData("\tLLLL\t=\r")]
+        [InlineData("6066=")]
+        [InlineData("6066==")]
+        [InlineData("SM==")]
+        [InlineData("SM =")]
+        [InlineData("s\rEs\r\r==")]
+        public void BasicValidationEdgeCaseScenario(string base64UrlText)
+        {
+            Assert.False(Base64.IsValid(base64UrlText.AsSpan(), out int decodedLength));
+            Assert.Equal(0, decodedLength);
+            Span<byte> dest = new byte[Base64.GetMaxDecodedFromUtf8Length(base64UrlText.Length)];
+            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(base64UrlText.ToUtf8Span(), dest, out _, out _));
+        }
+
         [Fact]
         public void BasicValidationBytes()
         {

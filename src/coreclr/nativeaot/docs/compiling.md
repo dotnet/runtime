@@ -21,13 +21,13 @@ from the project's root directory. New package sources must be added after the `
 
 Once you have added the package sources, add a reference to the ILCompiler package either by running
 ```bash
-> dotnet add package Microsoft.DotNet.ILCompiler -v 9.0.0-*
+> dotnet add package Microsoft.DotNet.ILCompiler -v 10.0.0-*
 ```
 
 or by adding the following element to the project file:
 ```xml
 <ItemGroup>
-  <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="9.0.0-*" />
+  <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.0-*" />
 </ItemGroup>
 ```
 
@@ -54,7 +54,7 @@ For using daily builds according to the instructions above, in addition to the `
 <PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="9.0.0-alpha.1.23456.7" />
 ```
 
-Replace `9.0.0-alpha.1.23456.7` with the latest version from the [dotnet9](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet9/NuGet/Microsoft.DotNet.ILCompiler/) feed.
+Replace `9.0.0-alpha.1.23456.7` with the latest version from the [dotnet10](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet10/NuGet/Microsoft.DotNet.ILCompiler/) feed.
 Note that it is important to use _the same version_ for both packages to avoid potential hard-to-debug issues. After adding the package reference, you may publish for win-arm64 as usual:
 ```bash
 > dotnet publish -r win-arm64
@@ -74,8 +74,28 @@ You can use this feature by adding the `StaticICULinking` property to your proje
 ```xml
 <PropertyGroup>
   <StaticICULinking>true</StaticICULinking>
+
+  <!-- Optional: Embeds ICU data into the binary, making it fully standalone when system ICU
+       libraries are not installed on the target machine.
+       Update path to match your ICU version and variant: l(arge), b(ig endian), s(mall) or full. -->
+  <EmbedIcuDataPath>/usr/share/icu/74.2/icudt74l.dat</EmbedIcuDataPath>
 </PropertyGroup>
 ```
+
+> [!NOTE]
+> Some distros, such as Alpine and Gentoo, currently package ICU data as a `icudt*.dat` archive,
+> while others, like Ubuntu, do not.
+> To use `EmbedIcuDataPath` on a distro that does not provide the `.dat` file,
+> you may need to build ICU with `--with-data-packaging=archive` to generate it.
+> See https://unicode-org.github.io/icu/userguide/icu_data#building-and-linking-against-icu-data.
+> ```sh
+> # e.g. to obtain icudt*.dat on Ubuntu
+> $ curl -sSL https://github.com/unicode-org/icu/releases/download/release-74-2/icu4c-74_2-src.tgz | tar xzf -
+> $ cd icu/source
+> $ ./configure --with-data-packaging=archive --enable-static --disable-shared --disable-samples
+> $ make -j
+> $ find . -path *out/* -name icudt*.dat -exec echo $(pwd)/{} \;
+> ```
 
 This feature is only supported on Linux. This feature is not supported when crosscompiling.
 

@@ -158,14 +158,16 @@ namespace System.Net
 
             // Determine the maximum length needed to format.
             int maxLength =
-                familyString.Length + // AddressFamily
-                1 + // :
-                10 + // Size (max length for a positive Int32)
-                2 + // :{
-                (Size - DataOffset) * 4 + // at most ','+3digits per byte
-                1; // }
+                checked(
+                    familyString.Length + // AddressFamily
+                    1 + // :
+                    10 + // Size (max length for a positive Int32)
+                    2 + // :{
+                    (Size - DataOffset) * 4 + // at most ','+3digits per byte
+                    1 // }
+                );
 
-            Span<char> result = maxLength <= 256 ? // arbitrary limit that should be large enough for the vast majority of cases
+            Span<char> result = (uint)maxLength <= 256 ? // arbitrary limit that should be large enough for the vast majority of cases
                 stackalloc char[256] :
                 new char[maxLength];
 

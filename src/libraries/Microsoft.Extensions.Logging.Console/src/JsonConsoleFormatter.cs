@@ -81,7 +81,13 @@ namespace Microsoft.Extensions.Logging.Console
                     if (hasState)
                     {
                         writer.WriteStartObject(nameof(LogEntry<object>.State));
-                        writer.WriteString("Message", stateMessage);
+
+                        // In many cases the message and stateMessage will be the same, so we only write the message if it differs from the stateMessage.
+                        // This helps reducing the size of the log entry.
+                        if (!string.Equals(message, stateMessage))
+                        {
+                            writer.WriteString("Message", stateMessage);
+                        }
                         if (stateProperties != null)
                         {
                             foreach (KeyValuePair<string, object?> item in stateProperties)
@@ -96,7 +102,7 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.Flush();
                 }
 
-                var messageBytes = output.WrittenMemory.Span;
+                var messageBytes = output.WrittenSpan;
                 var logMessageBuffer = ArrayPool<char>.Shared.Rent(Encoding.UTF8.GetMaxCharCount(messageBytes.Length));
                 try
                 {

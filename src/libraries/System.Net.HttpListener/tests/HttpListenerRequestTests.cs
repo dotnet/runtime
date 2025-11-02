@@ -35,7 +35,7 @@ namespace System.Net.Tests
         [InlineData("Accept: Test, Test2,Test3 ,  Test4", new string[] { "Test", "Test2", "Test3 ", " Test4" })]
         [InlineData("Accept: ", new string[] { "" })]
         [InlineData("Unknown-Header: ", null)]
-        public async Task AcceptTypes_GetProperty_ReturnsExpected(string acceptString, string[] expected)
+        public async Task AcceptTypes_GetProperty_ReturnsExpected(string acceptString, string[]? expected)
         {
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { acceptString });
             Assert.Equal(request.AcceptTypes, request.AcceptTypes);
@@ -164,7 +164,7 @@ namespace System.Net.Tests
         [InlineData("Referer: ", "")]
         [InlineData("Referer: http://microsoft.com<>", null)]
         [InlineData("Unknown-Header: ", null)]
-        public async Task Referer_GetProperty_ReturnsExpected(string refererString, string expected)
+        public async Task Referer_GetProperty_ReturnsExpected(string refererString, string? expected)
         {
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { refererString });
             Assert.Equal(expected, request.UrlReferrer?.ToString());
@@ -175,7 +175,7 @@ namespace System.Net.Tests
         [InlineData("user-agent: Test", "Test")]
         [InlineData("User-Agent: ", "")]
         [InlineData("Unknown-Header: Test", null)]
-        public async Task UserAgent_GetProperty_ReturnsExpected(string userAgentString, string expected)
+        public async Task UserAgent_GetProperty_ReturnsExpected(string userAgentString, string? expected)
         {
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { userAgentString });
             Assert.Equal(expected, request.UserAgent);
@@ -246,7 +246,7 @@ namespace System.Net.Tests
         [InlineData("Accept-Language:", new string[] { "" })]
         [InlineData("Accept-Language: ", new string[] { "" })]
         [InlineData("Unknown-Header: Test", null)]
-        public async Task UserLanguages_GetProperty_ReturnsExpected(string userLanguageString, string[] expected)
+        public async Task UserLanguages_GetProperty_ReturnsExpected(string userLanguageString, string[]? expected)
         {
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { userLanguageString });
             Assert.Equal(request.UserLanguages, request.UserLanguages);

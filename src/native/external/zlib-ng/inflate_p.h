@@ -6,19 +6,21 @@
 #define INFLATE_P_H
 
 #include <stdlib.h>
+#include "zmemory.h"
 
 /* Architecture-specific hooks. */
 #ifdef S390_DFLTCC_INFLATE
 #  include "arch/s390/dfltcc_inflate.h"
+/* DFLTCC instructions require window to be page-aligned */
+#  define PAD_WINDOW            PAD_4096
+#  define WINDOW_PAD_SIZE       4096
+#  define HINT_ALIGNED_WINDOW   HINT_ALIGNED_4096
 #else
-/* Memory management for the inflate state. Useful for allocating arch-specific extension blocks. */
-#  define ZALLOC_INFLATE_STATE(strm) ((struct inflate_state *)ZALLOC(strm, 1, sizeof(struct inflate_state)))
-#  define ZFREE_STATE(strm, addr) ZFREE(strm, addr)
-#  define ZCOPY_INFLATE_STATE(dst, src) memcpy(dst, src, sizeof(struct inflate_state))
-/* Memory management for the window. Useful for allocation the aligned window. */
-#  define ZALLOC_WINDOW(strm, items, size) ZALLOC(strm, items, size)
-#  define ZCOPY_WINDOW(dest, src, n) memcpy(dest, src, n)
-#  define ZFREE_WINDOW(strm, addr) ZFREE(strm, addr)
+#  define PAD_WINDOW            PAD_64
+#  define WINDOW_PAD_SIZE       64
+#  define HINT_ALIGNED_WINDOW   HINT_ALIGNED_64
+/* Adjust the window size for the arch-specific inflate code. */
+#  define INFLATE_ADJUST_WINDOW_SIZE(n) (n)
 /* Invoked at the end of inflateResetKeep(). Useful for initializing arch-specific extension blocks. */
 #  define INFLATE_RESET_KEEP_HOOK(strm) do {} while (0)
 /* Invoked at the beginning of inflatePrime(). Useful for updating arch-specific buffers. */
@@ -46,9 +48,9 @@
 /* check function to use adler32() for zlib or crc32() for gzip */
 #ifdef GUNZIP
 #  define UPDATE(check, buf, len) \
-    (state->flags ? PREFIX(crc32)(check, buf, len) : functable.adler32(check, buf, len))
+    (state->flags ? PREFIX(crc32)(check, buf, len) : FUNCTABLE_CALL(adler32)(check, buf, len))
 #else
-#  define UPDATE(check, buf, len) functable.adler32(check, buf, len)
+#  define UPDATE(check, buf, len) FUNCTABLE_CALL(adler32)(check, buf, len)
 #endif
 
 /* check macros for header crc */
@@ -137,8 +139,7 @@
 
 /* Load 64 bits from IN and place the bytes at offset BITS in the result. */
 static inline uint64_t load_64_bits(const unsigned char *in, unsigned bits) {
-    uint64_t chunk;
-    memcpy(&chunk, in, sizeof(chunk));
+    uint64_t chunk = zng_memread_8(in);
 
 #if BYTE_ORDER == LITTLE_ENDIAN
     return chunk << bits;
@@ -149,7 +150,7 @@ static inline uint64_t load_64_bits(const unsigned char *in, unsigned bits) {
 
 /* Behave like chunkcopy, but avoid writing beyond of legal output. */
 static inline uint8_t* chunkcopy_safe(uint8_t *out, uint8_t *from, uint64_t len, uint8_t *safe) {
-    uint64_t safelen = (safe - out) + 1;
+    uint64_t safelen = safe - out;
     len = MIN(len, safelen);
     int32_t olap_src = from >= out && from < out + len;
     int32_t olap_dst = out >= from && out < from + len;
@@ -173,25 +174,16 @@ static inline uint8_t* chunkcopy_safe(uint8_t *out, uint8_t *from, uint64_t len,
      * behind or lookahead distance. */
     uint64_t non_olap_size = llabs(from - out); // llabs vs labs for compatibility with windows
 
-    memcpy(out, from, (size_t)non_olap_size);
-    out += non_olap_size;
-    from += non_olap_size;
-    len -= non_olap_size;
-
     /* So this doesn't give use a worst case scenario of function calls in a loop,
-     * we want to instead break this down into copy blocks of fixed lengths */
+     * we want to instead break this down into copy blocks of fixed lengths
+     *
+     * TODO: The memcpy calls aren't inlined on architectures with strict memory alignment
+     */
     while (len) {
         tocopy = MIN(non_olap_size, len);
         len -= tocopy;
 
-        while (tocopy >= 32) {
-            memcpy(out, from, 32);
-            out += 32;
-            from += 32;
-            tocopy -= 32;
-        }
-
-        if (tocopy >= 16) {
+        while (tocopy >= 16) {
             memcpy(out, from, 16);
             out += 16;
             from += 16;
@@ -212,14 +204,7 @@ static inline uint8_t* chunkcopy_safe(uint8_t *out, uint8_t *from, uint64_t len,
             tocopy -= 4;
         }
 
-        if (tocopy >= 2) {
-            memcpy(out, from, 2);
-            out += 2;
-            from += 2;
-            tocopy -= 2;
-        }
-
-        if (tocopy) {
+        while (tocopy--) {
             *out++ = *from++;
         }
     }

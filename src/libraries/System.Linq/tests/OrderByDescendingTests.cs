@@ -33,15 +33,15 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceEmpty()
         {
-            int[] source = { };
+            int[] source = [];
             Assert.Empty(source.OrderByDescending(e => e));
         }
 
         [Fact]
         public void KeySelectorReturnsNull()
         {
-            int?[] source = { null, null, null };
-            int?[] expected = { null, null, null };
+            int?[] source = [null, null, null];
+            int?[] expected = [null, null, null];
 
             Assert.Equal(expected, source.OrderByDescending(e => e));
         }
@@ -49,8 +49,8 @@ namespace System.Linq.Tests
         [Fact]
         public void ElementsAllSameKey()
         {
-            int?[] source = { 9, 9, 9, 9, 9, 9 };
-            int?[] expected = { 9, 9, 9, 9, 9, 9 };
+            int?[] source = [9, 9, 9, 9, 9, 9];
+            int?[] expected = [9, 9, 9, 9, 9, 9];
 
             Assert.Equal(expected, source.OrderByDescending(e => e));
         }
@@ -80,8 +80,8 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstAndLastAreDuplicatesCustomComparer()
         {
-            string[] source = { "Prakash", "Alpha", "DAN", "dan", "Prakash" };
-            string[] expected = { "Prakash", "Prakash", "DAN", "dan", "Alpha" };
+            string[] source = ["Prakash", "Alpha", "DAN", "dan", "Prakash"];
+            string[] expected = ["Prakash", "Prakash", "DAN", "dan", "Alpha"];
 
             Assert.Equal(expected, source.OrderByDescending(e => e, StringComparer.OrdinalIgnoreCase));
         }
@@ -89,8 +89,8 @@ namespace System.Linq.Tests
         [Fact]
         public void RunOnce()
         {
-            string[] source = { "Prakash", "Alpha", "DAN", "dan", "Prakash" };
-            string[] expected = { "Prakash", "Prakash", "DAN", "dan", "Alpha" };
+            string[] source = ["Prakash", "Alpha", "DAN", "dan", "Prakash"];
+            string[] expected = ["Prakash", "Prakash", "DAN", "dan", "Alpha"];
 
             Assert.Equal(expected, source.RunOnce().OrderByDescending(e => e, StringComparer.OrdinalIgnoreCase));
         }
@@ -98,8 +98,8 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstAndLastAreDuplicatesNullPassedAsComparer()
         {
-            int[] source = { 5, 1, 3, 2, 5 };
-            int[] expected = { 5, 5, 3, 2, 1 };
+            int[] source = [5, 1, 3, 2, 5];
+            int[] expected = [5, 5, 3, 2, 1];
 
             Assert.Equal(expected, source.OrderByDescending(e => e, null));
         }
@@ -107,8 +107,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceReverseOfResultNullPassedAsComparer()
         {
-            int[] source = { -75, -50, 0, 5, 9, 30, 100 };
-            int[] expected = { 100, 30, 9, 5, 0, -50, -75 };
+            int[] source = [-75, -50, 0, 5, 9, 30, 100];
+            int[] expected = [100, 30, 9, 5, 0, -50, -75];
 
             Assert.Equal(expected, source.OrderByDescending(e => e, null));
         }
@@ -155,7 +155,7 @@ namespace System.Linq.Tests
         [Fact]
         public void OrderByExtremeComparer()
         {
-            int[] outOfOrder = new[] { 7, 1, 0, 9, 3, 5, 4, 2, 8, 6 };
+            int[] outOfOrder = [7, 1, 0, 9, 3, 5, 4, 2, 8, 6];
 
             // The .NET Framework has a bug where the input is incorrectly ordered if the comparer
             // returns int.MaxValue or int.MinValue. See https://github.com/dotnet/corefx/pull/2240.

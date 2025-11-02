@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="NetCoreServer/NetCoreServer.csproj" />
+  <Project Path="RemoteLoopServer/RemoteLoopServer.csproj" />
+</Solution>

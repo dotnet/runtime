@@ -20,25 +20,3 @@ LEAF_ENTRY GetCurrentIP, _TEXT
         ret
 
 LEAF_END GetCurrentIP, _TEXT
-
-
-// EXTERN_C void LazyMachStateCaptureState(struct LazyMachState *pState)
-LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-
-        mov     rdx, [rsp]      // get the return address
-
-        mov     [rdi + OFFSETOF__MachState__m_Capture + 0*8], r12
-        mov     [rdi + OFFSETOF__MachState__m_Capture + 1*8], r13
-        mov     [rdi + OFFSETOF__MachState__m_Capture + 2*8], r14
-        mov     [rdi + OFFSETOF__MachState__m_Capture + 3*8], r15
-        mov     [rdi + OFFSETOF__MachState__m_Capture + 4*8], rbx
-        mov     [rdi + OFFSETOF__MachState__m_Capture + 5*8], rbp
-
-        mov     qword ptr [rdi + OFFSETOF__MachState___pRetAddr], 0
-
-        mov     [rdi + OFFSETOF__LazyMachState__m_CaptureRip], rdx
-        mov     [rdi + OFFSETOF__LazyMachState__m_CaptureRsp], rsp
-
-        ret
-
-LEAF_END LazyMachStateCaptureState, _TEXT

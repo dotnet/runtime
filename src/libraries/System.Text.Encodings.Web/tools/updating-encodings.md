@@ -6,7 +6,7 @@ This folder contains tools which allow updating the Unicode data within the __Sy
 
 ### Current implementation
 
-The current version of the Unicode data checked in is __14.0.0__. The archived files can be found at https://unicode.org/Public/14.0.0/.
+The current version of the Unicode data checked in is __16.0.0__. The archived files can be found at https://unicode.org/Public/16.0.0/.
 
 ### Updating the implementation
 

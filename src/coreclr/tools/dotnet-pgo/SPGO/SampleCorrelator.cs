@@ -227,7 +227,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                             bool skip = false;
 
-                            for (int j = callStack.Count - 1; j >= 0; j++)
+                            for (int j = callStack.Count - 1; j >= 0; j--)
                             {
                                 (BasicBlock callFromBB, int callFromILOffs) = callStack[j];
                                 if (callFromBB == bb && mapping.ILOffset >= callFromILOffs)

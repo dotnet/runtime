@@ -150,12 +150,5 @@ namespace System.IO.Compression
                 }
             }, testScenario.ToString()).Dispose();
         }
-
-        [Theory]
-        [MemberData(nameof(UncompressedTestFilesZLib))]
-        public async Task ZLibCompressionLevel_SizeInOrder(string testFile)
-        {
-            await CompressionLevel_SizeInOrderBase(testFile);
-        }
     }
 }

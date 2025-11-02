@@ -22,14 +22,13 @@ Abstract:
 #include "corunix.hpp"
 #include "threadinfo.hpp"
 #include "mutex.hpp"
-#include "shm.hpp"
 #include "list.h"
 
 #include <pthread.h>
 
-#define SharedID SHMPTR
-#define SharedIDToPointer(shID) SHMPTR_TO_TYPED_PTR(PVOID, shID)
-#define SharedIDToTypePointer(TYPE,shID) SHMPTR_TO_TYPED_PTR(TYPE, shID)
+typedef LPVOID SharedID;
+#define SharedIDToPointer(shID) reinterpret_cast<void*>(shID)
+#define SharedIDToTypePointer(TYPE,shID) reinterpret_cast<TYPE*>(shID)
 
 namespace CorUnix
 {
@@ -75,14 +74,12 @@ namespace CorUnix
     typedef struct _ThreadWaitInfo
     {
         WaitType wtWaitType;
-        WaitDomain wdWaitDomain;
         LONG lObjCount;
-        LONG lSharedObjCount;
         CPalThread * pthrOwner;
         PWaitingThreadsListNode rgpWTLNodes[MAXIMUM_WAIT_OBJECTS];
 
-        _ThreadWaitInfo() : wtWaitType(SingleObject), wdWaitDomain(LocalWait),
-                            lObjCount(0), lSharedObjCount(0),
+        _ThreadWaitInfo() : wtWaitType(SingleObject),
+                            lObjCount(0),
                             pthrOwner(NULL) {}
     } ThreadWaitInfo;
 
@@ -114,7 +111,6 @@ namespace CorUnix
         THREAD_STATE           m_tsThreadState;
         SharedID               m_shridWaitAwakened;
         Volatile<LONG>         m_lLocalSynchLockCount;
-        Volatile<LONG>         m_lSharedSynchLockCount;
         LIST_ENTRY             m_leOwnedObjsList;
 
         NamedMutexProcessData *m_ownedNamedMutexListHead;

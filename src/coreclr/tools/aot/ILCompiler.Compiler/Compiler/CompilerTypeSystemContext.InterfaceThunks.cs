@@ -62,13 +62,11 @@ namespace ILCompiler
     // Contains functionality related to instantiating thunks for default interface methods
     public partial class CompilerTypeSystemContext
     {
-        private const int UseContextFromRuntime = -1;
-
         /// <summary>
         /// For a shared (canonical) default interface method, gets a method that can be used to call the
         /// method on a specific implementing class.
         /// </summary>
-        public MethodDesc GetDefaultInterfaceMethodImplementationThunk(MethodDesc targetMethod, TypeDesc implementingClass, DefType interfaceOnDefinition)
+        public MethodDesc GetDefaultInterfaceMethodImplementationThunk(MethodDesc targetMethod, TypeDesc implementingClass, DefType interfaceOnDefinition, out int interfaceIndex)
         {
             Debug.Assert(targetMethod.IsSharedByGenericInstantiations);
             Debug.Assert(!targetMethod.Signature.IsStatic);
@@ -76,11 +74,16 @@ namespace ILCompiler
             Debug.Assert(interfaceOnDefinition.GetTypeDefinition() == targetMethod.OwningType.GetTypeDefinition());
             Debug.Assert(targetMethod.OwningType.IsInterface);
 
-            int interfaceIndex;
+            bool useContextFromRuntime = false;
             if (implementingClass.IsInterface)
             {
                 Debug.Assert(((MetadataType)implementingClass).IsDynamicInterfaceCastableImplementation());
-                interfaceIndex = UseContextFromRuntime;
+                useContextFromRuntime = true;
+            }
+
+            if (useContextFromRuntime && targetMethod.OwningType == implementingClass)
+            {
+                interfaceIndex = -1;
             }
             else
             {
@@ -90,7 +93,7 @@ namespace ILCompiler
 
             // Get a method that will inject the appropriate instantiation context to the
             // target default interface method.
-            var methodKey = new DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey(targetMethod, interfaceIndex);
+            var methodKey = new DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey(targetMethod, interfaceIndex, useContextFromRuntime);
             MethodDesc thunk = _dimThunkHashtable.GetOrCreateValue(methodKey);
 
             return thunk;
@@ -117,11 +120,13 @@ namespace ILCompiler
         {
             public readonly MethodDesc TargetMethod;
             public readonly int InterfaceIndex;
+            public bool UseContextFromRuntime;
 
-            public DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey(MethodDesc targetMethod, int interfaceIndex)
+            public DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey(MethodDesc targetMethod, int interfaceIndex, bool useContextFromRuntime)
             {
                 TargetMethod = targetMethod;
                 InterfaceIndex = interfaceIndex;
+                UseContextFromRuntime = useContextFromRuntime;
             }
         }
 
@@ -138,17 +143,19 @@ namespace ILCompiler
             protected override bool CompareKeyToValue(DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey key, DefaultInterfaceMethodImplementationInstantiationThunk value)
             {
                 return ReferenceEquals(key.TargetMethod, value.TargetMethod) &&
-                    key.InterfaceIndex == value.InterfaceIndex;
+                    key.InterfaceIndex == value.InterfaceIndex &&
+                    key.UseContextFromRuntime == value.UseContextFromRuntime;
             }
             protected override bool CompareValueToValue(DefaultInterfaceMethodImplementationInstantiationThunk value1, DefaultInterfaceMethodImplementationInstantiationThunk value2)
             {
                 return ReferenceEquals(value1.TargetMethod, value2.TargetMethod) &&
-                    value1.InterfaceIndex == value2.InterfaceIndex;
+                    value1.InterfaceIndex == value2.InterfaceIndex &&
+                    value1.UseContextFromRuntime == value2.UseContextFromRuntime;
             }
             protected override DefaultInterfaceMethodImplementationInstantiationThunk CreateValueFromKey(DefaultInterfaceMethodImplementationInstantiationThunkHashtableKey key)
             {
                 TypeDesc owningTypeOfThunks = ((CompilerTypeSystemContext)key.TargetMethod.Context).GeneratedAssembly.GetGlobalModuleType();
-                return new DefaultInterfaceMethodImplementationInstantiationThunk(owningTypeOfThunks, key.TargetMethod, key.InterfaceIndex);
+                return new DefaultInterfaceMethodImplementationInstantiationThunk(owningTypeOfThunks, key.TargetMethod, key.InterfaceIndex, key.UseContextFromRuntime);
             }
         }
         private DefaultInterfaceMethodImplementationInstantiationThunkHashtable _dimThunkHashtable = new DefaultInterfaceMethodImplementationInstantiationThunkHashtable();
@@ -162,8 +169,9 @@ namespace ILCompiler
             private readonly DefaultInterfaceMethodImplementationWithHiddenParameter _nakedTargetMethod;
             private readonly TypeDesc _owningType;
             private readonly int _interfaceIndex;
+            private readonly bool _useContextFromRuntime;
 
-            public DefaultInterfaceMethodImplementationInstantiationThunk(TypeDesc owningType, MethodDesc targetMethod, int interfaceIndex)
+            public DefaultInterfaceMethodImplementationInstantiationThunk(TypeDesc owningType, MethodDesc targetMethod, int interfaceIndex, bool useContextFromRuntime)
             {
                 Debug.Assert(targetMethod.OwningType.IsInterface);
                 Debug.Assert(!targetMethod.Signature.IsStatic);
@@ -172,6 +180,7 @@ namespace ILCompiler
                 _targetMethod = targetMethod;
                 _nakedTargetMethod = new DefaultInterfaceMethodImplementationWithHiddenParameter(targetMethod, owningType);
                 _interfaceIndex = interfaceIndex;
+                _useContextFromRuntime = useContextFromRuntime;
             }
 
             public override TypeSystemContext Context => _targetMethod.Context;
@@ -180,11 +189,13 @@ namespace ILCompiler
 
             public int InterfaceIndex => _interfaceIndex;
 
+            public bool UseContextFromRuntime => _useContextFromRuntime;
+
             public override MethodSignature Signature => _targetMethod.Signature;
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override string Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {
@@ -202,7 +213,7 @@ namespace ILCompiler
 
             public MethodDesc BaseMethod => _targetMethod;
 
-            public string Prefix => $"__InstantiatingStub_{_interfaceIndex}_";
+            public string Prefix => $"__InstantiatingStub_{(uint)_interfaceIndex}_{(_useContextFromRuntime ? "_FromRuntime" : "")}_";
 
             public override MethodIL EmitIL()
             {
@@ -212,9 +223,9 @@ namespace ILCompiler
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
 
-                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType");
-                MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers", "GetOrdinalInterface");
-                MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers", "GetCurrentSharedThunkContext");
+                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8);
+                MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetOrdinalInterface"u8);
+                MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetCurrentSharedThunkContext"u8);
 
                 bool isX86 = Context.Target.Architecture == TargetArchitecture.X86;
 
@@ -230,7 +241,7 @@ namespace ILCompiler
                 }
 
                 // Load the instantiating argument.
-                if (_interfaceIndex == UseContextFromRuntime)
+                if (_useContextFromRuntime)
                 {
                     codeStream.Emit(ILOpcode.call, emit.NewToken(getCurrentContext));
                 }
@@ -238,6 +249,10 @@ namespace ILCompiler
                 {
                     codeStream.EmitLdArg(0);
                     codeStream.Emit(ILOpcode.ldfld, emit.NewToken(eeTypeField));
+                }
+
+                if (_interfaceIndex >= 0)
+                {
                     codeStream.EmitLdc(_interfaceIndex);
                     codeStream.Emit(ILOpcode.call, emit.NewToken(getOrdinalInterfaceMethod));
                 }
@@ -292,7 +307,7 @@ namespace ILCompiler
             public override TypeSystemContext Context => _methodRepresented.Context;
             public override TypeDesc OwningType => _owningType;
 
-            public override string Name => _methodRepresented.Name;
+            public override ReadOnlySpan<byte> Name => _methodRepresented.Name;
             public override string DiagnosticName => _methodRepresented.DiagnosticName;
 
             public override MethodSignature Signature

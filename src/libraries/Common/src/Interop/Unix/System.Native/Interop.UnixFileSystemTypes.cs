@@ -11,12 +11,13 @@ internal static partial class Interop
     internal static partial class Sys
     {
         /// <summary>
-        /// Internal FileSystem names and magic numbers taken from man(2) statfs
+        /// FileSystem magic numbers used to turn numbers into a DriveInfo.DriveFormat string representation.
         /// </summary>
         /// <remarks>
         /// These value names MUST be kept in sync with those in GetDriveType (moved to Interop.MountPoints.FormatInfo.cs),
-        /// where this enum must be a subset of the GetDriveType list, with the enum
-        /// values here exactly matching a string there.
+        /// where this enum must be a subset of the GetDriveType list, with the enum values here exactly matching a string there.
+        /// If possible, use names that match the Linux file system type strings.
+        /// Don't add multiple names for the same value.
         /// </remarks>
         internal enum UnixFileSystemTypes : uint
         {
@@ -29,25 +30,25 @@ internal static partial class Interop
             autofs = 0x0187,
             autofs4 = 0x6D4A556D,
             befs = 0x42465331,
-            bdevfs = 0x62646576,
+            bdev = 0x62646576,
             bfs = 0x1BADFACE,
             bpf_fs = 0xCAFE4A11,
             binfmt_misc = 0x42494E4D,
             bootfs = 0xA56D3FF9,
             btrfs = 0x9123683E,
             ceph = 0x00C36400,
-            cgroupfs = 0x0027E0EB,
-            cgroup2fs = 0x63677270,
+            cgroup = 0x0027E0EB,
+            cgroup2 = 0x63677270,
             cifs = 0xFF534D42,
             coda = 0x73757245,
             coherent = 0x012FF7B7,
             configfs = 0x62656570,
-            cpuset = 0x01021994, // same as tmpfs
+            // cpuset = 0x01021994, // same as tmpfs
             cramfs = 0x28CD3D45,
-            ctfs = 0x01021994, // same as tmpfs
+            // ctfs = 0x01021994, // same as tmpfs
             debugfs = 0x64626720,
-            dev = 0x1373, // same as devfs
-            devfs = 0x1373,
+            dev = 0x1373,
+            // devfs = 0x1373, // same as dev
             devpts = 0x1CD1,
             ecryptfs = 0xF15F,
             efs = 0x00414A53,
@@ -55,17 +56,17 @@ internal static partial class Interop
             ext = 0x137D,
             ext2_old = 0xEF51,
             ext2 = 0xEF53,
-            ext3 = 0xEF53,
-            ext4 = 0xEF53,
+            // ext3 = 0xEF53, // same as ext2
+            // ext4 = 0xEF53, // same as ext2
             f2fs = 0xF2F52010,
             fat = 0x4006,
             fd = 0xF00D1E,
             fhgfs = 0x19830326,
             fuse = 0x65735546,
-            fuseblk = 0x65735546,
+            // fuseblk = 0x65735546, // same as fuse
             fusectl = 0x65735543,
             futexfs = 0x0BAD1DEA,
-            gfsgfs2 = 0x1161970,
+            // gfsgfs2 = 0x1161970, // same as gfs2
             gfs2 = 0x01161970,
             gpfs = 0x47504653,
             hfs = 0x4244,
@@ -81,7 +82,7 @@ internal static partial class Interop
             jffs2 = 0x72B6,
             jfs = 0x3153464A,
             kafs = 0x6B414653,
-            lofs = 0xEF53, /* loopback filesystem, magic same as ext2 */
+            // lofs = 0xEF53, same as ext2
             logfs = 0xC97E8168,
             lustre = 0x0BD00BD0,
             minix_old = 0x137F, /* orig. minix */
@@ -89,7 +90,7 @@ internal static partial class Interop
             minix2 = 0x2468, /* minix V2 */
             minix2v2 = 0x2478, /* MINIX V2, 30 char names */
             minix3 = 0x4D5A,
-            mntfs = 0x01021994, // same as tmpfs
+            // mntfs = 0x01021994, // same as tmpfs
             mqueue = 0x19800202,
             msdos = 0x4D44,
             nfs = 0x6969,
@@ -97,7 +98,7 @@ internal static partial class Interop
             nilfs = 0x3434,
             novell = 0x564C,
             ntfs = 0x5346544E,
-            objfs = 0x01021994, // same as tmpfs
+            // objfs = 0x01021994, // same as tmpfs
             ocfs2 = 0x7461636F,
             openprom = 0x9FA1,
             omfs = 0xC2993D87,
@@ -106,7 +107,7 @@ internal static partial class Interop
             panfs = 0xAAD7AAEA,
             pipefs = 0x50495045,
             proc = 0x9FA0,
-            pstorefs = 0x6165676C,
+            pstore = 0x6165676C,
             qnx4 = 0x002F,
             qnx6 = 0x68191122,
             ramfs = 0x858458F6,
@@ -114,12 +115,12 @@ internal static partial class Interop
             romfs = 0x7275,
             rootfs = 0x53464846,
             rpc_pipefs = 0x67596969,
-            samba = 0x517B,
+            // samba = 0x517B, // same as smb
             sdcardfs = 0x5DCA2DF5,
             securityfs = 0x73636673,
-            selinux = 0xF97CFF8C,
-            sffs = 0x786F4256, // same as vboxfs
-            sharefs = 0x01021994, // same as tmpfs
+            selinuxfs = 0xF97CFF8C,
+            // sffs = 0x786F4256, // same as vboxfs
+            // sharefs = 0x01021994, // same as tmpfs
             smb = 0x517B,
             smb2 = 0xFE534D42,
             sockfs = 0x534F434B,
@@ -136,7 +137,7 @@ internal static partial class Interop
             ufs2 = 0x19540119,
             usbdevice = 0x9FA2,
             v9fs = 0x01021997,
-            vagrant = 0x786F4256, // same as vboxfs
+            // vagrant = 0x786F4256, // same as vboxfs
             vboxfs = 0x786F4256,
             vmhgfs = 0xBACBACBC,
             vxfs = 0xA501FCF5,
@@ -145,7 +146,7 @@ internal static partial class Interop
             xenix = 0x012FF7B4,
             xfs = 0x58465342,
             xia = 0x012FD16D,
-            udev = 0x01021994, // same as tmpfs
+            // udev = 0x01021994, // same as tmpfs
             zfs = 0x2FC12FC1,
         }
 

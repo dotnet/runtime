@@ -134,12 +134,12 @@
       </trans-unit>
       <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
         <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
-        <target state="new">Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</target>
+        <target state="translated">Класс "{0}" имеет первичный параметр конструктора типа Microsoft.Extensions.Logging.ILogger который скрыт полем в этом классе или базовом классе, что препятствует его использованию</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
         <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
-        <target state="new">Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</target>
+        <target state="translated">Параметр основного конструктора типа Microsoft.Extensions.Logging.ILogger скрыт полем</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">

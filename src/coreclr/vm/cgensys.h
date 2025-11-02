@@ -50,7 +50,7 @@ enum class CallerGCMode
 // Non-CPU-specific helper functions called by the CPU-dependent code
 extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, MethodDesc * pMD);
 
-extern "C" void STDCALL VarargPInvokeStubWorker(TransitionBlock * pTransitionBlock, VASigCookie * pVASigCookie, MethodDesc * pMD);
+extern "C" void STDCALL VarargPInvokeStubWorker(TransitionBlock* pTransitionBlock, VASigCookie* pVASigCookie, MethodDesc* pMD);
 extern "C" void STDCALL VarargPInvokeStub(void);
 extern "C" void STDCALL VarargPInvokeStub_RetBuffArg(void);
 
@@ -58,7 +58,6 @@ extern "C" void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransit
 extern "C" void STDCALL GenericPInvokeCalliHelper(void);
 
 extern "C" PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule);
-extern "C" void STDCALL ExternalMethodFixupPatchLabel(void);
 
 extern "C" void STDCALL VirtualMethodFixupStub(void);
 extern "C" void STDCALL VirtualMethodFixupPatchLabel(void);

@@ -81,7 +81,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                 sb.Append($"            LowBits: ");
                 if ((Flags & GcSlotFlags.GC_SLOT_UNTRACKED) != 0)
                 {
-                    if((LowBits & pinned_OFFSET_FLAG) != 0) sb.Append("pinned ");
+                    if ((LowBits & pinned_OFFSET_FLAG) != 0) sb.Append("pinned ");
                     if ((LowBits & byref_OFFSET_FLAG) != 0) sb.Append("byref ");
                 }
                 sb.AppendLine();
@@ -98,12 +98,12 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
         public GcSlotTable() { }
 
-        public GcSlotTable(byte[] image, InfoHdrSmall header, ref int offset)
+        public GcSlotTable(NativeReader imageReader, InfoHdrSmall header, ref int offset)
         {
             GcSlots = new List<GcSlot>();
 
-            DecodeUntracked(image, header, ref offset);
-            DecodeFrameVariableLifetimeTable(image, header, ref offset);
+            DecodeUntracked(imageReader, header, ref offset);
+            DecodeFrameVariableLifetimeTable(imageReader, header, ref offset);
         }
 
         public override string ToString()
@@ -124,7 +124,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
         /// </summary>
-        private void DecodeUntracked(byte[] image, InfoHdrSmall header, ref int offset)
+        private void DecodeUntracked(NativeReader imageReader, InfoHdrSmall header, ref int offset)
         {
             uint calleeSavedRegs = 0;
             if (header.DoubleAlign)
@@ -144,7 +144,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
 
                 char reg = header.EbpFrame ? 'B' : 'S';
 
-                stkOffsDelta = NativeReader.DecodeSignedGc(image, ref offset);
+                stkOffsDelta = imageReader.DecodeSignedGc(ref offset);
                 int stkOffs = lastStkOffs - stkOffsDelta;
                 lastStkOffs = stkOffs;
 
@@ -165,15 +165,15 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         /// <summary>
         /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/gcdump/i386/gcdumpx86.cpp">GCDump::DumpGCTable</a>
         /// </summary>
-        private void DecodeFrameVariableLifetimeTable(byte[] image, InfoHdrSmall header, ref int offset)
+        private void DecodeFrameVariableLifetimeTable(NativeReader imageReader, InfoHdrSmall header, ref int offset)
         {
             uint count = header.VarPtrTableSize;
             uint curOffs = 0;
             while (count-- > 0)
             {
-                uint varOffs = NativeReader.DecodeUnsignedGc(image, ref offset);
-                uint begOffs = NativeReader.DecodeUDelta(image, ref offset, curOffs);
-                uint endOffs = NativeReader.DecodeUDelta(image, ref offset, begOffs);
+                uint varOffs = imageReader.DecodeUnsignedGc(ref offset);
+                uint begOffs = imageReader.DecodeUDelta(ref offset, curOffs);
+                uint endOffs = imageReader.DecodeUDelta(ref offset, begOffs);
 
 
                 uint lowBits = varOffs & 0x3;

@@ -31,6 +31,23 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        public static void Ctor_CollectionExpressions_Empty()
+        {
+            ReadOnlyCollection<int> c = [];
+            Assert.IsType<ReadOnlyCollection<int>>(c);
+            Assert.Empty(c);
+            Assert.Same(c, ReadOnlyCollection<int>.Empty);
+        }
+
+        [Fact]
+        public static void Ctor_CollectionExpressions()
+        {
+            ReadOnlyCollection<int> c = [.. s_intArray];
+            Assert.IsType<ReadOnlyCollection<int>>(c);
+            Assert.Equal(c, s_intArray);
+        }
+
+        [Fact]
         public static void Count()
         {
             var collection = new ReadOnlyCollection<int>(s_intArray);

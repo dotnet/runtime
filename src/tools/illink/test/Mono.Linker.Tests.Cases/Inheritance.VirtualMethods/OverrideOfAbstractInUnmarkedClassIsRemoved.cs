@@ -5,87 +5,87 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods
 {
-	public class OverrideOfAbstractInUnmarkedClassIsRemoved
-	{
-		[Kept]
-		public static void Main ()
-		{
-			MarkedBase x = new MarkedDerived ();
-			x.Method ();
+    public class OverrideOfAbstractInUnmarkedClassIsRemoved
+    {
+        [Kept]
+        public static void Main()
+        {
+            MarkedBase x = new MarkedDerived();
+            x.Method();
 
-			UsedSecondLevelTypeWithAbstractBase y = new ();
-			y.Method ();
+            UsedSecondLevelTypeWithAbstractBase y = new();
+            y.Method();
 
-			UsedSecondLevelType z = new ();
-			z.Method ();
-		}
+            UsedSecondLevelType z = new();
+            z.Method();
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		abstract class MarkedBase
-		{
-			[Kept]
-			public abstract int Method ();
-		}
+        [Kept]
+        [KeptMember(".ctor()")]
+        abstract class MarkedBase
+        {
+            [Kept]
+            public abstract int Method();
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		[KeptBaseType (typeof (MarkedBase))]
-		class MarkedDerived : MarkedBase
-		{
-			[Kept]
-			public override int Method () => 1;
-		}
+        [Kept]
+        [KeptMember(".ctor()")]
+        [KeptBaseType(typeof(MarkedBase))]
+        class MarkedDerived : MarkedBase
+        {
+            [Kept]
+            public override int Method() => 1;
+        }
 
-		class UnmarkedDerived : MarkedBase
-		{
-			public override int Method () => 1;
-		}
+        class UnmarkedDerived : MarkedBase
+        {
+            public override int Method() => 1;
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		[KeptBaseType (typeof (MarkedBase))]
-		class UnusedIntermediateType : MarkedBase
-		{
-			[Kept]
-			public override int Method () => 1;
-		}
+        [Kept]
+        [KeptMember(".ctor()")]
+        [KeptBaseType(typeof(MarkedBase))]
+        class UnusedIntermediateType : MarkedBase
+        {
+            [Kept]
+            public override int Method() => 1;
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		[KeptBaseType (typeof (UnusedIntermediateType))]
-		class UsedSecondLevelType : UnusedIntermediateType
-		{
-			[Kept]
-			public override int Method () => 1;
-		}
+        [Kept]
+        [KeptMember(".ctor()")]
+        [KeptBaseType(typeof(UnusedIntermediateType))]
+        class UsedSecondLevelType : UnusedIntermediateType
+        {
+            [Kept]
+            public override int Method() => 1;
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		[KeptBaseType (typeof (MarkedBase))]
-		abstract class UnusedIntermediateTypeWithAbstractOverride : MarkedBase
-		{
-			[Kept]
-			public abstract override int Method ();
-		}
+        [Kept]
+        [KeptMember(".ctor()")]
+        [KeptBaseType(typeof(MarkedBase))]
+        abstract class UnusedIntermediateTypeWithAbstractOverride : MarkedBase
+        {
+            [Kept]
+            public abstract override int Method();
+        }
 
-		[Kept]
-		[KeptMember (".ctor()")]
-		[KeptBaseType (typeof (UnusedIntermediateTypeWithAbstractOverride))]
-		class UsedSecondLevelTypeWithAbstractBase : UnusedIntermediateTypeWithAbstractOverride
-		{
-			[Kept]
-			public override int Method () => 1;
-		}
+        [Kept]
+        [KeptMember(".ctor()")]
+        [KeptBaseType(typeof(UnusedIntermediateTypeWithAbstractOverride))]
+        class UsedSecondLevelTypeWithAbstractBase : UnusedIntermediateTypeWithAbstractOverride
+        {
+            [Kept]
+            public override int Method() => 1;
+        }
 
-		class UnusedSecondLevelTypeWithAbstractBase : UnusedIntermediateTypeWithAbstractOverride
-		{
-			public override int Method () => 1;
-		}
+        class UnusedSecondLevelTypeWithAbstractBase : UnusedIntermediateTypeWithAbstractOverride
+        {
+            public override int Method() => 1;
+        }
 
-		class UnusedSecondLevelType : UnusedIntermediateType
-		{
-			public override int Method () => 1;
-		}
-	}
+        class UnusedSecondLevelType : UnusedIntermediateType
+        {
+            public override int Method() => 1;
+        }
+    }
 }

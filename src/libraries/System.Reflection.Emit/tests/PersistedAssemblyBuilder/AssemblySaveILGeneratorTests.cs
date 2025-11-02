@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveILGeneratorTests
     {
         [Fact]
@@ -20,6 +20,27 @@ namespace System.Reflection.Emit.Tests
             {
                 PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
                 MethodBuilder methodBuilder = type.DefineMethod("EmptyMethod", MethodAttributes.Public, typeof(void), [typeof(Version)]);
+                type.CreateType();
+                ab.Save(file.Path);
+
+                using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+                {
+                    Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
+                    Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
+                    MethodInfo method = typeFromDisk.GetMethod("EmptyMethod");
+                    MethodBody? body = method.GetMethodBody();
+                    Assert.Null(body);
+                }
+            }
+        }
+
+        [Fact]
+        public void MethodWithMinimalBody()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                MethodBuilder methodBuilder = type.DefineMethod("MinimalMethod", MethodAttributes.Public, typeof(void), [typeof(Version)]);
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ret);
                 type.CreateType();
@@ -29,7 +50,7 @@ namespace System.Reflection.Emit.Tests
                 {
                     Assembly assemblyFromDisk = mlc.LoadFromAssemblyPath(file.Path);
                     Type typeFromDisk = assemblyFromDisk.Modules.First().GetType("MyType");
-                    MethodInfo method = typeFromDisk.GetMethod("EmptyMethod");
+                    MethodInfo method = typeFromDisk.GetMethod("MinimalMethod");
                     MethodBody body = method.GetMethodBody();
                     Assert.Empty(body.LocalVariables);
                     Assert.Empty(body.ExceptionHandlingClauses);
@@ -219,7 +240,7 @@ namespace System.Reflection.Emit.Tests
                 il1.Emit(OpCodes.Ldarg_2);     // push 1 MaxStack 7
                 il1.Emit(OpCodes.Ldc_I4_5);    // push 1 MaxStack 8
                 il1.Emit(OpCodes.Ldarg_1);     // push 1 MaxStack 9
-                il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 8 
+                il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 8
                 il1.Emit(OpCodes.Sub);         // pop 2 push 1 stack size 7
                 il1.Emit(OpCodes.Mul);         // pop 2 push 1 stack size 6
                 il1.Emit(OpCodes.Add);         // pop 2 push 1 stack size 5
@@ -630,7 +651,7 @@ namespace System.Reflection.Emit.Tests
                 MethodBuilder methodMultiply = tb.DefineMethod("Multiply", MethodAttributes.Public, typeof(int), [typeof(int)]);
                 /*
                 class MyType
-                { 
+                {
                     private int _field;
                     int Multiply(int value) => _field * value;
                     void Main(int a)
@@ -888,7 +909,7 @@ internal class Dummy
                 FieldBuilder field = anotherType.DefineField("StaticField", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
                 MethodBuilder staticMethod = anotherType.DefineMethod("StaticMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), Type.EmptyTypes);
                 /*class MyType
-                  { 
+                  {
                       int Main(int a)
                       {
                           AnotherType.StaticField = a;
@@ -2327,7 +2348,7 @@ public class MyType
                 // Unreachable.
                 ilg.Emit(OpCodes.Ldarg_0);
 
-                // Depth 
+                // Depth
                 ilg.MarkLabel(lab);
                 ilg.Emit(OpCodes.Add);
                 ilg.Emit(OpCodes.Ret);
@@ -2907,6 +2928,142 @@ public class MyType
             stream.Seek(0, SeekOrigin.Begin);
             var assembly = AssemblyLoadContext.Default.LoadFromStream(stream);
             var method = assembly.GetType("ExplicitLayoutType")!;
+        }
+
+        [Fact]
+        public void ReferenceMemberInOtherGeneratedAssembly()
+        {
+            using (TempFile file = TempFile.Create())
+            using (TempFile file2 = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab1 = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly1"), typeof(object).Assembly);
+                ModuleBuilder mb1 = ab1.DefineDynamicModule("Module1");
+                TypeBuilder type1 = mb1.DefineType("Type1", TypeAttributes.Public);
+                MethodBuilder method = type1.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+
+                ILGenerator ilGenerator = method.GetILGenerator();
+                int expectedReturn = 5;
+                ilGenerator.Emit(OpCodes.Ldc_I4, expectedReturn);
+                ilGenerator.Emit(OpCodes.Ret);
+                type1.CreateType();
+                ab1.Save(file.Path);
+
+                PersistedAssemblyBuilder ab2 = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly2"), typeof(object).Assembly);
+                ModuleBuilder mb2 = ab2.DefineDynamicModule("Module2");
+                TypeBuilder type2 = mb2.DefineType("Type2", TypeAttributes.Public);
+                MethodBuilder method2 = type2.DefineMethod("TestMethod2", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+
+                ILGenerator ilGenerator2 = method2.GetILGenerator();
+                ilGenerator2.Emit(OpCodes.Call, method);
+                ilGenerator2.Emit(OpCodes.Ret);
+                type2.CreateType();
+                ab2.Save(file2.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                tlc.LoadFromAssemblyPath(file.Path);
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file2.Path).GetType("Type2");
+                MethodInfo methodFromDisk = typeFromDisk.GetMethod("TestMethod2")!;
+                Assert.Equal(expectedReturn, methodFromDisk.Invoke(null, null));
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void CrossReferenceGeneratedAssemblyMembers()
+        {
+            using (TempFile file = TempFile.Create())
+            using (TempFile file2 = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab1 = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly1"), typeof(object).Assembly);
+                ModuleBuilder mb1 = ab1.DefineDynamicModule("Module1");
+                TypeBuilder type1 = mb1.DefineType("Type1", TypeAttributes.Public);
+                MethodBuilder method = type1.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+                int expectedReturn = 5;
+
+                PersistedAssemblyBuilder ab2 = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly2"), typeof(object).Assembly);
+                ModuleBuilder mb2 = ab2.DefineDynamicModule("Module2");
+                TypeBuilder type2 = mb2.DefineType("Type2", TypeAttributes.Public);
+                MethodBuilder method2 = type2.DefineMethod("TestMethod2", MethodAttributes.Public | MethodAttributes.Static, typeof(int), Type.EmptyTypes);
+                FieldBuilder field = type2.DefineField("Field2", typeof(int), FieldAttributes.Public | FieldAttributes.Static);
+                ILGenerator staticCtorIL = type2.DefineTypeInitializer().GetILGenerator();
+                staticCtorIL.Emit(OpCodes.Ldc_I4, expectedReturn);
+                staticCtorIL.Emit(OpCodes.Stsfld, field);
+                staticCtorIL.Emit(OpCodes.Ret);
+                ILGenerator ilGenerator2 = method2.GetILGenerator();
+                ilGenerator2.Emit(OpCodes.Call, method);
+                ilGenerator2.Emit(OpCodes.Ret);
+                type2.CreateType();
+
+                ILGenerator ilGenerator = method.GetILGenerator();
+                ilGenerator.Emit(OpCodes.Ldsfld, field);
+                ilGenerator.Emit(OpCodes.Ret);
+                type1.CreateType();
+
+                ab1.Save(file.Path);
+                ab2.Save(file2.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                tlc.LoadFromAssemblyPath(file.Path);
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file2.Path).GetType("Type2");
+                MethodInfo methodFromDisk = typeFromDisk.GetMethod("TestMethod2")!;
+                Assert.Equal(expectedReturn, methodFromDisk.Invoke(null, null));
+                tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void ReferenceGenericMembersInOtherGeneratedAssembly()
+        {
+            using (TempFile file = TempFile.Create())
+            using (TempFile file2 = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
+                GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(["T"]);
+                ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public |
+                    MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
+                FieldBuilder myField = type.DefineField("Field", typeParams[0], FieldAttributes.Public);
+                MethodBuilder genericMethod = type.DefineMethod("GM", MethodAttributes.Public | MethodAttributes.Static);
+                GenericTypeParameterBuilder[] methodParams = genericMethod.DefineGenericParameters("U");
+                genericMethod.SetSignature(methodParams[0], null, null, new[] { methodParams[0] }, null, null);
+
+                ILGenerator ilg = genericMethod.GetILGenerator();
+                Type SampleOfU = type.MakeGenericType(methodParams[0]);
+                ConstructorInfo ctorOfU = TypeBuilder.GetConstructor(SampleOfU, ctor);
+                ilg.Emit(OpCodes.Newobj, ctorOfU);
+                ilg.Emit(OpCodes.Dup);
+                ilg.Emit(OpCodes.Ldarg_0);
+                FieldInfo FieldOfU = TypeBuilder.GetField(SampleOfU, myField);
+                ilg.Emit(OpCodes.Stfld, FieldOfU);
+                ilg.Emit(OpCodes.Dup);
+                ilg.Emit(OpCodes.Ldfld, FieldOfU);
+                ilg.Emit(OpCodes.Box, methodParams[0]);
+                MethodInfo writeLineObj = typeof(Console).GetMethod("WriteLine", [typeof(object)]);
+                ilg.EmitCall(OpCodes.Call, writeLineObj, null);
+                ilg.Emit(OpCodes.Ldfld, FieldOfU);
+                ilg.Emit(OpCodes.Ret);
+                type.CreateType();
+                ab.Save(file.Path);
+
+                PersistedAssemblyBuilder ab2 = new PersistedAssemblyBuilder(new AssemblyName("MyAssembly2"), typeof(object).Assembly);
+                TypeBuilder type2 = ab2.DefineDynamicModule("MyModule2").DefineType("Type2", TypeAttributes.Class | TypeAttributes.Public);
+                MethodBuilder method2 = type2.DefineMethod("Method2", MethodAttributes.Public | MethodAttributes.Static, typeof(string), Type.EmptyTypes);
+                ilg = method2.GetILGenerator();
+                Type SampleOfInt = type.MakeGenericType(typeof(string));
+                MethodInfo SampleOfIntGM = TypeBuilder.GetMethod(SampleOfInt, genericMethod);
+                MethodInfo GMOfString = SampleOfIntGM.MakeGenericMethod(typeof(string));
+                ilg.Emit(OpCodes.Ldstr, "Hello, world!");
+                ilg.EmitCall(OpCodes.Call, GMOfString, null);
+                ilg.Emit(OpCodes.Ret);
+                type2.CreateType();
+                ab2.Save(file2.Path);
+
+                TestAssemblyLoadContext tlc = new TestAssemblyLoadContext();
+                tlc.LoadFromAssemblyPath(file.Path);
+                Type typeFromDisk = tlc.LoadFromAssemblyPath(file2.Path).GetType("Type2");
+                MethodInfo methodFromDisk = typeFromDisk.GetMethod("Method2")!;
+                Assert.Equal("Hello, world!", methodFromDisk.Invoke(null, null));
+                tlc.Unload();
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -62,5 +62,8 @@
   </data>
   <data name="PlatformNotSupported_CryptographyProtectedData" xml:space="preserve">
     <value>Windows Data Protection API (DPAPI) is not supported on this platform.</value>
+  </data>
+  <data name="Argument_DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
   </data>
 </root>

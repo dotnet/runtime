@@ -77,7 +77,7 @@ namespace System.Reflection
         // For the default binder, the most specific method will be selected.
         //
         // This will invoke a specific member...
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(Type.InvokeMemberMembers)]
         object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters);
 
         // Return the underlying Type that represents the IReflect Object.  For expando object,

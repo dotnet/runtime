@@ -11,6 +11,7 @@ namespace System.Net.Sockets.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public class DnsEndPointTest : DualModeBase
     {
         private void OnConnectAsyncCompleted(object sender, SocketAsyncEventArgs args)

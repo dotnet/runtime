@@ -4,15 +4,15 @@
 namespace System.Threading.Tasks
 {
     /// <summary>
-    /// Provide extensions methods for <see cref="Task"/> operations with <see cref="TimeProvider"/>.
+    /// Provides extensions methods for <see cref="Task"/> operations with <see cref="TimeProvider"/>.
     /// </summary>
     /// <remarks>
     /// The Microsoft.Bcl.TimeProvider library interfaces are intended solely for use in building against pre-.NET 8 surface area.
-    /// If your code is being built against .NET 8 or higher, then this library should not be utilized.
+    /// If your code is being built against .NET 8 or higher, then you shouldn't use this library.
     /// </remarks>
     public static class TimeProviderTaskExtensions
     {
-#if !NET8_0_OR_GREATER
+#if !NET
         private sealed class DelayState : TaskCompletionSource<bool>
         {
             public DelayState(CancellationToken cancellationToken)
@@ -37,7 +37,7 @@ namespace System.Threading.Tasks
             public CancellationTokenRegistration Registration;
             public ITimer? Timer;
         }
-#endif // !NET8_0_OR_GREATER
+#endif // !NET
 
         /// <summary>Creates a task that completes after a specified time interval.</summary>
         /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="delay"/>.</param>
@@ -48,7 +48,7 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="delay"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
         public static Task Delay(this TimeProvider timeProvider, TimeSpan delay, CancellationToken cancellationToken = default)
         {
-#if NET8_0_OR_GREATER
+#if NET
             return Task.Delay(delay, timeProvider, cancellationToken);
 #else
             if (timeProvider == TimeProvider.System)
@@ -56,24 +56,21 @@ namespace System.Threading.Tasks
                 return Task.Delay(delay, cancellationToken);
             }
 
-            if (timeProvider is null)
-            {
-                throw new ArgumentNullException(nameof(timeProvider));
-            }
+            ArgumentNullException.ThrowIfNull(timeProvider);
 
             if (delay != Timeout.InfiniteTimeSpan && delay < TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(nameof(delay));
             }
 
-            if (delay == TimeSpan.Zero)
-            {
-                return Task.CompletedTask;
-            }
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
+            }
+
+            if (delay == TimeSpan.Zero)
+            {
+                return Task.CompletedTask;
             }
 
             DelayState state = new(cancellationToken);
@@ -117,7 +114,7 @@ namespace System.Threading.Tasks
             }
 
             return state.Task;
-#endif // NET8_0_OR_GREATER
+#endif // NET
         }
 
         /// <summary>
@@ -128,28 +125,21 @@ namespace System.Threading.Tasks
         /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
         /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="task"/> argument is null.</exception>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
+        /// <exception cref="System.ArgumentNullException"><paramref name="task"/> or <paramref name="timeProvider"/> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
         public static Task WaitAsync(this Task task, TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken = default)
         {
-#if NET8_0_OR_GREATER
+#if NET
             return task.WaitAsync(timeout, timeProvider, cancellationToken);
 #else
-            if (task is null)
-            {
-                throw new ArgumentNullException(nameof(task));
-            }
+            ArgumentNullException.ThrowIfNull(task);
 
             if (timeout != Timeout.InfiniteTimeSpan && timeout < TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(nameof(timeout));
             }
 
-            if (timeProvider is null)
-            {
-                throw new ArgumentNullException(nameof(timeProvider));
-            }
+            ArgumentNullException.ThrowIfNull(timeProvider);
 
             if (task.IsCompleted)
             {
@@ -161,14 +151,14 @@ namespace System.Threading.Tasks
                 return task;
             }
 
-            if (timeout == TimeSpan.Zero)
-            {
-                return Task.FromException(new TimeoutException());
-            }
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
+            }
+
+            if (timeout == TimeSpan.Zero)
+            {
+                return Task.FromException(new TimeoutException());
             }
 
             WaitAsyncState state = new(cancellationToken);
@@ -214,7 +204,7 @@ namespace System.Threading.Tasks
             }
 
             return state.Task;
-#endif // NET8_0_OR_GREATER
+#endif // NET
         }
 
         /// <summary>
@@ -224,11 +214,10 @@ namespace System.Threading.Tasks
         /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
         /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
-        /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="task"/> argument is null.</exception>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
+        /// <returns>The <see cref="Task"/> representing the asynchronous wait. It may or may not be the same instance as the current instance.</returns>
+        /// <exception cref="System.ArgumentNullException"><paramref name="task"/> or <paramref name="timeProvider"/> is <see langword="null" />.</exception>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
-#if NET8_0_OR_GREATER
+#if NET
         public static Task<TResult> WaitAsync<TResult>(this Task<TResult> task, TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken = default)
             => task.WaitAsync(timeout, timeProvider, cancellationToken);
 #else
@@ -237,12 +226,12 @@ namespace System.Threading.Tasks
             await ((Task)task).WaitAsync(timeout, timeProvider, cancellationToken).ConfigureAwait(false);
             return task.Result;
         }
-#endif // NET8_0_OR_GREATER
+#endif // NET
 
         /// <summary>Initializes a new instance of the <see cref="CancellationTokenSource"/> class that will be canceled after the specified <see cref="TimeSpan"/>. </summary>
         /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret the <paramref name="delay"/>. </param>
         /// <param name="delay">The time interval to wait before canceling this <see cref="CancellationTokenSource"/>. </param>
-        /// <exception cref="ArgumentOutOfRangeException"> The <paramref name="delay"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan" /> or greater than maximum allowed timer duration.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="delay"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan" /> or greater than maximum allowed timer duration.</exception>
         /// <returns><see cref="CancellationTokenSource"/> that will be canceled after the specified <paramref name="delay"/>.</returns>
         /// <remarks>
         /// <para>
@@ -257,13 +246,10 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static CancellationTokenSource CreateCancellationTokenSource(this TimeProvider timeProvider, TimeSpan delay)
         {
-#if NET8_0_OR_GREATER
+#if NET
             return new CancellationTokenSource(delay, timeProvider);
 #else
-            if (timeProvider is null)
-            {
-                throw new ArgumentNullException(nameof(timeProvider));
-            }
+            ArgumentNullException.ThrowIfNull(timeProvider);
 
             if (delay != Timeout.InfiniteTimeSpan && delay < TimeSpan.Zero)
             {
@@ -288,7 +274,7 @@ namespace System.Threading.Tasks
 
             cts.Token.Register(static t => ((ITimer)t!).Dispose(), timer);
             return cts;
-#endif // NET8_0_OR_GREATER
+#endif // NET
         }
     }
 }

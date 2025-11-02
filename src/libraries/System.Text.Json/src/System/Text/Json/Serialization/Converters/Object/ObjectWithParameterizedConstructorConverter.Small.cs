@@ -80,8 +80,6 @@ namespace System.Text.Json.Serialization.Converters
                         ThrowHelper.ThrowJsonException_ConstructorParameterDisallowNull(info.Name, state.Current.JsonTypeInfo.Type);
                     }
                 }
-
-                state.Current.MarkRequiredPropertyAsRead(jsonParameterInfo.MatchingProperty);
             }
 
             arg = value;

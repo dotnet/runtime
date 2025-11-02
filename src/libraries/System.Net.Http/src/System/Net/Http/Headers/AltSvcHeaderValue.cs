@@ -13,7 +13,9 @@ namespace System.Net.Http.Headers
     /// </remarks>
     internal sealed class AltSvcHeaderValue
     {
-        public static AltSvcHeaderValue Clear { get; } = new AltSvcHeaderValue("clear", host: null, port: 0, maxAge: TimeSpan.Zero, persist: false);
+        public const string ClearString = "clear";
+
+        public static AltSvcHeaderValue Clear { get; } = new AltSvcHeaderValue(ClearString, host: null, port: 0, maxAge: TimeSpan.Zero, persist: false);
 
         public AltSvcHeaderValue(string alpnProtocolName, string? host, int port, TimeSpan maxAge, bool persist)
         {
@@ -50,6 +52,11 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
+            if (ReferenceEquals(Clear, this))
+            {
+                return ClearString;
+            }
+
             var sb = new ValueStringBuilder(stackalloc char[256]);
 
             sb.Append(AlpnProtocolName);

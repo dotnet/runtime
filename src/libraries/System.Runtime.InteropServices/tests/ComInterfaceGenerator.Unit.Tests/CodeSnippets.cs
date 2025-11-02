@@ -205,15 +205,15 @@ namespace ComInterfaceGenerator.Unit.Tests
             partial interface INativeAPI
             {
 
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl) })}}
+                {{UnmanagedCallConv(CallConvs: [typeof(CallConvCdecl)])}}
                 {{VirtualMethodIndex(0)}}
                 void Method();
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })}}
+                {{UnmanagedCallConv(CallConvs: [typeof(CallConvCdecl), typeof(CallConvMemberFunction)])}}
                 {{VirtualMethodIndex(1)}}
                 void Method1();
 
                 [SuppressGCTransition]
-                {{UnmanagedCallConv(CallConvs: new[] { typeof(CallConvCdecl), typeof(CallConvMemberFunction) })}}
+                {{UnmanagedCallConv(CallConvs: [typeof(CallConvCdecl), typeof(CallConvMemberFunction)])}}
                 {{VirtualMethodIndex(2)}}
                 void Method2();
 
@@ -668,6 +668,36 @@ namespace ComInterfaceGenerator.Unit.Tests
                 event EventHandler Event;
 
                 public static event EventHandler StaticEvent;
+            }
+            """;
+
+        public string ForwarderWithPreserveSigAndRefKind(string refKind) => $$"""
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            #nullable enable
+
+            [assembly:DisableRuntimeMarshalling]
+
+            {{GeneratedComInterface()}}
+            partial interface IValue
+            {
+            }
+
+            {{GeneratedComInterface()}}
+            partial interface INativeAPIBase
+            {
+                [PreserveSig]
+                int FindValue(int key, {{refKind}} IValue? value);
+            }
+
+            {{GeneratedComInterface()}}
+            unsafe partial interface INativeDerived : INativeAPIBase
+            {
+                [PreserveSig]
+                int GetName(out char* name);
             }
             """;
 

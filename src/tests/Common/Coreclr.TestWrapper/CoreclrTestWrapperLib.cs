@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-#nullable disable
 
 using System;
 using System.Collections.Generic;
@@ -100,7 +99,7 @@ namespace CoreclrTestLib
     static class @libproc
     {
         [DllImport(nameof(libproc))]
-        private static extern int proc_listchildpids(int ppid, int[] buffer, int byteSize);
+        private static extern int proc_listchildpids(int ppid, int[]? buffer, int byteSize);
 
         public static unsafe bool ListChildPids(int ppid, out int[] buffer)
         {
@@ -112,6 +111,36 @@ namespace CoreclrTestLib
 
     internal static class ProcessExtensions
     {
+        public static bool TryGetProcessId(this Process process, out int processId)
+        {
+            try
+            {
+                processId = process.Id;
+                return true;
+            }
+            catch
+            {
+                // Process exited
+                processId = default;
+                return false;
+            }
+        }
+
+        public static bool TryGetProcessName(this Process process, out string processName)
+        {
+            try
+            {
+                processName = process.ProcessName;
+                return true;
+            }
+            catch
+            {
+                // Process exited
+                processName = default;
+                return false;
+            }
+        }
+
         public unsafe static IEnumerable<Process> GetChildren(this Process process)
         {
             var children = new List<Process>();
@@ -171,7 +200,7 @@ namespace CoreclrTestLib
         private static IEnumerable<Process> Linux_GetChildren(Process process)
         {
             var children = new List<Process>();
-            List<int> childPids = null;
+            List<int>? childPids = null;
 
             try
             {
@@ -188,7 +217,7 @@ namespace CoreclrTestLib
                 pgrepInfo.RedirectStandardOutput = true;
                 pgrepInfo.Arguments = $"-P {process.Id}";
 
-                using Process pgrep = Process.Start(pgrepInfo);
+                using Process pgrep = Process.Start(pgrepInfo)!;
 
                 string[] pidStrings = pgrep.StandardOutput.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 pgrep.WaitForExit();
@@ -264,14 +293,18 @@ namespace CoreclrTestLib
             }
             if (collectedDump)
             {
-                TryPrintStackTraceFromDmp(crashDumpPath, outputWriter);
+                TryPrintStackTraceFromWindowsDmp(crashDumpPath, outputWriter);
             }
             return collectedDump;
         }
 
         static bool CollectCrashDumpWithCreateDump(Process process, string crashDumpPath, StreamWriter outputWriter)
         {
-            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
+            string? coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
+            if (coreRoot is null)
+            {
+                throw new InvalidOperationException("CORE_ROOT environment variable is not set.");
+            }
             string createdumpPath = Path.Combine(coreRoot, "createdump");
             string arguments = $"--crashreport --name \"{crashDumpPath}\" {process.Id} --withheap";
             Process createdump = new Process();
@@ -302,6 +335,28 @@ namespace CoreclrTestLib
                 Console.WriteLine(error);
 
                 TryPrintStackTraceFromCrashReport(crashDumpPath + ".crashreport.json", outputWriter);
+
+                // Ensure the dump is accessible by current user
+                Process chown = new Process();
+                chown.StartInfo.FileName = "sudo";
+                chown.StartInfo.Arguments = $"chown \"{Environment.UserName}\" \"{crashDumpPath}\"";
+
+                chown.StartInfo.UseShellExecute = false;
+                chown.StartInfo.RedirectStandardOutput = true;
+                chown.StartInfo.RedirectStandardError = true;
+
+                Console.WriteLine($"Invoking: {chown.StartInfo.FileName} {chown.StartInfo.Arguments}");
+                chown.Start();
+                copyOutput = chown.StandardOutput.ReadToEndAsync();
+                copyError = chown.StandardError.ReadToEndAsync();
+
+                chown.WaitForExit(DEFAULT_TIMEOUT_MS);
+
+                Task.WaitAll(copyError, copyOutput);
+                Console.WriteLine("chown stdout:");
+                Console.WriteLine(copyOutput.Result);
+                Console.WriteLine("chown stderr:");
+                Console.WriteLine(copyError.Result);
             }
             else
             {
@@ -350,7 +405,7 @@ namespace CoreclrTestLib
 
             Task<string> stdOut = proc.StandardOutput.ReadToEndAsync();
             Task<string> stdErr = proc.StandardError.ReadToEndAsync();
-            if(!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
+            if (!proc.WaitForExit(DEFAULT_TIMEOUT_MS))
             {
                 proc.Kill(true);
                 outputWriter.WriteLine($"Timedout: '{fileName} {arguments}");
@@ -388,25 +443,32 @@ namespace CoreclrTestLib
                 }
 
                 Console.WriteLine("=========================================");
-                string userName = Environment.GetEnvironmentVariable("USER");
-                if (!string.IsNullOrEmpty(userName))
+                string? userName = Environment.GetEnvironmentVariable("USER");
+                if (string.IsNullOrEmpty(userName))
                 {
-                    if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                    userName = "helixbot";
+                }
 
-                    Console.WriteLine("=========================================");
-                    if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                if (!RunProcess("sudo", $"chmod a+rw {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
 
-                    Console.WriteLine("=========================================");
-                    if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
-                    {
-                        return false;
-                    }
+                if (!RunProcess("sudo", $"chown {userName} {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
+
+                Console.WriteLine("=========================================");
+                if (!RunProcess("sudo", $"ls -l {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
+                }
+
+                Console.WriteLine("=========================================");
+                if (!RunProcess("ls", $"-l {crashReportJsonFile}", Console.Out))
+                {
+                    return false;
                 }
             }
 
@@ -426,8 +488,8 @@ namespace CoreclrTestLib
                 Console.WriteLine($"Error reading {crashReportJsonFile}: {ex.ToString()}");
                 return false;
             }
-            dynamic crashReport = JsonSerializer.Deserialize<JsonObject>(contents);
-            var threads = crashReport["payload"]["threads"];
+            var crashReport = JsonNode.Parse(contents)!;
+            var threads = (JsonArray)crashReport["payload"]!["threads"]!;
 
             // The logic happens in 3 steps:
             // 1. Read the crashReport.json file, locate all the addresses of interest and then build
@@ -443,7 +505,7 @@ namespace CoreclrTestLib
             foreach (var thread in threads)
             {
 
-                if (thread["native_thread_id"] == null)
+                if (thread!["native_thread_id"] == null)
                 {
                     continue;
                 }
@@ -452,21 +514,21 @@ namespace CoreclrTestLib
                 addrBuilder.AppendLine("----------------------------------");
                 addrBuilder.AppendLine($"Thread Id: {thread["native_thread_id"]}");
                 addrBuilder.AppendLine("      Child SP               IP Call Site");
-                var stack_frames = thread["stack_frames"];
+                var stack_frames = (JsonArray)thread["stack_frames"]!;
                 foreach (var frame in stack_frames)
                 {
-                    addrBuilder.Append($"{SKIP_LINE_TAG} {frame["stack_pointer"]} {frame["native_address"]} ");
-                    bool isNative = (string)frame["is_managed"] == "false";
+                    addrBuilder.Append($"{SKIP_LINE_TAG} {frame!["stack_pointer"]} {frame["native_address"]} ");
+                    bool isNative = (string)frame["is_managed"]! == "false";
 
                     if (isNative)
                     {
-                        string nativeModuleName = (string)frame["native_module"];
-                        string unmanagedName = (string)frame["unmanaged_name"];
+                        var nativeModuleName = (string)frame["native_module"]!;
+                        var unmanagedName = (string)frame["unmanaged_name"]!;
 
                         if ((nativeModuleName != null) && (knownNativeModules.Contains(nativeModuleName)))
                         {
                             // Need to use llvm-symbolizer (only if module_address != 0)
-                            AppendAddress(addrBuilder, coreRoot, nativeModuleName, (string)frame["native_address"], (string)frame["module_address"]);
+                            AppendAddress(addrBuilder, coreRoot, nativeModuleName, (string)frame["native_address"]!, (string)frame["module_address"]!);
                         }
                         else if ((nativeModuleName != null) || (unmanagedName != null))
                         {
@@ -482,8 +544,8 @@ namespace CoreclrTestLib
                     }
                     else
                     {
-                        string fileName = (string)frame["filename"];
-                        string methodName = (string)frame["method_name"];
+                        var fileName = (string)frame["filename"]!;
+                        var methodName = (string)frame["method_name"]!;
 
                         if ((fileName != null) || (methodName != null))
                         {
@@ -507,7 +569,7 @@ namespace CoreclrTestLib
                 }
             }
 
-            string symbolizerOutput = null;
+            string? symbolizerOutput = null;
 
             Process llvmSymbolizer = new Process()
             {
@@ -559,7 +621,9 @@ namespace CoreclrTestLib
 
                 symbolizerOutput = stdout.Result;
 
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 outputWriter.WriteLine("Errors while running llvm-symbolizer --pretty-print");
                 outputWriter.WriteLine(e.ToString());
                 return false;
@@ -600,9 +664,9 @@ namespace CoreclrTestLib
             }
         }
 
-        public static bool TryPrintStackTraceFromDmp(string dmpFile, TextWriter outputWriter)
+        public static bool TryPrintStackTraceFromWindowsDmp(string dmpFile, TextWriter outputWriter)
         {
-            string targetArchitecture = Environment.GetEnvironmentVariable(TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR);
+            string? targetArchitecture = Environment.GetEnvironmentVariable(TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR);
             if (string.IsNullOrEmpty(targetArchitecture))
             {
                 outputWriter.WriteLine($"Environment variable {TEST_TARGET_ARCHITECTURE_ENVIRONMENT_VAR} is not set.");
@@ -617,9 +681,17 @@ namespace CoreclrTestLib
             }
 
             string sosPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".dotnet", "sos", "sos.dll");
+            
+            string corDllArg = string.Empty;
+            string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
+            if (coreRoot is not null)
+            {
+                corDllArg = $".cordll -lp \"{coreRoot}\"";
+            }
 
             var cdbScriptPath = Path.GetTempFileName();
             File.WriteAllText(cdbScriptPath, $$"""
+                {{ corDllArg }}
                 .load {{sosPath}}
                 ~*k
                 !clrstack -f -all
@@ -639,26 +711,53 @@ namespace CoreclrTestLib
         // The children are sorted in the order they should be dumped
         static unsafe IEnumerable<Process> FindChildProcessesByName(Process process, string childName)
         {
+            process.TryGetProcessName(out string parentProcessName);
+            process.TryGetProcessId(out int parentProcessId);
+            Console.WriteLine($"Finding all child processes of '{parentProcessName}' (ID: {parentProcessId}) with name '{childName}'");
+
             var children = new Stack<Process>();
             Queue<Process> childrenToCheck = new Queue<Process>();
             HashSet<int> seen = new HashSet<int>();
 
-            seen.Add(process.Id);
-            foreach (var child in process.GetChildren())
-                childrenToCheck.Enqueue(child);
+            seen.Add(parentProcessId);
+
+            try
+            {
+                foreach (var child in process.GetChildren())
+                    childrenToCheck.Enqueue(child);
+            }
+            catch
+            {
+                // Process exited
+            }
 
             while (childrenToCheck.Count != 0)
             {
                 Process child = childrenToCheck.Dequeue();
-                if (seen.Contains(child.Id))
+
+                if (!child.TryGetProcessId(out int processId))
                     continue;
 
-                seen.Add(child.Id);
+                if (seen.Contains(processId))
+                    continue;
 
-                foreach (var grandchild in child.GetChildren())
-                    childrenToCheck.Enqueue(grandchild);
+                if (!child.TryGetProcessName(out string processName))
+                    continue;
 
-                if (child.ProcessName.Equals(childName, StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine($"Checking child process: '{processName}' (ID: {processId})");
+                seen.Add(processId);
+
+                try
+                {
+                    foreach (var grandchild in child.GetChildren())
+                        childrenToCheck.Enqueue(grandchild);
+                }
+                catch
+                {
+                    // Process exited
+                }
+
+                if (processName.Equals(childName, StringComparison.OrdinalIgnoreCase))
                 {
                     children.Push(child);
                 }
@@ -675,10 +774,10 @@ namespace CoreclrTestLib
 
             // If a timeout was given to us by an environment variable, use it instead of the default
             // timeout.
-            string environmentVar = Environment.GetEnvironmentVariable(TIMEOUT_ENVIRONMENT_VAR);
+            string? environmentVar = Environment.GetEnvironmentVariable(TIMEOUT_ENVIRONMENT_VAR);
             int timeout = environmentVar != null ? int.Parse(environmentVar) : DEFAULT_TIMEOUT_MS;
             bool collectCrashDumps = Environment.GetEnvironmentVariable(COLLECT_DUMPS_ENVIRONMENT_VAR) != null;
-            string crashDumpFolder = Environment.GetEnvironmentVariable(CRASH_DUMP_FOLDER_ENVIRONMENT_VAR);
+            string? crashDumpFolder = Environment.GetEnvironmentVariable(CRASH_DUMP_FOLDER_ENVIRONMENT_VAR);
 
             var outputStream = new FileStream(outputFile, FileMode.Create);
             var errorStream = new FileStream(errorFile, FileMode.Create);
@@ -761,7 +860,7 @@ namespace CoreclrTestLib
                                             break;
                                         }
                                         outputWriter.WriteLine($"Processing {dmpFile.FullName}");
-                                        TryPrintStackTraceFromDmp(dmpFile.FullName, outputWriter);
+                                        TryPrintStackTraceFromWindowsDmp(dmpFile.FullName, outputWriter);
                                     }
                                 }
                             }
@@ -776,14 +875,32 @@ namespace CoreclrTestLib
                         {
                             cts.Cancel();
                         }
-                        catch {}
+                        catch { }
 
                         outputWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
                                 executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
                                 startTime.ToString(), endTime.ToString());
+                        outputWriter.Flush();
                         errorWriter.WriteLine("\ncmdLine:{0} Timed Out (timeout in milliseconds: {1}{2}{3}, start: {4}, end: {5})",
                                 executable, timeout, (environmentVar != null) ? " from variable " : "", (environmentVar != null) ? TIMEOUT_ENVIRONMENT_VAR : "",
                                 startTime.ToString(), endTime.ToString());
+                        errorWriter.Flush();
+
+                        Console.WriteLine("Collecting diagnostic information...");
+                        Console.WriteLine("Snapshot of processes currently running:");
+                        Console.WriteLine($"\t{"ID",-6} ProcessName");
+                        foreach (var activeProcess in Process.GetProcesses())
+                        {
+                            activeProcess.TryGetProcessName(out string activeProcessName);
+                            activeProcess.TryGetProcessId(out int activeProcessId);
+                            Console.WriteLine($"\t{activeProcessId,-6} {activeProcessName}");
+                        }
+
+                        if (OperatingSystem.IsWindows())
+                        {
+                            Console.WriteLine("Snapshot of processes currently running (using wmic):");
+                            Console.WriteLine(GetAllProcessNames_wmic());
+                        }
 
                         if (collectCrashDumps)
                         {
@@ -816,6 +933,28 @@ namespace CoreclrTestLib
             }
 
             return exitCode;
+        }
+
+        private static string GetAllProcessNames_wmic()
+        {
+            // The command to execute
+            string command = "wmic process get Name, ProcessId, ParentProcessId";
+
+            // Start the process and capture the output
+            Process process = new Process();
+            process.StartInfo.FileName = "cmd.exe";
+            process.StartInfo.Arguments = $"/c {command}";
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+
+            // Start the process and read the output
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(100); // wait for 100 ms
+
+            // Output the result
+            return output;
         }
     }
 }

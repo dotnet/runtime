@@ -11,22 +11,22 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	internal sealed partial record MethodParameterValue : ValueWithDynamicallyAccessedMembers, IValueWithStaticType
-	{
-		public TypeProxy? StaticType { get; }
+    internal sealed partial record MethodParameterValue : ValueWithDynamicallyAccessedMembers, IValueWithStaticType
+    {
+        public TypeProxy? StaticType { get; }
 
-		public ParameterProxy Parameter { get; }
+        public ParameterProxy Parameter { get; }
 
-		public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch ()
-			=> Parameter.GetDiagnosticArgumentsForAnnotationMismatch ();
+        public override IEnumerable<string> GetDiagnosticArgumentsForAnnotationMismatch()
+            => Parameter.GetDiagnosticArgumentsForAnnotationMismatch();
 
-		public override string ToString ()
-			=> this.ValueToString (Parameter.Method.Method, Parameter.Index, DynamicallyAccessedMemberTypes);
+        public override string ToString()
+            => this.ValueToString(Parameter.Method.Method, Parameter.Index, DynamicallyAccessedMemberTypes);
 
-		public bool IsThisParameter () => Parameter.IsImplicitThis;
+        public bool IsThisParameter() => Parameter.IsImplicitThis;
 
-		public override SingleValue DeepCopy () => this; // This value is immutable
+        public override SingleValue DeepCopy() => this; // This value is immutable
 
-		public ParameterIndex Index => Parameter.Index;
-	}
+        public ParameterIndex Index => Parameter.Index;
+    }
 }

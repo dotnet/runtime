@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Utility methods and constants for manipulating Configuration paths
+    /// Provides utility methods and constants for manipulating Configuration paths.
     /// </summary>
     public static class ConfigurationPath
     {
@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The combined path.</returns>
         public static string Combine(params string[] pathSegments)
         {
-            ThrowHelper.ThrowIfNull(pathSegments);
+            ArgumentNullException.ThrowIfNull(pathSegments);
 
             return string.Join(KeyDelimiter, pathSegments);
         }
@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The combined path.</returns>
         public static string Combine(IEnumerable<string> pathSegments)
         {
-            ThrowHelper.ThrowIfNull(pathSegments);
+            ArgumentNullException.ThrowIfNull(pathSegments);
 
             return string.Join(KeyDelimiter, pathSegments);
         }

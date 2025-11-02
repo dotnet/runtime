@@ -22,6 +22,7 @@ namespace System.Threading
     /// concurrently from multiple threads.
     /// </para>
     /// </remarks>
+    [DebuggerDisplay("IsCancellationRequested = {IsCancellationRequested}")]
     public class CancellationTokenSource : IDisposable
     {
         /// <summary>A <see cref="CancellationTokenSource"/> that's already canceled.</summary>
@@ -631,10 +632,7 @@ namespace System.Threading
                             node.SynchronizationContext = syncContext;
                             node.Next = registrations.Callbacks;
                             registrations.Callbacks = node;
-                            if (node.Next != null)
-                            {
-                                node.Next.Prev = node;
-                            }
+                            node.Next?.Prev = node;
                         }
                     }
                     finally
@@ -662,10 +660,7 @@ namespace System.Threading
                     {
                         node.Id = id = registrations.NextAvailableId++;
                         node.Next = registrations.Callbacks;
-                        if (node.Next != null)
-                        {
-                            node.Next.Prev = node;
-                        }
+                        node.Next?.Prev = node;
                         registrations.Callbacks = node;
                     }
                     finally
@@ -772,10 +767,7 @@ namespace System.Threading
 
                         Debug.Assert(node.Registrations.Source == this);
                         Debug.Assert(node.Prev == null);
-                        if (node.Next != null)
-                        {
-                            node.Next.Prev = null;
-                        }
+                        node.Next?.Prev = null;
                         registrations.Callbacks = node.Next;
 
                         // Publish the intended callback ID, to ensure ctr.Dispose can tell if a wait is necessary.
@@ -1093,10 +1085,7 @@ namespace System.Threading
                         node.Prev.Next = node.Next;
                     }
 
-                    if (node.Next != null)
-                    {
-                        node.Next.Prev = node.Prev;
-                    }
+                    node.Next?.Prev = node.Prev;
 
                     Recycle(node);
 

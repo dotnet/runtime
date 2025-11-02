@@ -8,7 +8,7 @@ using MdToken = System.Reflection.MetadataToken;
 
 namespace System.Reflection
 {
-    internal sealed unsafe class RuntimeParameterInfo : ParameterInfo
+    internal sealed class RuntimeParameterInfo : ParameterInfo
     {
         #region Static Members
         internal static ParameterInfo[] GetParameters(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
@@ -287,7 +287,7 @@ namespace System.Reflection
                 if (IsOptional)
                 {
                     // If the argument is marked as optional then the default value is Missing.Value.
-                    defaultValue = Type.Missing;
+                    defaultValue = Missing.Value;
                 }
                 #endregion
             }
@@ -434,16 +434,12 @@ namespace System.Reflection
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return m_signature is null ?
-                Type.EmptyTypes :
-                m_signature.GetCustomModifiers(PositionImpl + 1, true);
+            return m_signature is null ? [] : m_signature.GetCustomModifiers(PositionImpl + 1, true);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return m_signature is null ?
-                Type.EmptyTypes :
-                m_signature.GetCustomModifiers(PositionImpl + 1, false);
+            return m_signature is null ? [] : m_signature.GetCustomModifiers(PositionImpl + 1, false);
         }
 
         public override Type GetModifiedParameterType() =>

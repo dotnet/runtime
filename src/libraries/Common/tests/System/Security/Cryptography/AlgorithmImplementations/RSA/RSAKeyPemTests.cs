@@ -44,7 +44,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
                 rsa.ImportFromPem(pem);
                 RSAParameters rsaParameters = rsa.ExportParameters(true);
 
-                ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
+                RSATestHelpers.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
             }
         }
 
@@ -68,7 +68,7 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
                 rsa.ImportFromPem(pem);
                 RSAParameters rsaParameters = rsa.ExportParameters(true);
 
-                ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
+                RSATestHelpers.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
             }
         }
 
@@ -97,7 +97,7 @@ acPiMCuFTnRSFYAhozpmsqoLyTREqwIhAMLJlZTGjEB2N+sEazH5ToEczQzKqp7t
                 rsa.ImportFromPem(pem);
                 RSAParameters rsaParameters = rsa.ExportParameters(true);
 
-                ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
+                RSATestHelpers.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
             }
         }
 
@@ -114,7 +114,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
                 rsa.ImportFromPem(pem);
                 RSAParameters rsaParameters = rsa.ExportParameters(false);
 
-                ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters.ToPublic(), rsaParameters);
+                RSATestHelpers.AssertKeyEquals(TestData.DiminishedDPParameters.ToPublic(), rsaParameters);
             }
         }
 
@@ -136,7 +136,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==
                 rsa.ImportFromPem(pem);
                 RSAParameters rsaParameters = rsa.ExportParameters(false);
 
-                ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters.ToPublic(), rsaParameters);
+                RSATestHelpers.AssertKeyEquals(TestData.DiminishedDPParameters.ToPublic(), rsaParameters);
             }
         }
 
@@ -154,7 +154,7 @@ MEgCQQC3P1n17ovVXiS3/wKa0WqFQ8ltJT5UMZuTUyxBw8FHe4nbLS8z17modFhI
                 rsa.ImportFromPem(pem);
                 RSAParameters rsaParameters = rsa.ExportParameters(false);
 
-                ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters.ToPublic(), rsaParameters);
+                RSATestHelpers.AssertKeyEquals(TestData.DiminishedDPParameters.ToPublic(), rsaParameters);
             }
         }
 
@@ -191,7 +191,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
                 rsa.ImportFromPem(pem);
                 RSAParameters rsaParameters = rsa.ExportParameters(true);
 
-                ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
+                RSATestHelpers.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
             }
         }
 
@@ -216,7 +216,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
                 rsa.ImportFromPem(pem);
                 RSAParameters rsaParameters = rsa.ExportParameters(true);
 
-                ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
+                RSATestHelpers.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
             }
         }
 
@@ -243,7 +243,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==
                 rsa.ImportFromPem(pem);
                 RSAParameters rsaParameters = rsa.ExportParameters(true);
 
-                ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
+                RSATestHelpers.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
             }
         }
 
@@ -403,7 +403,7 @@ CA7ffFk=
                 rsa.ImportFromEncryptedPem(pem, (ReadOnlySpan<char>)"test");
                 RSAParameters rsaParameters = rsa.ExportParameters(true);
 
-                ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
+                RSATestHelpers.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
             }
         }
 
@@ -428,7 +428,7 @@ raZNyk8KAsLs+FJq9T2tda0=
                 rsa.ImportFromEncryptedPem(pem, "test"u8);
                 RSAParameters rsaParameters = rsa.ExportParameters(true);
 
-                ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
+                RSATestHelpers.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);
             }
         }
 

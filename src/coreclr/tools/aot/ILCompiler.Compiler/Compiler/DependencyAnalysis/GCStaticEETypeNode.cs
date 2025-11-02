@@ -44,6 +44,10 @@ namespace ILCompiler.DependencyAnalysis
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append("__GCStaticEEType_"u8).Append(_gcMap.ToString());
+            if (_requiresAlign8)
+            {
+                sb.Append("_align8"u8);
+            }
         }
 
         int ISymbolDefinitionNode.Offset
@@ -97,7 +101,8 @@ namespace ILCompiler.DependencyAnalysis
             totalSize = Math.Max(totalSize, _target.PointerSize * 3); // minimum GC MethodTable size is 3 pointers
             dataBuilder.EmitInt(totalSize);
 
-            // Related type: System.Object. This allows storing an instance of this type in an array of objects.
+            // Related type: System.Object. This allows storing an instance of this type in an array of objects,
+            // or finding associated module from BulkType event source events.
             dataBuilder.EmitPointerReloc(factory.NecessaryTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.Object)));
 
             return dataBuilder.ToObjectData();
@@ -107,7 +112,14 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _gcMap.CompareTo(((GCStaticEETypeNode)other)._gcMap);
+            GCStaticEETypeNode otherGCStaticEETypeNode = (GCStaticEETypeNode)other;
+            int mapCompare = _gcMap.CompareTo(otherGCStaticEETypeNode._gcMap);
+            if (mapCompare == 0)
+            {
+                return _requiresAlign8.CompareTo(otherGCStaticEETypeNode._requiresAlign8);
+            }
+
+            return mapCompare;
         }
     }
 }

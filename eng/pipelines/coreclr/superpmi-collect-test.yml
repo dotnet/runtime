@@ -1,0 +1,9 @@
+# This job definition automates the SuperPMI collection process for the "test" pipeline.
+
+trigger: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template: /eng/pipelines/coreclr/templates/superpmi-collect-pipeline.yml

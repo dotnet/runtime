@@ -11,8 +11,12 @@
 #ifndef INFLATE_H_
 #define INFLATE_H_
 
-#include "adler32_fold.h"
-#include "crc32_fold.h"
+#include "crc32.h"
+
+#ifdef S390_DFLTCC_INFLATE
+#  include "arch/s390/dfltcc_common.h"
+#  define HAVE_ARCH_INFLATE_STATE
+#endif
 
 /* define NO_GZIP when compiling if you want to disable gzip header and trailer decoding by inflate().
    NO_GZIP would be used to avoid linking in the crc code when it is not needed.
@@ -53,14 +57,13 @@ typedef enum {
     LENGTH,     /* i: waiting for 32-bit length (gzip) */
     DONE,       /* finished check, done -- remain here until reset */
     BAD,        /* got a data error -- remain here until reset */
-    MEM,        /* got an inflate() memory error -- remain here until reset */
     SYNC        /* looking for synchronization bytes to restart inflate() */
 } inflate_mode;
 
 /*
     State transitions between above modes -
 
-    (most modes can go to BAD or MEM on error -- not shown for clarity)
+    (most modes can go to BAD on error -- not shown for clarity)
 
     Process header:
         HEAD -> (gzip) or (zlib) or (raw)
@@ -81,11 +84,20 @@ typedef enum {
     Process trailer:
         CHECK -> LENGTH -> DONE
  */
+typedef struct inflate_state inflate_state;
+
+/* Struct for memory allocation handling */
+typedef struct inflate_allocs_s {
+    char            *buf_start;
+    free_func        zfree;
+    inflate_state   *state;
+    unsigned char   *window;
+} inflate_allocs;
 
 /* State maintained between inflate() calls -- approximately 7K bytes, not
    including the allocated sliding window, which is up to 32K bytes. */
-struct inflate_state {
-    PREFIX3(stream) *strm;             /* pointer back to this zlib stream */
+struct ALIGNED_(64) inflate_state {
+    PREFIX3(stream) *strm;      /* pointer back to this zlib stream */
     inflate_mode mode;          /* current inflate mode */
     int last;                   /* true if processing last block */
     int wrap;                   /* bit 0 true for zlib, bit 1 true for gzip,
@@ -93,48 +105,68 @@ struct inflate_state {
     int havedict;               /* true if dictionary provided */
     int flags;                  /* gzip header method and flags, 0 if zlib, or
                                    -1 if raw or no header yet */
-    unsigned dmax;              /* zlib header max distance (INFLATE_STRICT) */
+    unsigned was;               /* initial length of match, for inflateMark */
     unsigned long check;        /* protected copy of check value */
     unsigned long total;        /* protected copy of output count */
     PREFIX(gz_headerp) head;    /* where to save gzip header information */
+    int back;                   /* bits back of last unprocessed length/lit */
+
         /* sliding window */
     unsigned wbits;             /* log base 2 of requested window size */
     uint32_t wsize;             /* window size or zero if not using window */
+    uint32_t wbufsize;          /* real size of the allocated window buffer, including padding */
     uint32_t whave;             /* valid bytes in the window */
     uint32_t wnext;             /* window write index */
     unsigned char *window;      /* allocated sliding window, if needed */
-
-    struct crc32_fold_s ALIGNED_(16) crc_fold;
+    uint32_t chunksize;         /* size of memory copying chunk */
 
         /* bit accumulator */
-    uint32_t hold;              /* input bit accumulator */
+    uint64_t hold;              /* input bit accumulator */
     unsigned bits;              /* number of bits in "in" */
+        /* fixed and dynamic code tables */
+    unsigned lenbits;           /* index bits for lencode */
+    code const *lencode;        /* starting table for length/literal codes */
+    code const *distcode;       /* starting table for distance codes */
+    unsigned distbits;          /* index bits for distcode */
         /* for string and stored block copying */
     uint32_t length;            /* literal or length of data to copy */
     unsigned offset;            /* distance back to copy string from */
         /* for table and code decoding */
     unsigned extra;             /* extra bits needed */
-        /* fixed and dynamic code tables */
-    code const *lencode;        /* starting table for length/literal codes */
-    code const *distcode;       /* starting table for distance codes */
-    unsigned lenbits;           /* index bits for lencode */
-    unsigned distbits;          /* index bits for distcode */
         /* dynamic table building */
     unsigned ncode;             /* number of code length code lengths */
     unsigned nlen;              /* number of length code lengths */
     unsigned ndist;             /* number of distance code lengths */
     uint32_t have;              /* number of code lengths in lens[] */
     code *next;                 /* next available space in codes[] */
+
+#if defined(_M_IX86) || defined(_M_ARM)
+    uint32_t padding[1];
+#endif
+    struct crc32_fold_s ALIGNED_(16) crc_fold;
+
     uint16_t lens[320];         /* temporary storage for code lengths */
     uint16_t work[288];         /* work area for code table building */
     code codes[ENOUGH];         /* space for code tables */
+
+    inflate_allocs *alloc_bufs; /* struct for handling memory allocations */
+
+#ifdef INFLATE_STRICT
+    unsigned dmax;              /* zlib header max distance (INFLATE_STRICT) */
+#endif
+#ifdef INFLATE_ALLOW_INVALID_DISTANCE_TOOFAR_ARRR
     int sane;                   /* if false, allow invalid distance too far */
-    int back;                   /* bits back of last unprocessed length/lit */
-    unsigned was;               /* initial length of match */
-    uint32_t chunksize;         /* size of memory copying chunk */
+#endif
+#ifdef HAVE_ARCH_INFLATE_STATE
+    arch_inflate_state arch;    /* architecture-specific extensions */
+#endif
+#if defined(_M_IX86) || defined(_M_ARM)
+    int padding2[8];
+#endif
 };
 
-int Z_INTERNAL PREFIX(inflate_ensure_window)(struct inflate_state *state);
 void Z_INTERNAL PREFIX(fixedtables)(struct inflate_state *state);
+Z_INTERNAL inflate_allocs* alloc_inflate(PREFIX3(stream) *strm);
+Z_INTERNAL void free_inflate(PREFIX3(stream) *strm);
 
 #endif /* INFLATE_H_ */

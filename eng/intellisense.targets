@@ -6,12 +6,12 @@
 
   <PropertyGroup Condition="'$(UseCompilerGeneratedDocXmlFile)' != 'true'">
     <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
+    <IntellisensePackageXmlFilePathFromNetVersionFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net-$(NetCoreAppCurrentVersion)', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetVersionFolder>
     <IntellisensePackageXmlFilePathFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetFolder>
-    <IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>
+    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetVersionFolder))">$(IntellisensePackageXmlFilePathFromNetVersionFolder)</IntellisensePackageXmlFilePath>
     <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>
-    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder)</IntellisensePackageXmlFilePath>
 
-    <IntermediateDocFileItemFromIntellisensePackage>$(IntermediateOutputPath)$(TargetName).intellisense-package.xml</IntermediateDocFileItemFromIntellisensePackage>
+    <IntermediateDocFileItemFromIntellisensePackage>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'intellisense-package', '$(TargetName).xml'))</IntermediateDocFileItemFromIntellisensePackage>
 
     <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors when the intellisense package xml file is used. -->
     <NoWarn Condition="'$(SkipIntellisenseNoWarnCS1591)' != 'true'">$(NoWarn);CS1591</NoWarn>

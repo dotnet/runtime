@@ -6,7 +6,9 @@
 
 #ifdef RISCV_RVV
 
-#include "../../zbuild.h"
+#include "zbuild.h"
+#include "zmemory.h"
+#include "deflate.h"
 #include "fallback_builtins.h"
 
 #include <riscv_vector.h>

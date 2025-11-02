@@ -32,12 +32,11 @@ namespace System.Threading.Tasks
         public static IAsyncResult Begin(Task task, AsyncCallback? callback, object? state)
         {
 #if NET
+            if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
+
             ArgumentNullException.ThrowIfNull(task);
 #else
-            if (task is null)
-            {
-                throw new ArgumentNullException(nameof(task));
-            }
+            ArgumentNullException.ThrowIfNull(task);
 #endif
 
             return new TaskAsyncResult(task, state, callback);
@@ -68,14 +67,7 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException"><paramref name="asyncResult"/> was not produced by a call to <see cref="Begin"/>.</exception>
         public static Task Unwrap(IAsyncResult asyncResult)
         {
-#if NET
             ArgumentNullException.ThrowIfNull(asyncResult);
-#else
-            if (asyncResult is null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-#endif
 
             if ((asyncResult as TaskAsyncResult)?._task is not Task task)
             {
@@ -97,14 +89,7 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<TResult> Unwrap<TResult>(IAsyncResult asyncResult)
         {
-#if NET
             ArgumentNullException.ThrowIfNull(asyncResult);
-#else
-            if (asyncResult is null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
-#endif
 
             if ((asyncResult as TaskAsyncResult)?._task is not Task<TResult> task)
             {

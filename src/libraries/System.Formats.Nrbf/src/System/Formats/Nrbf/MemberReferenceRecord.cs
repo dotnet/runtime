@@ -38,5 +38,5 @@ internal sealed class MemberReferenceRecord : SerializationRecord
     internal static MemberReferenceRecord Decode(BinaryReader reader, RecordMap recordMap)
         => new(SerializationRecordId.Decode(reader), recordMap);
 
-    internal SerializationRecord GetReferencedRecord() => RecordMap[Reference];
+    internal SerializationRecord GetReferencedRecord() => RecordMap.GetRecord(Reference);
 }

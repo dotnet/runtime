@@ -8,6 +8,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class GetTargetTest
 {
@@ -180,7 +181,8 @@ public class NullHandle
         isAliveTest = null;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         NullHandle t = new NullHandle();
         bool longPassed = false;

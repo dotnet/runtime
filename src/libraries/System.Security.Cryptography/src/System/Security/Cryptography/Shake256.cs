@@ -101,8 +101,7 @@ namespace System.Security.Cryptography
             {
                 CheckReading();
                 byte[] output = new byte[outputLength];
-                _hashProvider.Finalize(output);
-                _hashProvider.Reset();
+                _hashProvider.FinalizeAndReset(output);
                 return output;
             }
         }
@@ -121,8 +120,7 @@ namespace System.Security.Cryptography
             using (ConcurrencyBlock.Enter(ref _block))
             {
                 CheckReading();
-                _hashProvider.Finalize(destination);
-                _hashProvider.Reset();
+                _hashProvider.FinalizeAndReset(destination);
             }
         }
 

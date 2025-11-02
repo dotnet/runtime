@@ -5,10 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
     <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
     <ProjectReference Include="..\..\System.Private.Reflection.Execution\src\System.Private.Reflection.Execution.csproj" />
@@ -27,5 +23,7 @@
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\StackTraceData.cs">
       <Link>Internal\Runtime\StackTraceData.cs</Link>
     </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Runtime\CompilerServices\AnalysisCharacteristicAttribute.cs" />
+    <Compile Include="..\..\Runtime.Base\src\System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
   </ItemGroup>
 </Project>

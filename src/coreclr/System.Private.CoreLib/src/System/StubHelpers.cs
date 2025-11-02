@@ -2,9 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if FEATURE_COMINTEROP
+using System.Runtime.InteropServices.CustomMarshalers;
+#endif
 using System.Runtime.InteropServices.Marshalling;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace System.StubHelpers
@@ -26,6 +31,7 @@ namespace System.StubHelpers
         internal static unsafe byte ConvertToNative(char managedChar, bool fBestFit, bool fThrowOnUnmappableChar)
         {
             int cbAllocLength = (1 + 1) * Marshal.SystemMaxDBCSCharSize;
+            Debug.Assert(cbAllocLength <= 512); // Some arbitrary upper limit, in most cases SystemMaxDBCSCharSize is expected to be 1 or 2.
             byte* bufferPtr = stackalloc byte[cbAllocLength];
 
             int cbLength = Marshal.StringToAnsiString(managedChar.ToString(), bufferPtr, cbAllocLength, fBestFit, fThrowOnUnmappableChar);
@@ -499,7 +505,7 @@ namespace System.StubHelpers
 
     internal sealed class HandleMarshaler
     {
-        internal static unsafe IntPtr ConvertSafeHandleToNative(SafeHandle? handle, ref CleanupWorkListElement? cleanupWorkList)
+        internal static IntPtr ConvertSafeHandleToNative(SafeHandle? handle, ref CleanupWorkListElement? cleanupWorkList)
         {
             if (Unsafe.IsNullRef(ref cleanupWorkList))
             {
@@ -511,12 +517,12 @@ namespace System.StubHelpers
             return StubHelpers.AddToCleanupList(ref cleanupWorkList, handle);
         }
 
-        internal static unsafe void ThrowSafeHandleFieldChanged()
+        internal static void ThrowSafeHandleFieldChanged()
         {
             throw new NotSupportedException(SR.Interop_Marshal_CannotCreateSafeHandleField);
         }
 
-        internal static unsafe void ThrowCriticalHandleFieldChanged()
+        internal static void ThrowCriticalHandleFieldChanged()
         {
             throw new NotSupportedException(SR.Interop_Marshal_CannotCreateCriticalHandleField);
         }
@@ -792,32 +798,24 @@ namespace System.StubHelpers
 
     internal static unsafe partial class MngdRefCustomMarshaler
     {
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "CustomMarshaler_GetMarshalerObject")]
-        private static partial void GetMarshaler(IntPtr pCMHelper, ObjectHandleOnStack retMarshaler);
-
-        internal static ICustomMarshaler GetMarshaler(IntPtr pCMHelper)
-        {
-            ICustomMarshaler? marshaler = null;
-            GetMarshaler(pCMHelper, ObjectHandleOnStack.Create(ref marshaler));
-            return marshaler!;
-        }
-
-        internal static unsafe void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
+        internal static void ConvertContentsToNative(ICustomMarshaler marshaler, in object pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalManagedToNative.
             if (pManagedHome is null)
             {
+                *pNativeHome = IntPtr.Zero;
                 return;
             }
 
             *pNativeHome = marshaler.MarshalManagedToNative(pManagedHome);
         }
 
-        internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object pManagedHome, IntPtr* pNativeHome)
+        internal static void ConvertContentsToManaged(ICustomMarshaler marshaler, ref object? pManagedHome, IntPtr* pNativeHome)
         {
             // COMPAT: We never pass null to MarshalNativeToManaged.
             if (*pNativeHome == IntPtr.Zero)
             {
+                pManagedHome = null;
                 return;
             }
 
@@ -946,7 +944,7 @@ namespace System.StubHelpers
                     }
 
                 default:
-                    throw new ArgumentException(SR.Arg_NDirectBadObject);
+                    throw new ArgumentException(SR.Arg_PInvokeBadObject);
             }
 
             // marshal the object as C-style array (UnmanagedType.LPArray)
@@ -1153,7 +1151,7 @@ namespace System.StubHelpers
                 else
                 {
                     // this type is not supported for AsAny marshaling
-                    throw new ArgumentException(SR.Arg_NDirectBadObject);
+                    throw new ArgumentException(SR.Arg_PInvokeBadObject);
                 }
             }
 
@@ -1353,26 +1351,20 @@ namespace System.StubHelpers
 
         internal static Exception GetHRExceptionObject(int hr)
         {
-            Exception? ex = null;
-            GetHRExceptionObject(hr, ObjectHandleOnStack.Create(ref ex));
-            ex!.InternalPreserveStackTrace();
-            return ex!;
+            Exception ex = Marshal.GetExceptionForHR(hr)!;
+            ex.InternalPreserveStackTrace();
+            return ex;
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetHRExceptionObject")]
-        private static partial void GetHRExceptionObject(int hr, ObjectHandleOnStack throwable);
 
 #if FEATURE_COMINTEROP
-        internal static Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object pThis)
+        internal static Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, IntPtr pUnk)
         {
-            Exception? ex = null;
-            GetCOMHRExceptionObject(hr, pCPCMD, ObjectHandleOnStack.Create(ref pThis), ObjectHandleOnStack.Create(ref ex));
-            ex!.InternalPreserveStackTrace();
-            return ex!;
+            RuntimeMethodHandle handle = RuntimeMethodHandle.FromIntPtr(pCPCMD);
+            RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(handle.GetMethodInfo());
+            Exception ex = Marshal.GetExceptionForHR(hr, declaringType.GUID, pUnk)!;
+            ex.InternalPreserveStackTrace();
+            return ex;
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetCOMHRExceptionObject")]
-        private static partial void GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, ObjectHandleOnStack pThis, ObjectHandleOnStack throwable);
 #endif // FEATURE_COMINTEROP
 
         [ThreadStatic]
@@ -1395,8 +1387,28 @@ namespace System.StubHelpers
             s_pendingExceptionObject = exception;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshalerHelper")]
-        internal static partial IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshaler")]
+        internal static partial void CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType, ObjectHandleOnStack customMarshaler);
+
+#if FEATURE_COMINTEROP
+        [SupportedOSPlatform("windows")]
+        internal static object GetIEnumeratorToEnumVariantMarshaler() => EnumeratorToEnumVariantMarshaler.GetInstance(string.Empty);
+#endif
+
+        internal static object CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType)
+        {
+#if FEATURE_COMINTEROP
+            if (OperatingSystem.IsWindows()
+                && hndManagedType == typeof(System.Collections.IEnumerator).TypeHandle.Value)
+            {
+                return GetIEnumeratorToEnumVariantMarshaler();
+            }
+#endif
+
+            object? retVal = null;
+            CreateCustomMarshaler(pMD, paramToken, hndManagedType, ObjectHandleOnStack.Create(ref retVal));
+            return retVal!;
+        }
 
         //-------------------------------------------------------
         // SafeHandle Helpers
@@ -1565,14 +1577,54 @@ namespace System.StubHelpers
         internal static partial void ValidateByref(IntPtr byref, IntPtr pMD); // the byref is pinned so we can safely "cast" it to IntPtr
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetStubContext();
+        internal static IntPtr GetStubContext() => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void MulticastDebuggerTraceHelper(object o, int count);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void MulticastDebuggerTraceHelper(object o, int count)
+        {
+            MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack.Create(ref o), count);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MulticastDebuggerTraceHelper")]
+        private static partial void MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack obj, int count);
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr NextCallReturnAddress();
+        internal static IntPtr NextCallReturnAddress() => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
+        [Intrinsic]
+        internal static Continuation? AsyncCallContinuation() => throw new UnreachableException(); // Unconditionally expanded intrinsic
     }  // class StubHelpers
+
+#if FEATURE_COMINTEROP
+    internal static class ColorMarshaler
+    {
+        private static readonly MethodInvoker s_oleColorToDrawingColorMethod;
+        private static readonly MethodInvoker s_drawingColorToOleColorMethod;
+
+        internal static readonly IntPtr s_colorType;
+
+#pragma warning disable CA1810 // explicit static cctor
+        static ColorMarshaler()
+        {
+            Type colorTranslatorType = Type.GetType("System.Drawing.ColorTranslator, System.Drawing.Primitives", throwOnError: true)!;
+            Type colorType = Type.GetType("System.Drawing.Color, System.Drawing.Primitives", throwOnError: true)!;
+
+            s_colorType = colorType.TypeHandle.Value;
+
+            s_oleColorToDrawingColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("FromOle", [typeof(int)])!);
+            s_drawingColorToOleColorMethod = MethodInvoker.Create(colorTranslatorType.GetMethod("ToOle", [colorType])!);
+        }
+#pragma warning restore CA1810 // explicit static cctor
+
+        internal static object ConvertToManaged(int managedColor)
+        {
+            return s_oleColorToDrawingColorMethod.Invoke(null, managedColor)!;
+        }
+
+        internal static int ConvertToNative(object? managedColor)
+        {
+            return (int)s_drawingColorToOleColorMethod.Invoke(null, managedColor)!;
+        }
+    }
+#endif
 }

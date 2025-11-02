@@ -5,15 +5,14 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
+#include "PalLimitedContext.h"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "PalRedhawk.h"
+#include "Pal.h"
 #include "rhassert.h"
 
 #include "slist.h"
 #include "shash.h"
-#include "varint.h"
 #include "holder.h"
 #include "rhbinder.h"
 #include "Crst.h"
@@ -32,10 +31,10 @@
 
 #include "GCMemoryHelpers.inl"
 
-#if defined(USE_PORTABLE_HELPERS)
-EXTERN_C void* F_CALL_CONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+#if defined(FEATURE_PORTABLE_HELPERS)
+EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame);
 
-static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements)
+static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, intptr_t numElements)
 {
     Object* pObject = (Object*)RhpGcAlloc(pEEType, uFlags, numElements, nullptr);
     if (pObject == nullptr)
@@ -64,12 +63,13 @@ FCIMPL1(Object *, RhpNewFast, MethodTable* pEEType)
     size_t size = pEEType->GetBaseSize();
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= size)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= size)
     {
         acontext->alloc_ptr = alloc_ptr + size;
         Object* pObject = (Object *)alloc_ptr;
-        pObject->set_EEType(pEEType);
+        pObject->SetMethodTable(pEEType);
         return pObject;
     }
 
@@ -88,7 +88,7 @@ FCIMPL1(Object *, RhpNewFinalizable, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL2(Array *, RhpNewArray, MethodTable * pArrayEEType, int numElements)
+FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, intptr_t numElements)
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context * acontext = pCurThread->GetAllocContext();
@@ -112,13 +112,14 @@ FCIMPL2(Array *, RhpNewArray, MethodTable * pArrayEEType, int numElements)
     size = ALIGN_UP(size, sizeof(uintptr_t));
 
     uint8_t* alloc_ptr = acontext->alloc_ptr;
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= size)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= size)
     {
         acontext->alloc_ptr = alloc_ptr + size;
         Array* pObject = (Array*)alloc_ptr;
-        pObject->set_EEType(pArrayEEType);
-        pObject->InitArrayLength((uint32_t)numElements);
+        pObject->SetMethodTable(pArrayEEType);
+        pObject->SetNumComponents((uint32_t)numElements);
         return pObject;
     }
 
@@ -126,16 +127,16 @@ FCIMPL2(Array *, RhpNewArray, MethodTable * pArrayEEType, int numElements)
 }
 FCIMPLEND
 
-FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, int numElements)
+FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, intptr_t numElements)
 {
-    // TODO: Implement. We tail call to RhpNewArray for now since there's a bunch of TODOs in the places
+    // TODO: Implement. We tail call to RhpNewArrayFast for now since there's a bunch of TODOs in the places
     // that matter anyway.
-    return (String*)RhpNewArray(pArrayEEType, numElements);
+    return (String*)RhpNewArrayFast(pArrayEEType, numElements);
 }
 FCIMPLEND
 
 #endif
-#if defined(USE_PORTABLE_HELPERS)
+#if defined(FEATURE_PORTABLE_HELPERS)
 #if defined(FEATURE_64BIT_ALIGNMENT)
 
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
@@ -165,18 +166,19 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pEEType)
         paddedSize += 12;
     }
 
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
     {
         acontext->alloc_ptr = alloc_ptr + paddedSize;
         if (requiresPadding)
         {
             Object* dummy = (Object*)alloc_ptr;
-            dummy->set_EEType(g_pFreeObjectEEType);
+            dummy->SetMethodTable(g_pFreeObjectEEType);
             alloc_ptr += 12;
         }
         Object* pObject = (Object *)alloc_ptr;
-        pObject->set_EEType(pEEType);
+        pObject->SetMethodTable(pEEType);
         return pObject;
     }
 
@@ -199,18 +201,19 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
         paddedSize += 12;
     }
 
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
     {
         acontext->alloc_ptr = alloc_ptr + paddedSize;
         if (requiresPadding)
         {
             Object* dummy = (Object*)alloc_ptr;
-            dummy->set_EEType(g_pFreeObjectEEType);
+            dummy->SetMethodTable(g_pFreeObjectEEType);
             alloc_ptr += 12;
         }
         Object* pObject = (Object *)alloc_ptr;
-        pObject->set_EEType(pEEType);
+        pObject->SetMethodTable(pEEType);
         return pObject;
     }
 
@@ -218,7 +221,7 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL2(Array*, RhpNewArrayAlign8, MethodTable* pArrayEEType, int numElements)
+FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numElements)
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();
@@ -248,19 +251,20 @@ FCIMPL2(Array*, RhpNewArrayAlign8, MethodTable* pArrayEEType, int numElements)
         paddedSize += 12;
     }
 
-    ASSERT(alloc_ptr <= acontext->alloc_limit);
-    if ((size_t)(acontext->alloc_limit - alloc_ptr) >= paddedSize)
+    uint8_t* combined_limit = pCurThread->GetEEAllocContext()->GetCombinedLimit();
+    ASSERT(alloc_ptr <= combined_limit);
+    if ((size_t)(combined_limit - alloc_ptr) >= paddedSize)
     {
         acontext->alloc_ptr = alloc_ptr + paddedSize;
         if (requiresAlignObject)
         {
             Object* dummy = (Object*)alloc_ptr;
-            dummy->set_EEType(g_pFreeObjectEEType);
+            dummy->SetMethodTable(g_pFreeObjectEEType);
             alloc_ptr += 12;
         }
         Array* pObject = (Array*)alloc_ptr;
-        pObject->set_EEType(pArrayEEType);
-        pObject->InitArrayLength((uint32_t)numElements);
+        pObject->SetMethodTable(pArrayEEType);
+        pObject->SetNumComponents((uint32_t)numElements);
         return pObject;
     }
 
@@ -318,12 +322,6 @@ FCIMPL0(void, RhpInterfaceDispatch64)
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpVTableOffsetDispatch)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;
 void * ReturnFromUniversalTransition;
@@ -335,7 +333,7 @@ void * ReturnFromUniversalTransition_DebugStepTailCall;
 #if !defined (HOST_ARM64)
 FCIMPL2(void, RhpAssignRef, Object ** dst, Object * ref)
 {
-    // @TODO: USE_PORTABLE_HELPERS - Null check
+    // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     *dst = ref;
     InlineWriteBarrier(dst, ref);
 }
@@ -343,7 +341,7 @@ FCIMPLEND
 
 FCIMPL2(void, RhpCheckedAssignRef, Object ** dst, Object * ref)
 {
-    // @TODO: USE_PORTABLE_HELPERS - Null check
+    // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     *dst = ref;
     InlineCheckedWriteBarrier(dst, ref);
 }
@@ -360,16 +358,16 @@ FCIMPLEND
 
 FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 {
-    // @TODO: USE_PORTABLE_HELPERS - Null check
+    // @TODO: FEATURE_PORTABLE_HELPERS - Null check
     Object * ret = (Object *)PalInterlockedExchangePointer((void * volatile *)location, value);
     InlineCheckedWriteBarrier(location, value);
     return ret;
 }
 FCIMPLEND
 
-FCIMPL0(void*, RhAllocateThunksMapping)
+FCIMPL1(HRESULT, RhAllocateThunksMapping, void ** ppThunksSection)
 {
-    return NULL;
+    return E_FAIL;
 }
 FCIMPLEND
 

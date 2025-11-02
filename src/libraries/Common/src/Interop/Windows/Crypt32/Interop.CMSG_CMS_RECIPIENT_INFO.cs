@@ -20,7 +20,7 @@ internal static partial class Interop
             //
             private void* pRecipientInfo;  // Do NOT add an underscore - this name still maps to a C++ Win32 header definition.
 
-            internal unsafe CMSG_KEY_TRANS_RECIPIENT_INFO* KeyTrans
+            internal CMSG_KEY_TRANS_RECIPIENT_INFO* KeyTrans
             {
                 get
                 {
@@ -29,7 +29,7 @@ internal static partial class Interop
                 }
             }
 
-            internal unsafe CMSG_KEY_AGREE_RECIPIENT_INFO* KeyAgree
+            internal CMSG_KEY_AGREE_RECIPIENT_INFO* KeyAgree
             {
                 get
                 {

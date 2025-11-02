@@ -299,13 +299,12 @@ inline BOOL MethodTable::IsValueType()
     return GetFlag(enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
 }
 
-//==========================================================================================
-inline CorElementType MethodTable::GetArrayElementType()
+inline BOOL MethodTable::IsContinuation()
 {
-    WRAPPER_NO_CONTRACT;
+    LIMITED_METHOD_DAC_CONTRACT;
 
-    _ASSERTE (IsArray());
-    return dac_cast<PTR_ArrayClass>(GetClass())->GetArrayElementType();
+    PTR_MethodTable contClass = g_pContinuationClassIfSubTypeCreated;
+    return contClass != NULL && m_pParentMethodTable == contClass;
 }
 
 //==========================================================================================
@@ -421,10 +420,10 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
     // for an interface virtual, since their slots usually point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
-        return MethodDesc::GetMethodDescFromStubAddr(pCode);
+        return MethodDesc::GetMethodDescFromPrecode(pCode);
     }
 
-    return MethodTable::GetMethodDescForSlotAddress(pCode);
+    return NonVirtualEntry2MethodDesc(pCode);
 }
 #endif // DACCESS_COMPILE
 
@@ -443,7 +442,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
 
     if (pCode == (PCODE)NULL)
     {
-        // This code path should only be hit for methods which have not been overriden
+        // This code path should only be hit for methods which have not been overridden
         MethodTable *pMTToSearchForMethodDesc = this->GetCanonicalMethodTable();
         while (pMTToSearchForMethodDesc != NULL)
         {
@@ -465,10 +464,10 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
     // for an interface virtual, since their slots point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
-        return MethodDesc::GetMethodDescFromStubAddr(pCode);
+        return MethodDesc::GetMethodDescFromPrecode(pCode);
     }
 
-    return MethodTable::GetMethodDescForSlotAddress(pCode);
+    return NonVirtualEntry2MethodDesc(pCode);
 }
 
 #ifndef DACCESS_COMPILE
@@ -1110,7 +1109,7 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
     if (id == OptionalMember_##NAME) { \
         return offset; \
     } \
-    C_ASSERT(sizeof(TYPE) % sizeof(UINT_PTR) == 0); /* To insure proper alignment */ \
+    static_assert(sizeof(TYPE) % sizeof(UINT_PTR) == 0); /* To ensure proper alignment */ \
     if (Has##NAME()) { \
         offset += sizeof(TYPE); \
     }
@@ -1239,7 +1238,7 @@ inline OBJECTREF MethodTable::AllocateNoChecks()
     }
     CONTRACTL_END;
 
-    // we know an instance of this class already exists in the same appdomain
+    // We know an instance of this class already exists
     // therefore, some checks become redundant.
     // this currently only happens for Delegate.Combine
 
@@ -1248,33 +1247,7 @@ inline OBJECTREF MethodTable::AllocateNoChecks()
     return AllocateObject(this);
 }
 
-
 #ifndef DACCESS_COMPILE
-//==========================================================================================
-// unbox src into dest, making sure src is of the correct type.
-
-inline BOOL MethodTable::UnBoxInto(void *dest, OBJECTREF src)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (Nullable::IsNullableType(TypeHandle(this)))
-        return Nullable::UnBoxNoGC(dest, src, this);
-    else
-    {
-        if (src == NULL || src->GetMethodTable() != this)
-            return FALSE;
-
-        CopyValueClass(dest, src->UnBox(), this);
-    }
-    return TRUE;
-}
-
 //==========================================================================================
 // unbox src into dest, No checks are done
 
@@ -1289,9 +1262,7 @@ inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src)
     CONTRACTL_END;
 
     if (Nullable::IsNullableType(TypeHandle(this))) {
-        BOOL ret;
-        ret = Nullable::UnBoxNoGC(dest, src, this);
-        _ASSERTE(ret);
+        Nullable::UnBoxNoCheck(dest, src, this);
     }
     else
     {
@@ -1376,7 +1347,7 @@ FORCEINLINE BOOL MethodTable::ImplementsInterfaceInline(MethodTable *pInterface)
     while (--numInterfaces);
 
     // Second scan, looking for the curiously recurring generic scenario
-    if (pInterface->HasInstantiation() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pInterface->GetInstantiation().ContainsAllOneType(this))
+    if (pInterface->HasInstantiation() && !GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() && pInterface->GetInstantiation().ContainsAllOneType(this->GetSpecialInstantiationType()))
     {
         numInterfaces = GetNumInterfaces();
         pInfo = GetInterfaceMap();

@@ -22,6 +22,7 @@ export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
 export const JavaScriptMarshalerArgSize = 32;
 // keep in sync with JSMarshalerArgumentImpl offsets
 const enum JSMarshalerArgumentOffsets {
+    /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
     BooleanValue = 0,
     ByteValue = 0,
     CharValue = 0,
@@ -232,7 +233,7 @@ export function get_arg_i32 (arg: JSMarshalerArgument): number {
 
 export function get_arg_intptr (arg: JSMarshalerArgument): number {
     mono_assert(arg, "Null arg");
-    return getI32(<any>arg);
+    return getU32(<any>arg);
 }
 
 export function get_arg_i52 (arg: JSMarshalerArgument): number {
@@ -291,7 +292,7 @@ export function set_arg_i32 (arg: JSMarshalerArgument, value: number): void {
 
 export function set_arg_intptr (arg: JSMarshalerArgument, value: VoidPtr): void {
     mono_assert(arg, "Null arg");
-    setI32(<any>arg, <any>value);
+    setU32(<any>arg, <any>value);
 }
 
 export function set_arg_i52 (arg: JSMarshalerArgument, value: number): void {

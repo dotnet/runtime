@@ -35,10 +35,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If partUri parameter has a fragment</exception>
         public static Uri CreatePartUri(Uri partUri)
         {
-            if (partUri is null)
-            {
-                throw new ArgumentNullException(nameof(partUri));
-            }
+            ArgumentNullException.ThrowIfNull(partUri);
 
             ThrowIfAbsoluteUri(partUri);
 
@@ -78,14 +75,8 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If sourcePartUri parameter does not conform to the valid partUri syntax</exception>
         public static Uri ResolvePartUri(Uri sourcePartUri, Uri targetUri)
         {
-            if (sourcePartUri is null)
-            {
-                throw new ArgumentNullException(nameof(sourcePartUri));
-            }
-            if (targetUri is null)
-            {
-                throw new ArgumentNullException(nameof(targetUri));
-            }
+            ArgumentNullException.ThrowIfNull(sourcePartUri);
+            ArgumentNullException.ThrowIfNull(targetUri);
 
             ThrowIfAbsoluteUri(sourcePartUri);
             ThrowIfAbsoluteUri(targetUri);
@@ -110,14 +101,8 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If either sourcePartUri or targetPartUri parameter does not conform to the valid partUri syntax</exception>
         public static Uri GetRelativeUri(Uri sourcePartUri, Uri targetPartUri)
         {
-            if (sourcePartUri is null)
-            {
-                throw new ArgumentNullException(nameof(sourcePartUri));
-            }
-            if (targetPartUri is null)
-            {
-                throw new ArgumentNullException(nameof(targetPartUri));
-            }
+            ArgumentNullException.ThrowIfNull(sourcePartUri);
+            ArgumentNullException.ThrowIfNull(targetPartUri);
 
             sourcePartUri = new Uri(s_defaultUri, ValidatePartUri(sourcePartUri));
             targetPartUri = new Uri(s_defaultUri, ValidatePartUri(targetPartUri));
@@ -134,10 +119,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri syntax</exception>
         public static Uri GetNormalizedPartUri(Uri partUri)
         {
-            if (partUri is null)
-            {
-                throw new ArgumentNullException(nameof(partUri));
-            }
+            ArgumentNullException.ThrowIfNull(partUri);
 
             ValidatedPartUri validatedUri = partUri as ValidatedPartUri ?? ValidatePartUri(partUri);
 
@@ -182,10 +164,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri Syntax</exception>
         public static bool IsRelationshipPartUri(Uri partUri)
         {
-            if (partUri is null)
-            {
-                throw new ArgumentNullException(nameof(partUri));
-            }
+            ArgumentNullException.ThrowIfNull(partUri);
 
             ValidatedPartUri validatedUri = partUri as ValidatedPartUri ?? ValidatePartUri(partUri);
 
@@ -207,10 +186,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri Syntax</exception>
         public static Uri GetRelationshipPartUri(Uri partUri)
         {
-            if (partUri is null)
-            {
-                throw new ArgumentNullException(nameof(partUri));
-            }
+            ArgumentNullException.ThrowIfNull(partUri);
 
             if (Uri.Compare(partUri, PackageRootUri, UriComponents.SerializationInfoString, UriFormat.UriEscaped, StringComparison.Ordinal) == 0)
                 return PackageRelationship.ContainerRelationshipPartName;
@@ -263,10 +239,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If the resultant Uri obtained is a relationship part Uri</exception>
         public static Uri GetSourcePartUriFromRelationshipPartUri(Uri relationshipPartUri)
         {
-            if (relationshipPartUri is null)
-            {
-                throw new ArgumentNullException(nameof(relationshipPartUri));
-            }
+            ArgumentNullException.ThrowIfNull(relationshipPartUri);
 
             // Verify -
             // 1. Validates that this part Uri is a valid part Uri
@@ -396,10 +369,7 @@ namespace System.IO.Packaging
         #region Private Methods
         private static Exception? GetExceptionIfPartUriInvalid(Uri partUri, out string partUriString)
         {
-            if (partUri is null)
-            {
-                throw new ArgumentNullException(nameof(partUri));
-            }
+            ArgumentNullException.ThrowIfNull(partUri);
 
             partUriString = string.Empty;
 
@@ -631,9 +601,7 @@ namespace System.IO.Packaging
         /// to reduce the parsing and number of allocations for Strings and Uris
         /// we cache the results after parsing.
         /// </summary>
- #pragma warning disable CA1067 // Override Equals because it implements IEquatable<T>; not overriding to avoid possible regressions in code that's working
         internal sealed class ValidatedPartUri : Uri, IComparable<ValidatedPartUri>, IEquatable<ValidatedPartUri>
-#pragma warning restore CA1067
         {
             //------------------------------------------------------
             //
@@ -682,6 +650,22 @@ namespace System.IO.Packaging
             }
 
             #endregion IEquatable Methods
+
+            #region Overrides
+
+            public override bool Equals(object? obj)
+            {
+                if (obj is ValidatedPartUri other)
+                    return Compare(other) == 0;
+                return false;
+            }
+
+            public override int GetHashCode()
+            {
+                return StringComparer.OrdinalIgnoreCase.GetHashCode(NormalizedPartUriString);
+            }
+
+            #endregion Overrides
 
             #region Internal Properties
 
@@ -871,7 +855,11 @@ namespace System.IO.Packaging
                     return 1;
 
                 //Compare the normalized uri strings for the two part uris.
-                return string.CompareOrdinal(NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
+                return string.Compare(
+                    NormalizedPartUriString,
+                    otherPartUri.NormalizedPartUriString,
+                    StringComparison.OrdinalIgnoreCase
+                );
             }
 
             //------------------------------------------------------

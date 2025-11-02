@@ -11,9 +11,9 @@ namespace Microsoft.Extensions.Caching.Hybrid;
 public interface IHybridCacheSerializerFactory
 {
     /// <summary>
-    /// Request a serializer for the provided type, if possible.
+    /// Requests a serializer for the provided type, if possible.
     /// </summary>
-    /// <typeparam name="T">The type being serialized/deserialized.</typeparam>
+    /// <typeparam name="T">The type being serialized or deserialized.</typeparam>
     /// <param name="serializer">The serializer.</param>
     /// <returns><c>true</c> if the factory supports this type, <c>false</c> otherwise.</returns>
     bool TryCreateSerializer<T>([NotNullWhen(true)] out IHybridCacheSerializer<T>? serializer);

@@ -44,9 +44,8 @@ if not exist IL_DLLS\mainv1.dll (
     echo FAILED to copy mainv1.dll to IL_DLLS
     exit /b 1
 )
-IF "%__TestDotNetCmd%"=="" set __TestDotNetCmd=dotnet
 
-%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:%25CD%\IL_DLLS\mainv1.dll -o:test.dll testv1\test.dll
+%Core_Root%\crossgen2\crossgen2.exe --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:%25CD%\IL_DLLS\mainv1.dll -o:test.dll testv1\test.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
@@ -58,7 +57,7 @@ if not exist test.map (
     exit /b 1
 )
 
-%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\mainv1.dll -r:testv1\test.dll -o:fieldgetter.dll IL_DLLS\fieldgetter.dll
+%Core_Root%\crossgen2\crossgen2.exe --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\mainv1.dll -r:testv1\test.dll -o:fieldgetter.dll IL_DLLS\fieldgetter.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
@@ -70,7 +69,7 @@ if not exist fieldgetter.map (
     exit /b 1
 )
 
-%__TestDotNetCmd% %Core_Root%\crossgen2\crossgen2.dll --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:testv1\test.dll --opt-cross-module:test -o:mainv1.dll IL_DLLS\mainv1.dll
+%Core_Root%\crossgen2\crossgen2.exe --map -r:%Core_Root%\*.dll -r:%25CD%\IL_DLLS\fieldgetter.dll -r:testv1\test.dll --opt-cross-module:test -o:mainv1.dll IL_DLLS\mainv1.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
@@ -112,7 +111,7 @@ then
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:IL_DLLS/fieldgetter.dll -r:IL_DLLS/mainv1.dll -o:test.dll testv1/test.dll
+"$CORE_ROOT"/crossgen2/crossgen2 --map -r:"$CORE_ROOT"/*.dll -r:IL_DLLS/fieldgetter.dll -r:IL_DLLS/mainv1.dll -o:test.dll testv1/test.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -126,7 +125,7 @@ then
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:testv1/test.dll -r:IL_DLLS/mainv1.dll -o:fieldgetter.dll IL_DLLS/fieldgetter.dll
+"$CORE_ROOT"/crossgen2/crossgen2 --map -r:"$CORE_ROOT"/*.dll -r:testv1/test.dll -r:IL_DLLS/mainv1.dll -o:fieldgetter.dll IL_DLLS/fieldgetter.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
@@ -140,7 +139,7 @@ then
   exit 1
 fi
 
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --map -r:$CORE_ROOT/*.dll -r:testv1/test.dll -r:IL_DLLS/fieldgetter.dll --opt-cross-module:test -o:mainv1.dll IL_DLLS/mainv1.dll
+"$CORE_ROOT"/crossgen2/crossgen2 --map -r:"$CORE_ROOT"/*.dll -r:testv1/test.dll -r:IL_DLLS/fieldgetter.dll --opt-cross-module:test -o:mainv1.dll IL_DLLS/mainv1.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]

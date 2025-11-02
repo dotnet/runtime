@@ -17,7 +17,7 @@ namespace System.Numerics.Tensors
         /// This method effectively computes <c><paramref name="destination" />[i] = <typeparamref name="T"/>.TanPi(<paramref name="x" />[i])</c>.
         /// </para>
         /// <para>
-        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians"/> or multiply by <typeparamref name="T"/>.Pi/180 to convert degrees to radians.
+        /// The angles in x must be in radians. Use <see cref="M:System.Single.DegreesToRadians(System.Single)"/> or multiply by <typeparamref name="T"/>.Pi/180 to convert degrees to radians.
         /// </para>
         /// <para>
         /// This method may call into the underlying C runtime or employ instructions specific to the current architecture. Exact results may differ between different
@@ -25,8 +25,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void TanPi<T>(ReadOnlySpan<T> x, Span<T> destination)
-            where T : ITrigonometricFunctions<T> =>
+            where T : ITrigonometricFunctions<T>
+        {
+            if (typeof(T) == typeof(Half) && TryUnaryInvokeHalfAsInt16<T, TanPiOperator<float>>(x, destination))
+            {
+                return;
+            }
+
             InvokeSpanIntoSpan<T, TanPiOperator<T>>(x, destination);
+        }
 
         /// <summary>T.TanPi(x)</summary>
         private readonly struct TanPiOperator<T> : IUnaryOperator<T, T>

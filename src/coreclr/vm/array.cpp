@@ -337,7 +337,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         pClass->SetInternalCorElementType(arrayKind);
         pClass->SetAttrClass (tdPublic | tdSerializable | tdSealed);  // This class is public, serializable, sealed
         pClass->SetRank (Rank);
-        pClass->SetArrayElementType (elemType);
         pClass->SetMethodTable (pMT);
 
         // Fill In the method table
@@ -466,7 +465,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                             + 3;        // for rank specific Get, Set, Address
 
         MethodDescChunk * pChunks = MethodDescChunk::CreateChunk(pAllocator->GetHighFrequencyHeap(),
-                            dwMethodDescs, mcArray, FALSE /* fNonVtableSlot*/, FALSE /* fNativeCodeSlot */,
+                            dwMethodDescs, mcArray, FALSE /* fNonVtableSlot*/, FALSE /* fNativeCodeSlot */, FALSE /* HasAsyncMethodData */,
                             pMT, pamTracker);
         pClass->SetChunks(pChunks);
 
@@ -658,9 +657,8 @@ public:
             hiddenArgIdx = 0;
         }
 #endif
-
-        ArrayClass *pcls = (ArrayClass*)(pMT->GetClass());
-        if(pcls->GetArrayElementType() == ELEMENT_TYPE_CLASS)
+        CorElementType sigElementType = pMT->GetArrayElementType();
+        if (CorTypeInfo::IsObjRef(sigElementType))
         {
             // Type Check
             if(m_pMD->GetArrayFuncIndex() == ArrayMethodDesc::ARRAY_FUNC_SET)
@@ -902,7 +900,7 @@ Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
     static const ILStubTypes stubTypes[3] = { ILSTUB_ARRAYOP_GET, ILSTUB_ARRAYOP_SET, ILSTUB_ARRAYOP_ADDRESS };
 
     _ASSERTE(pMD->GetArrayFuncIndex() <= ARRAY_SIZE(stubTypes));
-    NDirectStubFlags arrayOpStubFlag = (NDirectStubFlags)stubTypes[pMD->GetArrayFuncIndex()];
+    PInvokeStubFlags arrayOpStubFlag = (PInvokeStubFlags)stubTypes[pMD->GetArrayFuncIndex()];
 
     MethodDesc * pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
                                                             pMD->GetMethodTable(),
@@ -975,7 +973,7 @@ MethodDesc* GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(Met
 
     // Subtract one for the non-generic IEnumerable that the generic enumerable inherits from
     unsigned int inheritanceDepth = pItfcMeth->GetMethodTable()->GetNumInterfaces() - 1;
-    PREFIX_ASSUME(0 <= inheritanceDepth && inheritanceDepth < ARRAY_SIZE(startingMethod));
+    _ASSERTE(0 <= inheritanceDepth && inheritanceDepth < ARRAY_SIZE(startingMethod));
 
     MethodDesc *pGenericImplementor = CoreLibBinder::GetMethod((BinderMethodID)(startingMethod[inheritanceDepth] + slot));
 

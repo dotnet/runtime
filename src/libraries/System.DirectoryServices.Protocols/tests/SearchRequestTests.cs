@@ -31,7 +31,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData("", "", SearchScope.OneLevel, new string[0])]
         [InlineData("DistinguishedName", "LdapFilter", SearchScope.Base, new string[] { "attribute" })]
         [InlineData("DistinguishedName", "LdapFilter", SearchScope.OneLevel, new string[] { null })]
-        public void Ctor_DistinguishedName_LdapFilter_SearchScope_AttributeList(string distinguishedName, string ldapFilter, SearchScope searchScope, string[] attributeList)
+        public void Ctor_DistinguishedName_LdapFilter_SearchScope_AttributeList(string? distinguishedName, string? ldapFilter, SearchScope searchScope, string[]? attributeList)
         {
             var request = new SearchRequest(distinguishedName, ldapFilter, searchScope, attributeList);
             Assert.Equal(DereferenceAlias.Never, request.Aliases);

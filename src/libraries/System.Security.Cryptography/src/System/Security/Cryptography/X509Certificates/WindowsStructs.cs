@@ -87,13 +87,6 @@ namespace System.Security.Cryptography.X509Certificates
     };
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct CERT_ENHKEY_USAGE
-    {
-        public int cUsageIdentifier;
-        public IntPtr* rgpszUsageIdentifier; // LPSTR*
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct CERT_POLICY_INFO
     {
         public IntPtr pszPolicyIdentifier;

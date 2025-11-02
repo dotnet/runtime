@@ -115,7 +115,7 @@ PALTEST(composite_object_management_semaphore_nonshared_paltest_semaphore_nonsha
     }    
 
      /* Register the start time */  
-    dwStartTime = GetTickCount();
+    dwStartTime = (DWORD)minipal_lowres_ticks();
     testStats.relationId   = RELATION_ID;
     testStats.processCount = PROCESS_COUNT;
     testStats.threadCount  = THREAD_COUNT;

@@ -302,7 +302,7 @@ namespace System.Reflection
 
         #region Constructor
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe IntPtr GetMetadataImport(RuntimeModule module);
+        private static extern IntPtr GetMetadataImport(RuntimeModule module);
 
         internal MetadataImport(RuntimeModule module)
         {

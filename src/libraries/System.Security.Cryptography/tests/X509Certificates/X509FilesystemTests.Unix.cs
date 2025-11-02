@@ -624,6 +624,55 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 });
         }
 
+        [Fact]
+        [OuterLoop("Alters user/machine state")]
+        public static void X509Store_WritesWithPbeParameters()
+        {
+            RunX509StoreTest(
+                static (store, storeDirectory) =>
+                {
+                    store.Open(OpenFlags.ReadWrite);
+
+                    using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword))
+                    {
+                        store.Add(cert);
+                        string file = Assert.Single(Directory.GetFiles(storeDirectory, "*.pfx"));
+                        byte[] pkcs12 = File.ReadAllBytes(file);
+                        ExportTests.VerifyPkcs12(
+                            pkcs12,
+                            null,
+                            expectedIterations: 1,
+                            HashAlgorithmName.SHA256,
+                            PbeEncryptionAlgorithm.Aes256Cbc);
+                    }
+                });
+        }
+
+        [Fact]
+        [OuterLoop("Alters user/machine state")]
+        public static void X509Store_CanOpenLegacyEncryptedCerts()
+        {
+            RunX509StoreTest(
+                static (store, storeDirectory) =>
+                {
+                    Directory.CreateDirectory(storeDirectory);
+
+                    using (X509Certificate2 cert = new(TestData.PfxData, TestData.PfxDataPassword))
+                    {
+                        string fileName = cert.Thumbprint + ".pfx";
+                        File.WriteAllBytes(Path.Join(storeDirectory, fileName), cert.Export(X509ContentType.Pkcs12));
+                        store.Open(OpenFlags.ReadOnly);
+                        X509Certificate2 storeCert = Assert.Single(store.Certificates);
+
+                        using (storeCert)
+                        {
+                            AssertExtensions.SequenceEqual(cert.RawDataMemory.Span, storeCert.RawDataMemory.Span);
+                            Assert.True(storeCert.HasPrivateKey);
+                        }
+                    }
+                });
+        }
+
         private static void AssertEqualContents(X509Store storeA, X509Store storeB)
         {
             Assert.NotSame(storeA, storeB);

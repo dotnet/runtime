@@ -95,7 +95,7 @@ namespace System.Diagnostics.Metrics
                 unit: "{contention}",
                 description: "The number of times there was contention when trying to acquire a monitor lock since the process has started.");
 
-            s_meter.CreateObservableCounter(
+            s_meter.CreateObservableUpDownCounter(
                 "dotnet.thread_pool.thread.count",
                 () => (long)ThreadPool.ThreadCount,
                 unit: "{thread}",
@@ -146,7 +146,7 @@ namespace System.Diagnostics.Metrics
                 unit: "{cpu}",
                 description: "The number of processors available to the process.");
 
-            if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsTvOS() && !(OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()))
+            if (!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() && !OperatingSystem.IsTvOS() && !(OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()))
             {
                 s_meter.CreateObservableCounter(
                     "dotnet.process.cpu.time",
@@ -174,7 +174,7 @@ namespace System.Diagnostics.Metrics
         [SupportedOSPlatform("maccatalyst")]
         private static IEnumerable<Measurement<double>> GetCpuTime()
         {
-            Debug.Assert(!OperatingSystem.IsBrowser() && !OperatingSystem.IsTvOS() && !(OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()));
+            Debug.Assert(!OperatingSystem.IsBrowser() && !OperatingSystem.IsWasi() &&!OperatingSystem.IsTvOS() && !(OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()));
 
             Environment.ProcessCpuUsage processCpuUsage = Environment.CpuUsage;
 

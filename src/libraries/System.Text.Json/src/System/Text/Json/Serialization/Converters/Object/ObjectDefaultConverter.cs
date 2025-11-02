@@ -125,7 +125,7 @@ namespace System.Text.Json.Serialization.Converters
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                     {
                         Debug.Assert(state.ReferenceId != null);
-                        Debug.Assert(options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve);
+                        Debug.Assert(options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve);
                         state.ReferenceResolver.AddReference(state.ReferenceId, obj);
                         state.ReferenceId = null;
                     }
@@ -134,7 +134,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     state.Current.ReturnValue = obj;
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
-                    state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
+                    state.Current.InitializePropertiesValidationState(jsonTypeInfo);
                 }
                 else
                 {
@@ -271,7 +271,7 @@ namespace System.Text.Json.Serialization.Converters
         internal static void PopulatePropertiesFastPath(object obj, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             jsonTypeInfo.OnDeserializing?.Invoke(obj);
-            state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
+            state.Current.InitializePropertiesValidationState(jsonTypeInfo);
 
             // Process all properties.
             while (true)

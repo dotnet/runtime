@@ -5,10 +5,10 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
+#include "PalLimitedContext.h"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "PalRedhawk.h"
+#include "Pal.h"
 #include "rhassert.h"
 
 
@@ -24,6 +24,8 @@
 #define THUNK_SIZE  16
 #elif TARGET_LOONGARCH64
 #define THUNK_SIZE  16
+#elif TARGET_RISCV64
+#define THUNK_SIZE  20
 #else
 #define THUNK_SIZE  (2 * OS_PAGE_SIZE) // This will cause RhpGetNumThunksPerBlock to return 0
 #endif
@@ -98,13 +100,15 @@ FCIMPL0(int, RhpGetThunkBlockSize)
 }
 FCIMPLEND
 
-EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
 #ifdef WIN32
 
     void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_READWRITE);
     if (pNewMapping == NULL)
-        return NULL;
+    {
+        return E_OUTOFMEMORY;
+    }
 
     void * pThunksSection = pNewMapping;
     void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
@@ -118,7 +122,9 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
     // changed anymore.
     void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_EXECUTE_READ);
     if (pNewMapping == NULL)
-        return NULL;
+    {
+        return E_OUTOFMEMORY;
+    }
 
     void * pThunksSection = pNewMapping;
     void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
@@ -127,7 +133,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
         !PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READWRITE))
     {
         PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
-        return NULL;
+        return E_FAIL;
     }
 
 #if defined(HOST_APPLE) && defined(HOST_ARM64)
@@ -242,10 +248,14 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
             //jirl      $r0, $t8, 0
 
             int delta = (int)(pCurrentDataAddress - pCurrentThunkAddress);
+            ASSERT((-0x200000 <= delta) && (delta < 0x200000));
+
             *((uint32_t*)pCurrentThunkAddress) = 0x18000013 | (((delta & 0x3FFFFC) >> 2) << 5);
             pCurrentThunkAddress += 4;
 
             delta += OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2) - 4;
+            ASSERT((-0x200000 <= delta) && (delta < 0x200000));
+
             *((uint32_t*)pCurrentThunkAddress) = 0x18000014 | (((delta & 0x3FFFFC) >> 2) << 5);
             pCurrentThunkAddress += 4;
 
@@ -253,6 +263,31 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
             pCurrentThunkAddress += 4;
 
             *((uint32_t*)pCurrentThunkAddress) = 0x4C000280;
+            pCurrentThunkAddress += 4;
+
+#elif defined(TARGET_RISCV64)
+
+            //auipc    t1, hi(<delta PC to thunk data address>)
+            //addi     t1, t1, lo(<delta PC to thunk data address>)
+            //auipc    t0, hi(<delta to get to last word in data page>)
+            //ld       t0, (t0)
+            //jalr     zero, t0, 0
+
+            int delta = (int)(pCurrentDataAddress - pCurrentThunkAddress);
+            *((uint32_t*)pCurrentThunkAddress) = 0x00000317 | ((((delta + 0x800) & 0xFFFFF000) >> 12) << 12);  // auipc t1, delta[31:12]
+            pCurrentThunkAddress += 4;
+
+            *((uint32_t*)pCurrentThunkAddress) = 0x00030313 | ((delta & 0xFFF) << 20);  // addi t1, t1, delta[11:0]
+            pCurrentThunkAddress += 4;
+
+            delta += OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2) - 8;
+            *((uint32_t*)pCurrentThunkAddress) = 0x00000297 | ((((delta + 0x800) & 0xFFFFF000) >> 12) << 12);  // auipc t0, delta[31:12]
+            pCurrentThunkAddress += 4;
+
+            *((uint32_t*)pCurrentThunkAddress) = 0x0002b283 | ((delta & 0xFFF) << 20); // ld t0, (delta[11:0])(t0)
+            pCurrentThunkAddress += 4;
+
+            *((uint32_t*)pCurrentThunkAddress) = 0x00008282;  // jalr zero, t0, 0
             pCurrentThunkAddress += 4;
 
 #else
@@ -275,13 +310,14 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
     if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
     {
         PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
-        return NULL;
+        return E_FAIL;
     }
 #endif
 
     PalFlushInstructionCache(pThunksSection, THUNKS_MAP_SIZE);
 
-    return pThunksSection;
+    *ppThunksSection = pThunksSection;
+    return S_OK;
 }
 
 // FEATURE_RX_THUNKS
@@ -296,7 +332,7 @@ FCDECL0(int, RhpGetThunkBlockSize);
 FCDECL1(void*, RhpGetThunkDataBlockAddress, void* addr);
 FCDECL1(void*, RhpGetThunkStubsBlockAddress, void* addr);
 
-EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
     static int nextThunkDataMapping = 0;
 
@@ -311,7 +347,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
     if (nextThunkDataMapping == thunkDataMappingCount)
     {
-        return NULL;
+        return E_FAIL;
     }
 
     if (g_pThunkStubData == NULL)
@@ -322,7 +358,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
         if (g_pThunkStubData == NULL)
         {
-            return NULL;
+            return E_OUTOFMEMORY;
         }
     }
 
@@ -330,7 +366,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
 
     if (VirtualAlloc(pThunkDataBlock, thunkDataMappingSize, MEM_COMMIT, PAGE_READWRITE) == NULL)
     {
-        return NULL;
+        return E_OUTOFMEMORY;
     }
 
     nextThunkDataMapping++;
@@ -338,7 +374,8 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
     void* pThunks = RhpGetThunkStubsBlockAddress(pThunkDataBlock);
     ASSERT(RhpGetThunkDataBlockAddress(pThunks) == pThunkDataBlock);
 
-    return pThunks;
+    *ppThunksSection = pThunks;
+    return S_OK;
 }
 
 #else // FEATURE_FIXED_POOL_THUNKS
@@ -349,7 +386,7 @@ FCDECL0(int, RhpGetNumThunksPerBlock);
 FCDECL0(int, RhpGetThunkSize);
 FCDECL0(int, RhpGetThunkBlockSize);
 
-EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
     static void* pThunksTemplateAddress = NULL;
 
@@ -378,7 +415,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
         int templateRva = (int)((uint8_t*)RhpGetThunksBase() - pModuleBase);
 
         if (!PalAllocateThunksFromTemplate((HANDLE)pModuleBase, templateRva, templateSize, &pThunkMap))
-            return NULL;
+            return E_OUTOFMEMORY;
     }
 
     if (!PalMarkThunksAsValidCallTargets(
@@ -391,10 +428,11 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
         if (pThunkMap != pThunksTemplateAddress)
             PalFreeThunksFromTemplate(pThunkMap, templateSize);
 
-        return NULL;
+        return E_FAIL;
     }
 
-    return pThunkMap;
+    *ppThunksSection = pThunkMap;
+    return S_OK;
 }
 
 #endif // FEATURE_RX_THUNKS

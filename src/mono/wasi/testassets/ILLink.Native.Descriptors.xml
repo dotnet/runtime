@@ -1,0 +1,8 @@
+<linker>
+  <!-- workaround for https://github.com/dotnet/runtime/issues/106627 -->
+  <assembly fullname="Wasi.Native.Test">
+    <type fullname="Sample.Test">
+        <method signature="System.Int32 MyExport(System.Int32)" />
+    </type>
+  </assembly>
+</linker>

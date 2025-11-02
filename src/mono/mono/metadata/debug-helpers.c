@@ -170,30 +170,30 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 	case MONO_TYPE_OBJECT:
 		g_string_append (res, "object"); break;
 	case MONO_TYPE_PTR:
-		mono_type_get_desc (res, type->data.type, include_namespace);
+		mono_type_get_desc (res, m_type_data_get_type_unchecked (type), include_namespace);
 		g_string_append_c (res, '*');
 		break;
 	case MONO_TYPE_ARRAY:
-		mono_type_get_desc (res, &type->data.array->eklass->_byval_arg, include_namespace);
+		mono_type_get_desc (res, &m_type_data_get_array_unchecked (type)->eklass->_byval_arg, include_namespace);
 		g_string_append_c (res, '[');
-		for (guint8 i = 1; i < type->data.array->rank; ++i)
+		for (guint8 i = 1; i < m_type_data_get_array_unchecked (type)->rank; ++i)
 			g_string_append_c (res, ',');
 		g_string_append_c (res, ']');
 		break;
 	case MONO_TYPE_SZARRAY:
-		mono_type_get_desc (res, &type->data.klass->_byval_arg, include_namespace);
+		mono_type_get_desc (res, &m_type_data_get_klass_unchecked (type)->_byval_arg, include_namespace);
 		g_string_append (res, "[]");
 		break;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
-		append_class_name (res, type->data.klass, include_namespace);
+		append_class_name (res, m_type_data_get_klass_unchecked (type), include_namespace);
 		break;
 	case MONO_TYPE_GENERICINST: {
 		MonoGenericContext *context;
 
-		mono_type_get_desc (res, &type->data.generic_class->container_class->_byval_arg, include_namespace);
+		mono_type_get_desc (res, &m_type_data_get_generic_class_unchecked (type)->container_class->_byval_arg, include_namespace);
 		g_string_append (res, "<");
-		context = &type->data.generic_class->context;
+		context = &m_type_data_get_generic_class_unchecked (type)->context;
 		if (context->class_inst) {
 			for (guint i = 0; i < context->class_inst->type_argc; ++i) {
 				if (i > 0)
@@ -215,12 +215,12 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		if (type->data.generic_param) {
-			const char *name = mono_generic_param_name (type->data.generic_param);
+		if (m_type_data_get_generic_param_unchecked (type)) {
+			const char *name = mono_generic_param_name (m_type_data_get_generic_param_unchecked (type));
 			if (name)
 				g_string_append (res, name);
 			else
-				g_string_append_printf (res, "%s%hu", type->type == MONO_TYPE_VAR ? "!" : "!!", mono_generic_param_num (type->data.generic_param));
+				g_string_append_printf (res, "%s%hu", type->type == MONO_TYPE_VAR ? "!" : "!!", mono_generic_param_num (m_type_data_get_generic_param_unchecked (type)));
 		} else {
 			g_string_append (res, "<unknown>");
 		}

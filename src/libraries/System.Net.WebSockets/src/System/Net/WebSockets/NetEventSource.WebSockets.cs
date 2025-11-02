@@ -8,9 +8,13 @@ using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
-    [EventSource(Name = "Private.InternalDiagnostics.System.Net.WebSockets")]
+    [EventSource(Name = NetEventSourceName)]
     internal sealed partial class NetEventSource
     {
+        private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.WebSockets";
+
+        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
+
         // NOTE
         // - The 'Start' and 'Stop' suffixes on the following event names have special meaning in EventSource. They
         //   enable creating 'activities'.
@@ -34,7 +38,6 @@ namespace System.Net
 
         private const int MutexEnterId = SendStopId + 1;
         private const int MutexExitId = MutexEnterId + 1;
-        private const int MutexContendedId = MutexExitId + 1;
 
         //
         // Keep-Alive
@@ -185,10 +188,6 @@ namespace System.Net
         private void MutexExit(string objName, string memberName) =>
             WriteEvent(MutexExitId, objName, memberName);
 
-        [Event(MutexContendedId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        private void MutexContended(string objName, string memberName, int queueLength) =>
-            WriteEvent(MutexContendedId, objName, memberName, queueLength);
-
         [NonEvent]
         public static void MutexEntered(object? obj, [CallerMemberName] string? memberName = null)
         {
@@ -201,13 +200,6 @@ namespace System.Net
         {
             Debug.Assert(Log.IsEnabled());
             Log.MutexExit(IdOf(obj), memberName ?? MissingMember);
-        }
-
-        [NonEvent]
-        public static void MutexContended(object? obj, int gateValue, [CallerMemberName] string? memberName = null)
-        {
-            Debug.Assert(Log.IsEnabled());
-            Log.MutexContended(IdOf(obj), memberName ?? MissingMember, -gateValue);
         }
 
         //

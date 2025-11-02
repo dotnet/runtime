@@ -164,6 +164,11 @@ void Phase::PostPhase(PhaseStatus status)
             comp->fgDebugCheckBBlist();
         }
 
+        if (hasFlag(checks, PhaseChecks::CHECK_FG_INIT_BLOCK))
+        {
+            comp->fgDebugCheckInitBB();
+        }
+
         if (hasFlag(checks, PhaseChecks::CHECK_IR))
         {
             comp->fgDebugCheckLinks();

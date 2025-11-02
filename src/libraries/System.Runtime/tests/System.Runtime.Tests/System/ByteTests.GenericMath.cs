@@ -2256,30 +2256,45 @@ namespace System.Tests
         public static void op_LeftShiftTest()
         {
             Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_LeftShift((byte)0x00, 1));
+            Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_LeftShift((byte)0x00, 9));
             Assert.Equal((byte)0x02, ShiftOperatorsHelper<byte, int, byte>.op_LeftShift((byte)0x01, 1));
+            Assert.Equal((byte)0x02, ShiftOperatorsHelper<byte, int, byte>.op_LeftShift((byte)0x01, 9));
             Assert.Equal((byte)0xFE, ShiftOperatorsHelper<byte, int, byte>.op_LeftShift((byte)0x7F, 1));
+            Assert.Equal((byte)0xFE, ShiftOperatorsHelper<byte, int, byte>.op_LeftShift((byte)0x7F, 9));
             Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_LeftShift((byte)0x80, 1));
+            Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_LeftShift((byte)0x80, 9));
             Assert.Equal((byte)0xFE, ShiftOperatorsHelper<byte, int, byte>.op_LeftShift((byte)0xFF, 1));
+            Assert.Equal((byte)0xFE, ShiftOperatorsHelper<byte, int, byte>.op_LeftShift((byte)0xFF, 9));
         }
 
         [Fact]
         public static void op_RightShiftTest()
         {
             Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_RightShift((byte)0x00, 1));
+            Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_RightShift((byte)0x00, 9));
             Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_RightShift((byte)0x01, 1));
+            Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_RightShift((byte)0x01, 9));
             Assert.Equal((byte)0x3F, ShiftOperatorsHelper<byte, int, byte>.op_RightShift((byte)0x7F, 1));
+            Assert.Equal((byte)0x3F, ShiftOperatorsHelper<byte, int, byte>.op_RightShift((byte)0x7F, 9));
             Assert.Equal((byte)0x40, ShiftOperatorsHelper<byte, int, byte>.op_RightShift((byte)0x80, 1));
+            Assert.Equal((byte)0x40, ShiftOperatorsHelper<byte, int, byte>.op_RightShift((byte)0x80, 9));
             Assert.Equal((byte)0x7F, ShiftOperatorsHelper<byte, int, byte>.op_RightShift((byte)0xFF, 1));
+            Assert.Equal((byte)0x7F, ShiftOperatorsHelper<byte, int, byte>.op_RightShift((byte)0xFF, 9));
         }
 
         [Fact]
         public static void op_UnsignedRightShiftTest()
         {
             Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_UnsignedRightShift((byte)0x00, 1));
+            Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_UnsignedRightShift((byte)0x00, 9));
             Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_UnsignedRightShift((byte)0x01, 1));
+            Assert.Equal((byte)0x00, ShiftOperatorsHelper<byte, int, byte>.op_UnsignedRightShift((byte)0x01, 9));
             Assert.Equal((byte)0x3F, ShiftOperatorsHelper<byte, int, byte>.op_UnsignedRightShift((byte)0x7F, 1));
+            Assert.Equal((byte)0x3F, ShiftOperatorsHelper<byte, int, byte>.op_UnsignedRightShift((byte)0x7F, 9));
             Assert.Equal((byte)0x40, ShiftOperatorsHelper<byte, int, byte>.op_UnsignedRightShift((byte)0x80, 1));
+            Assert.Equal((byte)0x40, ShiftOperatorsHelper<byte, int, byte>.op_UnsignedRightShift((byte)0x80, 9));
             Assert.Equal((byte)0x7F, ShiftOperatorsHelper<byte, int, byte>.op_UnsignedRightShift((byte)0xFF, 1));
+            Assert.Equal((byte)0x7F, ShiftOperatorsHelper<byte, int, byte>.op_UnsignedRightShift((byte)0xFF, 9));
         }
 
         //

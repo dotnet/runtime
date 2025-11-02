@@ -21,6 +21,7 @@
 #include "fstream.h"
 #include "hash.h"
 #include "clrex.h"
+#include "minipal/time.h"
 
 #include "appdomain.hpp"
 
@@ -45,7 +46,7 @@ void MulticoreJitCodeStorage::Init()
     CONTRACTL
     {
         THROWS;
-        MODE_ANY;   // called from BaseDomain::Init which is MODE_ANY
+        MODE_ANY;   // called from SystemDomain::Attach which is MODE_ANY
     }
     CONTRACTL_END;
 
@@ -382,7 +383,7 @@ MulticoreJitProfilePlayer::MulticoreJitProfilePlayer(AssemblyBinder * pBinder, L
     m_pFileBuffer        = NULL;
     m_nFileSize          = 0;
 
-    m_nStartTime         = GetTickCount();
+    m_nStartTime         = (unsigned int)minipal_lowres_ticks();
 }
 
 
@@ -733,7 +734,7 @@ bool MulticoreJitProfilePlayer::ShouldAbort(bool fast) const
         return false;
     }
 
-    if (GetTickCount() - m_nStartTime > MULTICOREJITLIFE)
+    if ((unsigned int)minipal_lowres_ticks() - m_nStartTime > MULTICOREJITLIFE)
     {
         MulticoreJitTrace(("MulticoreJitProfilePlayer::ShouldAbort time over"));
 
@@ -780,13 +781,13 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, uns
                 assemblyName.SetASCII(mod.m_pRecord->GetAssemblyName(), mod.m_pRecord->AssemblyNameLen());
 
                 // Load the assembly.
-                DomainAssembly * pDomainAssembly = LoadAssembly(assemblyName);
+                Assembly * pAssembly = LoadAssembly(assemblyName);
 
-                if (pDomainAssembly)
+                if (pAssembly)
                 {
                     // If we successfully loaded the assembly, enumerate the modules in the assembly
                     // and update all modules status.
-                    moduleEnumerator.HandleAssembly(pDomainAssembly);
+                    moduleEnumerator.HandleAssembly(pAssembly);
 
                     if (mod.m_pModule == NULL)
                     {
@@ -819,7 +820,7 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, uns
     return hr;
 }
 
-DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
+Assembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
 {
     STANDARD_VM_CONTRACT;
 
@@ -839,7 +840,7 @@ DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
     }
 
     // Bind and load the assembly.
-    return spec.LoadDomainAssembly(
+    return spec.LoadAssembly(
         FILE_LOADED,
         FALSE); // Don't throw on FileNotFound.
 }
@@ -921,7 +922,7 @@ HRESULT MulticoreJitProfilePlayer::HandleGenericMethodInfoRecord(unsigned module
             EX_CATCH
             {
             }
-            EX_END_CATCH(SwallowAllExceptions);
+            EX_END_CATCH
 
             CompileMethodInfoRecord(pModule, pMethod, true);
         }
@@ -1117,7 +1118,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     HRESULT hr = S_OK;
 
-    DWORD start = GetTickCount();
+    DWORD start = (DWORD)minipal_lowres_ticks();
 
     Thread * pThread = GetThread();
 
@@ -1132,7 +1133,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
         nSize,
-        GetAppDomain()->GetFriendlyNameForLogging()));
+        GetAppDomain()->GetFriendlyName()));
 
     while ((SUCCEEDED(hr)) && (nSize > sizeof(unsigned)))
     {
@@ -1311,7 +1312,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
         }
     }
 
-    start = GetTickCount() - start;
+    start = (DWORD)minipal_lowres_ticks() - start;
 
     {
         FireEtwThreadTerminated((ULONGLONG) pThread, (ULONGLONG) GetAppDomain(), GetClrInstanceId());
@@ -1354,7 +1355,7 @@ HRESULT MulticoreJitProfilePlayer::JITThreadProc(Thread * pThread)
             m_stats.m_hr = COR_E_EXCEPTION;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return (DWORD) m_stats.m_hr;
 }

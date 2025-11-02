@@ -48,4 +48,7 @@ jobs:
 
         - The PR target branch is `release/X.0-staging`, not `release/X.0`.
 
-        - If the change touches code that ships in a NuGet package, you have added the necessary [package authoring](https://github.com/dotnet/runtime/blob/main/docs/project/library-servicing.md) and gotten it explicitly reviewed.
+        ## Package authoring no longer needed in .NET 9
+
+        **IMPORTANT**: Starting with .NET 9, you no longer need to edit a NuGet package's csproj to enable building and bump the version.
+        Keep in mind that we still need package authoring in .NET 8 and older versions.

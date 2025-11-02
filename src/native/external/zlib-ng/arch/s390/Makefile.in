@@ -20,12 +20,6 @@ s390_features.o:
 s390_features.lo:
 	$(CC) $(SFLAGS) $(INCLUDES) -c -o $@ $(SRCDIR)/s390_features.c
 
-dfltcc_common.o:
-	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $(SRCDIR)/dfltcc_common.c
-
-dfltcc_common.lo:
-	$(CC) $(SFLAGS) $(INCLUDES) -c -o $@ $(SRCDIR)/dfltcc_common.c
-
 dfltcc_deflate.o:
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $(SRCDIR)/dfltcc_deflate.c
 

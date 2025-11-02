@@ -6,6 +6,7 @@ schedules:
   branches:
     include:
     - main
+  always: false # run only if there were changes since the last successful scheduled run.
 
 variables:
   - template: variables.yml
@@ -65,7 +66,7 @@ extends:
                 - template: /eng/pipelines/libraries/helix.yml
                   parameters:
                     scenarios:
-                    - WasmTestOnV8
+                    - WasmTestOnChrome
                     testScope: outerloop
                     creator: dotnet-bot
                     testRunNamePrefixSuffix: Mono_$(_BuildConfig)

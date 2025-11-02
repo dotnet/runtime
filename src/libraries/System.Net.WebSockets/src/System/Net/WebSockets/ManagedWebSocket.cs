@@ -32,15 +32,6 @@ namespace System.Net.WebSockets
         /// <summary>Encoding for the payload of text messages: UTF-8 encoding that throws if invalid bytes are discovered, per the RFC.</summary>
         private static readonly UTF8Encoding s_textEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-        /// <summary>Valid states to be in when calling SendAsync.</summary>
-        private static readonly WebSocketState[] s_validSendStates = { WebSocketState.Open, WebSocketState.CloseReceived };
-        /// <summary>Valid states to be in when calling ReceiveAsync.</summary>
-        private static readonly WebSocketState[] s_validReceiveStates = { WebSocketState.Open, WebSocketState.CloseSent };
-        /// <summary>Valid states to be in when calling CloseOutputAsync.</summary>
-        private static readonly WebSocketState[] s_validCloseOutputStates = { WebSocketState.Open, WebSocketState.CloseReceived };
-        /// <summary>Valid states to be in when calling CloseAsync.</summary>
-        private static readonly WebSocketState[] s_validCloseStates = { WebSocketState.Open, WebSocketState.CloseReceived, WebSocketState.CloseSent };
-
         /// <summary>The maximum size in bytes of a message frame header that includes mask bytes.</summary>
         internal const int MaxMessageHeaderLength = 14;
         /// <summary>The maximum size of a control message payload.</summary>
@@ -307,13 +298,7 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
-            if (messageType != WebSocketMessageType.Text && messageType != WebSocketMessageType.Binary)
-            {
-                throw new ArgumentException(SR.Format(
-                    SR.net_WebSockets_Argument_InvalidMessageType,
-                    nameof(WebSocketMessageType.Close), nameof(SendAsync), nameof(WebSocketMessageType.Binary), nameof(WebSocketMessageType.Text), nameof(CloseOutputAsync)),
-                    nameof(messageType));
-            }
+            ThrowIfInvalidMessageType(messageType);
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
 
@@ -327,17 +312,11 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
-            if (messageType != WebSocketMessageType.Text && messageType != WebSocketMessageType.Binary)
-            {
-                throw new ArgumentException(SR.Format(
-                    SR.net_WebSockets_Argument_InvalidMessageType,
-                    nameof(WebSocketMessageType.Close), nameof(SendAsync), nameof(WebSocketMessageType.Binary), nameof(WebSocketMessageType.Text), nameof(CloseOutputAsync)),
-                    nameof(messageType));
-            }
+            ThrowIfInvalidMessageType(messageType);
 
             try
             {
-                ThrowIfInvalidState(s_validSendStates);
+                ThrowIfInvalidState(WebSocketStateHelper.ValidSendStates);
             }
             catch (Exception exc)
             {
@@ -377,7 +356,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ThrowIfInvalidState(s_validReceiveStates);
+                ThrowIfInvalidState(WebSocketStateHelper.ValidReceiveStates);
 
                 return ReceiveAsyncPrivate<WebSocketReceiveResult>(buffer, cancellationToken).AsTask();
             }
@@ -394,7 +373,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ThrowIfInvalidState(s_validReceiveStates);
+                ThrowIfInvalidState(WebSocketStateHelper.ValidReceiveStates);
 
                 return ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(buffer, cancellationToken);
             }
@@ -413,7 +392,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                ThrowIfInvalidState(s_validCloseStates);
+                ThrowIfInvalidState(WebSocketStateHelper.ValidCloseStates);
             }
             catch (Exception exc)
             {
@@ -436,7 +415,7 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
-            ThrowIfInvalidState(s_validCloseOutputStates);
+            ThrowIfInvalidState(WebSocketStateHelper.ValidCloseOutputStates);
 
             await SendCloseFrameAsync(closeStatus, statusDescription, cancellationToken).ConfigureAwait(false);
 
@@ -555,7 +534,7 @@ namespace System.Net.WebSockets
                 return ValueTask.FromException(
                     exc is OperationCanceledException ? exc :
                     _state == WebSocketState.Aborted ? CreateOperationCanceledException(exc) :
-                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc));
+                    ExceptionDispatchInfo.SetCurrentStackTrace(new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc)));
             }
             finally
             {
@@ -1153,6 +1132,7 @@ namespace System.Net.WebSockets
             // additional data, but at this point we're about to close the connection and we're just stalling
             // to try to get the server to close first.
             ValueTask<int> finalReadTask = _stream.ReadAsync(_receiveBuffer, cancellationToken);
+
             if (finalReadTask.IsCompletedSuccessfully)
             {
                 finalReadTask.GetAwaiter().GetResult();
@@ -1160,16 +1140,19 @@ namespace System.Net.WebSockets
             else
             {
                 const int WaitForCloseTimeoutMs = 1_000; // arbitrary amount of time to give the server (same duration as .NET Framework)
+                Task task = finalReadTask.AsTask();
+
                 try
                 {
 #pragma warning disable CA2016 // Token was already provided to the ReadAsync
-                    await finalReadTask.AsTask().WaitAsync(TimeSpan.FromMilliseconds(WaitForCloseTimeoutMs)).ConfigureAwait(false);
+                    await task.WaitAsync(TimeSpan.FromMilliseconds(WaitForCloseTimeoutMs)).ConfigureAwait(false);
 #pragma warning restore CA2016
                 }
                 catch
                 {
+                    // Eat any resulting exceptions. We were going to close the connection, anyway.
+                    LogExceptions(task);
                     Abort();
-                    // Eat any resulting exceptions.  We were going to close the connection, anyway.
                 }
             }
         }
@@ -1731,15 +1714,15 @@ namespace System.Net.WebSockets
         /// <summary>Creates an OperationCanceledException instance, using a default message and the specified inner exception and token.</summary>
         private static OperationCanceledException CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return new OperationCanceledException(
+            return (OperationCanceledException)ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(
                 new OperationCanceledException().Message,
                 innerException,
-                cancellationToken);
+                cancellationToken));
         }
 
-        private void ThrowIfDisposed() => ThrowIfInvalidState();
+        private void ThrowIfDisposed() => ThrowIfInvalidState(validStates: ManagedWebSocketStates.All);
 
-        private void ThrowIfInvalidState(WebSocketState[]? validStates = null)
+        private void ThrowIfInvalidState(ManagedWebSocketStates validStates)
         {
             bool disposed = _disposed;
             WebSocketState state = _state;
@@ -1758,7 +1741,7 @@ namespace System.Net.WebSockets
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"_state={state}, _disposed={disposed}, _keepAlivePingState.Exception={keepAliveException}");
 
-            WebSocketValidate.ThrowIfInvalidState(state, disposed, keepAliveException, validStates);
+            WebSocketStateHelper.ThrowIfInvalidState(state, disposed, keepAliveException, validStates);
         }
 
         // From https://github.com/aspnet/WebSockets/blob/aa63e27fce2e9202698053620679a9a1059b501e/src/Microsoft.AspNetCore.WebSockets.Protocol/Utilities.cs#L75
@@ -1858,6 +1841,66 @@ namespace System.Net.WebSockets
             }
 
             return !endOfMessage || !state.SequenceInProgress;
+        }
+
+        // "Observe" either a ValueTask result, or any exception, logging and ignoring it
+        // to prevent the unobserved exception event from being raised.
+        private void LogExceptions(ValueTask t)
+        {
+            if (t.IsCompletedSuccessfully)
+            {
+                t.GetAwaiter().GetResult();
+            }
+            else
+            {
+                LogExceptions(t.AsTask());
+            }
+        }
+
+        // "Observe" and log any exception, ignoring it to prevent the unobserved task
+        // exception event from being raised.
+        private void LogExceptions(Task t)
+        {
+            if (t.IsCompleted)
+            {
+                if (t.IsFaulted)
+                {
+                    LogFaulted(t, this);
+                }
+            }
+            else
+            {
+                t.ContinueWith(
+                    LogFaulted,
+                    this,
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default);
+            }
+
+            static void LogFaulted(Task task, object? thisObj)
+            {
+                Debug.Assert(task.IsFaulted);
+
+                // accessing exception to observe it regardless of whether the tracing is enabled
+                Exception e = task.Exception!.InnerException!;
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(thisObj, e);
+            }
+        }
+
+        internal static void ThrowIfInvalidMessageType(WebSocketMessageType messageType, [CallerArgumentExpression(nameof(messageType))] string? paramName = null)
+        {
+            if (messageType is not (WebSocketMessageType.Text or WebSocketMessageType.Binary))
+            {
+                ThrowInvalidMessageType(paramName);
+            }
+
+            static void ThrowInvalidMessageType(string? paramName) =>
+                throw new ArgumentException(SR.Format(
+                    SR.net_WebSockets_Argument_InvalidMessageType,
+                    nameof(WebSocketMessageType.Close), nameof(SendAsync), nameof(WebSocketMessageType.Binary), nameof(WebSocketMessageType.Text), nameof(CloseOutputAsync)),
+                    paramName);
         }
 
         private sealed class Utf8MessageState

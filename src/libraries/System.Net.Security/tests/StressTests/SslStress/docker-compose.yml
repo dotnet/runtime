@@ -1,18 +1,22 @@
-version: '3'
+version: '3' # Although the version attribute is obsolete and should be ignored, it's seemingly not the case on Build.Ubuntu.2204.Amd64.Open
 services:
   client:
     build:
       context: ../../../../ # ~> src/libraries
-      dockerfile: ./System.Net.Security/tests/StressTests/SslStress//${DOCKERFILE:-Dockerfile}
+      dockerfile: ./System.Net.Security/tests/StressTests/SslStress/${DOCKERFILE:-Dockerfile}
+    volumes:
+      - "${DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
     links:
       - server
     environment:
-      - SSLSTRESS_ARGS=--mode client --server-endpoint server:5001 ${SSLSTRESS_CLIENT_ARGS}
+      - STRESS_ARGS=--mode client --server-endpoint server:5001 ${STRESS_CLIENT_ARGS}
   server:
     build:
       context: ../../../../ # ~> src/libraries
       dockerfile: ./System.Net.Security/tests/StressTests/SslStress/${DOCKERFILE:-Dockerfile}
+    volumes:
+      - "${DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
     ports:
       - "5001:5001"
     environment:
-      - SSLSTRESS_ARGS=--mode server --server-endpoint 0.0.0.0:5001 ${SSLSTRESS_SERVER_ARGS}
+      - STRESS_ARGS=--mode server --server-endpoint 0.0.0.0:5001 ${STRESS_SERVER_ARGS}

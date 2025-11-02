@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Profiler APIs aren't supported on mobile platforms -->
+    <DisableProjectBuild Condition="'$(TargetsMobile)' == 'true'">true</DisableProjectBuild>
+    <!-- Profiler APIs aren't supported on Mono -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="*/**/*.csproj" Exclude="common/**/*.csproj;unittest/unloadlibrary.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

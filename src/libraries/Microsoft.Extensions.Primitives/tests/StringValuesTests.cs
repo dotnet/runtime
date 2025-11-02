@@ -453,19 +453,19 @@ namespace Microsoft.Extensions.Primitives
         {
             string[] expected = new[] { "abc", "bcd", "foo" };
             StringValues expectedStringValues = new StringValues(expected);
-            Assert.Equal(expected, StringValues.Concat(stringValues, expectedStringValues));
-            Assert.Equal(expected, StringValues.Concat(expectedStringValues, stringValues));
-            Assert.Equal(expected, StringValues.Concat((string)null, in expectedStringValues));
-            Assert.Equal(expected, StringValues.Concat(in expectedStringValues, (string)null));
+            Assert.Equal(expected, StringValues.Concat(stringValues, expectedStringValues).ToArray());
+            Assert.Equal(expected, StringValues.Concat(expectedStringValues, stringValues).ToArray());
+            Assert.Equal(expected, StringValues.Concat((string)null, in expectedStringValues).ToArray());
+            Assert.Equal(expected, StringValues.Concat(in expectedStringValues, (string)null).ToArray());
 
             string[] empty = new string[0];
             StringValues emptyStringValues = new StringValues(empty);
-            Assert.Equal(empty, StringValues.Concat(stringValues, StringValues.Empty));
-            Assert.Equal(empty, StringValues.Concat(StringValues.Empty, stringValues));
-            Assert.Equal(empty, StringValues.Concat(stringValues, new StringValues()));
-            Assert.Equal(empty, StringValues.Concat(new StringValues(), stringValues));
-            Assert.Equal(empty, StringValues.Concat((string)null, in emptyStringValues));
-            Assert.Equal(empty, StringValues.Concat(in emptyStringValues, (string)null));
+            Assert.Equal(empty, StringValues.Concat(stringValues, StringValues.Empty).ToArray());
+            Assert.Equal(empty, StringValues.Concat(StringValues.Empty, stringValues).ToArray());
+            Assert.Equal(empty, StringValues.Concat(stringValues, new StringValues()).ToArray());
+            Assert.Equal(empty, StringValues.Concat(new StringValues(), stringValues).ToArray());
+            Assert.Equal(empty, StringValues.Concat((string)null, in emptyStringValues).ToArray());
+            Assert.Equal(empty, StringValues.Concat(in emptyStringValues, (string)null).ToArray());
         }
 
         [Theory]
@@ -475,24 +475,24 @@ namespace Microsoft.Extensions.Primitives
             string[] filled = new[] { "abc", "bcd", "foo" };
 
             string[] expectedPrepended = array.Concat(filled).ToArray();
-            Assert.Equal(expectedPrepended, StringValues.Concat(stringValues, new StringValues(filled)));
+            Assert.Equal(expectedPrepended, StringValues.Concat(stringValues, new StringValues(filled)).ToArray());
 
             string[] expectedAppended = filled.Concat(array).ToArray();
-            Assert.Equal(expectedAppended, StringValues.Concat(new StringValues(filled), stringValues));
+            Assert.Equal(expectedAppended, StringValues.Concat(new StringValues(filled), stringValues).ToArray());
 
             StringValues values = stringValues;
             foreach (string s in filled)
             {
                 values = StringValues.Concat(in values, s);
             }
-            Assert.Equal(expectedPrepended, values);
+            Assert.Equal(expectedPrepended, (string[])values);
 
             values = stringValues;
-            foreach (string s in filled.Reverse())
+            foreach (string s in Enumerable.Reverse(filled))
             {
                 values = StringValues.Concat(s, in values);
             }
-            Assert.Equal(expectedAppended, values);
+            Assert.Equal(expectedAppended, (string[])values);
         }
 
         [Fact]

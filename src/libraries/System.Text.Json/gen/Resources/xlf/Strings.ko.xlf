@@ -144,12 +144,12 @@
       </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberFormat">
         <source>The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</source>
-        <target state="new">The type '{0}' includes the ref like property, field or constructor parameter '{1}'. No source code will be generated for the property, field or constructor.</target>
+        <target state="translated">'{0}' 형식에는 속성, 필드 또는 생성자 매개 변수 '{1}'와 같은 ref가 포함됩니다. 속성, 필드 또는 생성자에 대한 소스 코드가 생성되지 않습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeContainsRefLikeMemberTitle">
         <source>Type includes ref like property, field or constructor parameter.</source>
-        <target state="new">Type includes ref like property, field or constructor parameter.</target>
+        <target state="translated">형식에는 속성, 필드 또는 생성자 매개 변수와 같은 ref가 포함됩니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">

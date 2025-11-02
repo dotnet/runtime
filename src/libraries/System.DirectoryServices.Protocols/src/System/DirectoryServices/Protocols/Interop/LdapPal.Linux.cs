@@ -19,8 +19,6 @@ namespace System.DirectoryServices.Protocols
 
         internal static void FreeDirectoryControls(IntPtr value) => Interop.Ldap.ldap_controls_free(value);
 
-        internal static int CreateDirectorySortControl(ConnectionHandle handle, IntPtr keys, byte critical, ref IntPtr control) => Interop.Ldap.ldap_create_sort_control(handle, keys, critical, ref control);
-
         internal static int DeleteDirectoryEntry(ConnectionHandle ldapHandle, string dn, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) => Interop.Ldap.ldap_delete_ext(ldapHandle, dn, servercontrol, clientcontrol, ref messageNumber);
 
         internal static int ExtendedDirectoryOperation(ConnectionHandle ldapHandle, string oid, BerVal data, IntPtr servercontrol, IntPtr clientcontrol, ref int messageNumber) =>
@@ -117,6 +115,8 @@ namespace System.DirectoryServices.Protocols
 
         internal static int SetReferralOption(ConnectionHandle ldapHandle, LdapOption option, ref LdapReferralCallback outValue) => Interop.Ldap.ldap_set_option_referral(ldapHandle, option, ref outValue);
 
+        internal static int SetTimevalOption(ConnectionHandle ldapHandle, LdapOption option, ref LDAP_TIMEVAL inValue) => Interop.Ldap.ldap_set_option_timeval(ldapHandle, option, ref inValue);
+
         // This option is not supported in Linux, so it would most likely throw.
         internal static int SetServerCertOption(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue) => Interop.Ldap.ldap_set_option_servercert(ldapHandle, option, outValue);
 
@@ -128,7 +128,7 @@ namespace System.DirectoryServices.Protocols
                 passwordPtr = LdapPal.StringToPtr(passwd);
                 BerVal passwordBerval = new BerVal
                 {
-                    bv_len = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)passwordPtr).Length,
+                    bv_len = new CLong(MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)passwordPtr).Length),
                     bv_val = passwordPtr,
                 };
 

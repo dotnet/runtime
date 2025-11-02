@@ -204,7 +204,7 @@ namespace ILCompiler.DependencyAnalysis
                     metadataManager.Logger.LogWarning(
                         new MessageOrigin(entity),
                         DiagnosticId.NoMembersResolvedForMemberSignatureOrType,
-                        memberTypesFromAttribute.ToString(),
+                        ((DynamicallyAccessedMemberTypes)memberTypesFromAttribute).ToString(),
                         targetType.GetDisplayName());
                     return;
                 }

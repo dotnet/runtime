@@ -676,14 +676,20 @@ namespace System.Net.Sockets
         /// <param name="endPoint">The DNS end point to which to connect.</param>
         /// <param name="socketType">The SocketType to use to construct new sockets, if necessary.</param>
         /// <param name="protocolType">The ProtocolType to use to construct new sockets, if necessary.</param>
+        /// <param name="cancellationToken">The CancellationToken.</param>
         /// <returns>true if the operation is pending; otherwise, false if it's already completed.</returns>
-        internal bool DnsConnectAsync(DnsEndPoint endPoint, SocketType socketType, ProtocolType protocolType)
+        internal bool DnsConnectAsync(DnsEndPoint endPoint, SocketType socketType, ProtocolType protocolType, CancellationToken cancellationToken)
         {
             Debug.Assert(endPoint.AddressFamily == AddressFamily.Unspecified ||
                          endPoint.AddressFamily == AddressFamily.InterNetwork ||
                          endPoint.AddressFamily == AddressFamily.InterNetworkV6);
 
-            CancellationToken cancellationToken = _multipleConnectCancellation?.Token ?? default;
+            if (_multipleConnectCancellation is not null)
+            {
+                Debug.Assert(!cancellationToken.CanBeCanceled, "Task-based connect logic should not use _multipleConnectCancellation for cancellation.");
+                // We registered a CancellationTokenSource in StartOperationConnect.
+                cancellationToken = _multipleConnectCancellation.Token;
+            }
 
             // In .NET 5 and earlier, the APM implementation allowed for synchronous exceptions from this to propagate
             // synchronously.  This call is made here rather than in the Core async method below to preserve that behavior.
@@ -698,7 +704,9 @@ namespace System.Net.Sockets
             // Delegate to the actual implementation.  The returned Task is unused and ignored, as the whole body is surrounded
             // by a try/catch.  Thus we ignore the result.  We avoid an "async void" method so as to skip the implicit SynchronizationContext
             // interactions async void methods entail.
+#pragma warning disable CA2025
             _ = Core(internalArgs, addressesTask, endPoint.Port, socketType, protocolType, cancellationToken);
+#pragma warning restore
 
             // Determine whether the async operation already completed and stored the results into `this`.
             // If we reached this point and the operation hasn't yet stored the results, then it's considered
@@ -772,12 +780,9 @@ namespace System.Net.Sockets
                         }
 
                         // Issue the connect.  If it pends, wait for it to complete.
-                        if (attemptSocket.ConnectAsync(internalArgs))
+                        if (attemptSocket.ConnectAsync(internalArgs, userSocket: true, saeaMultiConnectCancelable: false, cancellationToken))
                         {
-                            using (cancellationToken.UnsafeRegister(s => Socket.CancelConnectAsync((SocketAsyncEventArgs)s!), internalArgs))
-                            {
-                                await new ValueTask(internalArgs, internalArgs.Version).ConfigureAwait(false);
-                            }
+                            await new ValueTask(internalArgs, internalArgs.Version).ConfigureAwait(false);
                         }
 
                         // If it completed successfully, we're done; cleanup will be handled by the finally.
@@ -789,10 +794,18 @@ namespace System.Net.Sockets
                         // If the operation was canceled, simulate the appropriate SocketError.
                         if (cancellationToken.IsCancellationRequested)
                         {
-                            throw new SocketException((int)SocketError.OperationAborted);
+                            lastError = SocketError.OperationAborted;
+                            break;
                         }
 
                         lastError = internalArgs.SocketError;
+
+                        // If multi-connect is no longer possible, terminate propagating the last error.
+                        if (!attemptSocket.CanProceedWithMultiConnect)
+                        {
+                            break;
+                        }
+
                         internalArgs.Reset();
                     }
 

@@ -22,6 +22,7 @@ main PR <!-- Link to PR if any that fixed this in the main branch. -->
 
 <!-- Please assess the risk of taking this fix. Provide details backing up your assessment. -->
 
-# Package authoring signed off?
+# Package authoring no longer needed in .NET 9
 
-IMPORTANT: If this change touches code that ships in a NuGet package, please make certain that you have added any necessary [package authoring](../../docs/project/library-servicing.md) and gotten it explicitly reviewed.
+IMPORTANT: Starting with .NET 9, you no longer need to edit a NuGet package's csproj to enable building and bump the version.
+Keep in mind that we still need package authoring in .NET 8 and older versions.

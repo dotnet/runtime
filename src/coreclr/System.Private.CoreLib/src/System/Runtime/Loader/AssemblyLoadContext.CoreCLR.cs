@@ -110,9 +110,9 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM to resolve a satellite assembly reference
         // after trying assembly resolution via Load override without success.
-        private static RuntimeAssembly? ResolveSatelliteAssembly(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        private static RuntimeAssembly? ResolveSatelliteAssembly(IntPtr gchAssemblyLoadContext, AssemblyName assemblyName)
         {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
+            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
 
             // Invoke the ResolveSatelliteAssembly method
             return context.ResolveSatelliteAssembly(assemblyName);
@@ -120,25 +120,25 @@ namespace System.Runtime.Loader
 
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
-        private static IntPtr ResolveUnmanagedDll(string unmanagedDllName, IntPtr gchManagedAssemblyLoadContext)
+        private static IntPtr ResolveUnmanagedDll(string unmanagedDllName, IntPtr gchAssemblyLoadContext)
         {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
+            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
             return context.LoadUnmanagedDll(unmanagedDllName);
         }
 
         // This method is invoked by the VM to resolve a native library using the ResolvingUnmanagedDll event
         // after trying all other means of resolution.
-        private static IntPtr ResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchManagedAssemblyLoadContext)
+        private static IntPtr ResolveUnmanagedDllUsingEvent(string unmanagedDllName, Assembly assembly, IntPtr gchAssemblyLoadContext)
         {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
+            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
             return context.GetResolvedUnmanagedDll(assembly, unmanagedDllName);
         }
 
         // This method is invoked by the VM to resolve an assembly reference using the Resolving event
         // after trying assembly resolution via Load override and TPA load context without success.
-        private static RuntimeAssembly? ResolveUsingResolvingEvent(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
+        private static RuntimeAssembly? ResolveUsingResolvingEvent(IntPtr gchAssemblyLoadContext, AssemblyName assemblyName)
         {
-            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchManagedAssemblyLoadContext).Target)!;
+            AssemblyLoadContext context = (AssemblyLoadContext)(GCHandle.FromIntPtr(gchAssemblyLoadContext).Target)!;
             // Invoke the AssemblyResolve event callbacks if wired up
             return context.ResolveUsingEvent(assemblyName);
         }

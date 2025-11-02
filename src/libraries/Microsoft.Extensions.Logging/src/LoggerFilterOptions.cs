@@ -18,8 +18,11 @@ namespace Microsoft.Extensions.Logging
         public LoggerFilterOptions() { }
 
         /// <summary>
-        /// Gets or sets value indicating whether logging scopes are being captured. Defaults to <c>true</c>
+        /// Gets or sets a value indicating whether logging scopes are being captured.
         /// </summary>
+        /// <value>
+        /// The default value is <see langword="true" />
+        /// </value>
         public bool CaptureScopes { get; set; } = true;
 
         /// <summary>

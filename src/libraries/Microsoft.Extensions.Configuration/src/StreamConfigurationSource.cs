@@ -7,12 +7,12 @@ using System.IO;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Stream based <see cref="IConfigurationSource" />.
+    /// Defines the core behavior of stream-based configuration sources and provides a base for derived classes.
     /// </summary>
     public abstract class StreamConfigurationSource : IConfigurationSource
     {
         /// <summary>
-        /// The stream containing the configuration data.
+        /// Gets or sets the stream containing the configuration data.
         /// </summary>
         [DisallowNull]
         public Stream? Stream { get; set; }
@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Configuration
         /// Builds the <see cref="StreamConfigurationProvider"/> for this source.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
-        /// <returns>An <see cref="IConfigurationProvider"/></returns>
+        /// <returns>An <see cref="IConfigurationProvider"/> instance.</returns>
         public abstract IConfigurationProvider Build(IConfigurationBuilder builder);
     }
 }

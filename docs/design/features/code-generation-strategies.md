@@ -24,10 +24,6 @@ The format of ahead of time compiled binaries is called [Ready To Run](../corecl
 
 Ahead of time compilation gives the code generator more time to perform optimizations.
 
-### Interpreter
-
-CoreCLR also has an interpreter that executes code by interpreting individual IL instructions. The interpreter is not enabled by default and not actively maintained. Look for `FEATURE_INTERPRETER` #defines in the CoreCLR source base.
-
 ## Mixed strategies
 
 The best results are typically achieved by mixed execution strategies - CoreCLR typically uses a mixed strategy of compiling certain parts of the program ahead of time (for example, the base class libraries), and using JIT for the remaining parts.

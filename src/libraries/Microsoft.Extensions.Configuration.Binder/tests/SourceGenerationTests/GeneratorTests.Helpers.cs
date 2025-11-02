@@ -68,7 +68,6 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         private static readonly Assembly[] s_compilationAssemblyRefs = new[] {
-            typeof(BitArray).Assembly,
             typeof(ConfigurationBinder).Assembly,
             typeof(ConfigurationBuilder).Assembly,
             typeof(CultureInfo).Assembly,
@@ -80,6 +79,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             typeof(IDictionary).Assembly,
             typeof(OptionsBuilder<>).Assembly,
             typeof(OptionsConfigurationServiceCollectionExtensions).Assembly,
+            typeof(Stack<>).Assembly,
             typeof(Uri).Assembly,
         };
 
@@ -201,6 +201,19 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 assemblies.Remove(exclusion.Assembly);
             }
             return assemblies;
+        }
+
+        public static byte[] CreateAssemblyImage(Compilation compilation)
+        {
+            MemoryStream ms = new MemoryStream();
+            var emitResult = compilation.Emit(ms);
+            if (!emitResult.Success)
+            {
+                // Explicit failures to include in the test output.
+                string errorMessage = string.Join(Environment.NewLine, emitResult.Diagnostics.Select(d => d.ToString()));
+                throw new InvalidOperationException(errorMessage);
+            }
+            return ms.ToArray();
         }
     }
 }

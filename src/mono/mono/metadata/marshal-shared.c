@@ -507,7 +507,7 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 		int esize;
 
 		if (type->type == MONO_TYPE_SZARRAY) {
-			eklass = type->data.klass;
+			eklass = m_type_data_get_klass_unchecked (type);
 		} else {
 			g_assert_not_reached ();
 		}
@@ -873,8 +873,8 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 				MonoType *etype;
 				int len;
 
-				if (t == MONO_TYPE_VALUETYPE && m_class_is_enumtype (ftype->data.klass)) {
-					ftype = mono_class_enum_basetype_internal (ftype->data.klass);
+				if (t == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (ftype))) {
+					ftype = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (ftype));
 					goto handle_enum;
 				}
 
@@ -1060,9 +1060,9 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 		int esize;
 
 		if (type->type == MONO_TYPE_SZARRAY) {
-			eklass = type->data.klass;
+			eklass = m_type_data_get_klass_unchecked (type);
 		} else if (type->type == MONO_TYPE_ARRAY) {
-			eklass = type->data.array->eklass;
+			eklass = m_type_data_get_array_unchecked (type)->eklass;
 			g_assert(m_class_is_blittable (eklass));
 		} else {
 			g_assert_not_reached ();

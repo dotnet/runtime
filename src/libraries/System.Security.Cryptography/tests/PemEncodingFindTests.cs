@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public abstract class PemEncodingFindTests
+    public abstract class PemEncodingFindTests<TChar> where TChar : IEquatable<TChar>
     {
         [Fact]
         public void Find_Success_Simple()
@@ -183,7 +183,7 @@ namespace System.Security.Cryptography.Tests
         public void Find_Success_LabelCharacterBoundaries()
         {
             string content = $"-----BEGIN !PANIC~~~-----\nAHHH\n-----END !PANIC~~~-----";
-            PemFields fields = AssertPemFound(content,
+            AssertPemFound(content,
                 expectedLocation: 0..54,
                 expectedBase64: 26..30,
                 expectedLabel: 11..20);
@@ -197,7 +197,7 @@ namespace System.Security.Cryptography.Tests
         public void Find_Success_WhiteSpaceBeforePreebSeparatesFromPriorContent(string whiteSpace)
         {
             string content = $"blah{whiteSpace}-----BEGIN TEST-----\nZn9v\n-----END TEST-----";
-            PemFields fields = AssertPemFound(content,
+            AssertPemFound(content,
                 expectedLocation: 5..49,
                 expectedBase64: 26..30,
                 expectedLabel: 16..20);
@@ -211,7 +211,7 @@ namespace System.Security.Cryptography.Tests
         public void Find_Success_WhiteSpaceAfterPpostebSeparatesFromSubsequentContent(string whiteSpace)
         {
             string content = $"-----BEGIN TEST-----\nZn9v\n-----END TEST-----{whiteSpace}blah";
-            PemFields fields = AssertPemFound(content,
+            AssertPemFound(content,
                 expectedLocation: 0..44,
                 expectedBase64: 21..25,
                 expectedLabel: 11..15);
@@ -221,7 +221,7 @@ namespace System.Security.Cryptography.Tests
         public void Find_Success_Base64SurroundingWhiteSpaceStripped()
         {
             string content = $"-----BEGIN A-----\r\n Zm9v\n\r \t-----END A-----";
-            PemFields fields = AssertPemFound(content,
+            AssertPemFound(content,
                 expectedLocation: 0..43,
                 expectedBase64: 20..24,
                 expectedLabel: 11..12);
@@ -418,14 +418,14 @@ MII
         [InlineData("c G V u b n k h", 6)]
         public void Find_Success_DecodeSize(string base64, int expectedSize)
         {
-            string content = $"-----BEGIN TEST-----\n{base64}\n-----END TEST-----";
+            ReadOnlySpan<TChar> content = Create($"-----BEGIN TEST-----\n{base64}\n-----END TEST-----");
             PemFields fields = FindPem(content);
             Assert.Equal(expectedSize, fields.DecodedDataLength);
-            Assert.Equal(base64, content[fields.Base64Data]);
+            AssertExtensions.SequenceEqual(Create(base64), content[fields.Base64Data]);
         }
 
         private PemFields AssertPemFound(
-            ReadOnlySpan<char> input,
+            string input,
             Range expectedLocation,
             Range expectedBase64,
             Range expectedLabel)
@@ -438,12 +438,16 @@ MII
             return fields;
         }
 
-        protected abstract void AssertNoPemFound(ReadOnlySpan<char> input);
+        private void AssertNoPemFound(string input) => AssertNoPemFound(Create(input));
+        protected abstract void AssertNoPemFound(ReadOnlySpan<TChar> input);
 
-        protected abstract PemFields FindPem(ReadOnlySpan<char> input);
+        protected abstract PemFields FindPem(ReadOnlySpan<TChar> input);
+        private PemFields FindPem(string input) => FindPem(Create(input));
+
+        protected abstract ReadOnlySpan<TChar> Create(string pem);
     }
 
-    public class PemEncodingFindThrowingTests : PemEncodingFindTests
+    public class PemEncodingFindThrowingTests : PemEncodingFindTests<char>
     {
         protected override PemFields FindPem(ReadOnlySpan<char> input) => PemEncoding.Find(input);
 
@@ -451,9 +455,11 @@ MII
         {
             AssertExtensions.Throws<ArgumentException, char>("pemData", input, x => PemEncoding.Find(x));
         }
+
+        protected override ReadOnlySpan<char> Create(string pem) => pem;
     }
 
-    public class PemEncodingFindTryTests : PemEncodingFindTests
+    public class PemEncodingFindTryTests : PemEncodingFindTests<char>
     {
         protected override PemFields FindPem(ReadOnlySpan<char> input)
         {
@@ -467,5 +473,57 @@ MII
             bool found = PemEncoding.TryFind(input, out _);
             Assert.False(found, "Found PEM when not expected");
         }
+
+        protected override ReadOnlySpan<char> Create(string pem) => pem;
+    }
+
+    public class PemEncodingFindUtf8ThrowingTests : PemEncodingFindTests<byte>
+    {
+        [Fact]
+        public void FindUtf8_InvalidUtf8_OutsideOfEncapBoundary_Ignored()
+        {
+            ReadOnlySpan<byte> content = [0xFF, 0xFF, .."\n-----BEGIN TEST-----\nZm9v\n-----END TEST-----"u8];
+            PemFields fields = PemEncoding.FindUtf8(content);
+            Assert.Equal(14..18, fields.Label);
+            Assert.Equal(24..28, fields.Base64Data);
+            Assert.Equal(3..47, fields.Location);
+        }
+
+        protected override PemFields FindPem(ReadOnlySpan<byte> input) => PemEncoding.FindUtf8(input);
+
+        protected override void AssertNoPemFound(ReadOnlySpan<byte> input)
+        {
+            AssertExtensions.Throws<ArgumentException, byte>("pemData", input, x => PemEncoding.FindUtf8(x));
+        }
+
+        protected override ReadOnlySpan<byte> Create(string pem) => Encoding.UTF8.GetBytes(pem);
+    }
+
+    public class PemEncodingFindUtf8TryTests : PemEncodingFindTests<byte>
+    {
+        [Fact]
+        public void FindUtf8_InvalidUtf8_OutsideOfEncapBoundary_Ignored()
+        {
+            ReadOnlySpan<byte> content = [0xFF, 0xFF, .."\n-----BEGIN TEST-----\nZm9v\n-----END TEST-----"u8];
+            Assert.True(PemEncoding.TryFindUtf8(content, out PemFields fields), nameof(PemEncoding.TryFindUtf8));
+            Assert.Equal(14..18, fields.Label);
+            Assert.Equal(24..28, fields.Base64Data);
+            Assert.Equal(3..47, fields.Location);
+        }
+
+        protected override PemFields FindPem(ReadOnlySpan<byte> input)
+        {
+            bool found = PemEncoding.TryFindUtf8(input, out PemFields fields);
+            Assert.True(found, "Did not find PEM.");
+            return fields;
+        }
+
+        protected override void AssertNoPemFound(ReadOnlySpan<byte> input)
+        {
+            bool found = PemEncoding.TryFindUtf8(input, out _);
+            Assert.False(found, "Found PEM when not expected");
+        }
+
+        protected override ReadOnlySpan<byte> Create(string pem) => Encoding.UTF8.GetBytes(pem);
     }
 }

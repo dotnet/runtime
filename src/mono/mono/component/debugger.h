@@ -198,7 +198,7 @@ typedef struct MonoComponentDebugger {
 	void (*send_enc_delta) (MonoImage *image, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 
 	//wasi
-	void (*receive_and_process_command_from_debugger_agent) (void);
+	gboolean (*receive_and_process_command_from_debugger_agent) (void);
 	gboolean (*debugger_enabled) (void);
 } MonoComponentDebugger;
 

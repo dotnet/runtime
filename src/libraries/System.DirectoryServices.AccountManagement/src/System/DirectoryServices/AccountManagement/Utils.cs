@@ -227,6 +227,12 @@ namespace System.DirectoryServices.AccountManagement
                 return SidType.FakeObject;
             }
 
+            // Is the SID S-1-5-0-0-0-RID (sentinel SID)?
+            if (IsSentinelSID(pSid))
+            {
+                return SidType.FakeObject;
+            }
+
             return rid switch
             {
                 21 => SidType.RealObject, // Account SID
@@ -810,6 +816,59 @@ namespace System.DirectoryServices.AccountManagement
                 if (dsRoleInfoPtr != IntPtr.Zero)
                     Interop.Dsrole.DsRoleFreeMemory(dsRoleInfoPtr);
             }
+        }
+
+        //
+        // The sentinel SID were placed in the domain SID range S-1-5-21-X-Y-Z-R with R < 512 because the existing domain controllers would always filter those SIDs out at boundaries.
+        // That way, the sentinel SID which says the claims or compound data is safe to consume would be removed should the claims or compound PAC ever pass through a domain controller
+        // that did not know how to apply security checks. S-1-5-21-X-Y-Z-R means that the SID belongs to a domain(including the local account domain) unless X=Y=Z=0 in which
+        // case it's a sentinel SID, a special type of pseudo-object that can't be interpreted in isolation.
+        //
+        internal static bool IsSentinelSID(IntPtr pSid)
+        {
+            Debug.Assert(Interop.Advapi32.IsValidSid(pSid));
+
+            IntPtr psubAuthorityCount = Interop.Advapi32.GetSidSubAuthorityCount(pSid);
+            int subAuthorityCount = Marshal.ReadByte(psubAuthorityCount);
+
+            //
+            // Sentinel SIDs are of format S-1-5-21-X-Y-Z-R, so if the subauthority count is not equal to 5
+            // (21-X-Y-Z-R), then it is not a sentinel SID.
+            //
+            if (subAuthorityCount != 5)
+            {
+                return false;
+            }
+
+            //
+            // If the rid is greater than equal to 512 then it is not a sentinel sid
+            //
+            int rid = GetLastRidFromSid(pSid);
+            if (rid >= 512)
+            {
+                return false;
+            }
+
+            // We  are going to check for X, Y and Z only hence starting the for loop
+            // with i = 1, and not reading sunAuthority-1 which is the RID
+            for (int i = 1; i < subAuthorityCount - 1; i++)
+            {
+                IntPtr pcurrentSubauthority = Interop.Advapi32.GetSidSubAuthority(pSid, i);
+                int currentSubauthority = Marshal.ReadInt32(pcurrentSubauthority);
+
+                //
+                // We return false as soon as we know the first subauthority is not 0
+                //
+                if (currentSubauthority != 0)
+                {
+                    return false;
+                }
+            }
+
+            //
+            // This means X=Y=Z=0
+            //
+            return true;
         }
     }
 }

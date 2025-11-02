@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
 
     include/pal/synchcache.hpp
@@ -12,16 +9,13 @@ Module Name:
 Abstract:
     Simple look-aside cache for unused objects with default
     constructor or no constructor
-
-
-
 --*/
 
 #ifndef _SYNCH_CACHE_H_
 #define _SYNCH_CACHE_H_
 
 #include "pal/thread.hpp"
-#include "pal/malloc.hpp"
+#include <new>
 
 namespace CorUnix
 {
@@ -36,7 +30,7 @@ namespace CorUnix
         static const int MaxDepth = 256;
 
         Volatile<USynchCacheStackNode*> m_pHead;
-        CRITICAL_SECTION m_cs;
+        minipal_mutex m_cs;
         Volatile<int> m_iDepth;
         int m_iMaxDepth;
 #ifdef _DEBUG
@@ -44,9 +38,9 @@ namespace CorUnix
 #endif
 
         void Lock(CPalThread * pthrCurrent)
-            { InternalEnterCriticalSection(pthrCurrent, &m_cs); }
+            { minipal_mutex_enter(&m_cs); }
         void Unlock(CPalThread * pthrCurrent)
-            { InternalLeaveCriticalSection(pthrCurrent, &m_cs); }
+            { minipal_mutex_leave(&m_cs); }
 
      public:
         CSynchCache(int iMaxDepth = MaxDepth) :
@@ -57,7 +51,7 @@ namespace CorUnix
             ,m_iMaxTrackedDepth(0)
 #endif
         {
-            InternalInitializeCriticalSection(&m_cs);
+            minipal_mutex_init(&m_cs);
             if (m_iMaxDepth < 0)
             {
                 m_iMaxDepth = 0;
@@ -67,7 +61,7 @@ namespace CorUnix
         ~CSynchCache()
         {
             Flush(NULL, true);
-            InternalDeleteCriticalSection(&m_cs);
+            minipal_mutex_destroy(&m_cs);
         }
 
 #ifdef _DEBUG
@@ -116,7 +110,7 @@ namespace CorUnix
 
             for (j=i;j<n;j++)
             {
-                pvObjRaw = (void *) InternalNew<USynchCacheStackNode>();
+                pvObjRaw = (void *) new(std::nothrow) USynchCacheStackNode();
                 if (NULL == pvObjRaw)
                     break;
 #ifdef _DEBUG
@@ -159,7 +153,7 @@ namespace CorUnix
             }
             else
             {
-                InternalDelete((char *)pNode);
+                delete (char *)pNode;
             }
             Unlock(pthrCurrent);
         }
@@ -184,7 +178,7 @@ namespace CorUnix
             {
                 pTemp = pNode;
                 pNode = pNode->next;
-                InternalDelete((char *)pTemp);
+                delete (char *)pTemp;
             }
         }
     };
@@ -205,13 +199,13 @@ namespace CorUnix
 
         static const int MaxDepth       = 256;
         static const int PreAllocFactor = 10; // Everytime a Get finds no available
-                                              // cached raw intances, it preallocates
+                                              // cached raw instances, it preallocates
                                               // MaxDepth/PreAllocFactor new raw
                                               // instances and store them into the
                                               // cache before continuing
 
         Volatile<USHRSynchCacheStackNode*> m_pHead;
-        CRITICAL_SECTION m_cs;
+        minipal_mutex m_cs;
         Volatile<int> m_iDepth;
         int m_iMaxDepth;
 #ifdef _DEBUG
@@ -219,9 +213,9 @@ namespace CorUnix
 #endif
 
         void Lock(CPalThread * pthrCurrent)
-            { InternalEnterCriticalSection(pthrCurrent, &m_cs); }
+            { minipal_mutex_enter(&m_cs); }
         void Unlock(CPalThread * pthrCurrent)
-            { InternalLeaveCriticalSection(pthrCurrent, &m_cs); }
+            { minipal_mutex_leave(&m_cs); }
 
      public:
         CSHRSynchCache(int iMaxDepth = MaxDepth) :
@@ -232,7 +226,7 @@ namespace CorUnix
             ,m_iMaxTrackedDepth(0)
 #endif
         {
-            InternalInitializeCriticalSection(&m_cs);
+            minipal_mutex_init(&m_cs);
             if (m_iMaxDepth < 0)
             {
                 m_iMaxDepth = 0;
@@ -242,7 +236,7 @@ namespace CorUnix
         ~CSHRSynchCache()
         {
             Flush(NULL, true);
-            InternalDeleteCriticalSection(&m_cs);
+            minipal_mutex_destroy(&m_cs);
         }
 
 #ifdef _DEBUG

@@ -176,6 +176,20 @@ void Compiler::unwindPushPopCFI(regNumber reg)
     }
 }
 
+//------------------------------------------------------------------------
+// Compiler::unwindPush2Pop2CFI: Record  push/save of 2 registers simultaneously.
+//
+// Arguments:
+//    reg1 - The first register being pushed/saved.
+//    reg2 - The second register being pushed/saved.
+//
+void Compiler::unwindPush2Pop2CFI(regNumber reg1, regNumber reg2)
+{
+    // ToDo: This is a placeholder till OS has unwind support for push2/pop2.
+    unwindPushPopCFI(reg1);
+    unwindPushPopCFI(reg2);
+}
+
 typedef jitstd::vector<CFI_CODE> CFICodeVector;
 
 void Compiler::unwindBegPrologCFI()

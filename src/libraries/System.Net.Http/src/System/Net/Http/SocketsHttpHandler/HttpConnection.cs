@@ -588,8 +588,10 @@ namespace System.Net.Http
                         var expect100Timer = new Timer(
                             static s => ((TaskCompletionSource<bool>)s!).TrySetResult(true),
                             allowExpect100ToContinue, _pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
+#pragma warning disable CA2025
                         sendRequestContentTask = SendRequestContentWithExpect100ContinueAsync(
                             request, allowExpect100ToContinue.Task, CreateRequestContentStream(request), expect100Timer, async, cancellationToken);
+#pragma warning restore
                     }
                 }
 
@@ -2056,9 +2058,14 @@ namespace System.Net.Http
                 _connectionClose = true;
             }
 
-            // If the connection is no longer in use (i.e. for NT authentication), then we can return it to the pool now.
-            // Otherwise, it will be returned when the connection is no longer in use (i.e. Release above is called).
-            if (!_inUse)
+            // If the connection is no longer in use (i.e. for NT authentication), then we can
+            // return it to the pool now; otherwise, it will be returned by the Release method later.
+            // The cancellation logic in HTTP/1.1 response stream reading methods is prone to race conditions
+            // where CancellationTokenRegistration callbacks may dispose the connection without the disposal
+            // leading to an actual cancellation of the response reading methods by an OperationCanceledException.
+            // To guard against these cases, it is necessary to check if the connection is disposed before
+            // attempting to return it to the pool.
+            if (!_inUse && !_disposed)
             {
                 ReturnConnectionToPool();
             }
@@ -2097,6 +2104,7 @@ namespace System.Net.Http
 
         private void ReturnConnectionToPool()
         {
+            Debug.Assert(!_disposed, "Connection should not be disposed.");
             Debug.Assert(_currentRequest == null, "Connection should no longer be associated with a request.");
             Debug.Assert(_readAheadTask == default, "Expected a previous initial read to already be consumed.");
             Debug.Assert(_readAheadTaskStatus == ReadAheadTask_NotStarted, "Expected SendAsync to reset the read-ahead task status.");

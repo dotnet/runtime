@@ -344,12 +344,12 @@ handle_enum:
 				break;
 			}
 
-			t = m_class_get_byval_arg (t->data.generic_class->container_class);
+			t = m_class_get_byval_arg (m_type_data_get_generic_class (t)->container_class);
 			type = t->type;
 			goto handle_enum;
 		case MONO_TYPE_VALUETYPE:
-			if (type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (t->data.klass)) {
-				type = mono_class_enum_basetype_internal (t->data.klass)->type;
+			if (type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass (t))) {
+				type = mono_class_enum_basetype_internal (m_type_data_get_klass (t))->type;
 				goto handle_enum;
 			}
 			mono_mb_emit_no_nullcheck (mb);
@@ -1009,9 +1009,9 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 			case MONO_TYPE_VOID:
 				break;
 			case MONO_TYPE_VALUETYPE:
-				klass = sig->ret->data.klass;
+				klass = m_type_data_get_klass (sig->ret);
 				if (m_class_is_enumtype (klass)) {
-					type = mono_class_enum_basetype_internal (sig->ret->data.klass)->type;
+					type = mono_class_enum_basetype_internal (m_type_data_get_klass (sig->ret))->type;
 					goto handle_enum;
 				}
 				mono_emit_marshal (&m, 0, sig->ret, spec, 0, NULL, MARSHAL_ACTION_CONV_RESULT);
@@ -2052,7 +2052,8 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 			}
 			mono_mb_emit_ldarg_addr (mb, 1);
 			mono_mb_emit_ldarg (mb, 0);
-			mono_mb_emit_icall (mb, mono_get_addr_compiled_method);
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_LDVIRTFTN_DELEGATE);
 			mono_mb_emit_op (mb, CEE_CALLI, target_method_sig);
 		} else {
 			mono_mb_emit_byte (mb, CEE_LDNULL);
@@ -2305,8 +2306,8 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, gboolean inflate_gene
 	}
 
 	MonoClassField *target_field = mono_class_get_field_from_name_full (target_class, member_name, NULL);
-	if (target_field == NULL || !mono_metadata_type_equal_full (target_field->type, m_class_get_byval_arg (mono_class_from_mono_type_internal (ret_type)), TRUE)) {
-		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", 
+	if (target_field == NULL || !mono_metadata_type_equal_full (target_field->type, m_class_get_byval_arg (mono_class_from_mono_type_internal (ret_type)), MONO_TYPE_EQ_FLAGS_SIG_ONLY | MONO_TYPE_EQ_FLAG_IGNORE_CMODS)) {
+		mono_mb_emit_exception_full (mb, "System", "MissingFieldException",
 			g_strdup_printf("No '%s' in '%s'. Or the type of '%s' doesn't match", member_name, m_class_get_name (target_class), member_name));
 		return;
 	}
@@ -2403,7 +2404,7 @@ inflate_method (MonoClass *klass, MonoMethod *method, MonoMethod *accessor_metho
 	if ((context.class_inst != NULL) || (context.method_inst != NULL))
 		result = mono_class_inflate_generic_method_checked (method, &context, error);
 	mono_error_assert_ok (error);
-	
+
 	return result;
 }
 
@@ -2425,13 +2426,13 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, gboolean inflate_gener
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
-	
+
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
 
 	ERROR_DECL(find_method_error);
 
 	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig);
-	
+
 	MonoClass *in_class = target_class;
 
 	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
@@ -2506,7 +2507,7 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, gboolean inflate_gen
 		emit_missing_method_error (mb, find_method_error, member_name);
 		return;
 	}
-	
+
 	g_assert (target_method->klass == target_class);
 
 	emit_unsafe_accessor_ldargs (mb, sig, !hasthis ? 1 : 0);
@@ -2733,7 +2734,7 @@ emit_swift_lowered_struct_load (MonoMethodBuilder *mb, MonoMethodSignature *csig
     }
 }
 
-/* Swift struct lowering handling causes csig to have additional arguments. 
+/* Swift struct lowering handling causes csig to have additional arguments.
  * This function returns the index of the argument in the csig that corresponds to the argument in the original signature.
  */
 static int

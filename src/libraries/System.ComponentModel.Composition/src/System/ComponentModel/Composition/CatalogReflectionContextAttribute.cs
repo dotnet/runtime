@@ -24,10 +24,7 @@ namespace System.ComponentModel.Composition
 
         public ReflectionContext CreateReflectionContext()
         {
-            if (_reflectionContextType == null)
-            {
-                throw new ArgumentNullException(nameof(_reflectionContextType));
-            }
+            ArgumentNullException.ThrowIfNull(_reflectionContextType);
 
             ReflectionContext reflectionContext;
             try

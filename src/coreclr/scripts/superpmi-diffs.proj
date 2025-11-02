@@ -28,11 +28,13 @@
     <Python>%HELIX_PYTHONPATH%</Python>
     <ProductDirectory>%HELIX_CORRELATION_PAYLOAD%</ProductDirectory>
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
+    <HelixWorkDir>%HELIX_WORKITEM_ROOT%</HelixWorkDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
     <Python>$HELIX_PYTHONPATH</Python>
     <ProductDirectory>$HELIX_CORRELATION_PAYLOAD</ProductDirectory>
     <SuperpmiLogsLocation>$HELIX_WORKITEM_UPLOAD_ROOT</SuperpmiLogsLocation>
+    <HelixWorkDir>$HELIX_WORKITEM_ROOT</HelixWorkDir>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -56,7 +58,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <WorkItemCommand>$(Python) $(ProductDirectory)/superpmi_diffs.py -type $(SuperPmiDiffType) -base_jit_directory $(ProductDirectory)/base -diff_jit_directory $(ProductDirectory)/diff $(SuperPmiBaseJitOptionsArg) $(SuperPmiDiffJitOptionsArg) -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(ProductDirectory)/superpmi_diffs.py -type $(SuperPmiDiffType) -base_jit_directory $(ProductDirectory)/base -diff_jit_directory $(ProductDirectory)/diff $(SuperPmiBaseJitOptionsArg) $(SuperPmiDiffJitOptionsArg) -work_directory $(HelixWorkDir) -log_directory $(SuperpmiLogsLocation)</WorkItemCommand>
     <WorkItemTimeout>5:00</WorkItemTimeout>
   </PropertyGroup>
 

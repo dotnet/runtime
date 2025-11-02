@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 #if NETFRAMEWORK
             X509KeyStorageFlags.DefaultKeySet;
 #else
-           PlatformDetection.UsesAppleCrypto ? 
+            PlatformDetection.UsesAppleCrypto ?
                 X509KeyStorageFlags.DefaultKeySet :
                 X509KeyStorageFlags.EphemeralKeySet;
 #endif
@@ -302,7 +302,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal(contentType, actualType);
                 }
             }
-            
+
             if (path is null)
             {
                 Assert.ThrowsAny<CryptographicException>(() => LoadPfxNoFile(data));
@@ -744,14 +744,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             Pkcs12LoaderLimits limits = Pkcs12LoaderLimits.Defaults;
 
+#if !NET10_0_OR_GREATER
             if (allowDuplicates)
             {
                 limits = Pkcs12LoaderLimits.DangerousNoLimits;
             }
+#endif
 
             // remove the edit lock
             limits = new Pkcs12LoaderLimits(limits)
             {
+#if NET10_0_OR_GREATER
+                AllowDuplicateAttributes = allowDuplicates,
+#endif
                 PreserveCertificateAlias = false,
                 PreserveKeyName = false,
                 PreserveStorageProvider = false,
@@ -773,6 +778,71 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 Pkcs12LoadLimitExceededException ex = Assert.Throws<Pkcs12LoadLimitExceededException>(() => func());
                 Assert.Contains("AllowDuplicateAttributes", ex.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void LoadWithLegacyProvider(bool preserveStorageProvider, bool ephemeralIfPossible)
+        {
+            Pkcs12LoaderLimits limits = new Pkcs12LoaderLimits { PreserveStorageProvider = preserveStorageProvider, };
+            X509KeyStorageFlags flags = ephemeralIfPossible ? EphemeralIfPossible : X509KeyStorageFlags.DefaultKeySet;
+
+            // EphemeralKeySet is not available by name in the netfx build.
+            const X509KeyStorageFlags EphemeralKeySet = (X509KeyStorageFlags)0x20;
+            bool expectLegacy = (flags & EphemeralKeySet) == 0 && preserveStorageProvider;
+
+            using (X509Certificate2 cert = LoadPfxNoFile(TestData.SChannelPfx, TestData.PlaceholderPw, flags, limits))
+            {
+                VerifySChannelProvider(cert, expectLegacy);
+            }
+        }
+
+        internal static void VerifySChannelProvider(X509Certificate2 cert, bool expectLegacy)
+        {
+            const string SChannelProviderName = "Microsoft RSA SChannel Cryptographic Provider";
+
+            Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+
+            using (RSA privateKey = cert.GetRSAPrivateKey())
+            {
+                Assert.NotNull(privateKey);
+
+                if (PlatformDetection.IsWindows)
+                {
+                    string expectedProvider = expectLegacy ?
+                        SChannelProviderName :
+                        "Microsoft Software Key Storage Provider";
+
+                    RSACng cng = Assert.IsType<RSACng>(privateKey);
+                    Assert.Equal(expectedProvider, cng.Key.Provider.Provider);
+                }
+
+                if (PlatformDetection.IsNetFramework)
+                {
+#pragma warning disable SYSLIB0028
+                    if (expectLegacy)
+                    {
+                        AsymmetricAlgorithm otherPrivateKeyInstance = cert.PrivateKey;
+
+                        RSACryptoServiceProvider csp =
+                            Assert.IsType<RSACryptoServiceProvider>(otherPrivateKeyInstance);
+
+                        Assert.Equal(SChannelProviderName, csp.CspKeyContainerInfo.ProviderName);
+                    }
+                    else
+                    {
+                        Assert.Throws<CryptographicException>(() => cert.PrivateKey);
+                    }
+#pragma warning restore SYSLIB0028
+                }
+
+                // Regardless of the platform, the key should work (partially because of the CNG wrapper of CAPI keys)
+                // Assert.NoThrow
+                privateKey.SignData(TestData.SChannelPfx, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
             }
         }
 

@@ -76,11 +76,11 @@ namespace System.Formats.Asn1
         ///   the method.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   the 9 most significant bits are all set.
+        ///   The 9 most significant bits are all set.
         ///
         ///   -or-
         ///
-        ///   the 9 most significant bits are all unset.
+        ///   The 9 most significant bits are all unset.
         /// </exception>
         public void WriteInteger(ReadOnlySpan<byte> value, Asn1Tag? tag = null)
         {
@@ -101,7 +101,7 @@ namespace System.Formats.Asn1
         ///   the method.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   the 9 most significant bits are all unset.
+        ///   The 9 most significant bits are all unset.
         /// </exception>
         public void WriteIntegerUnsigned(ReadOnlySpan<byte> value, Asn1Tag? tag = null)
         {

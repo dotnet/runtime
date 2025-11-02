@@ -866,5 +866,23 @@ namespace ComInterfaceGenerator.Unit.Tests
             test.DisabledDiagnostics.Remove(GeneratorDiagnostics.Ids.NotRecommendedGeneratedComInterfaceUsage);
             await test.RunAsync();
         }
+
+        [Fact]
+        public async Task VerifyInvalidExceptionToUnmanagedMarshallerTypeDiagnostic()
+        {
+            string code = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                [GeneratedComInterface(ExceptionToUnmanagedMarshaller = typeof(string[]))]
+                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                public partial interface {|#0:I|}
+                {
+                    void Method();
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(code, new DiagnosticResult(GeneratorDiagnostics.InvalidExceptionToUnmanagedMarshallerType).WithLocation(0));
+        }
     }
 }
