@@ -865,10 +865,10 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             {
                 assert(curAssertion->assertionKind == Compiler::OAK_NOT_EQUAL);
 
-                // We have an assertion of the form "var != cnstLimit".
-                // Say we have "var != 100" and we already have [100, X] as range for var,
-                // then we can tighten it to [101, X]
-                // Similarly, if we have [Y, 100], we can tighten it to [Y, 99].
+                // We have an assertion of the form "X != constLimit".
+                // For example, if the assertion is "X != 100" and the current range for X is [100, X],
+                // we can tighten the range to [101, X].
+                // Similarly, if the range is [Y, 100], we can tighten it to [Y, 99].
 
                 if (pRange->LowerLimit().IsConstant() && pRange->LowerLimit().GetConstant() == cnstLimit)
                 {
