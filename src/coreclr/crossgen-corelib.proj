@@ -106,7 +106,6 @@
     <Copy SourceFiles="@(CoreLib)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
   </Target>
 
-
   <Target Name="InvokeCrossgen"
           DependsOnTargets="PrepareInvokeCrossgen;CreateMergedMibcFile"
           Inputs="@(Crossgen2Inputs)"
