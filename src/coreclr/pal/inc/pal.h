@@ -3109,16 +3109,9 @@ Lse_##METHOD_DECL                                               \
                                                                 \
 EXTERN_C PALIMPORT inline RETURN_TYPE PALAPI METHOD_DECL        \
 {                                                               \
-    if (g_arm64_atomics_present)                                \
-    {                                                           \
-        return Lse_##METHOD_INVOC;                              \
-    }                                                           \
-    else                                                        \
-    {                                                           \
         RETURN_TYPE result = INTRINSIC_NAME;                    \
         PAL_InterlockedOperationBarrier();                      \
         return result;                                          \
-    }                                                           \
 }                                                               \
 
 #endif  // LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT

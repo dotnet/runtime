@@ -516,6 +516,10 @@ else()
     endif()
 endif()
 
+if(CLR_CMAKE_HOST_UNIX_ARM64)
+    add_compile_options(-mno-outline-atomics)
+endif()
+
 if (CLR_CMAKE_HOST_ANDROID)
     # Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
     # This applies only to 64-bit binaries
