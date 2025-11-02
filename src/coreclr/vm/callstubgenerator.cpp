@@ -1402,6 +1402,408 @@ PCODE FPRegs32LoadRoutines[] =
 
 #endif // TARGET_ARM64
 
+#ifdef TARGET_RISCV64
+
+extern "C" void Load_A0();
+extern "C" void Load_A0_A1();
+extern "C" void Load_A0_A1_A2();
+extern "C" void Load_A0_A1_A2_A3();
+extern "C" void Load_A0_A1_A2_A3_A4();
+extern "C" void Load_A0_A1_A2_A3_A4_A5();
+extern "C" void Load_A0_A1_A2_A3_A4_A5_A6();
+extern "C" void Load_A0_A1_A2_A3_A4_A5_A6_A7();
+extern "C" void Load_A1();
+extern "C" void Load_A1_A2();
+extern "C" void Load_A1_A2_A3();
+extern "C" void Load_A1_A2_A3_A4();
+extern "C" void Load_A1_A2_A3_A4_A5();
+extern "C" void Load_A1_A2_A3_A4_A5_A6();
+extern "C" void Load_A1_A2_A3_A4_A5_A6_A7();
+extern "C" void Load_A2();
+extern "C" void Load_A2_A3();
+extern "C" void Load_A2_A3_A4();
+extern "C" void Load_A2_A3_A4_A5();
+extern "C" void Load_A2_A3_A4_A5_A6();
+extern "C" void Load_A2_A3_A4_A5_A6_A7();
+extern "C" void Load_A3();
+extern "C" void Load_A3_A4();
+extern "C" void Load_A3_A4_A5();
+extern "C" void Load_A3_A4_A5_A6();
+extern "C" void Load_A3_A4_A5_A6_A7();
+extern "C" void Load_A4();
+extern "C" void Load_A4_A5();
+extern "C" void Load_A4_A5_A6();
+extern "C" void Load_A4_A5_A6_A7();
+extern "C" void Load_A5();
+extern "C" void Load_A5_A6();
+extern "C" void Load_A5_A6_A7();
+extern "C" void Load_A6();
+extern "C" void Load_A6_A7();
+extern "C" void Load_A7();
+
+extern "C" void Store_A0();
+extern "C" void Store_A0_A1();
+extern "C" void Store_A0_A1_A2();
+extern "C" void Store_A0_A1_A2_A3();
+extern "C" void Store_A0_A1_A2_A3_A4();
+extern "C" void Store_A0_A1_A2_A3_A4_A5();
+extern "C" void Store_A0_A1_A2_A3_A4_A5_A6();
+extern "C" void Store_A0_A1_A2_A3_A4_A5_A6_A7();
+extern "C" void Store_A1();
+extern "C" void Store_A1_A2();
+extern "C" void Store_A1_A2_A3();
+extern "C" void Store_A1_A2_A3_A4();
+extern "C" void Store_A1_A2_A3_A4_A5();
+extern "C" void Store_A1_A2_A3_A4_A5_A6();
+extern "C" void Store_A1_A2_A3_A4_A5_A6_A7();
+extern "C" void Store_A2();
+extern "C" void Store_A2_A3();
+extern "C" void Store_A2_A3_A4();
+extern "C" void Store_A2_A3_A4_A5();
+extern "C" void Store_A2_A3_A4_A5_A6();
+extern "C" void Store_A2_A3_A4_A5_A6_A7();
+extern "C" void Store_A3();
+extern "C" void Store_A3_A4();
+extern "C" void Store_A3_A4_A5();
+extern "C" void Store_A3_A4_A5_A6();
+extern "C" void Store_A3_A4_A5_A6_A7();
+extern "C" void Store_A4();
+extern "C" void Store_A4_A5();
+extern "C" void Store_A4_A5_A6();
+extern "C" void Store_A4_A5_A6_A7();
+extern "C" void Store_A5();
+extern "C" void Store_A5_A6();
+extern "C" void Store_A5_A6_A7();
+extern "C" void Store_A6();
+extern "C" void Store_A6_A7();
+extern "C" void Store_A7();
+
+PCODE GPRegsRoutines[] =
+{
+    (PCODE)Load_A0,                         // 00
+    (PCODE)Load_A0_A1,                      // 01
+    (PCODE)Load_A0_A1_A2,                   // 02
+    (PCODE)Load_A0_A1_A2_A3,                // 03
+    (PCODE)Load_A0_A1_A2_A3_A4,             // 04
+    (PCODE)Load_A0_A1_A2_A3_A4_A5,          // 05
+    (PCODE)Load_A0_A1_A2_A3_A4_A5_A6,       // 06
+    (PCODE)Load_A0_A1_A2_A3_A4_A5_A6_A7,    // 07
+    (PCODE)0,                               // 10
+    (PCODE)Load_A1,                         // 11
+    (PCODE)Load_A1_A2,                      // 12
+    (PCODE)Load_A1_A2_A3,                   // 13
+    (PCODE)Load_A1_A2_A3_A4,                // 14
+    (PCODE)Load_A1_A2_A3_A4_A5,             // 15
+    (PCODE)Load_A1_A2_A3_A4_A5_A6,          // 16
+    (PCODE)Load_A1_A2_A3_A4_A5_A6_A7,       // 17
+    (PCODE)0,                               // 20
+    (PCODE)0,                               // 21
+    (PCODE)Load_A2,                         // 22
+    (PCODE)Load_A2_A3,                      // 23
+    (PCODE)Load_A2_A3_A4,                   // 24
+    (PCODE)Load_A2_A3_A4_A5,                // 25
+    (PCODE)Load_A2_A3_A4_A5_A6,             // 26
+    (PCODE)Load_A2_A3_A4_A5_A6_A7,          // 27
+    (PCODE)0,                               // 30
+    (PCODE)0,                               // 31
+    (PCODE)0,                               // 32
+    (PCODE)Load_A3,                         // 33
+    (PCODE)Load_A3_A4,                      // 34
+    (PCODE)Load_A3_A4_A5,                   // 35
+    (PCODE)Load_A3_A4_A5_A6,                // 36
+    (PCODE)Load_A3_A4_A5_A6_A7,             // 37
+    (PCODE)0,                               // 40
+    (PCODE)0,                               // 41
+    (PCODE)0,                               // 42
+    (PCODE)0,                               // 43
+    (PCODE)Load_A4,                         // 44
+    (PCODE)Load_A4_A5,                      // 45
+    (PCODE)Load_A4_A5_A6,                   // 46
+    (PCODE)Load_A4_A5_A6_A7,                // 47
+    (PCODE)0,                               // 50
+    (PCODE)0,                               // 51
+    (PCODE)0,                               // 52
+    (PCODE)0,                               // 53
+    (PCODE)0,                               // 54
+    (PCODE)Load_A5,                         // 55
+    (PCODE)Load_A5_A6,                      // 56
+    (PCODE)Load_A5_A6_A7,                   // 57
+    (PCODE)0,                               // 60
+    (PCODE)0,                               // 61
+    (PCODE)0,                               // 62
+    (PCODE)0,                               // 63
+    (PCODE)0,                               // 64
+    (PCODE)0,                               // 65
+    (PCODE)Load_A6,                         // 66
+    (PCODE)Load_A6_A7,                      // 67
+    (PCODE)0,                               // 70
+    (PCODE)0,                               // 71
+    (PCODE)0,                               // 72
+    (PCODE)0,                               // 73
+    (PCODE)0,                               // 74
+    (PCODE)0,                               // 75
+    (PCODE)0,                               // 76
+    (PCODE)Load_A7                          // 77
+};
+
+PCODE GPRegsStoreRoutines[] =
+{
+    (PCODE)Store_A0,                         // 00
+    (PCODE)Store_A0_A1,                      // 01
+    (PCODE)Store_A0_A1_A2,                   // 02
+    (PCODE)Store_A0_A1_A2_A3,                // 03
+    (PCODE)Store_A0_A1_A2_A3_A4,             // 04
+    (PCODE)Store_A0_A1_A2_A3_A4_A5,          // 05
+    (PCODE)Store_A0_A1_A2_A3_A4_A5_A6,       // 06
+    (PCODE)Store_A0_A1_A2_A3_A4_A5_A6_A7,    // 07
+    (PCODE)0,                                // 10
+    (PCODE)Store_A1,                         // 11
+    (PCODE)Store_A1_A2,                      // 12
+    (PCODE)Store_A1_A2_A3,                   // 13
+    (PCODE)Store_A1_A2_A3_A4,                // 14
+    (PCODE)Store_A1_A2_A3_A4_A5,             // 15
+    (PCODE)Store_A1_A2_A3_A4_A5_A6,          // 16
+    (PCODE)Store_A1_A2_A3_A4_A5_A6_A7,       // 17
+    (PCODE)0,                                // 20
+    (PCODE)0,                                // 21
+    (PCODE)Store_A2,                         // 22
+    (PCODE)Store_A2_A3,                      // 23
+    (PCODE)Store_A2_A3_A4,                   // 24
+    (PCODE)Store_A2_A3_A4_A5,                // 25
+    (PCODE)Store_A2_A3_A4_A5_A6,             // 26
+    (PCODE)Store_A2_A3_A4_A5_A6_A7,          // 27
+    (PCODE)0,                                // 30
+    (PCODE)0,                                // 31
+    (PCODE)0,                                // 32
+    (PCODE)Store_A3,                         // 33
+    (PCODE)Store_A3_A4,                      // 34
+    (PCODE)Store_A3_A4_A5,                   // 35
+    (PCODE)Store_A3_A4_A5_A6,                // 36
+    (PCODE)Store_A3_A4_A5_A6_A7,             // 37
+    (PCODE)0,                                // 40
+    (PCODE)0,                                // 41
+    (PCODE)0,                                // 42
+    (PCODE)0,                                // 43
+    (PCODE)Store_A4,                         // 44
+    (PCODE)Store_A4_A5,                      // 45
+    (PCODE)Store_A4_A5_A6,                   // 46
+    (PCODE)Store_A4_A5_A6_A7,                // 47
+    (PCODE)0,                                // 50
+    (PCODE)0,                                // 51
+    (PCODE)0,                                // 52
+    (PCODE)0,                                // 53
+    (PCODE)0,                                // 54
+    (PCODE)Store_A5,                         // 55
+    (PCODE)Store_A5_A6,                      // 56
+    (PCODE)Store_A5_A6_A7,                   // 57
+    (PCODE)0,                                // 60
+    (PCODE)0,                                // 61
+    (PCODE)0,                                // 62
+    (PCODE)0,                                // 63
+    (PCODE)0,                                // 64
+    (PCODE)0,                                // 65
+    (PCODE)Store_A6,                         // 66
+    (PCODE)Store_A6_A7,                      // 67
+    (PCODE)0,                                // 70
+    (PCODE)0,                                // 71
+    (PCODE)0,                                // 72
+    (PCODE)0,                                // 73
+    (PCODE)0,                                // 74
+    (PCODE)0,                                // 75
+    (PCODE)0,                                // 76
+    (PCODE)Store_A7                          // 77
+};
+
+extern "C" void Load_FA0();
+extern "C" void Load_FA0_FA1();
+extern "C" void Load_FA0_FA1_FA2();
+extern "C" void Load_FA0_FA1_FA2_FA3();
+extern "C" void Load_FA0_FA1_FA2_FA3_FA4();
+extern "C" void Load_FA0_FA1_FA2_FA3_FA4_FA5();
+extern "C" void Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Load_FA2();
+extern "C" void Load_FA2_FA3();
+extern "C" void Load_FA2_FA3_FA4();
+extern "C" void Load_FA2_FA3_FA4_FA5();
+extern "C" void Load_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Load_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Load_FA4();
+extern "C" void Load_FA4_FA5();
+extern "C" void Load_FA4_FA5_FA6();
+extern "C" void Load_FA4_FA5_FA6_FA7();
+extern "C" void Load_FA6();
+extern "C" void Load_FA6_FA7();
+
+extern "C" void Store_FA0();
+extern "C" void Store_FA0_FA1();
+extern "C" void Store_FA0_FA1_FA2();
+extern "C" void Store_FA0_FA1_FA2_FA3();
+extern "C" void Store_FA0_FA1_FA2_FA3_FA4();
+extern "C" void Store_FA0_FA1_FA2_FA3_FA4_FA5();
+extern "C" void Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Store_FA2();
+extern "C" void Store_FA2_FA3();
+extern "C" void Store_FA2_FA3_FA4();
+extern "C" void Store_FA2_FA3_FA4_FA5();
+extern "C" void Store_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Store_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Store_FA4();
+extern "C" void Store_FA4_FA5();
+extern "C" void Store_FA4_FA5_FA6();
+extern "C" void Store_FA4_FA5_FA6_FA7();
+extern "C" void Store_FA6();
+extern "C" void Store_FA6_FA7();
+
+PCODE FPRegsRoutines[] =
+{
+    (PCODE)Load_FA0,                         // 00
+    (PCODE)Load_FA0_FA1,                     // 01
+    (PCODE)Load_FA0_FA1_FA2,                 // 02
+    (PCODE)Load_FA0_FA1_FA2_FA3,             // 03
+    (PCODE)Load_FA0_FA1_FA2_FA3_FA4,         // 04
+    (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5,     // 05
+    (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6,    // 06
+    (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 07
+    (PCODE)0,                                // 10
+    (PCODE)0,                                // 11
+    (PCODE)0,                                // 12
+    (PCODE)0,                                // 13
+    (PCODE)0,                                // 14
+    (PCODE)0,                                // 15
+    (PCODE)0,                                // 16
+    (PCODE)0,                                // 17
+    (PCODE)0,                                // 20
+    (PCODE)0,                                // 21
+    (PCODE)Load_FA2,                         // 22
+    (PCODE)Load_FA2_FA3,                     // 23
+    (PCODE)Load_FA2_FA3_FA4,                 // 24
+    (PCODE)Load_FA2_FA3_FA4_FA5,             // 25
+    (PCODE)Load_FA2_FA3_FA4_FA5_FA6,         // 26
+    (PCODE)Load_FA2_FA3_FA4_FA5_FA6_FA7,     // 27
+    (PCODE)0,                                // 30
+    (PCODE)0,                                // 31
+    (PCODE)0,                                // 32
+    (PCODE)0,                                // 33
+    (PCODE)0,                                // 34
+    (PCODE)0,                                // 35
+    (PCODE)0,                                // 36
+    (PCODE)0,                                // 37
+    (PCODE)0,                                // 40
+    (PCODE)0,                                // 41
+    (PCODE)0,                                // 42
+    (PCODE)0,                                // 43
+    (PCODE)Load_FA4,                         // 44
+    (PCODE)Load_FA4_FA5,                     // 45
+    (PCODE)Load_FA4_FA5_FA6,                 // 46
+    (PCODE)Load_FA4_FA5_FA6_FA7,             // 47
+    (PCODE)0,                                // 50
+    (PCODE)0,                                // 51
+    (PCODE)0,                                // 52
+    (PCODE)0,                                // 53
+    (PCODE)0,                                // 54
+    (PCODE)0,                                // 55
+    (PCODE)0,                                // 56
+    (PCODE)0,                                // 57
+    (PCODE)0,                                // 60
+    (PCODE)0,                                // 61
+    (PCODE)0,                                // 62
+    (PCODE)0,                                // 63
+    (PCODE)0,                                // 64
+    (PCODE)0,                                // 65
+    (PCODE)Load_FA6,                         // 66
+    (PCODE)Load_FA6_FA7                      // 67
+};
+
+PCODE FPRegsStoreRoutines[] =
+{
+    (PCODE)Store_FA0,                         // 00
+    (PCODE)Store_FA0_FA1,                     // 01
+    (PCODE)Store_FA0_FA1_FA2,                 // 02
+    (PCODE)Store_FA0_FA1_FA2_FA3,             // 03
+    (PCODE)Store_FA0_FA1_FA2_FA3_FA4,         // 04
+    (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5,     // 05
+    (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6,    // 06
+    (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 07
+    (PCODE)0,                                 // 10
+    (PCODE)0,                                 // 11
+    (PCODE)0,                                 // 12
+    (PCODE)0,                                 // 13
+    (PCODE)0,                                 // 14
+    (PCODE)0,                                 // 15
+    (PCODE)0,                                 // 16
+    (PCODE)0,                                 // 17
+    (PCODE)0,                                 // 20
+    (PCODE)0,                                 // 21
+    (PCODE)Store_FA2,                         // 22
+    (PCODE)Store_FA2_FA3,                     // 23
+    (PCODE)Store_FA2_FA3_FA4,                 // 24
+    (PCODE)Store_FA2_FA3_FA4_FA5,             // 25
+    (PCODE)Store_FA2_FA3_FA4_FA5_FA6,         // 26
+    (PCODE)Store_FA2_FA3_FA4_FA5_FA6_FA7,     // 27
+    (PCODE)0,                                 // 30
+    (PCODE)0,                                 // 31
+    (PCODE)0,                                 // 32
+    (PCODE)0,                                 // 33
+    (PCODE)0,                                 // 34
+    (PCODE)0,                                 // 35
+    (PCODE)0,                                 // 36
+    (PCODE)0,                                 // 37
+    (PCODE)0,                                 // 40
+    (PCODE)0,                                 // 41
+    (PCODE)0,                                 // 42
+    (PCODE)0,                                 // 43
+    (PCODE)Store_FA4,                         // 44
+    (PCODE)Store_FA4_FA5,                     // 45
+    (PCODE)Store_FA4_FA5_FA6,                 // 46
+    (PCODE)Store_FA4_FA5_FA6_FA7,             // 47
+    (PCODE)0,                                 // 50
+    (PCODE)0,                                 // 51
+    (PCODE)0,                                 // 52
+    (PCODE)0,                                 // 53
+    (PCODE)0,                                 // 54
+    (PCODE)0,                                 // 55
+    (PCODE)0,                                 // 56
+    (PCODE)0,                                 // 57
+    (PCODE)0,                                 // 60
+    (PCODE)0,                                 // 61
+    (PCODE)0,                                 // 62
+    (PCODE)0,                                 // 63
+    (PCODE)0,                                 // 64
+    (PCODE)0,                                 // 65
+    (PCODE)Store_FA6,                         // 66
+    (PCODE)Store_FA6_FA7                      // 67
+};
+
+// Reference routines for GC tracking - not yet implemented for RISC-V64
+// Using null pointers as placeholders
+PCODE GPRegsRefRoutines[] =
+{
+    (PCODE)0,        // 0 - a0
+    (PCODE)0,        // 1 - a1
+    (PCODE)0,        // 2 - a2
+    (PCODE)0,        // 3 - a3
+    (PCODE)0,        // 4 - a4
+    (PCODE)0,        // 5 - a5
+    (PCODE)0,        // 6 - a6
+    (PCODE)0         // 7 - a7
+};
+
+PCODE GPRegsRefStoreRoutines[] =
+{
+    (PCODE)0,        // 0 - a0
+    (PCODE)0,        // 1 - a1
+    (PCODE)0,        // 2 - a2
+    (PCODE)0,        // 3 - a3
+    (PCODE)0,        // 4 - a4
+    (PCODE)0,        // 5 - a5
+    (PCODE)0,        // 6 - a6
+    (PCODE)0         // 7 - a7
+};
+
+#endif // TARGET_RISCV64
+
 #define LOG_COMPUTE_CALL_STUB 0
 
 PCODE CallStubGenerator::GetStackRoutine()
