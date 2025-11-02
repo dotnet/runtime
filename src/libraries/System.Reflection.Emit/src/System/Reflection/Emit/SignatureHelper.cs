@@ -48,7 +48,7 @@ namespace System.Reflection.Emit
 
             retType.Void();
 
-            WriteParametersSignature(module, ModuleBuilderImpl.ParameterTypes(parameters), parameterEncoder);
+            WriteParametersSignature(module, GetParameterTypes(parameters), parameterEncoder);
 
             return constructorSignature;
         }
@@ -104,6 +104,23 @@ namespace System.Reflection.Emit
             }
 
             return methodSignature;
+        }
+
+        internal static Type[] GetParameterTypes(ParameterInfo[] parameterInfos)
+        {
+            if (parameterInfos.Length == 0)
+            {
+                return Type.EmptyTypes;
+            }
+
+            Type[] parameterTypes = new Type[parameterInfos.Length];
+
+            for (int i = 0; i < parameterInfos.Length; i++)
+            {
+                parameterTypes[i] = parameterInfos[i].GetModifiedParameterType();
+            }
+
+            return parameterTypes;
         }
 
         private static void WriteReturnTypeCustomModifiers(CustomModifiersEncoder encoder,

@@ -794,7 +794,7 @@ namespace System.Reflection.Emit
         }
 
         private BlobBuilder GetMethodSignature(MethodInfo method, Type[]? optionalParameterTypes) =>
-            MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), method.ReturnParameter.GetModifiedParameterType(),
+            MetadataSignatureHelper.GetMethodSignature(this, MetadataSignatureHelper.GetParameterTypes(method.GetParameters()), method.ReturnParameter.GetModifiedParameterType(),
                 GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
 
         private BlobBuilder GetMethodArrayMethodSignature(ArrayMethod method) => MetadataSignatureHelper.GetMethodSignature(
@@ -830,23 +830,6 @@ namespace System.Reflection.Emit
             }
 
             return memberInfo;
-        }
-
-        internal static Type[] ParameterTypes(ParameterInfo[] parameterInfos)
-        {
-            if (parameterInfos.Length == 0)
-            {
-                return Type.EmptyTypes;
-            }
-
-            Type[] parameterTypes = new Type[parameterInfos.Length];
-
-            for (int i = 0; i < parameterInfos.Length; i++)
-            {
-                parameterTypes[i] = parameterInfos[i].GetModifiedParameterType();
-            }
-
-            return parameterTypes;
         }
 
         private AssemblyReferenceHandle GetAssemblyReference(Assembly assembly)
