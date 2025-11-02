@@ -31,6 +31,7 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public virtual HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(request);

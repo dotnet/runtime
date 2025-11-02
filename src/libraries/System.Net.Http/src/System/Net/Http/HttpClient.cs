@@ -444,24 +444,28 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public HttpResponseMessage Send(HttpRequestMessage request) =>
             Send(request, DefaultCompletionOption, cancellationToken: default);
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption) =>
             Send(request, completionOption, cancellationToken: default);
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Send(request, DefaultCompletionOption, cancellationToken);
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken)
         {
             CheckRequestBeforeSend(request);
