@@ -864,6 +864,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public void ConsumeFunctionPointerMembers()
         {
             // public unsafe class Container
