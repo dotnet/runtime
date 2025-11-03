@@ -98,8 +98,18 @@ class CallStubGenerator
         ReturnTypeVector128,
         ReturnType2Vector128,
         ReturnType3Vector128,
-        ReturnType4Vector128
+        ReturnType4Vector128,
 #endif // TARGET_ARM64
+#ifdef TARGET_RISCV64
+        ReturnType2I8,
+        ReturnType2Double,
+        ReturnType3Double,
+        ReturnType4Double,
+        ReturnTypeFloat,
+        ReturnType2Float,
+        ReturnType3Float,
+        ReturnType4Float,
+#endif // TARGET_RISCV64
     };
 
     enum class RoutineType

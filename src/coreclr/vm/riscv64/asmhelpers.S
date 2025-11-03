@@ -942,18 +942,30 @@ LEAF_ENTRY Store_Stack_Ref
     // Split large immediate into separate additions to avoid 12-bit limit
     addi t5, t5, __PWTB_TransitionBlock
     addi t5, t5, SIZEOF__TransitionBlock
-    ld t7, 0(t5)    // t7 = source pointer
-
-    // Simple byte copy loop
-    beqz t4, LOCAL_LABEL(StoreCopyDone)
-LOCAL_LABEL(StoreCopyLoop):
-    lbu t6, 0(t7)   // Load from source
-    sb t6, 0(t3)    // Store to destination
-    addi t7, t7, 1  // Advance source
-    addi t3, t3, 1  // Advance destination
-    addi t4, t4, -1 // Decrement count
-    bnez t4, LOCAL_LABEL(StoreCopyLoop)
-LOCAL_LABEL(StoreCopyDone):
+    ld t5, 0(t5)    // t5 = pointer to source data from native stack
+    // Copy the data from native stack to interpreter stack
+    // Copy 8 bytes at a time if possible
+    addi t4, t4, -8
+    bltz t4, LOCAL_LABEL(StoreRefCopyBy1)
+LOCAL_LABEL(StoreRefCopyLoop8):
+    ld t6, 0(t5)
+    sd t6, 0(t3)
+    addi t5, t5, 8
+    addi t3, t3, 8
+    addi t4, t4, -8
+    bgez t4, LOCAL_LABEL(StoreRefCopyLoop8)
+LOCAL_LABEL(StoreRefCopyBy1):
+    // Copy remaining bytes (0-7)
+    addi t4, t4, 8
+    beqz t4, LOCAL_LABEL(StoreRefCopyDone)
+LOCAL_LABEL(StoreRefCopyLoop1):
+    lbu t6, 0(t5)
+    sb t6, 0(t3)
+    addi t5, t5, 1
+    addi t3, t3, 1
+    addi t4, t4, -1
+    bnez t4, LOCAL_LABEL(StoreRefCopyLoop1)
+LOCAL_LABEL(StoreRefCopyDone):
     // Align t3 to the stack slot size
     addi t3, t3, 7
     andi t3, t3, -8
@@ -998,34 +1010,34 @@ LOCAL_LABEL(RefCopyDone\argReg):
 // Routines for passing value type arguments by reference in general purpose registers A0..A7
 // from native code to the interpreter (Store direction)
 
-.macro Store_Ref argReg
+.macro Store_Ref argReg, argRegLower
 LEAF_ENTRY Store_Ref_\argReg
     ld t4, 0(t2)    // size of the value type
     addi t2, t2, 8
-    Copy_Ref \argReg
+    Copy_Ref \argRegLower
     ld t4, 0(t2)
     addi t2, t2, 8
     jr t4
 LEAF_END Store_Ref_\argReg
 .endm
 
-Store_Ref a0
-Store_Ref a1
-Store_Ref a2
-Store_Ref a3
-Store_Ref a4
-Store_Ref a5
-Store_Ref a6
-Store_Ref a7
+Store_Ref A0, a0
+Store_Ref A1, a1
+Store_Ref A2, a2
+Store_Ref A3, a3
+Store_Ref A4, a4
+Store_Ref A5, a5
+Store_Ref A6, a6
+Store_Ref A7, a7
 
 // Routines for loading value type arguments by reference from interpreter stack
 // to general purpose registers A0..A7 (Load direction - interpreter to native)
 
-.macro Load_Ref argReg
+.macro Load_Ref argReg, argRegLower
 LEAF_ENTRY Load_Ref_\argReg
     ld t4, 0(t2)    // size of the value type
     addi t2, t2, 8
-    mv \argReg, t3  // Pass pointer to the value type in register
+    mv \argRegLower, t3  // Pass pointer to the value type in register
     add t3, t3, t4  // Advance interpreter stack pointer
     // Align t3 to the stack slot size
     addi t3, t3, 7
@@ -1036,14 +1048,14 @@ LEAF_ENTRY Load_Ref_\argReg
 LEAF_END Load_Ref_\argReg
 .endm
 
-Load_Ref a0
-Load_Ref a1
-Load_Ref a2
-Load_Ref a3
-Load_Ref a4
-Load_Ref a5
-Load_Ref a6
-Load_Ref a7
+Load_Ref A0, a0
+Load_Ref A1, a1
+Load_Ref A2, a2
+Load_Ref A3, a3
+Load_Ref A4, a4
+Load_Ref A5, a5
+Load_Ref A6, a6
+Load_Ref A7, a7
 
 // Call jitted method routines
 // a0 - routines array
