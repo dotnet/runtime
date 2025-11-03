@@ -7987,7 +7987,7 @@ DO_LDFTN:
                     }
                     else if (asCorInfoType == CORINFO_TYPE_DOUBLE && m_pStackPointer[-1].GetStackType() == StackTypeR4)
                     {
-                        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R8_R4);
+                        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
                     }
 #ifdef TARGET_64BIT
                     // nint and int32 can be used interchangeably. Add implicit conversions.
