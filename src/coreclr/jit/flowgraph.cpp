@@ -1710,24 +1710,7 @@ void Compiler::fgAddAsyncContextSaveRestore()
     lvaAsyncSynchronizationContextVar = lvaGrabTemp(true DEBUGARG("Async SynchronizationContext"));
     lvaTable[lvaAsyncSynchronizationContextVar].lvType = TYP_REF;
 
-    // Initialize to null if not OSR (for OSR, values are preserved from tier0)
-    if (!opts.IsOSR())
-    {
-        GenTree* nullExecCtx = gtNewZeroConNode(TYP_REF);
-        GenTree* initExecCtx = gtNewStoreLclVarNode(lvaAsyncExecutionContextVar, nullExecCtx);
-        fgNewStmtAtBeg(fgFirstBB, initExecCtx);
-
-        GenTree* nullSyncCtx = gtNewZeroConNode(TYP_REF);
-        GenTree* initSyncCtx = gtNewStoreLclVarNode(lvaAsyncSynchronizationContextVar, nullSyncCtx);
-        fgNewStmtAtBeg(fgFirstBB, initSyncCtx);
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nAsync method - Initialize context locals in first block %s\n", fgFirstBB->dspToString());
-        }
-#endif
-    }
+    // Note: No need to initialize these to null - TYP_REF locals are automatically zero-initialized
 
     // Create try-fault structure (similar to synchronized methods)
     BasicBlock* const tryBegBB  = fgSplitBlockAtBeginning(fgFirstBB);
