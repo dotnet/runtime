@@ -3000,7 +3000,7 @@ namespace System
                     {
                         if (NotAny(Flags.UserEscaped))
                         {
-                            UriHelper.EscapeString(slice, ref dest, checkExistingEscaped: true, UriHelper.UnreservedReserved);
+                            UriHelper.EscapeString(slice, ref dest, checkExistingEscaped: true, isQuery ? UriHelper.UnreservedReservedExceptHash : UriHelper.UnreservedReserved);
                         }
                         else
                         {
