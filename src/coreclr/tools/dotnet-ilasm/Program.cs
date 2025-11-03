@@ -107,19 +107,24 @@ namespace Microsoft.NETCore.ILAsm
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                os = "linux";
+                // Detect musl-based Linux distributions
+                if (IsMuslBased())
+                {
+                    os = "linux-musl";
+                }
+                else
+                {
+                    os = "linux";
+                }
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 os = "osx";
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
-            {
-                os = "freebsd";
-            }
             else
             {
-                // Fallback to linux for unknown Unix-like platforms
+                // Fallback to linux for unknown Unix-like platforms (FreeBSD, etc.)
+                // Note: FreeBSD and other BSDs currently not supported by this package
                 os = "linux";
             }
 
@@ -140,6 +145,23 @@ namespace Microsoft.NETCore.ILAsm
             };
 
             return $"{os}-{arch}";
+        }
+
+        private static bool IsMuslBased()
+        {
+            // Check if running on a musl-based Linux distribution
+            // This is done by checking for the presence of musl libc
+            try
+            {
+                return File.Exists("/lib/ld-musl-x86_64.so.1") ||
+                       File.Exists("/lib/ld-musl-aarch64.so.1") ||
+                       File.Exists("/lib/ld-musl-armhf.so.1") ||
+                       Directory.GetFiles("/lib", "ld-musl-*.so.1").Length > 0;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
