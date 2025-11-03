@@ -1478,6 +1478,24 @@ extern "C" void Store_A6();
 extern "C" void Store_A6_A7();
 extern "C" void Store_A7();
 
+extern "C" void Load_Ref_A0();
+extern "C" void Load_Ref_A1();
+extern "C" void Load_Ref_A2();
+extern "C" void Load_Ref_A3();
+extern "C" void Load_Ref_A4();
+extern "C" void Load_Ref_A5();
+extern "C" void Load_Ref_A6();
+extern "C" void Load_Ref_A7();
+
+extern "C" void Store_Ref_A0();
+extern "C" void Store_Ref_A1();
+extern "C" void Store_Ref_A2();
+extern "C" void Store_Ref_A3();
+extern "C" void Store_Ref_A4();
+extern "C" void Store_Ref_A5();
+extern "C" void Store_Ref_A6();
+extern "C" void Store_Ref_A7();
+
 PCODE GPRegsRoutines[] =
 {
     (PCODE)Load_A0,                         // 00
@@ -1622,18 +1640,34 @@ extern "C" void Load_FA0_FA1_FA2_FA3_FA4();
 extern "C" void Load_FA0_FA1_FA2_FA3_FA4_FA5();
 extern "C" void Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6();
 extern "C" void Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Load_FA1();
+extern "C" void Load_FA1_FA2();
+extern "C" void Load_FA1_FA2_FA3();
+extern "C" void Load_FA1_FA2_FA3_FA4();
+extern "C" void Load_FA1_FA2_FA3_FA4_FA5();
+extern "C" void Load_FA1_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7();
 extern "C" void Load_FA2();
 extern "C" void Load_FA2_FA3();
 extern "C" void Load_FA2_FA3_FA4();
 extern "C" void Load_FA2_FA3_FA4_FA5();
 extern "C" void Load_FA2_FA3_FA4_FA5_FA6();
 extern "C" void Load_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Load_FA3();
+extern "C" void Load_FA3_FA4();
+extern "C" void Load_FA3_FA4_FA5();
+extern "C" void Load_FA3_FA4_FA5_FA6();
+extern "C" void Load_FA3_FA4_FA5_FA6_FA7();
 extern "C" void Load_FA4();
 extern "C" void Load_FA4_FA5();
 extern "C" void Load_FA4_FA5_FA6();
 extern "C" void Load_FA4_FA5_FA6_FA7();
+extern "C" void Load_FA5();
+extern "C" void Load_FA5_FA6();
+extern "C" void Load_FA5_FA6_FA7();
 extern "C" void Load_FA6();
 extern "C" void Load_FA6_FA7();
+extern "C" void Load_FA7();
 
 extern "C" void Store_FA0();
 extern "C" void Store_FA0_FA1();
@@ -1643,18 +1677,34 @@ extern "C" void Store_FA0_FA1_FA2_FA3_FA4();
 extern "C" void Store_FA0_FA1_FA2_FA3_FA4_FA5();
 extern "C" void Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6();
 extern "C" void Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Store_FA1();
+extern "C" void Store_FA1_FA2();
+extern "C" void Store_FA1_FA2_FA3();
+extern "C" void Store_FA1_FA2_FA3_FA4();
+extern "C" void Store_FA1_FA2_FA3_FA4_FA5();
+extern "C" void Store_FA1_FA2_FA3_FA4_FA5_FA6();
+extern "C" void Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7();
 extern "C" void Store_FA2();
 extern "C" void Store_FA2_FA3();
 extern "C" void Store_FA2_FA3_FA4();
 extern "C" void Store_FA2_FA3_FA4_FA5();
 extern "C" void Store_FA2_FA3_FA4_FA5_FA6();
 extern "C" void Store_FA2_FA3_FA4_FA5_FA6_FA7();
+extern "C" void Store_FA3();
+extern "C" void Store_FA3_FA4();
+extern "C" void Store_FA3_FA4_FA5();
+extern "C" void Store_FA3_FA4_FA5_FA6();
+extern "C" void Store_FA3_FA4_FA5_FA6_FA7();
 extern "C" void Store_FA4();
 extern "C" void Store_FA4_FA5();
 extern "C" void Store_FA4_FA5_FA6();
 extern "C" void Store_FA4_FA5_FA6_FA7();
+extern "C" void Store_FA5();
+extern "C" void Store_FA5_FA6();
+extern "C" void Store_FA5_FA6_FA7();
 extern "C" void Store_FA6();
 extern "C" void Store_FA6_FA7();
+extern "C" void Store_FA7();
 
 PCODE FPRegsRoutines[] =
 {
@@ -1667,13 +1717,13 @@ PCODE FPRegsRoutines[] =
     (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6,    // 06
     (PCODE)Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 07
     (PCODE)0,                                // 10
-    (PCODE)0,                                // 11
-    (PCODE)0,                                // 12
-    (PCODE)0,                                // 13
-    (PCODE)0,                                // 14
-    (PCODE)0,                                // 15
-    (PCODE)0,                                // 16
-    (PCODE)0,                                // 17
+    (PCODE)Load_FA1,                         // 11
+    (PCODE)Load_FA1_FA2,                     // 12
+    (PCODE)Load_FA1_FA2_FA3,                 // 13
+    (PCODE)Load_FA1_FA2_FA3_FA4,             // 14
+    (PCODE)Load_FA1_FA2_FA3_FA4_FA5,         // 15
+    (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6,     // 16
+    (PCODE)Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 17
     (PCODE)0,                                // 20
     (PCODE)0,                                // 21
     (PCODE)Load_FA2,                         // 22
@@ -1685,11 +1735,11 @@ PCODE FPRegsRoutines[] =
     (PCODE)0,                                // 30
     (PCODE)0,                                // 31
     (PCODE)0,                                // 32
-    (PCODE)0,                                // 33
-    (PCODE)0,                                // 34
-    (PCODE)0,                                // 35
-    (PCODE)0,                                // 36
-    (PCODE)0,                                // 37
+    (PCODE)Load_FA3,                         // 33
+    (PCODE)Load_FA3_FA4,                     // 34
+    (PCODE)Load_FA3_FA4_FA5,                 // 35
+    (PCODE)Load_FA3_FA4_FA5_FA6,             // 36
+    (PCODE)Load_FA3_FA4_FA5_FA6_FA7,         // 37
     (PCODE)0,                                // 40
     (PCODE)0,                                // 41
     (PCODE)0,                                // 42
@@ -1703,9 +1753,9 @@ PCODE FPRegsRoutines[] =
     (PCODE)0,                                // 52
     (PCODE)0,                                // 53
     (PCODE)0,                                // 54
-    (PCODE)0,                                // 55
-    (PCODE)0,                                // 56
-    (PCODE)0,                                // 57
+    (PCODE)Load_FA5,                         // 55
+    (PCODE)Load_FA5_FA6,                     // 56
+    (PCODE)Load_FA5_FA6_FA7,                 // 57
     (PCODE)0,                                // 60
     (PCODE)0,                                // 61
     (PCODE)0,                                // 62
@@ -1713,7 +1763,15 @@ PCODE FPRegsRoutines[] =
     (PCODE)0,                                // 64
     (PCODE)0,                                // 65
     (PCODE)Load_FA6,                         // 66
-    (PCODE)Load_FA6_FA7                      // 67
+    (PCODE)Load_FA6_FA7,                     // 67
+    (PCODE)0,                                // 70
+    (PCODE)0,                                // 71
+    (PCODE)0,                                // 72
+    (PCODE)0,                                // 73
+    (PCODE)0,                                // 74
+    (PCODE)0,                                // 75
+    (PCODE)0,                                // 76
+    (PCODE)Load_FA7                          // 77
 };
 
 PCODE FPRegsStoreRoutines[] =
@@ -1727,13 +1785,13 @@ PCODE FPRegsStoreRoutines[] =
     (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6,    // 06
     (PCODE)Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 07
     (PCODE)0,                                 // 10
-    (PCODE)0,                                 // 11
-    (PCODE)0,                                 // 12
-    (PCODE)0,                                 // 13
-    (PCODE)0,                                 // 14
-    (PCODE)0,                                 // 15
-    (PCODE)0,                                 // 16
-    (PCODE)0,                                 // 17
+    (PCODE)Store_FA1,                         // 11
+    (PCODE)Store_FA1_FA2,                     // 12
+    (PCODE)Store_FA1_FA2_FA3,                 // 13
+    (PCODE)Store_FA1_FA2_FA3_FA4,             // 14
+    (PCODE)Store_FA1_FA2_FA3_FA4_FA5,         // 15
+    (PCODE)Store_FA1_FA2_FA3_FA4_FA5_FA6,     // 16
+    (PCODE)Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7, // 17
     (PCODE)0,                                 // 20
     (PCODE)0,                                 // 21
     (PCODE)Store_FA2,                         // 22
@@ -1745,11 +1803,11 @@ PCODE FPRegsStoreRoutines[] =
     (PCODE)0,                                 // 30
     (PCODE)0,                                 // 31
     (PCODE)0,                                 // 32
-    (PCODE)0,                                 // 33
-    (PCODE)0,                                 // 34
-    (PCODE)0,                                 // 35
-    (PCODE)0,                                 // 36
-    (PCODE)0,                                 // 37
+    (PCODE)Store_FA3,                         // 33
+    (PCODE)Store_FA3_FA4,                     // 34
+    (PCODE)Store_FA3_FA4_FA5,                 // 35
+    (PCODE)Store_FA3_FA4_FA5_FA6,             // 36
+    (PCODE)Store_FA3_FA4_FA5_FA6_FA7,         // 37
     (PCODE)0,                                 // 40
     (PCODE)0,                                 // 41
     (PCODE)0,                                 // 42
@@ -1763,9 +1821,9 @@ PCODE FPRegsStoreRoutines[] =
     (PCODE)0,                                 // 52
     (PCODE)0,                                 // 53
     (PCODE)0,                                 // 54
-    (PCODE)0,                                 // 55
-    (PCODE)0,                                 // 56
-    (PCODE)0,                                 // 57
+    (PCODE)Store_FA5,                         // 55
+    (PCODE)Store_FA5_FA6,                     // 56
+    (PCODE)Store_FA5_FA6_FA7,                 // 57
     (PCODE)0,                                 // 60
     (PCODE)0,                                 // 61
     (PCODE)0,                                 // 62
@@ -1773,33 +1831,39 @@ PCODE FPRegsStoreRoutines[] =
     (PCODE)0,                                 // 64
     (PCODE)0,                                 // 65
     (PCODE)Store_FA6,                         // 66
-    (PCODE)Store_FA6_FA7                      // 67
+    (PCODE)Store_FA6_FA7,                     // 67
+    (PCODE)0,                                 // 70
+    (PCODE)0,                                 // 71
+    (PCODE)0,                                 // 72
+    (PCODE)0,                                 // 73
+    (PCODE)0,                                 // 74
+    (PCODE)0,                                 // 75
+    (PCODE)0,                                 // 76
+    (PCODE)Store_FA7                          // 77
 };
 
-// Reference routines for GC tracking - not yet implemented for RISC-V64
-// Using null pointers as placeholders
 PCODE GPRegsRefRoutines[] =
 {
-    (PCODE)0,        // 0 - a0
-    (PCODE)0,        // 1 - a1
-    (PCODE)0,        // 2 - a2
-    (PCODE)0,        // 3 - a3
-    (PCODE)0,        // 4 - a4
-    (PCODE)0,        // 5 - a5
-    (PCODE)0,        // 6 - a6
-    (PCODE)0         // 7 - a7
+    (PCODE)Load_Ref_A0,        // 0 - a0
+    (PCODE)Load_Ref_A1,        // 1 - a1
+    (PCODE)Load_Ref_A2,        // 2 - a2
+    (PCODE)Load_Ref_A3,        // 3 - a3
+    (PCODE)Load_Ref_A4,        // 4 - a4
+    (PCODE)Load_Ref_A5,        // 5 - a5
+    (PCODE)Load_Ref_A6,        // 6 - a6
+    (PCODE)Load_Ref_A7         // 7 - a7
 };
 
 PCODE GPRegsRefStoreRoutines[] =
 {
-    (PCODE)0,        // 0 - a0
-    (PCODE)0,        // 1 - a1
-    (PCODE)0,        // 2 - a2
-    (PCODE)0,        // 3 - a3
-    (PCODE)0,        // 4 - a4
-    (PCODE)0,        // 5 - a5
-    (PCODE)0,        // 6 - a6
-    (PCODE)0         // 7 - a7
+    (PCODE)Store_Ref_A0,        // 0 - a0
+    (PCODE)Store_Ref_A1,        // 1 - a1
+    (PCODE)Store_Ref_A2,        // 2 - a2
+    (PCODE)Store_Ref_A3,        // 3 - a3
+    (PCODE)Store_Ref_A4,        // 4 - a4
+    (PCODE)Store_Ref_A5,        // 5 - a5
+    (PCODE)Store_Ref_A6,        // 6 - a6
+    (PCODE)Store_Ref_A7         // 7 - a7
 };
 
 #endif // TARGET_RISCV64
@@ -1967,6 +2031,25 @@ extern "C" void InterpreterStubRet3Vector128();
 extern "C" void InterpreterStubRet4Vector128();
 #endif // TARGET_ARM64
 
+#ifdef TARGET_RISCV64
+extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet3Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet4Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void InterpreterStubRet2I8();
+extern "C" void InterpreterStubRet2Double();
+extern "C" void InterpreterStubRet3Double();
+extern "C" void InterpreterStubRet4Double();
+extern "C" void InterpreterStubRetFloat();
+extern "C" void InterpreterStubRet2Float();
+extern "C" void InterpreterStubRet3Float();
+extern "C" void InterpreterStubRet4Float();
+#endif // TARGET_RISCV64
+
 #if LOG_COMPUTE_CALL_STUB
 #define INVOKE_FUNCTION_PTR(functionPtrName) printf(#functionPtrName "\n"); return functionPtrName
 #else
@@ -2038,6 +2121,24 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
         case ReturnType4Vector128:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet4Vector128);
 #endif // TARGET_ARM64
+#ifdef TARGET_RISCV64
+        case ReturnType2I8:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2I8);
+        case ReturnType2Double:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2Double);
+        case ReturnType3Double:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet3Double);
+        case ReturnType4Double:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet4Double);
+        case ReturnTypeFloat:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloat);
+        case ReturnType2Float:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet2Float);
+        case ReturnType3Float:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet3Float);
+        case ReturnType4Float:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRet4Float);
+#endif // TARGET_RISCV64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
             return NULL; // This should never happen, but just in case.
@@ -2115,6 +2216,24 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
         case ReturnType4Vector128:
             RETURN_TYPE_HANDLER(InterpreterStubRet4Vector128);
 #endif // TARGET_ARM64
+#ifdef TARGET_RISCV64
+        case ReturnType2I8:
+            RETURN_TYPE_HANDLER(InterpreterStubRet2I8);
+        case ReturnType2Double:
+            RETURN_TYPE_HANDLER(InterpreterStubRet2Double);
+        case ReturnType3Double:
+            RETURN_TYPE_HANDLER(InterpreterStubRet3Double);
+        case ReturnType4Double:
+            RETURN_TYPE_HANDLER(InterpreterStubRet4Double);
+        case ReturnTypeFloat:
+            RETURN_TYPE_HANDLER(InterpreterStubRetFloat);
+        case ReturnType2Float:
+            RETURN_TYPE_HANDLER(InterpreterStubRet2Float);
+        case ReturnType3Float:
+            RETURN_TYPE_HANDLER(InterpreterStubRet3Float);
+        case ReturnType4Float:
+            RETURN_TYPE_HANDLER(InterpreterStubRet4Float);
+#endif // TARGET_RISCV64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
             return 0; // This should never happen, but just in case.
