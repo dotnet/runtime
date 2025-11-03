@@ -512,7 +512,7 @@ public:
         TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
-        TS_LegalToJoin            = 0x00000020,    // Is it now legal to attempt a Join()
+        // unused                 = 0x00000020,
 
         TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
 
@@ -1127,6 +1127,7 @@ public:
     void        OnThreadTerminate(BOOL holdingLock);
 
     static void CleanupDetachedThreads();
+    static void CleanupFinalizedThreads();
     //--------------------------------------------------------------
     // Returns innermost active Frame.
     //--------------------------------------------------------------
@@ -1661,9 +1662,6 @@ public:
     BOOL SetThreadPriority(
         int nPriority   // thread priority level
     );
-    BOOL Alert ();
-    DWORD Join(DWORD timeout, BOOL alertable);
-    DWORD JoinEx(DWORD timeout, WaitMode mode);
 
     BOOL GetThreadContext(
         LPCONTEXT lpContext   // context structure
@@ -1825,8 +1823,6 @@ private:
     BOOL           ReadyForAsyncException();
 
 public:
-    void           UserInterrupt(ThreadInterruptMode mode);
-
     BOOL           ReadyForAbort()
     {
         return ReadyForAsyncException();
@@ -2088,12 +2084,9 @@ public:
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
     // Either perform WaitForSingleObject or MsgWaitForSingleObject as appropriate.
-    DWORD          DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
-                                     DWORD millis, WaitMode mode);
-
     DWORD          DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout, WaitMode mode);
+    DWORD          DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode);
 private:
-    void           DoAppropriateWaitAlertableHelper(WaitMode mode);
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
 public:
 
@@ -2572,10 +2565,14 @@ private:
         InterlockedExchange(&m_UserInterrupt, 0);
     }
 
+#ifdef TARGET_WINDOWS
+    static void WINAPI UserInterruptAPC(ULONG_PTR ignore);
+public:
+    void        UserInterrupt(ThreadInterruptMode mode);
+#endif // TARGET_WINDOWS
+
 public:
     void        HandleThreadInterrupt();
-
-    static void WINAPI UserInterruptAPC(ULONG_PTR ignore);
 
     // Access to thread handle and ThreadId.
     HANDLE      GetThreadHandle()

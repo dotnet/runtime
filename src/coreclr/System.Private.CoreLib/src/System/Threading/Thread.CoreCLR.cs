@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Threading
 {
@@ -417,17 +418,33 @@ namespace System.Threading
         {
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
             WaitSubsystem.Interrupt(this);
-#endif
+#else
             Interrupt(GetNativeHandle());
             GC.KeepAlive(this);
+#endif
         }
 
+#if TARGET_WINDOWS
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Interrupt")]
         private static partial void Interrupt(ThreadHandle t);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Join")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool Join(ObjectHandleOnStack thread, int millisecondsTimeout);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetOSHandle")]
+        private static partial SafeWaitHandle GetOSHandle(ThreadHandle t);
+
+        private SafeWaitHandle GetJoinHandle()
+        {
+            SafeWaitHandle handle = GetOSHandle(GetNativeHandle());
+            GC.KeepAlive(this);
+            return handle;
+        }
+#else
+        private volatile ManualResetEvent? _joinEvent;
+        private SafeWaitHandle GetJoinHandle()
+        {
+            ManualResetEvent joinEvent = Interlocked.CompareExchange(ref _joinEvent, new ManualResetEvent(false), null)!;
+            return joinEvent.SafeWaitHandle;
+        }
+#endif
 
         /// <summary>
         /// Waits for the thread to die or for timeout milliseconds to elapse.

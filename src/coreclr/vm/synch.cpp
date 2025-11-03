@@ -218,20 +218,10 @@ DWORD CLREventBase::WaitEx(DWORD dwMilliseconds, WaitMode mode)
     BOOL alertable = (mode & WaitMode_Alertable)!=0;
     CONTRACTL
     {
-        if (alertable)
-        {
-            THROWS;               // Thread::DoAppropriateWait can throw
-        }
-        else
-        {
-            NOTHROW;
-        }
+        NOTHROW;
         if (GetThreadNULLOk())
         {
-            if (alertable)
-                GC_TRIGGERS;
-            else
-                GC_NOTRIGGER;
+            GC_NOTRIGGER;
         }
         else
         {
@@ -250,10 +240,8 @@ DWORD CLREventBase::WaitEx(DWORD dwMilliseconds, WaitMode mode)
 
     {
         if (pThread && alertable) {
-            DWORD dwRet = WAIT_FAILED;
-            dwRet = pThread->DoAppropriateWait(1, &m_handle, FALSE, dwMilliseconds,
-                                              mode);
-            return dwRet;
+            GCX_PREEMP();
+            return pThread->DoReentrantWaitWithRetry(m_handle, dwMilliseconds, mode);
         }
         else {
             return CLREventWaitHelper(m_handle,dwMilliseconds,alertable);

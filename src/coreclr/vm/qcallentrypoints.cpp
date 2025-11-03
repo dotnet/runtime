@@ -289,16 +289,17 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_SetWaitSleepJoinState)
     DllImportEntry(ThreadNative_ClearWaitSleepJoinState)
     DllImportEntry(ThreadNative_ReentrantWaitAny)
-    DllImportEntry(ThreadNative_CheckForPendingInterrupt)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_GetApartmentState)
     DllImportEntry(ThreadNative_SetApartmentState)
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    DllImportEntry(ThreadNative_Join)
     DllImportEntry(ThreadNative_Abort)
     DllImportEntry(ThreadNative_ResetAbort)
     DllImportEntry(ThreadNative_SpinWait)
+#ifdef TARGET_WINDOWS
+    DllImportEntry(ThreadNative_CheckForPendingInterrupt)
     DllImportEntry(ThreadNative_Interrupt)
+#endif // TARGET_WINDOWS
     DllImportEntry(ThreadNative_PollGC)
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)

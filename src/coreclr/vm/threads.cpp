@@ -373,59 +373,6 @@ void SetThread(Thread* t)
     t_CurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
 }
 
-BOOL Thread::Alert ()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    BOOL fRetVal = FALSE;
-    {
-        HANDLE handle = GetThreadHandle();
-        if (handle != INVALID_HANDLE_VALUE)
-        {
-            fRetVal = ::QueueUserAPC(UserInterruptAPC, handle, APC_Code);
-        }
-    }
-
-    return fRetVal;
-}
-
-
-DWORD Thread::Join(DWORD timeout, BOOL alertable)
-{
-    WRAPPER_NO_CONTRACT;
-    return JoinEx(timeout,alertable?WaitMode_Alertable:WaitMode_None);
-}
-DWORD Thread::JoinEx(DWORD timeout, WaitMode mode)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS; // For DoAppropriateWait
-    }
-    CONTRACTL_END;
-
-    BOOL alertable = (mode & WaitMode_Alertable)?TRUE:FALSE;
-
-    Thread *pCurThread = GetThreadNULLOk();
-    _ASSERTE(pCurThread || dbgOnly_IsSpecialEEThread());
-
-    {
-        HANDLE handle = GetThreadHandle();
-        if (handle == INVALID_HANDLE_VALUE) {
-            return WAIT_FAILED;
-        }
-        if (pCurThread) {
-            return pCurThread->DoAppropriateWait(1, &handle, FALSE, timeout, mode);
-        }
-        else {
-            return WaitForSingleObjectEx(handle,timeout,alertable);
-        }
-    }
-}
-
 extern INT32 MapFromNTPriority(INT32 NTPriority);
 
 BOOL Thread::SetThreadPriority(
@@ -694,7 +641,6 @@ Thread* SetupThread()
 
     // reset any unstarted bits on the thread object
     pThread->ResetThreadState(Thread::TS_Unstarted);
-    pThread->SetThreadState(Thread::TS_LegalToJoin);
 
     ThreadStore::AddThread(pThread);
 
@@ -2553,6 +2499,45 @@ void Thread::CleanupDetachedThreads()
     }
 }
 
+void Thread::CleanupFinalizedThreads()
+{
+    CONTRACTL {
+        THROWS;
+        MODE_COOPERATIVE;
+        GC_TRIGGERS;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(!ThreadStore::HoldingThreadStore());
+
+    ThreadStoreLockHolder threadStoreLockHolder;
+
+    Thread *thread = ThreadStore::GetAllThreadList(NULL, 0, 0);
+
+    STRESS_LOG0(LF_SYNC, LL_INFO1000, "T::CDT called\n");
+
+    while (thread != NULL)
+    {
+        Thread *next = ThreadStore::GetAllThreadList(thread, 0, 0);
+
+        if (thread->HasThreadState(TS_Finalized))
+        {
+            STRESS_LOG1(LF_SYNC, LL_INFO1000, "T::CDT - finalized thread 0x%p\n", thread);
+
+            thread->ResetThreadState(TS_Finalized);
+            // We have finalized the managed Thread object.  Now it is time to clean up the unmanaged part
+            thread->DecExternalCount(TRUE);
+            thread = next;
+        }
+        else
+        {
+            thread = next;
+        }
+    }
+
+    s_fCleanFinalizedThread = FALSE;
+}
+
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 void Thread::CleanupCOMState()
@@ -2958,7 +2943,6 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
 
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-
 DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout, WaitMode mode)
 {
     CONTRACTL {
@@ -2969,6 +2953,50 @@ DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout
     CONTRACTL_END;
 
     return DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
+}
+
+DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+#ifdef TARGET_UNIX
+    return WaitForSingleObjectEx(handle, timeout, mode == WaitMode_Alertable);
+#else
+    ULONGLONG dwStart = 0, dwEnd;
+    if (timeout != INFINITE)
+    {
+        dwStart = minipal_lowres_ticks();
+    }
+
+    while (true)
+    {
+        HRESULT ret = DoAppropriateAptStateWait(1, &handle, FALSE, timeout, mode);
+
+        if (ret != WAIT_IO_COMPLETION)
+        {
+            return ret;
+        }
+
+        _ASSERTE (alertable);
+        if (timeout != INFINITE)
+        {
+            dwEnd = minipal_lowres_ticks();
+            if (dwEnd - dwStart >= timeout)
+            {
+                ret = WAIT_TIMEOUT;
+                return ret;
+            }
+
+            timeout -= (DWORD)(dwEnd - dwStart);
+            dwStart = dwEnd;
+        }
+    }
+#endif
 }
 
 
@@ -2995,268 +3023,7 @@ DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL b
     return WaitForMultipleObjectsEx(numWaiters, pHandles, bWaitAll, timeout, alertable);
 }
 
-// A helper called by our two flavors of DoAppropriateWaitWorker
-void Thread::DoAppropriateWaitAlertableHelper(WaitMode mode)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    // A word about ordering for Interrupt.  If someone tries to interrupt a thread
-    // that's in the interruptible state, we queue an APC.  But if they try to interrupt
-    // a thread that's not in the interruptible state, we just record that fact.  So
-    // we have to set TS_Interruptible before we test to see whether someone wants to
-    // interrupt us or else we have a race condition that causes us to skip the APC.
-    SetThreadState(TS_Interruptible);
-
-    if (HasThreadStateNC(TSNC_InRestoringSyncBlock))
-    {
-        // The thread is restoring SyncBlock for Object.Wait.
-        ResetThreadStateNC(TSNC_InRestoringSyncBlock);
-    }
-    else
-    {
-        HandleThreadInterrupt();
-
-        // Safe to clear the interrupted state, no APC could have fired since we
-        // reset m_UserInterrupt (which inhibits our APC callback from doing
-        // anything).
-        ResetThreadState(TS_Interrupted);
-    }
-}
-
-//--------------------------------------------------------------------
-// Based on whether this thread has a message pump, do the appropriate
-// style of Wait.
-//--------------------------------------------------------------------
-DWORD Thread::DoAppropriateWait(int countHandles, HANDLE *handles, BOOL waitAll,
-                                      DWORD millis, WaitMode mode)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    DWORD ret = 0;
-
-    BOOL alertable = (mode & WaitMode_Alertable) != 0;
-
-    // Before going to pre-emptive mode the thread needs to be flagged as waiting for
-    // the debugger. This used to be accomplished by the TS_Interruptible flag but that
-    // doesn't work reliably, see DevDiv Bugs 699245. Some methods call in here already in
-    // COOP mode so we set the bit before the transition. For the calls that are already
-    // in pre-emptive mode those are still buggy. This is only a partial fix.
-    BOOL isCoop = PreemptiveGCDisabled();
-    ThreadStateNCStackHolder tsNC(isCoop && alertable, TSNC_DebuggerSleepWaitJoin);
-
-    GCX_PREEMP();
-
-    if (alertable)
-    {
-        DoAppropriateWaitAlertableHelper(mode);
-    }
-
-    ThreadStateHolder tsh(alertable, TS_Interruptible | TS_Interrupted);
-
-    bool sendWaitEvents =
-        millis != 0 &&
-        (mode & WaitMode_Alertable) != 0 &&
-        ETW_TRACING_CATEGORY_ENABLED(
-            MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-            TRACE_LEVEL_VERBOSE,
-            CLR_WAITHANDLE_KEYWORD);
-
-    // When sending the wait events try a nonblocking wait first
-    // such that the events sent are more likely to represent blocking waits.
-    bool tryNonblockingWaitFirst = sendWaitEvents;
-    if (tryNonblockingWaitFirst)
-    {
-        ret = DoAppropriateAptStateWait(countHandles, handles, waitAll, 0 /* timeout */, mode);
-        if (ret == WAIT_TIMEOUT)
-        {
-            // Do a full wait and send the wait events
-            tryNonblockingWaitFirst = false;
-        }
-        else if (ret != WAIT_IO_COMPLETION && ret != WAIT_FAILED)
-        {
-            // The nonblocking wait was successful, don't send the wait events
-            sendWaitEvents = false;
-        }
-    }
-
-    if (sendWaitEvents)
-    {
-        FireEtwWaitHandleWaitStart(ETW::WaitHandleLog::WaitHandleStructs::Unknown, NULL, GetClrInstanceId());
-    }
-
-    ULONGLONG dwStart = 0, dwEnd;
-    if (millis != INFINITE)
-    {
-        dwStart = minipal_lowres_ticks();
-    }
-
-retry:
-    if (tryNonblockingWaitFirst)
-    {
-        // We have a final wait result from the nonblocking wait above
-        tryNonblockingWaitFirst = false;
-    }
-    else
-    {
-        ret = DoAppropriateAptStateWait(countHandles, handles, waitAll, millis, mode);
-    }
-
-    if (ret == WAIT_IO_COMPLETION)
-    {
-        _ASSERTE (alertable);
-
-        if (m_State & TS_Interrupted)
-        {
-            HandleThreadInterrupt();
-        }
-        // We could be woken by some spurious APC or an EE APC queued to
-        // interrupt us. In the latter case the TS_Interrupted bit will be set
-        // in the thread state bits. Otherwise we just go back to sleep again.
-        if (millis != INFINITE)
-        {
-            dwEnd = minipal_lowres_ticks();
-            if (dwEnd - dwStart >= millis)
-            {
-                ret = WAIT_TIMEOUT;
-                goto WaitCompleted;
-            }
-
-            millis -= (DWORD)(dwEnd - dwStart);
-            dwStart = dwEnd;
-        }
-        goto retry;
-    }
-    _ASSERTE((ret >= WAIT_OBJECT_0  && ret < (WAIT_OBJECT_0  + (DWORD)countHandles)) ||
-             (ret == WAIT_TIMEOUT) || (ret == WAIT_FAILED));
-    // countHandles is used as an unsigned -- it should never be negative.
-    _ASSERTE(countHandles >= 0);
-
-    // We support precisely one WAIT_FAILED case, where we attempt to wait on a
-    // thread handle and the thread is in the process of dying we might get a
-    // invalid handle substatus. Turn this into a successful wait.
-    // There are three cases to consider:
-    //  1)  Only waiting on one handle: return success right away.
-    //  2)  Waiting for all handles to be signalled: retry the wait without the
-    //      affected handle.
-    //  3)  Waiting for one of multiple handles to be signalled: return with the
-    //      first handle that is either signalled or has become invalid.
-    if (ret == WAIT_FAILED)
-    {
-        DWORD errorCode = ::GetLastError();
-        if (errorCode == ERROR_INVALID_PARAMETER)
-        {
-            if (CheckForDuplicateHandles(countHandles, handles))
-                COMPlusThrow(kDuplicateWaitObjectException);
-            else
-                COMPlusThrowHR(HRESULT_FROM_WIN32(errorCode));
-        }
-        else if (errorCode == ERROR_ACCESS_DENIED)
-        {
-            // A Win32 ACL could prevent us from waiting on the handle.
-            COMPlusThrow(kUnauthorizedAccessException);
-        }
-        else if (errorCode == ERROR_NOT_ENOUGH_MEMORY)
-        {
-            ThrowOutOfMemory();
-        }
-        else if (errorCode != ERROR_INVALID_HANDLE)
-        {
-            ThrowWin32(errorCode);
-        }
-
-        if (countHandles == 1)
-            ret = WAIT_OBJECT_0;
-        else if (waitAll)
-        {
-            // Probe all handles with a timeout of zero. When we find one that's
-            // invalid, move it out of the list and retry the wait.
-            for (int i = 0; i < countHandles; i++)
-            {
-                // WaitForSingleObject won't pump memssage; we already probe enough space
-                // before calling this function and we don't want to fail here, so we don't
-                // do a transition to tolerant code here
-                DWORD subRet = WaitForSingleObject (handles[i], 0);
-                if (subRet != WAIT_FAILED)
-                    continue;
-                _ASSERTE(::GetLastError() == ERROR_INVALID_HANDLE);
-                if ((countHandles - i - 1) > 0)
-                    memmove(&handles[i], &handles[i+1], (countHandles - i - 1) * sizeof(HANDLE));
-                countHandles--;
-                break;
-            }
-
-            // Compute the new timeout value by assume that the timeout
-            // is not large enough for more than one wrap
-            if (millis != INFINITE)
-            {
-                dwEnd = minipal_lowres_ticks();
-                if (dwEnd - dwStart >= millis)
-                {
-                    ret = WAIT_TIMEOUT;
-                    goto WaitCompleted;
-                }
-
-                millis -= (DWORD)(dwEnd - dwStart);
-                dwStart = dwEnd;
-            }
-            goto retry;
-        }
-        else
-        {
-            // Probe all handles with a timeout as zero, succeed with the first
-            // handle that doesn't timeout.
-            ret = WAIT_OBJECT_0;
-            int i;
-            for (i = 0; i < countHandles; i++)
-            {
-            TryAgain:
-                // WaitForSingleObject won't pump memssage; we already probe enough space
-                // before calling this function and we don't want to fail here, so we don't
-                // do a transition to tolerant code here
-                DWORD subRet = WaitForSingleObject (handles[i], 0);
-                if ((subRet == WAIT_OBJECT_0) || (subRet == WAIT_FAILED))
-                    break;
-#ifdef HOST_WINDOWS
-                if (subRet == WAIT_ABANDONED)
-                {
-                    ret = (ret - WAIT_OBJECT_0) + WAIT_ABANDONED;
-                    break;
-                }
-#endif // HOST_WINDOWS
-                // If we get alerted it just masks the real state of the current
-                // handle, so retry the wait.
-                if (subRet == WAIT_IO_COMPLETION)
-                    goto TryAgain;
-                _ASSERTE(subRet == WAIT_TIMEOUT);
-                ret++;
-            }
-        }
-    }
-
-WaitCompleted:
-
-    _ASSERTE((ret != WAIT_TIMEOUT) || (millis != INFINITE));
-
-    if (sendWaitEvents)
-    {
-        FireEtwWaitHandleWaitStop(GetClrInstanceId());
-    }
-
-    return ret;
-}
-
-#define WAIT_INTERRUPT_THREADABORT 0x1
-#define WAIT_INTERRUPT_INTERRUPT 0x2
-#define WAIT_INTERRUPT_OTHEREXCEPTION 0x4
-
+#ifdef TARGET_WINDOWS
 // This is the callback from the OS, when we queue an APC to interrupt a waiting thread.
 // The callback occurs on the thread we wish to interrupt.  It is a STATIC method.
 void WINAPI Thread::UserInterruptAPC(ULONG_PTR data)
@@ -3301,9 +3068,14 @@ void Thread::UserInterrupt(ThreadInterruptMode mode)
     if (HasValidThreadHandle() &&
         HasThreadState (TS_Interruptible))
     {
-        Alert();
+        HANDLE handle = GetThreadHandle();
+        if (handle != INVALID_HANDLE_VALUE)
+        {
+            ::QueueUserAPC(UserInterruptAPC, handle, APC_Code);
+        }
     }
 }
+#endif // TARGET_WINDOWS
 
 // Correspondence between an EE Thread and an exposed System.Thread:
 OBJECTREF Thread::GetExposedObject()
@@ -4402,7 +4174,6 @@ void ThreadStore::TransferStartedThread(Thread *thread)
     // As soon as we erase this bit, the thread becomes eligible for suspension,
     // stopping, interruption, etc.
     thread->ResetThreadState(Thread::TS_Unstarted);
-    thread->SetThreadState(Thread::TS_LegalToJoin);
 
     // One of the components of OtherThreadsComplete() has changed, so check whether
     // we should now exit the EE.
@@ -7224,8 +6995,7 @@ namespace
             ForeignThreadsToCleanUpEvent->Wait(INFINITE, FALSE);
         }
 
-        if (Thread::m_DetachCount > 0
-            || Thread::CleanupNeededForFinalizedThread())
+        if (Thread::m_DetachCount > 0)
         {
             Thread::CleanupDetachedThreads();
         }

@@ -14,6 +14,8 @@ namespace System.Threading
         // Event signaling that the thread has stopped
         private ManualResetEvent _stopped;
 
+        private SafeWaitHandle GetJoinHandle() => _stopped.SafeWaitHandle;
+
         private WaitSubsystem.ThreadWaitInfo _waitInfo;
 
         internal WaitSubsystem.ThreadWaitInfo WaitInfo => _waitInfo;
@@ -52,38 +54,6 @@ namespace System.Threading
                 currentThread._waitInfo.OnThreadExiting();
                 StopThread(currentThread);
                 currentThread._stopped.Set();
-            }
-        }
-
-        private bool JoinInternal(int millisecondsTimeout)
-        {
-            // This method assumes the thread has been started
-            Debug.Assert(!GetThreadStateBit(ThreadState.Unstarted) || (millisecondsTimeout == 0));
-            SafeWaitHandle waitHandle = _stopped.SafeWaitHandle;
-
-            // If an OS thread is terminated and its Thread object is resurrected, waitHandle may be finalized and closed
-            if (waitHandle.IsClosed)
-            {
-                return true;
-            }
-
-            // Prevent race condition with the finalizer
-            try
-            {
-                waitHandle.DangerousAddRef();
-            }
-            catch (ObjectDisposedException)
-            {
-                return true;
-            }
-
-            try
-            {
-                return _stopped.WaitOne(millisecondsTimeout);
-            }
-            finally
-            {
-                waitHandle.DangerousRelease();
             }
         }
 

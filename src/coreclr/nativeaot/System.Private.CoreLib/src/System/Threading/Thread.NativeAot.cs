@@ -320,16 +320,6 @@ namespace System.Threading
             return millisecondsTimeout;
         }
 
-        public bool Join(int millisecondsTimeout)
-        {
-            VerifyTimeoutMilliseconds(millisecondsTimeout);
-            if (GetThreadStateBit(ThreadState.Unstarted))
-            {
-                throw new ThreadStateException(SR.ThreadState_NotStarted);
-            }
-            return JoinInternal(millisecondsTimeout);
-        }
-
         /// <summary>
         /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. Currently, the value comes from
         /// defaults in CoreCLR's Thread::InitializeYieldProcessorNormalized(). This value is supposed to be normalized to be

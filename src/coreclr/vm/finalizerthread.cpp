@@ -146,6 +146,13 @@ static void DoExtraWorkForFinalizer(Thread* finalizerThread)
         SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
     }
 
+    if (Thread::CleanupNeededForFinalizedThread())
+    {
+        Thread::CleanupFinalizedThreads();
+    }
+
+    ThreadStore::s_pThreadStore->TriggerGCForDeadThreadsIfNecessary();
+
     if (YieldProcessorNormalization::IsMeasurementScheduled())
     {
         GCX_PREEMP();
