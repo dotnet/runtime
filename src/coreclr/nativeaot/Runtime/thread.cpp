@@ -345,7 +345,6 @@ bool Thread::IsGCSpecial()
     return IsStateSet(TSF_IsGcSpecialThread);
 }
 
-// Returns the OS thread ID.
 uint64_t Thread::GetOSThreadId()
 {
     return m_threadId;
