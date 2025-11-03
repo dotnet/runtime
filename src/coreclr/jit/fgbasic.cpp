@@ -4866,7 +4866,7 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
             splitPointILOffset = curr->bbCodeOffsEnd == BAD_IL_OFFSET ? curr->bbCodeOffs : curr->bbCodeOffsEnd;
         }
 
-        curr->bbCodeOffsEnd = splitPointILOffset;
+        curr->bbCodeOffsEnd  = splitPointILOffset;
         newBlock->bbCodeOffs = splitPointILOffset;
     }
     else
