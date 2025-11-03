@@ -14,5 +14,6 @@
     <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
     <HasMergedInTests>true</HasMergedInTests>
     <ExpectedExitCode>100</ExpectedExitCode>
+    <DefineConstants>$(DefineConstants);TARGETS_ANDROID</DefineConstants>
   </PropertyGroup>
 </Project>

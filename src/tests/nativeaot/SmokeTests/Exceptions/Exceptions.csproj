@@ -6,8 +6,6 @@
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <!-- Test infra issue on apple devices: https://github.com/dotnet/runtime/issues/89917 -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
-    <!-- Environment.Exit return code kills process and doesn't propagate to MonoRunner.java -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>

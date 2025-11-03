@@ -163,9 +163,13 @@ public class BringUpTest
 
         TestUnwindInFunclet();
 
+#if !TARGETS_ANDROID // Environment.Exit doesn't propagate to MonoRunner.java
         throw new Exception("UnhandledException");
 
         return Fail;
+#else
+        return Pass;
+#endif
     }
 
     static void UnhandledExceptionEventHandler(object sender, UnhandledExceptionEventArgs e)

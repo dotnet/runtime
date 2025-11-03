@@ -13,7 +13,7 @@ unsafe class Program
     {
         s_success = true;
 
-#if !DEBUG
+#if !DEBUG && !TARGETS_ANDROID // Environment.ProcessPath is app_process64 on Android
         Console.WriteLine("****************************************************");
         Console.WriteLine("* Size test                                        *");
         long fileSize = new System.IO.FileInfo(Environment.ProcessPath).Length;
