@@ -38,12 +38,6 @@ namespace CorUnix
         BOOL bWaitAll,
         DWORD dwMilliseconds);
 
-    DWORD InternalSignalObjectAndWait(
-        CPalThread *thread,
-        HANDLE hObjectToSignal,
-        HANDLE hObjectToWaitOn,
-        DWORD dwMilliseconds);
-
     PAL_ERROR InternalSleepEx(
         CPalThread * pthrCurrent,
         DWORD dwMilliseconds);
