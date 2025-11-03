@@ -277,12 +277,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("telnet://telnet.example.com")]
         public async Task GetAsync_AllowAutoRedirectTrue_UnsupportedRedirectScheme_ReturnsOriginalResponse(string redirectLocation)
         {
-            if (IsWinHttpHandler)
-            {
-                // WinHttpHandler may have different behavior for unsupported schemes
-                return;
-            }
-
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AllowAutoRedirect = true;
             using (HttpClient client = CreateHttpClient(handler))
@@ -291,12 +285,23 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Task<HttpResponseMessage> getTask = client.GetAsync(url);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Found, $"Location: {redirectLocation}\r\n");
-                    await TestHelper.WhenAllCompletedOrAnyFailed(getTask, serverTask);
 
-                    using (HttpResponseMessage response = await getTask)
+                    if (IsWinHttpHandler)
                     {
-                        Assert.Equal(302, (int)response.StatusCode);
-                        Assert.Equal(url, response.RequestMessage.RequestUri);
+                        // WinHttpHandler throws HttpRequestException for unsupported redirect schemes
+                        await Assert.ThrowsAsync<HttpRequestException>(async () => await getTask);
+                        await serverTask;
+                    }
+                    else
+                    {
+                        // SocketsHttpHandler refuses to follow the redirect and returns the original response
+                        await TestHelper.WhenAllCompletedOrAnyFailed(getTask, serverTask);
+
+                        using (HttpResponseMessage response = await getTask)
+                        {
+                            Assert.Equal(302, (int)response.StatusCode);
+                            Assert.Equal(url, response.RequestMessage.RequestUri);
+                        }
                     }
                 });
             }
