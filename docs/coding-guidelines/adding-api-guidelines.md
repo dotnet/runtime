@@ -64,7 +64,7 @@ The rest of the documentation workflow depends on whether the assembly has the `
 updates must be made directly in the dotnet-api-docs repo.
 - It's fine to make updates to the triple-slash comments later, they just won't automatically flow into the official docs. Copilot can help with porting the changes
 in triple-slash comments to dotnet-api-docs.
-- Older libraries typically follow this workflow.
+- Older libraries typically follow this workflow. Libraries in this mode can work towards a better workflow in the future by using api-docs-sync tool to port back docs to source, then removing the `UseCompilerGeneratedDocXmlFile` property.
 
 ## FAQ
 
