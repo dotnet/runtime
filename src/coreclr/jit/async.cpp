@@ -1713,6 +1713,20 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
     *remainder = m_comp->fgSplitBlockAfterNode(block, jtrue);
     JITDUMP("  Remainder is " FMT_BB "\n", (*remainder)->bbNum);
 
+    // For non-inlined calls adjust offset for the split. We have the exact
+    // offset of the await call, so we can do better than
+    // fgSplitBlockAfterNode. The previous block contains the call so add 1 to
+    // include its start offset (the IL offsets are only used for range checks
+    // in the backend, so having the offset be inside an IL instruction is ok.)
+    DebugInfo di = call->GetAsyncInfo().CallAsyncDebugInfo.GetRoot();
+    DebugInfo par;
+    if (!di.GetParent(&par))
+    {
+        IL_OFFSET awaitOffset    = di.GetLocation().GetOffset();
+        block->bbCodeOffsEnd     = awaitOffset + 1;
+        (*remainder)->bbCodeOffs = awaitOffset + 1;
+    }
+
     FlowEdge* retBBEdge = m_comp->fgAddRefPred(suspendBB, block);
     block->SetCond(retBBEdge, block->GetTargetEdge());
 
