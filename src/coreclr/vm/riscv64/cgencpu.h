@@ -219,7 +219,7 @@ inline void SetReg(T_CONTEXT * context, int Regnum, PCODE RegContent)
     *(&context->R0 + Regnum) = RegContent;
 }
 
-extern "C" LPVOID __stdcall GetCurrentSP();
+extern "C" void* GetCurrentSP();
 
 inline void SetSP(T_CONTEXT *context, TADDR sp) {
     LIMITED_METHOD_DAC_CONTRACT;

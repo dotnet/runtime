@@ -261,7 +261,7 @@ inline void SetSimdReg(T_CONTEXT * context, int Regnum, NEON128 RegContent)
     context->V[Regnum] = RegContent;
 }
 
-extern "C" LPVOID __stdcall GetCurrentSP();
+extern "C" void* GetCurrentSP();
 
 inline void SetSP(T_CONTEXT *context, TADDR sp) {
     LIMITED_METHOD_DAC_CONTRACT;
