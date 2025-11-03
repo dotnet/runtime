@@ -14014,7 +14014,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         // We'll jump to the genReturnBB.
 
 #if !defined(TARGET_X86)
-        if (info.compFlags & CORINFO_FLG_SYNCH)
+        if ((info.compFlags & CORINFO_FLG_SYNCH) || compIsAsync())
         {
             fgConvertSyncReturnToLeave(block);
         }
