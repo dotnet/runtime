@@ -55,7 +55,7 @@ The rest of the documentation workflow depends on whether the assembly has the `
 
 **For libraries without this property (or with it set to `true`, which is the default):**
 - Source comments in this repo are the source of truth for documentation.
-- Triple-slash comments in source code are synced to dotnet-api-docs periodically.
+- Triple-slash comments in source code are synced to dotnet-api-docs periodically (every preview).
 - More recently introduced libraries typically follow this workflow.
 
 **For libraries with `<UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>`:**
