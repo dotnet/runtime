@@ -98,7 +98,7 @@ namespace System.Net.Mail
                         if (i < length)
                         {
                             byte b = buffer[i++];
-                            if (b < '0' && b > '9')
+                            if (b < '0' || b > '9')
                             {
                                 throw new FormatException(SR.SmtpInvalidResponse);
                             }
@@ -115,7 +115,7 @@ namespace System.Net.Mail
                         if (i < length)
                         {
                             byte b = buffer[i++];
-                            if (b < '0' && b > '9')
+                            if (b < '0' || b > '9')
                             {
                                 throw new FormatException(SR.SmtpInvalidResponse);
                             }
@@ -132,7 +132,7 @@ namespace System.Net.Mail
                         if (i < length)
                         {
                             byte b = buffer[i++];
-                            if (b < '0' && b > '9')
+                            if (b < '0' || b > '9')
                             {
                                 throw new FormatException(SR.SmtpInvalidResponse);
                             }
