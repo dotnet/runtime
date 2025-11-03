@@ -17,8 +17,7 @@
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
             #if NET10_0_OR_GREATER
-            string displayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.Validate" : $"{name}.Validate";
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, displayName, null, null);
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "OptionsUsingGeneratedAttributes", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             #endif
@@ -26,7 +25,7 @@
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "P3";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P3" : $"{name}.P3";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P3" : $"{name}.P3";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.P3, context, validationResults, validationAttributes))
             {
@@ -34,7 +33,7 @@
             }
 
             context.MemberName = "P4";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P4" : $"{name}.P4";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P4" : $"{name}.P4";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -44,7 +43,7 @@
             }
 
             context.MemberName = "P5";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P5" : $"{name}.P5";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P5" : $"{name}.P5";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
@@ -54,7 +53,7 @@
             }
 
             context.MemberName = "P6";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P6" : $"{name}.P6";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P6" : $"{name}.P6";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A4);
@@ -64,7 +63,7 @@
             }
 
             context.MemberName = "P7";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P7" : $"{name}.P7";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P7" : $"{name}.P7";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -74,7 +73,7 @@
             }
 
             context.MemberName = "P8";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P8" : $"{name}.P8";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P8" : $"{name}.P8";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -84,7 +83,7 @@
             }
 
             context.MemberName = "P9";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P9" : $"{name}.P9";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P9" : $"{name}.P9";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
@@ -94,7 +93,7 @@
             }
 
             context.MemberName = "P10";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P10" : $"{name}.P10";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P10" : $"{name}.P10";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
@@ -104,7 +103,7 @@
             }
 
             context.MemberName = "P11";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P11" : $"{name}.P11";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P11" : $"{name}.P11";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -114,7 +113,7 @@
             }
 
             context.MemberName = "P12";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P12" : $"{name}.P12";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P12" : $"{name}.P12";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A3);
@@ -124,7 +123,7 @@
             }
 
             context.MemberName = "P13";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P13" : $"{name}.P13";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P13" : $"{name}.P13";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A5);
@@ -134,7 +133,7 @@
             }
 
             context.MemberName = "P14";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "OptionsUsingGeneratedAttributes.P14" : $"{name}.P14";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "P14" : $"{name}.P14";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A6);
@@ -426,7 +425,7 @@ namespace __OptionValidationGeneratedAttributes
                 {
                     convertedValue = ConvertValue(value, formatProvider);
                 }
-                catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
                 {
                     return false;
                 }

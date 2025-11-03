@@ -1027,17 +1027,7 @@ namespace System
             string self = GetParts(ComponentsToCompare, UriFormat.SafeUnescaped);
             string other = uriLink.GetParts(ComponentsToCompare, UriFormat.SafeUnescaped);
 
-            unsafe
-            {
-                fixed (char* selfPtr = self)
-                {
-                    fixed (char* otherPtr = other)
-                    {
-                        return UriHelper.TestForSubPath(selfPtr, self.Length, otherPtr, other.Length,
-                            IsUncOrDosPath || uriLink.IsUncOrDosPath);
-                    }
-                }
-            }
+            return UriHelper.TestForSubPath(self, other, IsUncOrDosPath || uriLink.IsUncOrDosPath);
         }
 
         //

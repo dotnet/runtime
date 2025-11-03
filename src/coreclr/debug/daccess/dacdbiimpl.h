@@ -918,11 +918,6 @@ public:
     GENERICS_TYPE_TOKEN ResolveExactGenericArgsToken(DWORD               dwExactGenericArgsTokenIndex,
                                                      GENERICS_TYPE_TOKEN rawToken);
 
-    // Enumerate all monitors blocking a thread
-    void EnumerateBlockingObjects(VMPTR_Thread                           vmThread,
-                                  FP_BLOCKINGOBJECT_ENUMERATION_CALLBACK fpCallback,
-                                  CALLBACK_DATA                          pUserData);
-
     // Returns a bitfield reflecting the managed debugging state at the time of
     // the jit attach.
     CLR_DEBUGGING_PROCESS_FLAGS GetAttachStateFlags();
