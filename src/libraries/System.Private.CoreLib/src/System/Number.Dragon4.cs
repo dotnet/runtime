@@ -91,16 +91,16 @@ namespace System
 
                     // scaledValue      = 2 * 2 * mantissa * 2^exponent
                     BigInteger.SetUInt64(out scaledValue, 4 * mantissa);
-                    scaledValue.ShiftLeft((uint)(exponent));
+                    scaledValue.ShiftLeft(exponent);
 
                     // scale            = 2 * 2 * 1
                     BigInteger.SetUInt32(out scale, 4);
 
                     // scaledMarginLow  = 2 * 2^(exponent - 1)
-                    BigInteger.Pow2((uint)(exponent), out scaledMarginLow);
+                    BigInteger.Pow2(exponent, out scaledMarginLow);
 
                     // scaledMarginHigh = 2 * 2 * 2^(exponent + 1)
-                    BigInteger.Pow2((uint)(exponent + 1), out optionalMarginHigh);
+                    BigInteger.Pow2(exponent + 1, out optionalMarginHigh);
                 }
                 else                // We have a fractional exponent
                 {
@@ -110,7 +110,7 @@ namespace System
                     BigInteger.SetUInt64(out scaledValue, 4 * mantissa);
 
                     // scale            = 2 * 2 * 2^(-exponent)
-                    BigInteger.Pow2((uint)(-exponent + 2), out scale);
+                    BigInteger.Pow2(-exponent + 2, out scale);
 
                     // scaledMarginLow  = 2 * 2^(-1)
                     BigInteger.SetUInt32(out scaledMarginLow, 1);
@@ -133,13 +133,13 @@ namespace System
 
                     // scaledValue     = 2 * mantissa*2^exponent
                     BigInteger.SetUInt64(out scaledValue, 2 * mantissa);
-                    scaledValue.ShiftLeft((uint)(exponent));
+                    scaledValue.ShiftLeft(exponent);
 
                     // scale           = 2 * 1
                     BigInteger.SetUInt32(out scale, 2);
 
                     // scaledMarginLow = 2 * 2^(exponent-1)
-                    BigInteger.Pow2((uint)(exponent), out scaledMarginLow);
+                    BigInteger.Pow2(exponent, out scaledMarginLow);
                 }
                 else                // We have a fractional exponent
                 {
@@ -149,7 +149,7 @@ namespace System
                     BigInteger.SetUInt64(out scaledValue, 2 * mantissa);
 
                     // scale           = 2 * 2^(-exponent)
-                    BigInteger.Pow2((uint)(-exponent + 1), out scale);
+                    BigInteger.Pow2(-exponent + 1, out scale);
 
                     // scaledMarginLow = 2 * 2^(-1)
                     BigInteger.SetUInt32(out scaledMarginLow, 1);
@@ -272,7 +272,7 @@ namespace System
             // This requires the highest block of the denominator to be less than or equal to 429496729 which is the highest number that can be multiplied by 10 without overflowing to a new block.
 
             Debug.Assert(scale.GetLength() > 0);
-            uint hiBlock = scale.GetBlock((uint)(scale.GetLength() - 1));
+            uint hiBlock = scale.GetBlock(scale.GetLength() - 1);
 
             if ((hiBlock < 8) || (hiBlock > 429496729))
             {
@@ -281,9 +281,9 @@ namespace System
                 // This is safe because (2^28 - 1) = 268435455 which is less than 429496729.
                 // This means that all values with a highest bit at index 27 are within range.
                 Debug.Assert(hiBlock != 0);
-                uint hiBlockLog2 = (uint)BitOperations.Log2(hiBlock);
+                int hiBlockLog2 = BitOperations.Log2(hiBlock);
                 Debug.Assert((hiBlockLog2 < 3) || (hiBlockLog2 > 27));
-                uint shift = (32 + 27 - hiBlockLog2) % 32;
+                int shift = (32 + 27 - hiBlockLog2) % 32;
 
                 scale.ShiftLeft(shift);
                 scaledValue.ShiftLeft(shift);
