@@ -283,7 +283,7 @@ namespace ILCompiler
                         typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
                     }
 
-                    RunSingleCompilation(singleCompilationInputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, singleCompilationVersionBubbleModulesHash, typeSystemContext, logger);
+                    RunSingleCompilation(singleCompilationInputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, singleCompilationVersionBubbleModulesHash, typeSystemContext, logger, targetOS);
                 }
 
                 // In case of inputbubble ni.dll are created as ni.dll.tmp in order to not interfere with crossgen2, move them all to ni.dll
@@ -301,13 +301,13 @@ namespace ILCompiler
             }
             else
             {
-                RunSingleCompilation(inputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, versionBubbleModulesHash, typeSystemContext, logger);
+                RunSingleCompilation(inputFilePaths, instructionSetSupport, compositeRootPath, unrootedInputFilePaths, versionBubbleModulesHash, typeSystemContext, logger, targetOS);
             }
 
             return 0;
         }
 
-        private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash, ReadyToRunCompilerContext typeSystemContext, Logger logger)
+        private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash, ReadyToRunCompilerContext typeSystemContext, Logger logger, TargetOS targetOS)
         {
             //
             // Initialize output filename
@@ -599,11 +599,22 @@ namespace ILCompiler
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
                     nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport);
 
+                    // Disable PerfMap generation for Apple mobile platforms as they are not supported for ReadyToRun
+                    bool shouldGeneratePerfMap = Get(_command.PerfMap);
+                    if (shouldGeneratePerfMap && (targetOS == TargetOS.iOS ||
+                                                  targetOS == TargetOS.tvOS ||
+                                                  targetOS == TargetOS.iOSSimulator ||
+                                                  targetOS == TargetOS.tvOSSimulator ||
+                                                  targetOS == TargetOS.MacCatalyst))
+                    {
+                        shouldGeneratePerfMap = false;
+                    }
+
                     builder
                         .UseMapFile(Get(_command.Map))
                         .UseMapCsvFile(Get(_command.MapCsv))
                         .UsePdbFile(Get(_command.Pdb), Get(_command.PdbPath))
-                        .UsePerfMapFile(Get(_command.PerfMap), Get(_command.PerfMapPath), Get(_command.PerfMapFormatVersion))
+                        .UsePerfMapFile(shouldGeneratePerfMap, Get(_command.PerfMapPath), Get(_command.PerfMapFormatVersion))
                         .UseProfileFile(jsonProfile != null)
                         .UseProfileData(profileDataManager)
                         .UseNodeFactoryOptimizationFlags(nodeFactoryFlags)
