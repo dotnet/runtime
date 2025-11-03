@@ -537,6 +537,7 @@ extends:
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -603,7 +604,7 @@ extends:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
                   creator: dotnet-bot
-                  testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;JIT/HardwareIntrinsics;" /p:BuildNativeAotFrameworkObjects=true'
+                  testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;" /p:BuildNativeAotFrameworkObjects=true'
                   liveLibrariesBuildConfig: Release
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
