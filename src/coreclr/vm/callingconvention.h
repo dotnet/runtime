@@ -2190,6 +2190,14 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
     // Clear the iterator started flag
     m_dwFlags &= ~ITERATION_STARTED;
 
+#ifdef TARGET_WASM
+    if (this->NumFixedArgs() == 0)
+    {
+        // we have zero arguments, but we still need to reserve space for hidden arguments which are in registers on other architectures
+        maxOffset += m_ofsStack;
+    }
+#endif // TARGET_WASM
+
     int nSizeOfArgStack = maxOffset - TransitionBlock::GetOffsetOfArgs();
 
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
