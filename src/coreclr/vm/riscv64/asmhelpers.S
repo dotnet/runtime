@@ -1284,12 +1284,11 @@ NESTED_END InterpreterStubRetDouble, _TEXT
 NESTED_ENTRY InterpreterStubRetBuff, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
     // The +16 is for the fp, ra above
+    mv   a2, a0        // save caller's return buffer in a2
     addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
-    // Load the return buffer address
-    mv a2, a0 // return buffer in a0
+    mv   a1, t6        // the IR bytecode pointer (x19)
     call C_FUNC(ExecuteInterpretedMethod)
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
     EPILOG_RETURN
 NESTED_END InterpreterStubRetBuff, _TEXT
 
