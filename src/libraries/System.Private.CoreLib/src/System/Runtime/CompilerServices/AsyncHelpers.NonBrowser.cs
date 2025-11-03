@@ -20,7 +20,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>
         /// This method is intended to be used by Roslyn-generated async entry point.
-        /// On multi-threaded environments, it would block and await the specified task and return when the task has completed.
+        /// On multi-threaded environments, it will block and await the specified task, returning when the task has completed.
         /// On single-threaded environments (e.g., browser), it would register a continuation and yield to the browser event loop immediately.
         /// </summary>
         /// <param name="task">The result from the main entrypoint to await.</param>
