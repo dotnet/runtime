@@ -350,6 +350,8 @@ uint64_t Thread::GetPalThreadIdForLogging()
     return m_threadId;
 }
 
+// Returns the OS thread ID. This is the proper method to get the thread ID for general use
+// (e.g., EventPipe, GC). GetPalThreadIdForLogging() should only be used for logging purposes.
 uint64_t Thread::GetOSThreadId()
 {
     return m_threadId;
