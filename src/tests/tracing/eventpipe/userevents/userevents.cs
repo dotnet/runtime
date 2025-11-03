@@ -43,23 +43,23 @@ namespace Tracing.Tests.UserEvents
                 return -1;
             }
 
-            Process traceeProcess = new();
-            traceeProcess.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
-            traceeProcess.StartInfo.Arguments = $"{typeof(UserEventsTest).Assembly.Location} tracee";
-            traceeProcess.StartInfo.WorkingDirectory = appBaseDir;
-            traceeProcess.Start();
-            int traceePid = traceeProcess.Id;
+            ProcessStartInfo traceeStartInfo = new();
+            traceeStartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
+            traceeStartInfo.Arguments = $"{typeof(UserEventsTest).Assembly.Location} tracee";
+            traceeStartInfo.WorkingDirectory = appBaseDir;
 
-            Process recordTraceProcess = new();
-            recordTraceProcess.StartInfo.FileName = recordTracePath;
-            recordTraceProcess.StartInfo.Arguments = $"--script-file {scriptFilePath} --pid {traceePid}";
-            recordTraceProcess.StartInfo.WorkingDirectory = appBaseDir;
-            recordTraceProcess.StartInfo.RedirectStandardOutput = true;
-            recordTraceProcess.StartInfo.RedirectStandardError = true;
+            ProcessStartInfo recordTraceStartInfo = new();
+            recordTraceStartInfo.FileName = recordTracePath;
+            recordTraceStartInfo.Arguments = $"--script-file {scriptFilePath}";
+            recordTraceStartInfo.WorkingDirectory = appBaseDir;
+            recordTraceStartInfo.RedirectStandardOutput = true;
+            recordTraceStartInfo.RedirectStandardError = true;
+
+            using Process traceeProcess = Process.Start(traceeStartInfo);
+            using Process recordTraceProcess = Process.Start(recordTraceStartInfo);
             recordTraceProcess.OutputDataReceived += (_, args) => Console.WriteLine($"[record-trace] {args.Data}");
-            recordTraceProcess.ErrorDataReceived += (_, args) => Console.Error.WriteLine($"[record-trace] {args.Data}");
-            recordTraceProcess.Start();
             recordTraceProcess.BeginOutputReadLine();
+            recordTraceProcess.ErrorDataReceived += (_, args) => Console.Error.WriteLine($"[record-trace] {args.Data}");
             recordTraceProcess.BeginErrorReadLine();
 
             if (!recordTraceProcess.HasExited && !traceeProcess.WaitForExit(15000))
