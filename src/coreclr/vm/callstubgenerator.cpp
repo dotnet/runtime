@@ -1645,17 +1645,17 @@ PCODE CallStubGenerator::GetStackRoutine_4B()
 extern "C" void CallJittedMethodRetVoid(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetDouble(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetI8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-#ifndef TARGET_64BIT
+#ifdef TARGET_32BIT
 extern "C" void CallJittedMethodRetI4(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-#endif // !TARGET_64BIT
+#endif // TARGET_32BIT
 extern "C" void InterpreterStubRetVoid();
 extern "C" void InterpreterStubRetDouble();
 extern "C" void InterpreterStubRetI8();
-#ifndef TARGET_64BIT
+#ifdef TARGET_32BIT
 extern "C" void InterpreterStubRetI4();
 extern "C" void InterpreterStubRetFloat();
-#endif // !TARGET_64BIT
+#endif // TARGET_32BIT
 
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
 extern "C" void CallJittedMethodRetBuffRCX(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
@@ -1738,14 +1738,14 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
 #endif // !ARM_SOFTFP
         case ReturnTypeI8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI8);
-#ifndef TARGET_64BIT
+#ifdef TARGET_32BIT
         case ReturnTypeFloat:
 #ifndef ARM_SOFTFP
             INVOKE_FUNCTION_PTR(CallJittedMethodRetFloat);
 #endif // !ARM_SOFTFP
         case ReturnTypeI4:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetI4);
-#endif // !TARGET_64BIT
+#endif // TARGET_32BIT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         case ReturnTypeBuffArg1:
             INVOKE_FUNCTION_PTR(CallJittedMethodRetBuffRCX);
@@ -1830,14 +1830,14 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
 #endif // !ARM_SOFTFP
         case ReturnTypeI8:
             RETURN_TYPE_HANDLER(InterpreterStubRetI8);
-#ifndef TARGET_64BIT
+#ifdef TARGET_32BIT
         case ReturnTypeFloat:
 #ifndef ARM_SOFTFP
             RETURN_TYPE_HANDLER(InterpreterStubRetFloat);
 #endif // !ARM_SOFTFP
         case ReturnTypeI4:
             RETURN_TYPE_HANDLER(InterpreterStubRetI4);
-#endif // !TARGET_64BIT
+#endif // TARGET_32BIT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
         case ReturnTypeBuffArg1:
             RETURN_TYPE_HANDLER(InterpreterStubRetBuffRCX);
@@ -2109,12 +2109,12 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
     if ((m_currentRoutineType == RoutineType::Stack) && (type != RoutineType::Stack))
     {
         pRoutines[m_routineIndex++] = GetStackRoutine();
-#ifdef TARGET_64BIT
-        pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
-#else // !TARGET_64BIT
+#ifdef TARGET_32BIT
         pRoutines[m_routineIndex++] = m_s1;
         pRoutines[m_routineIndex++] = m_s2 - m_s1 + 1;
-#endif // TARGET_64BIT
+#else // !TARGET_32BIT
+        pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+#endif // TARGET_32BIT
         m_s1 = NoRange;
         m_currentRoutineType = RoutineType::None;
     }
@@ -2456,12 +2456,12 @@ void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocD
         {
             // Discontinuous range - store a routine for the current and start a new one
             pRoutines[m_routineIndex++] = GetStackRoutine();
-#ifdef TARGET_64BIT
-            pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
-#else // !TARGET_64BIT
+#ifdef TARGET_32BIT
             pRoutines[m_routineIndex++] = m_s1;
             pRoutines[m_routineIndex++] = m_s2 - m_s1 + 1;
-#endif // TARGET_64BIT
+#else // !TARGET_32BIT
+            pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+#endif // TARGET_32BIT
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
@@ -2575,19 +2575,19 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
             case ELEMENT_TYPE_ARRAY:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_FNPTR:
-#ifndef TARGET_64BIT
+#ifdef TARGET_32BIT
                 return ReturnTypeI4;
                 break;
-#endif
+#endif // TARGET_32BIT
             case ELEMENT_TYPE_I8:
             case ELEMENT_TYPE_U8:
                 return ReturnTypeI8;
                 break;
             case ELEMENT_TYPE_R4:
-#ifndef TARGET_64BIT
+#ifdef TARGET_32BIT
                 return ReturnTypeFloat;
                 break;
-#endif
+#endif // TARGET_32BIT
             case ELEMENT_TYPE_R8:
                 return ReturnTypeDouble;
                 break;
