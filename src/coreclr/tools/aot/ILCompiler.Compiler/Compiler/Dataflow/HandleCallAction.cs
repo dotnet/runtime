@@ -167,14 +167,20 @@ namespace ILLink.Shared.TrimAnalysis
                                             }
                                         }
                                     }
-                                    else if (methodInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
-                                    {
-                                        // This will always succeed thanks to the runtime type loader
-                                    }
                                     else
                                     {
-                                        // If the owning type is a generic definition, we can't help much.
-                                        triggersWarning = true;
+                                        bool hasReferenceTypeConstraints = methodInstantiated.Instantiation.IsConstrainedToBeReferenceTypes();
+                                        bool hasKnownReferenceTypeArguments = AreAllArgumentsKnownReferenceTypes(argumentValues[0]);
+
+                                        if (hasReferenceTypeConstraints || hasKnownReferenceTypeArguments)
+                                        {
+                                            // This will always succeed thanks to the runtime type loader
+                                        }
+                                        else
+                                        {
+                                            // If the owning type is a generic definition, we can't help much.
+                                            triggersWarning = true;
+                                        }
                                     }
                                 }
                                 else if (methodValue == NullValue.Instance)
