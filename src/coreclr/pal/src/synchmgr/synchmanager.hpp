@@ -59,7 +59,6 @@ namespace CorUnix
     {
         TWS_ACTIVE,
         TWS_WAITING,
-        TWS_ALERTABLE,
         TWS_EARLYDEATH,
     };
 
@@ -115,13 +114,6 @@ namespace CorUnix
         LIST_ENTRY Link;
         CPalThread * pthrTarget;
     } DeferredSignalingListNode;
-
-    typedef struct _ThreadApcInfoNode
-    {
-        struct _ThreadApcInfoNode * pNext;
-        PAPCFUNC pfnAPC;
-        ULONG_PTR pAPCData;
-    } ThreadApcInfoNode;
 
     class CPalSynchronizationManager; // fwd declaration
     class CProcProcessLocalData;      // fwd declaration
@@ -365,8 +357,7 @@ namespace CorUnix
 
         virtual PAL_ERROR RegisterWaitingThread(
             WaitType wtWaitType,
-            DWORD dwIndex,
-            bool fAlertable);
+            DWORD dwIndex);
 
         virtual void ReleaseController(void);
 
@@ -405,7 +396,6 @@ namespace CorUnix
         typedef CSHRSynchCache<CSynchData>             CSHRSynchDataCache;
         typedef CSynchCache<WaitingThreadsListNode>    CWaitingThreadsListNodeCache;
         typedef CSHRSynchCache<WaitingThreadsListNode> CSHRWaitingThreadsListNodeCache;
-        typedef CSynchCache<ThreadApcInfoNode>         CThreadApcInfoNodeCache;
 
     private:
         // types
@@ -444,7 +434,6 @@ namespace CorUnix
         static const int CtrlrsCacheMaxSize                = 256;
         static const int SynchDataCacheMaxSize             = 256;
         static const int WTListNodeCacheMaxSize            = 256;
-        static const int ApcInfoNodeCacheMaxSize           = 32;
         static const int MaxWorkerConsecutiveEintrs        = 128;
         static const int MaxConsecutiveEagains             = 128;
         static const int WorkerThreadProcMonitoringTimeout = 250;  // ms
@@ -481,7 +470,6 @@ namespace CorUnix
         CSHRSynchDataCache              m_cacheSHRSynchData;
         CWaitingThreadsListNodeCache    m_cacheWTListNodes;
         CSHRWaitingThreadsListNodeCache m_cacheSHRWTListNodes;
-        CThreadApcInfoNodeCache         m_cacheThreadApcInfoNodes;
 
         // static methods
         static PAL_ERROR Initialize();
@@ -637,24 +625,12 @@ namespace CorUnix
             m_cacheSHRWTListNodes.Add(pthrCurrent, shridWTLNode);
         }
 
-        ThreadApcInfoNode * CacheGetApcInfoNodes(CPalThread * pthrCurrent)
-        {
-            return m_cacheThreadApcInfoNodes.Get(pthrCurrent);
-        }
-        void CacheAddApcInfoNodes(
-            CPalThread * pthrCurrent,
-            ThreadApcInfoNode * pNode)
-        {
-            m_cacheThreadApcInfoNodes.Add(pthrCurrent, pNode);
-        }
-
         //
         // IPalSynchronizationManager methods
         //
         virtual PAL_ERROR BlockThread(
             CPalThread *pthrCurrent,
             DWORD dwTimeout,
-            bool fAlertable,
             bool fIsSleep,
             ThreadWakeupReason *ptwrWakeupReason,
             DWORD *pdwSignaledObject);
@@ -690,16 +666,6 @@ namespace CorUnix
             CObjectType *potObjectType,
             VOID *pvSynchData,
             ISynchWaitController **ppWaitController);
-
-        virtual PAL_ERROR QueueUserAPC(
-            CPalThread * pthrCurrent,
-            CPalThread *pthrTarget,
-            PAPCFUNC pfnAPC,
-            ULONG_PTR uptrData);
-
-        virtual bool AreAPCsPending(CPalThread * pthrTarget);
-
-        virtual PAL_ERROR DispatchPendingAPCs(CPalThread * pthrCurrent);
 
         virtual void AcquireProcessLock(CPalThread *pthrCurrent);
 
@@ -767,10 +733,6 @@ namespace CorUnix
         PAL_ERROR WakeUpLocalWorkerThread(
             SynchWorkerCmd swcWorkerCmd);
 
-        void DiscardAllPendingAPCs(
-            CPalThread * pthrCurrent,
-            CPalThread * pthrTarget);
-
         int ReadBytesFromProcessPipe(
             int iTimeout,
             BYTE * pRecvBuf,
@@ -809,8 +771,7 @@ namespace CorUnix
             bool * pfIsActualExitCode);
 
         static bool InterlockedAwaken(
-            DWORD *pWaitState,
-            bool fAlertOnly);
+            DWORD *pWaitState);
 
         static PAL_ERROR GetAbsoluteTimeout(
             DWORD dwTimeout,

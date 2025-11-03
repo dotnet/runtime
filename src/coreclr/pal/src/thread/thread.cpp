@@ -1571,13 +1571,6 @@ CPalThread::ThreadEntry(
             ASSERT("Error %i attempting to suspend new thread\n", palError);
             goto fail;
         }
-
-        //
-        // We need to run any APCs that have already been queued for
-        // this thread.
-        //
-
-        (void) g_pSynchronizationManager->DispatchPendingAPCs(pThread);
     }
     else
     {
@@ -2060,12 +2053,6 @@ CPalThread::RunPreCreateInitializers(
         goto RunPreCreateInitializersExit;
     }
 
-    palError = apcInfo.InitializePreCreate();
-    if (NO_ERROR != palError)
-    {
-        goto RunPreCreateInitializersExit;
-    }
-
 RunPreCreateInitializersExit:
 
     return palError;
@@ -2147,12 +2134,6 @@ CPalThread::RunPostCreateInitializers(
     }
 
     palError = suspensionInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
-    if (NO_ERROR != palError)
-    {
-        goto RunPostCreateInitializersExit;
-    }
-
-    palError = apcInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
     if (NO_ERROR != palError)
     {
         goto RunPostCreateInitializersExit;

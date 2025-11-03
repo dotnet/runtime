@@ -36,20 +36,17 @@ namespace CorUnix
         DWORD nCount,
         CONST HANDLE *lpHandles,
         BOOL bWaitAll,
-        DWORD dwMilliseconds,
-        BOOL bAlertable);
+        DWORD dwMilliseconds);
 
     DWORD InternalSignalObjectAndWait(
         CPalThread *thread,
         HANDLE hObjectToSignal,
         HANDLE hObjectToWaitOn,
-        DWORD dwMilliseconds,
-        BOOL bAlertable);
+        DWORD dwMilliseconds);
 
     PAL_ERROR InternalSleepEx(
         CPalThread * pthrCurrent,
-        DWORD dwMilliseconds,
-        BOOL bAlertable);
+        DWORD dwMilliseconds);
 
     enum THREAD_STATE
     {
@@ -66,7 +63,6 @@ namespace CorUnix
     class CSynchData;
 
     typedef struct _WaitingThreadsListNode * PWaitingThreadsListNode;
-    typedef struct _ThreadApcInfoNode * PThreadApcInfoNode;
 
     typedef struct _ThreadWaitInfo
     {
@@ -161,21 +157,6 @@ namespace CorUnix
         void AcquireNativeWaitLock(void);
         void ReleaseNativeWaitLock(void);
         bool TryAcquireNativeWaitLock(void);
-    };
-
-    class CThreadApcInfo : public CThreadInfoInitializer
-    {
-        friend class CPalSynchronizationManager;
-
-        PThreadApcInfoNode m_ptainHead;
-        PThreadApcInfoNode m_ptainTail;
-
-    public:
-        CThreadApcInfo() :
-            m_ptainHead(NULL),
-            m_ptainTail(NULL)
-        {
-        }
     };
 
     class CPalSynchMgrController

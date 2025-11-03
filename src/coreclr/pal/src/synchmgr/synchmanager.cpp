@@ -158,8 +158,7 @@ namespace CorUnix
           m_cacheSynchData(SynchDataCacheMaxSize),
           m_cacheSHRSynchData(SynchDataCacheMaxSize),
           m_cacheWTListNodes(WTListNodeCacheMaxSize),
-          m_cacheSHRWTListNodes(WTListNodeCacheMaxSize),
-          m_cacheThreadApcInfoNodes(ApcInfoNodeCacheMaxSize)
+          m_cacheSHRWTListNodes(WTListNodeCacheMaxSize)
     {
 #if HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
         m_iKQueue = -1;
@@ -184,7 +183,6 @@ namespace CorUnix
     PAL_ERROR CPalSynchronizationManager::BlockThread(
         CPalThread *pthrCurrent,
         DWORD dwTimeout,
-        bool fAlertable,
         bool fIsSleep,
         ThreadWakeupReason *ptwrWakeupReason,
         DWORD * pdwSignaledObject)
@@ -194,7 +192,6 @@ namespace CorUnix
         DWORD * pdwWaitState;
         DWORD dwWaitState = 0;
         DWORD dwSigObjIdx = 0;
-        bool fRaceAlerted = false;
         bool fEarlyDeath = false;
 
         pdwWaitState = SharedIDToTypePointer(DWORD,
@@ -206,105 +203,58 @@ namespace CorUnix
 
         if (fIsSleep)
         {
-            // If fIsSleep is true we are being called by Sleep/SleepEx
-            // and we need to switch the wait state to TWS_WAITING or
-            // TWS_ALERTABLE (according to fAlertable)
+            // Setting the thread in wait state
+            dwWaitState = TWS_WAITING;
 
-            if (fAlertable)
+            TRACE("Switching my wait state [%p] from TWS_ACTIVE to %u [current *pdwWaitState=%u]\n",
+                    pdwWaitState, dwWaitState, *pdwWaitState);
+
+            dwWaitState = InterlockedCompareExchange((LONG *)pdwWaitState,
+                                                        dwWaitState,
+                                                        TWS_ACTIVE);
+
+            if ((DWORD)TWS_ACTIVE != dwWaitState)
             {
-                // If we are in alertable mode we need to grab the lock to
-                // make sure that no APC is queued right before the
-                // InterlockedCompareExchange.
-                // If there are APCs queued at this time, no native wakeup
-                // will be posted, so we need to skip the native wait
-
-                // Lock
-                AcquireLocalSynchLock(pthrCurrent);
-
-                if (AreAPCsPending(pthrCurrent))
+                if ((DWORD)TWS_EARLYDEATH == dwWaitState)
                 {
-                    // APCs have been queued when the thread wait status was
-                    // still TWS_ACTIVE, therefore the queueing thread will not
-                    // post any native wakeup: we need to skip the actual
-                    // native wait
-                    fRaceAlerted = true;
+                    // Process is terminating, this thread will soon be suspended (by SuspendOtherThreads).
+                    WARN("Thread is about to get suspended by TerminateProcess\n");
+
+                    fEarlyDeath = true;
+                    palErr = WAIT_FAILED;
                 }
-            }
-
-            if (!fRaceAlerted)
-            {
-                // Setting the thread in wait state
-                dwWaitState = (DWORD)(fAlertable ? TWS_ALERTABLE : TWS_WAITING);
-
-                TRACE("Switching my wait state [%p] from TWS_ACTIVE to %u [current *pdwWaitState=%u]\n",
-                      pdwWaitState, dwWaitState, *pdwWaitState);
-
-                dwWaitState = InterlockedCompareExchange((LONG *)pdwWaitState,
-                                                         dwWaitState,
-                                                         TWS_ACTIVE);
-
-                if ((DWORD)TWS_ACTIVE != dwWaitState)
+                else
                 {
-                    if (fAlertable)
-                    {
-                        // Unlock
-                        ReleaseLocalSynchLock(pthrCurrent);
-                    }
-
-                    if ((DWORD)TWS_EARLYDEATH == dwWaitState)
-                    {
-                        // Process is terminating, this thread will soon be suspended (by SuspendOtherThreads).
-                        WARN("Thread is about to get suspended by TerminateProcess\n");
-
-                        fEarlyDeath = true;
-                        palErr = WAIT_FAILED;
-                    }
-                    else
-                    {
-                        ASSERT("Unexpected thread wait state %u\n", dwWaitState);
-                        palErr = ERROR_INTERNAL_ERROR;
-                    }
-
-                    goto BT_exit;
+                    ASSERT("Unexpected thread wait state %u\n", dwWaitState);
+                    palErr = ERROR_INTERNAL_ERROR;
                 }
-            }
 
-            if (fAlertable)
-            {
-                // Unlock
-                ReleaseLocalSynchLock(pthrCurrent);
-            }
-        }
-
-        if (fRaceAlerted)
-        {
-            twrWakeupReason = Alerted;
-        }
-        else
-        {
-            TRACE("Current thread is about to block for waiting\n");
-
-            palErr = ThreadNativeWait(
-                &pthrCurrent->synchronizationInfo.m_tnwdNativeData,
-                dwTimeout,
-                &twrWakeupReason,
-                &dwSigObjIdx);
-
-            if (NO_ERROR != palErr)
-            {
-                ERROR("ThreadNativeWait() failed [palErr=%d]\n", palErr);
-                twrWakeupReason = WaitFailed;
                 goto BT_exit;
             }
-
-            TRACE("ThreadNativeWait returned {WakeupReason=%u "
-                  "dwSigObjIdx=%u}\n", twrWakeupReason, dwSigObjIdx);
         }
+
+        TRACE("Current thread is about to block for waiting\n");
+
+        palErr = ThreadNativeWait(
+            &pthrCurrent->synchronizationInfo.m_tnwdNativeData,
+            dwTimeout,
+            &twrWakeupReason,
+            &dwSigObjIdx);
+
+        if (NO_ERROR != palErr)
+        {
+            ERROR("ThreadNativeWait() failed [palErr=%d]\n", palErr);
+            twrWakeupReason = WaitFailed;
+            goto BT_exit;
+        }
+
+        TRACE("ThreadNativeWait returned {WakeupReason=%u "
+                "dwSigObjIdx=%u}\n", twrWakeupReason, dwSigObjIdx);
 
         if (WaitTimeout == twrWakeupReason)
         {
             // timeout reached. set wait state back to 'active'
-            dwWaitState = (DWORD)(fAlertable ? TWS_ALERTABLE : TWS_WAITING);
+            dwWaitState = TWS_WAITING;
 
             TRACE("Current thread awakened for timeout: switching wait "
                   "state [%p] from %u to TWS_ACTIVE [current *pdwWaitState=%u]\n",
@@ -363,7 +313,6 @@ namespace CorUnix
                     palErr = WAIT_FAILED;
                     break;
                 case TWS_WAITING:
-                case TWS_ALERTABLE:
                 default:
                     _ASSERT_MSG(dwOldWaitState == dwWaitState,
                                 "Unexpected wait status: actual=%u, expected=%u\n",
@@ -398,7 +347,7 @@ namespace CorUnix
                 *pdwSignaledObject = dwSigObjIdx;
                 break;
             default:
-                // 'Alerted' and 'WaitFailed' go through this case
+                // 'WaitFailed' goes through this case
                 break;
         }
 
@@ -904,232 +853,6 @@ namespace CorUnix
         *ppWaitController = (ISynchWaitController *)pCtrlr;
 
         return NO_ERROR;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::QueueUserAPC
-
-    Internal implementation of QueueUserAPC
-    --*/
-    PAL_ERROR CPalSynchronizationManager::QueueUserAPC(CPalThread * pthrCurrent,
-        CPalThread * pthrTarget,
-        PAPCFUNC pfnAPC,
-        ULONG_PTR uptrData)
-    {
-        PAL_ERROR palErr = NO_ERROR;
-        ThreadApcInfoNode * ptainNode = NULL;
-        DWORD dwWaitState;
-        DWORD * pdwWaitState;
-        ThreadWaitInfo * pTargetTWInfo = GetThreadWaitInfo(pthrTarget);
-        bool fLocalSynchLock = false;
-        bool fThreadLock = false;
-
-        ptainNode = m_cacheThreadApcInfoNodes.Get(pthrCurrent);
-        if (NULL == ptainNode)
-        {
-            ERROR("No memory for new APCs linked list entry\n");
-            palErr = ERROR_NOT_ENOUGH_MEMORY;
-            goto QUAPC_exit;
-        }
-
-        ptainNode->pfnAPC = pfnAPC;
-        ptainNode->pAPCData = uptrData;
-        ptainNode->pNext = NULL;
-
-        AcquireLocalSynchLock(pthrCurrent);
-        fLocalSynchLock = true;
-
-        pthrTarget->Lock(pthrCurrent);
-        fThreadLock = true;
-
-        if (TS_DONE == pthrTarget->synchronizationInfo.GetThreadState())
-        {
-            ERROR("Thread %#x has terminated; can't queue an APC on it\n",
-                  pthrTarget->GetThreadId());
-            palErr = ERROR_INVALID_PARAMETER;
-            goto QUAPC_exit;
-        }
-        pdwWaitState = SharedIDToTypePointer(DWORD,
-            pthrTarget->synchronizationInfo.m_shridWaitAwakened);
-        if (TWS_EARLYDEATH == VolatileLoad(pdwWaitState))
-        {
-            ERROR("Thread %#x is about to be suspended for process shutdwon, "
-                  "can't queue an APC on it\n", pthrTarget->GetThreadId());
-            palErr = ERROR_INVALID_PARAMETER;
-            goto QUAPC_exit;
-        }
-
-        if (NULL == pthrTarget->apcInfo.m_ptainTail)
-        {
-            _ASSERT_MSG(NULL == pthrTarget->apcInfo.m_ptainHead, "Corrupted APC list\n");
-
-            pthrTarget->apcInfo.m_ptainHead = ptainNode;
-            pthrTarget->apcInfo.m_ptainTail = ptainNode;
-        }
-        else
-        {
-            pthrTarget->apcInfo.m_ptainTail->pNext = ptainNode;
-            pthrTarget->apcInfo.m_ptainTail = ptainNode;
-        }
-
-        // Set ptainNode to NULL so it won't be readded to the cache
-        ptainNode = NULL;
-
-        TRACE("APC %p with parameter %p added to APC queue\n", pfnAPC, uptrData);
-
-        dwWaitState = InterlockedCompareExchange((LONG *)pdwWaitState,
-                                                 (LONG)TWS_ACTIVE,
-                                                 (LONG)TWS_ALERTABLE);
-
-        // Release thread lock
-        pthrTarget->Unlock(pthrCurrent);
-        fThreadLock = false;
-
-        if (TWS_ALERTABLE == dwWaitState)
-        {
-            // Unregister the wait
-            UnRegisterWait(pthrCurrent, pTargetTWInfo);
-
-            // Wake up target thread
-            palErr = WakeUpLocalThread(
-                pthrCurrent,
-                pthrTarget,
-                Alerted,
-                0);
-
-            if (NO_ERROR != palErr)
-            {
-                ERROR("Failed to wakeup local thread %#x for dispatching APCs [err=%u]\n",
-                    pthrTarget->GetThreadId(), palErr);
-            }
-        }
-
-    QUAPC_exit:
-        if (fThreadLock)
-        {
-            pthrTarget->Unlock(pthrCurrent);
-        }
-
-        if (fLocalSynchLock)
-        {
-            ReleaseLocalSynchLock(pthrCurrent);
-        }
-
-        if (ptainNode)
-        {
-            m_cacheThreadApcInfoNodes.Add(pthrCurrent, ptainNode);
-        }
-
-        return palErr;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::AreAPCsPending
-
-    Returns 'true' if there are APCs currently pending for the target
-    thread (normally the current one)
-    --*/
-    bool CPalSynchronizationManager::AreAPCsPending(
-        CPalThread * pthrTarget)
-    {
-        // No need to lock here
-        return (NULL != pthrTarget->apcInfo.m_ptainHead);
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::DispatchPendingAPCs
-
-    Executes any pending APC for the current thread
-    --*/
-    PAL_ERROR CPalSynchronizationManager::DispatchPendingAPCs(
-        CPalThread * pthrCurrent)
-    {
-        ThreadApcInfoNode * ptainNode, * ptainLocalHead;
-        int iAPCsCalled = 0;
-
-        while (TRUE)
-        {
-            // Lock
-            pthrCurrent->Lock(pthrCurrent);
-            ptainLocalHead = pthrCurrent->apcInfo.m_ptainHead;
-            if (ptainLocalHead)
-            {
-                pthrCurrent->apcInfo.m_ptainHead = NULL;
-                pthrCurrent->apcInfo.m_ptainTail = NULL;
-            }
-
-            // Unlock
-            pthrCurrent->Unlock(pthrCurrent);
-
-            if (NULL == ptainLocalHead)
-            {
-                break;
-            }
-
-            while (ptainLocalHead)
-            {
-                ptainNode = ptainLocalHead;
-                ptainLocalHead = ptainNode->pNext;
-
-#if _ENABLE_DEBUG_MESSAGES_
-                // reset ENTRY nesting level back to zero while
-                // inside the callback ...
-                int iOldLevel = DBG_change_entrylevel(0);
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
-
-                TRACE("Calling APC %p with parameter %#x\n",
-                      ptainNode->pfnAPC, ptainNode->pfnAPC);
-
-                // Actual APC call
-                ptainNode->pfnAPC(ptainNode->pAPCData);
-
-#if _ENABLE_DEBUG_MESSAGES_
-                // ... and set nesting level back to what it was
-                DBG_change_entrylevel(iOldLevel);
-#endif /* _ENABLE_DEBUG_MESSAGES_ */
-
-                iAPCsCalled++;
-                m_cacheThreadApcInfoNodes.Add(pthrCurrent, ptainNode);
-            }
-        }
-
-        return (iAPCsCalled > 0) ? NO_ERROR : ERROR_NOT_FOUND;
-    }
-
-    /*++
-    Method:
-      CPalSynchronizationManager::DiscardAllPendingAPCs
-
-    Discards any pending APC for the target pthrTarget thread
-    --*/
-    void CPalSynchronizationManager::DiscardAllPendingAPCs(
-        CPalThread * pthrCurrent,
-        CPalThread * pthrTarget)
-    {
-        ThreadApcInfoNode * ptainNode, * ptainLocalHead;
-
-        // Lock
-        pthrTarget->Lock(pthrCurrent);
-        ptainLocalHead = pthrTarget->apcInfo.m_ptainHead;
-        if (ptainLocalHead)
-        {
-            pthrTarget->apcInfo.m_ptainHead = NULL;
-            pthrTarget->apcInfo.m_ptainTail = NULL;
-        }
-
-        // Unlock
-        pthrTarget->Unlock(pthrCurrent);
-
-        while (ptainLocalHead)
-        {
-            ptainNode = ptainLocalHead;
-            ptainLocalHead = ptainNode->pNext;
-
-            m_cacheThreadApcInfoNodes.Add(pthrCurrent, ptainNode);
-        }
     }
 
     /*++
@@ -3256,31 +2979,9 @@ namespace CorUnix
     Tries to change the target wait status to 'active' in an interlocked fashion
     --*/
     bool CPalSynchronizationManager::InterlockedAwaken(
-        DWORD *pWaitState,
-        bool fAlertOnly)
+        DWORD *pWaitState)
     {
-        DWORD dwPrevState;
-
-        dwPrevState = InterlockedCompareExchange((LONG *)pWaitState, TWS_ACTIVE, TWS_ALERTABLE);
-        if (TWS_ALERTABLE != dwPrevState)
-        {
-            if (fAlertOnly)
-            {
-                return false;
-            }
-
-            dwPrevState = InterlockedCompareExchange((LONG *)pWaitState, TWS_ACTIVE, TWS_WAITING);
-            if (TWS_WAITING == dwPrevState)
-            {
-                return true;
-            }
-        }
-        else
-        {
-            return true;
-        }
-
-        return false;
+        return InterlockedCompareExchange((LONG *)pWaitState, TWS_ACTIVE, TWS_WAITING) == TWS_WAITING;
     }
 
     /*++

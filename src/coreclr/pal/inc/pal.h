@@ -900,14 +900,6 @@ ResumeThread(
 
 typedef VOID (PALAPI_NOEXPORT *PAPCFUNC)(ULONG_PTR dwParam);
 
-PALIMPORT
-DWORD
-PALAPI
-QueueUserAPC(
-         IN PAPCFUNC pfnAPC,
-         IN HANDLE hThread,
-         IN ULONG_PTR dwData);
-
 #ifdef HOST_X86
 
 //

@@ -246,8 +246,7 @@ namespace CorUnix
     --*/
     PAL_ERROR CSynchWaitController::RegisterWaitingThread(
         WaitType wtWaitType,
-        DWORD dwIndex,
-        bool fAlertable)
+        DWORD dwIndex)
     {
         VALIDATEOBJECT(m_psdSynchData);
 
@@ -336,7 +335,7 @@ namespace CorUnix
             DWORD dwWaitState;
 
             // Setting the thread in wait state
-            dwWaitState = (DWORD)(fAlertable ? TWS_ALERTABLE: TWS_WAITING);
+            dwWaitState = TWS_WAITING;
 
             TRACE("Switching my wait state [%p] from TWS_ACTIVE to %u \n",
                   pdwWaitState, dwWaitState);
@@ -833,13 +832,13 @@ namespace CorUnix
                 //
                 // Target wait is satisfied
                 //
-                TRACE("Trying to switch wait state [%p] from WAIT/ALERTABLE "
+                TRACE("Trying to switch wait state [%p] from WAIT "
                       "to ACTIVE for thread=%u\n",
                       pdwWaitState, pwtlnItem->dwThreadId);
 
-                if (CPalSynchronizationManager::InterlockedAwaken(pdwWaitState, FALSE))
+                if (CPalSynchronizationManager::InterlockedAwaken(pdwWaitState))
                 {
-                    TRACE("Succeeded switching wait state [%p] from WAIT/ALERTABLE "
+                    TRACE("Succeeded switching wait state [%p] from WAIT "
                           "to TWS_ACTIVE for trhead=%u\n",
                           pdwWaitState, pwtlnItem->dwThreadId);
 
@@ -942,13 +941,13 @@ namespace CorUnix
                 //
                 // Target wait is satisfied
                 //
-                TRACE("Trying to switch wait state [%p] from WAIT/ALERTABLE "
+                TRACE("Trying to switch wait state [%p] from WAIT "
                       "to ACTIVE for thread=%u\n",
                       pdwWaitState, pwtlnItem->dwThreadId);
 
-                if (CPalSynchronizationManager::InterlockedAwaken(pdwWaitState, FALSE))
+                if (CPalSynchronizationManager::InterlockedAwaken(pdwWaitState))
                 {
-                    TRACE("Succeeded switching wait state [%p] from WAIT/ALERTABLE "
+                    TRACE("Succeeded switching wait state [%p] from WAIT "
                           "to TWS_ACTIVE for trhead=%u\n",
                           pdwWaitState, pwtlnItem->dwThreadId);
 

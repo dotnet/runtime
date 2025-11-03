@@ -73,7 +73,7 @@ WaitForSingleObject(IN HANDLE hHandle,
     CPalThread * pThread = InternalGetCurrentThread();
 
     dwRet = InternalWaitForMultipleObjectsEx(pThread, 1, &hHandle, FALSE,
-                                             dwMilliseconds, FALSE);
+                                             dwMilliseconds);
 
     LOGEXIT("WaitForSingleObject returns DWORD %u\n", dwRet);
     PERF_EXIT(WaitForSingleObject);
@@ -101,7 +101,7 @@ WaitForSingleObjectEx(IN HANDLE hHandle,
     CPalThread * pThread = InternalGetCurrentThread();
 
     dwRet = InternalWaitForMultipleObjectsEx(pThread, 1, &hHandle, FALSE,
-                                             dwMilliseconds, bAlertable);
+                                             dwMilliseconds);
 
     LOGEXIT("WaitForSingleObjectEx returns DWORD %u\n", dwRet);
     PERF_EXIT(WaitForSingleObjectEx);
@@ -133,7 +133,7 @@ WaitForMultipleObjects(IN DWORD nCount,
     CPalThread * pThread = InternalGetCurrentThread();
 
     dwRet = InternalWaitForMultipleObjectsEx(pThread, nCount, lpHandles,
-                                             bWaitAll, dwMilliseconds, FALSE);
+                                             bWaitAll, dwMilliseconds);
 
     LOGEXIT("WaitForMultipleObjects returns DWORD %u\n", dwRet);
     PERF_EXIT(WaitForMultipleObjects);
@@ -164,7 +164,7 @@ WaitForMultipleObjectsEx(IN DWORD nCount,
     CPalThread * pThread = InternalGetCurrentThread();
 
     dwRet = InternalWaitForMultipleObjectsEx(pThread, nCount, lpHandles, bWaitAll,
-                                             dwMilliseconds, bAlertable);
+                                             dwMilliseconds);
 
     LOGEXIT("WaitForMultipleObjectsEx returns DWORD %u\n", dwRet);
     PERF_EXIT(WaitForMultipleObjectsEx);
@@ -194,7 +194,7 @@ SignalObjectAndWait(
         bAlertable ? "TRUE" : "FALSE");
 
     CPalThread *thread = InternalGetCurrentThread();
-    DWORD result = InternalSignalObjectAndWait(thread, hObjectToSignal, hObjectToWaitOn, dwMilliseconds, bAlertable);
+    DWORD result = InternalSignalObjectAndWait(thread, hObjectToSignal, hObjectToWaitOn, dwMilliseconds);
 
     LOGEXIT("SignalObjectAndWait returns DWORD %u\n", result);
     PERF_EXIT(SignalObjectAndWait);
@@ -216,7 +216,7 @@ Sleep(IN DWORD dwMilliseconds)
 
     CPalThread * pThread = InternalGetCurrentThread();
 
-    DWORD internalSleepRet = InternalSleepEx(pThread, dwMilliseconds, FALSE);
+    DWORD internalSleepRet = InternalSleepEx(pThread, dwMilliseconds);
 
     if (internalSleepRet != 0)
     {
@@ -247,71 +247,11 @@ SleepEx(IN DWORD dwMilliseconds,
 
     CPalThread * pThread = InternalGetCurrentThread();
 
-    dwRet = InternalSleepEx(pThread, dwMilliseconds, bAlertable);
+    dwRet = InternalSleepEx(pThread, dwMilliseconds);
 
     LOGEXIT("SleepEx returns DWORD %u\n", dwRet);
     PERF_EXIT(SleepEx);
 
-    return dwRet;
-}
-
-/*++
-Function:
-  QueueUserAPC
-
-See MSDN doc.
---*/
-DWORD
-PALAPI
-QueueUserAPC(
-    PAPCFUNC pfnAPC,
-    HANDLE hThread,
-    ULONG_PTR dwData)
-{
-    CPalThread * pCurrentThread = NULL;
-    CPalThread * pTargetThread = NULL;
-    IPalObject * pTargetThreadObject = NULL;
-    PAL_ERROR palErr;
-    DWORD dwRet;
-
-    PERF_ENTRY(QueueUserAPC);
-    ENTRY("QueueUserAPC(pfnAPC=%p, hThread=%p, dwData=%#x)\n",
-          pfnAPC, hThread, dwData);
-
-    /* NOTE: Windows does not check the validity of pfnAPC, even if it is
-       NULL.  It just does an access violation later on when the APC call
-       is attempted */
-
-    pCurrentThread = InternalGetCurrentThread();
-
-    palErr = InternalGetThreadDataFromHandle(
-        pCurrentThread,
-        hThread,
-        &pTargetThread,
-        &pTargetThreadObject
-        );
-
-    if (NO_ERROR != palErr)
-    {
-        ERROR("Unable to obtain thread data for handle %p (error %x)!\n",
-                hThread, palErr);
-        goto QueueUserAPC_exit;
-    }
-
-
-    palErr = g_pSynchronizationManager->QueueUserAPC(pCurrentThread, pTargetThread,
-                                                     pfnAPC, dwData);
-
-QueueUserAPC_exit:
-    if (pTargetThreadObject)
-    {
-        pTargetThreadObject->ReleaseReference(pCurrentThread);
-    }
-
-    dwRet = (NO_ERROR == palErr) ? 1 : 0;
-
-    LOGEXIT("QueueUserAPC returns DWORD %d\n", dwRet);
-    PERF_EXIT(QueueUserAPC);
     return dwRet;
 }
 
@@ -320,8 +260,7 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
     DWORD nCount,
     CONST HANDLE *lpHandles,
     BOOL bWaitAll,
-    DWORD dwMilliseconds,
-    BOOL bAlertable)
+    DWORD dwMilliseconds)
 {
     DWORD dwRet = WAIT_FAILED;
     PAL_ERROR palErr = NO_ERROR;
@@ -410,34 +349,6 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
         goto WFMOExIntCleanup;
     }
 
-    if (bAlertable)
-    {
-        // First check for pending APC. We need to do that while holding the global
-        // synch lock implicitely grabbed by GetSynchWaitControllersForObjects
-        if (g_pSynchronizationManager->AreAPCsPending(pThread))
-        {
-            // If there is any pending APC we need to release the
-            // implicit global synch lock before calling into it
-            for (i = 0; (i < (int)nCount) && (NULL != ppISyncWaitCtrlrs[i]); i++)
-            {
-                ppISyncWaitCtrlrs[i]->ReleaseController();
-                ppISyncWaitCtrlrs[i] = NULL;
-            }
-            palErr = g_pSynchronizationManager->DispatchPendingAPCs(pThread);
-            if (NO_ERROR == palErr)
-            {
-                dwRet = WAIT_IO_COMPLETION;
-            }
-            else
-            {
-                ASSERT("Awakened for APC, but no APC is pending\n");
-                pThread->SetLastError(ERROR_INTERNAL_ERROR);
-                dwRet = WAIT_FAILED;
-            }
-            goto WFMOExIntCleanup;
-        }
-    }
-
     iSignaledObjCount = 0;
     iSignaledObjIndex = -1;
     for (i=0;i<(int)nCount;i++)
@@ -514,8 +425,7 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
         {
             palErr = ppISyncWaitCtrlrs[i]->RegisterWaitingThread(
                                                         wtWaitType,
-                                                        i,
-                                                        (TRUE == bAlertable));
+                                                        i);
             if (NO_ERROR != palErr)
             {
                 ERROR("RegisterWaitingThread() failed for %d-th object "
@@ -545,7 +455,6 @@ WFMOExIntReleaseControllers:
         //
         palErr = g_pSynchronizationManager->BlockThread(pThread,
                                                         dwMilliseconds,
-                                                        (TRUE == bAlertable),
                                                         false,
                                                         &twrWakeupReason,
                                                         (DWORD *)&iSignaledObjIndex);
@@ -566,16 +475,6 @@ WFMOExIntReleaseControllers:
             break;
         case WaitTimeout:
             dwRet = WAIT_TIMEOUT;
-            break;
-        case Alerted:
-            _ASSERT_MSG(bAlertable,
-                        "Awakened for APC from a non-alertable wait\n");
-
-            dwRet = WAIT_IO_COMPLETION;
-            palErr = g_pSynchronizationManager->DispatchPendingAPCs(pThread);
-
-            _ASSERT_MSG(NO_ERROR == palErr,
-                        "Awakened for APC, but no APC is pending\n");
             break;
         case WaitFailed:
         default:
@@ -624,8 +523,7 @@ DWORD CorUnix::InternalSignalObjectAndWait(
     CPalThread *thread,
     HANDLE hObjectToSignal,
     HANDLE hObjectToWaitOn,
-    DWORD dwMilliseconds,
-    BOOL bAlertable)
+    DWORD dwMilliseconds)
 {
     DWORD result = WAIT_FAILED;
     PAL_ERROR palError = NO_ERROR;
@@ -689,8 +587,7 @@ DWORD CorUnix::InternalSignalObjectAndWait(
             1 /* nCount */,
             &hObjectToWaitOn,
             false /* bWaitAll */,
-            dwMilliseconds,
-            bAlertable);
+            dwMilliseconds);
     if (result == WAIT_FAILED)
     {
         ERROR("Unable to wait on object for handle %p (error %u)!\n", hObjectToWaitOn, palError);
@@ -724,33 +621,19 @@ InternalSignalObjectAndWait_Exit:
 
 DWORD CorUnix::InternalSleepEx (
     CPalThread * pThread,
-    DWORD dwMilliseconds,
-    BOOL bAlertable)
+    DWORD dwMilliseconds)
 {
     PAL_ERROR palErr = NO_ERROR;
     DWORD dwRet = WAIT_FAILED;
     int iSignaledObjIndex;
 
-    TRACE("Sleeping %u ms [bAlertable=%d]", dwMilliseconds, (int)bAlertable);
-
-    if (bAlertable)
-    {
-        // In this case do not use AreAPCsPending. In fact, since we are
-        // not holding the synch lock(s) an APC posting may race with
-        // AreAPCsPending.
-        palErr = g_pSynchronizationManager->DispatchPendingAPCs(pThread);
-        if (NO_ERROR == palErr)
-        {
-            return WAIT_IO_COMPLETION;
-        }
-    }
+    TRACE("Sleeping %u ms", dwMilliseconds);
 
     if (dwMilliseconds > 0)
     {
         ThreadWakeupReason twrWakeupReason;
         palErr = g_pSynchronizationManager->BlockThread(pThread,
                                                         dwMilliseconds,
-                                                        (TRUE == bAlertable),
                                                         true,
                                                         &twrWakeupReason,
                                                         (DWORD *)&iSignaledObjIndex);
@@ -767,14 +650,7 @@ DWORD CorUnix::InternalSleepEx (
         case WaitTimeout:
             dwRet = 0;
             break;
-        case Alerted:
-            _ASSERT_MSG(bAlertable, "Awakened for APC from a non-alertable wait\n");
 
-            dwRet = WAIT_IO_COMPLETION;
-            palErr = g_pSynchronizationManager->DispatchPendingAPCs(pThread);
-            _ASSERT_MSG(NO_ERROR == palErr, "Awakened for APC, but no APC is pending\n");
-
-            break;
         case WaitFailed:
         default:
             ERROR("Thread %p awakened with some failure\n", pThread);
@@ -787,7 +663,7 @@ DWORD CorUnix::InternalSleepEx (
         dwRet = 0;
     }
 
-    TRACE("Done sleeping %u ms [bAlertable=%d]", dwMilliseconds, (int)bAlertable);
+    TRACE("Done sleeping %u ms", dwMilliseconds);
     return dwRet;
 }
 

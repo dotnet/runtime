@@ -570,8 +570,7 @@ namespace CorUnix
         PAL_ERROR
         RegisterWaitingThread(
             WaitType eWaitType,
-            DWORD dwIndex,
-            bool fAltertable
+            DWORD dwIndex
             ) = 0;
 
         //
@@ -860,7 +859,6 @@ namespace CorUnix
     enum ThreadWakeupReason
     {
         WaitSucceeded,
-        Alerted,
         WaitTimeout,
         WaitFailed
     };
@@ -885,32 +883,11 @@ namespace CorUnix
         BlockThread(
             CPalThread *pCurrentThread,
             DWORD dwTimeout,
-            bool fAlertable,
             bool fIsSleep,
             ThreadWakeupReason *peWakeupReason, // OUT
             DWORD *pdwSignaledObject       // OUT
             ) = 0;
 
-        virtual
-        PAL_ERROR
-        QueueUserAPC(
-            CPalThread *pThread,
-            CPalThread *pTargetThread,
-            PAPCFUNC pfnAPC,
-            ULONG_PTR dwData
-            ) = 0;
-
-        virtual
-        bool
-        AreAPCsPending(
-            CPalThread *pThread
-            ) = 0;
-
-        virtual
-        PAL_ERROR
-        DispatchPendingAPCs(
-            CPalThread *pThread
-            ) = 0;
 
         //
         // This routine is primarily meant for use by WaitForMultipleObjects[Ex].

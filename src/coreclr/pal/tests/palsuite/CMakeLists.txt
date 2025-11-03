@@ -407,13 +407,6 @@ add_executable_clr(paltests
   threading/OpenProcess/test1/childProcess.cpp
   threading/OpenProcess/test1/test1.cpp
   threading/QueryThreadCycleTime/test1/test1.cpp
-  threading/QueueUserAPC/test1/test1.cpp
-  threading/QueueUserAPC/test2/test2.cpp
-  threading/QueueUserAPC/test3/test3.cpp
-  threading/QueueUserAPC/test4/test4.cpp
-  threading/QueueUserAPC/test5/test5.cpp
-  threading/QueueUserAPC/test6/test6.cpp
-  threading/QueueUserAPC/test7/test7.cpp
   threading/releasesemaphore/test1/test.cpp
   threading/ResetEvent/test1/test1.cpp
   threading/ResetEvent/test2/test2.cpp
@@ -428,18 +421,14 @@ add_executable_clr(paltests
   threading/Sleep/test1/Sleep.cpp
   threading/Sleep/test2/sleep.cpp
   threading/SleepEx/test1/test1.cpp
-  threading/SleepEx/test2/test2.cpp
   threading/SwitchToThread/test1/test1.cpp
   threading/TerminateProcess/test1/TerminateProcess.cpp
   threading/ThreadPriority/test1/ThreadPriority.cpp
   threading/WaitForMultipleObjects/test1/test1.cpp
   threading/WaitForMultipleObjectsEx/test1/test1.cpp
-  threading/WaitForMultipleObjectsEx/test2/test2.cpp
   threading/WaitForMultipleObjectsEx/test5/helper.cpp
   threading/WaitForMultipleObjectsEx/test5/test5.cpp
   threading/WaitForSingleObject/test1/test1.cpp
-  threading/WaitForSingleObject/WFSOExSemaphoreTest/WFSOExSemaphoreTest.cpp
-  threading/WaitForSingleObject/WFSOExThreadTest/WFSOExThreadTest.cpp
   threading/WaitForSingleObject/WFSOProcessTest/ChildProcess.cpp
   threading/WaitForSingleObject/WFSOProcessTest/WFSOProcessTest.cpp
   threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp

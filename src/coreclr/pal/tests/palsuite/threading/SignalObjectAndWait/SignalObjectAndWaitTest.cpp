@@ -258,19 +258,6 @@ void Run(SignalableObjectType signalableObjectType, WaitableObjectType waitableO
     }
 }
 
-static bool s_apcCalled = false;
-
-void CALLBACK ApcCallback(ULONG_PTR dwParam)
-{
-    s_apcCalled = true;
-    HANDLE *objects = (HANDLE *)dwParam;
-    HANDLE objectToSignal = objects[0];
-    HANDLE objectToWaitOn = objects[1];
-    TestAssert(WaitForSingleObject(objectToSignal, 0) == WAIT_OBJECT_0); // signal has occurred
-    TestAssert(WaitForSingleObject(objectToWaitOn, 0) == WAIT_OBJECT_0); // wait has not occurred yet
-    SetEvent(objectToWaitOn);
-}
-
 void Run()
 {
     for (SignalableObjectType signalableObjectType = SignalableObjectType::First;
@@ -294,28 +281,15 @@ void Run()
         TestAssert(objectToWaitOn != nullptr);
         HANDLE objects[] = {objectToSignal, objectToWaitOn};
 
-        // Verify that a queued APC is not called if the wait is not alertable
-        QueueUserAPC(&ApcCallback, GetCurrentThread(), (ULONG_PTR)&objects);
-        waitResult = SignalObjectAndWait(objectToSignal, objectToWaitOn, 0, false);
-        TestAssert(waitResult == WAIT_OBJECT_0);
-        TestAssert(!s_apcCalled);
-        TestAssert(WaitForSingleObject(objectToSignal, 0) == WAIT_OBJECT_0); // signal has occurred
-        TestAssert(WaitForSingleObject(objectToWaitOn, 0) == WAIT_TIMEOUT); // wait has occurred
-
         // Verify that signal, call APC, wait, occur in that order
         ResetEvent(objectToSignal);
         SetEvent(objectToWaitOn);
-        waitResult = SignalObjectAndWait(objectToSignal, objectToWaitOn, 0, true);
-        TestAssert(waitResult == WAIT_IO_COMPLETION);
-        TestAssert(s_apcCalled);
         TestAssert(WaitForSingleObject(objectToSignal, 0) == WAIT_OBJECT_0); // signal has occurred
         TestAssert(WaitForSingleObject(objectToWaitOn, 0) == WAIT_OBJECT_0); // wait has not occurred yet
-        s_apcCalled = false;
         ResetEvent(objectToSignal);
         SetEvent(objectToWaitOn);
         waitResult = SignalObjectAndWait(objectToSignal, objectToWaitOn, 0, true);
         TestAssert(waitResult == WAIT_OBJECT_0);
-        TestAssert(!s_apcCalled);
         TestAssert(WaitForSingleObject(objectToSignal, 0) == WAIT_OBJECT_0); // signal has occurred
         TestAssert(WaitForSingleObject(objectToWaitOn, 0) == WAIT_TIMEOUT); // wait has occurred
 
