@@ -432,6 +432,11 @@ namespace System.Runtime.InteropServices
             {
                 string currLibNameVariation = libraryNameVariation.Prefix + libraryName + libraryNameVariation.Suffix;
 
+#if CORECLR
+                // NATIVE_DLL_SEARCH_DIRECTORIES set by host is considered well known path
+                ret = LoadFromNativeDllSearchDirectories(currLibNameVariation, loadWithAlteredPathFlags, ref errorTracker);
+#endif
+
                 if (!libNameIsRelativePath)
                 {
                     // LOAD_WITH_ALTERED_SEARCH_PATH is incompatible with LOAD_LIBRARY_SEARCH flags. Remove those flags if they are set.

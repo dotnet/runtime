@@ -38,6 +38,35 @@ extern "C" void QCALLTYPE AppDomain_CreateDynamicAssembly(QCall::ObjectHandleOnS
     END_QCALL;
 }
 
+extern "C" void QCALLTYPE AppDomain_GetNativeLibrarySearchPaths(QCall::ObjectHandleOnStack searchPaths)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    BASEARRAYREF ret = NULL;
+
+    AppDomain* pDomain = GetAppDomain();
+    ret = (BASEARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_STRING, pDomain->m_NativeDllSearchDirectories.GetCount());
+    GCPROTECT_BEGIN(ret);
+
+    uint32_t i = 0;
+    AppDomain::PathIterator pathIter = pDomain->IterateNativeDllSearchDirectories();
+    while (pathIter.Next())
+    {
+        _ASSERTE(i < ret->GetNumComponents());
+        STRINGREF str = AllocateString(*pathIter.GetPath());
+        SetObjectReference((OBJECTREF*)ret->GetDataPtr() + i, str);
+    }
+
+    GCPROTECT_END();
+    searchPaths.Set(ret);
+
+    END_QCALL;
+}
+
 extern "C" void QCALLTYPE AssemblyNative_GetLoadedAssemblies(QCall::ObjectHandleOnStack retAssemblies)
 {
     QCALL_CONTRACT;
