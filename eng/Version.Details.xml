@@ -414,6 +414,18 @@
       <Uri>https://github.com/dotnet/msbuild</Uri>
       <Sha>195e7f5a3a8e51c37d83cd9e54cb99dc3fc69c22</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.Build.Framework" Version="17.8.3">
+      <Uri>https://github.com/dotnet/msbuild</Uri>
+      <Sha>195e7f5a3a8e51c37d83cd9e54cb99dc3fc69c22</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.Build.Tasks.Core" Version="17.8.3">
+      <Uri>https://github.com/dotnet/msbuild</Uri>
+      <Sha>195e7f5a3a8e51c37d83cd9e54cb99dc3fc69c22</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.Build.Utilities.Core" Version="17.8.3">
+      <Uri>https://github.com/dotnet/msbuild</Uri>
+      <Sha>195e7f5a3a8e51c37d83cd9e54cb99dc3fc69c22</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.msbuild" Version="17.8.3-preview-23613-06">
       <Uri>https://github.com/dotnet/msbuild</Uri>
       <Sha>195e7f5a3a8e51c37d83cd9e54cb99dc3fc69c22</Sha>
