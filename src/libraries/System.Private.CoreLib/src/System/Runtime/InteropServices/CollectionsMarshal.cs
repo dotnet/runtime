@@ -46,6 +46,10 @@ namespace System.Runtime.InteropServices
         /// Get a <see cref="Span{Byte}"/> view over a <see cref="BitArray"/>'s data.
         /// </summary>
         /// <param name="array">The <see cref="BitArray"/> whose backing storage should be viewed.</param>
+        /// <returns>
+        /// A <see cref="Span{Byte}"/> representing the underlying byte storage for the given <paramref name="array"/>,
+        /// or an empty span if <paramref name="array"/> is <see langword="null"/>.
+        /// </returns>
         /// <remarks>
         /// <para>
         /// The <see cref="BitArray"/> may have more capacity than is required to store the number of bits represented by

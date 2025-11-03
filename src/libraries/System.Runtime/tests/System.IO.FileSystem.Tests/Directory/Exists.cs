@@ -159,7 +159,7 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
+        [Theory,
             MemberData(nameof(ValidPathComponentNames))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path exists
         public void ValidExtendedPathExists_ReturnsTrue(string component)
@@ -169,7 +169,7 @@ namespace System.IO.Tests
             Assert.True(Exists(path));
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as directory
         public void ExtendedPathAlreadyExistsAsDirectory()
         {
@@ -181,7 +181,7 @@ namespace System.IO.Tests
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long directory path doesn't throw on Exists
         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
         {
@@ -219,7 +219,7 @@ namespace System.IO.Tests
             Assert.False(Exists(testDir.FullName.ToLowerInvariant()));
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
+        [Theory,
             MemberData(nameof(SimpleWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed appropriately
         public void TrailingWhitespaceExistence_SimpleWhiteSpace(string component)
@@ -347,7 +347,7 @@ namespace System.IO.Tests
             Assert.Contains(IOServices.GetReadyDrives(), drive => Exists(drive));
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // drive labels
         public void ExtendedDriveAsPath()
         {
@@ -380,7 +380,7 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as file
         public void ExtendedPathAlreadyExistsAsFile()
         {

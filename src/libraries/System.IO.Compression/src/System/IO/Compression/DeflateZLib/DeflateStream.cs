@@ -22,7 +22,6 @@ namespace System.IO.Compression
         private Deflater? _deflater;
         private byte[]? _buffer;
         private volatile bool _activeAsyncOperation;
-        private bool _wroteBytes;
 
         internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, ZLibNative.Deflate_DefaultWindowBits, uncompressedSize)
         {
@@ -62,7 +61,7 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(stream);
             ArgumentNullException.ThrowIfNull(compressionOptions);
 
-            InitializeDeflater(stream, (ZLibNative.CompressionLevel)compressionOptions.CompressionLevel, (CompressionStrategy)compressionOptions.CompressionStrategy, leaveOpen,  windowBits);
+            InitializeDeflater(stream, (ZLibNative.CompressionLevel)compressionOptions.CompressionLevel, (CompressionStrategy)compressionOptions.CompressionStrategy, leaveOpen, windowBits);
         }
 
         /// <summary>
@@ -565,7 +564,6 @@ namespace System.IO.Compression
                 {
                     _deflater.SetInput(bufferPtr, buffer.Length);
                     WriteDeflaterOutput();
-                    _wroteBytes = true;
                 }
             }
         }
@@ -586,25 +584,22 @@ namespace System.IO.Compression
         // This is called by Flush:
         private void FlushBuffers()
         {
-            if (_wroteBytes)
-            {
-                // Compress any bytes left:
-                WriteDeflaterOutput();
+            // Compress any bytes left:
+            WriteDeflaterOutput();
 
-                Debug.Assert(_deflater != null && _buffer != null);
-                // Pull out any bytes left inside deflater:
-                bool flushSuccessful;
-                do
+            Debug.Assert(_deflater != null && _buffer != null);
+            // Pull out any bytes left inside deflater:
+            bool flushSuccessful;
+            do
+            {
+                int compressedBytes;
+                flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
+                if (flushSuccessful)
                 {
-                    int compressedBytes;
-                    flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
-                    if (flushSuccessful)
-                    {
-                        _stream.Write(_buffer, 0, compressedBytes);
-                    }
-                    Debug.Assert(flushSuccessful == (compressedBytes > 0));
-                } while (flushSuccessful);
-            }
+                    _stream.Write(_buffer, 0, compressedBytes);
+                }
+                Debug.Assert(flushSuccessful == (compressedBytes > 0));
+            } while (flushSuccessful);
 
             // Always flush on the underlying stream
             _stream.Flush();
@@ -623,40 +618,19 @@ namespace System.IO.Compression
                 return;
 
             Debug.Assert(_deflater != null && _buffer != null);
-            // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
-            // This round-trips and we should be ok with this, but our legacy managed deflater
-            // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
-            // took dependencies on it. Thus, make sure to only "flush" when we actually had
-            // some input:
-            if (_wroteBytes)
-            {
-                // Compress any bytes left
-                WriteDeflaterOutput();
+            // Compress any bytes left
+            WriteDeflaterOutput();
 
-                // Pull out any bytes left inside deflater:
-                bool finished;
-                do
-                {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
-
-                    if (compressedBytes > 0)
-                        _stream.Write(_buffer, 0, compressedBytes);
-                } while (!finished);
-            }
-            else
+            // Pull out any bytes left inside deflater:
+            bool finished;
+            do
             {
-                // In case of zero length buffer, we still need to clean up the native created stream before
-                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
-                // the dispose operation and although it frees the stream but it return error code because the
-                // stream state was still marked as in use. The symptoms of this problem will not be seen except
-                // if running any diagnostic tools which check for disposing safe handle objects
-                bool finished;
-                do
-                {
-                    finished = _deflater.Finish(_buffer, out _);
-                } while (!finished);
-            }
+                int compressedBytes;
+                finished = _deflater.Finish(_buffer, out compressedBytes);
+
+                if (compressedBytes > 0)
+                    _stream.Write(_buffer, 0, compressedBytes);
+            } while (!finished);
         }
 
         private async ValueTask PurgeBuffersAsync()
@@ -670,40 +644,19 @@ namespace System.IO.Compression
                 return;
 
             Debug.Assert(_deflater != null && _buffer != null);
-            // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
-            // This round-trips and we should be ok with this, but our legacy managed deflater
-            // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
-            // took dependencies on it. Thus, make sure to only "flush" when we actually had
-            // some input.
-            if (_wroteBytes)
-            {
-                // Compress any bytes left
-                await WriteDeflaterOutputAsync(default).ConfigureAwait(false);
+            // Compress any bytes left
+            await WriteDeflaterOutputAsync(default).ConfigureAwait(false);
 
-                // Pull out any bytes left inside deflater:
-                bool finished;
-                do
-                {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
-
-                    if (compressedBytes > 0)
-                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes)).ConfigureAwait(false);
-                } while (!finished);
-            }
-            else
+            // Pull out any bytes left inside deflater:
+            bool finished;
+            do
             {
-                // In case of zero length buffer, we still need to clean up the native created stream before
-                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
-                // the dispose operation and although it frees the stream, it returns an error code because the
-                // stream state was still marked as in use. The symptoms of this problem will not be seen except
-                // if running any diagnostic tools which check for disposing safe handle objects.
-                bool finished;
-                do
-                {
-                    finished = _deflater.Finish(_buffer, out _);
-                } while (!finished);
-            }
+                int compressedBytes;
+                finished = _deflater.Finish(_buffer, out compressedBytes);
+
+                if (compressedBytes > 0)
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes)).ConfigureAwait(false);
+            } while (!finished);
         }
 
         protected override void Dispose(bool disposing)
@@ -857,8 +810,6 @@ namespace System.IO.Compression
                     _deflater.SetInput(buffer);
 
                     await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
-
-                    _wroteBytes = true;
                 }
                 finally
                 {

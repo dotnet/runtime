@@ -21,7 +21,7 @@ public class CC
             } while (a);
         }
     }
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
     public static void TestEntryPoint()
     {
         ulong ul = 0;

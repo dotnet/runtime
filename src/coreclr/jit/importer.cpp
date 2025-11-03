@@ -5980,21 +5980,29 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
 //   optimized for runtime async
 //
 // Arguments:
-//   codeAddr - IL after call[virt]
+//   codeAddr - IL after call[virt]     NB: pointing at unconsumed token.
 //   codeEndp - End of IL code stream
 //   configVal - [out] set to 0 or 1, accordingly, if we saw ConfigureAwait(0|1)
 //
 // Returns:
-//    true if this is an Await that we can optimize
+//    NULL if we did not recognise an Await pattern that we can optimize
+//    Otherwise returns position at the end of the Await pattern with one token left unconsumed.
 //
-bool Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
+const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
 {
     // If we see the following code pattern in runtime async methods:
     //
     //    call[virt] <Method>
     //    [ OPTIONAL ]
+    //    {
+    //       [ OPTIONAL ]
+    //       {
+    //         stloc X;
+    //         ldloca X
+    //       }
     //       ldc.i4.0 / ldc.i4.1
     //       call[virt] <ConfigureAwait>
+    //    }
     //    call       <Await>
     //
     // We emit an eqivalent of:
@@ -6011,11 +6019,85 @@ bool Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEn
     // There must be enough space after ldc for {call + tk + call + tk}
     if (nextOpcode + 2 * (1 + sizeof(mdToken)) < codeEndp)
     {
+        // ConfigureAwait on a ValueTask will start with stloc/ldloca.
+        // The longest encoding should fit in the length we asked for above.
+        uint8_t     maybeStLoc = getU1LittleEndian(nextOpcode);
+        const BYTE* nextTmp    = nextOpcode + 1;
+        int         stlocNum   = -1;
+        switch (maybeStLoc)
+        {
+            case CEE_STLOC_0:
+                stlocNum = 0;
+                break;
+            case CEE_STLOC_1:
+                stlocNum = 1;
+                break;
+            case CEE_STLOC_2:
+                stlocNum = 2;
+                break;
+            case CEE_STLOC_3:
+                stlocNum = 3;
+                break;
+            case CEE_STLOC_S:
+                stlocNum = getU1LittleEndian(nextTmp);
+                nextTmp += 1;
+                break;
+            case CEE_PREFIX1:
+                uint16_t maybeStLocWide = (uint16_t)256 + getU1LittleEndian(nextTmp);
+                nextTmp += 1;
+                if (maybeStLocWide == CEE_STLOC)
+                {
+                    stlocNum = getU2LittleEndian(nextTmp);
+                    nextTmp += 2;
+                }
+                break;
+        }
+
+        // if it was a stloc, check for matching ldloca
+        if (stlocNum != -1)
+        {
+            uint8_t maybeLdLoca = getU1LittleEndian(nextTmp);
+            nextTmp += 1;
+            int ldlocaNum = -1;
+            switch (maybeLdLoca)
+            {
+                case CEE_LDLOCA_S:
+                    ldlocaNum = getU1LittleEndian(nextTmp);
+                    nextTmp += 1;
+                    break;
+                case CEE_PREFIX1:
+                    uint16_t maybeLdLocaWide = (uint16_t)256 + getU1LittleEndian(nextTmp);
+                    nextTmp += 1;
+                    if (maybeLdLocaWide == CEE_LDLOCA)
+                    {
+                        ldlocaNum = getU2LittleEndian(nextTmp);
+                        nextTmp += 2;
+                    }
+                    break;
+            }
+
+            // no ldloca or locals did not match, this can't be await pattern
+            if (stlocNum != ldlocaNum)
+                return nullptr;
+
+            // locals match, but no space for ConfigureAwait call, this can't be await pattern
+            if (nextTmp + 2 * (1 + sizeof(mdToken)) >= codeEndp)
+                return nullptr;
+
+            nextOpcode = nextTmp;
+        }
+
         uint8_t nextOp     = getU1LittleEndian(nextOpcode);
         uint8_t nextNextOp = getU1LittleEndian(nextOpcode + 1);
         if ((nextOp != CEE_LDC_I4_0 && nextOp != CEE_LDC_I4_1) ||
             (nextNextOp != CEE_CALL && nextNextOp != CEE_CALLVIRT))
         {
+            if (stlocNum != -1)
+            {
+                // we had stloc/ldloca, we must see ConfigAwait
+                return nullptr;
+            }
+
             goto checkForAwait;
         }
 
@@ -6026,6 +6108,12 @@ bool Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEn
         if (!eeIsIntrinsic(nextCallTok.hMethod) ||
             lookupNamedIntrinsic(nextCallTok.hMethod) != NI_System_Threading_Tasks_Task_ConfigureAwait)
         {
+            if (stlocNum != -1)
+            {
+                // we had stloc/ldloca, we must see ConfigAwait
+                return nullptr;
+            }
+
             goto checkForAwait;
         }
 
@@ -6047,11 +6135,13 @@ checkForAwait:
             lookupNamedIntrinsic(nextCallTok.hMethod) == NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
         {
             // yes, this is an Await
-            return true;
+            // Consume the call opcode, but not the token.
+            // The call importer always consumes one token before moving to the next opcode.
+            return nextOpcode + 1;
         }
     }
 
-    return false;
+    return nullptr;
 }
 
 /*****************************************************************************
@@ -9086,15 +9176,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // many other places.  We unfortunately embed that knowledge here.
                 if (opcode != CEE_CALLI)
                 {
-                    bool isAwait   = false;
-                    int  configVal = -1; // -1 not configured, 0/1 configured to false/true
+                    bool        isAwait            = false;
+                    int         configVal          = -1; // -1 not configured, 0/1 configured to false/true
+                    const BYTE* codeAddrAfterMatch = NULL;
 #ifdef DEBUG
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
 #else
                     if (compIsAsync())
 #endif
                     {
-                        if (impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal))
+                        codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal);
+                        if (codeAddrAfterMatch != NULL)
                         {
                             isAwait = true;
                             prefixFlags |= PREFIX_IS_TASK_AWAIT;
@@ -9111,14 +9203,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (resolvedToken.hMethod != NULL)
                         {
                             // There is a runtime async variant that is implicitly awaitable, just call that.
-                            // if configured, skip {ldc call ConfigureAwait}
-                            if (configVal >= 0)
-                            {
-                                codeAddr += 2 + sizeof(mdToken);
-                            }
-
-                            // Skip the call to `Await`
-                            codeAddr += 1 + sizeof(mdToken);
+                            // skip the await pattern to the last token.
+                            codeAddr = codeAddrAfterMatch;
                         }
                         else
                         {

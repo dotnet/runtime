@@ -567,7 +567,7 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(void* context, uint32
         return -1;
     }
 
-    uint8_t* buffer = malloc(byteCount);
+    uint8_t* buffer = (uint8_t*)malloc(byteCount);
     if (buffer == NULL)
     {
         errno = ENOMEM;
@@ -593,7 +593,7 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(void* context, uint32
 
         byteCount = tmpEstimatedSize;
         free(buffer);
-        buffer = malloc(byteCount);
+        buffer = (uint8_t*)malloc(byteCount);
         if (buffer == NULL)
         {
             errno = ENOMEM;
