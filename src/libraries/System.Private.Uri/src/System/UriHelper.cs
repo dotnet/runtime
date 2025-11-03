@@ -337,7 +337,7 @@ namespace System
                         dest.Append(c);
                     }
 
-                    if (unescaped <= 127)
+                    if (char.IsAscii(unescaped))
                     {
                         dest.Append(unescaped);
                         i += 3;
