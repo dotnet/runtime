@@ -8,22 +8,26 @@ namespace System.Runtime.CompilerServices
     public static partial class AsyncHelpers
     {
         /// <summary>
-        /// This method is intended to be used by Roslyn-generated async entry point.
-        /// On multi-threaded environments, it will block and await the specified task, returning when the task has completed.
-        /// On single-threaded environments (for example, browser), it would register a continuation and yield to the browser event loop immediately.
+        /// This method is intended to be used by a compiler-generated async entry point.
         /// </summary>
-        /// <param name="task">The result from the main entrypoint to await.</param>
+        /// <remarks>
+        /// On multi-threaded environments, this method blocks and awaits the specified task, and returns when the task has completed.
+        /// On single-threaded environments (for example, browser), it registers a continuation and yields to the browser event loop immediately.
+        /// </remarks>
+        /// <param name="task">The result from the main entry point to await.</param>
         public static void HandleAsyncEntryPoint(Task task)
         {
             task.GetAwaiter().GetResult();
         }
 
         /// <summary>
-        /// This method is intended to be used by Roslyn-generated async entry point.
-        /// On multi-threaded environments, it will block and await the specified task, returning when the task has completed.
-        /// On single-threaded environments (e.g., browser), it would register a continuation and yield to the browser event loop immediately.
+        /// This method is intended to be used by a compiler-generated async entry point.
         /// </summary>
-        /// <param name="task">The result from the main entrypoint to await.</param>
+        /// <remarks>
+        /// On multi-threaded environments, this method blocks and awaits the specified task, and returns when the task has completed.
+        /// On single-threaded environments (for example, browser), it registers a continuation and yields to the browser event loop immediately.
+        /// </remarks>
+        /// <param name="task">The result from the main entry point to await.</param>
         public static int HandleAsyncEntryPoint(Task<int> task)
         {
             return task.GetAwaiter().GetResult();
