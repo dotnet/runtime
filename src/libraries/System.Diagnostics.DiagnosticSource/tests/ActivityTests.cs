@@ -2549,7 +2549,7 @@ namespace System.Diagnostics.Tests
 
         private const int MaxClockErrorMSec = 20;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void TestActivityDebuggerDisplay()
         {
             Activity activity = new Activity("TestOperation");
@@ -2562,7 +2562,7 @@ namespace System.Diagnostics.Tests
             activity.Stop();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void TestActivityDebuggerProxy()
         {
             Activity activity = new Activity("TestOperation");
@@ -2577,7 +2577,7 @@ namespace System.Diagnostics.Tests
             activity.Stop();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void TestActivityContextDebuggerDisplay()
         {
             ActivityTraceId traceId = ActivityTraceId.CreateRandom();
@@ -2588,7 +2588,7 @@ namespace System.Diagnostics.Tests
             Assert.NotNull(debuggerDisplay);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void TestActivityLinkDebuggerDisplay()
         {
             ActivityTraceId traceId = ActivityTraceId.CreateRandom();
@@ -2599,7 +2599,7 @@ namespace System.Diagnostics.Tests
             DebuggerAttributes.ValidateDebuggerDisplayReferences(link);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public void TestActivityEventDebuggerDisplay()
         {
             ActivityEvent activityEvent = new ActivityEvent("TestEvent");
