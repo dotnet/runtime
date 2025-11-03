@@ -100,9 +100,7 @@ namespace Microsoft.NETCore.ILAsm
         private static string GetRuntimeIdentifier()
         {
             // Determine the current runtime identifier
-            string os = string.Empty;
-            string arch = RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-
+            string os;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 os = "win";
@@ -119,6 +117,27 @@ namespace Microsoft.NETCore.ILAsm
             {
                 os = "freebsd";
             }
+            else
+            {
+                // Fallback to linux for unknown Unix-like platforms
+                os = "linux";
+            }
+
+            // Map architecture to RID format
+            string arch = RuntimeInformation.ProcessArchitecture switch
+            {
+                Architecture.X86 => "x86",
+                Architecture.X64 => "x64",
+                Architecture.Arm => "arm",
+                Architecture.Arm64 => "arm64",
+                Architecture.Wasm => "wasm",
+                Architecture.S390x => "s390x",
+                Architecture.LoongArch64 => "loongarch64",
+                Architecture.Armv6 => "armv6",
+                Architecture.Ppc64le => "ppc64le",
+                Architecture.RiscV64 => "riscv64",
+                _ => RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant()
+            };
 
             return $"{os}-{arch}";
         }
