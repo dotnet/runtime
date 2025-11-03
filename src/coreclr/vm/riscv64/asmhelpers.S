@@ -922,28 +922,128 @@ LEAF_END Load_Stack
 
 // Load/Store stack reference routines (placeholders for GC tracking)
 LEAF_ENTRY Load_Stack_Ref
-    lw t4, 0(t2)    // SP offset
-    addi t2, t2, 4
+    lwu t4, 0(t2)   // SP offset (zero-extend)
+    lwu t5, 4(t2)   // size of the value type (zero-extend)
     add t4, sp, t4
-    ld t6, 0(t3)
-    sd t6, 0(t4)
-    addi t3, t3, 8
-    ld t4, 0(t2)
-    addi t2, t2, 8
+    sd t3, 0(t4)
+    add t3, t3, t5
+    // Align t3 to the stack slot size
+    addi t3, t3, 7
+    andi t3, t3, -8
+    ld t4, 8(t2)    // Next routine pointer (aligned)
+    addi t2, t2, 16
     jr t4
 LEAF_END Load_Stack_Ref
 
 LEAF_ENTRY Store_Stack_Ref
-    lw t4, 0(t2)    // SP offset
-    addi t2, t2, 4
-    add t4, sp, t4
-    ld t6, 0(t4)
+    lwu t5, 0(t2)   // SP offset (zero-extend)
+    lwu t4, 4(t2)   // size of the value type (zero-extend)
+    add t5, sp, t5
+    // Split large immediate into separate additions to avoid 12-bit limit
+    addi t5, t5, __PWTB_TransitionBlock
+    addi t5, t5, SIZEOF__TransitionBlock
+    ld t7, 0(t5)    // t7 = source pointer
+
+    // Simple byte copy loop
+    beqz t4, LOCAL_LABEL(StoreCopyDone)
+LOCAL_LABEL(StoreCopyLoop):
+    lbu t6, 0(t7)   // Load from source
+    sb t6, 0(t3)    // Store to destination
+    addi t7, t7, 1  // Advance source
+    addi t3, t3, 1  // Advance destination
+    addi t4, t4, -1 // Decrement count
+    bnez t4, LOCAL_LABEL(StoreCopyLoop)
+LOCAL_LABEL(StoreCopyDone):
+    // Align t3 to the stack slot size
+    addi t3, t3, 7
+    andi t3, t3, -8
+    ld t4, 8(t2)    // Next routine pointer (aligned)
+    addi t2, t2, 16
+    jr t4
+LEAF_END Store_Stack_Ref
+
+// Macro for copying value types by reference
+// Arguments:
+//   argReg - source register containing pointer to value type
+//   t4 - size of the value type (in bytes)
+//   t3 - destination pointer (interpreter stack)
+.macro Copy_Ref argReg
+    // Copy 8 bytes at a time if possible
+    addi t4, t4, -8
+    bltz t4, LOCAL_LABEL(CopyBy1\argReg)
+LOCAL_LABEL(RefCopyLoop8\argReg):
+    ld t6, 0(\argReg)
     sd t6, 0(t3)
+    addi \argReg, \argReg, 8
     addi t3, t3, 8
+    addi t4, t4, -8
+    bgez t4, LOCAL_LABEL(RefCopyLoop8\argReg)
+LOCAL_LABEL(CopyBy1\argReg):
+    // Copy remaining bytes (0-7)
+    addi t4, t4, 8
+    beqz t4, LOCAL_LABEL(RefCopyDone\argReg)
+LOCAL_LABEL(RefCopyLoop1\argReg):
+    lbu t6, 0(\argReg)
+    sb t6, 0(t3)
+    addi \argReg, \argReg, 1
+    addi t3, t3, 1
+    addi t4, t4, -1
+    bnez t4, LOCAL_LABEL(RefCopyLoop1\argReg)
+LOCAL_LABEL(RefCopyDone\argReg):
+    // Align t3 to the stack slot size
+    addi t3, t3, 7
+    andi t3, t3, -8
+.endm
+
+// Routines for passing value type arguments by reference in general purpose registers A0..A7
+// from native code to the interpreter (Store direction)
+
+.macro Store_Ref argReg
+LEAF_ENTRY Store_Ref_\argReg
+    ld t4, 0(t2)    // size of the value type
+    addi t2, t2, 8
+    Copy_Ref \argReg
     ld t4, 0(t2)
     addi t2, t2, 8
     jr t4
-LEAF_END Store_Stack_Ref
+LEAF_END Store_Ref_\argReg
+.endm
+
+Store_Ref a0
+Store_Ref a1
+Store_Ref a2
+Store_Ref a3
+Store_Ref a4
+Store_Ref a5
+Store_Ref a6
+Store_Ref a7
+
+// Routines for loading value type arguments by reference from interpreter stack
+// to general purpose registers A0..A7 (Load direction - interpreter to native)
+
+.macro Load_Ref argReg
+LEAF_ENTRY Load_Ref_\argReg
+    ld t4, 0(t2)    // size of the value type
+    addi t2, t2, 8
+    mv \argReg, t3  // Pass pointer to the value type in register
+    add t3, t3, t4  // Advance interpreter stack pointer
+    // Align t3 to the stack slot size
+    addi t3, t3, 7
+    andi t3, t3, -8
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jr t4
+LEAF_END Load_Ref_\argReg
+.endm
+
+Load_Ref a0
+Load_Ref a1
+Load_Ref a2
+Load_Ref a3
+Load_Ref a4
+Load_Ref a5
+Load_Ref a6
+Load_Ref a7
 
 // Call jitted method routines
 // a0 - routines array
@@ -1008,6 +1108,179 @@ NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetDouble, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a2, 16(fp)
+    sd a0, 0(a2)
+    sd a1, 8(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet2I8, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a2, 16(fp)
+    fsd fa0, 0(a2)
+    fsd fa1, 8(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet2Double, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet3Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a2, 16(fp)
+    fsd fa0, 0(a2)
+    fsd fa1, 8(a2)
+    fsd fa2, 16(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet3Double, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet4Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a2, 16(fp)
+    fsd fa0, 0(a2)
+    fsd fa1, 8(a2)
+    fsd fa2, 16(a2)
+    fsd fa3, 24(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet4Double, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a2, 16(fp)
+    fsw fa0, 0(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRetFloat, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a2, 16(fp)
+    fsw fa0, 0(a2)
+    fsw fa1, 4(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet2Float, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet3Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a2, 16(fp)
+    fsw fa0, 0(a2)
+    fsw fa1, 4(a2)
+    fsw fa2, 8(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet3Float, _TEXT
+
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+NESTED_ENTRY CallJittedMethodRet4Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a2, 16(fp)
+    sub sp, sp, a3
+    mv t2, a0
+    mv t3, a1
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    jalr t4
+    ld a2, 16(fp)
+    fsw fa0, 0(a2)
+    fsw fa1, 4(a2)
+    fsw fa2, 8(a2)
+    fsw fa3, 12(a2)
+    EPILOG_STACK_RESTORE
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
+    EPILOG_RETURN
+NESTED_END CallJittedMethodRet4Float, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
@@ -1147,6 +1420,64 @@ NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
     EPILOG_RETURN
 NESTED_END InterpreterStubRet2Float, _TEXT
+
+NESTED_ENTRY InterpreterStubRet3Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    // The +16 is for the fp, ra above
+    addi a0, sp, __PWTB_TransitionBlock + 16
+    mv a1, t6 // the IR bytecode pointer
+    mv a2, zero
+    call C_FUNC(ExecuteInterpretedMethod)
+    fld fa0, 0(a0)
+    fld fa1, 8(a0)
+    fld fa2, 16(a0)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet3Double, _TEXT
+
+NESTED_ENTRY InterpreterStubRet4Double, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    // The +16 is for the fp, ra above
+    addi a0, sp, __PWTB_TransitionBlock + 16
+    mv a1, t6 // the IR bytecode pointer
+    mv a2, zero
+    call C_FUNC(ExecuteInterpretedMethod)
+    fld fa0, 0(a0)
+    fld fa1, 8(a0)
+    fld fa2, 16(a0)
+    fld fa3, 24(a0)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet4Double, _TEXT
+
+NESTED_ENTRY InterpreterStubRet3Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    // The +16 is for the fp, ra above
+    addi a0, sp, __PWTB_TransitionBlock + 16
+    mv a1, t6 // the IR bytecode pointer
+    mv a2, zero
+    call C_FUNC(ExecuteInterpretedMethod)
+    flw fa0, 0(a0)
+    flw fa1, 4(a0)
+    flw fa2, 8(a0)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet3Float, _TEXT
+
+NESTED_ENTRY InterpreterStubRet4Float, _TEXT, NoHandler
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
+    // The +16 is for the fp, ra above
+    addi a0, sp, __PWTB_TransitionBlock + 16
+    mv a1, t6 // the IR bytecode pointer
+    mv a2, zero
+    call C_FUNC(ExecuteInterpretedMethod)
+    flw fa0, 0(a0)
+    flw fa1, 4(a0)
+    flw fa2, 8(a0)
+    flw fa3, 12(a0)
+    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
+    EPILOG_RETURN
+NESTED_END InterpreterStubRet4Float, _TEXT
 
 // Copy arguments from the processor stack to the interpreter stack
 // The CPU stack slots are aligned to pointer size.
@@ -1662,6 +1993,169 @@ ALTERNATE_ENTRY Load_FA6_FA7
     EPILOG_BRANCH_REG t4
 LEAF_END Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
 
+// Additional Load_FA* routines starting from FA1, FA3, FA5, FA7
+LEAF_ENTRY Load_FA1
+    fld fa1, 0(t3)
+    addi t3, t3, 8
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA1
+
+LEAF_ENTRY Load_FA1_FA2
+    fld fa1, 0(t3)
+    fld fa2, 8(t3)
+    addi t3, t3, 16
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA1_FA2
+
+LEAF_ENTRY Load_FA1_FA2_FA3
+    fld fa1, 0(t3)
+    fld fa2, 8(t3)
+    fld fa3, 16(t3)
+    addi t3, t3, 24
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA1_FA2_FA3
+
+LEAF_ENTRY Load_FA1_FA2_FA3_FA4
+    fld fa1, 0(t3)
+    fld fa2, 8(t3)
+    fld fa3, 16(t3)
+    fld fa4, 24(t3)
+    addi t3, t3, 32
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA1_FA2_FA3_FA4
+
+LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5
+    fld fa1, 0(t3)
+    fld fa2, 8(t3)
+    fld fa3, 16(t3)
+    fld fa4, 24(t3)
+    fld fa5, 32(t3)
+    addi t3, t3, 40
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA1_FA2_FA3_FA4_FA5
+
+LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5_FA6
+    fld fa1, 0(t3)
+    fld fa2, 8(t3)
+    fld fa3, 16(t3)
+    fld fa4, 24(t3)
+    fld fa5, 32(t3)
+    fld fa6, 40(t3)
+    addi t3, t3, 48
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA1_FA2_FA3_FA4_FA5_FA6
+
+LEAF_ENTRY Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+    fld fa1, 0(t3)
+    fld fa2, 8(t3)
+    fld fa3, 16(t3)
+    fld fa4, 24(t3)
+    fld fa5, 32(t3)
+    fld fa6, 40(t3)
+    fld fa7, 48(t3)
+    addi t3, t3, 56
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+
+LEAF_ENTRY Load_FA3
+    fld fa3, 0(t3)
+    addi t3, t3, 8
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA3
+
+LEAF_ENTRY Load_FA3_FA4
+    fld fa3, 0(t3)
+    fld fa4, 8(t3)
+    addi t3, t3, 16
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA3_FA4
+
+LEAF_ENTRY Load_FA3_FA4_FA5
+    fld fa3, 0(t3)
+    fld fa4, 8(t3)
+    fld fa5, 16(t3)
+    addi t3, t3, 24
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA3_FA4_FA5
+
+LEAF_ENTRY Load_FA3_FA4_FA5_FA6
+    fld fa3, 0(t3)
+    fld fa4, 8(t3)
+    fld fa5, 16(t3)
+    fld fa6, 24(t3)
+    addi t3, t3, 32
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA3_FA4_FA5_FA6
+
+LEAF_ENTRY Load_FA3_FA4_FA5_FA6_FA7
+    fld fa3, 0(t3)
+    fld fa4, 8(t3)
+    fld fa5, 16(t3)
+    fld fa6, 24(t3)
+    fld fa7, 32(t3)
+    addi t3, t3, 40
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA3_FA4_FA5_FA6_FA7
+
+LEAF_ENTRY Load_FA5
+    fld fa5, 0(t3)
+    addi t3, t3, 8
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA5
+
+LEAF_ENTRY Load_FA5_FA6
+    fld fa5, 0(t3)
+    fld fa6, 8(t3)
+    addi t3, t3, 16
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA5_FA6
+
+LEAF_ENTRY Load_FA5_FA6_FA7
+    fld fa5, 0(t3)
+    fld fa6, 8(t3)
+    fld fa7, 16(t3)
+    addi t3, t3, 24
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA5_FA6_FA7
+
+LEAF_ENTRY Load_FA7
+    fld fa7, 0(t3)
+    addi t3, t3, 8
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Load_FA7
+
 LEAF_ENTRY Store_FA0
     fsd fa0, 0(t3)
     addi t3, t3, 8
@@ -1765,5 +2259,168 @@ ALTERNATE_ENTRY Store_FA6_FA7
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
 LEAF_END Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+
+// Additional Store_FA* routines starting from FA1, FA3, FA5, FA7
+LEAF_ENTRY Store_FA1
+    fsd fa1, 0(t3)
+    addi t3, t3, 8
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA1
+
+LEAF_ENTRY Store_FA1_FA2
+    fsd fa1, 0(t3)
+    fsd fa2, 8(t3)
+    addi t3, t3, 16
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA1_FA2
+
+LEAF_ENTRY Store_FA1_FA2_FA3
+    fsd fa1, 0(t3)
+    fsd fa2, 8(t3)
+    fsd fa3, 16(t3)
+    addi t3, t3, 24
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA1_FA2_FA3
+
+LEAF_ENTRY Store_FA1_FA2_FA3_FA4
+    fsd fa1, 0(t3)
+    fsd fa2, 8(t3)
+    fsd fa3, 16(t3)
+    fsd fa4, 24(t3)
+    addi t3, t3, 32
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA1_FA2_FA3_FA4
+
+LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5
+    fsd fa1, 0(t3)
+    fsd fa2, 8(t3)
+    fsd fa3, 16(t3)
+    fsd fa4, 24(t3)
+    fsd fa5, 32(t3)
+    addi t3, t3, 40
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA1_FA2_FA3_FA4_FA5
+
+LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5_FA6
+    fsd fa1, 0(t3)
+    fsd fa2, 8(t3)
+    fsd fa3, 16(t3)
+    fsd fa4, 24(t3)
+    fsd fa5, 32(t3)
+    fsd fa6, 40(t3)
+    addi t3, t3, 48
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA1_FA2_FA3_FA4_FA5_FA6
+
+LEAF_ENTRY Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+    fsd fa1, 0(t3)
+    fsd fa2, 8(t3)
+    fsd fa3, 16(t3)
+    fsd fa4, 24(t3)
+    fsd fa5, 32(t3)
+    fsd fa6, 40(t3)
+    fsd fa7, 48(t3)
+    addi t3, t3, 56
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA1_FA2_FA3_FA4_FA5_FA6_FA7
+
+LEAF_ENTRY Store_FA3
+    fsd fa3, 0(t3)
+    addi t3, t3, 8
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA3
+
+LEAF_ENTRY Store_FA3_FA4
+    fsd fa3, 0(t3)
+    fsd fa4, 8(t3)
+    addi t3, t3, 16
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA3_FA4
+
+LEAF_ENTRY Store_FA3_FA4_FA5
+    fsd fa3, 0(t3)
+    fsd fa4, 8(t3)
+    fsd fa5, 16(t3)
+    addi t3, t3, 24
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA3_FA4_FA5
+
+LEAF_ENTRY Store_FA3_FA4_FA5_FA6
+    fsd fa3, 0(t3)
+    fsd fa4, 8(t3)
+    fsd fa5, 16(t3)
+    fsd fa6, 24(t3)
+    addi t3, t3, 32
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA3_FA4_FA5_FA6
+
+LEAF_ENTRY Store_FA3_FA4_FA5_FA6_FA7
+    fsd fa3, 0(t3)
+    fsd fa4, 8(t3)
+    fsd fa5, 16(t3)
+    fsd fa6, 24(t3)
+    fsd fa7, 32(t3)
+    addi t3, t3, 40
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA3_FA4_FA5_FA6_FA7
+
+LEAF_ENTRY Store_FA5
+    fsd fa5, 0(t3)
+    addi t3, t3, 8
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA5
+
+LEAF_ENTRY Store_FA5_FA6
+    fsd fa5, 0(t3)
+    fsd fa6, 8(t3)
+    addi t3, t3, 16
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA5_FA6
+
+LEAF_ENTRY Store_FA5_FA6_FA7
+    fsd fa5, 0(t3)
+    fsd fa6, 8(t3)
+    fsd fa7, 16(t3)
+    addi t3, t3, 24
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA5_FA6_FA7
+
+LEAF_ENTRY Store_FA7
+    fsd fa7, 0(t3)
+    addi t3, t3, 8
+    ld t4, 0(t2)
+    addi t2, t2, 8
+    EPILOG_BRANCH_REG t4
+LEAF_END Store_FA7
 
 #endif // FEATURE_INTERPRETER
