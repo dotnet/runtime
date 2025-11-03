@@ -3553,7 +3553,7 @@ do                                                                      \
                     COMPlusThrow(kPlatformNotSupportedException);
                     break;
                 default:
-                    _ASSERTE(!"Unimplemented or invalid interpreter opcode");
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unimplemented or invalid interpreter opcode\n"));
                     break;
             }
         }
