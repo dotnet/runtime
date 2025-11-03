@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Tests;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
@@ -996,14 +997,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            // Save current culture
-            var currentCulture = System.Globalization.CultureInfo.CurrentCulture;
-            
-            try
+            // Test with fi_FI culture which uses U+2212 minus sign for negative numbers
+            using (new ThreadCultureChange("fi-FI"))
             {
-                // Test with fi_FI culture which uses U+2212 minus sign for negative numbers
-                System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("fi-FI");
-
                 Compilation compilation = CompilationHelper.CreateCompilation(source);
                 JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
 
@@ -1012,13 +1008,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 var errors = result.NewCompilation.GetDiagnostics()
                     .Where(d => d.Severity == DiagnosticSeverity.Error)
                     .ToList();
-                
+
                 Assert.Empty(errors);
-            }
-            finally
-            {
-                // Restore culture
-                System.Globalization.CultureInfo.CurrentCulture = currentCulture;
             }
         }
     }

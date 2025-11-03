@@ -77,8 +77,6 @@ namespace System.Text.Json.SourceGeneration
 #pragma warning disable RS1035 // CultureInfo.CurrentCulture is banned in analyzers
             CultureInfo originalCulture = CultureInfo.CurrentCulture;
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-#pragma warning restore RS1035
-
             try
             {
                 Emitter emitter = new(sourceProductionContext);
@@ -86,10 +84,9 @@ namespace System.Text.Json.SourceGeneration
             }
             finally
             {
-#pragma warning disable RS1035
                 CultureInfo.CurrentCulture = originalCulture;
-#pragma warning restore RS1035
             }
+#pragma warning restore RS1035
         }
 
         /// <summary>

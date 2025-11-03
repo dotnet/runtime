@@ -86,7 +86,6 @@ namespace System.Text.Json.SourceGeneration
             // Note: RS1035 is already disabled at the file level for this Roslyn version.
             CultureInfo originalCulture = CultureInfo.CurrentCulture;
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-
             try
             {
                 Emitter emitter = new(executionContext);
