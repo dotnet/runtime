@@ -34,7 +34,7 @@ struct HijackArgs
 inline void* GetCurrentSP()
 {
     WRAPPER_NO_CONTRACT;
-    return (LPVOID)emscripten_stack_get_current();
+    return (void*)emscripten_stack_get_current();
 }
 
 extern PCODE GetPreStubEntryPoint();
