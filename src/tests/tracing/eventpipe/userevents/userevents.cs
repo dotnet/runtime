@@ -62,7 +62,7 @@ namespace Tracing.Tests.UserEvents
             recordTraceProcess.ErrorDataReceived += (_, args) => Console.Error.WriteLine($"[record-trace] {args.Data}");
             recordTraceProcess.BeginErrorReadLine();
 
-            if (!recordTraceProcess.HasExited && !traceeProcess.WaitForExit(15000))
+            if (!traceeProcess.HasExited && !traceeProcess.WaitForExit(15000))
             {
                 traceeProcess.Kill();
             }
