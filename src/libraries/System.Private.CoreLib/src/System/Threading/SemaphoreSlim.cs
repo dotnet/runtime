@@ -279,6 +279,14 @@ namespace System.Threading
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
+            // Validate the timeout
+            if (millisecondsTimeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+            }
+
+            // Call wait with the timeout milliseconds
             return WaitCore(millisecondsTimeout, CancellationToken.None);
         }
 
@@ -566,6 +574,14 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(int millisecondsTimeout)
         {
+            // Validate the timeout
+            if (millisecondsTimeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+            }
+
+            // Call wait with the timeout milliseconds
             return WaitAsyncCore(millisecondsTimeout, default);
         }
 
