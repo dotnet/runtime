@@ -110,3 +110,13 @@
         ret
     }
 }
+
+.method public static int32 Main() il managed
+{
+    .entrypoint
+    call void [genericjmp]JmpGenericToGeneric::TestEntryPoint()
+    call void [genericjmp]JmpGenericToRegular::TestEntryPoint()
+    call void [genericjmp]JmpRegularToGeneric::TestEntryPoint()
+    ldc.i4 100
+    ret
+}
