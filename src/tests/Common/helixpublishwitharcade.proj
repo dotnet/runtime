@@ -552,7 +552,7 @@
 
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.MergedTestAssembly(ForStress)?\.\d+\.\d+$', ''))</_MergedWrapperName>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -567,11 +567,11 @@
       <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
     </ItemGroup>
     <ItemGroup>
-      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/**" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)/$(_MergedWrapperName).app/**" />
       <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
-        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
       </_MergedPayloadFiles>
       <!-- Remove the placeholder test exclusion list here -->
       <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
@@ -592,7 +592,7 @@
 
     <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
-      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <_MergedWrapperName>$([System.Text.RegularExpressions.Regex]::Replace('%(_MergedWrapperMarker.FileName)', '\.MergedTestAssembly(ForStress)?\.\d+\.\d+$', ''))</_MergedWrapperName>
     </PropertyGroup>
 
     <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
