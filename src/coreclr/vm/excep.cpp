@@ -224,9 +224,11 @@ void GetExceptionMessage(OBJECTREF throwable, SString &result)
 
     STRINGREF pString = GetExceptionMessage(throwable);
 
+    GCPROTECT_BEGIN(pString);
     // If call returned NULL (not empty), oh well, no message.
     if (pString != NULL)
         pString->GetSString(result);
+    GCPROTECT_END();
 } // void GetExceptionMessage()
 
 STRINGREF GetExceptionMessage(OBJECTREF throwable)

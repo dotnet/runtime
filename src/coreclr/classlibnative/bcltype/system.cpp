@@ -117,6 +117,8 @@ static StackWalkAction FindFailFastCallerCallback(CrawlFrame* frame, VOID* data)
     return SWA_ABORT;
 }
 
+static int alreadyfailing = 0;
+
 extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource)
 {
     QCALL_CONTRACT;
@@ -124,6 +126,8 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     BEGIN_QCALL;
 
     GCX_COOP();
+
+    alreadyfailing++;
 
     FindFailFastCallerStruct findCallerData;
     findCallerData.pStackMark = mark;
@@ -143,7 +147,7 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 
     LPCWSTR argExceptionString = NULL;
     StackSString msg;
-    if (exception.Get() != NULL)
+    if (alreadyfailing == 1 && exception.Get() != NULL)
     {
         GetExceptionMessage(exception.Get(), msg);
         argExceptionString = msg.GetUnicode();
