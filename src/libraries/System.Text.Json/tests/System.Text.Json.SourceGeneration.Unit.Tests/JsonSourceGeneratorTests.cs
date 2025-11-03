@@ -969,7 +969,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Fact]
         public void NegativeJsonPropertyOrderGeneratesValidCode()
         {
-            // Test for https://github.com/dotnet/runtime/issues/XXX
+            // Test for https://github.com/dotnet/runtime/issues/121277
             // Verify that negative JsonPropertyOrder values generate compilable code
             // even on locales that use non-ASCII minus signs (e.g., fi_FI uses U+2212)
             string source = """

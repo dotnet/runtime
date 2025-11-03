@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -78,10 +79,25 @@ namespace System.Text.Json.SourceGeneration
 
             // Stage 3. Emit source code from the spec models.
             OnSourceEmitting?.Invoke(contextGenerationSpecs.ToImmutableArray());
-            Emitter emitter = new(executionContext);
-            foreach (ContextGenerationSpec contextGenerationSpec in contextGenerationSpecs)
+
+            // Ensure the source generator emits number literals using invariant culture.
+            // This prevents issues such as locale-specific negative signs (e.g., U+2212 in fi-FI)
+            // from being written to generated source files.
+            // Note: RS1035 is already disabled at the file level for this Roslyn version.
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+
+            try
             {
-                emitter.Emit(contextGenerationSpec);
+                Emitter emitter = new(executionContext);
+                foreach (ContextGenerationSpec contextGenerationSpec in contextGenerationSpecs)
+                {
+                    emitter.Emit(contextGenerationSpec);
+                }
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = originalCulture;
             }
         }
 

@@ -706,11 +706,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (property.Order != 0)
                     {
-                        // Use InvariantCulture to format the Order value to prevent issues on locales where
-                        // negative numbers use non-ASCII minus signs (e.g., U+2212 in fi-FI culture).
-                        // Note: We use ToString() on each value rather than setting CultureInfo.CurrentCulture
-                        // because source generators must not mutate shared state (violates analyzer rule RS1035).
-                        writer.WriteLine($"properties[{i}].Order = {property.Order.ToString(CultureInfo.InvariantCulture)};");
+                        writer.WriteLine($"properties[{i}].Order = {property.Order};");
                     }
 
                     if (property.IsGetterNonNullableAnnotation)

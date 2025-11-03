@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -69,8 +70,26 @@ namespace System.Text.Json.SourceGeneration
             }
 
             OnSourceEmitting?.Invoke(ImmutableArray.Create(input.ContextGenerationSpec));
-            Emitter emitter = new(sourceProductionContext);
-            emitter.Emit(input.ContextGenerationSpec);
+
+            // Ensure the source generator emits number literals using invariant culture.
+            // This prevents issues such as locale-specific negative signs (e.g., U+2212 in fi-FI)
+            // from being written to generated source files.
+#pragma warning disable RS1035 // CultureInfo.CurrentCulture is banned in analyzers
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+#pragma warning restore RS1035
+
+            try
+            {
+                Emitter emitter = new(sourceProductionContext);
+                emitter.Emit(input.ContextGenerationSpec);
+            }
+            finally
+            {
+#pragma warning disable RS1035
+                CultureInfo.CurrentCulture = originalCulture;
+#pragma warning restore RS1035
+            }
         }
 
         /// <summary>
