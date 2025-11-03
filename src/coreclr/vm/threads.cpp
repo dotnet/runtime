@@ -701,6 +701,11 @@ Thread* SetupThread()
     ETW::ThreadLog::FireThreadCreated(pThread);
 #endif // FEATURE_EVENT_TRACE
 
+    // We have now had at least one external thread enter the runtime.
+    // Ensure we have the cleanup thread started to clean up this thread's
+    // managed resources after it exits.
+    ThreadCleanupThread::EnsureCleanupThreadExists();
+
     return pThread;
 }
 
@@ -7019,7 +7024,7 @@ namespace
 }
 
 void
-ThreadCleanupThread::SetHasThreadsToCleanUp()
+ThreadCleanupThread::EnsureCleanupThreadExists()
 {
     if (ForeignThreadsToCleanUpEvent == nullptr)
     {
@@ -7050,7 +7055,11 @@ ThreadCleanupThread::SetHasThreadsToCleanUp()
             }
         }
     }
-
+}
+void
+ThreadCleanupThread::SetHasThreadsToCleanUp()
+{
+    _ASSERT(ForeignThreadsToCleanUpEvent != nullptr);
     ForeignThreadsToCleanUpEvent->Set();
 }
 #endif // DACCESS_COMPILE
