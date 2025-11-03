@@ -571,14 +571,11 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(int millisecondsTimeout)
         {
-            // Validate the timeout
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
             }
-
-            // Call wait with the timeout milliseconds
             return WaitAsyncCore(millisecondsTimeout, default);
         }
 
