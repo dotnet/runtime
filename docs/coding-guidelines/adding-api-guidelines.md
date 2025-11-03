@@ -47,7 +47,7 @@ New public APIs must be documented with triple-slash comments on top of them. Vi
 [API writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) has information about language and proper style for writing API documentation.
 If your new API or the APIs it calls throw any exceptions, those need to be manually documented by adding the `<exception></exception>` elements.
 
-After your change is merged, we will eventually port them to the [dotnet-api-docs](https://github.com/dotnet/dotnet-api-docs) repo. Once the dotnet-api-docs change
+After your change is merged, we will eventually port them to the [dotnet-api-docs](https://github.com/dotnet/dotnet-api-docs) repo. The tools used for this port live in [api-docs-sync](https://github.com/dotnet/api-docs-sync) repo. Once the dotnet-api-docs change
 is merged, your comments will start showing up in the official API documentation at https://learn.microsoft.com, and later they'll appear in IntelliSense
 in Visual Studio and Visual Studio Code.
 
