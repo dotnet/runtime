@@ -87,15 +87,6 @@ namespace Tracing.Tests.UserEvents
                 return -1;
             }
 
-            if (File.Exists(traceFilePath))
-            {
-                try
-                {
-                    File.Delete(traceFilePath);
-                }
-                catch {}
-            }
-
             return 100;
         }
 
