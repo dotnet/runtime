@@ -2982,44 +2982,46 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                     }
                 }
 #elif defined(TARGET_RISCV64)
-                FpStructInRegistersInfo info = pArgIt->GetReturnFpStructInRegistersInfo();
-                // RISC-V pass floating-point struct fields in FA registers
-                if ((info.flags & FpStruct::OnlyOne) != 0)
                 {
-                    // Single field - could be float or int in single register
-                    return ReturnTypeDouble; // Use Double routine for both float and double (NaN-boxed)
-                }
-                else if ((info.flags & FpStruct::BothFloat) != 0)
-                {
-                    // Two float/double fields
-                    return ReturnType2Double;
-                }
-                else if ((info.flags & FpStruct::FloatInt) != 0)
-                {
-                    // First field float, second int
-                    return ReturnTypeFloatInt;
-                }
-                else if ((info.flags & FpStruct::IntFloat) != 0)
-                {
-                    // First field int, second float
-                    return ReturnTypeIntFloat;
-                }
-                else
-                {
-                    _ASSERTE(info.flags == FpStruct::UseIntCallConv);
-                    _ASSERTE(thReturnValueType.AsMethodTable()->IsRegPassedStruct());
-                    unsigned size = thReturnValueType.GetSize();
-                    if (size <= 8)
+                    FpStructInRegistersInfo info = pArgIt->GetReturnFpStructInRegistersInfo();
+                    // RISC-V pass floating-point struct fields in FA registers
+                    if ((info.flags & FpStruct::OnlyOne) != 0)
                     {
-                        return ReturnTypeI8;
+                        // Single field - could be float or int in single register
+                        return ReturnTypeDouble; // Use Double routine for both float and double (NaN-boxed)
                     }
-                    else if (size <= 16)
+                    else if ((info.flags & FpStruct::BothFloat) != 0)
                     {
-                        return ReturnType2I8;
+                        // Two float/double fields
+                        return ReturnType2Double;
+                    }
+                    else if ((info.flags & FpStruct::FloatInt) != 0)
+                    {
+                        // First field float, second int
+                        return ReturnTypeFloatInt;
+                    }
+                    else if ((info.flags & FpStruct::IntFloat) != 0)
+                    {
+                        // First field int, second float
+                        return ReturnTypeIntFloat;
                     }
                     else
                     {
-                        _ASSERTE(!"Struct returns should be <= 16 bytes in size");
+                        _ASSERTE(info.flags == FpStruct::UseIntCallConv);
+                        _ASSERTE(thReturnValueType.AsMethodTable()->IsRegPassedStruct());
+                        unsigned size = thReturnValueType.GetSize();
+                        if (size <= 8)
+                        {
+                            return ReturnTypeI8;
+                        }
+                        else if (size <= 16)
+                        {
+                            return ReturnType2I8;
+                        }
+                        else
+                        {
+                            _ASSERTE(!"Struct returns should be <= 16 bytes in size");
+                        }
                     }
                 }
 #else
