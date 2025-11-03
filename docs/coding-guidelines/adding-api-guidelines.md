@@ -62,7 +62,7 @@ The rest of the documentation workflow depends on whether the assembly has the `
 - The [dotnet-api-docs](https://github.com/dotnet/dotnet-api-docs) repo is the source of truth for documentation.
 - Triple-slash comments in source code are synced to dotnet-api-docs **only once** for newly introduced APIs. After the initial sync, all subsequent documentation
 updates must be made directly in the dotnet-api-docs repo.
-- It's fine to make updates to the triple-slash comments later, they just won't automatically flow into the official docs. Copilot can help with porting the changes
+- It's fine to make updates to the triple-slash comments later to aid local development, they just won't automatically flow into the official docs. Copilot can help with porting the changes
 in triple-slash comments to dotnet-api-docs.
 - Older libraries typically follow this workflow. Libraries in this mode can work towards a better workflow in the future by using api-docs-sync tool to port back docs to source, then removing the `UseCompilerGeneratedDocXmlFile` property.
 
