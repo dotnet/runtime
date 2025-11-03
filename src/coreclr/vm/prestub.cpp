@@ -1057,6 +1057,9 @@ bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver
 {
     STANDARD_VM_CONTRACT;
 
+    // When adding new methods implemented by Transient IL, consider if MethodDesc::IsDiagnosticsHidden() needs to be
+    // updated as well.
+
     if (TryGenerateAsyncThunk(resolver, methodILDecoder))
     {
         return true;
