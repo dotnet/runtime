@@ -65,7 +65,7 @@ namespace ILCompiler.ObjectWriter
         private readonly Dictionary<string, uint> _symbolNameToIndex = new();
         private readonly List<MachSymbol> _symbolTable = new();
         private readonly MachDynamicLinkEditSymbolTable _dySymbolTable = new();
-        private readonly Dictionary<string, (string StartNode, string EndNode)> _rangeSymbols = new();
+        private readonly Dictionary<string, (string StartNode, string EndNode, int Size)> _rangeSymbols = new();
 
         /// <summary>
         /// Base symbol to use for <see cref="RelocType.IMAGE_REL_BASED_ADDR32NB"/> relocations.
@@ -384,14 +384,14 @@ namespace ILCompiler.ObjectWriter
             machSection.Log2Alignment = Math.Max(machSection.Log2Alignment, (uint)BitOperations.Log2((uint)alignment));
         }
 
-        private protected override void EmitSymbolRangeDefinition(string rangeNodeName, string startSymbolName, string endSymbolName)
+        private protected override void EmitSymbolRangeDefinition(string rangeNodeName, string startSymbolName, string endSymbolName, SymbolDefinition endSymbol)
         {
             // Mach has a few characteristics that make range symbols more difficult to emit:
             // - Emitting two symbols in the same location is not well supported by the Apple linker.
             // - Mach-O makes it more difficult to preserve symbol layout in the way we like.
             // However, it also has one thing that makes it easier:
             // - Mach-O natively supports a relocation type that can represents the distance between two symbols.
-            _rangeSymbols.Add(rangeNodeName, (startSymbolName, endSymbolName));
+            _rangeSymbols.Add(rangeNodeName, (startSymbolName, endSymbolName, endSymbol.Size));
         }
 
         protected internal override unsafe void EmitRelocation(
@@ -405,10 +405,19 @@ namespace ILCompiler.ObjectWriter
             // We don't emit the range node name into the image as it overlaps with another symbol.
             // For relocs to it, instead target the start symbol.
             // For the "symbol size" reloc, we'll handle it later when we emit relocations in the Mach format.
-            if (relocType != RelocType.IMAGE_REL_SYMBOL_SIZE
-                && _rangeSymbols.TryGetValue(symbolName, out (string StartNode, string) range))
+            if (_rangeSymbols.TryGetValue(symbolName, out (string StartNode, string, int Size) range))
             {
-                symbolName = range.StartNode;
+                if (relocType == RelocType.IMAGE_REL_SYMBOL_SIZE)
+                {
+                    // In this case, we will later emit the reloc as a pair of SUBTRACTOR + UNSIGNED relocs.
+                    // However, we need to adjust for the size of the end symbol here.
+                    BinaryPrimitives.WriteUInt32LittleEndian(data, (uint)addend + (uint)range.Size);
+                }
+                else
+                {
+                    // Otherwise, point relocs to the range as a reloc to the start symbol (as these locations are identical).
+                    symbolName = range.StartNode;
+                }
             }
 
             // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
@@ -587,10 +596,10 @@ namespace ILCompiler.ObjectWriter
             foreach (SymbolicRelocation symbolicRelocation in relocationList)
             {
                 if (symbolicRelocation.Type == RelocType.IMAGE_REL_SYMBOL_SIZE
-                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (string, string) range))
+                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (string, string, int) range))
                 {
                     // Represent as X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED.
-                    (string StartNode, string EndNode) = range;
+                    (string StartNode, string EndNode, int Size) = range;
                     uint startSymbolIndex = _symbolNameToIndex[StartNode];
                     uint endSymbolIndex = _symbolNameToIndex[EndNode];
                     sectionRelocations.Add(

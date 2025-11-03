@@ -506,7 +506,12 @@ namespace ILCompiler.ObjectWriter
 
                 string rangeNodeName = GetMangledName(range);
 
-                EmitSymbolRangeDefinition(rangeNodeName, startNodeName, endNodeName);
+                if (!_definedSymbols.TryGetValue(endNodeName, out SymbolDefinition endSymbol))
+                {
+                    throw new InvalidOperationException("The end symbol of the symbol range must be emitted into the same object.");
+                }
+
+                EmitSymbolRangeDefinition(rangeNodeName, startNodeName, endNodeName, endSymbol);
             }
 
             foreach (BlockToRelocate blockToRelocate in blocksToRelocate)
@@ -579,12 +584,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void EmitSymbolRangeDefinition(string rangeNodeName, string startNodeName, string endNodeName)
+        private protected virtual void EmitSymbolRangeDefinition(string rangeNodeName, string startNodeName, string endNodeName, SymbolDefinition endSymbol)
         {
-            if (!_definedSymbols.TryGetValue(startNodeName, out var startSymbol)
-                    || !_definedSymbols.TryGetValue(endNodeName, out var endSymbol))
+            if (!_definedSymbols.TryGetValue(startNodeName, out var startSymbol))
             {
-                throw new InvalidOperationException("The symbols defined by a symbol range must be emitted into the same object.");
+                throw new InvalidOperationException("The start symbol of the symbol range must be emitted into the same object.");
             }
 
             if (startSymbol.SectionIndex != endSymbol.SectionIndex)
@@ -592,7 +596,7 @@ namespace ILCompiler.ObjectWriter
                 throw new InvalidOperationException("The symbols that define a symbol range must be in the same section.");
             }
             // Don't use SectionWriter here as it emits symbols relative to the current writing position.
-            EmitSymbolDefinition(startSymbol.SectionIndex, rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value)));
+            EmitSymbolDefinition(startSymbol.SectionIndex, rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value + endSymbol.Size)));
         }
 
         private static string GetNodeTypeName(Type nodeType)
