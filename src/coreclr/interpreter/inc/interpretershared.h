@@ -22,6 +22,10 @@ struct InterpHelperData {
     uint32_t accessType : 3;
 };
 
+#ifndef INTERPRETER_COMPILER_INTERNAL
+class MethodDesc;
+#endif
+
 struct CallStubHeader;
 
 struct InterpMethod
@@ -29,7 +33,11 @@ struct InterpMethod
 #if DEBUG
     InterpMethod *self;
 #endif
+#ifdef INTERPRETER_COMPILER_INTERNAL
     CORINFO_METHOD_HANDLE methodHnd;
+#else
+    DPTR(MethodDesc) methodDesc;
+#endif
     int32_t argsSize;
     int32_t allocaSize;
     void** pDataItems;
@@ -38,6 +46,7 @@ struct InterpMethod
     bool initLocals;
     bool unmanagedCallersOnly;
 
+#ifdef INTERPRETER_COMPILER_INTERNAL
     InterpMethod(
         CORINFO_METHOD_HANDLE methodHnd, int32_t argsSize, int32_t allocaSize,
         void** pDataItems, bool initLocals, bool unmanagedCallersOnly
@@ -54,6 +63,7 @@ struct InterpMethod
         this->unmanagedCallersOnly = unmanagedCallersOnly;
         pCallStub = NULL;
     }
+#endif
 
     bool CheckIntegrity()
     {
