@@ -93,7 +93,10 @@ namespace ILLink.Shared.TrimAnalysis
                                     }
                                     else
                                     {
-                                        if (typeInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
+                                        bool hasReferenceTypeConstraints = typeInstantiated.Instantiation.IsConstrainedToBeReferenceTypes();
+                                        bool hasKnownReferenceTypeArguments = AreAllArgumentsKnownReferenceTypes(argumentValues[0]);
+
+                                        if (hasReferenceTypeConstraints || hasKnownReferenceTypeArguments)
                                         {
                                             // This will always succeed thanks to the runtime type loader
                                         }
@@ -773,6 +776,48 @@ namespace ILLink.Shared.TrimAnalysis
                     RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, instantiatedType, "MakeGenericType");
                 return list;
             }
+        }
+
+        private static bool AreAllArgumentsKnownReferenceTypes(in MultiValue typeArgumentsArray)
+        {
+            // Check if we can prove all type arguments will be reference types.
+            // This avoids false warnings when MakeGenericType is called with runtime checks like !t.IsValueType.
+
+            var typesValue = typeArgumentsArray.AsSingleValue();
+
+            // If we don't have an array value, we can't prove anything
+            if (typesValue is not ArrayValue array)
+                return false;
+
+            int? size = array.Size.AsConstInt();
+            if (size is null)
+                return false;
+
+            // Check each element in the array
+            for (int i = 0; i < size.Value; i++)
+            {
+                if (!array.TryGetValueByIndex(i, out MultiValue value))
+                    return false;
+
+                var singleValue = value.AsSingleValue();
+
+                bool isKnownReferenceType = singleValue switch
+                {
+                    // SystemTypeValue representing a specific type - check if it's not a value type
+                    SystemTypeValue systemType => !systemType.RepresentedType.Type.IsValueType,
+                    // GenericParameterValue - check if it has a reference type constraint (class constraint)
+                    GenericParameterValue genericParam => genericParam.GenericParameter.GenericParameter.HasReferenceTypeConstraint,
+                    // NullableSystemTypeValue is always a value type
+                    NullableSystemTypeValue => false,
+                    // Unknown value - can't prove it's a reference type
+                    _ => false
+                };
+
+                if (!isKnownReferenceType)
+                    return false;
+            }
+
+            return true;
         }
 
     }
