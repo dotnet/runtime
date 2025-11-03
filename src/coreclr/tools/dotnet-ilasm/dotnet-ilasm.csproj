@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <PackageDescription>The .NET IL Assembler.</PackageDescription>
+    <PackageId>dotnet-ilasm</PackageId>
+    <ToolCommandName>ilasm</ToolCommandName>
+  </PropertyGroup>
+
+  <!-- Include native ilasm binaries for different platforms -->
+  <!-- These will be populated by the official build for all target platforms -->
+  <ItemGroup>
+    <!-- Include ilasm for current platform if it exists - try both Debug and Release -->
+    <Content Include="$(ArtifactsBinDir)coreclr/linux.x64.Release/ilasm" Condition="Exists('$(ArtifactsBinDir)coreclr/linux.x64.Release/ilasm')">
+      <PackagePath>runtimes/linux-x64/native/</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes/linux-x64/native/ilasm</Link>
+    </Content>
+    <Content Include="$(ArtifactsBinDir)coreclr/linux.x64.Debug/ilasm" Condition="Exists('$(ArtifactsBinDir)coreclr/linux.x64.Debug/ilasm') and !Exists('$(ArtifactsBinDir)coreclr/linux.x64.Release/ilasm')">
+      <PackagePath>runtimes/linux-x64/native/</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes/linux-x64/native/ilasm</Link>
+    </Content>
+    <Content Include="$(ArtifactsBinDir)coreclr/linux.arm64.Release/ilasm" Condition="Exists('$(ArtifactsBinDir)coreclr/linux.arm64.Release/ilasm')">
+      <PackagePath>runtimes/linux-arm64/native/</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes/linux-arm64/native/ilasm</Link>
+    </Content>
+    <Content Include="$(ArtifactsBinDir)coreclr/osx.x64.Release/ilasm" Condition="Exists('$(ArtifactsBinDir)coreclr/osx.x64.Release/ilasm')">
+      <PackagePath>runtimes/osx-x64/native/</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes/osx-x64/native/ilasm</Link>
+    </Content>
+    <Content Include="$(ArtifactsBinDir)coreclr/osx.arm64.Release/ilasm" Condition="Exists('$(ArtifactsBinDir)coreclr/osx.arm64.Release/ilasm')">
+      <PackagePath>runtimes/osx-arm64/native/</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes/osx-arm64/native/ilasm</Link>
+    </Content>
+    <Content Include="$(ArtifactsBinDir)coreclr/windows.x64.Release/ilasm.exe" Condition="Exists('$(ArtifactsBinDir)coreclr/windows.x64.Release/ilasm.exe')">
+      <PackagePath>runtimes/win-x64/native/</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes/win-x64/native/ilasm.exe</Link>
+    </Content>
+    <Content Include="$(ArtifactsBinDir)coreclr/windows.x86.Release/ilasm.exe" Condition="Exists('$(ArtifactsBinDir)coreclr/windows.x86.Release/ilasm.exe')">
+      <PackagePath>runtimes/win-x86/native/</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes/win-x86/native/ilasm.exe</Link>
+    </Content>
+    <Content Include="$(ArtifactsBinDir)coreclr/windows.arm64.Release/ilasm.exe" Condition="Exists('$(ArtifactsBinDir)coreclr/windows.arm64.Release/ilasm.exe')">
+      <PackagePath>runtimes/win-arm64/native/</PackagePath>
+      <Pack>true</Pack>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>runtimes/win-arm64/native/ilasm.exe</Link>
+    </Content>
+  </ItemGroup>
+
+</Project>
