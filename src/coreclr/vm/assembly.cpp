@@ -1229,16 +1229,14 @@ static void RunMainInternal(Param* pParam)
     else if (pParam->EntryType == EntryManagedMainAsync)
     {
         *pParam->piRetVal = 0;
+        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
+        
         OBJECTREF exitCodeTask = threadStart.Call_RetOBJECTREF(&stackVar);
-        GCPROTECT_BEGIN(exitCodeTask)
         ARG_SLOT stackVarWrapper[] =
         {
             ObjToArgSlot(exitCodeTask)
         };
-
-        MethodDescCallSite mainWrapper(METHOD__ASYNC_HELPERS__HANDLE_ASYNC_ENTRYPOINT);
         mainWrapper.Call(stackVarWrapper);
-        GCPROTECT_END();
     }
     else if (pParam->EntryType == EntryManagedMainAsyncVoid)
     {
