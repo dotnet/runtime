@@ -31,7 +31,7 @@ struct HijackArgs
 {
 };
 
-inline LPVOID STDCALL GetCurrentSP()
+inline void* GetCurrentSP()
 {
     WRAPPER_NO_CONTRACT;
     return (LPVOID)emscripten_stack_get_current();
