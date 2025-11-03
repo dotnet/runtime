@@ -4401,7 +4401,6 @@ struct AsyncCallInfo
     ContinuationContextHandling ContinuationContextHandling               = ContinuationContextHandling::None;
     bool                        SaveAndRestoreSynchronizationContextField = false;
     bool                        HasSuspensionIndicatorDef                 = false;
-    unsigned                    SynchronizationContextLclNum              = BAD_VAR_NUM;
 };
 
 // Return type descriptor of a GT_CALL node.
