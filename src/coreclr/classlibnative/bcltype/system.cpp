@@ -117,7 +117,7 @@ static StackWalkAction FindFailFastCallerCallback(CrawlFrame* frame, VOID* data)
     return SWA_ABORT;
 }
 
-static int alreadyfailing = 0;
+static int alreadyFailing = 0;
 
 extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource)
 {
@@ -126,8 +126,6 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     BEGIN_QCALL;
 
     GCX_COOP();
-
-    alreadyfailing++;
 
     FindFailFastCallerStruct findCallerData;
     findCallerData.pStackMark = mark;
@@ -147,7 +145,10 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
 
     LPCWSTR argExceptionString = NULL;
     StackSString msg;
-    if (alreadyfailing == 1 && exception.Get() != NULL)
+    // because Environment_FailFast should kill the process, any subsequent calls are likely nested call from managed while unwinding the stack.
+    // only collect exception string if this is the first attempt to fail fast.
+    alreadyFailing++;
+    if (alreadyFailing == 1 && exception.Get() != NULL)
     {
         GetExceptionMessage(exception.Get(), msg);
         argExceptionString = msg.GetUnicode();
