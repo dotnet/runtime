@@ -88,7 +88,7 @@ namespace System.Runtime.CompilerServices
         // caused the suspension.
         // For optimized codegen the mapping into the root method may be more
         // approximate (e.g. because of inlining).
-        // For all codegen (DiagnosticsIP - MethodStartIP) matches
+        // For all codegens the offset of DiagnosticsIP matches
         // DiagnosticNativeOffset for the corresponding AsyncSuspensionPoint in
         // the debug info.
         public void* DiagnosticIP;
