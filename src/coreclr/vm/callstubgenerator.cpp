@@ -2031,23 +2031,15 @@ extern "C" void InterpreterStubRet3Vector128();
 extern "C" void InterpreterStubRet4Vector128();
 #endif // TARGET_ARM64
 
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64)
 extern "C" void CallJittedMethodRet2I8(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void CallJittedMethodRet2Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet3Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet4Double(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRetFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet2Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet3Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
-extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetFloatInt(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+extern "C" void CallJittedMethodRetIntFloat(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
 extern "C" void InterpreterStubRet2I8();
 extern "C" void InterpreterStubRet2Double();
-extern "C" void InterpreterStubRet3Double();
-extern "C" void InterpreterStubRet4Double();
-extern "C" void InterpreterStubRetFloat();
-extern "C" void InterpreterStubRet2Float();
-extern "C" void InterpreterStubRet3Float();
-extern "C" void InterpreterStubRet4Float();
+extern "C" void InterpreterStubRetFloatInt();
+extern "C" void InterpreterStubRetIntFloat();
 #endif // TARGET_RISCV64
 
 #if LOG_COMPUTE_CALL_STUB
@@ -2121,23 +2113,15 @@ CallStubHeader::InvokeFunctionPtr CallStubGenerator::GetInvokeFunctionPtr(CallSt
         case ReturnType4Vector128:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet4Vector128);
 #endif // TARGET_ARM64
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64)
         case ReturnType2I8:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet2I8);
         case ReturnType2Double:
             INVOKE_FUNCTION_PTR(CallJittedMethodRet2Double);
-        case ReturnType3Double:
-            INVOKE_FUNCTION_PTR(CallJittedMethodRet3Double);
-        case ReturnType4Double:
-            INVOKE_FUNCTION_PTR(CallJittedMethodRet4Double);
-        case ReturnTypeFloat:
-            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloat);
-        case ReturnType2Float:
-            INVOKE_FUNCTION_PTR(CallJittedMethodRet2Float);
-        case ReturnType3Float:
-            INVOKE_FUNCTION_PTR(CallJittedMethodRet3Float);
-        case ReturnType4Float:
-            INVOKE_FUNCTION_PTR(CallJittedMethodRet4Float);
+        case ReturnTypeFloatInt:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetFloatInt);
+        case ReturnTypeIntFloat:
+            INVOKE_FUNCTION_PTR(CallJittedMethodRetIntFloat);
 #endif // TARGET_RISCV64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
@@ -2216,23 +2200,15 @@ PCODE CallStubGenerator::GetInterpreterReturnTypeHandler(CallStubGenerator::Retu
         case ReturnType4Vector128:
             RETURN_TYPE_HANDLER(InterpreterStubRet4Vector128);
 #endif // TARGET_ARM64
-#ifdef TARGET_RISCV64
+#if defined(TARGET_RISCV64)
         case ReturnType2I8:
             RETURN_TYPE_HANDLER(InterpreterStubRet2I8);
         case ReturnType2Double:
             RETURN_TYPE_HANDLER(InterpreterStubRet2Double);
-        case ReturnType3Double:
-            RETURN_TYPE_HANDLER(InterpreterStubRet3Double);
-        case ReturnType4Double:
-            RETURN_TYPE_HANDLER(InterpreterStubRet4Double);
-        case ReturnTypeFloat:
-            RETURN_TYPE_HANDLER(InterpreterStubRetFloat);
-        case ReturnType2Float:
-            RETURN_TYPE_HANDLER(InterpreterStubRet2Float);
-        case ReturnType3Float:
-            RETURN_TYPE_HANDLER(InterpreterStubRet3Float);
-        case ReturnType4Float:
-            RETURN_TYPE_HANDLER(InterpreterStubRet4Float);
+        case ReturnTypeFloatInt:
+            RETURN_TYPE_HANDLER(InterpreterStubRetFloatInt);
+        case ReturnTypeIntFloat:
+            RETURN_TYPE_HANDLER(InterpreterStubRetIntFloat);
 #endif // TARGET_RISCV64
         default:
             _ASSERTE(!"Unexpected return type for interpreter stub");
@@ -3003,6 +2979,54 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIterator *pArg
                     else
                     {
                         _ASSERTE(!"The return types that are not HFA should be <= 16 bytes in size");
+                    }
+                }
+#elif defined(TARGET_RISCV64)
+                // RISC-V pass floating-point struct fields in FA registers
+                if (thReturnValueType.AsMethodTable()->IsRegPassedStruct())
+                {
+                    FpStructInRegistersInfo info = pArgIt->GetReturnFpStructInRegistersInfo();
+                    
+                    if ((info.flags & FpStruct::OnlyOne) != 0)
+                    {
+                        // Single field - could be float or int in single register
+                        return ReturnTypeDouble; // Use Double routine for both float and double (NaN-boxed)
+                    }
+                    else if ((info.flags & FpStruct::BothFloat) != 0)
+                    {
+                        // Two float/double fields
+                        return ReturnType2Double;
+                    }
+                    else if ((info.flags & FpStruct::FloatInt) != 0)
+                    {
+                        // First field float, second int
+                        return ReturnTypeFloatInt;
+                    }
+                    else if ((info.flags & FpStruct::IntFloat) != 0)
+                    {
+                        // First field int, second float
+                        return ReturnTypeIntFloat;
+                    }
+                    else
+                    {
+                        // Two integer fields
+                        return ReturnType2I8;
+                    }
+                }
+                else
+                {
+                    unsigned size = thReturnValueType.GetSize();
+                    if (size <= 8)
+                    {
+                        return ReturnTypeI8;
+                    }
+                    else if (size <= 16)
+                    {
+                        return ReturnType2I8;
+                    }
+                    else
+                    {
+                        _ASSERTE(!"Struct returns should be <= 16 bytes in size");
                     }
                 }
 #else

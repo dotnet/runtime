@@ -887,8 +887,8 @@ LEAF_END InjectInterpStackAlign
 // Copy arguments from the interpreter stack to the processor stack
 // The CPU stack slots are aligned to pointer size.
 LEAF_ENTRY Load_Stack
-    lw t4, 0(t2)    // SP offset
-    lw t5, 4(t2)    // number of stack slots
+    lwu t4, 0(t2)    // SP offset
+    lwu t5, 4(t2)    // number of stack slots
     addi t2, t2, 8
     add t4, sp, t4
     addi t5, t5, -8
@@ -1167,7 +1167,7 @@ NESTED_END CallJittedMethodRet2Double, _TEXT
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
-NESTED_ENTRY CallJittedMethodRet3Double, _TEXT, NoHandler
+NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
     sd a2, 16(fp)
     sub sp, sp, a3
@@ -1178,18 +1178,17 @@ NESTED_ENTRY CallJittedMethodRet3Double, _TEXT, NoHandler
     jalr t4
     ld a2, 16(fp)
     fsd fa0, 0(a2)
-    fsd fa1, 8(a2)
-    fsd fa2, 16(a2)
+    sd a0, 8(a2)
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
-NESTED_END CallJittedMethodRet3Double, _TEXT
+NESTED_END CallJittedMethodRetFloatInt, _TEXT
 
 // a0 - routines array
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
-NESTED_ENTRY CallJittedMethodRet4Double, _TEXT, NoHandler
+NESTED_ENTRY CallJittedMethodRetIntFloat, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
     sd a2, 16(fp)
     sub sp, sp, a3
@@ -1199,100 +1198,12 @@ NESTED_ENTRY CallJittedMethodRet4Double, _TEXT, NoHandler
     addi t2, t2, 8
     jalr t4
     ld a2, 16(fp)
-    fsd fa0, 0(a2)
-    fsd fa1, 8(a2)
-    fsd fa2, 16(a2)
-    fsd fa3, 24(a2)
+    sd a0, 0(a2)
+    fsd fa0, 8(a2)
     EPILOG_STACK_RESTORE
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
-NESTED_END CallJittedMethodRet4Double, _TEXT
-
-// a0 - routines array
-// a1 - interpreter stack args location
-// a2 - interpreter stack return value location
-// a3 - stack arguments size (properly aligned)
-NESTED_ENTRY CallJittedMethodRetFloat, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
-    sd a2, 16(fp)
-    sub sp, sp, a3
-    mv t2, a0
-    mv t3, a1
-    ld t4, 0(t2)
-    addi t2, t2, 8
-    jalr t4
-    ld a2, 16(fp)
-    fsw fa0, 0(a2)
-    EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
-    EPILOG_RETURN
-NESTED_END CallJittedMethodRetFloat, _TEXT
-
-// a0 - routines array
-// a1 - interpreter stack args location
-// a2 - interpreter stack return value location
-// a3 - stack arguments size (properly aligned)
-NESTED_ENTRY CallJittedMethodRet2Float, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
-    sd a2, 16(fp)
-    sub sp, sp, a3
-    mv t2, a0
-    mv t3, a1
-    ld t4, 0(t2)
-    addi t2, t2, 8
-    jalr t4
-    ld a2, 16(fp)
-    fsw fa0, 0(a2)
-    fsw fa1, 4(a2)
-    EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
-    EPILOG_RETURN
-NESTED_END CallJittedMethodRet2Float, _TEXT
-
-// a0 - routines array
-// a1 - interpreter stack args location
-// a2 - interpreter stack return value location
-// a3 - stack arguments size (properly aligned)
-NESTED_ENTRY CallJittedMethodRet3Float, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
-    sd a2, 16(fp)
-    sub sp, sp, a3
-    mv t2, a0
-    mv t3, a1
-    ld t4, 0(t2)
-    addi t2, t2, 8
-    jalr t4
-    ld a2, 16(fp)
-    fsw fa0, 0(a2)
-    fsw fa1, 4(a2)
-    fsw fa2, 8(a2)
-    EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
-    EPILOG_RETURN
-NESTED_END CallJittedMethodRet3Float, _TEXT
-
-// a0 - routines array
-// a1 - interpreter stack args location
-// a2 - interpreter stack return value location
-// a3 - stack arguments size (properly aligned)
-NESTED_ENTRY CallJittedMethodRet4Float, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
-    sd a2, 16(fp)
-    sub sp, sp, a3
-    mv t2, a0
-    mv t3, a1
-    ld t4, 0(t2)
-    addi t2, t2, 8
-    jalr t4
-    ld a2, 16(fp)
-    fsw fa0, 0(a2)
-    fsw fa1, 4(a2)
-    fsw fa2, 8(a2)
-    fsw fa3, 12(a2)
-    EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
-    EPILOG_RETURN
-NESTED_END CallJittedMethodRet4Float, _TEXT
+NESTED_END CallJittedMethodRetIntFloat, _TEXT
 
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
@@ -1433,7 +1344,7 @@ NESTED_ENTRY InterpreterStubRet2Float, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END InterpreterStubRet2Float, _TEXT
 
-NESTED_ENTRY InterpreterStubRet3Double, _TEXT, NoHandler
+NESTED_ENTRY InterpreterStubRetFloatInt, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
@@ -1441,62 +1352,31 @@ NESTED_ENTRY InterpreterStubRet3Double, _TEXT, NoHandler
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
     fld fa0, 0(a0)
-    fld fa1, 8(a0)
-    fld fa2, 16(a0)
+    ld a0, 8(a0)
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
     EPILOG_RETURN
-NESTED_END InterpreterStubRet3Double, _TEXT
+NESTED_END InterpreterStubRetFloatInt, _TEXT
 
-NESTED_ENTRY InterpreterStubRet4Double, _TEXT, NoHandler
+NESTED_ENTRY InterpreterStubRetIntFloat, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
     // The +16 is for the fp, ra above
     addi a0, sp, __PWTB_TransitionBlock + 16
     mv a1, t6 // the IR bytecode pointer
     mv a2, zero
     call C_FUNC(ExecuteInterpretedMethod)
-    fld fa0, 0(a0)
-    fld fa1, 8(a0)
-    fld fa2, 16(a0)
-    fld fa3, 24(a0)
+    ld a1, 0(a0)
+    fld fa0, 8(a0)
+    mv a0, a1
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
     EPILOG_RETURN
-NESTED_END InterpreterStubRet4Double, _TEXT
-
-NESTED_ENTRY InterpreterStubRet3Float, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
-    // The +16 is for the fp, ra above
-    addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
-    mv a2, zero
-    call C_FUNC(ExecuteInterpretedMethod)
-    flw fa0, 0(a0)
-    flw fa1, 4(a0)
-    flw fa2, 8(a0)
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
-    EPILOG_RETURN
-NESTED_END InterpreterStubRet3Float, _TEXT
-
-NESTED_ENTRY InterpreterStubRet4Float, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, -16
-    // The +16 is for the fp, ra above
-    addi a0, sp, __PWTB_TransitionBlock + 16
-    mv a1, t6 // the IR bytecode pointer
-    mv a2, zero
-    call C_FUNC(ExecuteInterpretedMethod)
-    flw fa0, 0(a0)
-    flw fa1, 4(a0)
-    flw fa2, 8(a0)
-    flw fa3, 12(a0)
-    EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra,   16
-    EPILOG_RETURN
-NESTED_END InterpreterStubRet4Float, _TEXT
+NESTED_END InterpreterStubRetIntFloat, _TEXT
 
 // Copy arguments from the processor stack to the interpreter stack
 // The CPU stack slots are aligned to pointer size.
 
 LEAF_ENTRY Store_Stack
-    lw t4, 0(t2) // SP offset
-    lw t5, 4(t2) // size (multiple of stack slot size)
+    lwu t4, 0(t2) // SP offset
+    lwu t5, 4(t2) // size (multiple of stack slot size)
     add t4, sp, t4
     // Split large immediate into separate additions to avoid 12-bit limit
     addi t4, t4, __PWTB_TransitionBlock
@@ -1537,9 +1417,10 @@ LEAF_END Load_A0_A1
 LEAF_ENTRY Load_A0_A1_A2
     ld a0, 0(t3)
     ld a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A2
-    ld a2, 16(t3)
-    addi t3, t3, 24
+    ld a2, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1548,10 +1429,11 @@ LEAF_END Load_A0_A1_A2
 LEAF_ENTRY Load_A0_A1_A2_A3
     ld a0, 0(t3)
     ld a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A2_A3
-    ld a2, 16(t3)
-    ld a3, 24(t3)
-    addi t3, t3, 32
+    ld a2, 0(t3)
+    ld a3, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1560,12 +1442,14 @@ LEAF_END Load_A0_A1_A2_A3
 LEAF_ENTRY Load_A0_A1_A2_A3_A4
     ld a0, 0(t3)
     ld a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A2_A3_A4
-    ld a2, 16(t3)
-    ld a3, 24(t3)
+    ld a2, 0(t3)
+    ld a3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A4
-    ld a4, 32(t3)
-    addi t3, t3, 40
+    ld a4, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1574,13 +1458,15 @@ LEAF_END Load_A0_A1_A2_A3_A4
 LEAF_ENTRY Load_A0_A1_A2_A3_A4_A5
     ld a0, 0(t3)
     ld a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A2_A3_A4_A5
-    ld a2, 16(t3)
-    ld a3, 24(t3)
+    ld a2, 0(t3)
+    ld a3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A4_A5
-    ld a4, 32(t3)
-    ld a5, 40(t3)
-    addi t3, t3, 48
+    ld a4, 0(t3)
+    ld a5, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1589,15 +1475,18 @@ LEAF_END Load_A0_A1_A2_A3_A4_A5
 LEAF_ENTRY Load_A0_A1_A2_A3_A4_A5_A6
     ld a0, 0(t3)
     ld a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A2_A3_A4_A5_A6
-    ld a2, 16(t3)
-    ld a3, 24(t3)
+    ld a2, 0(t3)
+    ld a3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A4_A5_A6
-    ld a4, 32(t3)
-    ld a5, 40(t3)
+    ld a4, 0(t3)
+    ld a5, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A6
-    ld a6, 48(t3)
-    addi t3, t3, 56
+    ld a6, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1606,16 +1495,19 @@ LEAF_END Load_A0_A1_A2_A3_A4_A5_A6
 LEAF_ENTRY Load_A0_A1_A2_A3_A4_A5_A6_A7
     ld a0, 0(t3)
     ld a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A2_A3_A4_A5_A6_A7
-    ld a2, 16(t3)
-    ld a3, 24(t3)
+    ld a2, 0(t3)
+    ld a3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A4_A5_A6_A7
-    ld a4, 32(t3)
-    ld a5, 40(t3)
+    ld a4, 0(t3)
+    ld a5, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A6_A7
-    ld a6, 48(t3)
-    ld a7, 56(t3)
-    addi t3, t3, 64
+    ld a6, 0(t3)
+    ld a7, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1641,9 +1533,10 @@ LEAF_END Load_A1_A2
 LEAF_ENTRY Load_A1_A2_A3
     ld a1, 0(t3)
     ld a2, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A3
-    ld a3, 16(t3)
-    addi t3, t3, 24
+    ld a3, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1652,10 +1545,11 @@ LEAF_END Load_A1_A2_A3
 LEAF_ENTRY Load_A1_A2_A3_A4
     ld a1, 0(t3)
     ld a2, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A3_A4
-    ld a3, 16(t3)
-    ld a4, 24(t3)
-    addi t3, t3, 32
+    ld a3, 0(t3)
+    ld a4, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1664,12 +1558,14 @@ LEAF_END Load_A1_A2_A3_A4
 LEAF_ENTRY Load_A1_A2_A3_A4_A5
     ld a1, 0(t3)
     ld a2, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A3_A4_A5
-    ld a3, 16(t3)
-    ld a4, 24(t3)
+    ld a3, 0(t3)
+    ld a4, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A5
-    ld a5, 32(t3)
-    addi t3, t3, 40
+    ld a5, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1678,13 +1574,15 @@ LEAF_END Load_A1_A2_A3_A4_A5
 LEAF_ENTRY Load_A1_A2_A3_A4_A5_A6
     ld a1, 0(t3)
     ld a2, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A3_A4_A5_A6
-    ld a3, 16(t3)
-    ld a4, 24(t3)
+    ld a3, 0(t3)
+    ld a4, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A5_A6
-    ld a5, 32(t3)
-    ld a6, 40(t3)
-    addi t3, t3, 48
+    ld a5, 0(t3)
+    ld a6, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1693,15 +1591,18 @@ LEAF_END Load_A1_A2_A3_A4_A5_A6
 LEAF_ENTRY Load_A1_A2_A3_A4_A5_A6_A7
     ld a1, 0(t3)
     ld a2, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A3_A4_A5_A6_A7
-    ld a3, 16(t3)
-    ld a4, 24(t3)
+    ld a3, 0(t3)
+    ld a4, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A5_A6_A7
-    ld a5, 32(t3)
-    ld a6, 40(t3)
+    ld a5, 0(t3)
+    ld a6, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_A7
-    ld a7, 48(t3)
-    addi t3, t3, 56
+    ld a7, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1729,9 +1630,10 @@ LEAF_END Store_A0_A1
 LEAF_ENTRY Store_A0_A1_A2
     sd a0, 0(t3)
     sd a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A2
-    sd a2, 16(t3)
-    addi t3, t3, 24
+    sd a2, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1740,10 +1642,11 @@ LEAF_END Store_A0_A1_A2
 LEAF_ENTRY Store_A0_A1_A2_A3
     sd a0, 0(t3)
     sd a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A2_A3
-    sd a2, 16(t3)
-    sd a3, 24(t3)
-    addi t3, t3, 32
+    sd a2, 0(t3)
+    sd a3, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1752,12 +1655,14 @@ LEAF_END Store_A0_A1_A2_A3
 LEAF_ENTRY Store_A0_A1_A2_A3_A4
     sd a0, 0(t3)
     sd a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A2_A3_A4
-    sd a2, 16(t3)
-    sd a3, 24(t3)
+    sd a2, 0(t3)
+    sd a3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A4
-    sd a4, 32(t3)
-    addi t3, t3, 40
+    sd a4, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1766,13 +1671,15 @@ LEAF_END Store_A0_A1_A2_A3_A4
 LEAF_ENTRY Store_A0_A1_A2_A3_A4_A5
     sd a0, 0(t3)
     sd a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A2_A3_A4_A5
-    sd a2, 16(t3)
-    sd a3, 24(t3)
+    sd a2, 0(t3)
+    sd a3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A4_A5
-    sd a4, 32(t3)
-    sd a5, 40(t3)
-    addi t3, t3, 48
+    sd a4, 0(t3)
+    sd a5, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1781,15 +1688,18 @@ LEAF_END Store_A0_A1_A2_A3_A4_A5
 LEAF_ENTRY Store_A0_A1_A2_A3_A4_A5_A6
     sd a0, 0(t3)
     sd a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A2_A3_A4_A5_A6
-    sd a2, 16(t3)
-    sd a3, 24(t3)
+    sd a2, 0(t3)
+    sd a3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A4_A5_A6
-    sd a4, 32(t3)
-    sd a5, 40(t3)
+    sd a4, 0(t3)
+    sd a5, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A6
-    sd a6, 48(t3)
-    addi t3, t3, 56
+    sd a6, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1798,16 +1708,19 @@ LEAF_END Store_A0_A1_A2_A3_A4_A5_A6
 LEAF_ENTRY Store_A0_A1_A2_A3_A4_A5_A6_A7
     sd a0, 0(t3)
     sd a1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A2_A3_A4_A5_A6_A7
-    sd a2, 16(t3)
-    sd a3, 24(t3)
+    sd a2, 0(t3)
+    sd a3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A4_A5_A6_A7
-    sd a4, 32(t3)
-    sd a5, 40(t3)
+    sd a4, 0(t3)
+    sd a5, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A6_A7
-    sd a6, 48(t3)
-    sd a7, 56(t3)
-    addi t3, t3, 64
+    sd a6, 0(t3)
+    sd a7, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1833,9 +1746,10 @@ LEAF_END Store_A1_A2
 LEAF_ENTRY Store_A1_A2_A3
     sd a1, 0(t3)
     sd a2, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A3
-    sd a3, 16(t3)
-    addi t3, t3, 24
+    sd a3, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1844,10 +1758,11 @@ LEAF_END Store_A1_A2_A3
 LEAF_ENTRY Store_A1_A2_A3_A4
     sd a1, 0(t3)
     sd a2, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A3_A4
-    sd a3, 16(t3)
-    sd a4, 24(t3)
-    addi t3, t3, 32
+    sd a3, 0(t3)
+    sd a4, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1856,12 +1771,14 @@ LEAF_END Store_A1_A2_A3_A4
 LEAF_ENTRY Store_A1_A2_A3_A4_A5
     sd a1, 0(t3)
     sd a2, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A3_A4_A5
-    sd a3, 16(t3)
-    sd a4, 24(t3)
+    sd a3, 0(t3)
+    sd a4, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A5
-    sd a5, 32(t3)
-    addi t3, t3, 40
+    sd a5, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1870,13 +1787,15 @@ LEAF_END Store_A1_A2_A3_A4_A5
 LEAF_ENTRY Store_A1_A2_A3_A4_A5_A6
     sd a1, 0(t3)
     sd a2, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A3_A4_A5_A6
-    sd a3, 16(t3)
-    sd a4, 24(t3)
+    sd a3, 0(t3)
+    sd a4, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A5_A6
-    sd a5, 32(t3)
-    sd a6, 40(t3)
-    addi t3, t3, 48
+    sd a5, 0(t3)
+    sd a6, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1885,15 +1804,18 @@ LEAF_END Store_A1_A2_A3_A4_A5_A6
 LEAF_ENTRY Store_A1_A2_A3_A4_A5_A6_A7
     sd a1, 0(t3)
     sd a2, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A3_A4_A5_A6_A7
-    sd a3, 16(t3)
-    sd a4, 24(t3)
+    sd a3, 0(t3)
+    sd a4, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A5_A6_A7
-    sd a5, 32(t3)
-    sd a6, 40(t3)
+    sd a5, 0(t3)
+    sd a6, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_A7
-    sd a7, 48(t3)
-    addi t3, t3, 56
+    sd a7, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1921,9 +1843,10 @@ LEAF_END Load_FA0_FA1
 LEAF_ENTRY Load_FA0_FA1_FA2
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2
-    fld fa2, 16(t3)
-    addi t3, t3, 24
+    fld fa2, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1932,10 +1855,11 @@ LEAF_END Load_FA0_FA1_FA2
 LEAF_ENTRY Load_FA0_FA1_FA2_FA3
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2_FA3
-    fld fa2, 16(t3)
-    fld fa3, 24(t3)
-    addi t3, t3, 32
+    fld fa2, 0(t3)
+    fld fa3, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1944,12 +1868,14 @@ LEAF_END Load_FA0_FA1_FA2_FA3
 LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2_FA3_FA4
-    fld fa2, 16(t3)
-    fld fa3, 24(t3)
+    fld fa2, 0(t3)
+    fld fa3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA4
-    fld fa4, 32(t3)
-    addi t3, t3, 40
+    fld fa4, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1958,13 +1884,15 @@ LEAF_END Load_FA0_FA1_FA2_FA3_FA4
 LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4_FA5
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2_FA3_FA4_FA5
-    fld fa2, 16(t3)
-    fld fa3, 24(t3)
+    fld fa2, 0(t3)
+    fld fa3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA4_FA5
-    fld fa4, 32(t3)
-    fld fa5, 40(t3)
-    addi t3, t3, 48
+    fld fa4, 0(t3)
+    fld fa5, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1973,15 +1901,18 @@ LEAF_END Load_FA0_FA1_FA2_FA3_FA4_FA5
 LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2_FA3_FA4_FA5_FA6
-    fld fa2, 16(t3)
-    fld fa3, 24(t3)
+    fld fa2, 0(t3)
+    fld fa3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA4_FA5_FA6
-    fld fa4, 32(t3)
-    fld fa5, 40(t3)
+    fld fa4, 0(t3)
+    fld fa5, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA6
-    fld fa6, 48(t3)
-    addi t3, t3, 56
+    fld fa6, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -1990,16 +1921,19 @@ LEAF_END Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6
 LEAF_ENTRY Load_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
     fld fa0, 0(t3)
     fld fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA2_FA3_FA4_FA5_FA6_FA7
-    fld fa2, 16(t3)
-    fld fa3, 24(t3)
+    fld fa2, 0(t3)
+    fld fa3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA4_FA5_FA6_FA7
-    fld fa4, 32(t3)
-    fld fa5, 40(t3)
+    fld fa4, 0(t3)
+    fld fa5, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Load_FA6_FA7
-    fld fa6, 48(t3)
-    fld fa7, 56(t3)
-    addi t3, t3, 64
+    fld fa6, 0(t3)
+    fld fa7, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -2188,9 +2122,10 @@ LEAF_END Store_FA0_FA1
 LEAF_ENTRY Store_FA0_FA1_FA2
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2
-    fsd fa2, 16(t3)
-    addi t3, t3, 24
+    fsd fa2, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -2199,10 +2134,11 @@ LEAF_END Store_FA0_FA1_FA2
 LEAF_ENTRY Store_FA0_FA1_FA2_FA3
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2_FA3
-    fsd fa2, 16(t3)
-    fsd fa3, 24(t3)
-    addi t3, t3, 32
+    fsd fa2, 0(t3)
+    fsd fa3, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -2211,12 +2147,14 @@ LEAF_END Store_FA0_FA1_FA2_FA3
 LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2_FA3_FA4
-    fsd fa2, 16(t3)
-    fsd fa3, 24(t3)
+    fsd fa2, 0(t3)
+    fsd fa3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA4
-    fsd fa4, 32(t3)
-    addi t3, t3, 40
+    fsd fa4, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -2225,13 +2163,15 @@ LEAF_END Store_FA0_FA1_FA2_FA3_FA4
 LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4_FA5
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2_FA3_FA4_FA5
-    fsd fa2, 16(t3)
-    fsd fa3, 24(t3)
+    fsd fa2, 0(t3)
+    fsd fa3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA4_FA5
-    fsd fa4, 32(t3)
-    fsd fa5, 40(t3)
-    addi t3, t3, 48
+    fsd fa4, 0(t3)
+    fsd fa5, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -2240,15 +2180,18 @@ LEAF_END Store_FA0_FA1_FA2_FA3_FA4_FA5
 LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2_FA3_FA4_FA5_FA6
-    fsd fa2, 16(t3)
-    fsd fa3, 24(t3)
+    fsd fa2, 0(t3)
+    fsd fa3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA4_FA5_FA6
-    fsd fa4, 32(t3)
-    fsd fa5, 40(t3)
+    fsd fa4, 0(t3)
+    fsd fa5, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA6
-    fsd fa6, 48(t3)
-    addi t3, t3, 56
+    fsd fa6, 0(t3)
+    addi t3, t3, 8
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
@@ -2257,16 +2200,19 @@ LEAF_END Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6
 LEAF_ENTRY Store_FA0_FA1_FA2_FA3_FA4_FA5_FA6_FA7
     fsd fa0, 0(t3)
     fsd fa1, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA2_FA3_FA4_FA5_FA6_FA7
-    fsd fa2, 16(t3)
-    fsd fa3, 24(t3)
+    fsd fa2, 0(t3)
+    fsd fa3, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA4_FA5_FA6_FA7
-    fsd fa4, 32(t3)
-    fsd fa5, 40(t3)
+    fsd fa4, 0(t3)
+    fsd fa5, 8(t3)
+    addi t3, t3, 16
 ALTERNATE_ENTRY Store_FA6_FA7
-    fsd fa6, 48(t3)
-    fsd fa7, 56(t3)
-    addi t3, t3, 64
+    fsd fa6, 0(t3)
+    fsd fa7, 8(t3)
+    addi t3, t3, 16
     ld t4, 0(t2)
     addi t2, t2, 8
     EPILOG_BRANCH_REG t4
