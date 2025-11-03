@@ -60,7 +60,7 @@ Some of this information can be omitted or stored in more efficient form, e.g.:
 - The garbage collection information can be omitted for environments with conservative garbage collection, such as IL2CPP.
 - The full metadata information is not strictly required for 'private' methods or types so it is possible to strip it from the CLI image.
 - The metadata can be stored in more efficient form, such as the .NET Native metadata format.
-- The platform native executable format (ELF, Mach-O) can be used as envelope instead of PE to take advantage of platform OS loader.
+- As of .NET 10, the PE format is used on all platforms. A [future improvement](#platform-native-envelope-support) could be support for the platform native executable format (ELF, Mach-O) to take advantage of platform OS loader.
 
 
 ## Definition of Version Compatibility for Native Code
@@ -332,4 +332,8 @@ Another important observation is that `MethodTable` contains other very frequent
 
 # Current State
 
-The design and implementation is a work in progress under code name ReadyToRun (`FEATURE_READYTORUN`). RyuJIT is used as the code generator to produce the ReadyToRun images currently.
+As of .NET 6, the .NET SDK can publish applications as ReadyToRun using the `crossgen2` tool. The tool lives under `src/coreclr/aot/crossgen2`. Support in the coreclr runtime is under `FEATURE_READYTORUN`. RyuJIT is used as the code generator to produce the ReadyToRun images currently.
+
+## Platform-Native Envelope Support
+
+Through .NET 10, ReadyToRun uses the PE format on all platforms. In .NET 11, we plan to start adding support for other formats, with Mach-O being the first target. For more details, see [ReadyToRun Platform-Native Envelope](./readytorun-platform-native-envelope.md).
