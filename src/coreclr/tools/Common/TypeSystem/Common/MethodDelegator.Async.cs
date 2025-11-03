@@ -10,6 +10,6 @@ namespace Internal.TypeSystem
     /// </summary>
     public abstract partial class MethodDelegator : MethodDesc
     {
-       public abstract override AsyncMethodData AsyncMethodData { get; }
+       public abstract override AsyncMethodKind AsyncMethodKind { get; }
     }
 }

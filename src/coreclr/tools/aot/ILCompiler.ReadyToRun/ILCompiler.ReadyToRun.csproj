@@ -354,6 +354,9 @@
     <Compile Include="..\..\Common\JitInterface\UnboxingMethodDescFactory.cs">
       <Link>JitInterface\UnboxingMethodDescFactory.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\AsyncMethodVariant.cs">
+      <Link>TypeSystem\Common\AsyncMethodVariant.cs</Link>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>

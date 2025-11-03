@@ -112,13 +112,13 @@ namespace ILCompiler.DependencyAnalysis
             _markedILBodyFixupSignatures.Add(sig);
         }
 
-        private NodeCache<MethodDesc, MethodWithGCInfo> _localMethodCache;
+        private NodeCache<(MethodDesc, bool), MethodWithGCInfo> _localMethodCache;
 
-        public MethodWithGCInfo CompiledMethodNode(MethodDesc method)
+        public MethodWithGCInfo CompiledMethodNode(MethodDesc method, bool asyncVariant)
         {
             Debug.Assert(CompilationModuleGroup.ContainsMethodBody(method, false));
             Debug.Assert(method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
-            return _localMethodCache.GetOrAdd(method);
+            return _localMethodCache.GetOrAdd((method, asyncVariant));
         }
 
         private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;
@@ -281,9 +281,9 @@ namespace ILCompiler.DependencyAnalysis
 
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
 
-            _localMethodCache = new NodeCache<MethodDesc, MethodWithGCInfo>(key =>
+            _localMethodCache = new NodeCache<(MethodDesc, bool), MethodWithGCInfo>(key =>
             {
-                return new MethodWithGCInfo(key);
+                return new MethodWithGCInfo(key.Item1, key.Item2);
             });
 
             _methodSignatures = new NodeCache<MethodFixupKey, MethodFixupSignature>(key =>
@@ -430,7 +430,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (CompilationModuleGroup.ContainsMethodBody(compilableMethod, false))
             {
-                methodWithGCInfo = CompiledMethodNode(compilableMethod);
+                methodWithGCInfo = CompiledMethodNode(compilableMethod, method.AsyncVariant);
             }
 
             if (isPrecodeImportRequired)
@@ -479,7 +479,7 @@ namespace ILCompiler.DependencyAnalysis
                     EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
                     ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
 
-                    IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null), false, false, false);
+                    IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, asyncVariant: methodCodeNode.AsyncVariant, context: null), false, false, false);
                     MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
                     if (methodCodeNodeDebug == null && methodNodeDebug is DelayLoadMethodImport DelayLoadMethodImport)
                     {
@@ -778,7 +778,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null, 
+            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
                 CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
             this.CrossModuleInlningInfo = crossModuleInliningInfoTable;

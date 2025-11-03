@@ -29,11 +29,11 @@ namespace Internal.TypeSystem.Ecma
             public const int AggressiveOptimization = 0x00400;
             public const int NoOptimization         = 0x00800;
             public const int RequireSecObject       = 0x01000;
+            public const int Async                  = 0x02000;
 
-            public const int AttributeMetadataCache = 0x02000;
-            public const int Intrinsic              = 0x04000;
-            public const int UnmanagedCallersOnly   = 0x08000;
-            public const int Async                  = 0x10000;
+            public const int AttributeMetadataCache = 0x04000;
+            public const int Intrinsic              = 0x08000;
+            public const int UnmanagedCallersOnly   = 0x10000;
 #pragma warning restore IDE0055
         };
 
@@ -44,7 +44,7 @@ namespace Internal.TypeSystem.Ecma
         private unsafe volatile byte* _namePointer;
         private int _nameLength;
         private ThreadSafeFlags _methodFlags;
-        private MethodSignature _metadataSignature;
+        private MethodSignature _signature;
         private TypeDesc[] _genericParameters; // TODO: Optional field?
 
         internal EcmaMethod(EcmaType type, MethodDefinitionHandle handle)
@@ -83,10 +83,19 @@ namespace Internal.TypeSystem.Ecma
             BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetMethodDefinition(_handle).Signature);
             EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader, NotFoundBehavior.Throw);
             var signature = parser.ParseMethodSignature();
-            _metadataSignature = signature;
+            _signature = signature;
         }
 
-        // Signature requires AsyncInfo for EcmaMethod and is in EcmaMethod.Async.cs or EcmaMethod.Dummy.Async.cs
+        public override MethodSignature Signature
+        {
+            get
+            {
+                if (_signature == null)
+                    InitializeSignature();
+
+                return _signature;
+            }
+        }
 
         public EcmaModule Module
         {

@@ -8,68 +8,27 @@ namespace Internal.TypeSystem.Ecma
 {
     public sealed partial class EcmaMethod
     {
-        private AsyncMethodData _asyncMethodData;
-        private MethodDesc _asyncOtherVariant;
-
-        public override MethodSignature Signature
+        public override AsyncMethodKind AsyncMethodKind
         {
             get
             {
-                if (_metadataSignature == null)
-                    InitializeSignature();
-                if (AsyncMethodData.IsAsyncVariant)
+                // EcmaMethod always represents the Task-returning variant for Task-returning methods
+                // in order to match the signature, even though the IL in metadata may not match.
+                // Other MethodDescs represent the async variant.
+                bool returnsTask = Signature.ReturnsTaskOrValueTask;
+                if (returnsTask)
                 {
-                    Debug.Assert(_asyncMethodData.Kind == AsyncMethodKind.AsyncVariantImpl && _asyncMethodData.Signature is not null);
-                    return _asyncMethodData.Signature;
+                    return IsAsync
+                        ? AsyncMethodKind.RuntimeAsync
+                        : AsyncMethodKind.TaskReturning;
                 }
-                return _metadataSignature;
-            }
-        }
-
-        public override AsyncMethodData AsyncMethodData
-        {
-            get
-            {
-                if (_asyncMethodData.Equals(default(AsyncMethodData)))
+                else
                 {
-                    InitializeSignature();
-                    bool returnsTask = _metadataSignature.ReturnsTaskOrValueTask();
-                    if (!returnsTask && !IsAsync)
-                    {
-                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.NotAsync, Signature = _metadataSignature };
-                    }
-                    else if (returnsTask && IsAsync)
-                    {
-                        var asyncSignature = _metadataSignature.CreateAsyncSignature();
-                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.AsyncVariantImpl, Signature = asyncSignature };
-                    }
-                    else if (returnsTask && !IsAsync)
-                    {
-                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.TaskReturning, Signature = _metadataSignature };
-                    }
-                    else
-                    {
-                        Debug.Assert(IsAsync && !returnsTask);
-                        _asyncMethodData = new AsyncMethodData { Kind = AsyncMethodKind.AsyncExplicitImpl, Signature = _metadataSignature };
-                    }
+                    return IsAsync
+                        ? AsyncMethodKind.AsyncExplicitImpl
+                        : AsyncMethodKind.NotAsync;
                 }
-
-                Debug.Assert(!_asyncMethodData.Equals(default(AsyncMethodData)));
-                return _asyncMethodData;
             }
-        }
-
-        public override MethodDesc GetAsyncOtherVariant()
-        {
-            Debug.Assert(AsyncMethodData.Kind is AsyncMethodKind.TaskReturning or AsyncMethodKind.AsyncVariantImpl);
-            if (_asyncOtherVariant is null)
-            {
-                MethodDesc otherVariant = IsAsync ?
-                    new TaskReturningAsyncThunk(this, _metadataSignature) :
-                    new AsyncMethodThunk(this);
-                Interlocked.CompareExchange(ref _asyncOtherVariant, otherVariant, null);
-            }
-            return _asyncOtherVariant;
         }
     }
 }

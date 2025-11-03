@@ -42,9 +42,6 @@
     <Compile Include="..\..\Common\TypeSystem\Canon\ArrayType.Canon.cs">
       <Link>TypeSystem\Canon\ArrayType.Canon.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Canon\AsyncMethodThunk.Canon.cs">
-      <Link>TypeSystem\Canon\AsyncMethodThunk.Canon.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Canon\ByRefType.Canon.cs">
       <Link>TypeSystem\Canon\ByRefType.Canon.cs</Link>
     </Compile>
@@ -101,9 +98,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Canon\SignatureVariable.Canon.cs">
       <Link>TypeSystem\Canon\SignatureVariable.Canon.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Canon\TaskReturningAsyncThunk.Canon.cs">
-      <Link>TypeSystem\Canon\TaskReturningAsyncThunk.Canon.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Canon\TypeDesc.Canon.cs">
       <Link>TypeSystem\Canon\TypeDesc.Canon.cs</Link>
@@ -396,12 +390,6 @@
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDelegator.Diagnostic.cs">
       <Link>TypeSystem\Common\MethodDelegator.Diagnostic.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\AsyncMethodThunk.cs">
-      <Link>TypeSystem\Common\AsyncMethodThunk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\AsyncMethodThunk.Diagnostic.cs">
-      <Link>TypeSystem\Common\AsyncMethodThunk.Diagnostic.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.cs">
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
     </Compile>
@@ -413,12 +401,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.ToString.cs">
       <Link>TypeSystem\Common\MethodDesc.ToString.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\TaskReturningAsyncThunk.cs">
-      <Link>TypeSystem\Common\TaskReturningAsyncThunk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\TaskReturningAsyncThunk.Diagnostic.cs">
-      <Link>TypeSystem\Common\TaskReturningAsyncThunk.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MetadataVirtualMethodAlgorithm.cs">
       <Link>TypeSystem\Common\StandardVirtualMethodAlgorithm.cs</Link>
@@ -606,9 +588,6 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs">
       <Link>IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Sorting\AsyncMethodThunk.Sorting.cs">
-      <Link>TypeSystem\Sorting\AsyncMethodThunk.Sorting.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Sorting\FieldDesc.Sorting.cs">
       <Link>TypeSystem\Sorting\FieldDesc.Sorting.cs</Link>
     </Compile>
@@ -623,9 +602,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Sorting\MethodForInstantiatedType.Sorting.cs">
       <Link>TypeSystem\Sorting\MethodForInstantiatedType.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Sorting\TaskReturningAsyncThunk.Sorting.cs">
-      <Link>TypeSystem\Sorting\TaskReturningAsyncThunk.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Interop\FieldDesc.Interop.cs">
       <Link>TypeSystem\Interop\FieldDesc.Interop.cs</Link>

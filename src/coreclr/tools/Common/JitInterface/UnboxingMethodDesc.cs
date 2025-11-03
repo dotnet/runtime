@@ -64,11 +64,11 @@ namespace Internal.JitInterface
             return this;
         }
 
-        public override AsyncMethodData AsyncMethodData
+        public override AsyncMethodKind AsyncMethodKind
         {
             get
             {
-                return _wrappedMethod.AsyncMethodData;
+                return _wrappedMethod.AsyncMethodKind;
             }
         }
 

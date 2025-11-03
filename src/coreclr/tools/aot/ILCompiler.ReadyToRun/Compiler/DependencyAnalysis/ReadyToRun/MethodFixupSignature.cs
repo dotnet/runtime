@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 try
                 {
                     factory.DetectGenericCycles(_method.Method, canonMethod);
-                    list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
+                    list.Add(factory.CompiledMethodNode(canonMethod, _method.AsyncVariant), "Virtual function dependency on cross module inlineable method");
                 }
                 catch (TypeSystemException)
                 {
@@ -89,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Optimize some of the fixups into a more compact form
             ReadyToRunFixupKind fixupKind = _fixupKind;
             bool optimized = false;
-            if (!_method.Unboxing && !IsInstantiatingStub && _method.ConstrainedType == null &&
+            if (!_method.Unboxing && !IsInstantiatingStub && !_method.AsyncVariant && _method.ConstrainedType == null &&
                 fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
                 if (!_method.Method.HasInstantiation && !_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
@@ -116,13 +116,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                 {
-                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, null);
+                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, asyncVariant: _method.AsyncVariant, null);
                 }
                 else if (!optimized && (method.Token.TokenType == CorTokenType.mdtMemberRef))
                 {
                     if (method.Method.OwningType.GetTypeDefinition() is EcmaType)
                     {
-                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, null);
+                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, asyncVariant: _method.AsyncVariant, null);
                     }
                 }
             }
@@ -153,6 +153,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (IsInstantiatingStub)
             {
                 sb.Append(" [INST]"u8);
+            }
+            if (_method.AsyncVariant)
+            {
+                sb.Append(" [ASYNC]"u8);
             }
             sb.Append(": "u8);
             _method.AppendMangledName(nameMangler, sb);
