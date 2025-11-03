@@ -17,6 +17,6 @@ set Platform=
 set DOTNET_MULTILEVEL_LOOKUP=0
 
 :: Disable first run since we want to control all package sources
-set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+set DOTNET_NOLOGO=1
 
 call "%dotnetPath%\dotnet.exe" %*
