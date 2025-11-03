@@ -82,8 +82,15 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct ResumeInfo
     {
         public delegate*<Continuation, ref byte, Continuation?> Resume;
-        // IP to use for diagnostics. Points into main code and maps to the
-        // call that resulted in suspension.
+        // IP to use for diagnostics. Points into the jitted suspension code.
+        // For debug codegen the IP resolves via an ASYNC native->IL mapping to
+        // the IL AsyncHelpers.Await (or other async function) call which
+        // caused the suspension.
+        // For optimized codegen the mapping into the root method may be more
+        // approximate (e.g. because of inlining).
+        // For all codegen (DiagnosticsIP - MethodStartIP) matches
+        // DiagnosticNativeOffset for the corresponding AsyncSuspensionPoint in
+        // the debug info.
         public void* DiagnosticIP;
     }
 
