@@ -1424,7 +1424,7 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
 
 #endif // #ifndef DACCESS_COMPILE
 
-#if defined(TARGET_IA64) || defined(TARGET_AMD64)
+#ifdef FEATURE_JIT
 // -------------------------------------------------------
 // JumpStub stubs
 //
@@ -1473,7 +1473,7 @@ BOOL JumpStubStubManager::DoTraceStub(PCODE stubStartAddress,
 
     return TRUE;
 }
-#endif // defined(TARGET_IA64) || defined(TARGET_AMD64)
+#endif // FEATURE_JIT
 
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
@@ -1537,10 +1537,10 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 
     switch (GetStubKind(stubStartAddress))
     {
-#if defined(TARGET_IA64) || defined(TARGET_AMD64)
+#ifdef FEATURE_JIT
     case STUB_CODE_BLOCK_JUMPSTUB:
         return JumpStubStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
-#endif // defined(TARGET_IA64) || defined(TARGET_AMD64)
+#endif // FEATURE_JIT
 
     case STUB_CODE_BLOCK_STUBLINK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
