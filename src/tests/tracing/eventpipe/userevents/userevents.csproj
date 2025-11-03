@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'linux' or ('$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64')">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <MicrosoftOneCollectRecordTraceVersion>0.1.32221</MicrosoftOneCollectRecordTraceVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-diagnostics-tests/nuget/v3/index.json</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.OneCollect.RecordTrace" Version="$(MicrosoftOneCollectRecordTraceVersion)" PrivateAssets="All" Condition="'$(TargetOS)' == 'linux'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <Compile Include="usereventstracee.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="dotnet-common.script" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="CopyRecordTraceBinary" AfterTargets="Build" Condition="'$(TargetOS)' == 'linux'">
+    <PropertyGroup>
+      <RecordTracePath>$(NuGetPackageRoot)microsoft.onecollect.recordtrace/$(MicrosoftOneCollectRecordTraceVersion)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/record-trace</RecordTracePath>
+    </PropertyGroup>
+
+    <Copy SourceFiles="$(RecordTracePath)" DestinationFolder="$(OutputPath)" Condition="Exists('$(RecordTracePath)')" />
+    <Error Text="record-trace not found at $(RecordTracePath)" Condition="!Exists('$(RecordTracePath)')" />
+  </Target>
+</Project>
