@@ -88,7 +88,6 @@ The various task inputs correspond to properties as:
 
   AppDir                            : $(WasmAppDir)
   MainAssembly                      : $(WasmMainAssemblyPath)
-  InvariantGlobalization            : $(WasmInvariantGlobalization)
   SatelliteAssemblies               : @(WasmSatelliteAssemblies)
   FilesToIncludeInFileSystem        : @(WasmFilesToIncludeInFileSystem)
   DebugLevel                        : $(WasmDebugLevel)

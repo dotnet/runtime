@@ -11,6 +11,7 @@
     <CompressionEnabled>false</CompressionEnabled>
     <DisableBuildCompression>true</DisableBuildCompression>
     <PublishTrimmed>false</PublishTrimmed>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
 
     <!-- set this when provisioning emsdk on CI -->
@@ -174,7 +175,6 @@
       <WasmMainJSPath Condition="'$(WasmMainJSPath)' == ''">$(MonoProjectRoot)\browser\test-main.js</WasmMainJSPath>
       <WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</WasmMainJSFileName>
       <WasmMainHtmlPath>$(PublishDir)index.html</WasmMainHtmlPath>
-      <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>
 
