@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -241,6 +242,13 @@ namespace System.Text.Unicode.Tests
             {
                 AssertIsInvalidFourByteSequence(new byte[] { 0xF4, (byte)i, 0x80, 0x80 });
             }
+
+            // [ F5..FF ] [ 80..BF ] [ 80..BF ] [ 80..BF ] is out-of-range 4-byte sequence
+
+            for (int i = 0xF5; i < 0x100; i++)
+            {
+                AssertIsInvalidFourByteSequence(new byte[] { (byte)i, 0x80, 0x80, 0x80 });
+            }
         }
 
         [Fact]
@@ -279,57 +287,72 @@ namespace System.Text.Unicode.Tests
         {
             Assert.Equal(2, invalidSequence.Length);
 
-            byte[] knownGoodBytes = Utf8Tests.DecodeHex(E_ACUTE);
+            // Exercise the vectorized codepath and insert the invalid sequence at different positions.
 
-            byte[] toTest = invalidSequence.Concat(invalidSequence).Concat(knownGoodBytes).ToArray(); // at start of first DWORD
-            GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, 0, 0, 0);
+            byte[] byteVector = Utf8Tests.DecodeHex(E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE + E_ACUTE);
 
-            toTest = knownGoodBytes.Concat(invalidSequence).Concat(knownGoodBytes).ToArray(); // at end of first DWORD
-            GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, 2, 1, 0);
+            for (int pos = 0; pos <= 16; pos++)
+            {
+                ArrayList testList = new ArrayList(byteVector);
 
-            // Run the same tests but with extra data at the beginning so that we're inside one of
-            // the 2-byte processing "hot loop" code paths.
+                if (pos % 2 != 0)
+                {
+                    // Replace bytes with valid ASCII characters so they can be broken up.
+                    testList.SetRange(pos - pos % 2, new byte[2] {0x20, 0x21});
+                }
 
-            toTest = knownGoodBytes.Concat(knownGoodBytes).Concat(invalidSequence).Concat(knownGoodBytes).ToArray(); // at start of next DWORD
-            GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, 4, 2, 0);
-
-            toTest = knownGoodBytes.Concat(knownGoodBytes).Concat(knownGoodBytes).Concat(invalidSequence).Concat(knownGoodBytes).ToArray(); // at end of next DWORD
-            GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, 6, 3, 0);
+                testList.InsertRange(pos, invalidSequence);
+                byte[] toTest = (byte[])testList.ToArray(typeof(byte));
+                GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, pos, (pos + 1) / 2, 0);
+            }
         }
 
         private static void AssertIsInvalidThreeByteSequence(byte[] invalidSequence)
         {
             Assert.Equal(3, invalidSequence.Length);
 
-            byte[] knownGoodBytes = Utf8Tests.DecodeHex(EURO_SYMBOL);
+            // Exercise the vectorized codepath and insert the invalid sequence at different positions.
 
-            byte[] toTest = invalidSequence.Concat(invalidSequence).Concat(knownGoodBytes).ToArray(); // at start of first DWORD
-            GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, 0, 0, 0);
+            byte[] byteVector = Utf8Tests.DecodeHex(EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL + EURO_SYMBOL);
 
-            // Run the same tests but with extra data at the beginning so that we're inside one of
-            // the 3-byte processing "hot loop" code paths.
+            for (int pos = 0; pos <= 16; pos++)
+            {
+                ArrayList testList = new ArrayList(byteVector);
 
-            toTest = knownGoodBytes.Concat(invalidSequence).Concat(knownGoodBytes).ToArray(); // straddling first and second DWORDs
-            GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, 3, 1, 0);
+                if (pos % 3 != 0)
+                {
+                    // Replace bytes with valid ASCII characters so they can be broken up.
+                    testList.SetRange(pos - pos % 3, new byte[3] {0x20, 0x21, 0x22});
+                }
 
-            toTest = knownGoodBytes.Concat(knownGoodBytes).Concat(invalidSequence).Concat(knownGoodBytes).ToArray(); // straddling second and third DWORDs
-            GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, 6, 2, 0);
-
-            toTest = knownGoodBytes.Concat(knownGoodBytes).Concat(knownGoodBytes).Concat(invalidSequence).Concat(knownGoodBytes).ToArray(); // at end of third DWORD
-            GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, 9, 3, 0);
+                testList.InsertRange(pos, invalidSequence);
+                byte[] toTest = (byte[])testList.ToArray(typeof(byte));
+                GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, pos, (pos / 3) + (pos % 3), 0);
+            }
         }
 
         private static void AssertIsInvalidFourByteSequence(byte[] invalidSequence)
         {
             Assert.Equal(4, invalidSequence.Length);
 
-            byte[] knownGoodBytes = Utf8Tests.DecodeHex(GRINNING_FACE);
+            // Exercise the vectorized codepath and insert the invalid sequence at different positions.
 
-            byte[] toTest = invalidSequence.Concat(invalidSequence).Concat(knownGoodBytes).ToArray();
-            GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, 0, 0, 0);
+            byte[] byteVector = Utf8Tests.DecodeHex(GRINNING_FACE + GRINNING_FACE + GRINNING_FACE + GRINNING_FACE);
 
-            toTest = knownGoodBytes.Concat(invalidSequence).Concat(knownGoodBytes).ToArray();
-            GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, 4, 1, 1);
+            for (int pos = 0; pos <= 16; pos++)
+            {
+                ArrayList testList = new ArrayList(byteVector);
+
+                if (pos % 4 != 0)
+                {
+                    // Replace bytes with valid ASCII characters so they can be broken up.
+                    testList.SetRange(pos - pos % 4, new byte[4] {0x20, 0x21, 0x22, 0x23});
+                }
+
+                testList.InsertRange(pos, invalidSequence);
+                byte[] toTest = (byte[])testList.ToArray(typeof(byte));
+                GetIndexOfFirstInvalidUtf8Sequence_Test_Core(toTest, pos, (pos / 4) + (pos % 4), pos / 4);
+            }
         }
 
         private static void GetIndexOfFirstInvalidUtf8Sequence_Test_Core(string inputHex, int expectedRetVal, int expectedRuneCount, int expectedSurrogatePairCount)

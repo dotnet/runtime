@@ -1524,7 +1524,7 @@ namespace System.Text
 
 #if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool VectorContainsNonAsciiChar(Vector128<byte> asciiVector)
+        internal static bool VectorContainsNonAsciiChar(Vector128<byte> asciiVector)
         {
             // max ASCII character is 0b_0111_1111, so the most significant bit (0x80) tells whether it contains non ascii
 
