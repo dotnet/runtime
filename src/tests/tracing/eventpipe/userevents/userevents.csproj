@@ -3,9 +3,7 @@
     <CLRTestTargetUnsupported Condition="'$(TargetOS)' != 'linux' or ('$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64')">true</CLRTestTargetUnsupported>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
-    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
-    <MicrosoftOneCollectRecordTraceVersion>0.1.32221</MicrosoftOneCollectRecordTraceVersion>
   </PropertyGroup>
 
   <PropertyGroup>
