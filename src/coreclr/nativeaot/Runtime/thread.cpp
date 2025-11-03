@@ -350,6 +350,11 @@ uint64_t Thread::GetPalThreadIdForLogging()
     return m_threadId;
 }
 
+uint64_t Thread::GetOSThreadId()
+{
+    return m_threadId;
+}
+
 uint64_t Thread::s_DeadThreadsNonAllocBytes = 0;
 
 /* static*/
