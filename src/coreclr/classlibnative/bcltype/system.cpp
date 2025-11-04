@@ -146,7 +146,7 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     LPCWSTR argExceptionString = NULL;
     StackSString msg;
     // Because Environment_FailFast should kill the process, any subsequent calls are likely nested call from managed while formatting the exception message or the stack trace.
-    // only collect exception string if this is the first attempt to fail fast on this thread.
+    // Only collect exception string if this is the first attempt to fail fast on this thread.
     alreadyFailing++;
     if (alreadyFailing != 1)
     {
