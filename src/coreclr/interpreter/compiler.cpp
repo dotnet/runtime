@@ -4396,8 +4396,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 if (tailcall && isPInvoke && !isMarshaledPInvoke)
                 {
                     tailcall = false;
-                    // We need to inject ret after the call when we can't tail call
-                    injectRet = true;
+                    // We need to inject ret after a jmp when we can't use a tail call
+                    injectRet = isJmp;
                 }
 
                 // Normal call
@@ -4537,7 +4537,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     if (injectRet)
     {
-        // Tail call to PInvoke was converted to normal pinvoke, so we need to inject a ret after the call
+        // Jmp to PInvoke was converted to normal pinvoke, so we need to inject a ret after the call
         switch (GetInterpType(callInfo.sig.retType))
         {
             case InterpTypeVT:
