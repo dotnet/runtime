@@ -11,9 +11,9 @@ void ASMDumper::DumpToFile(FILE* fp, MethodContext* mc, CompileResult* cr)
     CORINFO_OS          os    = CORINFO_WINNT;
     mc->repCompileMethod(&info, &flags, &os);
 
-    fprintf_s(fp, ";;Generated from SuperPMI on original input '%s'", cr->repProcessName());
+    fprintf(fp, ";;Generated from SuperPMI on original input '%s'", cr->repProcessName());
 
-    fprintf_s(fp, "\n Method Name \"%s\"", getMethodName(mc, info.ftn).c_str());
+    fprintf(fp, "\n Method Name \"%s\"", getMethodName(mc, info.ftn).c_str());
 
     ULONG              hotCodeSize;
     ULONG              coldCodeSize;
@@ -47,7 +47,7 @@ void ASMDumper::DumpToFile(FILE* fp, MethodContext* mc, CompileResult* cr)
     cr->applyRelocs(&rc, coldCodeBlock, coldCodeSize, orig_coldCodeBlock);
     cr->applyRelocs(&rc, roDataBlock, roDataSize, orig_roDataBlock);
 
-    fprintf_s(fp, ";; No disassembler available");
+    fprintf(fp, ";; No disassembler available");
 
     fflush(fp);
 }

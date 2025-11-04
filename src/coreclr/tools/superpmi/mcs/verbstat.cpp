@@ -31,7 +31,7 @@ int verbStat::DoWork(const char* nameOfInput, const char* nameOfOutput, int inde
     ZeroMemory(&buff[0], bufflen);
     offset += sprintf_s(buff, bufflen, "Title,MC#,");
     offset += MethodContext::dumpStatTitleToBuffer(&buff[offset], bufflen - offset);
-    fprintf_s(fpOut, "%s\n", buff);
+    fprintf(fpOut, "%s\n", buff);
 
     while (mci.MoveNext())
     {
@@ -48,7 +48,7 @@ int verbStat::DoWork(const char* nameOfInput, const char* nameOfOutput, int inde
         buff[offset++] = ',';
         offset += sprintf_s(&buff[offset], bufflen - offset, "%d,", mci.MethodContextNumber());
         offset += mc->dumpStatToBuffer(&buff[offset], bufflen - offset);
-        fprintf_s(fpOut, "%s\n", buff);
+        fprintf(fpOut, "%s\n", buff);
         savedCount++;
     }
 

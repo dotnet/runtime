@@ -119,7 +119,7 @@ bool MCList::getLineData(const char* nameOfInput, std::vector<int>& indexes)
     }
 
     int value;
-    while (fscanf_s(fp, "%d", &value) > 0)
+    while (fscanf(fp, "%d", &value) > 0)
     {
         indexes.push_back(value);
     }
@@ -146,7 +146,7 @@ void MCList::AddMethodToMCL(int methodIndex)
 {
     if (fpMCLFile != NULL)
     {
-        if (fprintf_s(fpMCLFile, "%d\n", methodIndex) != 0)
+        if (fprintf(fpMCLFile, "%d\n", methodIndex) != 0)
         {
             LogError("Failed to write method index '%d'. errno=%d", methodIndex, errno);
         }

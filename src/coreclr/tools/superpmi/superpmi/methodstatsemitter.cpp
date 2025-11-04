@@ -43,11 +43,11 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
             if (mc->dumpMethodHashToBuffer(md5Hash, MM3_HASH_BUFFER_SIZE) != MM3_HASH_BUFFER_SIZE)
                 md5Hash[0] = 0;
 
-            fprintf_s(fpStatsFile, "%s,", md5Hash);
+            fprintf(fpStatsFile, "%s,", md5Hash);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'n') != NULL || strchr(statsTypes, 'N') != NULL)
         {
-            fprintf_s(fpStatsFile, "%d,", methodNumber);
+            fprintf(fpStatsFile, "%d,", methodNumber);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'i') != NULL || strchr(statsTypes, 'I') != NULL)
         {
@@ -57,7 +57,7 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
             CORINFO_OS          os    = CORINFO_WINNT;
             mc->repCompileMethod(&info, &flags, &os);
 
-            fprintf_s(fpStatsFile, "%d,", info.ILCodeSize);
+            fprintf(fpStatsFile, "%d,", info.ILCodeSize);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'a') != NULL || strchr(statsTypes, 'A') != NULL)
         {
@@ -70,14 +70,14 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
             else
                 codeSize = 0; // this is likely a thin mc
 
-            fprintf_s(fpStatsFile, "%d,", codeSize);
+            fprintf(fpStatsFile, "%d,", codeSize);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 't') != NULL || strchr(statsTypes, 'T') != NULL)
         {
-            fprintf_s(fpStatsFile, "%llu,%llu,", firstTime, secondTime);
+            fprintf(fpStatsFile, "%llu,%llu,", (unsigned long long)firstTime, (unsigned long long)secondTime);
         }
 
-        fprintf_s(fpStatsFile, "\n");
+        fprintf(fpStatsFile, "\n");
     }
 }
 
@@ -88,16 +88,16 @@ void MethodStatsEmitter::SetStatsTypes(char* types)
     if (fpStatsFile != INVALID_HANDLE_VALUE)
     {
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'h') != NULL || strchr(statsTypes, 'H') != NULL)
-            fprintf_s(fpStatsFile, "HASH,");
+            fprintf(fpStatsFile, "HASH,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'n') != NULL || strchr(statsTypes, 'N') != NULL)
-            fprintf_s(fpStatsFile, "METHOD_NUMBER,");
+            fprintf(fpStatsFile, "METHOD_NUMBER,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'i') != NULL || strchr(statsTypes, 'I') != NULL)
-            fprintf_s(fpStatsFile, "IL_CODE_SIZE,");
+            fprintf(fpStatsFile, "IL_CODE_SIZE,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'a') != NULL || strchr(statsTypes, 'A') != NULL)
-            fprintf_s(fpStatsFile, "ASM_CODE_SIZE,");
+            fprintf(fpStatsFile, "ASM_CODE_SIZE,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 't') != NULL || strchr(statsTypes, 'T') != NULL)
-            fprintf_s(fpStatsFile, "Time1,Time2,");
+            fprintf(fpStatsFile, "Time1,Time2,");
 
-        fprintf_s(fpStatsFile, "\n");
+        fprintf(fpStatsFile, "\n");
     }
 }

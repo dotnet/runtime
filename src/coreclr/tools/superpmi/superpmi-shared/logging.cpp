@@ -275,7 +275,7 @@ void Logger::LogVprintf(
         const char* timeStr = "";
 #endif // TARGET_UNIX
 
-        if (fprintf_s(s_logFile, "%s - %s [%s:%d] - %s - %s\r\n", timeStr, function, file, line, logLevelStr, fullMsg) <= 0)
+        if (fprintf(s_logFile, "%s - %s [%s:%d] - %s - %s\r\n", timeStr, function, file, line, logLevelStr, fullMsg) <= 0)
             fprintf(stderr, "WARNING: [Logger::LogVprintf] Failed to write to log file. errno=%d\n",
                     errno);
 

@@ -74,7 +74,8 @@ bool StartProcess(char* commandLine, HANDLE hStdOutput, HANDLE hStdError, HANDLE
 
 void ReadMCLToArray(char* mclFilename, std::vector<int>& MCL)
 {
-    FILE* fp = fopen(mclFilename, "r");
+    FILE*   fp = fopen(mclFilename, "r");
+    int64_t size;
 
     if (fp == NULL)
     {
@@ -84,9 +85,9 @@ void ReadMCLToArray(char* mclFilename, std::vector<int>& MCL)
 
     fseek(fp, 0, SEEK_END);
 #ifdef TARGET_WINDOWS
-    int64_t size = _ftelli64(fp);
+    size = _ftelli64(fp);
 #else
-    int64_t size = ftell(fp);
+    size = ftell(fp);
 #endif
     fseek(fp, 0, SEEK_SET);
 
@@ -97,7 +98,7 @@ void ReadMCLToArray(char* mclFilename, std::vector<int>& MCL)
     }
 
     int value;
-    while (fscanf_s(fp, "%d", &value) > 0)
+    while (fscanf(fp, "%d", &value) > 0)
     {
         MCL.push_back(value);
     }
@@ -121,7 +122,7 @@ bool WriteArrayToMCL(char* mclFilename, std::vector<int>& MCL)
 
     for (int val : MCL)
     {
-        if (fprintf_s(fpMCLFile, "%d\r\n", val) <= 0)
+        if (fprintf(fpMCLFile, "%d\r\n", val) <= 0)
         {
             LogError("Failed to write method index '%d'. errno=%d", val, errno);
             result = false;
