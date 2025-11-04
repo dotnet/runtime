@@ -85,7 +85,7 @@ namespace ILCompiler
                         perModuleData = new PerModuleMethodsGenerated(module);
                         _methodsGenerated[module] = perModuleData;
                     }
-                    if (method.HasInstantiation || method.OwningType.HasInstantiation)
+                    if (method.HasInstantiation || method.OwningType.HasInstantiation || method.IsAsyncThunk)
                     {
                         perModuleData.GenericMethodsGenerated.Add(methodNode);
                     }
