@@ -789,11 +789,6 @@ namespace System.Runtime.Loader
             return asm;
         }
 
-        internal IntPtr InvokeLoadUnmanagedDll(string unmanagedDllName)
-        {
-            return LoadUnmanagedDll(unmanagedDllName);
-        }
-
         internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)
         {
             // Loop through the event subscribers and return the first non-null native library handle
