@@ -144,14 +144,29 @@ namespace System.Text.Json.Serialization.Metadata
         internal override void DetermineReflectionPropertyAccessors(MemberInfo memberInfo, bool useNonPublicAccessors)
             => DefaultJsonTypeInfoResolver.DeterminePropertyAccessors<T>(this, memberInfo, useNonPublicAccessors);
 
-        private protected override void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo)
+        private protected override void DetermineEffectiveConverter(JsonTypeInfo? jsonTypeInfo, JsonConverter? expandedCustomConverter)
         {
-            Debug.Assert(jsonTypeInfo is JsonTypeInfo<T>);
+            Debug.Assert(jsonTypeInfo is null or JsonTypeInfo<T>);
 
-            JsonConverter<T> converter =
-                Options.ExpandConverterFactory(CustomConverter, PropertyType) // Expand any property-level custom converters.
-                ?.CreateCastingConverter<T>()                                 // Cast to JsonConverter<T>, potentially with wrapping.
-                ?? ((JsonTypeInfo<T>)jsonTypeInfo).EffectiveConverter;        // Fall back to the effective converter for the type.
+            JsonConverter<T> converter;
+            if (expandedCustomConverter is not null)
+            {
+                // Use the already-expanded custom converter
+                converter = expandedCustomConverter.CreateCastingConverter<T>();
+            }
+            else
+            {
+                // Need to get JsonTypeInfo if we don't have it yet
+                if (jsonTypeInfo is null)
+                {
+                    jsonTypeInfo = Options.GetTypeInfoInternal(PropertyType);
+                    jsonTypeInfo.EnsureConfigured();
+                    JsonTypeInfo = jsonTypeInfo;
+                }
+
+                // Fall back to the effective converter for the type
+                converter = ((JsonTypeInfo<T>)jsonTypeInfo).EffectiveConverter;
+            }
 
             _effectiveConverter = converter;
             _typedEffectiveConverter = converter;

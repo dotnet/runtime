@@ -427,10 +427,24 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
-                _jsonTypeInfo.EnsureConfigured();
+                // Try to expand any custom converter first to avoid
+                // eagerly resolving JsonTypeInfo for types that have custom converters.
+                // This prevents failures for types with properties that cannot be serialized
+                // (e.g., ref properties) when they have a custom converter that handles serialization.
+                JsonConverter? expandedCustomConverter = null;
+                if (CustomConverter is not null)
+                {
+                    expandedCustomConverter = Options.ExpandConverterFactory(CustomConverter, PropertyType);
+                }
 
-                DetermineEffectiveConverter(_jsonTypeInfo);
+                if (expandedCustomConverter is null)
+                {
+                    // No custom converter or the factory returned null, so we need to get the JsonTypeInfo
+                    _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
+                    _jsonTypeInfo.EnsureConfigured();
+                }
+
+                DetermineEffectiveConverter(_jsonTypeInfo, expandedCustomConverter);
                 DetermineNumberHandlingForProperty();
                 DetermineEffectiveObjectCreationHandlingForProperty();
                 DetermineSerializationCapabilities();
@@ -466,7 +480,7 @@ namespace System.Text.Json.Serialization.Metadata
             IsConfigured = true;
         }
 
-        private protected abstract void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo);
+        private protected abstract void DetermineEffectiveConverter(JsonTypeInfo? jsonTypeInfo, JsonConverter? expandedCustomConverter);
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
