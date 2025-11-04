@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>cdac-build-tool.Tests</AssemblyName>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../cdac-build-tool.csproj" />
+  </ItemGroup>
+</Project>

@@ -85,14 +85,6 @@ public class DataDescriptorModel
         DictionaryKeyPolicy = null, // leave unchanged
     };
 
-    private static JsonSerializerOptions s_jsonDeserializerOptions = new JsonSerializerOptions
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DictionaryKeyPolicy = null,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true
-    };
-
     public string ToJson()
     {
         // always writes the "compact" format, see data_descriptor.md
@@ -209,14 +201,7 @@ public class DataDescriptorModel
 
         private void ParseBaseline()
         {
-            if (_baseline == "empty")
-            {
-                // Empty baseline - no types, globals, or contracts to load
-                _baselineModel = null;
-                return;
-            }
-
-            // Load the baseline file
+            // Load the baseline file to check if it's empty
             var baselinePath = Path.Combine(_baselinesDir, _baseline + ".jsonc");
             if (!File.Exists(baselinePath))
             {
@@ -228,54 +213,28 @@ public class DataDescriptorModel
             }
 
             var json = File.ReadAllText(baselinePath);
-            // Remove comments for JSONC support
-            json = RemoveJsonComments(json);
 
-            _baselineModel = JsonSerializer.Deserialize<DataDescriptorModel>(json, s_jsonDeserializerOptions);
-            if (_baselineModel is null)
+            // Check if this is an empty baseline (version 0 with no data)
+            using var doc = JsonDocument.Parse(json, new JsonDocumentOptions
             {
-                throw new InvalidOperationException($"Failed to deserialize baseline file: {baselinePath}");
+                CommentHandling = JsonCommentHandling.Skip,
+                AllowTrailingCommas = true
+            });
+
+            if (doc.RootElement.TryGetProperty("version", out var versionProp) &&
+                versionProp.GetInt32() == 0)
+            {
+                // Empty baseline - no types, globals, or contracts to load
+                _baselineModel = null;
+                return;
             }
 
-            // Populate the builder with baseline data
-            foreach (var (typeName, typeModel) in _baselineModel.Types)
-            {
-                var typeBuilder = AddOrUpdateType(typeName, typeModel.Size);
-                foreach (var (fieldName, fieldModel) in typeModel.Fields)
-                {
-                    typeBuilder.AddOrUpdateField(fieldName, fieldModel.Type, fieldModel.Offset);
-                }
-            }
-
-            foreach (var (globalName, globalModel) in _baselineModel.Globals)
-            {
-                AddOrUpdateGlobal(globalName, globalModel.Type, globalModel.Value);
-            }
-
-            foreach (var (subDescriptorName, subDescriptorModel) in _baselineModel.SubDescriptors)
-            {
-                AddOrUpdateSubDescriptor(subDescriptorName, subDescriptorModel.Type, subDescriptorModel.Value);
-            }
-
-            foreach (var (contractName, contractVersion) in _baselineModel.Contracts)
-            {
-                AddOrUpdateContract(contractName, contractVersion);
-            }
-        }
-
-        private static string RemoveJsonComments(string json)
-        {
-            var lines = json.Split('\n');
-            var result = new System.Text.StringBuilder();
-            foreach (var line in lines)
-            {
-                var trimmed = line.TrimStart();
-                if (!trimmed.StartsWith("//"))
-                {
-                    result.AppendLine(line);
-                }
-            }
-            return result.ToString();
+            // TODO: [cdac] - implement non-empty baseline parsing
+            // For now, we only support empty baselines (version 0) which contain no data
+            // Future work: Add proper JSON deserialization for non-empty baselines
+            // This would require custom JsonConverters for the compact array format used
+            // in baseline files (e.g., "Field1": [0, "uint32"] instead of expanded objects)
+            throw new InvalidOperationException($"Non-empty baseline parsing is not yet implemented. Only empty baselines (version 0) are currently supported.");
         }
 
         public DataDescriptorModel Build()
