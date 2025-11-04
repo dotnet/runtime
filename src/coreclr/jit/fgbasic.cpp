@@ -4847,7 +4847,7 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
             {
                 if (node->OperIs(GT_IL_OFFSET))
                 {
-                    GenTreeILOffset* ilOffset = (*riter)->AsILOffset();
+                    GenTreeILOffset* ilOffset = node->AsILOffset();
                     DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
                     if (rootDI.IsValid())
                     {
