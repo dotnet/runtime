@@ -5740,17 +5740,11 @@ retry_emit:
                     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 
                     m_pStackPointer--;
-                    InterpVar *pParamArgVar = &m_pVars[m_paramArgIndex];
-                    int32_t opcode = GetLdindForType(pParamArgVar->interpType);
+                    int32_t opcode = GetLdindForType(m_pVars[m_paramArgIndex].interpType);
                     AddIns(opcode);
                     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-                    m_pLastNewIns->SetDVar(pParamArgVar->offset);
-                    m_pLastNewIns->data[0] = pParamArgVar->offset;
-                    if (pParamArgVar->interpType == InterpTypeVT)
-                    {
-                        int size = m_compHnd->getClassSize(pParamArgVar->clsHnd);
-                        m_pLastNewIns->data[1] = size;
-                    }
+                    m_pLastNewIns->SetDVar(m_pVars[m_paramArgIndex].offset);
+                    m_pLastNewIns->data[0] = m_pVars[m_paramArgIndex].offset;
                 }
             }
         }
