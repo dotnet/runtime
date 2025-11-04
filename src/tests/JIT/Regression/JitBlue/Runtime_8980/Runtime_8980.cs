@@ -13,8 +13,9 @@ using Xunit;
 
 public class Runtime_8980
 {
+    // Use the [Fact] attribute directly on Main since we can't run the generator on this project.
     [Fact]
-    public static int TestEntryPoint()
+    public static int Main()
     {
         // Large dictionary with ValueTuple values using collection initializer
         var dict = new Dictionary<int, (double lat, double lon)>

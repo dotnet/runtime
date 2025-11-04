@@ -246,7 +246,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
 
     <ItemGroup>
-      <_WasmConfigFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
+      <_WasmDiscoveredFileCandidates Include="@(StaticWebAsset)" Condition="'%(SourceType)' == 'Discovered'" />
 
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$(_WasmNativeAssetFileNames.Contains(';%(FileName)%(Extension);'))" />
@@ -319,14 +319,13 @@ Copyright (c) .NET Foundation. All rights reserved.
     </DefineStaticWebAssets>
 
     <DefineStaticWebAssets
-      CandidateAssets="@(_WasmConfigFileCandidates)"
+      CandidateAssets="@(_WasmDiscoveredFileCandidates)"
       AssetTraitName="WasmResource"
       AssetTraitValue="settings"
       RelativePathFilter="appsettings*.json"
     >
       <Output TaskParameter="Assets" ItemName="_WasmJsConfigStaticWebAsset" />
     </DefineStaticWebAssets>
-
     <DefineStaticWebAssetEndpoints
       CandidateAssets="@(_WasmJsConfigStaticWebAsset)"
       ExistingEndpoints="@(StaticWebAssetEndpoint)"
@@ -336,11 +335,41 @@ Copyright (c) .NET Foundation. All rights reserved.
     </DefineStaticWebAssetEndpoints>
 
     <ItemGroup>
+      <WasmFilesToIncludeInFileSystem Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' == ''">
+        <TargetPath>/%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
+      </WasmFilesToIncludeInFileSystem>
+    </ItemGroup>
+    
+    <DefineStaticWebAssets
+      CandidateAssets="@(_WasmDiscoveredFileCandidates)"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="vfs:%(WasmFilesToIncludeInFileSystem.TargetPath)"
+      RelativePathFilter="@(WasmFilesToIncludeInFileSystem)"
+      Condition="'@(WasmFilesToIncludeInFileSystem)' != ''"
+    >
+      <Output TaskParameter="Assets" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAsset" />
+    </DefineStaticWebAssets>
+
+    <Error
+      Text="Some of the 'WasmFilesToIncludeInFileSystem' where not found in StaticWebAssets. WasmFilesToIncludeInFileSystem: @(WasmFilesToIncludeInFileSystem), matched StaticWebAssets: @(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
+      Condition="'@(WasmFilesToIncludeInFileSystem->Count())' != '@(_WasmFilesToIncludeInFileSystemStaticWebAsset->Count())'" />
+
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+
+    <ItemGroup>
       <!-- Update the boot config static web asset since we've given it a trait -->
       <StaticWebAsset Remove="@(_WasmJsConfigStaticWebAsset)" />
       <StaticWebAsset Include="@(_WasmJsConfigStaticWebAsset)" />
+      <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
+      <StaticWebAsset Include="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(_WasmJsConfigStaticWebAssetEndpoint)" />
-
+      <StaticWebAssetEndpoint Include="@(_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint)" />
       <ReferenceCopyLocalPaths Remove="@(_WasmBuildFilesToRemove)" />
     </ItemGroup>
 
@@ -385,8 +414,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     </DefineStaticWebAssetEndpoints>
 
     <ResolveFingerprintedStaticWebAssetEndpointsForAssets
-      CandidateEndpoints="@(WasmStaticWebAssetEndpoint);@(_WasmJsModuleCandidatesForBuildEndpoint)"
-      CandidateAssets="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild)"
+      CandidateEndpoints="@(WasmStaticWebAssetEndpoint);@(_WasmJsModuleCandidatesForBuildEndpoint);@(StaticWebAssetEndpoint)"
+      CandidateAssets="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
       IsStandalone="$(StaticWebAssetStandaloneHosting)"
     >
       <Output TaskParameter="ResolvedEndpoints" ItemName="_WasmResolvedEndpoints" />
@@ -395,7 +424,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
       ApplicationEnvironment="$(_WasmBuildApplicationEnvironmentName)"
-      Resources="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild)"
+      Resources="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
       Endpoints="@(_WasmResolvedEndpoints)"
       DebugBuild="true"
       DebugLevel="$(WasmDebugLevel)"
