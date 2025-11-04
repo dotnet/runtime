@@ -35,6 +35,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 "System",
                 "System.CodeDom.Compiler",
+                "System.Collections.Generic",
                 "System.Globalization",
                 "System.Runtime.CompilerServices",
                 "Microsoft.Extensions.Configuration",
@@ -164,10 +165,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 // Base case to avoid stack overflow for recursive object graphs.
                                 // Register all object types for gen; we need to throw runtime exceptions in some cases.
                                 _seenTransitiveTypes.Add(typeRef, true);
-
-                                // List<string> is used in generated code as a temp holder for formatting
-                                // an error for config properties that don't map to object properties.
-                                _namespaces.Add("System.Collections.Generic");
 
                                 if (_typeIndex.HasBindableMembers(objectSpec))
                                 {
