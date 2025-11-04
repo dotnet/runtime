@@ -6568,7 +6568,7 @@ BOOL ReadyToRunJitManager::GetAsyncDebugInfo(
 {
     CONTRACTL {
         THROWS;       // on OOM.
-        GC_NOTRIGGER; // getting vars shouldn't trigger
+        GC_NOTRIGGER; // getting async debug info shouldn't trigger
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
