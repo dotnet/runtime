@@ -53,12 +53,19 @@ namespace Internal.TypeSystem
 
         public override MethodDesc GetMethodDefinition()
         {
-            return _wrappedMethod.GetMethodDefinition();
+            var real = _wrappedMethod.GetMethodDefinition();
+            if (real == _wrappedMethod)
+                return this;
+
+            return _factory.GetOrCreateAsyncMethodImplVariant(real, _asyncMethodKind);
         }
 
         public override MethodDesc GetTypicalMethodDefinition()
         {
-            return _wrappedMethod.GetTypicalMethodDefinition();
+            var real = _wrappedMethod.GetTypicalMethodDefinition();
+            if (real == _wrappedMethod)
+                return this;
+            return _factory.GetOrCreateAsyncMethodImplVariant(real, _asyncMethodKind);
         }
 
         public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
