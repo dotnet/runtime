@@ -5874,7 +5874,37 @@ void Interpreter::LdObjValueClassWork(CORINFO_CLASS_HANDLE valueClsHnd, unsigned
     }
     else
     {
-        OpStackSet<INT64>(ind, GetSmallStructValue(src, sz));
+	if (sz == 1)
+	{
+		 CorInfoType cit = it.ToCorInfoType();
+		if (CorInfoTypeIsUnsigned(cit))
+		{
+			OpStackSet<UINT64>(ind, *reinterpret_cast<UINT8*>(src));
+		}
+		else
+		{
+			OpStackSet<INT64>(ind, *reinterpret_cast<INT8*>(src));
+		}
+	}
+	else if (sz == 2)
+	{
+		CorInfoType cit = it.ToCorInfoType();
+		if (CorInfoTypeIsUnsigned(cit))
+		 {
+		     OpStackSet<UINT64>(ind, *reinterpret_cast<UINT16*>(src));
+		 }
+		 else
+		 {
+		     OpStackSet<INT64>(ind, *reinterpret_cast<INT16*>(src));
+		 }
+	}
+	else if (sz == 4)
+	{
+		OpStackSet<INT64>(ind, *reinterpret_cast<INT32*>(src));
+	}
+	else{
+		OpStackSet<INT64>(ind, GetSmallStructValue(src, sz));
+	}
     }
 
     OpStackTypeSet(ind, it.StackNormalize());
