@@ -229,6 +229,34 @@ namespace System.StubHelpers
 
     internal static class BSTRMarshaler
     {
+        private class TrailByte(byte trailByte)
+        {
+            public readonly byte Value = trailByte;
+        }
+
+        // In some early version of VB when there were no arrays developers used to use BSTR as arrays
+        // The way this was done was by adding a trail byte at the end of the BSTR
+        // To support this scenario, we need to use a ConditionalWeakTable for this special case and
+        // save the trail character in here.
+        // This stores the trail character when a BSTR is used as an array
+        private static readonly ConditionalWeakTable<string, TrailByte> s_trailByteTable = new();
+
+        internal static bool TryGetTrailByte(string strManaged, out byte trailByte)
+        {
+            if (s_trailByteTable.TryGetValue(strManaged, out TrailByte? trailByteObj))
+            {
+                trailByte = trailByteObj.Value;
+                return true;
+            }
+
+            trailByte = 0;
+            return false;
+        }
+        internal static void SetTrailByte(string strManaged, byte trailByte)
+        {
+            s_trailByteTable.AddOrUpdate(strManaged, new TrailByte(trailByte));
+        }
+
         internal static unsafe IntPtr ConvertToNative(string strManaged, IntPtr pNativeBuffer)
         {
             if (null == strManaged)
@@ -237,7 +265,7 @@ namespace System.StubHelpers
             }
             else
             {
-                bool hasTrailByte = StubHelpers.TryGetStringTrailByte(strManaged, out byte trailByte);
+                bool hasTrailByte = s_trailByteTable.TryGetValue(strManaged, out TrailByte? trailByte);
 
                 uint lengthInBytes = (uint)strManaged.Length * 2;
 
@@ -276,7 +304,7 @@ namespace System.StubHelpers
                 // copy the trail byte if present
                 if (hasTrailByte)
                 {
-                    ptrToFirstChar[lengthInBytes - 1] = trailByte;
+                    ptrToFirstChar[lengthInBytes - 1] = trailByte.Value;
                 }
 
                 // return ptr to first character
@@ -320,8 +348,7 @@ namespace System.StubHelpers
 
                 if ((length & 1) == 1)
                 {
-                    // odd-sized strings need to have the trailing byte saved in their sync block
-                    StubHelpers.SetStringTrailByte(ret, ((byte*)bstr)[length - 1]);
+                    s_trailByteTable.Add(ret, new TrailByte(((byte*)bstr)[length - 1]));
                 }
 
                 return ret;
@@ -1489,18 +1516,11 @@ namespace System.StubHelpers
             }
         }
 
-        // Try to retrieve the extra byte - returns false if not present.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool TryGetStringTrailByte(string str, out byte data);
-
         // Set extra byte for odd-sized strings that came from interop as BSTR.
         internal static void SetStringTrailByte(string str, byte data)
         {
-            SetStringTrailByte(new StringHandleOnStack(ref str!), data);
+            BSTRMarshaler.SetTrailByte(str, data);
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_SetStringTrailByte")]
-        private static partial void SetStringTrailByte(StringHandleOnStack str, byte data);
 
         internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {

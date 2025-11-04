@@ -4265,10 +4265,8 @@ void OleVariant::AllocateEmptyStringForBSTR(BSTR bstr, STRINGREF *pStringObj)
     if (length > MAX_SIZE_FOR_INTEROP)
         COMPlusThrow(kMarshalDirectiveException, IDS_EE_STRING_TOOLONG);
 
-    // Check to see if the BSTR has trailing odd byte.
-    BOOL bHasTrailByte = ((length%sizeof(WCHAR)) != 0);
     length = length / sizeof(WCHAR);
-    SetObjectReference((OBJECTREF*)pStringObj, (OBJECTREF)StringObject::NewString(length, bHasTrailByte));
+    SetObjectReference((OBJECTREF*)pStringObj, (OBJECTREF)StringObject::NewString(length));
 }
 
 void OleVariant::ConvertContentsBSTRToString(BSTR bstr, STRINGREF *pStringObj)
@@ -4298,8 +4296,15 @@ void OleVariant::ConvertContentsBSTRToString(BSTR bstr, STRINGREF *pStringObj)
     if (hasTrailByte)
     {
         BYTE* buff = (BYTE*)bstr;
-        //set the trail byte
-        (*pStringObj)->SetTrailByte(buff[length-1]);
+
+        ASSERT_PROTECTED(pStringObj);
+
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__SET_TRAIL_BYTE);
+        DECLARE_ARGHOLDER_ARRAY(args, 2);
+        args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
+        args[ARGNUM_1] = INT8_TO_ARGHOLDER(buff[length-1]);
+
+        CALL_MANAGED_METHOD_NORET(METHOD__BSTRMARSHALER__SET_TRAIL_BYTE, args);
     }
 
     // null terminate the StringRef
@@ -4348,7 +4353,16 @@ BSTR OleVariant::AllocateEmptyBSTRForString(STRINGREF *pStringObj)
         COMPlusThrow(kMarshalDirectiveException, IDS_EE_STRING_TOOLONG);
 
     length = length*sizeof(WCHAR);
-    if ((*pStringObj)->HasTrailByte())
+
+    ASSERT_PROTECTED(pStringObj);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__TRY_GET_TRAIL_BYTE);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
+    BYTE trailByte;
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&trailByte);
+    CLR_BOOL hasTrailByte = CALL_MANAGED_METHOD(CLR_BOOL, METHOD__BSTRMARSHALER__TRY_GET_TRAIL_BYTE, args);
+
+    if (hasTrailByte)
     {
         length += 1;
     }
@@ -4381,13 +4395,17 @@ void OleVariant::ConvertContentsStringToBSTR(STRINGREF *pStringObj, BSTR bstr)
 
     memcpyNoGCRefs(bstr, (*pStringObj)->GetBuffer(), byteLen);
 
-    if ((*pStringObj)->HasTrailByte())
+    ASSERT_PROTECTED(pStringObj);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__TRY_GET_TRAIL_BYTE);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
+    BYTE trailByte;
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&trailByte);
+    CLR_BOOL hasTrailByte = CALL_MANAGED_METHOD(CLR_BOOL, METHOD__BSTRMARSHALER__TRY_GET_TRAIL_BYTE, args);
+
+    if (hasTrailByte)
     {
-        BYTE b;
-        BOOL hasTrailB;
-        hasTrailB = (*pStringObj)->GetTrailByte(&b);
-        _ASSERTE(hasTrailB);
-        buff[byteLen] = b;
+        buff[byteLen] = trailByte;
     }
     else
     {
