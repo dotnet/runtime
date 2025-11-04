@@ -539,6 +539,7 @@ static int run(const configuration& config)
         actions.after_execute_assembly();
     }
 
+#if !defined(TARGET_BROWSER)
     int latched_exit_code = 0;
     result = coreclr_shutdown2_func(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
     if (FAILED(result))
@@ -553,6 +554,10 @@ static int run(const configuration& config)
     ::free((void*)s_core_libs_path);
     ::free((void*)s_core_root_path);
     return exit_code;
+#else // TARGET_BROWSER
+    // In browser we don't shutdown the runtime here as we want to keep it alive
+    return 0;
+#endif // TARGET_BROWSER
 }
 
 // Display the command line options

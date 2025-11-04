@@ -649,3 +649,21 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
 {
     PORTABILITY_ASSERT("Attempted to execute unmanaged code from interpreter on wasm, this is not yet implemented");
 }
+
+// WASM-TODO: use [UnmanagedCallersOnly] once is supported in wasm
+// https://github.com/dotnet/runtime/issues/121006
+extern "C" void SystemJS_ExecuteTimerCallback()
+{
+    ARG_SLOT stackVarWrapper[] = { };
+    MethodDescCallSite timerHandler(METHOD__TIMER_QUEUE__TIMER_HANDLER);
+    timerHandler.Call(stackVarWrapper);
+}
+
+// WASM-TODO: use [UnmanagedCallersOnly] once is supported in wasm
+// https://github.com/dotnet/runtime/issues/121006
+extern "C" void SystemJS_ExecuteBackgroundJobCallback()
+{
+    ARG_SLOT stackVarWrapper[] = { };
+    MethodDescCallSite backgroundJobHandler(METHOD__THREAD_POOL__BACKGROUND_JOB_HANDLER);
+    backgroundJobHandler.Call(stackVarWrapper);
+}

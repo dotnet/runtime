@@ -373,7 +373,7 @@
     <value>Valid switches for {0} are: '{1}'. The default value is '{2}'.</value>
   </data>
   <data name="InstructionSetHelp" xml:space="preserve">
-    <value>The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx,aes,apx'</value>
+    <value>The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. By default other instruction sets not specified may light-up optimistically via dynamic checks. Individual instruction sets can be disallowed from such light-up by prefixing them with '-'. All such light-up can be disallowed by specifying '-optimistic'. The instruction sets supported by the machine invoking the tool can be targeted by specifying 'native'. For example 'native', 'avx,aes', 'avx,aes,-avx2', or 'avx,aes,-optimistic'</value>
   </data>
   <data name="MakeReproPathHelp" xml:space="preserve">
     <value>Make a repro zip file in the specified path. This is used for sending error reports to the .NET team.</value>

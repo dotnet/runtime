@@ -25,6 +25,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunUseRuntimePackOptimizationData Condition="'$(PublishReadyToRunUseRuntimePackOptimizationData)' == ''">true</PublishReadyToRunUseRuntimePackOptimizationData>
     <PublishReadyToRunPerfmapFormatVersion Condition="'$(PublishReadyToRunPerfmapFormatVersion)' == ''">1</PublishReadyToRunPerfmapFormatVersion>
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == ''">pe</PublishReadyToRunContainerFormat>
+    <PublishReadyToRunEmitSymbols Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">false</PublishReadyToRunEmitSymbols>
   </PropertyGroup>
 
   <!--
