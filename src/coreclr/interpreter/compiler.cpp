@@ -5743,7 +5743,7 @@ retry_emit:
                     int32_t opcode = GetLdindForType(m_pVars[m_paramArgIndex].interpType);
                     AddIns(opcode);
                     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-                    m_pLastNewIns->SetDVar(m_pVars[m_paramArgIndex].offset);
+                    m_pLastNewIns->SetDVar(m_paramArgIndex);
                     m_pLastNewIns->data[0] = m_pVars[m_paramArgIndex].offset;
                 }
             }
