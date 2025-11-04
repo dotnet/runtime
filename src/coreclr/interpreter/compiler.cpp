@@ -7991,9 +7991,13 @@ DO_LDFTN:
                     }
 #ifdef TARGET_64BIT
                     // nint and int32 can be used interchangeably. Add implicit conversions.
-                    else if ((asCorInfoType == CORINFO_TYPE_INT || asCorInfoType == CORINFO_TYPE_UINT) && m_pStackPointer[-1].GetStackType() == StackTypeI4)
+                    else if (asCorInfoType == CORINFO_TYPE_NATIVEINT && m_pStackPointer[-1].GetStackType() == StackTypeI4)
                     {
                         EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+                    }
+                    else if (asCorInfoType == CORINFO_TYPE_NATIVEUINT && m_pStackPointer[-1].GetStackType() == StackTypeI4)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
                     }
 #endif // TARGET_64BIT
                     CORINFO_GENERICHANDLE_RESULT embedInfo;
