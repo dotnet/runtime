@@ -561,6 +561,124 @@ namespace System.IO.Compression
             return compressorOutput;
         }
 
+        [Fact]
+        public void AutomaticStreamRewinds_WhenDecompressionFinishes()
+        {
+            // Create test data: some header bytes + compressed data + some footer bytes
+            byte[] originalData = Encoding.UTF8.GetBytes("Hello, world! This is a test string for compression.");
+            byte[] headerBytes = Encoding.UTF8.GetBytes("HEADER");
+            byte[] footerBytes = Encoding.UTF8.GetBytes("FOOTER");
+
+            // Create compressed data
+            byte[] compressedData;
+            using (var ms = new MemoryStream())
+            {
+                using (var compressor = CreateStream(ms, CompressionMode.Compress))
+                {
+                    compressor.Write(originalData);
+                }
+                compressedData = ms.ToArray();
+            }
+
+            // Create a stream with: [header][compressed data][footer]
+            byte[] combinedData = new byte[headerBytes.Length + compressedData.Length + footerBytes.Length];
+            Array.Copy(headerBytes, 0, combinedData, 0, headerBytes.Length);
+            Array.Copy(compressedData, 0, combinedData, headerBytes.Length, compressedData.Length);
+            Array.Copy(footerBytes, 0, combinedData, headerBytes.Length + compressedData.Length, footerBytes.Length);
+
+            using (var stream = new MemoryStream(combinedData))
+            {
+                // Read the header
+                byte[] headerBuffer = new byte[headerBytes.Length];
+                stream.Read(headerBuffer, 0, headerBytes.Length);
+                Assert.Equal(headerBytes, headerBuffer);
+
+                // Decompress the data
+                byte[] decompressedData;
+                using (var decompressor = CreateStream(stream, CompressionMode.Decompress, leaveOpen: true))
+                {
+                    using (var outputStream = new MemoryStream())
+                    {
+                        decompressor.CopyTo(outputStream);
+                        decompressedData = outputStream.ToArray();
+                    }
+                }
+                // Stream should have automatically rewound to the end of compressed data
+
+                // Verify decompressed data is correct
+                Assert.Equal(originalData, decompressedData);
+
+                // Read the footer - if automatic rewinding worked, this should read the footer correctly
+                byte[] footerBuffer = new byte[footerBytes.Length];
+                int bytesRead = stream.Read(footerBuffer, 0, footerBytes.Length);
+                
+                Assert.Equal(footerBytes.Length, bytesRead);
+                Assert.Equal(footerBytes, footerBuffer);
+
+                // Verify we're at the end of the stream
+                Assert.Equal(combinedData.Length, stream.Position);
+            }
+        }
+
+        [Fact]
+        public async Task AutomaticStreamRewinds_WhenDecompressionFinishes_Async()
+        {
+            // Create test data: some header bytes + compressed data + some footer bytes
+            byte[] originalData = Encoding.UTF8.GetBytes("Hello, world! This is a test string for compression.");
+            byte[] headerBytes = Encoding.UTF8.GetBytes("HEADER");
+            byte[] footerBytes = Encoding.UTF8.GetBytes("FOOTER");
+
+            // Create compressed data
+            byte[] compressedData;
+            using (var ms = new MemoryStream())
+            {
+                using (var compressor = CreateStream(ms, CompressionMode.Compress))
+                {
+                    await compressor.WriteAsync(originalData);
+                }
+                compressedData = ms.ToArray();
+            }
+
+            // Create a stream with: [header][compressed data][footer]
+            byte[] combinedData = new byte[headerBytes.Length + compressedData.Length + footerBytes.Length];
+            Array.Copy(headerBytes, 0, combinedData, 0, headerBytes.Length);
+            Array.Copy(compressedData, 0, combinedData, headerBytes.Length, compressedData.Length);
+            Array.Copy(footerBytes, 0, combinedData, headerBytes.Length + compressedData.Length, footerBytes.Length);
+
+            using (var stream = new MemoryStream(combinedData))
+            {
+                // Read the header
+                byte[] headerBuffer = new byte[headerBytes.Length];
+                await stream.ReadAsync(headerBuffer, 0, headerBytes.Length);
+                Assert.Equal(headerBytes, headerBuffer);
+
+                // Decompress the data
+                byte[] decompressedData;
+                await using (var decompressor = CreateStream(stream, CompressionMode.Decompress, leaveOpen: true))
+                {
+                    using (var outputStream = new MemoryStream())
+                    {
+                        await decompressor.CopyToAsync(outputStream);
+                        decompressedData = outputStream.ToArray();
+                    }
+                }
+                // Stream should have automatically rewound to the end of compressed data
+
+                // Verify decompressed data is correct
+                Assert.Equal(originalData, decompressedData);
+
+                // Read the footer - if automatic rewinding worked, this should read the footer correctly
+                byte[] footerBuffer = new byte[footerBytes.Length];
+                int bytesRead = await stream.ReadAsync(footerBuffer, 0, footerBytes.Length);
+                
+                Assert.Equal(footerBytes.Length, bytesRead);
+                Assert.Equal(footerBytes, footerBuffer);
+
+                // Verify we're at the end of the stream
+                Assert.Equal(combinedData.Length, stream.Position);
+            }
+        }
+
     }
 
     public enum TestScenario
