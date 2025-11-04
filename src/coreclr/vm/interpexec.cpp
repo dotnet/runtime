@@ -652,7 +652,7 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
     }
     else
     {
-        assert(pLookup->lookupType == InterpGenericLookupType::Method);
+        _ASSERTE(pLookup->lookupType == InterpGenericLookupType::Method);
         pMD = (MethodDesc*)genericVarAsPtr;
         lookup = (uint8_t*)pMD;
     }
@@ -784,7 +784,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     int8_t *stack;
 
     InterpMethod *pMethod = pFrame->startIp->Method;
-    assert(pMethod->CheckIntegrity());
+    _ASSERTE(pMethod->CheckIntegrity());
 
     pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
     stack = pFrame->pStack;
@@ -853,7 +853,7 @@ MAIN_LOOP:
                 case INTOP_STORESTUBCONTEXT:
                 {
                     UMEntryThunkData* thunkData = GetMostRecentUMEntryThunkData();
-                    assert(thunkData);
+                    _ASSERTE(thunkData);
                     LOCAL_VAR(ip[1], void*) = thunkData;
                     ip += 2;
                     break;
@@ -2484,7 +2484,7 @@ MAIN_LOOP:
                     pFrame->ip = ip;
 
                     PCODE calliFunctionPointer = LOCAL_VAR(calliFunctionPointerVar, PCODE);
-                    assert(calliFunctionPointer);
+                    _ASSERTE(calliFunctionPointer);
 
                     if (flags & (int32_t)CalliFlags::PInvoke)
                     {
@@ -2616,7 +2616,7 @@ MAIN_LOOP:
                             if (isTailcall)
                             {
                                 // Move args from callArgsOffset to start of stack frame.
-                                assert(pTargetMethod->CheckIntegrity());
+                                _ASSERTE(pTargetMethod->CheckIntegrity());
                                 // It is safe to use memcpy because the source and destination are both on the interp stack, not in the GC heap.
                                 // We need to use the target method's argsSize, not our argsSize, because tail calls (unlike CEE_JMP) can have a
                                 //  different signature from the caller.
@@ -2643,7 +2643,7 @@ MAIN_LOOP:
                             }
                             // Set execution state for the new frame
                             pMethod = pFrame->startIp->Method;
-                            assert(pMethod->CheckIntegrity());
+                            _ASSERTE(pMethod->CheckIntegrity());
                             stack = pFrame->pStack;
                             ip = pFrame->startIp->GetByteCodes();
                             pThreadContext->pStackPointer = stack + pMethod->allocaSize;
@@ -2731,7 +2731,7 @@ CALL_INTERP_METHOD:
                     {
                         // Move args from callArgsOffset to start of stack frame.
                         InterpMethod* pTargetMethod = targetIp->Method;
-                        assert(pTargetMethod->CheckIntegrity());
+                        _ASSERTE(pTargetMethod->CheckIntegrity());
                         // It is safe to use memcpy because the source and destination are both on the interp stack, not in the GC heap.
                         // We need to use the target method's argsSize, not our argsSize, because tail calls (unlike CEE_JMP) can have a
                         //  different signature from the caller.
@@ -2763,7 +2763,7 @@ CALL_INTERP_METHOD:
 
                     // Set execution state for the new frame
                     pMethod = pFrame->startIp->Method;
-                    assert(pMethod->CheckIntegrity());
+                    _ASSERTE(pMethod->CheckIntegrity());
                     stack = pFrame->pStack;
                     ip = pFrame->startIp->GetByteCodes();
                     pThreadContext->pStackPointer = stack + pMethod->allocaSize;
@@ -2917,7 +2917,7 @@ CALL_INTERP_METHOD:
                 }
                 case INTOP_LOAD_EXCEPTION:
                     // This opcode loads the exception object coming from a catch / filter funclet caller to a variable.
-                    assert(pExceptionClauseArgs != NULL);
+                    _ASSERTE(pExceptionClauseArgs != NULL);
                     LOCAL_VAR(ip[1], OBJECTREF) = pExceptionClauseArgs->throwable;
                     ip += 2;
                     break;
@@ -3591,7 +3591,7 @@ do                                                                      \
                     COMPlusThrow(kPlatformNotSupportedException);
                     break;
                 default:
-                    assert(!"Unimplemented or invalid interpreter opcode");
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unimplemented or invalid interpreter opcode\n"));
                     break;
             }
         }
@@ -3627,7 +3627,7 @@ do                                                                      \
 
         stack = pFrame->pStack;
         pMethod = pFrame->startIp->Method;
-        assert(pMethod->CheckIntegrity());
+        _ASSERTE(pMethod->CheckIntegrity());
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
 
         pInterpreterFrame->SetIsFaulting(false);
@@ -3646,7 +3646,7 @@ EXIT_FRAME:
         ip = pFrame->ip;
         stack = pFrame->pStack;
         pMethod = pFrame->startIp->Method;
-        assert(pMethod->CheckIntegrity());
+        _ASSERTE(pMethod->CheckIntegrity());
         pFrame->ip = NULL;
 
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
