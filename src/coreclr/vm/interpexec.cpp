@@ -13,6 +13,14 @@
 // for numeric_limits
 #include <limits>
 
+#ifdef TARGET_WASM
+// Unused on WASM
+#define SAVE_THE_LOWEST_SP do {} while (0)
+#else
+// Save the lowest SP in the current method so that we can identify it by that during stackwalk
+#define SAVE_THE_LOWEST_SP pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP())
+#endif // !TARGET_WASM
+
 // Call invoker helpers provided by platform.
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target);
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
@@ -809,8 +817,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     bool isTailcall = false;
     MethodDesc* targetMethod;
 
-    // Save the lowest SP in the current method so that we can identify it by that during stackwalk
-    pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
+    SAVE_THE_LOWEST_SP;
 
 MAIN_LOOP:
     try
@@ -2629,8 +2636,7 @@ MAIN_LOOP:
                                     pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                                     pChildFrame->pNext = NULL;
                                     pFrame->pNext = pChildFrame;
-                                    // Save the lowest SP in the current method so that we can identify it by that during stackwalk
-                                    pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
+                                    SAVE_THE_LOWEST_SP;
                                 }
                                 pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, LOCAL_VAR_ADDR(callArgsOffset, int8_t));
                                 pFrame = pChildFrame;
@@ -2747,8 +2753,7 @@ CALL_INTERP_METHOD:
                                 pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                                 pChildFrame->pNext = NULL;
                                 pFrame->pNext = pChildFrame;
-                                // Save the lowest SP in the current method so that we can identify it by that during stackwalk
-                                pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
+                                SAVE_THE_LOWEST_SP;
                             }
                             pChildFrame->ReInit(pFrame, targetIp, returnValueAddress, callArgsAddress);
                             pFrame = pChildFrame;
@@ -3564,8 +3569,7 @@ do                                                                      \
                             pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
                             pChildFrame->pNext = NULL;
                             pFrame->pNext = pChildFrame;
-                            // Save the lowest SP in the current method so that we can identify it by that during stackwalk
-                            pInterpreterFrame->SetInterpExecMethodSP((TADDR)GetCurrentSP());
+                            SAVE_THE_LOWEST_SP;
                         }
                         // Set the frame to the same values as the caller frame.
                         pChildFrame->ReInit(pFrame, pFrame->startIp, pFrame->pRetVal, pFrame->pStack);
