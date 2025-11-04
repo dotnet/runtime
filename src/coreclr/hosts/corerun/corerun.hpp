@@ -223,6 +223,39 @@ namespace pal
         return { buffer.get() };
     }
 
+    inline string_t convert_from_utf8(const char* str)
+    {
+        int wchar_req = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, nullptr, 0);
+
+        malloc_ptr<wchar_t> buffer{ (wchar_t*)::malloc(wchar_req * sizeof(wchar_t)) };
+        assert(buffer != nullptr);
+
+        int written = ::MultiByteToWideChar(CP_UTF8, 0, str, -1, buffer.get(), wchar_req);
+        assert(wchar_req == written);
+
+        return { buffer.get() };
+    }
+
+    inline void* get_image_base(mod_t m, void* sym)
+    {
+        // On Windows, the HMODULE is the base address
+        return (void*)m;
+    }
+
+    inline size_t get_image_size(void* base_address)
+    {
+        IMAGE_DOS_HEADER* dos_header = (IMAGE_DOS_HEADER*)base_address;
+        if (dos_header->e_magic == IMAGE_DOS_SIGNATURE)
+        {
+            IMAGE_NT_HEADERS* nt_headers = (IMAGE_NT_HEADERS*)((BYTE*)base_address + dos_header->e_lfanew);
+            if (nt_headers->Signature == IMAGE_NT_SIGNATURE)
+            {
+                return nt_headers->OptionalHeader.SizeOfImage;
+            }
+        }
+        return 0;
+    }
+
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
     {
         const char_t* hostpolicyName = W("hostpolicy.dll");
@@ -566,6 +599,29 @@ namespace pal
     inline string_utf8_t convert_to_utf8(const char_t* str)
     {
         return { str };
+    }
+
+    inline string_t convert_from_utf8(const char* str)
+    {
+        return { str };
+    }
+
+    inline void* get_image_base(mod_t m, void* sym)
+    {
+#ifndef TARGET_WASM
+        Dl_info info;
+        if (dladdr(sym, &info) != 0)
+        {
+            return info.dli_fbase;
+        }
+#endif
+        return nullptr;
+    }
+
+    inline size_t get_image_size(void* base_address)
+    {
+        // TODO: Handle for macOS
+        return 0;
     }
 
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
