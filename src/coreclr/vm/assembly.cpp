@@ -1060,8 +1060,8 @@ void Assembly::AddDiagnosticStartupHookPath(LPCWSTR wszPath)
 
 enum CorEntryPointType
 {
-    EntryManagedMain,                   // void Main(String[])
-    EntryCrtMain,                       // unsigned main(void)
+    EntryManagedMain,                   // void/int/uint Main(string[])
+    EntryCrtMain,                       // void/int/uint Main(void)
     EntryManagedMainAsync,              // Task<int> Main(String[])
     EntryManagedMainAsyncVoid,          // Task Main(String[])
 };
