@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Threading;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -51,29 +51,21 @@ namespace Internal.TypeSystem
             return type.InstantiateSignature(_instantiatedType.Instantiation, default(Instantiation));
         }
 
-        private MethodSignature InstantiateSignature(MethodSignature template)
-        {
-            MethodSignatureBuilder builder = new MethodSignatureBuilder(template);
-            builder.ReturnType = Instantiate(template.ReturnType);
-            for (int i = 0; i < template.Length; i++)
-                builder[i] = Instantiate(template[i]);
-
-            return builder.ToSignature();
-        }
-
-        private void InitializeSignature()
-        {
-            MethodSignature template = _typicalMethodDef.Signature;
-            _signature = InstantiateSignature(template);
-
-        }
-
         public override MethodSignature Signature
         {
             get
             {
                 if (_signature == null)
-                    InitializeSignature();
+                {
+                    MethodSignature template = _typicalMethodDef.Signature;
+                    MethodSignatureBuilder builder = new MethodSignatureBuilder(template);
+
+                    builder.ReturnType = Instantiate(template.ReturnType);
+                    for (int i = 0; i < template.Length; i++)
+                        builder[i] = Instantiate(template[i]);
+
+                    _signature = builder.ToSignature();
+                }
 
                 return _signature;
             }
