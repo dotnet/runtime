@@ -1337,6 +1337,7 @@ public:
     HRESULT EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemCLRMainModuleInfo();
+    HRESULT EnumMemDataDescriptors(CLRDataEnumMemoryFlags flags);
 
     bool ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);
     bool DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer);
