@@ -87,7 +87,7 @@ public:
     }
 
     bool Equal(MethodContext* other);
-    unsigned int saveToFile(HANDLE hFile);
+    unsigned int saveToFile(FILE* fp);
     unsigned int calculateFileSize();
     unsigned int calculateRawFileSize();
 

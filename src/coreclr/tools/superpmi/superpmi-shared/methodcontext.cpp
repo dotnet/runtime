@@ -138,7 +138,7 @@ unsigned int MethodContext::calculateRawFileSize()
            2 /* end canary '4', '2' */;
 }
 
-unsigned int MethodContext::saveToFile(HANDLE hFile)
+unsigned int MethodContext::saveToFile(FILE* fp)
 {
     unsigned int totalLen = calculateFileSize();
     unsigned int totalFileSize =
@@ -165,7 +165,7 @@ unsigned int MethodContext::saveToFile(HANDLE hFile)
 
     Assert(buffIndex == totalFileSize);
 
-    WriteFile(hFile, buff2, totalFileSize, &bytesWritten, NULL);
+    bytesWritten = (DWORD)fwrite(buff2, 1, totalFileSize, fp);
     delete[] buff2;
     return bytesWritten;
 }
