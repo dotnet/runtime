@@ -17,10 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="tests/**/*.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
 </Project>
