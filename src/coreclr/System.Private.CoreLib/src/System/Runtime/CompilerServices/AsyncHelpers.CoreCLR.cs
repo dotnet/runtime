@@ -343,12 +343,20 @@ namespace System.Runtime.CompilerServices
 
         private static class RuntimeAsyncTaskCore
         {
+            [StructLayout(LayoutKind.Explicit)]
             private unsafe ref struct DispatcherInfo
             {
                 // Dispatcher info for next dispatcher present on stack, or
                 // null if none.
+                [FieldOffset(0)]
                 public DispatcherInfo* Next;
+
                 // Next continuation the dispatcher will process.
+#if TARGET_64BIT
+                [FieldOffset(8)]
+#else
+                [FieldOffset(4)]
+#endif
                 public Continuation? NextContinuation;
             }
 
