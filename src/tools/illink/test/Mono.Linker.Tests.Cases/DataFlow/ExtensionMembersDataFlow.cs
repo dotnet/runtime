@@ -11,9 +11,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	[SkipKeptItemsValidation]
-	// [IgnoreTestCase("NativeAOT sometimes emits duplicate IL2041: https://github.com/dotnet/runtime/issues/119155", IgnoredBy = Tool.NativeAot)]
+	[IgnoreTestCase("NativeAOT sometimes emits duplicate IL2041: https://github.com/dotnet/runtime/issues/119155", IgnoredBy = Tool.NativeAot)]
 	// Root the entire assembly to ensure that ILLink/ILC analyze extension properties which are otherwise unused in IL.
-	[SetupRootEntireAssembly ("test")]
 	[ExpectedNoWarnings]
 	public class ExtensionMembersDataFlow
 	{
@@ -42,13 +41,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			GetWithFields ().ExtensionMembersMethod ();
 		}
 
-		[ExpectedWarning ("IL2072", nameof (GetWithMethods), nameof (ExtensionMembers.ExtensionMembersMethod))]
+		[ExpectedWarning ("IL2072", nameof (GetWithMethods), nameof (ExtensionMembers.ExtensionMembersMethod), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
 		static void TestExtensionMethodMismatch ()
 		{
 			GetWithMethods ().ExtensionMembersMethodMismatch ();
 		}
 
-		[ExpectedWarning ("IL2026", nameof (ExtensionMembers.ExtensionMembersMethodRequires))]
+		[ExpectedWarning ("IL2026", nameof (ExtensionMembers.ExtensionMembersMethodRequires), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
 		static void TestExtensionMethodRequires ()
 		{
 			GetWithFields ().ExtensionMembersMethodRequires ();
@@ -59,8 +58,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			GetWithFields ().ExtensionMembersMethodWithParams (GetWithMethods ());
 		}
 
-		[ExpectedWarning ("IL2072", nameof (GetWithMethods), nameof (ExtensionMembers.ExtensionMembersMethodWithParams))]
-		[ExpectedWarning ("IL2072", nameof (GetWithFields), nameof (ExtensionMembers.ExtensionMembersMethodWithParams))]
+		[ExpectedWarning ("IL2072", nameof (GetWithMethods), nameof (ExtensionMembers.ExtensionMembersMethodWithParams), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
+		[ExpectedWarning ("IL2072", nameof (GetWithFields), nameof (ExtensionMembers.ExtensionMembersMethodWithParams), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
 		static void TestExtensionMethodWithParamsMismatch ()
 		{
 			GetWithMethods ().ExtensionMembersMethodWithParamsMismatch (GetWithFields ());
@@ -82,7 +81,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			ExtensionMembers.ExtensionMembersStaticMethodAnnotation ();
 		}
 
-		[ExpectedWarning ("IL2072", "ExtensionMembersProperty", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+		[ExpectedWarning ("IL2072", "ExtensionMembersProperty", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
 		static void TestExtensionProperty ()
 		{
 			var instance = GetWithFields ();
@@ -90,9 +89,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.ExtensionMembersProperty = GetWithMethods ();
 		}
 
-		[ExpectedWarning ("IL2072", nameof (GetWithMethods), "ExtensionMembersPropertyMismatch")]
-		[ExpectedWarning ("IL2072", nameof (GetWithMethods), "ExtensionMembersPropertyMismatch")]
-		[ExpectedWarning ("IL2072", "ExtensionMembersPropertyMismatch", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
+		[ExpectedWarning ("IL2072", nameof (GetWithMethods), "ExtensionMembersPropertyMismatch", Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
+		[ExpectedWarning ("IL2072", nameof (GetWithMethods), "ExtensionMembersPropertyMismatch", Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
+		[ExpectedWarning ("IL2072", "ExtensionMembersPropertyMismatch", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
 		static void TestExtensionPropertyMismatch ()
 		{
 			var instance = GetWithMethods ();
@@ -100,6 +99,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.ExtensionMembersPropertyMismatch = GetWithFields ();
 		}
 
+		[UnexpectedWarning("IL2072", "ExtensionMembersPropertyAnnotatedAccessor", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/80017")]
 		static void TestExtensionPropertyAnnotatedAccessor ()
 		{
 			var instance = GetWithFields ();
@@ -107,10 +107,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.ExtensionMembersPropertyAnnotatedAccessor = GetWithMethods ();
 		}
 
-		[ExpectedWarning ("IL2072", nameof (GetWithMethods), "ExtensionMembersPropertyAnnotatedAccessorMismatch")]
-		[ExpectedWarning ("IL2072", nameof (GetWithMethods), "ExtensionMembersPropertyAnnotatedAccessorMismatch")]
-		[ExpectedWarning ("IL2072", "ExtensionMembersPropertyAnnotatedAccessorMismatch", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
-		[ExpectedWarning ("IL2072", "ExtensionMembersPropertyAnnotatedAccessorMismatch", nameof (GetWithFields))]
+		[ExpectedWarning ("IL2072", nameof (GetWithMethods), "ExtensionMembersPropertyAnnotatedAccessorMismatch", Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
+		[ExpectedWarning ("IL2072", nameof (GetWithMethods), "ExtensionMembersPropertyAnnotatedAccessorMismatch", Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
+		[ExpectedWarning ("IL2072", "ExtensionMembersPropertyAnnotatedAccessorMismatch", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
+		[ExpectedWarning ("IL2072", "ExtensionMembersPropertyAnnotatedAccessorMismatch", nameof (GetWithFields), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
 		static void TestExtensionPropertyAnnotatedAccessorMismatch ()
 		{
 			var instance = GetWithMethods ();
@@ -118,12 +118,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.ExtensionMembersPropertyAnnotatedAccessorMismatch = GetWithFields ();
 		}
 
-		[ExpectedWarning ("IL2026", "ExtensionMembersPropertyRequires")]
+		[ExpectedWarning ("IL2026", "ExtensionMembersPropertyRequires", Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
 		static void TestExtensionPropertyRequires ()
 		{
 			_ = GetWithFields ().ExtensionMembersPropertyRequires;
 		}
 
+		[UnexpectedWarning("IL2072", "ExtensionMembersPropertyConflict", nameof(DataFlowTypeExtensions.RequiresPublicFields), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/roslyn/issues/80017")]
 		static void TestExtensionPropertyConflict ()
 		{
 			var instance = GetWithFields ();
@@ -166,7 +167,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			public void ExtensionMembersMethod () => type.RequiresPublicFields ();
 
-			[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+			[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
 			public void ExtensionMembersMethodMismatch () => type.RequiresPublicMethods ();
 
 			[RequiresUnreferencedCode (nameof (ExtensionMembersMethodRequires))]
@@ -178,7 +179,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeParam.RequiresPublicMethods ();
 			}
 
-			[ExpectedWarning ("IL2067", "type", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+			[ExpectedWarning ("IL2067", "type", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
 			[ExpectedWarning ("IL2067", "typeParam", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
 			public void ExtensionMembersMethodWithParamsMismatch ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type typeParam)
 			{
@@ -190,8 +191,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void ExtensionMembersStaticMethodRequires () { }
 
 			[ExpectedWarning ("IL2041")]
-			[ExpectedWarning ("IL2041", Tool.Trimmer | Tool.NativeAot, "Analyzer doesn't see generated extension metadata type", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+			[ExpectedWarning ("IL2067", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public void ExtensionMembersMethodAnnotation ()
 			{
@@ -200,24 +200,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2041")]
-			[ExpectedWarning ("IL2041", Tool.Trimmer | Tool.NativeAot, "Analyzer doesn't see generated extension metadata type", CompilerGeneratedCode = true)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public static void ExtensionMembersStaticMethodAnnotation ()
 			{
 			}
 
-			[ExpectedWarning ("IL2127", CompilerGeneratedCode = true)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public Type ExtensionMembersProperty {
 				get => ExtensionMembersDataFlow.GetWithMethods ();
 
-				[ExpectedWarning ("IL2067", "value", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+				[ExpectedWarning ("IL2067", "value", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "Analyzer can't see extension metadata")]
 				set => value.RequiresPublicMethods ();
 			}
 
-			[ExpectedWarning ("IL2127", CompilerGeneratedCode = true)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public Type ExtensionMembersPropertyMismatch {
+				[ExpectedWarning ("IL2073", nameof (ExtensionMembersDataFlow.GetWithFields), Tool.Analyzer, "Analyzer can't see extension metadata")]
 				get => ExtensionMembersDataFlow.GetWithFields ();
 
 				[ExpectedWarning ("IL2067", "value", nameof (DataFlowTypeExtensions.RequiresPublicFields))]
@@ -232,7 +230,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			public Type ExtensionMembersPropertyAnnotatedAccessorMismatch {
-				[ExpectedWarning ("IL2073", nameof (ExtensionMembersDataFlow.GetWithFields))]
+				[ExpectedWarning ("IL2073", nameof (ExtensionMembersDataFlow.GetWithFields), Tool.Analyzer, "Analyzer can't see extension metadata")]
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 				get => ExtensionMembersDataFlow.GetWithFields ();
 
@@ -246,8 +244,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				get => null;
 			}
 
-			[ExpectedWarning ("IL2127", CompilerGeneratedCode = true)]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+			[ExpectedWarning ("IL2043", Tool.Analyzer, "Analyzer can't see extension metadata")]
+			[ExpectedWarning ("IL2043", Tool.Analyzer, "Analyzer can't see extension metadata")]
 			public Type ExtensionMembersPropertyConflict {
 				[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 				get => ExtensionMembersDataFlow.GetWithFields ();
