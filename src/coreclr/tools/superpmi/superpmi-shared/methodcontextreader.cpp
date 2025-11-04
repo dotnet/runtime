@@ -18,15 +18,14 @@
 #endif // TARGET_UNIX
 
 // Just a helper...
-HANDLE MethodContextReader::OpenFile(const char* inputFile, DWORD flags)
+FILE* MethodContextReader::OpenFile(const char* inputFile, DWORD flags)
 {
-    HANDLE fileHandle =
-        CreateFileA(inputFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | flags, NULL);
-    if (fileHandle == INVALID_HANDLE_VALUE)
+    FILE* fp = fopen(inputFile, "rb");
+    if (fp == NULL)
     {
-        LogError("Failed to open file '%s'. GetLastError()=%u", inputFile, GetLastError());
+        LogError("Failed to open file '%s'. errno=%d", inputFile, errno);
     }
-    return fileHandle;
+    return fp;
 }
 
 static std::string to_lower(const std::string& input)
@@ -83,7 +82,7 @@ std::string MethodContextReader::CheckForPairedFile(const std::string& fileName,
 
 MethodContextReader::MethodContextReader(
     const char* inputFileName, const int* indexes, int indexCount, char* hash, int offset, int increment)
-    : fileHandle(INVALID_HANDLE_VALUE)
+    : fp(NULL)
     , fileSize(0)
     , curMCIndex(0)
     , Indexes(indexes)
@@ -123,11 +122,16 @@ MethodContextReader::MethodContextReader(
         this->tocFile.LoadToc(tocFileName.c_str());
 
     // we'll get here even if we don't have a valid index file
-    this->fileHandle = OpenFile(mchFileName.c_str(), (this->hasTOC() && this->hasIndex()) ? FILE_ATTRIBUTE_NORMAL
-                                                                                          : FILE_FLAG_SEQUENTIAL_SCAN);
-    if (this->fileHandle != INVALID_HANDLE_VALUE)
+    this->fp = fopen(mchFileName.c_str(), "rb");
+    if (this->fp != NULL)
     {
-        GetFileSizeEx(this->fileHandle, (PLARGE_INTEGER) & this->fileSize);
+        fseek(this->fp, 0, SEEK_END);
+#ifdef TARGET_WINDOWS
+        this->fileSize = _ftelli64(this->fp);
+#else
+        this->fileSize = ftell(this->fp);
+#endif
+        fseek(this->fp, 0, SEEK_SET);
     }
 
     ReadExcludedMethods(mchFileName);
@@ -135,9 +139,9 @@ MethodContextReader::MethodContextReader(
 
 MethodContextReader::~MethodContextReader()
 {
-    if (fileHandle != INVALID_HANDLE_VALUE)
+    if (fp != NULL)
     {
-        CloseHandle(this->fileHandle);
+        fclose(fp);
     }
 
     minipal_mutex_destroy(&this->mutex);
@@ -157,30 +161,26 @@ void MethodContextReader::ReleaseLock()
 
 bool MethodContextReader::atEof()
 {
-    int64_t pos = 0;
-    SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos,
-                     FILE_CURRENT); // LARGE_INTEGER is a crime against humanity
-    return pos == this->fileSize;
+    return feof(fp);
 }
 
 MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
 {
-    DWORD        bytesRead;
     char         buff[512];
     unsigned int totalLen = 0;
     if (atEof())
     {
         return MethodContextBuffer();
     }
-    Assert(ReadFile(this->fileHandle, buff, 2 + sizeof(unsigned int), &bytesRead, NULL) == TRUE);
+    Assert(fread(buff, 1, 2 + sizeof(unsigned int), this->fp) == 2 + sizeof(unsigned int));
     AssertMsg((buff[0] == 'm') && (buff[1] == 'c'), "Didn't find magic number");
     memcpy(&totalLen, &buff[2], sizeof(unsigned int));
     if (justSkip)
     {
         int64_t pos = totalLen + 2;
         // Just move the file pointer ahead the correct number of bytes
-        AssertMsg(SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT) == TRUE,
-                  "SetFilePointerEx failed (Error %X)", GetLastError());
+        AssertMsg(fseek(this->fp, totalLen + 2, SEEK_CUR) == 0,
+                  "fseek failed (Error %d)", errno);
 
         // Increment curMCIndex as we advanced the file pointer by another MC
         ++curMCIndex;
@@ -190,7 +190,7 @@ MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
     else
     {
         unsigned char* buff2 = new unsigned char[totalLen + 2]; // total + End Canary
-        Assert(ReadFile(this->fileHandle, buff2, totalLen + 2, &bytesRead, NULL) == TRUE);
+        Assert(fread(buff2, 1, totalLen + 2, this->fp) == totalLen + 2);
 
         // Increment curMCIndex as we read another MC
         ++curMCIndex;
@@ -417,7 +417,7 @@ bool MethodContextReader::hasTOC()
 
 bool MethodContextReader::isValid()
 {
-    return this->fileHandle != INVALID_HANDLE_VALUE;
+    return this->fp != NULL;
 }
 
 // Return a measure of "progress" through the method contexts, as follows:
@@ -438,8 +438,11 @@ double MethodContextReader::Progress()
     else
     {
         this->AcquireLock();
-        int64_t pos = 0;
-        SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT);
+#ifdef TARGET_WINDOWS
+        int64_t pos = _ftelli64(this->fp);
+#else
+        int64_t pos = ftell(this->fp);
+#endif
         this->ReleaseLock();
         return (double)pos;
     }
@@ -512,7 +515,7 @@ MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int m
     {
         return MethodContextBuffer(-2);
     }
-    if (SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_BEGIN))
+    if (fseek(this->fp, pos, SEEK_SET) == 0)
     {
         // ReadMethodContext will release the lock, but we already acquired it
         MethodContextBuffer mcb = this->ReadMethodContext(false);
@@ -636,9 +639,7 @@ bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
 
 void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
 {
-    int64_t pos    = 0;
-    BOOL    result = SetFilePointerEx(fileHandle, *(PLARGE_INTEGER)&pos, NULL, FILE_BEGIN);
-    assert(result);
+    fseek(fp, 0, SEEK_SET);
 
     Indexes     = newIndexes;
     IndexCount  = newIndexCount;
