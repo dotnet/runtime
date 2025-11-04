@@ -234,7 +234,7 @@ public class DataDescriptorModel
             // Future work: Add proper JSON deserialization for non-empty baselines
             // This would require custom JsonConverters for the compact array format used
             // in baseline files (e.g., "Field1": [0, "uint32"] instead of expanded objects)
-            throw new InvalidOperationException($"Non-empty baseline parsing is not yet implemented. Only empty baselines (version 0) are currently supported.");
+            throw new InvalidOperationException($"Non-empty baseline parsing is not yet implemented for baseline '{_baseline}'. Only empty baselines (version 0) are currently supported.");
         }
 
         public DataDescriptorModel Build()
@@ -272,7 +272,8 @@ public class DataDescriptorModel
                 contracts[contractName] = contractBuilder.Build();
             }
 
-            // If we have a baseline, only include differences
+            // If we have a baseline model loaded, only include differences
+            // Note: Empty baselines (version 0) set _baselineModel to null, so they result in full model output
             if (_baselineModel is not null)
             {
                 types = ComputeTypeDifferences(types, _baselineModel.Types);
