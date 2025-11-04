@@ -18,6 +18,7 @@
 #include "clrconfignative.h"
 #include "commodule.h"
 #include "marshalnative.h"
+#include "nativelibrarynative.h"
 #include "system.h"
 #include "comutilnative.h"
 #include "comsynchronizable.h"
@@ -118,7 +119,6 @@ static const Entry s_QCall[] =
     DllImportEntry(TypeHandle_GetCorElementType)
     DllImportEntry(ValueType_GetHashCodeStrategy)
     DllImportEntry(Stream_HasOverriddenSlow)
-    DllImportEntry(BundleNative_TryGetBundleInformation)
     DllImportEntry(RuntimeTypeHandle_MakePointer)
     DllImportEntry(RuntimeTypeHandle_MakeByRef)
     DllImportEntry(RuntimeTypeHandle_MakeSZArray)
@@ -277,7 +277,6 @@ static const Entry s_QCall[] =
     DllImportEntry(String_Intern)
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
-    DllImportEntry(AppDomain_GetNativeLibrarySearchPaths)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
@@ -395,6 +394,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
     DllImportEntry(Variant_ConvertValueTypeToRecord)
 #endif // FEATURE_COMINTEROP
+    DllImportEntry(NativeLibrary_LoadByName)
     DllImportEntry(GetTypeLoadExceptionMessage)
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)

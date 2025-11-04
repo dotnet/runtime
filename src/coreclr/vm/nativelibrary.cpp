@@ -707,7 +707,9 @@ namespace
 }
 
 // static
-NATIVE_LIBRARY_HANDLE NativeLibrary::LoadFromAssemblyDirectory(LPCWSTR libraryName, Assembly *callingAssembly)
+NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Assembly *callingAssembly,
+    BOOL hasDllImportSearchFlags, DWORD dllImportSearchFlags,
+    BOOL throwOnError)
 {
     CONTRACTL
     {
@@ -719,13 +721,43 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadFromAssemblyDirectory(LPCWSTR libraryNa
 
     NATIVE_LIBRARY_HANDLE hmod = nullptr;
 
-    LoadLibErrorTracker errorTracker;
-    hmod = LoadFromPInvokeAssemblyDirectory(callingAssembly, libraryName, 0, &errorTracker);
+    // Resolve using the AssemblyLoadContext.LoadUnmanagedDll implementation
+    hmod = LoadNativeLibraryViaAssemblyLoadContext(callingAssembly, libraryName);
     if (hmod != nullptr)
         return hmod;
 
-    SString libraryPathSString(libraryName);
-    errorTracker.Throw(libraryPathSString);
+    // Check if a default dllImportSearchPathFlags was passed in. If so, use that value.
+    // Otherwise, check if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
+    // If so, use that value.
+    BOOL searchAssemblyDirectory;
+    DWORD dllImportSearchPathFlags;
+    if (hasDllImportSearchFlags)
+    {
+        dllImportSearchPathFlags = dllImportSearchFlags & ~DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
+        searchAssemblyDirectory = dllImportSearchFlags & DLLIMPORTSEARCHPATH_ASSEMBLYDIRECTORY;
+
+    }
+    else
+    {
+        hasDllImportSearchFlags = GetDllImportSearchPathFlags(callingAssembly->GetModule(),
+                                    &dllImportSearchPathFlags, &searchAssemblyDirectory);
+    }
+
+    LoadLibErrorTracker errorTracker;
+    hmod = LoadNativeLibraryBySearch(callingAssembly, hasDllImportSearchFlags, searchAssemblyDirectory, dllImportSearchPathFlags, &errorTracker, libraryName);
+    if (hmod != nullptr)
+        return hmod;
+
+    // Resolve using the AssemblyLoadContext.ResolvingUnmanagedDll event
+    hmod = LoadNativeLibraryViaAssemblyLoadContextEvent(callingAssembly, libraryName);
+    if (hmod != nullptr)
+        return hmod;
+
+    if (throwOnError)
+    {
+        SString libraryPathSString(libraryName);
+        errorTracker.Throw(libraryPathSString);
+    }
 
     return hmod;
 }

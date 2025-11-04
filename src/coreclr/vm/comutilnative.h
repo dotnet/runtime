@@ -277,6 +277,4 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
 
 extern "C" BOOL QCALLTYPE Stream_HasOverriddenSlow(MethodTable* pMT, BOOL isRead);
 
-extern "C" BOOL QCALLTYPE BundleNative_TryGetBundleInformation(BOOL* isExtracted, QCall::StringHandleOnStack extractPath);
-
 #endif // _COMUTILNATIVE_H_

@@ -37,9 +37,6 @@
 #endif // !TARGET_UNIX
 
 #include "nativelibrary.h"
-#ifdef TARGET_UNIX
-#include "dlfcn.h"
-#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -647,7 +644,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
         // Preload the libSystem.Native.so/dylib to detect possible problems with loading it early
         EX_TRY
         {
-            NativeLibrary::LoadFromAssemblyDirectory(W("libSystem.Native") PAL_SHLIB_SUFFIX_W, SystemDomain::SystemAssembly());
+            NativeLibrary::LoadLibraryByName(W("libSystem.Native"), SystemDomain::SystemAssembly(), FALSE, 0, TRUE);
         }
         EX_HOOK
         {

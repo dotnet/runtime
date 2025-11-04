@@ -220,9 +220,9 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DynamicInterfaceCastableHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandle.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Java\JavaMarshal.CoreCLR.cs" Condition="'$(FeatureJavaMarshal)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.CoreCLR.cs" />

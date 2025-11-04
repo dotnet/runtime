@@ -351,6 +351,7 @@ set(VM_SOURCES_WKS
     multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     nativeeventsource.cpp
     nativelibrary.cpp
+    nativelibrarynative.cpp
     olevariant.cpp
     pendingload.cpp
     pinvokeoverride.cpp

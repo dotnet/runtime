@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Loader;
 using System.Threading;
 
 namespace System.Runtime.InteropServices
@@ -133,20 +130,6 @@ namespace System.Runtime.InteropServices
                                 throwOnError: false);
             return handle != IntPtr.Zero;
         }
-
-#if !MONO
-        // Not a public API. We expose this so that it's possible to bypass the codepath that tries to read search path
-        // from custom attributes.
-        internal static bool TryLoad(string libraryName, Assembly assembly, DllImportSearchPath searchPath, out IntPtr handle)
-        {
-            handle = LoadLibraryByName(libraryName,
-                                assembly,
-                                userSpecifiedSearchFlags: true,
-                                searchPath,
-                                throwOnError: false);
-            return handle != IntPtr.Zero;
-        }
-#endif
 
         /// <summary>
         /// Free a loaded library
@@ -283,204 +266,6 @@ namespace System.Runtime.InteropServices
         }
 
 #if !MONO
-        internal static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, bool throwOnError)
-        {
-#if !NATIVEAOT
-            // Resolve using the AssemblyLoadContext.LoadUnmanagedDll implementation
-            IntPtr mod = LoadNativeLibraryViaAssemblyLoadContext(assembly, libraryName);
-            if (mod != IntPtr.Zero)
-                return mod;
-#endif
-
-            // First checks if a default dllImportSearchPathFlags was passed in, if so, use that value.
-            // Otherwise checks if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
-            // If so, use that value.
-            bool userSpecifiedSearchFlags = searchPath.HasValue;
-            if (!userSpecifiedSearchFlags)
-            {
-                searchPath = GetDllImportSearchPath(assembly, out userSpecifiedSearchFlags);
-            }
-            return LoadLibraryByName(libraryName, assembly, userSpecifiedSearchFlags, searchPath!.Value, throwOnError);
-        }
-
-        private static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, bool userSpecifiedSearchFlags, DllImportSearchPath searchPath, bool throwOnError)
-        {
-            int searchPathFlags = (int)(searchPath & ~DllImportSearchPath.AssemblyDirectory);
-            bool searchAssemblyDirectory = (searchPath & DllImportSearchPath.AssemblyDirectory) != 0;
-
-            LoadLibErrorTracker errorTracker = default;
-            IntPtr ret = LoadBySearch(assembly, userSpecifiedSearchFlags, searchAssemblyDirectory, searchPathFlags, ref errorTracker, libraryName);
-
-            // Resolve using the AssemblyLoadContext.ResolvingUnmanagedDll event
-            if (ret == IntPtr.Zero)
-            {
-                ret = LoadNativeLibraryViaAssemblyLoadContextEvent(assembly, libraryName);
-            }
-
-            if (throwOnError && ret == IntPtr.Zero)
-            {
-                errorTracker.Throw(libraryName);
-            }
-
-            return ret;
-        }
-
-#if !NATIVEAOT
-        private static IntPtr LoadNativeLibraryViaAssemblyLoadContext(Assembly callingAssembly, string libraryName)
-        {
-#if TARGET_WINDOWS
-            // This is replicating quick check from the OS implementation of api sets.
-            if (libraryName.StartsWithOrdinalIgnoreCase("api-") ||
-                libraryName.StartsWithOrdinalIgnoreCase("ext-"))
-            {
-                // Prevent Overriding of Windows API sets.
-                return IntPtr.Zero;
-            }
-#endif
-            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(callingAssembly);
-            if (alc is null || alc == AssemblyLoadContext.Default)
-            {
-                // For assemblies bound via default binder, we should use the standard mechanism to make the pinvoke call.
-                return IntPtr.Zero;
-            }
-
-            // Call System.Runtime.Loader.AssemblyLoadContext.LoadUnmanagedDll to give
-            // The custom assembly context a chance to load the unmanaged dll.
-            return alc.InvokeLoadUnmanagedDll(libraryName);
-        }
-#endif
-
-        private static IntPtr LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly callingAssembly, string libraryName)
-        {
-            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(callingAssembly);
-            return alc?.GetResolvedUnmanagedDll(callingAssembly, libraryName) ?? IntPtr.Zero;
-        }
-
-        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
-            Justification = "The method explicitly handles single file scenario")]
-        private static IntPtr LoadFromPInvokeAssemblyDirectory(Assembly callingAssembly, string libraryName, int flags, ref LoadLibErrorTracker errorTracker)
-        {
-            string? path = Path.GetDirectoryName(callingAssembly.Location);
-
-#if CORECLR
-            // Bundled assembly/NativeAOT - path will be empty, path to load should point to the single-file bundle
-            bool isBundledAssembly = string.IsNullOrEmpty(path) && !callingAssembly.IsDynamic;
-#else
-            bool isBundledAssembly = true;
-#endif
-            if (isBundledAssembly)
-            {
-                path = AppContext.BaseDirectory;
-            }
-
-            if (string.IsNullOrEmpty(path))
-            {
-                return IntPtr.Zero;
-            }
-
-            IntPtr ret = LoadLibraryHelper(Path.Combine(path, libraryName), flags, ref errorTracker);
-
-#if CORECLR
-            // Bundle with additional files extracted - also treat the extraction path as the assembly directory for native library load
-            if (ret == IntPtr.Zero && isBundledAssembly)
-            {
-                string? extractionPath = null;
-                if (TryGetBundleInformation(out bool isExtracted, new StringHandleOnStack(ref extractionPath)) &&
-                    isExtracted && !string.IsNullOrEmpty(extractionPath))
-                {
-                    ret = LoadLibraryHelper(Path.Combine(extractionPath, libraryName), flags, ref errorTracker);
-                }
-            }
-#endif
-
-            return ret;
-        }
-
-        private static DllImportSearchPath GetDllImportSearchPath(Assembly callingAssembly, out bool userSpecifiedSearchFlags)
-        {
-            foreach (CustomAttributeData cad in callingAssembly.CustomAttributes)
-            {
-                if (cad.AttributeType == typeof(DefaultDllImportSearchPathsAttribute))
-                {
-                    userSpecifiedSearchFlags = true;
-                    return (DllImportSearchPath)cad.ConstructorArguments[0].Value!;
-                }
-            }
-
-            userSpecifiedSearchFlags = false;
-            return DllImportSearchPath.AssemblyDirectory;
-        }
-
-        internal static IntPtr LoadBySearch(Assembly callingAssembly, bool userSpecifiedSearchFlags, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)
-        {
-            IntPtr ret;
-
-            int loadWithAlteredPathFlags = LoadWithAlteredSearchPathFlag;
-            const int loadLibrarySearchFlags = (int)DllImportSearchPath.UseDllDirectoryForDependencies
-                | (int)DllImportSearchPath.ApplicationDirectory
-                | (int)DllImportSearchPath.UserDirectories
-                | (int)DllImportSearchPath.System32
-                | (int)DllImportSearchPath.SafeDirectories;
-            bool libNameIsRelativePath = !Path.IsPathFullyQualified(libraryName);
-
-            // P/Invokes are often declared with variations on the actual library name.
-            // For example, it's common to leave off the extension/suffix of the library
-            // even if it has one, or to leave off a prefix like "lib" even if it has one
-            // (both of these are typically done to smooth over cross-platform differences).
-            // We try to dlopen with such variations on the original.
-            foreach (LibraryNameVariation libraryNameVariation in LibraryNameVariation.DetermineLibraryNameVariations(libraryName, libNameIsRelativePath))
-            {
-                string currLibNameVariation = libraryNameVariation.Prefix + libraryName + libraryNameVariation.Suffix;
-
-#if CORECLR
-                // NATIVE_DLL_SEARCH_DIRECTORIES set by host is considered well known path
-                ret = LoadFromNativeDllSearchDirectories(currLibNameVariation, loadWithAlteredPathFlags, ref errorTracker);
-#endif
-
-                if (!libNameIsRelativePath)
-                {
-                    // LOAD_WITH_ALTERED_SEARCH_PATH is incompatible with LOAD_LIBRARY_SEARCH flags. Remove those flags if they are set.
-                    int flags = loadWithAlteredPathFlags | (dllImportSearchPathFlags & ~loadLibrarySearchFlags);
-                    ret = LoadLibraryHelper(currLibNameVariation, flags, ref errorTracker);
-                    if (ret != IntPtr.Zero)
-                    {
-                        return ret;
-                    }
-                }
-                else if ((callingAssembly != null) && searchAssemblyDirectory)
-                {
-                    // LOAD_WITH_ALTERED_SEARCH_PATH is incompatible with LOAD_LIBRARY_SEARCH flags. Remove those flags if they are set.
-                    int flags = loadWithAlteredPathFlags | (dllImportSearchPathFlags & ~loadLibrarySearchFlags);
-
-                    // Try to load the module alongside the assembly where the PInvoke was declared.
-                    // For PInvokes where the DllImportSearchPath.AssemblyDirectory is specified, look next to the application.
-                    ret = LoadFromPInvokeAssemblyDirectory(callingAssembly, libraryName, flags, ref errorTracker);
-                    if (ret != IntPtr.Zero)
-                    {
-                        return ret;
-                    }
-                }
-
-                // Internally, search path flags and whether or not to search the assembly directory are
-                // tracked separately. However, on the API level, DllImportSearchPath represents them both.
-                // When unspecified, the default is to search the assembly directory and all OS defaults,
-                // which maps to searchAssemblyDirectory being true and dllImportSearchPathFlags being 0.
-                // When a user specifies DllImportSearchPath.AssemblyDirectory, searchAssemblyDirectory is
-                // true, dllImportSearchPathFlags is 0, and the desired logic is to only search the assembly
-                // directory (handled above), so we avoid doing any additional load search in that case.
-                if (!userSpecifiedSearchFlags || !searchAssemblyDirectory || dllImportSearchPathFlags != 0)
-                {
-                    ret = LoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, ref errorTracker);
-                    if (ret != IntPtr.Zero)
-                    {
-                        return ret;
-                    }
-                }
-            }
-
-            return IntPtr.Zero;
-        }
-
         private static IntPtr LoadFromPath(string libraryName, bool throwOnError)
         {
             LoadLibErrorTracker errorTracker = default;
@@ -502,5 +287,5 @@ namespace System.Runtime.InteropServices
             return ret;
         }
 #endif
-        }
+    }
 }

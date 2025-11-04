@@ -1,47 +1,28 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
     public static partial class NativeLibrary
     {
-        private static string[]? s_nativeDllSearchDirectories;
-
-        private static IntPtr LoadFromNativeDllSearchDirectories(string libraryName, int flags, ref LoadLibErrorTracker errorTracker)
+        internal static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, bool throwOnError)
         {
-            string[]? nativeDllSearchDirectories = s_nativeDllSearchDirectories;
-            if (nativeDllSearchDirectories == null)
-            {
-                GetAppDomainNativeLibrarySearchPaths(ObjectHandleOnStack.Create(ref nativeDllSearchDirectories));
-                Debug.Assert(nativeDllSearchDirectories != null);
-                s_nativeDllSearchDirectories = nativeDllSearchDirectories;
-            }
-
-            IntPtr ret = IntPtr.Zero;
-
-            foreach (string directory in nativeDllSearchDirectories)
-            {
-                string qualifiedPath = Path.Combine(directory, libraryName);
-                if (Path.IsPathRooted(qualifiedPath))
-                {
-                    ret = LoadLibraryHelper(qualifiedPath, flags, ref errorTracker);
-                    if (ret != IntPtr.Zero)
-                        break;
-                }
-            }
-
-            return ret;
+            RuntimeAssembly rtAsm = (RuntimeAssembly)assembly;
+            return LoadByName(libraryName,
+                              new QCallAssembly(ref rtAsm),
+                              searchPath.HasValue,
+                              (uint)searchPath.GetValueOrDefault(),
+                              throwOnError);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_GetNativeLibrarySearchPaths")]
-        private static partial void GetAppDomainNativeLibrarySearchPaths(ObjectHandleOnStack searchPaths);
+        /// External functions that implement the NativeLibrary interface
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "BundleNative_TryGetBundleInformation")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool TryGetBundleInformation([MarshalAs(UnmanagedType.Bool)] out bool isExtracted, StringHandleOnStack extractPath);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_LoadByName", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial IntPtr LoadByName(string libraryName, QCallAssembly callingAssembly,
+                                                 [MarshalAs(UnmanagedType.Bool)] bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag,
+                                                 [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
     }
 }

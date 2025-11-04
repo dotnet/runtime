@@ -1503,7 +1503,7 @@ typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 #define BoolToArgSlot(b)  ((ARG_SLOT)(CLR_BOOL)(!!(b)))
 #define ArgSlotToBool(s)  ((BOOL)(s))
 
-STRINGREF AllocateString(SString& sstr);
+STRINGREF AllocateString(SString sstr);
 
 #ifdef FEATURE_COMINTEROP
 

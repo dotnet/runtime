@@ -201,6 +201,7 @@
     <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\IDynamicInterfaceCastable.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(FeatureCominterop)' == 'true'" />

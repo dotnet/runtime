@@ -9,7 +9,10 @@
 class NativeLibrary
 {
 public:
-    static NATIVE_LIBRARY_HANDLE LoadFromAssemblyDirectory(LPCWSTR libraryName, Assembly *callingAssembly);
+    static NATIVE_LIBRARY_HANDLE LoadLibraryByName(LPCWSTR name, Assembly *callingAssembly,
+                                                   BOOL hasDllImportSearchPathFlags, DWORD dllImportSearchPathFlags,
+                                                   BOOL throwOnError);
+
     static NATIVE_LIBRARY_HANDLE LoadLibraryFromMethodDesc(PInvokeMethodDesc *pMD);
 };
 

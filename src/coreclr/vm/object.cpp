@@ -287,7 +287,7 @@ Assembly *AssemblyBaseObject::GetAssembly()
     return m_pAssembly;
 }
 
-STRINGREF AllocateString(SString& sstr)
+STRINGREF AllocateString(SString sstr)
 {
     CONTRACTL {
         THROWS;
