@@ -2418,7 +2418,7 @@ MAIN_LOOP:
                     // slots containing the interpreter IR pointer
                     targetMethod = CallWithSEHWrapper(
                         [&pMD, &pThisArg]() {
-                            return pMD->GetMethodDescOfVirtualizedCode(pMD, pThisArg);
+                            return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
                         });
 
                     ip += 4;
