@@ -82,19 +82,14 @@ private:
     int Offset;
     int Increment;
 
-    struct StringList
-    {
-        StringList* next;
-        std::string hash;
-    };
-    StringList* excludedMethodsList;
+    std::vector<std::string> excludedMethodsList;
 
     // Binary search to get this method number from the index
     // Returns -1 for not found, or -2 for not indexed
     int64_t GetOffset(unsigned int methodNumber);
 
     // Just a helper...
-    static FILE* OpenFile(const char* inputFile, DWORD flags = FILE_ATTRIBUTE_NORMAL);
+    static FILE* OpenFile(const char* inputFile);
 
     MethodContextBuffer ReadMethodContextNoLock(bool justSkip = false);
     MethodContextBuffer ReadMethodContext(bool acquireLock, bool justSkip = false);
