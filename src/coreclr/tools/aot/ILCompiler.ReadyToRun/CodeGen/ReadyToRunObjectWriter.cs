@@ -12,6 +12,7 @@ using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Diagnostics;
 using ILCompiler.ObjectWriter;
 using ILCompiler.PEWriter;
 using Internal.TypeSystem;
