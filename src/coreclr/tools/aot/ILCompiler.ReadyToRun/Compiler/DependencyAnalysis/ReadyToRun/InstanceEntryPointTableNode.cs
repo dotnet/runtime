@@ -70,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
             signatureBuilder.EmitMethodSignature(
-                new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, asyncVariant: asyncVariant, context: null),
+                new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null),
                 enforceDefEncoding: true,
                 enforceOwningType: moduleToken.Module is EcmaModule ? factory.CompilationModuleGroup.EnforceOwningType((EcmaModule)moduleToken.Module) : true,
                 factory.SignatureContext,

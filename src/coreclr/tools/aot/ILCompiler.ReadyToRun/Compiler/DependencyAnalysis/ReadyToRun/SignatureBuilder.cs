@@ -436,7 +436,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType;
             }
-            if (method.AsyncVariant)
+            if (method.Method.IsAsyncThunk)
             {
                 flags |= (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_AsyncThunkVariant;
             }

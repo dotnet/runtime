@@ -130,11 +130,10 @@ namespace Internal.JitInterface
         public readonly TypeDesc ConstrainedType;
         public readonly bool Unboxing;
         public readonly bool OwningTypeNotDerivedFromToken;
-        public readonly bool AsyncVariant;
         public readonly TypeDesc OwningType;
 
 
-        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, bool asyncVariant, object context, TypeDesc devirtualizedMethodOwner = null)
+        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context, TypeDesc devirtualizedMethodOwner = null)
         {
             Debug.Assert(!method.IsUnboxingThunk());
             Debug.Assert(!method.IsAsyncVariant());
@@ -142,7 +141,6 @@ namespace Internal.JitInterface
             Token = token;
             ConstrainedType = constrainedType;
             Unboxing = unboxing;
-            AsyncVariant = asyncVariant;
             OwningType = GetMethodTokenOwningType(this, constrainedType, context, devirtualizedMethodOwner, out OwningTypeNotDerivedFromToken);
         }
 
@@ -352,7 +350,7 @@ namespace Internal.JitInterface
             }
             if (Unboxing)
                 sb.Append("; UNBOXING"u8);
-            if (AsyncVariant)
+            if (Method.IsAsyncVariant())
                 sb.Append("; ASYNC"u8);
         }
 
@@ -370,7 +368,7 @@ namespace Internal.JitInterface
             debuggingName.Append(Token.ToString());
             if (Unboxing)
                 debuggingName.Append("; UNBOXING");
-            if (AsyncVariant)
+            if (Method.IsAsyncVariant())
                 debuggingName.Append("; ASYNC");
 
             return debuggingName.ToString();
@@ -400,10 +398,6 @@ namespace Internal.JitInterface
                 return result;
 
             result = Unboxing.CompareTo(other.Unboxing);
-            if (result != 0)
-                return result;
-
-            result = AsyncVariant.CompareTo(other.AsyncVariant);
             if (result != 0)
                 return result;
 
@@ -918,7 +912,7 @@ namespace Internal.JitInterface
                             var methodIL = HandleToObject(pResolvedToken.tokenScope);
                             MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
                             _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
-                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, asyncVariant: false, context: sharedMethod);
+                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
                         }
                         else if (helperArg is FieldDesc fieldDesc)
                         {
@@ -968,7 +962,6 @@ namespace Internal.JitInterface
                 HandleToModuleToken(ref pTargetMethod),
                 constrainedType: constrainedType,
                 unboxing: false,
-                asyncVariant: false,
                 context: typeOrMethodContext);
 
             // runtime lookup is not needed, callerHandle is unused
@@ -1352,7 +1345,7 @@ namespace Internal.JitInterface
                 devirtualizedMethodOwner = HandleToObject(pResolvedToken.hClass);
             }
 
-            return new MethodWithToken(method, token, constrainedType: constrainedType, unboxing: unboxing, asyncVariant: asyncVariant, context: context, devirtualizedMethodOwner: devirtualizedMethodOwner);
+            return new MethodWithToken(method, token, constrainedType: constrainedType, unboxing: unboxing, context: context, devirtualizedMethodOwner: devirtualizedMethodOwner);
         }
 
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out object context, ref TypeDesc constrainedType)
@@ -3046,7 +3039,7 @@ namespace Internal.JitInterface
             Debug.Assert(_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodDesc));
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
-            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false, asyncVariant: false, context: null);
+            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false, context: null);
 
             if ((ecmaMethod.GetPInvokeMethodCallingConventions() & UnmanagedCallingConventions.IsSuppressGcTransition) != 0)
             {

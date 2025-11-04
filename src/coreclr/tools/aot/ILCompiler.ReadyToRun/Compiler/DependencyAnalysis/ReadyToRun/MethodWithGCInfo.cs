@@ -31,17 +31,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
         private DependencyList _nonRelocationDependencies;
-        private bool _isAsyncVariant;
 
-        public MethodWithGCInfo(MethodDesc methodDesc, bool isAsyncVariant)
+        public MethodWithGCInfo(MethodDesc methodDesc)
         {
-            Debug.Assert(!methodDesc.IsAsyncVariant());
             Debug.Assert(!methodDesc.IsUnboxingThunk());
             GCInfoNode = new MethodGCInfoNode(this);
             _fixups = new List<ISymbolNode>();
             _method = methodDesc;
-            _isAsyncVariant = isAsyncVariant;
-            Debug.Assert(_isAsyncVariant ? methodDesc.IsTaskReturning : true);
         }
 
         protected override void OnMarked(NodeFactory context)
@@ -95,15 +91,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public MethodDesc Method => _method;
-
-        public MethodDesc GetJitMethod(AsyncMethodVariantFactory factory)
-        {
-            if (!_isAsyncVariant)
-                return _method;
-            return _method.IsAsync ?
-                factory.GetOrCreateAsyncImpl(_method)
-                : factory.GetOrCreateAsyncThunk(_method);
-        }
 
         public List<ISymbolNode> Fixups => _fixups;
 
@@ -393,12 +380,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             MethodWithGCInfo otherNode = (MethodWithGCInfo)other;
 
-            var result = comparer.Compare(_method, otherNode._method);
-            if (result != 0)
-                return result;
-            if (_isAsyncVariant == otherNode._isAsyncVariant)
-                return 0;
-            return _isAsyncVariant ? -1 : 1;
+            return comparer.Compare(_method, otherNode._method);
         }
 
         public void InitializeInliningInfo(MethodDesc[] inlinedMethods, NodeFactory factory)
@@ -417,7 +399,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public int Offset => 0;
         public override bool IsShareable => throw new NotImplementedException();
 
-        public bool AsyncVariant => _isAsyncVariant;
+        public bool AsyncVariant => _method.IsAsyncVariant();
 
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => IsEmpty;
 

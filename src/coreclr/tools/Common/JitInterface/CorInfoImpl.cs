@@ -614,11 +614,7 @@ namespace Internal.JitInterface
         {
             get
             {
-#if READYTORUN
-                return _methodCodeNode.GetJitMethod(_asyncMethodFactory);
-#else
                 return _methodCodeNode.Method;
-#endif
             }
         }
 
@@ -1415,7 +1411,7 @@ namespace Internal.JitInterface
                     info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE;
                     return false;
                 }
-                methodWithTokenDecl = new MethodWithToken(decl, declToken, null, false, asyncVariant: false, null, devirtualizedMethodOwner: decl.OwningType);
+                methodWithTokenDecl = new MethodWithToken(decl, declToken, null, false, null, devirtualizedMethodOwner: decl.OwningType);
             }
             MethodWithToken methodWithTokenImpl;
 #endif
@@ -1441,7 +1437,7 @@ namespace Internal.JitInterface
             else
             {
 #if READYTORUN
-                methodWithTokenImpl = new MethodWithToken(nonUnboxingImpl, resolver.GetModuleTokenForMethod(nonUnboxingImpl.GetTypicalMethodDefinition(), allowDynamicallyCreatedReference: false, throwIfNotFound: true), null, unboxingStub, asyncVariant: false, null, devirtualizedMethodOwner: impl.OwningType);
+                methodWithTokenImpl = new MethodWithToken(nonUnboxingImpl, resolver.GetModuleTokenForMethod(nonUnboxingImpl.GetTypicalMethodDefinition(), allowDynamicallyCreatedReference: false, throwIfNotFound: true), null, unboxingStub, null, devirtualizedMethodOwner: impl.OwningType);
 #endif
 
                 info->resolvedTokenDevirtualizedMethod = CreateResolvedTokenFromMethod(this, impl

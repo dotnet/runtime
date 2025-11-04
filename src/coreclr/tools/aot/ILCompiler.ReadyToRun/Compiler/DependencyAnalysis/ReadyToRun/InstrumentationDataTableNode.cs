@@ -147,7 +147,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     EcmaMethod typicalMethod = (EcmaMethod)handle.AsMethod.GetTypicalMethodDefinition();
                     ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
 
-                    MethodWithToken tok = new MethodWithToken(handle.AsMethod, moduleToken, constrainedType: null, unboxing: false, asyncVariant:false, context: null);
+                    MethodWithToken tok = new MethodWithToken(handle.AsMethod, moduleToken, constrainedType: null, unboxing: false, context: null);
                     Import methodHandleImport = (Import)_symbolFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodHandle, tok);
                     _imports.Add(methodHandleImport);
 

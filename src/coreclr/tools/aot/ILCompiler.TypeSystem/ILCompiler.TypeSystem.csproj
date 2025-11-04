@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>Internal.TypeSystem</RootNamespace>
@@ -356,6 +356,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemContext.cs">
       <Link>TypeSystem\Common\TypeSystemContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemContext.Async.cs">
+      <Link>TypeSystem\Common\TypeSystemContext.Async.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemContext.Resolution.cs">
       <Link>TypeSystem\Common\TypeSystemContext.Resolution.cs</Link>
@@ -728,6 +731,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Sorting\TypeSystemComparer.cs">
       <Link>TypeSystem\Sorting\TypeSystemComparer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\AsyncMethodVariant.cs">
+      <Link>TypeSystem\Common\AsyncMethodVariant.cs</Link>
     </Compile>
   </ItemGroup>
 

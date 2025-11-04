@@ -2,41 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Internal.JitInterface;
-
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem
 {
     /// <summary>
     /// Either the AsyncMethodImplVariant or AsyncMethodThunkVariant of a method marked .IsAsync.
     /// </summary>
-    public partial class AsyncMethodVariant : MethodDelegator, IJitHashableOnly
+    public partial class AsyncMethodVariant : MethodDelegator
     {
-        private readonly AsyncMethodVariantFactory _factory;
-        private readonly AsyncMethodKind _asyncMethodKind;
         private readonly int _jitVisibleHashCode;
         private MethodSignature _asyncSignature;
 
-        public AsyncMethodVariant(MethodDesc wrappedMethod, AsyncMethodVariantFactory factory, AsyncMethodKind kind)
+        public AsyncMethodVariant(MethodDesc wrappedMethod)
             : base(wrappedMethod)
         {
             Debug.Assert(wrappedMethod.IsTaskReturning);
-            Debug.Assert(kind switch
-            {
-                AsyncMethodKind.AsyncVariantThunk => !wrappedMethod.IsAsync,
-                AsyncMethodKind.AsyncVariantImpl => wrappedMethod.IsAsync,
-                _ => false,
-            });
-            _factory = factory;
-            _asyncMethodKind = kind;
             _jitVisibleHashCode = HashCode.Combine(wrappedMethod.GetHashCode(), 0x310bb74f);
         }
 
         public MethodDesc Target => _wrappedMethod;
 
-        public override AsyncMethodKind AsyncMethodKind => _asyncMethodKind;
+        public override AsyncMethodKind AsyncMethodKind => _wrappedMethod.IsAsync ? AsyncMethodKind.AsyncVariantImpl : AsyncMethodKind.AsyncVariantThunk;
 
         public override MethodSignature Signature
         {
@@ -48,72 +38,45 @@ namespace Internal.TypeSystem
 
         public override MethodDesc GetCanonMethodTarget(CanonicalFormKind kind)
         {
-            return _factory.GetOrCreateAsyncMethodImplVariant(_wrappedMethod.GetCanonMethodTarget(kind), _asyncMethodKind);
+            return this;
         }
 
         public override MethodDesc GetMethodDefinition()
         {
-            var real = _wrappedMethod.GetMethodDefinition();
-            if (real == _wrappedMethod)
-                return this;
-
-            return _factory.GetOrCreateAsyncMethodImplVariant(real, _asyncMethodKind);
+            return this;
         }
 
         public override MethodDesc GetTypicalMethodDefinition()
         {
-            var real = _wrappedMethod.GetTypicalMethodDefinition();
-            if (real == _wrappedMethod)
-                return this;
-            return _factory.GetOrCreateAsyncMethodImplVariant(real, _asyncMethodKind);
+            return this;
         }
 
         public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            var real = _wrappedMethod.InstantiateSignature(typeInstantiation, methodInstantiation);
-            if (real == _wrappedMethod)
-                return this;
-            return _factory.GetOrCreateAsyncMethodImplVariant(real, _asyncMethodKind);
+            throw new NotImplementedException();
         }
 
-        public override string ToString() => $"Async variant ({_asyncMethodKind}): " + _wrappedMethod.ToString();
+        public override string ToString() => $"Async variant ({AsyncMethodKind}): " + _wrappedMethod.ToString();
 
-        protected override int ClassCode => throw new NotImplementedException();
+        protected internal override int ClassCode => unchecked((int)0xd0fd1c1fu);
 
-        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
-            throw new NotImplementedException();
+            var asyncOther = (AsyncMethodVariant)other;
+            return comparer.Compare(this._wrappedMethod, asyncOther._wrappedMethod);
         }
 
         protected override int ComputeHashCode()
         {
-            throw new NotSupportedException("This method may not be stored as it is expected to only be used transiently in the JIT");
+            return _jitVisibleHashCode;
         }
-
-        int IJitHashableOnly.GetJitVisibleHashCode() => _jitVisibleHashCode;
     }
 
-    public sealed class AsyncMethodVariantFactory : Dictionary<(MethodDesc, AsyncMethodKind), AsyncMethodVariant>
+    public sealed class AsyncMethodVariantFactory : ConcurrentDictionary<MethodDesc, AsyncMethodVariant>
     {
-        public AsyncMethodVariant GetOrCreateAsyncMethodImplVariant(MethodDesc wrappedMethod, AsyncMethodKind kind)
+        public AsyncMethodVariant GetOrCreateAsyncMethodImplVariant(MethodDesc wrappedMethod)
         {
-            Debug.Assert(wrappedMethod.IsAsync);
-            if (!TryGetValue((wrappedMethod, kind), out AsyncMethodVariant variant))
-            {
-                variant = new AsyncMethodVariant(wrappedMethod, this, kind);
-                this[(wrappedMethod, kind)] = variant;
-            }
-            return variant;
-        }
-
-        public AsyncMethodVariant GetOrCreateAsyncThunk(MethodDesc wrappedMethod)
-        {
-            return GetOrCreateAsyncMethodImplVariant(wrappedMethod, AsyncMethodKind.AsyncVariantThunk);
-        }
-
-        public AsyncMethodVariant GetOrCreateAsyncImpl(MethodDesc wrappedMethod)
-        {
-            return GetOrCreateAsyncMethodImplVariant(wrappedMethod, AsyncMethodKind.AsyncVariantImpl);
+            return GetOrAdd(wrappedMethod, static (x) => new AsyncMethodVariant(x));
         }
     }
 

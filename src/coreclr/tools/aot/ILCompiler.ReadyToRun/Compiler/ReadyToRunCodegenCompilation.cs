@@ -247,7 +247,7 @@ namespace ILCompiler
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
                 {
-                    IMethodNode methodEntryPoint = _factory.CompiledMethodNode(canonMethod, false);
+                    IMethodNode methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
 
                     if (rootMinimalDependencies)
                     {

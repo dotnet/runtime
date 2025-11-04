@@ -43,9 +43,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     try
                     {
                         context.DetectGenericCycles(Type, method);
-                        dependencies.Add(context.CompiledMethodNode(method, false), $"Method on type {Type.ToString()}");
+                        dependencies.Add(context.CompiledMethodNode(method), $"Method on type {Type.ToString()}");
                         if (method.IsTaskReturning)
-                            dependencies.Add(context.CompiledMethodNode(method, true), $"Async Method on type {Type.ToString()}");
+                            dependencies.Add(context.CompiledMethodNode(context.TypeSystemContext.GetAsyncVariant(method)), $"Async Method on type {Type.ToString()}");
 
                     }
                     catch (TypeSystemException)

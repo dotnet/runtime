@@ -185,7 +185,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 try
                                 {
                                     factory.DetectGenericCycles(type, method);
-                                    dependencies.Add(factory.CompiledMethodNode(method, false), $"AsyncStateMachineBox Method on type {type.ToString()}");
+                                    dependencies.Add(factory.CompiledMethodNode(method), $"AsyncStateMachineBox Method on type {type.ToString()}");
                                 }
                                 catch (TypeSystemException)
                                 {
