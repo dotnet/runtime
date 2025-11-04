@@ -659,6 +659,33 @@ namespace System.IO.Compression
             } while (!finished);
         }
 
+        /// <summary>
+        /// Rewinds the underlying stream to the exact end of the compressed data if there are unconsumed bytes.
+        /// This is called during disposal to reset the stream position.
+        /// </summary>
+        private void TryRewindStream(Stream stream)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(_mode == CompressionMode.Decompress);
+            Debug.Assert(stream.CanSeek);
+            Debug.Assert(_inflater != null);
+
+            // Check if there are unconsumed bytes in the inflater's input buffer
+            int unconsumedBytes = _inflater.GetAvailableInput();
+            if (unconsumedBytes > 0)
+            {
+                try
+                {
+                    // Rewind the stream to the exact end of the compressed data
+                    stream.Seek(-unconsumedBytes, SeekOrigin.Current);
+                }
+                catch
+                {
+                    // If seeking fails, we don't want to throw during disposal
+                }
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             try
@@ -675,20 +702,7 @@ namespace System.IO.Compression
                     // Auto-rewind the stream if we're in decompression mode and the stream supports seeking
                     if (disposing && _mode == CompressionMode.Decompress && _stream?.CanSeek == true && _inflater != null)
                     {
-                        // Check if there are unconsumed bytes in the inflater's input buffer
-                        int unconsumedBytes = _inflater.GetAvailableInput();
-                        if (unconsumedBytes > 0)
-                        {
-                            try
-                            {
-                                // Rewind the stream to the exact end of the compressed data
-                                _stream.Seek(-unconsumedBytes, SeekOrigin.Current);
-                            }
-                            catch
-                            {
-                                // If seeking fails, we don't want to throw during disposal
-                            }
-                        }
+                        TryRewindStream(_stream);
                     }
 
                     if (disposing && !_leaveOpen)
@@ -751,20 +765,7 @@ namespace System.IO.Compression
                         // Auto-rewind the stream if we're in decompression mode and the stream supports seeking
                         if (stream != null && _mode == CompressionMode.Decompress && stream.CanSeek && _inflater != null)
                         {
-                            // Check if there are unconsumed bytes in the inflater's input buffer
-                            int unconsumedBytes = _inflater.GetAvailableInput();
-                            if (unconsumedBytes > 0)
-                            {
-                                try
-                                {
-                                    // Rewind the stream to the exact end of the compressed data
-                                    stream.Seek(-unconsumedBytes, SeekOrigin.Current);
-                                }
-                                catch
-                                {
-                                    // If seeking fails, we don't want to throw during disposal
-                                }
-                            }
+                            TryRewindStream(stream);
                         }
 
                         if (!_leaveOpen && stream != null)
