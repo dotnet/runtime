@@ -552,7 +552,8 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
     if (ownerCompositeExecutableName != NULL)
     {
         AssemblyBinder *binder = pModule->GetPEAssembly()->GetAssemblyBinder();
-        return binder->LoadNativeImage(pModule, ownerCompositeExecutableName);
+        bool isPlatformNative = (pHeader->CoreHeader.Flags & READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE) != 0;
+        return binder->LoadNativeImage(pModule, ownerCompositeExecutableName, isPlatformNative);
     }
 
     return NULL;
@@ -637,6 +638,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
     else
     {
+        _ASSERTE((pHeader->CoreHeader.Flags & READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE) == 0 && "Non-component assembly should not be marked with READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE");
         if (!AcquireImage(pModule, pLayout, pHeader))
         {
             DoLog("Ready to Run disabled - module already loaded in another assembly load context");
