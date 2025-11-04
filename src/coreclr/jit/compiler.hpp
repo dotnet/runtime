@@ -918,6 +918,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
     }
 }
 
+#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------------
 // genRegNumFromMask : Maps a single register mask to a register number.
 //
@@ -1131,6 +1132,7 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
 
     return regNum;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 /*****************************************************************************
  *
@@ -3570,6 +3572,7 @@ inline int getJitStressLevel()
 
 #endif // DEBUG
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************/
 /* Map a register argument number ("RegArgNum") to a register number ("RegNum").
  * A RegArgNum is in this range:
@@ -3777,6 +3780,7 @@ inline unsigned genMapRegNumToRegArgNum(regNumber regNum, var_types type, CorInf
         return genMapIntRegNumToRegArgNum(regNum, callConv);
     }
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

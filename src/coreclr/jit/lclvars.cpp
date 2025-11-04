@@ -812,7 +812,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
     lvaParameterPassingInfo =
         info.compArgsCount == 0 ? nullptr : new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
 
-    regMaskTP argRegs = RBM_NONE;
     for (unsigned i = 0; i < info.compArgsCount; i++)
     {
         LclVarDsc*   dsc          = lvaGetDesc(i);
@@ -853,7 +852,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         {
             if (segment.IsPassedInRegister())
             {
-                argRegs |= segment.GetRegisterMask();
                 numRegisters++;
             }
         }
@@ -863,11 +861,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
     }
 
     lvaParameterStackSize = classifier.StackSize();
-
-    // genFnPrologCalleeRegArgs expect these to be the counts of registers it knows how to handle.
-    // TODO-Cleanup: Recompute these values in the backend instead, where they are used.
-    codeGen->intRegState.rsCalleeRegArgCount   = genCountBits(argRegs & RBM_ARG_REGS);
-    codeGen->floatRegState.rsCalleeRegArgCount = genCountBits(argRegs & RBM_FLTARG_REGS);
 
 #ifdef TARGET_ARM
     // Prespill all argument regs on to stack in case of Arm when under profiler.

@@ -46,6 +46,11 @@ struct FloatTraits
         unsigned bits = 0xFFC00000u;
 #elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         unsigned bits = 0x7FC00000u;
+#elif defined(TARGET_WASM)
+        // TODO-WASM: this may prove tricker than it seems since there are two possible "canonical"
+        // NaN values. We may need to introduce a new "unknown" value to be returned here.
+        NYI_WASM("FloatTraits::NaN");
+        unsigned bits = 0;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -72,6 +77,11 @@ struct DoubleTraits
         unsigned long long bits = 0xFFF8000000000000ull;
 #elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         unsigned long long bits = 0x7FF8000000000000ull;
+#elif defined(TARGET_WASM)
+        // TODO-WASM: this may prove tricker than it seems since there are two possible "canonical"
+        // NaN values. We may need to introduce a new "unknown" value to be returned here.
+        NYI_WASM("DoubleTraits::NaN");
+        unsigned long long bits = 0;
 #else
 #error Unsupported or unset target architecture
 #endif

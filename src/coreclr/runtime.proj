@@ -69,6 +69,7 @@
       <_CoreClrBuildArg Condition="'$(ClrHostsSubset)' == 'true'" Include="-component hosts" />
       <_CoreClrBuildArg Condition="'$(ClrRuntimeSubset)' == 'true'" Include="-component runtime" />
       <_CoreClrBuildArg Condition="'$(ClrJitSubset)' == 'true'" Include="-component jit" />
+      <_CoreClrBuildArg Condition="'$(ClrWasmJitSubset)' == 'true'" Include="-component wasmjit" />
       <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-component paltests" />
       <_CoreClrBuildArg Condition="'$(ClrAllJitsSubset)' == 'true'" Include="-component alljits" />
       <_CoreClrBuildArg Condition="'$(ClrAllJitsCommunitySubset)' == 'true'" Include="-component alljits;-cmakeargs &quot;-DCLR_CMAKE_BUILD_COMMUNITY_ALTJITS=1&quot;" />
