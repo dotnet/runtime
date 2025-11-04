@@ -504,9 +504,9 @@ class StubLinkStubManager : public StubManager
 #endif
 } ;
 
+#ifdef FEATURE_JIT
 //
 // Stub manager for jump stubs created by ExecutionManager::jumpStub()
-// These are currently used only on the 64-bit targets IA64 and AMD64
 //
 typedef VPTR(class JumpStubStubManager) PTR_JumpStubStubManager;
 
@@ -542,6 +542,7 @@ class JumpStubStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("JumpStub"); }
 #endif
 };
+#endif // FEATURE_JIT
 
 //
 // Stub manager for code sections. It forwards the query to the more appropriate

@@ -15,7 +15,7 @@ jobs:
         os:
           - name: linux
             image: ubuntu-latest
-            container: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64
+            container: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-amd64
             extension: '.sh'
             cross: '--cross'
             rootfs: '/crossrootfs/x64'
