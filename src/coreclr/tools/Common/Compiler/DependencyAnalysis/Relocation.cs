@@ -331,10 +331,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             uint ldrInstr = *pCode;
 
-            // 21-10 contains value. Mask 12 bits and shift by 10 bits.
+            // 0x003FFC00: Mask for bits 21-10 which contain the scaled immediate value
+            // in the ARM64 LDR instruction format
             int scaledImm12 = (int)(ldrInstr & 0x003FFC00) >> 10;
 
-            // Scale back to byte offset
+            // Scale back to byte offset (multiply by 8)
             return scaledImm12 << 3;
         }
 
@@ -355,8 +356,10 @@ namespace ILCompiler.DependencyAnalysis
             // Scale the offset by dividing by 8 for the instruction encoding
             int scaledImm12 = imm12 >> 3;
 
-            ldrInstr &= 0xFFC003FF;                    // keep bits 31-22, 9-0
-            ldrInstr |= (uint)(scaledImm12 << 10);     // Occupy 21-10.
+            // 0xFFC003FF: Mask to preserve bits 31-22 (opcode) and bits 9-0 (registers)
+            // Clear bits 21-10 which will hold the scaled immediate value
+            ldrInstr &= 0xFFC003FF;
+            ldrInstr |= (uint)(scaledImm12 << 10);     // Set bits 21-10 with scaled offset
 
             *pCode = ldrInstr;                         // write the assembled instruction
 
