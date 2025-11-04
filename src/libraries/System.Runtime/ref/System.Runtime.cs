@@ -14172,6 +14172,8 @@ namespace System.Runtime.CompilerServices
         public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw null; }
+        public static void HandleAsyncEntryPoint(System.Threading.Tasks.Task task) { }
+        public static int HandleAsyncEntryPoint(System.Threading.Tasks.Task<int> task) { throw null; }
     }
     public sealed partial class RuntimeWrappedException : System.Exception
     {
