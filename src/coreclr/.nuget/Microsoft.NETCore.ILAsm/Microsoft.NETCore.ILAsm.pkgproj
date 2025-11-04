@@ -3,6 +3,8 @@
 
   <PropertyGroup>
     <PackageDescription>The .NET IL Assembler.</PackageDescription>
+    <!-- Configure as a dotnet tool -->
+    <PackageType>DotnetTool</PackageType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
@@ -10,9 +12,25 @@
     <PackageTargetRuntime Condition="'$(_packageTargetOSGroup)' == 'windows'">$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
   </PropertyGroup>
 
-  <ItemGroup>
-    <NativeBinary Condition="'$(PackCrossComponent)' != 'true'" Include="$(RuntimeBinDir)ilasm$(ExeSuffix)" />
-    <NativeBinary Condition="'$(PackCrossComponent)' == 'true'" Include="$(RuntimeBinDir)$(BuildArchitecture)/ilasm$(ExeSuffix)" />
+  <!-- For RID-specific tool packages, include the native binary in tools folder -->
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <File Include="$(RuntimeBinDir)ilasm$(ExeSuffix)" Condition="'$(PackCrossComponent)' != 'true'">
+      <TargetPath>tools/$(NetCoreAppToolCurrent)/$(PackageTargetRuntime)/</TargetPath>
+    </File>
+    <File Include="$(RuntimeBinDir)$(BuildArchitecture)/ilasm$(ExeSuffix)" Condition="'$(PackCrossComponent)' == 'true'">
+      <TargetPath>tools/$(NetCoreAppToolCurrent)/$(PackageTargetRuntime)/</TargetPath>
+    </File>
+    <!-- Include tool settings manifest for RID-specific packages -->
+    <File Include="$(MSBuildThisFileDirectory)DotnetToolSettings.xml">
+      <TargetPath>tools/$(NetCoreAppToolCurrent)/$(PackageTargetRuntime)/</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <!-- For primary (non-RID-specific) package, include manifest that references RID-specific packages -->
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <File Include="$(MSBuildThisFileDirectory)DotnetToolSettings.primary.xml">
+      <TargetPath>tools/$(NetCoreAppToolCurrent)/any/DotnetToolSettings.xml</TargetPath>
+    </File>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
