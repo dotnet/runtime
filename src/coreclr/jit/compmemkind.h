@@ -68,6 +68,7 @@ CompMemKindMacro(MaskConversionOpt)
 CompMemKindMacro(TryRegionClone)
 CompMemKindMacro(Async)
 CompMemKindMacro(RangeCheckCloning)
+CompMemKindMacro(Wasm)
 //clang-format on
 
 #undef CompMemKindMacro

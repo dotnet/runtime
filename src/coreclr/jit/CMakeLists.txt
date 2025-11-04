@@ -113,6 +113,7 @@ set( JIT_SOURCES
   fgprofile.cpp
   fgprofilesynthesis.cpp
   fgstmt.cpp
+  fgwasm.cpp
   flowgraph.cpp
   forwardsub.cpp
   gcdecode.cpp

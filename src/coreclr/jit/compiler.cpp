@@ -5015,6 +5015,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);
 #endif
 
+    // Optionally, simulate generating wasm control flow
+    // (eventually this will become part of the wasm target)
+    //
+    if (JitConfig.JitWasmControlFlow() > 0)
+    {
+        DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
+    }
+
     // The common phase checks and dumps are no longer relevant past this point.
     //
     activePhaseChecks = PhaseChecks::CHECK_NONE;
