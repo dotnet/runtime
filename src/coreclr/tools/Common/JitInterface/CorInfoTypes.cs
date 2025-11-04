@@ -1339,6 +1339,11 @@ namespace Internal.JitInterface
 
     public struct AsyncSuspensionPoint
     {
+        // Offset of IP stored in ResumeInfo.DiagnosticIP. This offset maps to
+        // the IL call that resulted in the suspension point through an ASYNC
+        // mapping. Also used as a unique key for debug information about the
+        // suspension point. See ResumeInfo.DiagnosticIP in SPC for more info.
+        public uint DiagnosticNativeOffset;
         // Count of AsyncContinuationVarInfo in array of locals starting where
         // the previous suspension point's locals end.
         public uint NumContinuationVars;

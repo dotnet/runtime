@@ -2175,10 +2175,15 @@ DebugInfo Compiler::impCreateDIWithCurrentStackInfo(IL_OFFSET offs, bool isCall)
     assert(offs != BAD_IL_OFFSET);
 
     unsigned sourceTypes = 0;
+
     if (isCall)
+    {
         sourceTypes |= ICorDebugInfo::CALL_INSTRUCTION;
+    }
     if (stackState.esStackDepth <= 0)
+    {
         sourceTypes |= ICorDebugInfo::STACK_EMPTY;
+    }
 
     return DebugInfo(compInlineContext, ILLocation(offs, (ICorDebugInfo::SourceTypes)sourceTypes));
 }
