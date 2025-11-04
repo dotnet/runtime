@@ -928,7 +928,7 @@ namespace System
                 ref BigInteger product = ref temp2;
 
                 exponent >>= 3;
-                uint index = 0;
+                int index = 0;
 
                 while (exponent != 0)
                 {
@@ -938,7 +938,14 @@ namespace System
                         // Multiply into the next temporary
                         unsafe
                         {
-                            ref BigInteger rhs = ref Unsafe.As<uint, BigInteger>(ref Unsafe.AsRef(in Pow10BigNumTable[Pow10BigNumTableIndices[(int)index]]));
+                            // It is safe to reinterpret the memory at the indexed position of Pow10BigNumTable as a BigInteger,
+                            // because Pow10BigNumTable is laid out such that each indexed position contains a valid BigInteger
+                            // representation with the correct structure and alignment.
+
+                            int pow10BigNumTableIndex = Pow10BigNumTableIndices[index];
+                            Debug.Assert((pow10BigNumTableIndex + sizeof(BigInteger)) < Pow10BigNumTable.Length);
+
+                            ref BigInteger rhs = ref Unsafe.As<uint, BigInteger>(ref Unsafe.AsRef(in Pow10BigNumTable[pow10BigNumTableIndex]));
                             Multiply(ref lhs, ref rhs, out product);
                         }
 

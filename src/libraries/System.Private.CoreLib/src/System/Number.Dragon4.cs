@@ -77,11 +77,12 @@ namespace System
 
             // For normalized IEEE floating-point values, each time the exponent is incremented the margin also doubles.
             // That creates a subset of transition numbers where the high margin is twice the size of the low margin.
-            scoped ref BigInteger scaledMarginHigh = ref Unsafe.NullRef<BigInteger>();
             BigInteger optionalMarginHigh;
 
             if (hasUnequalMargins)
             {
+                // The high and low margins are different
+
                 if (exponent > 0)   // We have no fractional component
                 {
                     // 1) Expand the input value by multiplying out the mantissa and exponent.
@@ -118,12 +119,11 @@ namespace System
                     // scaledMarginHigh = 2 * 2 * 2^(-1)
                     BigInteger.SetUInt32(out optionalMarginHigh, 2);
                 }
-
-                // The high and low margins are different
-                scaledMarginHigh = ref optionalMarginHigh;
             }
             else
             {
+                // The high and low margins are equal
+
                 if (exponent > 0)   // We have no fractional component
                 {
                     // 1) Expand the input value by multiplying out the mantissa and exponent.
@@ -155,9 +155,12 @@ namespace System
                     BigInteger.SetUInt32(out scaledMarginLow, 1);
                 }
 
-                // The high and low margins are equal
-                scaledMarginHigh = ref scaledMarginLow;
+                // This is unused for this path, but we need it viewed as "initialized" so the
+                // scaledMarginHigh tracking works as expected.
+                Unsafe.SkipInit(out optionalMarginHigh);
             }
+
+            scoped ref BigInteger scaledMarginHigh = ref (hasUnequalMargins ? ref optionalMarginHigh : ref scaledMarginLow);
 
             // Compute an estimate for digitExponent that will be correct or undershoot by one.
             //

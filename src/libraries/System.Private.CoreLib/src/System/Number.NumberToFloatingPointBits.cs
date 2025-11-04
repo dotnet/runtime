@@ -881,7 +881,7 @@ namespace System
                 hasZeroTail &= (bottomBlock & unusedBottomBlockBitsMask) == 0;
             }
 
-            for (int i = 0; i != bottomBlockIndex; i++)
+            for (int i = 0; i < bottomBlockIndex; i++)
             {
                 hasZeroTail &= (value.GetBlock(i) == 0);
             }
