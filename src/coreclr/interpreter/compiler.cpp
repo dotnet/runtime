@@ -3900,8 +3900,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     bool isDelegateInvoke = false;
     bool isJmp = (*m_ip == CEE_JMP);
 
-    CORINFO_RESOLVED_TOKEN resolvedCallToken;
-    CORINFO_CALL_INFO callInfo;
+    CORINFO_RESOLVED_TOKEN resolvedCallToken{};
+    CORINFO_CALL_INFO callInfo{};
     bool doCallInsteadOfNew = false;
 
     int callIFunctionPointerVar = -1;
@@ -3909,10 +3909,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     if (isCalli)
     {
-        // Suppress uninitialized use warning.
-        memset(&resolvedCallToken, 0, sizeof(resolvedCallToken));
-        memset(&callInfo, 0, sizeof(callInfo));
-
         resolvedCallToken.token        = token;
         resolvedCallToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
         resolvedCallToken.tokenScope   = m_methodInfo->scope;

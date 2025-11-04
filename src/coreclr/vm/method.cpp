@@ -2119,7 +2119,11 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    return GetPortableEntryPoint();
+    PCODE entryPoint = GetPortableEntryPoint();
+    if (PortableEntryPoint::ToPortableEntryPoint(entryPoint)->HasUnmanagedCallersOnlyAttribute())
+        entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+
+    return entryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (RequiresStableEntryPoint() && !HasStableEntryPoint())

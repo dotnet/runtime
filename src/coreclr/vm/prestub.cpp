@@ -2056,18 +2056,28 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     return frames.interpMethodContextFrame.pRetVal;
 }
 
-extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff)
+extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret)
 {
-    // copy the arguments to the stack
-    if (size > 0 && pArgs != nullptr)
-    {
-        InterpThreadContext *threadContext = GetInterpThreadContext();
-        int8_t *sp = threadContext->pStackPointer;
+    _ASSERTE(pMD != NULL);
 
-        memcpy(sp, pArgs, size);
+    InterpByteCodeStart* targetIp = pMD->GetInterpreterCode();
+    if (targetIp == NULL)
+    {
+        GCX_PREEMP();
+        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+        targetIp = pMD->GetInterpreterCode();
     }
 
-    return ExecuteInterpretedMethod(pTransitionBlock, byteCodeAddr, retBuff);
+    // Copy arguments to the stack
+    if (argSize > 0 && args != nullptr)
+    {
+        InterpThreadContext *threadContext = GetInterpThreadContext();
+        int8_t* sp = threadContext->pStackPointer;
+        memcpy(sp, args, argSize);
+    }
+
+    TransitionBlock dummy{};
+    (void)ExecuteInterpretedMethod(&dummy, (TADDR)targetIp, ret);
 }
 #endif // FEATURE_INTERPRETER
 

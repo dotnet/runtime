@@ -735,3 +735,30 @@ const StringToWasmSigThunk g_wasmThunks[] = {
 };
 
 const size_t g_wasmThunksCount = sizeof(g_wasmThunks) / sizeof(g_wasmThunks[0]);
+
+// Define reverse thunks here
+
+// Entry point for interpreted method execution from unmanaged code
+class MethodDesc;
+extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret);
+
+// static MethodDesc* MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32 = nullptr;
+// static int Call_MyAssembly_MyType_MyMethod_I32_I32_RetI32(int a, int b)
+// {
+//     int64_t args[2] =
+//     {
+//         (int64_t)a,
+//         (int64_t)b
+//     };
+
+//     int result;
+//     ExecuteInterpretedMethodFromUnmanaged(MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
+//     return result;
+// }
+
+extern const ReverseThunkMapEntry g_ReverseThunks[] =
+{
+    /// { 0xee78b850, { &MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32, (void*)&Call_MyAssembly_MyType_MyMethod_I32_I32_RetI32 } },
+};
+
+const size_t g_ReverseThunksCount = sizeof(g_ReverseThunks) / sizeof(g_ReverseThunks[0]);

@@ -751,6 +751,7 @@ HRESULT CorHost2::CreateDelegate(
 
         if (pMD->HasUnmanagedCallersOnlyAttribute())
         {
+            pMD->PrepareForUseAsAFunctionPointer();
             *fnPtr = pMD->GetMultiCallableAddrOfCode();
         }
         else
