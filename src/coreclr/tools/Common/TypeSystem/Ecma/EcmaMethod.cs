@@ -81,6 +81,7 @@ namespace Internal.TypeSystem.Ecma
         {
             var metadataReader = MetadataReader;
             BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetMethodDefinition(_handle).Signature);
+
             EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader, NotFoundBehavior.Throw);
             var signature = parser.ParseMethodSignature();
             return (_signature = signature);
@@ -92,7 +93,6 @@ namespace Internal.TypeSystem.Ecma
             {
                 if (_signature == null)
                     return InitializeSignature();
-
                 return _signature;
             }
         }

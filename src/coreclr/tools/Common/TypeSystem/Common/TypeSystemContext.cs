@@ -512,7 +512,7 @@ namespace Internal.TypeSystem
 
         private MethodForInstantiatedTypeKey.MethodForInstantiatedTypeKeyHashtable _methodForInstantiatedTypes;
 
-        public MethodForInstantiatedType GetMethodForInstantiatedType(MethodDesc typicalMethodDef, InstantiatedType instantiatedType)
+        public MethodDesc GetMethodForInstantiatedType(MethodDesc typicalMethodDef, InstantiatedType instantiatedType)
         {
             Debug.Assert(!(typicalMethodDef is MethodForInstantiatedType));
             Debug.Assert(!(typicalMethodDef is InstantiatedMethod));
