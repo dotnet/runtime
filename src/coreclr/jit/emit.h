@@ -2636,9 +2636,9 @@ public:
 #endif // defined(TARGET_X86)
 #endif // !defined(HOST_64BIT)
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64)
     unsigned int emitCounts_INS_OPTS_J;
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_LOONGARCH64
 
     instrDesc* emitFirstInstrDesc(BYTE* idData) const;
     void       emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;

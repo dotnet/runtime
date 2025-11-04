@@ -466,8 +466,13 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
     if (IsAsyncVariantMethod())
     {
         Signature sig = GetAddrOfAsyncMethodData()->sig;
-        *ppSig = sig.GetRawSig();
         *pcSig = sig.GetRawSigLen();
+#ifdef DACCESS_COMPILE
+        *ppSig = (PCCOR_SIGNATURE)
+            DacInstantiateTypeByAddress((TADDR)sig.GetRawSig(), *pcSig, true);
+#else // !DACCESS_COMPILE
+        *ppSig = sig.GetRawSig();
+#endif // !DACCESS_COMPILE
         return;
     }
 

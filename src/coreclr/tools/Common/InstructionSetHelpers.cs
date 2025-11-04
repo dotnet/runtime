@@ -183,6 +183,17 @@ namespace System.CommandLine
                         instructionSet = "+" + instructionSet;
                     }
 
+                    if (instructionSet == "+optimistic")
+                    {
+                        allowOptimistic = true;
+                        continue;
+                    }
+                    if (instructionSet == "-optimistic")
+                    {
+                        allowOptimistic = false;
+                        continue;
+                    }
+
                     instructionSetParams.Add(instructionSet);
                 }
 
