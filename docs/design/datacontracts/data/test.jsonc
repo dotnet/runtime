@@ -1,0 +1,20 @@
+// Test baseline with some sample data
+{
+    "version": 1,
+    "baseline": "empty",
+    "types": {
+        "TestType": {
+            "size": 16,
+            "fields": {
+                "Field1": [0, "uint32"],
+                "Field2": [8, "pointer"]
+            }
+        }
+    },
+    "globals": {
+        "TestGlobal": ["uint32", 42]
+    },
+    "contracts": {
+        "TestContract": 1
+    }
+}

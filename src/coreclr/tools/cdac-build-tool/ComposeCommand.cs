@@ -13,6 +13,7 @@ internal sealed class ComposeCommand : Command
     private readonly Argument<string[]> inputFiles = new("INPUT [INPUTS...]") { Arity = ArgumentArity.OneOrMore, Description = "One or more input files" };
     private readonly Option<string> outputFile = new("-o") { Arity = ArgumentArity.ExactlyOne, HelpName = "OUTPUT", Required = true, Description = "Output file" };
     private readonly Option<string> baselinePath = new("-b", "--baseline") { Arity = ArgumentArity.ExactlyOne, HelpName = "BASELINEPATH", Description = "Directory containing the baseline contracts"};
+    private readonly Option<string?> baselineName = new("--baseline-name") { Arity = ArgumentArity.ZeroOrOne, HelpName = "BASELINENAME", Description = "Name of the baseline to use (optional, overrides baseline from input files)" };
     private readonly Option<string> templateFile = new("-i", "--input-template") { Arity = ArgumentArity.ExactlyOne, HelpName = "TEMPLATE", Description = "Contract descriptor template to be filled in" };
     private readonly Option<bool> _verboseOption;
     public ComposeCommand(Option<bool> verboseOption) : base("compose")
@@ -21,6 +22,7 @@ internal sealed class ComposeCommand : Command
         Add(inputFiles);
         Add(outputFile);
         Add(baselinePath);
+        Add(baselineName);
         Add(templateFile);
         SetAction(Run);
     }
@@ -64,7 +66,8 @@ internal sealed class ComposeCommand : Command
             return 1;
         }
         var verbose = parse.GetValue(_verboseOption);
-        var builder = new DataDescriptorModel.Builder(baselinesDir);
+        var baselineNameValue = parse.GetValue(baselineName);
+        var builder = new DataDescriptorModel.Builder(baselinesDir, baselineNameValue);
         var scraper = new ObjectFileScraper(verbose, builder);
         foreach (var input in inputs)
         {

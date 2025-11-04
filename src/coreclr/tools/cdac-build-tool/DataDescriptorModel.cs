@@ -84,6 +84,15 @@ public class DataDescriptorModel
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DictionaryKeyPolicy = null, // leave unchanged
     };
+
+    private static JsonSerializerOptions s_jsonDeserializerOptions = new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DictionaryKeyPolicy = null,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true
+    };
+
     public string ToJson()
     {
         // always writes the "compact" format, see data_descriptor.md
@@ -95,15 +104,19 @@ public class DataDescriptorModel
         private string _baseline;
         private readonly string _baselinesDir;
         private bool _baselineParsed;
+        private readonly string? _overrideBaselineName;
         private readonly Dictionary<string, TypeModelBuilder> _types = new();
         private readonly Dictionary<string, GlobalBuilder> _globals = new();
         private readonly Dictionary<string, GlobalBuilder> _subDescriptors = new();
         private readonly Dictionary<string, ContractBuilder> _contracts = new();
-        public Builder(string baselinesDir)
+        private DataDescriptorModel? _baselineModel;
+
+        public Builder(string baselinesDir, string? overrideBaselineName = null)
         {
             _baseline = string.Empty;
             _baselineParsed = false;
             _baselinesDir = baselinesDir;
+            _overrideBaselineName = overrideBaselineName;
         }
 
         public uint PlatformFlags {get; set;}
@@ -167,6 +180,12 @@ public class DataDescriptorModel
 
         public void SetBaseline(string baseline)
         {
+            // If an override baseline name was provided via command line, use it instead
+            if (_overrideBaselineName is not null)
+            {
+                baseline = _overrideBaselineName;
+            }
+
             if (_baseline != string.Empty && _baseline != baseline)
             {
                 throw new InvalidOperationException($"Baseline already set to {_baseline} cannot set to {baseline}");
@@ -190,20 +209,87 @@ public class DataDescriptorModel
 
         private void ParseBaseline()
         {
-            if (_baseline != "empty")
+            if (_baseline == "empty")
             {
-                throw new InvalidOperationException("TODO: [cdac] - implement baseline parsing");
+                // Empty baseline - no types, globals, or contracts to load
+                _baselineModel = null;
+                return;
             }
+
+            // Load the baseline file
+            var baselinePath = Path.Combine(_baselinesDir, _baseline + ".jsonc");
+            if (!File.Exists(baselinePath))
+            {
+                baselinePath = Path.Combine(_baselinesDir, _baseline + ".json");
+                if (!File.Exists(baselinePath))
+                {
+                    throw new InvalidOperationException($"Baseline file not found: {_baseline}.json or {_baseline}.jsonc in {_baselinesDir}");
+                }
+            }
+
+            var json = File.ReadAllText(baselinePath);
+            // Remove comments for JSONC support
+            json = RemoveJsonComments(json);
+
+            _baselineModel = JsonSerializer.Deserialize<DataDescriptorModel>(json, s_jsonDeserializerOptions);
+            if (_baselineModel is null)
+            {
+                throw new InvalidOperationException($"Failed to deserialize baseline file: {baselinePath}");
+            }
+
+            // Populate the builder with baseline data
+            foreach (var (typeName, typeModel) in _baselineModel.Types)
+            {
+                var typeBuilder = AddOrUpdateType(typeName, typeModel.Size);
+                foreach (var (fieldName, fieldModel) in typeModel.Fields)
+                {
+                    typeBuilder.AddOrUpdateField(fieldName, fieldModel.Type, fieldModel.Offset);
+                }
+            }
+
+            foreach (var (globalName, globalModel) in _baselineModel.Globals)
+            {
+                AddOrUpdateGlobal(globalName, globalModel.Type, globalModel.Value);
+            }
+
+            foreach (var (subDescriptorName, subDescriptorModel) in _baselineModel.SubDescriptors)
+            {
+                AddOrUpdateSubDescriptor(subDescriptorName, subDescriptorModel.Type, subDescriptorModel.Value);
+            }
+
+            foreach (var (contractName, contractVersion) in _baselineModel.Contracts)
+            {
+                AddOrUpdateContract(contractName, contractVersion);
+            }
+        }
+
+        private static string RemoveJsonComments(string json)
+        {
+            var lines = json.Split('\n');
+            var result = new System.Text.StringBuilder();
+            foreach (var line in lines)
+            {
+                var trimmed = line.TrimStart();
+                if (!trimmed.StartsWith("//"))
+                {
+                    result.AppendLine(line);
+                }
+            }
+            return result.ToString();
         }
 
         public DataDescriptorModel Build()
         {
             var types = new Dictionary<string, TypeModel>();
+            var globals = new Dictionary<string, GlobalModel>();
+            var subDescriptors = new Dictionary<string, GlobalModel>();
+            var contracts = new Dictionary<string, int>();
+
+            // Build current model
             foreach (var (typeName, typeBuilder) in _types)
             {
                 types[typeName] = typeBuilder.Build(typeName);
             }
-            var globals = new Dictionary<string, GlobalModel>();
             foreach (var (globalName, globalBuilder) in _globals)
             {
                 GlobalValue? v = globalBuilder.Value;
@@ -213,7 +299,6 @@ public class DataDescriptorModel
                 }
                 globals[globalName] = new GlobalModel { Type = globalBuilder.Type, Value = v.Value };
             }
-            var subDescriptors = new Dictionary<string, GlobalModel>();
             foreach (var (subDescriptorName, subDescriptorBuilder) in _subDescriptors)
             {
                 GlobalValue? v = subDescriptorBuilder.Value;
@@ -223,12 +308,116 @@ public class DataDescriptorModel
                 }
                 subDescriptors[subDescriptorName] = new GlobalModel { Type = subDescriptorBuilder.Type, Value = v.Value };
             }
-            var contracts = new Dictionary<string, int>();
             foreach (var (contractName, contractBuilder) in _contracts)
             {
                 contracts[contractName] = contractBuilder.Build();
             }
+
+            // If we have a baseline, only include differences
+            if (_baselineModel is not null)
+            {
+                types = ComputeTypeDifferences(types, _baselineModel.Types);
+                globals = ComputeGlobalDifferences(globals, _baselineModel.Globals);
+                subDescriptors = ComputeGlobalDifferences(subDescriptors, _baselineModel.SubDescriptors);
+                contracts = ComputeContractDifferences(contracts, _baselineModel.Contracts);
+            }
+
             return new DataDescriptorModel(_baseline, types, globals, subDescriptors, contracts, PlatformFlags);
+        }
+
+        private static Dictionary<string, TypeModel> ComputeTypeDifferences(
+            IReadOnlyDictionary<string, TypeModel> current,
+            IReadOnlyDictionary<string, TypeModel> baseline)
+        {
+            var differences = new Dictionary<string, TypeModel>();
+
+            foreach (var (typeName, currentType) in current)
+            {
+                if (!baseline.TryGetValue(typeName, out var baselineType))
+                {
+                    // New type not in baseline
+                    differences[typeName] = currentType;
+                    continue;
+                }
+
+                // Check if type has differences
+                if (!TypesEqual(currentType, baselineType))
+                {
+                    differences[typeName] = currentType;
+                }
+            }
+
+            return differences;
+        }
+
+        private static bool TypesEqual(TypeModel a, TypeModel b)
+        {
+            if (a.Size != b.Size)
+                return false;
+
+            if (a.Fields.Count != b.Fields.Count)
+                return false;
+
+            foreach (var (fieldName, fieldA) in a.Fields)
+            {
+                if (!b.Fields.TryGetValue(fieldName, out var fieldB))
+                    return false;
+
+                if (fieldA.Type != fieldB.Type || fieldA.Offset != fieldB.Offset)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static Dictionary<string, GlobalModel> ComputeGlobalDifferences(
+            IReadOnlyDictionary<string, GlobalModel> current,
+            IReadOnlyDictionary<string, GlobalModel> baseline)
+        {
+            var differences = new Dictionary<string, GlobalModel>();
+
+            foreach (var (globalName, currentGlobal) in current)
+            {
+                if (!baseline.TryGetValue(globalName, out var baselineGlobal))
+                {
+                    // New global not in baseline
+                    differences[globalName] = currentGlobal;
+                    continue;
+                }
+
+                // Check if global has differences
+                if (currentGlobal.Type != baselineGlobal.Type || currentGlobal.Value != baselineGlobal.Value)
+                {
+                    differences[globalName] = currentGlobal;
+                }
+            }
+
+            return differences;
+        }
+
+        private static Dictionary<string, int> ComputeContractDifferences(
+            IReadOnlyDictionary<string, int> current,
+            IReadOnlyDictionary<string, int> baseline)
+        {
+            var differences = new Dictionary<string, int>();
+
+            foreach (var (contractName, currentVersion) in current)
+            {
+                if (!baseline.TryGetValue(contractName, out var baselineVersion))
+                {
+                    // New contract not in baseline
+                    differences[contractName] = currentVersion;
+                    continue;
+                }
+
+                // Check if version has changed
+                if (currentVersion != baselineVersion)
+                {
+                    differences[contractName] = currentVersion;
+                }
+            }
+
+            return differences;
         }
     }
 
