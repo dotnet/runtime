@@ -585,7 +585,7 @@ OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions",
                                                                                     // conversions
 
 OPT_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
-RELEASE_CONFIG_INTEGER(JitOpportunisticContinuationReuse, "JitOpportunisticContinuationReuse", 1)
+RELEASE_CONFIG_INTEGER(JitOpportunisticContinuationReuse, "JitOpportunisticContinuationReuse", 0)
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
