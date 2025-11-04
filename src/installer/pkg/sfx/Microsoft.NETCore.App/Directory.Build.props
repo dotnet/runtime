@@ -261,6 +261,21 @@
     <PlatformManifestFileEntry Include="wasi-link.rsp" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
+    <!-- CoreCLR WASM-specific files -->
+    <PlatformManifestFileEntry Include="libclrinterpreter.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclrminipal.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libcoreclrpal.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libgcinfo_unix_wasm.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libminipal.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libnativeresourcestring.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libBrowserHost.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="libBrowserHost.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Browser.Utils.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Browser.Utils.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.Browser.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Native.Browser.js.map" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Runtime.InteropServices.JavaScript.Native.js" IsNative="true" />
+    <PlatformManifestFileEntry Include="libSystem.Runtime.InteropServices.JavaScript.Native.js.map" IsNative="true" />
     <!-- wasi specific -->
     <PlatformManifestFileEntry Include="main.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.h" IsNative="true" />
