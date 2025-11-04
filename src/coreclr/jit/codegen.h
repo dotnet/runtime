@@ -1044,7 +1044,7 @@ protected:
     //
     // Return Value:
     //     None.
-    __forceinline void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
+    FORCEINLINE void genUpdateLifeStore(GenTree* tree, regNumber targetReg, LclVarDsc* varDsc)
     {
         if (targetReg != REG_NA)
         {
@@ -1097,7 +1097,7 @@ protected:
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     void genConsumeMultiOpOperands(GenTreeMultiOp* tree);
 #endif
-    void genEmitGSCookieCheck(bool pushReg);
+    void genEmitGSCookieCheck(bool tailCall);
     void genCodeForShift(GenTree* tree);
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)

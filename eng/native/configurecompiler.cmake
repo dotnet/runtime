@@ -34,6 +34,13 @@ if (CLR_CMAKE_HOST_UNIX)
     endif()
 endif()
 
+# Force usage of classic linker on Xcode 15
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" AND
+    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 15 AND
+    CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16)
+    add_link_options("-Wl,-ld_classic")
+endif()
+
 if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
     set(CMAKE_CONFIGURATION_TYPES "Debug;Checked;Release;RelWithDebInfo" CACHE STRING "" FORCE)
 endif (CMAKE_CONFIGURATION_TYPES)
@@ -533,9 +540,14 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
   # Disable frame pointer optimizations so profilers can get better call stacks
   add_compile_options(-fno-omit-frame-pointer)
 
-  # Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
+  # Make signed overflow well-defined. Implies the following flags in clang-20 and above.
+  # -fwrapv - Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
   # using twos-complement representation (this is normally undefined according to the C++ spec).
-  add_compile_options(-fwrapv)
+  # -fwrapv-pointer - The same as -fwrapv but for pointers.
+  add_compile_options(-fno-strict-overflow)
+
+  # Suppress C++ strict aliasing rules. This matches our use of MSVC.
+  add_compile_options(-fno-strict-aliasing)
 
   if(CLR_CMAKE_HOST_APPLE)
     # Clang will by default emit objc_msgSend stubs in Xcode 14, which ld from earlier Xcodes doesn't understand.

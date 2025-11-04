@@ -142,13 +142,6 @@ typedef LPSTR   LPUTF8;
 #include "stdmacros.h"
 
 //********** Macros. **********************************************************
-#ifndef FORCEINLINE
- #if _MSC_VER < 1200
-   #define FORCEINLINE inline
- #else
-   #define FORCEINLINE __forceinline
- #endif
-#endif
 
 #ifndef DEBUG_NOINLINE
 #if defined(_DEBUG)
@@ -4003,7 +3996,6 @@ struct SpinConstants
     DWORD dwMaximumDuration;
     DWORD dwBackoffFactor;
     DWORD dwRepetitions;
-    DWORD dwMonitorSpinCount;
 };
 
 extern SpinConstants g_SpinConstants;

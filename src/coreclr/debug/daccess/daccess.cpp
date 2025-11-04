@@ -3103,7 +3103,6 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
     m_logMessageCb = NULL;
     m_enumMemFlags = (CLRDataEnumMemoryFlags)-1;    // invalid
     m_jitNotificationTable = NULL;
-    m_gcNotificationTable  = NULL;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
     m_streams = NULL;
@@ -5326,31 +5325,8 @@ ClrDataAccess::GetGcNotification(GcEvtArgs* gcEvtArgs)
 
     EX_TRY
     {
-        if (gcEvtArgs->typ >= GC_EVENT_TYPE_MAX)
-        {
-            status = E_INVALIDARG;
-        }
-        else
-        {
-            GcNotifications gn(GetHostGcNotificationTable());
-            if (!gn.IsActive())
-            {
-                status = E_OUTOFMEMORY;
-            }
-            else
-            {
-                GcEvtArgs *res = gn.GetNotification(*gcEvtArgs);
-                if (res != NULL)
-                {
-                    *gcEvtArgs = *res;
-                    status = S_OK;
-                }
-                else
-                {
-                    status = E_FAIL;
-                }
-            }
-        }
+        // XXX Microsoft.
+        status = E_NOTIMPL;
     }
     EX_CATCH
     {
@@ -5380,22 +5356,8 @@ ClrDataAccess::SetGcNotification(IN GcEvtArgs gcEvtArgs)
         }
         else
         {
-            GcNotifications gn(GetHostGcNotificationTable());
-            if (!gn.IsActive())
-            {
-                status = E_OUTOFMEMORY;
-            }
-            else
-            {
-                if (gn.SetNotification(gcEvtArgs) && gn.UpdateOutOfProcTable())
-                {
-                    status = S_OK;
-                }
-                else
-                {
-                    status = E_FAIL;
-                }
-            }
+            GcNotifications::SetNotification(gcEvtArgs);
+            status = S_OK;
         }
     }
     EX_CATCH
@@ -6396,18 +6358,6 @@ ClrDataAccess::GetHostJitNotificationTable()
     }
 
     return m_jitNotificationTable;
-}
-
-GcNotification*
-ClrDataAccess::GetHostGcNotificationTable()
-{
-    if (m_gcNotificationTable == NULL)
-    {
-        m_gcNotificationTable =
-            GcNotifications::InitializeNotificationTable(128);
-    }
-
-    return m_gcNotificationTable;
 }
 
 /* static */ bool

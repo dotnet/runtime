@@ -1521,7 +1521,10 @@ public:
 #if defined(TARGET_XARCH)
     bool isEvexCompatibleHWIntrinsic(Compiler* comp) const;
     bool isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const;
-    bool isEmbeddedMaskingCompatible(Compiler* comp, unsigned tgtMaskSize, CorInfoType& tgtSimdBaseJitType) const;
+    bool isEmbeddedMaskingCompatible(Compiler*    comp,
+                                     unsigned     tgtMaskSize,
+                                     CorInfoType& tgtSimdBaseJitType,
+                                     size_t*      broadcastOpIndex = nullptr) const;
 #endif // TARGET_XARCH
     bool isEmbeddedMaskingCompatible() const;
 #else
@@ -2066,6 +2069,8 @@ public:
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
 
     bool SupportsSettingZeroFlag();
+
+    bool SupportsSettingResultFlags();
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily

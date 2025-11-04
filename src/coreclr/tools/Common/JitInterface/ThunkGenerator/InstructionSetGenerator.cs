@@ -803,15 +803,15 @@ namespace Internal.JitInterface
             if (metadataType == null)
                 return InstructionSet.ILLEGAL;
 
-            string namespaceName = metadataType.Namespace;
-            string typeName = metadataType.Name;
+            string namespaceName = metadataType.GetNamespace();
+            string typeName = metadataType.GetName();
             string nestedTypeName = null;
             while (metadataType.ContainingType != null)
             {
-                var enclosingType = (MetadataType)metadataType.ContainingType;
-                namespaceName = enclosingType.Namespace;
-                nestedTypeName = nestedTypeName is null ? metadataType.Name : $""{metadataType.Name}_{nestedTypeName}"";
-                typeName = enclosingType.Name;
+                var enclosingType = metadataType.ContainingType;
+                namespaceName = enclosingType.GetNamespace();
+                nestedTypeName = nestedTypeName is null ? metadataType.GetName() : $""{metadataType.GetName()}_{nestedTypeName}"";
+                typeName = enclosingType.GetName();
                 metadataType = enclosingType;
             }
 

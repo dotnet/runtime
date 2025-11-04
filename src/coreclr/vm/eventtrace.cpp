@@ -1925,10 +1925,12 @@ VOID ETW::EnumerationLog::SendOneTimeRundownEvents()
     // Fire the runtime information event
     ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Callback);
 
+#if defined(FEATURE_TIERED_COMPILATION)
     if (ETW::CompilationLog::TieredCompilation::Rundown::IsEnabled() && g_pConfig->TieredCompilation())
     {
         ETW::CompilationLog::TieredCompilation::Rundown::SendSettings();
     }
+#endif // FEATURE_TIERED_COMPILATION
 }
 
 
@@ -5443,6 +5445,7 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, DWORD enumerat
     }
 }
 
+#if defined(FEATURE_TIERED_COMPILATION)
 void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
 {
     CONTRACTL {
@@ -5484,7 +5487,6 @@ void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
 #endif
     *flagsRef = flags;
 }
-
 void ETW::CompilationLog::TieredCompilation::Runtime::SendSettings()
 {
     CONTRACTL {
@@ -5556,6 +5558,7 @@ void ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(UINT
 
     FireEtwTieredCompilationBackgroundJitStop(GetClrInstanceId(), pendingMethodCount, jittedMethodCount);
 }
+#endif // FEATURE_TIERED_COMPILATION
 
 #endif // !FEATURE_NATIVEAOT
 
@@ -5589,30 +5592,6 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
 
     return false;
 }
-
-#ifdef TARGET_LINUX
-#include "user_events.h"
-bool UserEventsHelper::Enabled()
-{
-    return IsUserEventsEnabled();
-}
-
-bool UserEventsHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)
-{
-    return IsUserEventsEnabledByKeyword(Context.UserEventsProvider.id, Level, Keyword);
-}
-#else // TARGET_LINUX
-bool UserEventsHelper::Enabled()
-{
-    return false;
-}
-
-bool UserEventsHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword)
-{
-    return false;
-}
-#endif // TARGET_LINUX
-
 #endif // FEATURE_PERFTRACING
 
 #if defined(HOST_UNIX)  && defined(FEATURE_PERFTRACING)

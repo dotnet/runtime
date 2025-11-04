@@ -32,9 +32,9 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(FEATURE_PORTABLE_HELPERS)
-EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, intptr_t numElements, void * pTransitionFrame);
 
-static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements)
+static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, intptr_t numElements)
 {
     Object* pObject = (Object*)RhpGcAlloc(pEEType, uFlags, numElements, nullptr);
     if (pObject == nullptr)
@@ -88,7 +88,7 @@ FCIMPL1(Object *, RhpNewFinalizable, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, int numElements)
+FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, intptr_t numElements)
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context * acontext = pCurThread->GetAllocContext();
@@ -221,7 +221,7 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, int numElements)
+FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, intptr_t numElements)
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();

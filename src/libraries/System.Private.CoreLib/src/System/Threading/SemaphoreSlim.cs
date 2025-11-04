@@ -279,6 +279,11 @@ namespace System.Threading
 #if TARGET_WASI
             if (OperatingSystem.IsWasi()) throw new PlatformNotSupportedException(); // TODO remove with https://github.com/dotnet/runtime/pull/107185
 #endif
+            if (millisecondsTimeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+            }
             return WaitCore(millisecondsTimeout, CancellationToken.None);
         }
 
@@ -566,6 +571,11 @@ namespace System.Threading
         /// </exception>
         public Task<bool> WaitAsync(int millisecondsTimeout)
         {
+            if (millisecondsTimeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SemaphoreSlim_Wait_TimeoutWrong);
+            }
             return WaitAsyncCore(millisecondsTimeout, default);
         }
 
@@ -756,8 +766,8 @@ namespace System.Threading
             bool wasInList = m_asyncHead == task || task.Prev is not null;
 
             // Remove it from the linked list
-            if (task.Next is not null) task.Next.Prev = task.Prev;
-            if (task.Prev is not null) task.Prev.Next = task.Next;
+            task.Next?.Prev = task.Prev;
+            task.Prev?.Next = task.Next;
             if (m_asyncHead == task) m_asyncHead = task.Next;
             if (m_asyncTail == task) m_asyncTail = task.Prev;
             Debug.Assert((m_asyncHead is null) == (m_asyncTail is null), "Head is null iff tail is null");

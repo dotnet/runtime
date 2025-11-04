@@ -102,19 +102,16 @@ namespace Internal.Runtime.TypeLoader
                             var typeEntry = registeredTypes[i];
                             // There is no Remove feature in the LockFreeReaderHashtable...
                             GenericTypeEntry failedEntry = _dynamicGenericTypes.GetValueIfExists(typeEntry);
-                            if (failedEntry != null)
-                                failedEntry._isRegisteredSuccessfully = false;
+                            failedEntry?._isRegisteredSuccessfully = false;
                         }
                         for (int i = 0; i < registeredMethodsCount; i++)
                         {
                             // There is no Remove feature in the LockFreeReaderHashtable...
                             GenericMethodEntry failedEntry = _dynamicGenericMethods.GetValueIfExists(registeredMethods[i]);
-                            if (failedEntry != null)
-                                failedEntry._isRegisteredSuccessfully = false;
+                            failedEntry?._isRegisteredSuccessfully = false;
 
                             failedEntry = _dynamicGenericMethodComponents.GetValueIfExists(registeredMethods[i]);
-                            if (failedEntry != null)
-                                failedEntry._isRegisteredSuccessfully = false;
+                            failedEntry?._isRegisteredSuccessfully = false;
                         }
                     }
                     catch (Exception e)

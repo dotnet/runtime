@@ -231,6 +231,10 @@ try {
             exports.AppSettingsTest.Run();
             exit(0);
             break;
+        case "FilesToIncludeInFileSystemTest":
+            exports.FilesToIncludeInFileSystemTest.Run();
+            exit(0);
+            break;
         case "DownloadResourceProgressTest":
             exit(0);
             break;

@@ -335,7 +335,7 @@ namespace ILCompiler.Dataflow
         {
             MethodDesc method = referencedMethod.GetTypicalMethodDefinition();
 
-            if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.GetName()))
+            if (!CompilerGeneratedNames.IsLambdaOrLocalFunction(method.Name))
                 return;
 
             interproceduralState.TrackMethod(method);

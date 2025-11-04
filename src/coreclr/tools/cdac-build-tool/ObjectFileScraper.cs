@@ -163,6 +163,7 @@ public class ObjectFileScraper
         public uint GlobalStringValuesStart;
 
         public uint GlobalSubDescriptorsStart;
+        public uint GlobalContractsStart;
         public uint NamesStart;
 
         public uint TypesCount;
@@ -172,6 +173,7 @@ public class ObjectFileScraper
         public uint GlobalPointerValuesCount;
         public uint GlobalStringValuesCount;
         public uint GlobalSubDescriptorsCount;
+        public uint GlobalContractsCount;
 
         public uint NamesPoolCount;
 
@@ -220,23 +222,26 @@ public class ObjectFileScraper
         var globalStringValuesStart = state.ReadUInt32();
 
         var globalSubDescriptorsStart = state.ReadUInt32();
+        var globalContractsStart = state.ReadUInt32();
+
         var namesStart = state.ReadUInt32();
-
         var typeCount = state.ReadUInt32();
+
         var fieldPoolCount = state.ReadUInt32();
-
         var globalLiteralValuesCount = state.ReadUInt32();
-        var globalPointerValuesCount = state.ReadUInt32();
 
+        var globalPointerValuesCount = state.ReadUInt32();
         var globalStringValuesCount = state.ReadUInt32();
+
         var globalSubDescriptorsCount = state.ReadUInt32();
+        var globalContractsCount = state.ReadUInt32();
 
         var namesPoolCount = state.ReadUInt32();
-
         var typeSpecSize = state.ReadByte();
         var fieldSpecSize = state.ReadByte();
         var globalLiteralSpecSize = state.ReadByte();
         var globalPointerSpecSize = state.ReadByte();
+
         var globalStringSpecSize = state.ReadByte();
 
         return new HeaderDirectory {
@@ -247,6 +252,7 @@ public class ObjectFileScraper
             GlobalPointersStart = globalPointersStart,
             GlobalStringValuesStart = globalStringValuesStart,
             GlobalSubDescriptorsStart = globalSubDescriptorsStart,
+            GlobalContractsStart = globalContractsStart,
             NamesStart = namesStart,
 
             TypesCount = typeCount,
@@ -257,6 +263,7 @@ public class ObjectFileScraper
 
             GlobalStringValuesCount = globalStringValuesCount,
             GlobalSubDescriptorsCount = globalSubDescriptorsCount,
+            GlobalContractsCount = globalContractsCount,
 
             NamesPoolCount = namesPoolCount,
 
@@ -309,9 +316,15 @@ public class ObjectFileScraper
         public uint ValueIdx;
     }
 
+    private struct GlobalContractSpec
+    {
+        public uint NameIdx;
+        public uint Value;
+    }
+
     private sealed class Content
     {
-        public required bool Verbose {get; init; }
+        public required bool Verbose { get; init; }
         public required uint PlatformFlags { get; init; }
         public required uint Baseline { get; init; }
         public required IReadOnlyList<TypeSpec> TypeSpecs { get; init; }
@@ -320,6 +333,7 @@ public class ObjectFileScraper
         public required IReadOnlyList<GlobalPointerSpec> GlobalPointerSpecs { get; init; }
         public required IReadOnlyList<GlobalStringSpec> GlobalStringSpecs { get; init; }
         public required IReadOnlyList<GlobalPointerSpec> GlobalSubDescriptorSpecs { get; init; }
+        public required IReadOnlyList<GlobalContractSpec> GlobalContractSpecs { get; init; }
         public required ReadOnlyMemory<byte> NamesPool { get; init; }
 
         internal string GetPoolString(uint stringIdx)
@@ -408,6 +422,14 @@ public class ObjectFileScraper
                 builder.AddOrUpdateSubDescriptor(globalName, DataDescriptorModel.PointerTypeName, globalValue);
                 WriteVerbose($"Global sub-descriptor {globalName} has index {globalValue}");
             }
+
+            foreach (var contract in GlobalContractSpecs)
+            {
+                var globalName = GetPoolString(contract.NameIdx);
+                var value = contract.Value;
+                builder.AddOrUpdateContract(globalName, (int)value);
+                WriteVerbose($"Contract {globalName} has value {value}");
+            }
         }
 
         private void WriteVerbose(string msg)
@@ -431,6 +453,7 @@ public class ObjectFileScraper
         GlobalPointerSpec[] globalPointerSpecs = ReadGlobalPointerSpecs(state, header);
         GlobalStringSpec[] globalStringSpecs = ReadGlobalStringSpecs(state, header);
         GlobalPointerSpec[] globalSubDescriptorSpecs = ReadGlobalSubDescriptorSpecs(state, header);
+        GlobalContractSpec[] globalContractSpecs = ReadGlobalContractSpecs(state, header);
         byte[] namesPool = ReadNamesPool(state, header);
 
         byte[] endMagic = new byte[4];
@@ -458,6 +481,7 @@ public class ObjectFileScraper
             GlobalPointerSpecs = globalPointerSpecs,
             GlobalStringSpecs = globalStringSpecs,
             GlobalSubDescriptorSpecs = globalSubDescriptorSpecs,
+            GlobalContractSpecs = globalContractSpecs,
             NamesPool = namesPool
         };
     }
@@ -594,6 +618,25 @@ public class ObjectFileScraper
         return globalSpecs;
     }
 
+    private static GlobalContractSpec[] ReadGlobalContractSpecs(ScraperState state, HeaderDirectory header)
+    {
+        GlobalContractSpec[] globalSpecs = new GlobalContractSpec[header.GlobalContractsCount];
+        state.ResetPosition(state.HeaderStart + (long)header.GlobalContractsStart);
+        for (int i = 0; i < header.GlobalContractsCount; i++)
+        {
+            int bytesRead = 0;
+            globalSpecs[i].NameIdx = state.ReadUInt32();
+            bytesRead += sizeof(uint);
+            globalSpecs[i].Value = state.ReadUInt32();
+            bytesRead += sizeof(uint);
+            // skip padding
+            if (bytesRead < header.GlobalPointerSpecSize)
+            {
+                state.Skip(header.GlobalPointerSpecSize - bytesRead);
+            }
+        }
+        return globalSpecs;
+    }
     private static byte[] ReadNamesPool(ScraperState state, HeaderDirectory header)
     {
         byte[] namesPool = new byte[header.NamesPoolCount];
