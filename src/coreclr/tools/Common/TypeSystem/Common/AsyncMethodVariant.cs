@@ -43,17 +43,29 @@ namespace Internal.TypeSystem
 
         public override MethodDesc GetMethodDefinition()
         {
-            return this;
+            var real = _wrappedMethod.GetMethodDefinition();
+            if (real == _wrappedMethod)
+                return this;
+
+            return _wrappedMethod.Context.GetAsyncVariant(real);
         }
 
         public override MethodDesc GetTypicalMethodDefinition()
         {
-            return this;
+            var real = _wrappedMethod.GetTypicalMethodDefinition();
+            if (real == _wrappedMethod)
+                return this;
+
+            return _wrappedMethod.Context.GetAsyncVariant(real);
         }
 
         public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            throw new NotImplementedException();
+            var real = _wrappedMethod.InstantiateSignature(typeInstantiation, methodInstantiation);
+            if (real == _wrappedMethod)
+                return this;
+
+            return _wrappedMethod.Context.GetAsyncVariant(real);
         }
 
         public override string ToString() => $"Async variant ({AsyncMethodKind}): " + _wrappedMethod.ToString();
