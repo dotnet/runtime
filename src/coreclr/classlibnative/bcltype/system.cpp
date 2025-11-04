@@ -150,7 +150,7 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     alreadyFailing++;
     if (alreadyFailing != 1)
     {
-        argExceptionString = u"Environment.FailFast called recursively.";
+        argExceptionString = W("Environment.FailFast called recursively.");
     }
     else if (exception.Get() != NULL)
     {
