@@ -527,7 +527,7 @@ function read_array {
             theArray[${#theArray[@]}]=$line
         fi
     done < "$1"
-    echo ${theArray[@]}
+    echo "${theArray[@]}"
 }
 
 function load_unsupported_tests {

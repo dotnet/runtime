@@ -3766,6 +3766,24 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 }
 
+static bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig)
+{
+    // We allow only the return value types to differ between caller and callee as long as their stack types are the same.
+    // In principle we could allow more differences (e.g. I8 coercion to I4, or O to I) but for now we keep it simple.
+    if (callerSig->retType != calleeSig->retType)
+    {
+        if (g_stackTypeFromInterpType[GetInterpType(callerSig->retType)] != g_stackTypeFromInterpType[GetInterpType(calleeSig->retType)])
+        {
+            return true;
+        }
+    }
+    else if (callerSig->retType == CORINFO_TYPE_VALUECLASS && callerSig->retTypeClass != calleeSig->retTypeClass)
+    {
+        return true;
+    }
+    return false;
+}
+
 void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig)
 {
     AddIns(isTailCall ? INTOP_CALLI_TAIL : INTOP_CALLI);
@@ -4034,6 +4052,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         if (InterpConfig.InterpHaltOnCall().contains(m_compHnd, resolvedCallToken.hMethod, resolvedCallToken.hClass, nullptr))
             assert(!"HaltOnCall");
 #endif
+    }
+
+    if (tailcall && DisallowTailCall(&m_methodInfo->args, &callInfo.sig))
+    {
+        if (isJmp)
+        {
+            BADCODE("Incompatible target for CEE_JMP tail call");
+        }
+        tailcall = false;
     }
 
     if (newObj && (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE))
