@@ -114,8 +114,8 @@ target_link_options(browserhost PRIVATE
     -sMODULARIZE=1
     -sEXPORT_ES6=1
     -sEXIT_RUNTIME=0
-    -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,BROWSER_HOST
-    -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,___cpp_exception
+    -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,cwrap,ccall,HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64,safeSetTimeout,maybeExit,exitJS,abort,lengthBytesUTF8,UTF8ToString,stringToUTF8Array
+    -sEXPORTED_FUNCTIONS=_posix_memalign,_malloc,_free,stackAlloc,stackRestore,stackSave,___cpp_exception,_GetDotNetRuntimeContractDescriptor,_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly
     -sEXPORT_NAME=createDotnetRuntime
     -lnodefs.js)
 
