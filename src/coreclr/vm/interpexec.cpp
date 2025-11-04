@@ -2451,8 +2451,8 @@ MAIN_LOOP:
                     // This needs to be optimized, not operating at MethodDesc level, rather with ftnptr
                     // slots containing the interpreter IR pointer
                     targetMethod = CallWithSEHWrapper(
-                        [&pMD, &callArgsOffset, &stack]() {
-                            return pMD->GetMethodDescOfVirtualizedCode(LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF), pMD->GetMethodTable());
+                        [&pMD, &pThisArg]() {
+                            return pMD->GetMethodDescOfVirtualizedCode(pMD, pThisArg);
                         });
 
                     ip += 4;
