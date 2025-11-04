@@ -71,7 +71,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // to ensure alignment.
                 // The thunk itself starts immediately after the reloc.
                 // We don't need this for an Eager thunk.
-                // Note: ARM64 now uses ADRP/LDR pairs and doesn't need this offset
                 _symbolOffset = 8;
             }
         }
