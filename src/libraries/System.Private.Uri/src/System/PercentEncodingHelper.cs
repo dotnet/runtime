@@ -10,15 +10,10 @@ namespace System
 {
     internal static class PercentEncodingHelper
     {
-        public static int UnescapePercentEncodedUTF8Sequence(ReadOnlySpan<char> input, ref ValueStringBuilder dest, bool isQuery, bool iriParsing)
+        public static int UnescapePercentEncodedUTF8Sequence(scoped ReadOnlySpan<char> input, ref ValueStringBuilder dest, bool isQuery, bool iriParsing)
         {
-            int length = input.Length;
-
-            // The following assertions rely on the input not mutating mid-operation, as is the case currently since callers are working with strings
-            // If we start accepting input such as spans, this method must be audited to ensure no buffer overruns/infinite loops could occur
-
             // As an optimization, this method should only be called after the first character is known to be a part of a non-ascii UTF8 sequence
-            Debug.Assert(length >= 3);
+            Debug.Assert(input.Length >= 3);
             Debug.Assert(input[0] == '%');
             Debug.Assert(UriHelper.DecodeHexChars(input[1], input[2]) != Uri.c_DummyChar);
             Debug.Assert(UriHelper.DecodeHexChars(input[1], input[2]) >= 128);
@@ -34,7 +29,7 @@ namespace System
             int i = totalCharsConsumed + (bytesLeftInBuffer * 3);
 
         ReadByteFromInput:
-            if ((uint)(length - i) <= 2 || input[i] != '%')
+            if ((uint)(input.Length - i) <= 2 || input[i] != '%')
                 goto NoMoreOrInvalidInput;
 
             uint value = input[i + 1];
