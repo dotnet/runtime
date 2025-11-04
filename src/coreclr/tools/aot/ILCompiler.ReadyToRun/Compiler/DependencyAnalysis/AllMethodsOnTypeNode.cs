@@ -44,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         context.DetectGenericCycles(Type, method);
                         dependencies.Add(context.CompiledMethodNode(method), $"Method on type {Type.ToString()}");
-                        if (method.IsTaskReturning)
+                        if (method.Signature.ReturnsTaskOrValueTask())
                             dependencies.Add(context.CompiledMethodNode(context.TypeSystemContext.GetAsyncVariant(method)), $"Async Method on type {Type.ToString()}");
 
                     }

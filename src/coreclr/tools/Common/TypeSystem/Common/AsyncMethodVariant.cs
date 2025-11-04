@@ -20,7 +20,7 @@ namespace Internal.TypeSystem
         public AsyncMethodVariant(MethodDesc wrappedMethod)
             : base(wrappedMethod)
         {
-            Debug.Assert(wrappedMethod.IsTaskReturning);
+            Debug.Assert(wrappedMethod.Signature.ReturnsTaskOrValueTask());
             _jitVisibleHashCode = HashCode.Combine(wrappedMethod.GetHashCode(), 0x310bb74f);
         }
 
@@ -32,8 +32,19 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return _asyncSignature ??= _wrappedMethod.Signature.CreateAsyncSignature();
+                return _asyncSignature ??= CreateAsyncSignature(_wrappedMethod.Signature);
             }
+        }
+
+        private MethodSignature CreateAsyncSignature(MethodSignature signature)
+        {
+            Debug.Assert(!signature.IsAsyncCallConv);
+            Debug.Assert(signature.ReturnsTaskOrValueTask());
+            TypeDesc md = signature.ReturnType;
+            MethodSignatureBuilder builder = new MethodSignatureBuilder(signature);
+            builder.ReturnType = md.HasInstantiation ? md.Instantiation[0] : this.Context.GetWellKnownType(WellKnownType.Void);
+            builder.Flags = signature.Flags | MethodSignatureFlags.AsyncCallingConvention;
+            return builder.ToSignature();
         }
 
         public override MethodDesc GetCanonMethodTarget(CanonicalFormKind kind)

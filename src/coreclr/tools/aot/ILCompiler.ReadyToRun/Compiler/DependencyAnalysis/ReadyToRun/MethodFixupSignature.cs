@@ -89,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Optimize some of the fixups into a more compact form
             ReadyToRunFixupKind fixupKind = _fixupKind;
             bool optimized = false;
-            if (!_method.Unboxing && !IsInstantiatingStub && !_method.Method.IsTaskReturning && _method.ConstrainedType == null &&
+            if (!_method.Unboxing && !IsInstantiatingStub && !_method.Method.Signature.ReturnsTaskOrValueTask() && _method.ConstrainedType == null &&
                 fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
                 if (!_method.Method.HasInstantiation && !_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
@@ -154,7 +154,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 sb.Append(" [INST]"u8);
             }
-            if (_method.Method.IsAsyncVariant)
+            if (_method.Method.IsAsyncVariant())
             {
                 sb.Append(" [ASYNC]"u8);
             }

@@ -77,13 +77,13 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private void InitializeSignature()
+        private MethodSignature InitializeSignature()
         {
             var metadataReader = MetadataReader;
             BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetMethodDefinition(_handle).Signature);
             EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader, NotFoundBehavior.Throw);
             var signature = parser.ParseMethodSignature();
-            _signature = signature;
+            return (_signature = signature);
         }
 
         public override MethodSignature Signature
@@ -91,7 +91,7 @@ namespace Internal.TypeSystem.Ecma
             get
             {
                 if (_signature == null)
-                    InitializeSignature();
+                    return InitializeSignature();
 
                 return _signature;
             }

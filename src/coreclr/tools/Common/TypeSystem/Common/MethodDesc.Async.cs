@@ -8,44 +8,7 @@ namespace Internal.TypeSystem
 {
     public sealed partial class MethodSignature
     {
-        // Flags that extend MethodSignatureFlags.
-        // These are not in metadata, just cached values.
-        // They must not conflict with MethodSignatureFlags.
-        private static class MethodSignatureFlagsExtensions
-        {
-            public const MethodSignatureFlags ReturnsTaskOrValueTask = (MethodSignatureFlags)(1 << 30); // Not a real flag, just a cached value
-            public const MethodSignatureFlags ReturnsTaskOrValueTaskMask = (MethodSignatureFlags)(1 << 31); // Not a real flag, just a cached value
-        }
-
-        public bool ReturnsTaskOrValueTask
-        {
-            get
-            {
-                if ((_flags & MethodSignatureFlagsExtensions.ReturnsTaskOrValueTaskMask) == 0)
-                {
-                    // Compute and cache the value
-                    if (ReturnsTaskOrValueTaskCore())
-                    {
-                        _flags |= MethodSignatureFlagsExtensions.ReturnsTaskOrValueTask;
-                    }
-                    _flags |= MethodSignatureFlagsExtensions.ReturnsTaskOrValueTaskMask;
-                }
-                return (_flags & MethodSignatureFlagsExtensions.ReturnsTaskOrValueTask) != 0;
-            }
-        }
-
-        public MethodSignature CreateAsyncSignature()
-        {
-            Debug.Assert(!IsAsyncCallConv);
-            Debug.Assert(ReturnsTaskOrValueTask);
-            TypeDesc md = this.ReturnType;
-            MethodSignatureBuilder builder = new MethodSignatureBuilder(this);
-            builder.ReturnType = md.HasInstantiation ? md.Instantiation[0] : this.Context.GetWellKnownType(WellKnownType.Void);
-            builder.Flags = this.Flags | MethodSignatureFlags.AsyncCallingConvention;
-            return builder.ToSignature();
-        }
-
-        private bool ReturnsTaskOrValueTaskCore()
+        public bool ReturnsTaskOrValueTask()
         {
             TypeDesc ret = this.ReturnType;
 
@@ -134,24 +97,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public bool IsTaskReturning
-        {
-            get
-            {
-                return Signature.ReturnsTaskOrValueTask;
-            }
-        }
-
-        public bool IsAsyncVariant
-        {
-            get
-            {
-                return AsyncMethodKind is
-                AsyncMethodKind.AsyncVariantImpl or
-                AsyncMethodKind.AsyncVariantThunk;
-            }
-        }
-
         /// <summary>
         /// Is this synthetic Task/async adapter to an async/Task implementation?
         /// If yes, the method has another variant, which has the actual user-defined method body.
@@ -163,20 +108,6 @@ namespace Internal.TypeSystem
                 return AsyncMethodKind is
                     AsyncMethodKind.AsyncVariantThunk or
                     AsyncMethodKind.RuntimeAsync;
-            }
-        }
-
-        /// <summary>
-        /// Is this method callable as an async method? (i.e. uses Async calling convention)
-        /// </summary>
-        public bool IsAsyncCallConv
-        {
-            get
-            {
-                return AsyncMethodKind is
-                AsyncMethodKind.AsyncVariantImpl or
-                AsyncMethodKind.AsyncVariantThunk or
-                AsyncMethodKind.AsyncExplicitImpl;
             }
         }
     }

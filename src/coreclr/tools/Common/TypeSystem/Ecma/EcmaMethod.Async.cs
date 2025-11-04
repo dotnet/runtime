@@ -15,7 +15,7 @@ namespace Internal.TypeSystem.Ecma
                 // EcmaMethod always represents the Task-returning variant for Task-returning methods
                 // in order to match the signature, even though the IL in metadata may not match.
                 // Other MethodDescs represent the async variant.
-                bool returnsTask = Signature.ReturnsTaskOrValueTask;
+                bool returnsTask = Signature.ReturnsTaskOrValueTask();
                 if (returnsTask)
                 {
                     return IsAsync

@@ -11,7 +11,7 @@ namespace Internal.TypeSystem
 
         public MethodDesc GetAsyncVariant(MethodDesc method)
         {
-            if (!method.IsTaskReturning)
+            if (!method.Signature.ReturnsTaskOrValueTask())
                 throw new InvalidOperationException();
 
             return _asyncMethods.GetOrCreateAsyncMethodImplVariant(method);
