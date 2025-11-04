@@ -88,6 +88,7 @@ void ReadMCLToArray(char* mclFilename, std::vector<int>& MCL)
 #else
     int64_t size = ftell(fp);
 #endif
+    fseek(fp, 0, SEEK_SET);
 
     if (size > MAXMCLFILESIZE)
     {
