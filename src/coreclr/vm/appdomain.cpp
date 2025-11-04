@@ -722,7 +722,9 @@ void SystemDomain::Attach()
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     PrecodeStubManager::Init();
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#ifdef FEATURE_JIT
     JumpStubStubManager::Init();
+#endif // FEATURE_JIT
     RangeSectionStubManager::Init();
     ILStubManager::Init();
     InteropDispatchStubManager::Init();
