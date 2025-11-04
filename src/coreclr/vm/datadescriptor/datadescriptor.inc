@@ -1144,6 +1144,9 @@ CDAC_GLOBAL_POINTER(MethodDescSizeTable, &MethodDesc::s_ClassificationSizeTable)
 CDAC_GLOBAL_POINTER(GCLowestAddress, &g_lowest_address)
 CDAC_GLOBAL_POINTER(GCHighestAddress, &g_highest_address)
 
+
+// It is important for the subdescriptor pointers to be the last pointers in the global structure
+// enummem.cpp relies on this order to find and enumerate the subdescriptors
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
 CDAC_GLOBAL_CONTRACT(CodeVersions, 1)
