@@ -331,8 +331,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             uint ldrInstr = *pCode;
 
-            // 0x003FFC00: Mask for bits 21-10 which contain the scaled immediate value
-            // in the ARM64 LDR instruction format
+            // 0x003FFC00: Mask for bits 21-10 of the 32-bit ARM64 LDR instruction
+            // which contain the scaled immediate value
             int scaledImm12 = (int)(ldrInstr & 0x003FFC00) >> 10;
 
             // Scale back to byte offset (multiply by 8)
