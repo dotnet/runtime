@@ -31,8 +31,6 @@ namespace System.Text.Json.SourceGeneration
         ImmutableEnumerable,
         MemoryOfT,
         ReadOnlyMemoryOfT,
-#if NET
         IReadOnlySetOfT
-#endif
     }
 }
