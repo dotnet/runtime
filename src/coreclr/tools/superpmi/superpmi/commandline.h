@@ -36,7 +36,7 @@ public:
         int   indexCount = -1;  // If indexCount is -1 and hash points to nullptr it means compile all.
         int   failureLimit = -1; // Number of failures after which bail out the replay/asmdiffs.
         int   repeatCount = 1;   // Number of times given methods should be compiled.
-        int*  indexes = nullptr;
+        std::vector<int> indexes;
         char* hash = nullptr;
         char* methodStatsTypes = nullptr;
         char* details = nullptr;

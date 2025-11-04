@@ -154,7 +154,7 @@ int doStreamingSuperPMI(CommandLine::Options& o)
     // Just one worker for now... all method selection done via stream file
     //
     o.workerCount = 1;
-    o.indexes = nullptr;
+    o.indexes.clear();
     o.indexCount = -1;
     o.hash = nullptr;
     o.offset = -1;
@@ -163,7 +163,7 @@ int doStreamingSuperPMI(CommandLine::Options& o)
     // The method context reader handles skipping any unrequested method contexts
     // Used in conjunction with an MCI file, it does a lot less work...
     MethodContextReader* reader =
-        new MethodContextReader(o.nameOfInputMethodContextFile, o.indexes, o.indexCount, o.hash, o.offset, o.increment);
+        new MethodContextReader(o.nameOfInputMethodContextFile, nullptr, o.indexCount, o.hash, o.offset, o.increment);
     if (!reader->isValid())
     {
         return (int)SpmiResult::GeneralFailure;
