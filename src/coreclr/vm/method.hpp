@@ -732,6 +732,8 @@ public:
     inline bool IsILStub();
     inline bool IsLCGMethod();
 
+    inline bool IsDiagnosticsHidden();
+    
     inline DWORD IsPInvoke()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1966,19 +1968,6 @@ public:
             asyncKind == AsyncMethodKind::TaskReturning;
     }
 
-    inline bool IsStructMethodOperatingOnCopy()
-    {
-        if (!GetMethodTable()->IsValueType() || IsStatic())
-            return false;
-
-        if (!HasAsyncMethodData())
-            return false;
-
-        // Only async methods backed by actual user code operate on copies.
-        // Thunks with runtime-supplied implementation do not.
-        return GetAddrOfAsyncMethodData()->kind == AsyncMethodKind::AsyncVariantImpl;
-    }
-
     inline bool HasAsyncMethodData() const
     {
         return (m_wFlags & mdfHasAsyncMethodData) != 0;
@@ -2765,10 +2754,8 @@ public:
         StubArrayOp,
         StubMulticastDelegate,
         StubWrapperDelegate,
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
         StubUnboxingIL,
         StubInstantiating,
-#endif
         StubTailCallStoreArgs,
         StubTailCallCallTarget,
 
@@ -2897,10 +2884,8 @@ public:
 
         bool isStepThrough = false;
 
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
         ILStubType type = GetILStubType();
         isStepThrough = type == StubUnboxingIL || type == StubInstantiating;
-#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
 
         return isStepThrough;
     }
@@ -2960,14 +2945,12 @@ public:
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubWrapperDelegate;
     }
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     bool IsUnboxingILStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubUnboxingIL;
     }
-#endif
     bool IsDelegateShuffleThunk() const
     {
         LIMITED_METHOD_DAC_CONTRACT;

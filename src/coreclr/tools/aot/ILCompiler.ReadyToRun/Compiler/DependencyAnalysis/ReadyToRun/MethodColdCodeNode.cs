@@ -18,11 +18,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _owningMethod = owningMethod;
         }
 
+        protected internal override int Phase => (int)ObjectNodePhase.Late;
+
         public int Offset => 0;
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return factory.Target.IsWindows ? ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;            
+            return ObjectNodeSection.TextSection;            
         }
 
         public override bool IsShareable => false;

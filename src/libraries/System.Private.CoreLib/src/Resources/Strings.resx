@@ -4388,6 +4388,9 @@
   <data name="NotSupported_ReferenceEnumOrPrimitiveTypeRequired" xml:space="preserve">
     <value>The specified type must be a reference type, a primitive type, or an enum type.</value>
   </data>
+  <data name="NotSupported_IntegerEnumOrPrimitiveTypeRequired" xml:space="preserve">
+    <value>The specified type must be an integer primitive type or an enum type.</value>
+  </data>
   <data name="Argument_BadFieldForInitializeArray" xml:space="preserve">
     <value>The field is invalid for initializing array or span.</value>
   </data>
