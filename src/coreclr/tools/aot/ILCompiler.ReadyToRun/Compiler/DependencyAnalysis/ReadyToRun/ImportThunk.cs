@@ -64,14 +64,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             if (_thunkKind != Kind.Eager
-                && factory.Target.Architecture is Internal.TypeSystem.TargetArchitecture.ARM64
-                    or Internal.TypeSystem.TargetArchitecture.LoongArch64
+                && factory.Target.Architecture is Internal.TypeSystem.TargetArchitecture.LoongArch64
                     or Internal.TypeSystem.TargetArchitecture.RiscV64)
             {
                 // We stuff the reloc to the module import pointer before the start of the thunk
                 // to ensure alignment.
                 // The thunk itself starts immediately after the reloc.
                 // We don't need this for an Eager thunk.
+                // Note: ARM64 now uses ADRP/LDR pairs and doesn't need this offset
                 _symbolOffset = 8;
             }
         }
