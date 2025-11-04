@@ -117,7 +117,7 @@ static StackWalkAction FindFailFastCallerCallback(CrawlFrame* frame, VOID* data)
     return SWA_ABORT;
 }
 
-static int alreadyFailing = 0;
+static thread_local int8_t alreadyFailing = 0;
 
 extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark, PCWSTR message, QCall::ObjectHandleOnStack exception, PCWSTR errorSource)
 {
@@ -148,7 +148,11 @@ extern "C" void QCALLTYPE Environment_FailFast(QCall::StackCrawlMarkHandle mark,
     // because Environment_FailFast should kill the process, any subsequent calls are likely nested call from managed while unwinding the stack.
     // only collect exception string if this is the first attempt to fail fast.
     alreadyFailing++;
-    if (alreadyFailing == 1 && exception.Get() != NULL)
+    if (alreadyFailing != 1)
+    {
+        argExceptionString = u"Environment.FailFast called recursively.";
+    }
+    else if (exception.Get() != NULL)
     {
         GetExceptionMessage(exception.Get(), msg);
         argExceptionString = msg.GetUnicode();
