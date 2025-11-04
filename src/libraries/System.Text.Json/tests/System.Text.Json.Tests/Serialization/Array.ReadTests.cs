@@ -370,7 +370,6 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
-        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         [Fact]
         public static void ReadClassWithObjectIReadOnlySetT()
@@ -422,8 +421,6 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
-
-        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         [Fact]
         public static void ReadClassWithGenericIReadOnlySetT()

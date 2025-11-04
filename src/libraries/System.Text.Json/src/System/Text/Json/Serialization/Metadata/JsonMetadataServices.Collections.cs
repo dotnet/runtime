@@ -211,7 +211,6 @@ namespace System.Text.Json.Serialization.Metadata
                 collectionInfo,
                 new ISetOfTConverter<TCollection, TElement>());
 
-        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         /// <summary>
         /// Creates serialization metadata for types assignable to <see cref="IReadOnlySet{T}"/>.

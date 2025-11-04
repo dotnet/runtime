@@ -101,7 +101,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithObjectISetT))]
 
-        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlySetT))]
 #endif
@@ -118,7 +117,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithGenericISetT))]
 
-        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         [JsonSerializable(typeof(TestClassWithGenericIReadOnlySetT))]
 #endif
@@ -260,7 +258,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlyListT))]
         [JsonSerializable(typeof(TestClassWithObjectISetT))]
 
-        // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
         [JsonSerializable(typeof(TestClassWithObjectIReadOnlySetT))]
 #endif

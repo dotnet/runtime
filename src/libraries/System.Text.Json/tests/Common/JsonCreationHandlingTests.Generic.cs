@@ -260,7 +260,6 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    // Only modern .NET (>= 5.0) supports IReadOnlySet<T>.
 #if NET
     internal struct StructReadOnlySet<T> : IReadOnlySet<T>
     {
