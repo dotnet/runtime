@@ -109,47 +109,9 @@ NativeImage::~NativeImage()
 }
 
 #ifndef DACCESS_COMPILE
-NativeImage *NativeImage::Open(
-    const SString& componentModulePath,
-    LPCUTF8 nativeImageFileName,
-    AssemblyBinder *pAssemblyBinder,
-    LoaderAllocator *pLoaderAllocator,
-    bool isPlatformNative,
-    /* out */ bool *isNewNativeImage)
+namespace
 {
-    STANDARD_VM_CONTRACT;
-
-    NativeImage *pExistingImage = AppDomain::GetCurrentDomain()->GetNativeImage(nativeImageFileName);
-    if (pExistingImage != nullptr)
-    {
-        *isNewNativeImage = false;
-        if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
-        {
-            return pExistingImage;
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-
-    READYTORUN_HEADER *pHeader = nullptr;
-    NewHolder<ReadyToRunLoadedImage> loadedImageHolder;
-    if (isPlatformNative)
-    {
-        // Call into the host to load the composite native image
-        size_t image_size;
-        void* image_base;
-        if (HostInformation::GetNativeCodeData(componentModulePath, nativeImageFileName, reinterpret_cast<void**>(&pHeader), &image_size, &image_base))
-        {
-            loadedImageHolder = new ReadyToRunLoadedImage((TADDR)image_base, (uint32_t)image_size);
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
-    else
+    ReadyToRunLoadedImage* OpenR2RFromPE(const SString& componentModulePath, LPCUTF8 nativeImageFileName, READYTORUN_HEADER** header)
     {
         SString path{ componentModulePath };
         SString::Iterator lastPathSeparatorIter = path.End();
@@ -243,17 +205,74 @@ NativeImage *NativeImage::Open(
             }
         }
 
-        pHeader = (READYTORUN_HEADER *)peLoadedImage->GetExport("RTR_HEADER");
-        if (pHeader == NULL)
+        *header = (READYTORUN_HEADER *)peLoadedImage->GetExport("RTR_HEADER");
+        if (*header == NULL)
         {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
-        loadedImageHolder = new ReadyToRunLoadedImage(
+        return new ReadyToRunLoadedImage(
             (TADDR)peLoadedImage->GetBase(),
             peLoadedImage->GetSize(),
             peLoadedImage.Extract(),
             [](void* img) { delete (PEImageLayout*)img; });
+    }
+}
+
+NativeImage *NativeImage::Open(
+    const SString& componentModulePath,
+    LPCUTF8 nativeImageFileName,
+    AssemblyBinder *pAssemblyBinder,
+    LoaderAllocator *pLoaderAllocator,
+    bool isPlatformNative,
+    /* out */ bool *isNewNativeImage)
+{
+    STANDARD_VM_CONTRACT;
+
+    NativeImage *pExistingImage = AppDomain::GetCurrentDomain()->GetNativeImage(nativeImageFileName);
+    if (pExistingImage != nullptr)
+    {
+        *isNewNativeImage = false;
+        if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
+        {
+            return pExistingImage;
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+
+    READYTORUN_HEADER *pHeader = nullptr;
+    NewHolder<ReadyToRunLoadedImage> loadedImageHolder;
+    if (isPlatformNative)
+    {
+        // Call into the host to load the composite native image
+        size_t image_size;
+        void* image_base;
+        if (HostInformation::GetNativeCodeData(componentModulePath, nativeImageFileName, reinterpret_cast<void**>(&pHeader), &image_size, &image_base))
+        {
+            loadedImageHolder = new ReadyToRunLoadedImage((TADDR)image_base, (uint32_t)image_size);
+        }
+        else
+        {
+#ifdef TARGET_WINDOWS
+            // For platform-native on Windows, fall back to runtime loading the PE
+            loadedImageHolder = OpenR2RFromPE(componentModulePath, nativeImageFileName, &pHeader);
+#else
+            // Match failure behaviour for failing to load from PE
+#ifdef LOGGING
+            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load platform-native image '%s' for component assembly '%s' using host callback'\n",
+                nativeImageFileName,
+                path.GetUTF8()));
+#endif // LOGGING
+            RaiseFailFastException(nullptr, nullptr, 0);
+#endif
+        }
+    }
+    else
+    {
+        loadedImageHolder = OpenR2RFromPE(componentModulePath, nativeImageFileName, &pHeader);
     }
 
     if (pHeader->Signature != READYTORUN_SIGNATURE)
