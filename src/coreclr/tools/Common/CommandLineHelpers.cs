@@ -311,9 +311,22 @@ namespace System.CommandLine
                         string reproFileDir = prefix + originalToReproPackageFileName.Count.ToString() + Path.DirectorySeparatorChar;
                         reproPackagePath = Path.Combine(reproFileDir, Path.GetFileName(originalPath));
                         if (!input)
+                        {
                             archive.CreateEntry(reproFileDir); // for outputs just create output directory
+                        }
                         else
+                        {
                             archive.CreateEntryFromFile(originalPath, reproPackagePath);
+
+                            // The compiler probes for .pdb files next to input assemblies. For simplicity, just try to look
+                            // for PDB next to any file we package.
+                            string originalPdbPath = Path.ChangeExtension(originalPath, "pdb");
+                            if (!string.Equals(originalPath, originalPdbPath, StringComparison.InvariantCultureIgnoreCase)
+                                && File.Exists(originalPdbPath))
+                            {
+                                archive.CreateEntryFromFile(originalPdbPath, Path.ChangeExtension(reproPackagePath, "pdb"));
+                            }
+                        }
                         originalToReproPackageFileName.Add(originalPath, reproPackagePath);
 
                         return reproPackagePath;

@@ -518,7 +518,7 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 // Don't use SectionWriter here as it emits symbols relative to the current writing position.
-                EmitSymbolDefinition(startSymbol.SectionIndex, rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value)));
+                EmitSymbolDefinition(startSymbol.SectionIndex, rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value + endSymbol.Size)));
             }
 
             foreach (BlockToRelocate blockToRelocate in blocksToRelocate)
