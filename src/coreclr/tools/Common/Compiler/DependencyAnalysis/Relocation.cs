@@ -350,7 +350,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert((imm12 & 7) == 0, "LDR offset must be 8-byte aligned");
 
             uint ldrInstr = *pCode;
-            // Check ldr opcode: 11_111_0_01_01_... (LDR 64-bit register, unsigned immediate)
+            // Check ldr opcode: 0b11111001010000000000000000000000 (LDR 64-bit register, unsigned immediate)
             Debug.Assert((ldrInstr & 0xFFC00000) == 0xF9400000);
 
             // Scale the offset by dividing by 8 for the instruction encoding
