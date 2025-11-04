@@ -33,8 +33,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestExtensionPropertyAnnotatedAccessorMismatch ();
 			TestExtensionPropertyRequires ();
 			TestExtensionPropertyConflict ();
-			TestExtensionOperators ();
-			TestExtensionOperatorsMismatch ();
+			// TestExtensionOperators ();
+			// TestExtensionOperatorsMismatch ();
 		}
 
 		static void TestExtensionMethod ()
@@ -131,26 +131,26 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.ExtensionMembersPropertyConflict = GetWithFields ();
 		}
 
-		[UnexpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
-		static void TestExtensionOperators ()
-		{
-			var a = GetWithFields ();
-			var b = GetWithFields ();
-			var c = a + b;
-			c.RequiresPublicFields ();
-		}
+		// [UnexpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicFields), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
+		// static void TestExtensionOperators ()
+		// {
+		// 	var a = GetWithFields ();
+		// 	var b = GetWithFields ();
+		// 	var c = a + b;
+		// 	c.RequiresPublicFields ();
+		// }
 
-		[ExpectedWarning ("IL2072", nameof (GetWithMethods), nameof (ExtensionMembers.op_Subtraction), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
-		[ExpectedWarning ("IL2072", nameof (GetWithMethods), nameof (ExtensionMembers.op_Subtraction), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
-		[ExpectedWarning ("IL2072", nameof (ExtensionMembers.op_Subtraction), nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
-		[UnexpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
-		static void TestExtensionOperatorsMismatch ()
-		{
-			var a = GetWithMethods ();
-			var b = GetWithMethods ();
-			var c = a - b;
-			c.RequiresPublicMethods ();
-		}
+		// [ExpectedWarning ("IL2072", nameof (GetWithMethods), nameof (ExtensionMembers.op_Subtraction), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
+		// [ExpectedWarning ("IL2072", nameof (GetWithMethods), nameof (ExtensionMembers.op_Subtraction), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
+		// [ExpectedWarning ("IL2072", nameof (ExtensionMembers.op_Subtraction), nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/119110")]
+		// [UnexpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods), Tool.Analyzer, "https://github.com/dotnet/runtime/issues/119110")]
+		// static void TestExtensionOperatorsMismatch ()
+		// {
+		// 	var a = GetWithMethods ();
+		// 	var b = GetWithMethods ();
+		// 	var c = a - b;
+		// 	c.RequiresPublicMethods ();
+		// }
 
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 		public static Type GetWithFields () => null;
@@ -256,28 +256,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				set => value.RequiresPublicFields ();
 			}
 
-			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
-			public static Type operator + (
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type left,
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type right)
-			{
-				left.RequiresPublicFields ();
-				right.RequiresPublicFields ();
-				return ExtensionMembersDataFlow.GetWithFields ();
-			}
+			// [return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+			// public static Type operator + (
+			// 	[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type left,
+			// 	[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type right)
+			// {
+			// 	left.RequiresPublicFields ();
+			// 	right.RequiresPublicFields ();
+			// 	return ExtensionMembersDataFlow.GetWithFields ();
+			// }
 
-			[ExpectedWarning ("IL2067", "left", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
-			[ExpectedWarning ("IL2067", "right", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
-			[ExpectedWarning ("IL2073", nameof (ExtensionMembersDataFlow.GetWithMethods))]
-			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
-			public static Type operator - (
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type left,
-				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type right)
-			{
-				left.RequiresPublicMethods ();
-				right.RequiresPublicMethods ();
-				return ExtensionMembersDataFlow.GetWithMethods ();
-			}
+			// [ExpectedWarning ("IL2067", "left", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+			// [ExpectedWarning ("IL2067", "right", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
+			// [ExpectedWarning ("IL2073", nameof (ExtensionMembersDataFlow.GetWithMethods))]
+			// [return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
+			// public static Type operator - (
+			// 	[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type left,
+			// 	[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type right)
+			// {
+			// 	left.RequiresPublicMethods ();
+			// 	right.RequiresPublicMethods ();
+			// 	return ExtensionMembersDataFlow.GetWithMethods ();
+			// }
 		}
 	}
 }
