@@ -606,14 +606,14 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(DeclaringTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
             Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
-            Debug.Assert(_jsonTypeInfo != null, "Must have already been determined on configuration.");
 
             bool numberHandlingIsApplicable = NumberHandingIsApplicable();
 
             if (numberHandlingIsApplicable)
             {
                 // Priority 1: Get handling from attribute on property/field, its parent class type or property type.
-                JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeInfo.NumberHandling ?? _jsonTypeInfo.NumberHandling;
+                // _jsonTypeInfo may be null if using a custom converter that doesn't need type metadata.
+                JsonNumberHandling? handling = NumberHandling ?? DeclaringTypeInfo.NumberHandling ?? _jsonTypeInfo?.NumberHandling;
 
                 // Priority 2: Get handling from JsonSerializerOptions instance.
                 if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
@@ -673,9 +673,12 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyValueTypeMustHaveASetter(this);
                 }
 
-                Debug.Assert(_jsonTypeInfo != null);
-                Debug.Assert(_jsonTypeInfo.IsConfigurationStarted);
-                if (JsonTypeInfo.SupportsPolymorphicDeserialization)
+                // _jsonTypeInfo may be null if using a custom converter that doesn't need type metadata.
+                if (_jsonTypeInfo is not null)
+                {
+                    Debug.Assert(_jsonTypeInfo.IsConfigurationStarted);
+                }
+                if (JsonTypeInfo?.SupportsPolymorphicDeserialization == true)
                 {
                     ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyCannotAllowPolymorphicDeserialization(this);
                 }
