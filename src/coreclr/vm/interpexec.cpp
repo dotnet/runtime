@@ -12,8 +12,7 @@
 
 // for numeric_limits
 #include <limits>
-#include <tuple>
-#include <utility>
+#include <functional>
 
 // Call invoker helpers provided by platform.
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target);
@@ -31,28 +30,18 @@ LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
         : EXCEPTION_EXECUTE_HANDLER;
 }
 
-template<typename Obj, typename Method, typename Tuple, size_t... Is>
-auto CallWithArgumentPack(Obj* obj, Method method, Tuple& args, std::index_sequence<Is...>)
--> decltype((obj->*method)(std::get<Is>(args)...))
-{
-    return (obj->*method)(std::get<Is>(args)...);
-}
-
-template<typename Obj, typename Method, typename... Args>
-auto CallWithSEHWrapper(Obj* obj, Method method, Args... args) -> decltype((obj->*method)(args...))
+template<typename Function>
+std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
 {
     struct Local
     {
-        Local(Args... args, Obj *objArg, Method methodArg) : argsTuple(args...), obj(objArg), method(methodArg) {}
-        std::tuple<Args...> argsTuple;
-        Obj * const obj;
-        Method method;
-        decltype((obj->*method)(args...)) result;
-    } local(args..., obj, method);
+        Function function;
+        std::invoke_result_t<Function> result;
+    } local { function };
 
     PAL_TRY(Local *, pParam, &local)
     {
-        pParam->result = CallWithArgumentPack(pParam->obj, pParam->method, pParam->argsTuple, std::index_sequence_for<Args...>{});
+        pParam->result = pParam->function();
     }
     PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
     {
@@ -2461,7 +2450,10 @@ MAIN_LOOP:
                     // Interpreter-TODO
                     // This needs to be optimized, not operating at MethodDesc level, rather with ftnptr
                     // slots containing the interpreter IR pointer
-                    targetMethod = CallWithSEHWrapper(pMD, &MethodDesc::GetMethodDescOfVirtualizedCode, pThisArg, pMD->GetMethodTable());
+                    targetMethod = CallWithSEHWrapper(
+                        [&pMD, &callArgsOffset, &stack]() {
+                            return pMD->GetMethodDescOfVirtualizedCode(LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF), pMD->GetMethodTable());
+                        });
 
                     ip += 4;
                     goto CALL_INTERP_METHOD;
@@ -2603,7 +2595,11 @@ MAIN_LOOP:
                         if (isOpenVirtual)
                         {
                             targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
-                            targetMethod = CallWithSEHWrapper(targetMethod, &MethodDesc::GetMethodDescOfVirtualizedCode, LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF), targetMethod->GetMethodTable());
+                            targetMethod = CallWithSEHWrapper(
+                                [&targetMethod, &callArgsOffset, &stack]() {
+                                    return targetMethod->GetMethodDescOfVirtualizedCode(LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF), targetMethod->GetMethodTable());
+                                });
+
                         }
                         else
                         {
@@ -2715,7 +2711,10 @@ CALL_INTERP_METHOD:
 
                             if (targetMethod->ShouldCallPrestub())
                             {
-                                CallWithSEHWrapper(targetMethod, &MethodDesc::DoPrestub, nullptr, CallerGCMode::Coop);
+                                CallWithSEHWrapper(
+                                    [&targetMethod]() {
+                                        return targetMethod->DoPrestub(nullptr, CallerGCMode::Coop);
+                                    });
                             }
 
                             targetIp = targetMethod->GetInterpreterCode();
