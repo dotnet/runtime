@@ -325,33 +325,40 @@ namespace ILCompiler.DependencyAnalysis
 
         //*****************************************************************************
         //  Extract the 12-bit page offset from an LDR instruction (unsigned immediate)
+        //  For 64-bit LDR, the immediate is scaled by 8 bytes
         //*****************************************************************************
         private static unsafe int GetArm64Rel12Ldr(uint* pCode)
         {
             uint ldrInstr = *pCode;
 
             // 21-10 contains value. Mask 12 bits and shift by 10 bits.
-            int imm12 = (int)(ldrInstr & 0x003FFC00) >> 10;
+            int scaledImm12 = (int)(ldrInstr & 0x003FFC00) >> 10;
 
-            return imm12;
+            // Scale back to byte offset
+            return scaledImm12 << 3;
         }
 
         //*****************************************************************************
         //  Deposit the 12-bit page offset 'imm12' into an LDR instruction (unsigned immediate)
+        //  For 64-bit LDR, the immediate represents offset/8 (scaled by 8 bytes)
         //*****************************************************************************
         private static unsafe void PutArm64Rel12Ldr(uint* pCode, int imm12)
         {
-            // Verify that we got a valid offset
+            // Verify that we got a valid offset and that it's aligned to 8 bytes
             Debug.Assert(FitsInRel12(imm12));
+            Debug.Assert((imm12 & 7) == 0, "LDR offset must be 8-byte aligned");
 
             uint ldrInstr = *pCode;
             // Check ldr opcode: 11_111_0_01_01_... (LDR 64-bit register, unsigned immediate)
             Debug.Assert((ldrInstr & 0xFFC00000) == 0xF9400000);
 
-            ldrInstr &= 0xFFC003FF;           // keep bits 31-22, 9-0
-            ldrInstr |= (uint)(imm12 << 10);  // Occupy 21-10.
+            // Scale the offset by dividing by 8 for the instruction encoding
+            int scaledImm12 = imm12 >> 3;
 
-            *pCode = ldrInstr;                // write the assembled instruction
+            ldrInstr &= 0xFFC003FF;                    // keep bits 31-22, 9-0
+            ldrInstr |= (uint)(scaledImm12 << 10);     // Occupy 21-10.
+
+            *pCode = ldrInstr;                         // write the assembled instruction
 
             Debug.Assert(GetArm64Rel12Ldr(pCode) == imm12);
         }
