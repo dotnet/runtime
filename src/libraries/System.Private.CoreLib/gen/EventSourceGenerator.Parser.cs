@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -49,8 +50,17 @@ namespace Generators
                         {
                             if (!ctorModifier.IsKind(SyntaxKind.StaticKeyword))
                             {
-                                // Contains an explicit constructor, skip generation
-                                return null;
+                                var diagnostic = Diagnostic.Create(
+                                    new DiagnosticDescriptor(
+                                        "ESGEN001",
+                                        "EventSource class contains explicit constructor",
+                                        "EventSource class '{0}' contains an explicit constructor. EventSource classes must not declare constructors.",
+                                        "EventSourceGenerator",
+                                        DiagnosticSeverity.Warning,
+                                        isEnabledByDefault: true),
+                                    ctor.GetLocation(),
+                                    classDef.Identifier.ValueText);
+                                return new EventSourceClass(diagnostic, null, null, null, default, false);
                             }
                         }
                     }
@@ -94,7 +104,7 @@ namespace Generators
                     }
                 }
 
-                eventSourceClass = new EventSourceClass(nspace, className, name, result, hasProviderMetadataProperty);
+                eventSourceClass = new EventSourceClass(null, nspace, className, name, result, hasProviderMetadataProperty);
                 continue;
             }
 

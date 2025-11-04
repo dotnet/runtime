@@ -27,9 +27,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private readonly List<WeakReference<ServiceProvider>> _providers = new();
 
+#pragma warning disable ESGEN001 // EventSource classes should not declare constructors.
         private DependencyInjectionEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
+#pragma warning restore ESGEN001 // EventSource classes should not declare constructors.
 
         // There is a risk that each ServiceProviderBuilt call only finds one entry to remove, and the next call will clean the list again and spend O(n) time on that.
         // So instead of tying the cleaning to the resizing, it might be better to have a separate counter.

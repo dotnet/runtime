@@ -126,9 +126,11 @@ namespace Microsoft.Extensions.Logging.EventSource
         private static readonly char[] s_semicolon = new[] { ';' };
         private static readonly char[] s_colon = new[] { ':' };
 
+#pragma warning disable ESGEN001 // EventSource classes should not declare constructors.
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
+#pragma warning restore ESGEN001 // EventSource classes should not declare constructors.
 
         /// <summary>
         /// FormattedMessage() is called when ILogger.Log() is called. and the FormattedMessage keyword is active
