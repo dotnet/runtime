@@ -169,7 +169,7 @@ namespace Internal.IL
                 {
                     // We should not be creating any AsyncMethodVariants yet.
                     // This hasn't been implemented.
-                    Debug.Assert(method.AsyncMethodKind is AsyncMethodKind.RuntimeAsync or AsyncMethodKind.AsyncExplicitImpl);
+                    Debug.Assert(!method.IsAsyncVariant());
                     return null;
                 }
 

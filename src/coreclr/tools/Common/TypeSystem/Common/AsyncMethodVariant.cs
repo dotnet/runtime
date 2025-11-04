@@ -17,34 +17,33 @@ namespace Internal.TypeSystem
         private readonly int _jitVisibleHashCode;
         private MethodSignature _asyncSignature;
 
-        public AsyncMethodVariant(MethodDesc wrappedMethod)
+        public AsyncMethodVariant(EcmaMethod wrappedMethod)
             : base(wrappedMethod)
         {
             Debug.Assert(wrappedMethod.Signature.ReturnsTaskOrValueTask());
             _jitVisibleHashCode = HashCode.Combine(wrappedMethod.GetHashCode(), 0x310bb74f);
         }
 
-        public MethodDesc Target => _wrappedMethod;
-
-        public override AsyncMethodKind AsyncMethodKind => _wrappedMethod.IsAsync ? AsyncMethodKind.AsyncVariantImpl : AsyncMethodKind.AsyncVariantThunk;
+        public EcmaMethod Target => (EcmaMethod)_wrappedMethod;
 
         public override MethodSignature Signature
         {
             get
             {
-                return _asyncSignature ??= CreateAsyncSignature(_wrappedMethod.Signature);
+                return _asyncSignature ?? InitializeSignature();
             }
         }
 
-        private MethodSignature CreateAsyncSignature(MethodSignature signature)
+        private MethodSignature InitializeSignature()
         {
+            var signature = _wrappedMethod.Signature;
             Debug.Assert(!signature.IsAsyncCallConv);
             Debug.Assert(signature.ReturnsTaskOrValueTask());
             TypeDesc md = signature.ReturnType;
             MethodSignatureBuilder builder = new MethodSignatureBuilder(signature);
             builder.ReturnType = md.HasInstantiation ? md.Instantiation[0] : this.Context.GetWellKnownType(WellKnownType.Void);
             builder.Flags = signature.Flags | MethodSignatureFlags.AsyncCallingConvention;
-            return builder.ToSignature();
+            return (_asyncSignature = builder.ToSignature());
         }
 
         public override MethodDesc GetCanonMethodTarget(CanonicalFormKind kind)
@@ -54,32 +53,20 @@ namespace Internal.TypeSystem
 
         public override MethodDesc GetMethodDefinition()
         {
-            var real = _wrappedMethod.GetMethodDefinition();
-            if (real == _wrappedMethod)
-                return this;
-
-            return _wrappedMethod.Context.GetAsyncVariant(real);
+            return this;
         }
 
         public override MethodDesc GetTypicalMethodDefinition()
         {
-            var real = _wrappedMethod.GetTypicalMethodDefinition();
-            if (real == _wrappedMethod)
-                return this;
-
-            return _wrappedMethod.Context.GetAsyncVariant(real);
+            return this;
         }
 
         public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            var real = _wrappedMethod.InstantiateSignature(typeInstantiation, methodInstantiation);
-            if (real == _wrappedMethod)
-                return this;
-
-            return _wrappedMethod.Context.GetAsyncVariant(real);
+            throw new NotImplementedException();
         }
 
-        public override string ToString() => $"Async variant ({AsyncMethodKind}): " + _wrappedMethod.ToString();
+        public override string ToString() => $"Async variant: " + _wrappedMethod.ToString();
 
         protected internal override int ClassCode => unchecked((int)0xd0fd1c1fu);
 
@@ -95,14 +82,6 @@ namespace Internal.TypeSystem
         }
     }
 
-    public sealed class AsyncMethodVariantFactory : ConcurrentDictionary<MethodDesc, AsyncMethodVariant>
-    {
-        public AsyncMethodVariant GetOrCreateAsyncMethodImplVariant(MethodDesc wrappedMethod)
-        {
-            return GetOrAdd(wrappedMethod, static (x) => new AsyncMethodVariant(x));
-        }
-    }
-
     public static class AsyncMethodVariantExtensions
     {
         /// <summary>
@@ -111,14 +90,6 @@ namespace Internal.TypeSystem
         public static bool IsAsyncVariant(this MethodDesc method)
         {
             return method is AsyncMethodVariant;
-        }
-
-        /// <summary>
-        /// Gets the wrapped method of the AsyncMethodVariant. This method is Task-returning.
-        /// </summary>
-        public static MethodDesc GetAsyncVariantDefinition(this MethodDesc method)
-        {
-            return ((AsyncMethodVariant)method).Target;
         }
     }
 }

@@ -52,7 +52,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_METHOD_SIG_Constrained = 0x20,
         READYTORUN_METHOD_SIG_OwnerType = 0x40,
         READYTORUN_METHOD_SIG_UpdateContext = 0x80,
-        READYTORUN_METHOD_SIG_AsyncThunkVariant = 0x100,
+        READYTORUN_METHOD_SIG_AsyncVariant = 0x100,
     }
 
     [Flags]

@@ -470,7 +470,6 @@ namespace Internal.JitInterface
         private NativeVarInfo[] _debugVarInfos;
         private HashSet<MethodDesc> _inlinedMethods;
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
-        private AsyncMethodVariantFactory _asyncMethodFactory = new AsyncMethodVariantFactory();
         private List<ISymbolNode> _precodeFixups;
         private List<EcmaMethod> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();

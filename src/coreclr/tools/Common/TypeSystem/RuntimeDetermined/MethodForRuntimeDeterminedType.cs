@@ -40,7 +40,6 @@ namespace Internal.TypeSystem
         public override MethodDesc GetTypicalMethodDefinition() => _typicalMethodDef;
         public override Instantiation Instantiation => _typicalMethodDef.Instantiation;
         public override bool IsAsync => _typicalMethodDef.IsAsync;
-        public override AsyncMethodKind AsyncMethodKind => _typicalMethodDef.AsyncMethodKind;
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {

@@ -64,14 +64,6 @@ namespace Internal.JitInterface
             return this;
         }
 
-        public override AsyncMethodKind AsyncMethodKind
-        {
-            get
-            {
-                return _wrappedMethod.AsyncMethodKind;
-            }
-        }
-
         public override string ToString()
         {
             return "Unboxing MethodDesc: " + _wrappedMethod.ToString();
