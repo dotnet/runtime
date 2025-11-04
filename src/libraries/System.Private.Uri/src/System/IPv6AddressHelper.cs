@@ -144,8 +144,9 @@ namespace System.Net
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        private static unsafe bool InternalIsValid(char* name, int start, ref int end, bool validateStrictAddress)
+        private static bool InternalIsValid(ReadOnlySpan<char> name, out int end, bool validateStrictAddress)
         {
+            end = 0; // Default value in case of failure
             int sequenceCount = 0;
             int sequenceLength = 0;
             bool haveCompressor = false;
@@ -155,13 +156,14 @@ namespace System.Net
             int lastSequence = 1;
 
             // Starting with a colon character is only valid if another colon follows.
-            if (name[start] == ':' && (start + 1 >= end || name[start + 1] != ':'))
+            if (name.Length < 2 || (name[0] == ':' && name[1] != ':'))
             {
                 return false;
             }
 
+            int start = 0;
             int i;
-            for (i = start; i < end; ++i)
+            for (i = 0; i < name.Length; ++i)
             {
                 if (havePrefix ? char.IsAsciiDigit(name[i]) : char.IsAsciiHexDigit(name[i]))
                 {
@@ -185,7 +187,7 @@ namespace System.Net
                             while (true)
                             {
                                 //accept anything in scopeID
-                                if (++i == end)
+                                if (++i == name.Length)
                                 {
                                     // no closing ']', fail
                                     return false;
@@ -201,7 +203,7 @@ namespace System.Net
                             }
                         case ']':
                             start = i;
-                            i = end;
+                            i = name.Length;
                             //this will make i = end+1
                             continue;
                         case ':':
@@ -243,11 +245,12 @@ namespace System.Net
                                 return false;
                             }
 
-                            i = end;
-                            if (!IPv4AddressHelper.IsValid(name, lastSequence, ref i, true, false, false))
+                            i = name.Length;
+                            if (!IPv4AddressHelper.IsValid(name.Slice(lastSequence, i - lastSequence), out int seqEnd, true, false, false))
                             {
                                 return false;
                             }
+                            i = lastSequence + seqEnd;
                             // ipv4 address takes 2 slots in ipv6 address, one was just counted meeting the '.'
                             ++sequenceCount;
                             haveIPv4Address = true;
@@ -278,7 +281,7 @@ namespace System.Net
 
             if (!expectingNumber && (sequenceLength <= 4) && (haveCompressor ? (sequenceCount < expectedSequenceCount) : (sequenceCount == expectedSequenceCount)))
             {
-                if (i == end + 1)
+                if (i == name.Length + 1)
                 {
                     // ']' was found
                     end = start + 1;
@@ -321,9 +324,9 @@ namespace System.Net
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
 
-        internal static unsafe bool IsValid(char* name, int start, ref int end)
+        internal static bool IsValid(ReadOnlySpan<char> name, out int end)
         {
-            return InternalIsValid(name, start, ref end, false);
+            return InternalIsValid(name, out end, false);
         }
     }
 }

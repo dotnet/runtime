@@ -13,17 +13,7 @@ namespace System.Net
         // Parse and canonicalize
         internal static string ParseCanonicalName(string str, int start, int end, ref bool isLoopback)
         {
-            // end includes ports, so changedEnd may be different from end
-            int changedEnd = end;
-            long result;
-
-            unsafe
-            {
-                fixed (char* ipString = str)
-                {
-                    result = ParseNonCanonical(ipString, start, ref changedEnd, true);
-                }
-            }
+            long result = ParseNonCanonical(str.AsSpan(start), out _, true);
 
             Debug.Assert(result != Invalid, $"Failed to parse after already validated: {str}");
 
