@@ -84,7 +84,17 @@ namespace Generators
                     result = GenerateGuidFromName(name.ToUpperInvariant());
                 }
 
-                eventSourceClass = new EventSourceClass(nspace, className, name, result);
+                bool hasProviderMetadataProperty = false;
+                foreach (MemberDeclarationSyntax member in classDef.Members)
+                {
+                    if (member is PropertyDeclarationSyntax prop && prop.Identifier.Text == "ProviderMetadata")
+                    {
+                        hasProviderMetadataProperty = true;
+                        break;
+                    }
+                }
+
+                eventSourceClass = new EventSourceClass(nspace, className, name, result, hasProviderMetadataProperty);
                 continue;
             }
 

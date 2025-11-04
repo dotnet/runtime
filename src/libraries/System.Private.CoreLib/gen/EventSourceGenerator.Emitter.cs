@@ -42,7 +42,10 @@ namespace {ec.Namespace}
     {{");
             GenerateConstructor(ec, sb);
 
-            GenerateProviderMetadata(ec.SourceName, sb);
+            if (ec.HasProviderMetadataProperty)
+            {
+                GenerateProviderMetadata(ec.SourceName, sb);
+            }
 
             sb.AppendLine($@"
     }}");
@@ -63,8 +66,7 @@ namespace {ec.Namespace}
         private static void GenerateProviderMetadata(string sourceName, StringBuilder sb)
         {
             sb.Append(@"
-#if SYSTEM_PRIVATE_CORELIB
-        private protected override ReadOnlySpan<byte> ProviderMetadata => new byte[] { ");
+        private protected override ReadOnlySpan<byte> ProviderMetadata => [");
 
             byte[] metadataBytes = MetadataForString(sourceName);
             foreach (byte b in metadataBytes)
@@ -72,8 +74,7 @@ namespace {ec.Namespace}
                 sb.Append($"0x{b:x}, ");
             }
 
-            sb.AppendLine(@"};");
-            sb.AppendLine("#endif");
+            sb.AppendLine(@"];");
         }
 
         // From System.Private.CoreLib

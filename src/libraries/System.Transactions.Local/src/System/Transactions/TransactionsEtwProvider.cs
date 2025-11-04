@@ -80,11 +80,7 @@ namespace System.Transactions
         /// Defines the singleton instance for the Transactions ETW provider.
         /// The Transactions provider GUID is {8ac2d80a-1f1a-431b-ace4-bff8824aef0b}.
         /// </summary>
-        ///
-
-
         internal static readonly TransactionsEtwProvider Log = new TransactionsEtwProvider();
-        /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
 
         /// <summary>Enabled for all keywords.</summary>
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);

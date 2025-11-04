@@ -46,6 +46,6 @@ namespace Generators
             context.RegisterSourceOutput(eventSourceClasses, EmitSourceFile);
         }
 
-        private sealed record EventSourceClass(string Namespace, string ClassName, string SourceName, Guid Guid);
+        private sealed record EventSourceClass(string Namespace, string ClassName, string SourceName, Guid Guid, bool HasProviderMetadataProperty);
     }
 }

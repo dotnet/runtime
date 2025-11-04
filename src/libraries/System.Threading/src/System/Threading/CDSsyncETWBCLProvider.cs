@@ -32,7 +32,6 @@ namespace System.Threading
         /// The CDS Sync Event provider GUID is {EC631D38-466B-4290-9306-834971BA0217}.
         /// </summary>
         public static readonly CdsSyncEtwBCLProvider Log = new CdsSyncEtwBCLProvider();
-        /// <summary>Prevent external instantiation.  All logging should go through the Log instance.</summary>
 
         /// <summary>Enabled for all keywords.</summary>
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);
