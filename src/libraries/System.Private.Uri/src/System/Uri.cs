@@ -2234,11 +2234,11 @@ namespace System
 
                     if (newHost is not null)
                     {
-                        // When bidi characters are stripped, newHost is shorter than the original string.
-                        // Adjust idx to account for the removed characters.
-                        int removedChars = length - newHost.Length;
-                        idx -= removedChars;
                         _string = newHost;
+                        // newHost contains everything from the start through the end of the authority
+                        // with bidi characters removed. idx should point to the position right after
+                        // the authority in the new string, which is simply newHost.Length.
+                        idx = newHost.Length;
                     }
                 }
 
