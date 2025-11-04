@@ -439,7 +439,10 @@ namespace System.Text.Json.Serialization.Metadata
 
                 if (expandedCustomConverter is null)
                 {
-                    // No custom converter or the factory returned null, so we need to get the JsonTypeInfo
+                    // If expandedCustomConverter is null, it means either:
+                    // (1) no custom converter was specified, or
+                    // (2) a custom converter was specified but the factory returned null after expansion.
+                    // In either case, we need to get the JsonTypeInfo.
                     _jsonTypeInfo ??= Options.GetTypeInfoInternal(PropertyType);
                     _jsonTypeInfo.EnsureConfigured();
                 }

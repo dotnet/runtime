@@ -156,13 +156,8 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                // Need to get JsonTypeInfo if we don't have it yet
-                if (jsonTypeInfo is null)
-                {
-                    jsonTypeInfo = Options.GetTypeInfoInternal(PropertyType);
-                    jsonTypeInfo.EnsureConfigured();
-                    JsonTypeInfo = jsonTypeInfo;
-                }
+                // jsonTypeInfo should have been provided by caller when no custom converter is available
+                Debug.Assert(jsonTypeInfo is not null, "JsonTypeInfo must be provided when custom converter is not available.");
 
                 // Fall back to the effective converter for the type
                 converter = ((JsonTypeInfo<T>)jsonTypeInfo).EffectiveConverter;
