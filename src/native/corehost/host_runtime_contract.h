@@ -60,6 +60,25 @@ struct host_runtime_contract
         const char* path,
         /*out*/ void **data_start,
         /*out*/ int64_t* size);
-};
 
+    struct native_code_context
+    {
+        size_t size;                       // size of this struct
+        const char* assembly_path;         // component assembly path
+        const char* owner_composite_name;  // name from component R2R header
+    };
+
+    struct native_code_data
+    {
+       size_t size;           // size of this struct
+       void* r2r_header_ptr;  // ReadyToRun header
+       size_t image_size;     // size of the image
+       void* image_base;      // base address where the image was loaded
+    };
+
+    // Get native code data for the assembly specified by the supplied context
+    bool(HOST_CONTRACT_CALLTYPE* get_native_code_data)(
+       const struct native_code_context* context,
+       /*out*/ struct native_code_data* data);
+};
 #endif // __HOST_RUNTIME_CONTRACT_H__
