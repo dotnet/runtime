@@ -1396,7 +1396,7 @@ namespace Internal.JitInterface
 
             if (info->pResolvedTokenVirtualMethod != null)
             {
-                methodWithTokenDecl = ComputeMethodWithToken(decl, ref *info->pResolvedTokenVirtualMethod, null, false, asyncVariant: false);
+                methodWithTokenDecl = ComputeMethodWithToken(decl, ref *info->pResolvedTokenVirtualMethod, null, false);
             }
             else
             {

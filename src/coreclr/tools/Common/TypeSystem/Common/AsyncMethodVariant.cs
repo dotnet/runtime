@@ -14,14 +14,12 @@ namespace Internal.TypeSystem
     /// </summary>
     public partial class AsyncMethodVariant : MethodDelegator
     {
-        private readonly int _jitVisibleHashCode;
         private MethodSignature _asyncSignature;
 
         public AsyncMethodVariant(EcmaMethod wrappedMethod)
             : base(wrappedMethod)
         {
             Debug.Assert(wrappedMethod.Signature.ReturnsTaskOrValueTask());
-            _jitVisibleHashCode = HashCode.Combine(wrappedMethod.GetHashCode(), 0x310bb74f);
         }
 
         public EcmaMethod Target => (EcmaMethod)_wrappedMethod;
@@ -73,12 +71,7 @@ namespace Internal.TypeSystem
         protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             var asyncOther = (AsyncMethodVariant)other;
-            return comparer.Compare(this._wrappedMethod, asyncOther._wrappedMethod);
-        }
-
-        protected override int ComputeHashCode()
-        {
-            return _jitVisibleHashCode;
+            return comparer.Compare(_wrappedMethod, asyncOther._wrappedMethod);
         }
     }
 
