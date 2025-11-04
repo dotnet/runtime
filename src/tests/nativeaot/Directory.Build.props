@@ -7,6 +7,9 @@
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
   </PropertyGroup>
 
+  <!-- When runtime tests are brought up for Android, the logic that's common
+       to nativeaot and runtime tests should be moved into the parent
+       Directory.Build.props. -->
   <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
     <!-- We need the library import generator when running android tests. -->
     <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
