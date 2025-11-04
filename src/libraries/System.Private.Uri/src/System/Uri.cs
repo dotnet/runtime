@@ -2234,6 +2234,10 @@ namespace System
 
                     if (newHost is not null)
                     {
+                        // When bidi characters are stripped, newHost is shorter than the original string.
+                        // Adjust idx to account for the removed characters.
+                        int removedChars = length - newHost.Length;
+                        idx -= removedChars;
                         _string = newHost;
                     }
                 }
@@ -2273,7 +2277,7 @@ namespace System
             if ((cF & Flags.ImplicitFile) != 0)
             {
                 idx = 0;
-                while (idx < _string.Length && UriHelper.IsLWS(_string[idx]))
+                while (UriHelper.IsLWS(_string[idx]))
                 {
                     ++idx;
                     ++info.Offset.Scheme;
@@ -2283,18 +2287,8 @@ namespace System
                 {
                     // For implicit file AND Unc only
                     idx += 2;
-                    // Ensure idx doesn't exceed string length after increment
-                    if (idx > _string.Length)
-                    {
-                        throw GetException(ParsingError.BadHostName)!;
-                    }
                     //skip any other slashes (compatibility with V1.0 parser)
                     int end = (int)(cF & Flags.IndexMask);
-                    // If end exceeds string length, URI is malformed (e.g., bidi chars were stripped)
-                    if (end > _string.Length)
-                    {
-                        throw GetException(ParsingError.BadHostName)!;
-                    }
                     while (idx < end && (_string[idx] == '/' || _string[idx] == '\\'))
                     {
                         ++idx;
@@ -2306,33 +2300,22 @@ namespace System
                 // This is NOT an ImplicitFile uri
                 idx = _syntax.SchemeName.Length;
 
-                while (idx < _string.Length && _string[idx++] != ':')
+                while (_string[idx++] != ':')
                 {
                     ++info.Offset.Scheme;
                 }
 
                 if ((cF & Flags.AuthorityFound) != 0)
                 {
-                    if (idx < _string.Length && (idx + 1) < _string.Length &&
-                        (_string[idx] == '\\' || _string[idx + 1] == '\\'))
+                    if (_string[idx] == '\\' || _string[idx + 1] == '\\')
                         notCanonicalScheme = true;
 
                     idx += 2;
-                    // Ensure idx doesn't exceed string length after increment
-                    if (idx > _string.Length)
-                    {
-                        throw GetException(ParsingError.BadHostName)!;
-                    }
                     if ((cF & (Flags.UncPath | Flags.DosPath)) != 0)
                     {
                         // Skip slashes if it was allowed during ctor time
                         // NB: Today this is only allowed if a Unc or DosPath was found after the scheme
                         int end = (int)(cF & Flags.IndexMask);
-                        // If end exceeds string length, URI is malformed (e.g., bidi chars were stripped)
-                        if (end > _string.Length)
-                        {
-                            throw GetException(ParsingError.BadHostName)!;
-                        }
                         while (idx < end && (_string[idx] == '/' || _string[idx] == '\\'))
                         {
                             notCanonicalScheme = true;
@@ -2352,13 +2335,7 @@ namespace System
                 )
             {
                 //there is no Authority component defined
-                int pathIndex = (int)(cF & Flags.IndexMask);
-                // Validate index is within string bounds
-                if (pathIndex > _string.Length)
-                {
-                    throw GetException(ParsingError.BadHostName)!;
-                }
-                info.Offset.User = pathIndex;
+                info.Offset.User = (int)(cF & Flags.IndexMask);
                 info.Offset.Host = info.Offset.User;
                 info.Offset.Path = info.Offset.User;
                 cF &= ~Flags.IndexMask;
@@ -2375,13 +2352,7 @@ namespace System
             if (HostType == Flags.BasicHostType)
             {
                 info.Offset.Host = idx;
-                int pathIndex = (int)(cF & Flags.IndexMask);
-                // Validate index is within string bounds
-                if (pathIndex > _string.Length)
-                {
-                    throw GetException(ParsingError.BadHostName)!;
-                }
-                info.Offset.Path = pathIndex;
+                info.Offset.Path = (int)(cF & Flags.IndexMask);
                 cF &= ~Flags.IndexMask;
                 goto Done;
             }
@@ -2389,15 +2360,11 @@ namespace System
             if ((cF & Flags.HasUserInfo) != 0)
             {
                 // we previously found a userinfo, get it again
-                while (idx < _string.Length && _string[idx] != '@')
+                while (_string[idx] != '@')
                 {
                     ++idx;
                 }
-                // Only increment if we found '@' within bounds
-                if (idx < _string.Length)
-                {
-                    ++idx;
-                }
+                ++idx;
                 info.Offset.Host = idx;
             }
             else
@@ -2407,20 +2374,6 @@ namespace System
 
             //Now reload the end of the parsed host
             idx = (int)(cF & Flags.IndexMask);
-
-            // Handle cases where _string was modified during parsing (percent-decoding, bidi removal).
-            // If idx exceeds _string.Length AND we have a file:// URI with UncPath, this indicates
-            // bidi character removal created a malformed URI (empty host). Otherwise, clamp for IRI processing.
-            if (idx > _string.Length)
-            {
-                if (StaticIsFile(_syntax) && StaticInFact(cF, Flags.UncPath))
-                {
-                    // File UNC paths with out-of-bounds indices indicate malformed URIs from bidi removal
-                    throw GetException(ParsingError.BadHostName)!;
-                }
-                // For other cases (e.g., percent-decoding in IRI), clamp to string length
-                idx = _string.Length;
-            }
 
             //From now on we do not need IndexMask bits, and reuse the space for X_NotCanonical flags
             //clear them now
