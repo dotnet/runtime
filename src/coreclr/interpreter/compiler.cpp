@@ -5756,6 +5756,23 @@ retry_emit:
             {
                 AddIns(INTOP_LOAD_EXCEPTION);
                 m_pLastNewIns->SetDVar(m_pCBB->clauseVarIndex);
+
+                // To allow filter clauses in generic methods to access the generic argument,
+                // we copy that argument variable from the parent frame to the filter's frame.
+                // The target variable offset is the same as the one in the parent frame.
+                if ((m_pCBB->clauseType == BBClauseFilter) && (m_paramArgIndex != -1))
+                {
+                    AddIns(INTOP_LOAD_FRAMEVAR);
+                    PushInterpType(InterpTypeI, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                    m_pStackPointer--;
+                    int32_t opcode = GetLdindForType(m_pVars[m_paramArgIndex].interpType);
+                    AddIns(opcode);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                    m_pLastNewIns->SetDVar(m_paramArgIndex);
+                    m_pLastNewIns->data[0] = m_pVars[m_paramArgIndex].offset;
+                }
             }
         }
 
