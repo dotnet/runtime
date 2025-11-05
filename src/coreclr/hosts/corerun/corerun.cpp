@@ -285,8 +285,8 @@ static char* s_core_libs_path = nullptr;
 static char* s_core_root_path = nullptr;
 
 static bool HOST_CONTRACT_CALLTYPE get_native_code_data(
-    const host_runtime_contract::native_code_context* context,
-    host_runtime_contract::native_code_data* data)
+    const host_runtime_contract_native_code_context* context,
+    host_runtime_contract_native_code_data* data)
 {
 #if !defined(TARGET_WINDOWS) && !defined(TARGET_OSX)
     // Platform-native R2R is only supported on Windows and macOS
@@ -328,7 +328,7 @@ static bool HOST_CONTRACT_CALLTYPE get_native_code_data(
     if (image_size == 0)
         return false;
 
-    data->size = sizeof(host_runtime_contract::native_code_data);
+    data->size = sizeof(host_runtime_contract_native_code_data);
     data->r2r_header_ptr = header_ptr;
     data->image_size = image_size;
     data->image_base = base_address;
