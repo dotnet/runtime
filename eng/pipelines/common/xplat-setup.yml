@@ -20,7 +20,6 @@ jobs:
 
     variables:
       - template: /eng/common/${{ coalesce(parameters.jobParameters.templatePath, 'templates') }}/variables/pool-providers.yml
-      - template: /eng/pipelines/helix-platforms.yml
       # Disable component governance in our CI builds. These builds are not shipping nor
       # are they a service. Also the component governance jobs issue lots of inconsequential
       # warnings and errors into our build timelines that make it hard to track down

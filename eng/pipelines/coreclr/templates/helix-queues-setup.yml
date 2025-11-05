@@ -22,7 +22,9 @@ parameters:
 jobs:
 - template: ${{ parameters.jobTemplate }}
   parameters:
-    variables: ${{ parameters.variables }}
+    variables:
+    - template: /eng/pipelines/helix-platforms.yml
+    - ${{ parameters.variables }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
