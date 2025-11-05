@@ -43,8 +43,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="$(MonoProjectRoot)\browser\test-main.js" Link="wwwroot\test-main.js" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="$(MonoProjectRoot)\browser\test-index.html" Link="wwwroot\index.html" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MonoProjectRoot)browser\test-main.js" Link="wwwroot\test-main.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MonoProjectRoot)browser\test-index.html" Link="wwwroot\index.html" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- We expect WASM users to indicate they would like to have bigger download size by adding WasmIncludeFullIcuData, -->
