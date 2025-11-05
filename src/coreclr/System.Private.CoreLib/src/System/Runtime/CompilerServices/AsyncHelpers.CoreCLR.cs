@@ -151,7 +151,7 @@ namespace System.Runtime.CompilerServices
 #if NATIVEAOT
             Continuation newContinuation = (Continuation)RuntimeImports.RhNewObject(contMT);
 #else
-            Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);       
+            Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
 #endif
             prevContinuation.Next = newContinuation;
             return newContinuation;
