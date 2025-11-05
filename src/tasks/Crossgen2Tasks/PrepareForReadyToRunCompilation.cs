@@ -210,7 +210,7 @@ namespace Microsoft.NET.Build.Tasks
                     // an input to the ReadyToRunCompiler task
                     TaskItem r2rCompilationEntry = new(file);
                     r2rCompilationEntry.SetMetadata(MetadataKeys.OutputR2RImage, outputR2RImage);
-                    if (outputPDBImage != null && ReadyToRunUseCrossgen2 && !_crossgen2IsVersion5)
+                    if (outputPDBImage != null && ReadyToRunUseCrossgen2 && !_crossgen2IsVersion5 && EmitSymbols)
                     {
                         r2rCompilationEntry.SetMetadata(MetadataKeys.EmitSymbols, "true");
                         r2rCompilationEntry.SetMetadata(MetadataKeys.OutputPDBImage, outputPDBImage);

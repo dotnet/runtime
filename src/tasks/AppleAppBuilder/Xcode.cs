@@ -295,6 +295,12 @@ internal sealed class Xcode
         {
             predefinedExcludes.Add("libcoreclr.dylib");
         }
+        else
+        {
+            // Interpreter is statically linked into the runtime already
+            predefinedExcludes.Add("libclrjit.dylib");
+            predefinedExcludes.Add("libclrinterpreter.dylib");
+        }
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
             .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase) &&
@@ -386,52 +392,49 @@ internal sealed class Xcode
         }
         else
         {
-            string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
-            string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
-
-            // by default, component stubs will be linked and depending on how mono runtime has been build,
-            // stubs can disable or dynamic load components.
-            foreach (string staticComponentStubLib in staticComponentStubLibs)
-            {
-                string componentLibToLink = staticComponentStubLib;
-                foreach (string runtimeComponent in runtimeComponents)
-                {
-                    if (componentLibToLink.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // static link component.
-                        componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
-                        break;
-                    }
-                }
-
-                // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
-                if (!File.Exists(componentLibToLink))
-                {
-                    Logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
-                    componentLibToLink = staticComponentStubLib;
-                }
-
-                toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
-            }
-
             if (targetRuntime == TargetRuntime.CoreCLR)
             {
-                // Interpreter-FIXME: CoreCLR on iOS currently supports only static linking.
-                // The build system needs to be updated to conditionally initialize the compiler at runtime based on an environment variable.
-                // Tracking issue: https://github.com/dotnet/runtime/issues/119006
-                string[] staticLibPatterns = new string[] {
-                    "libcoreclr_static.a",
-                    "libbrotli*.a",
-                    "libSystem*.a"
+                string[] dylibsPatterns = new string[] {
+                    "libcoreclr.dylib",
+                    "libbrotli*.dylib",
+                    "libSystem*.dylib"
                 };
-                string[] staticLibs = staticLibPatterns.SelectMany(pattern => Directory.GetFiles(workspace, pattern)).ToArray();
-                foreach (string lib in staticLibs)
+                string[] dylibs = dylibsPatterns.SelectMany(pattern => Directory.GetFiles(workspace, pattern)).ToArray();
+                foreach (string lib in dylibs)
                 {
-                    toLink += $"    -Wl,-force_load,\"{lib}\"{Environment.NewLine}";
+                    toLink += $"    \"-force_load {lib}\"{Environment.NewLine}";
                 }
             }
             else
             {
+                string[] allComponentLibs = Directory.GetFiles(workspace, "libmono-component-*-static.a");
+                string[] staticComponentStubLibs = Directory.GetFiles(workspace, "libmono-component-*-stub-static.a");
+
+                // by default, component stubs will be linked and depending on how mono runtime has been build,
+                // stubs can disable or dynamic load components.
+                foreach (string staticComponentStubLib in staticComponentStubLibs)
+                {
+                    string componentLibToLink = staticComponentStubLib;
+                    foreach (string runtimeComponent in runtimeComponents)
+                    {
+                        if (componentLibToLink.Contains(runtimeComponent, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // static link component.
+                            componentLibToLink = componentLibToLink.Replace("-stub-static.a", "-static.a", StringComparison.OrdinalIgnoreCase);
+                            break;
+                        }
+                    }
+
+                    // if lib doesn't exist (primarily due to runtime build without static lib support), fallback linking stub lib.
+                    if (!File.Exists(componentLibToLink))
+                    {
+                        Logger.LogMessage(MessageImportance.High, $"\nCouldn't find static component library: {componentLibToLink}, linking static component stub library: {staticComponentStubLib}.\n");
+                        componentLibToLink = staticComponentStubLib;
+                    }
+
+                    toLink += $"    \"-force_load {componentLibToLink}\"{Environment.NewLine}";
+                }
+
                 string[] dylibs = Directory.GetFiles(workspace, "*.dylib");
                 // Sort the static libraries to link so the brotli libs are added to the list last (after the compression native libs)
                 List<string> staticLibsToLink = Directory.GetFiles(workspace, "*.a").OrderBy(libName => libName.Contains("brotli") ? 1 : 0).ToList();

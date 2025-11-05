@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { VoidPtr } from "../types";
+import type { CharPtr, VoidPtr } from "../types";
 import { dotnetApi } from "../utils/cross-module";
 import { getU16Local, setU16Local, viewOrCopy, zeroRegion } from "./memory";
 import { Module } from "./cross-module";
@@ -34,6 +34,13 @@ export function stringToUTF16Ptr(str: string): VoidPtr {
     const ptr = Module._malloc(bytes) as any;
     zeroRegion(ptr, str.length * 2);
     stringToUTF16(ptr, ptr + bytes, str);
+    return ptr;
+}
+
+export function stringToUTF8Ptr(str: string): CharPtr {
+    const size = Module.lengthBytesUTF8(str) + 1;
+    const ptr = Module._malloc(size) as any;
+    Module.stringToUTF8Array(str, Module.HEAPU8, ptr, size);
     return ptr;
 }
 

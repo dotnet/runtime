@@ -976,11 +976,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                             // The current configuration section doesn't have any children, let's check if we are binding to an array and the configuration value is empty string.
                             // In this case, we will assign an empty array to the member. Otherwise, we will skip the binding logic.
-                            if (complexType is ArraySpec arraySpec && canSet)
+                            if ((complexType is ArraySpec || complexType.IsExactIEnumerableOfT) && canSet)
                             {
+                                // Either we have an array or we have an IEnumerable<T> both these types can be assigned an empty array when having empty string configuration value.
+                                Debug.Assert(complexType is ArraySpec || complexType is EnumerableSpec);
                                 string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
                                 EmitStartBlock($@"if ({memberAccessExpr} is null && {Identifier.TryGetConfigurationValue}({configSection}, {Identifier.key}: null, out string? {valueIdentifier}) && {valueIdentifier} == string.Empty)");
-                                _writer.WriteLine($"{memberAccessExpr} = global::System.{Identifier.Array}.Empty<{arraySpec.ElementTypeRef.FullyQualifiedName}>();");
+                                _writer.WriteLine($"{memberAccessExpr} = global::System.{Identifier.Array}.Empty<{((CollectionSpec)complexType).ElementTypeRef.FullyQualifiedName}>();");
                                 EmitEndBlock();
                             }
 

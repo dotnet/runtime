@@ -877,6 +877,7 @@ namespace Internal.JitInterface
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
             if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
+            if (signature.IsAsyncCall) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
 
             TypeDesc returnType = signature.ReturnType;
 
@@ -1827,11 +1828,6 @@ namespace Internal.JitInterface
 
             if (result is MethodDesc method)
             {
-                pResolvedToken.hMethod = ObjectToHandle(method);
-
-                TypeDesc owningClass = method.OwningType;
-                pResolvedToken.hClass = ObjectToHandle(owningClass);
-
 #if !SUPPORT_JIT
                 _compilation.TypeSystemContext.EnsureLoadableMethod(method);
 #endif
@@ -1847,6 +1843,27 @@ namespace Internal.JitInterface
 #else
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
 #endif
+
+                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await)
+                {
+                    // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+                    // we cannot resolve to an Async variant in such case.
+                    // return NULL, so that caller would re-resolve as a regular method call
+                    method = method.IsAsync && method.GetMethodDefinition().Signature.ReturnsTaskOrValueTask()
+                        ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
+                        : null;
+                }
+
+                if (method != null)
+                {
+                    pResolvedToken.hMethod = ObjectToHandle(method);
+                    pResolvedToken.hClass = ObjectToHandle(method.OwningType);
+                }
+                else
+                {
+                    pResolvedToken.hMethod = null;
+                    pResolvedToken.hClass = null;
+                }
             }
             else
             if (result is FieldDesc)
@@ -4315,7 +4332,7 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
 
-            if (this.MethodBeingCompiled.IsAsync)
+            if (this.MethodBeingCompiled.Signature.IsAsyncCall)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
