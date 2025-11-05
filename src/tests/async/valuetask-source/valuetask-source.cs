@@ -189,11 +189,11 @@ public class Async2ValueTaskSource
         await s.ExtraCall().ConfigureAwait(false);
 
         // TODO: With ConfigureAwait(false) the following should behave as if ExtraCall continuation
-        //       runs transparently. That is not a case right now. We may consider matching this.
+        //       runs transparently. That is not a case right now. We may consider matching the baseline behavior.
         //
         //       When a continuation requires no context (i.e. configured "false" or had not context),
         //       it can run on notifiers's context. See Task.SetContinuationForAwait and Task.RunContinuations
-        //       Also note that this "inlining" is optional. There is a check for enough stack.
+        //       Note that this "inlining" is optional. There is also a check for enough stack.
 
         //if (inDefaultContext || !s._useContext)
         //{

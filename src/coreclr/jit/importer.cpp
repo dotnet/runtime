@@ -4432,6 +4432,14 @@ bool Compiler::impIsImplicitTailCallCandidate(
         return false;
     }
 
+    // We keep finding cases where tailcalling awaits is problematic.
+    // Perhaps at the end there will be a set of conditions when tailcalling is ok.
+    // For now we will just forbid.
+    if (prefixFlags & PREFIX_IS_TASK_AWAIT)
+    {
+        return false;
+    }
+
 #if !FEATURE_TAILCALL_OPT_SHARED_RETURN
     // the block containing call is marked as BBJ_RETURN
     // We allow shared ret tail call optimization on recursive calls even under
