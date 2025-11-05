@@ -915,6 +915,9 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         gcinfodecoder.cpp
     )
 elseif(CLR_CMAKE_TARGET_ARCH_WASM)
+    set(VM_HEADERS_WKS_ARCH_ASM
+        ${ARCH_SOURCES_DIR}/entrypoints.h
+    )
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
