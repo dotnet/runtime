@@ -150,7 +150,7 @@ static void PrintDiffsCsvHeader(std::ofstream& fs)
 
 #include "jitmetadatalist.h"
 
-    fs << std::endl;
+    fs << '\n';
 }
 
 static void PrintQuotedCsvField(std::ofstream& fs, const char* value)
@@ -206,7 +206,7 @@ static void PrintDiffsCsvRow(
 
 #include "jitmetadatalist.h"
 
-    fs << std::endl;
+    fs << '\n';
 }
 
 static void PrintReplayCsvHeader(std::ofstream& fs)
@@ -218,7 +218,7 @@ static void PrintReplayCsvHeader(std::ofstream& fs)
 
 #include "jitmetadatalist.h"
 
-    fs << std::endl;
+    fs << '\n';
 }
 
 static void PrintReplayCsvRow(
@@ -240,7 +240,7 @@ static void PrintReplayCsvRow(
 
 #include "jitmetadatalist.h"
 
-    fs << std::endl;
+    fs << '\n';
 }
 
 // Run superpmi. The return value is as follows:
