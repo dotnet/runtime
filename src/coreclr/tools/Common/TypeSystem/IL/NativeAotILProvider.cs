@@ -372,7 +372,15 @@ namespace Internal.IL
             else
             if (method is AsyncMethodVariant asyncVariantImpl)
             {
-                return EcmaMethodIL.Create(asyncVariantImpl.Target);
+                if (asyncVariantImpl.IsAsync)
+                {
+                    return EcmaMethodIL.Create(asyncVariantImpl.Target);
+                }
+                else
+                {
+                    // TODO: Emit thunk with async calling convention
+                    throw new NotImplementedException();
+                }
             }
             else
             {
