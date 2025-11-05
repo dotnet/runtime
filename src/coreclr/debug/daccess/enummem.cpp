@@ -1677,7 +1677,7 @@ HRESULT ClrDataAccess::EnumMemDataDescriptors(CLRDataEnumMemoryFlags flags)
             (TADDR)pContractDescriptor->pointer_data + subDescriptorIndex * sizeof(void*),
             (PBYTE)&pSubDescriptorAddr, sizeof(TADDR), &bytesRead))
             || bytesRead != sizeof(TADDR)
-            || pSubDescriptorAddr == NULL)
+            || pSubDescriptorAddr == 0)
         {
             continue;
         }
@@ -1687,7 +1687,7 @@ HRESULT ClrDataAccess::EnumMemDataDescriptors(CLRDataEnumMemoryFlags flags)
             pSubDescriptorAddr,
             (PBYTE)&subDescriptorAddr, sizeof(TADDR), &bytesRead))
             || bytesRead != sizeof(TADDR)
-            || subDescriptorAddr == NULL)
+            || subDescriptorAddr == 0)
         {
             continue;
         }
