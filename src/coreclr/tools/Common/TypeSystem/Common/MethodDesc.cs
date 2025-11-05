@@ -20,10 +20,11 @@ namespace Internal.TypeSystem
         UnmanagedCallingConventionThisCall   = 0x0003,
         CallingConventionVarargs             = 0x0005,
         UnmanagedCallingConvention           = 0x0009,
-        AsyncCallingConvention               = 0x0100,
 
         Static = 0x0010,
         ExplicitThis = 0x0020,
+
+        AsyncCall                            = 0x0100,
     }
 
     public enum EmbeddedSignatureDataKind
@@ -139,11 +140,11 @@ namespace Internal.TypeSystem
             }
         }
 
-        public bool IsAsyncCallConv
+        public bool IsAsyncCall
         {
             get
             {
-                return (_flags & MethodSignatureFlags.AsyncCallingConvention) != 0;
+                return (_flags & MethodSignatureFlags.AsyncCall) != 0;
             }
         }
 

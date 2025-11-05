@@ -41,7 +41,7 @@ namespace Internal.ReadyToRunConstants
     /// Constants for method and field encoding
     /// </summary>
     [Flags]
-    public enum ReadyToRunMethodSigFlags : ushort
+    public enum ReadyToRunMethodSigFlags : uint
     {
         READYTORUN_METHOD_SIG_None = 0x00,
         READYTORUN_METHOD_SIG_UnboxingStub = 0x01,

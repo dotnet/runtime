@@ -384,9 +384,6 @@
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.cs">
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.Async.cs">
-      <Link>TypeSystem\Common\MethodDesc.Async.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.Diagnostic.cs">
       <Link>TypeSystem\Common\MethodDesc.Diagnostic.cs</Link>
     </Compile>
@@ -716,9 +713,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Sorting\TypeSystemComparer.cs">
       <Link>TypeSystem\Sorting\TypeSystemComparer.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\AsyncMethodVariant.cs">
-      <Link>TypeSystem\Common\AsyncMethodVariant.cs</Link>
     </Compile>
   </ItemGroup>
 

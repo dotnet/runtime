@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly MethodWithToken _method;
 
         public MethodFixupSignature(
-            ReadyToRunFixupKind fixupKind, 
+            ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
             bool isInstantiatingStub)
         {
@@ -89,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Optimize some of the fixups into a more compact form
             ReadyToRunFixupKind fixupKind = _fixupKind;
             bool optimized = false;
-            if (!_method.Unboxing && !IsInstantiatingStub && !_method.Method.Signature.ReturnsTaskOrValueTask() && _method.ConstrainedType == null &&
+            if (!_method.Unboxing && !IsInstantiatingStub && _method.ConstrainedType == null &&
                 fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
                 if (!_method.Method.HasInstantiation && !_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
@@ -111,7 +111,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             MethodWithToken method = _method;
-            
+
             if (factory.CompilationModuleGroup.VersionsWithMethodBody(method.Method))
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)

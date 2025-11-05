@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-namespace Internal.TypeSystem
+namespace ILCompiler
 {
     /// <summary>
-    /// Either the AsyncMethodImplVariant or AsyncMethodThunkVariant of a method marked .IsAsync.
+    /// MethodDesc that represents  async calling convention entrypoint of a Task-returning method.
     /// </summary>
     public partial class AsyncMethodVariant : MethodDelegator
     {
@@ -35,17 +34,20 @@ namespace Internal.TypeSystem
         private MethodSignature InitializeSignature()
         {
             var signature = _wrappedMethod.Signature;
-            Debug.Assert(!signature.IsAsyncCallConv);
+            Debug.Assert(!signature.IsAsyncCall);
             Debug.Assert(signature.ReturnsTaskOrValueTask());
             TypeDesc md = signature.ReturnType;
             MethodSignatureBuilder builder = new MethodSignatureBuilder(signature);
             builder.ReturnType = md.HasInstantiation ? md.Instantiation[0] : this.Context.GetWellKnownType(WellKnownType.Void);
-            builder.Flags = signature.Flags | MethodSignatureFlags.AsyncCallingConvention;
+            builder.Flags = signature.Flags | MethodSignatureFlags.AsyncCall;
             return (_asyncSignature = builder.ToSignature());
         }
 
         public override MethodDesc GetCanonMethodTarget(CanonicalFormKind kind)
         {
+            // We should not be calling GetCanonMethodTarget on generic definitions of anything
+            // and this MethodDesc is a generic definition.
+            Debug.Assert(!HasInstantiation && !OwningType.HasInstantiation);
             return this;
         }
 
@@ -66,9 +68,9 @@ namespace Internal.TypeSystem
 
         public override string ToString() => $"Async variant: " + _wrappedMethod.ToString();
 
-        protected internal override int ClassCode => unchecked((int)0xd0fd1c1fu);
+        protected override int ClassCode => unchecked((int)0xd0fd1c1fu);
 
-        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             var asyncOther = (AsyncMethodVariant)other;
             return comparer.Compare(_wrappedMethod, asyncOther._wrappedMethod);
