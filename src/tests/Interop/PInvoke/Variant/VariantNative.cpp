@@ -1119,7 +1119,7 @@ extern "C" VARIANT DLL_EXPORT STDMETHODCALLTYPE GetBSTRWithTrailingByteInVariant
     VARIANT variant;
     VariantInit(&variant);
 
-    BSTR bstr = CoreClrBStrAlloc(sizeof(W("Test")) + 1); // 4 characters + trailing byte + null terminator
+    BSTR bstr = (BSTR)CoreClrBStrAlloc(sizeof(W("Test")) + 1); // 4 characters + trailing byte + null terminator
     bstr[0] = W('T');
     bstr[1] = W('e');
     bstr[2] = W('s');
