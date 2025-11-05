@@ -1522,12 +1522,6 @@ namespace System.StubHelpers
             }
         }
 
-        // Set extra byte for odd-sized strings that came from interop as BSTR.
-        internal static void SetStringTrailByte(string str, byte data)
-        {
-            BSTRMarshaler.SetTrailByte(str, data);
-        }
-
         internal static unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(obj);
