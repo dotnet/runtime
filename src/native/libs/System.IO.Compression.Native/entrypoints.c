@@ -11,6 +11,8 @@
 #include <brotli/encode.h>
 #include <brotli/port.h>
 #include <brotli/types.h>
+
+#define ZSTD_STATIC_LINKING_ONLY
 #include <zstd.h>
 #endif // !TARGET_WASM
 
