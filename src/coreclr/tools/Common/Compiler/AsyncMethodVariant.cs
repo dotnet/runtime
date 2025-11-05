@@ -9,7 +9,7 @@ using Internal.TypeSystem.Ecma;
 namespace ILCompiler
 {
     /// <summary>
-    /// MethodDesc that represents  async calling convention entrypoint of a Task-returning method.
+    /// MethodDesc that represents async calling convention entrypoint of a Task-returning method.
     /// </summary>
     public partial class AsyncMethodVariant : MethodDelegator
     {
