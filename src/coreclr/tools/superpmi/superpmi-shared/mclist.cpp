@@ -96,7 +96,7 @@ checkMCL: // check that mcl list is increasing only
         LogError("MCL list needs to start from 1!");
         return false;
     }
-    for (int i = 1; i < list.size(); i++)
+    for (size_t i = 1; i < list.size(); i++)
     {
         if (list[i - 1] >= list[i])
         {
