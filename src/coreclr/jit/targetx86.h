@@ -54,7 +54,7 @@
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
   #define LOWER_DECOMPOSE_LONGS    1       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
   #define EMIT_TRACK_STACK_DEPTH   1
-  #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in emit and generate GCInfo based on that
+  #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
