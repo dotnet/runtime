@@ -119,7 +119,7 @@ namespace Internal.JitInterface
         private uint totalILArgs() { return (uint)(numArgs + (hasImplicitThis() ? 1 : 0)); }
         private bool isVarArg() { return ((getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_VARARG) || (getCallConv() == CorInfoCallConv.CORINFO_CALLCONV_NATIVEVARARG)); }
         internal bool hasTypeArg() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE) != 0); }
-        private bool isAsyncCallConv() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL) != 0); }
+        private bool isAsyncCall() { return ((callConv & CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL) != 0); }
     };
 
     //----------------------------------------------------------------------------
