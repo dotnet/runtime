@@ -174,9 +174,6 @@ namespace ILCompiler.DependencyAnalysis.ARM64
                 // ldr x12, [x12, symbol page offset]
                 EmitLDR(Register.X12, Register.X12, symbol);
 
-                // ldr x12, [x12]
-                EmitLDR(Register.X12, Register.X12);
-
                 // br x12
                 EmitJMP(Register.X12);
             }

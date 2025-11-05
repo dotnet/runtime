@@ -48,9 +48,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     // ldr x10, [x10, ModuleImport page offset]
                     instructionEncoder.EmitLDR(Register.X10, Register.X10, factory.ModuleImport);
-
-                    // ldr x10, [x10]
-                    instructionEncoder.EmitLDR(Register.X10, Register.X10);
                     break;
 
                 case Kind.Lazy:
@@ -61,9 +58,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     // ldr x1, [x1, ModuleImport page offset]
                     instructionEncoder.EmitLDR(Register.X1, Register.X1, factory.ModuleImport);
-
-                    // ldr x1, [x1]
-                    instructionEncoder.EmitLDR(Register.X1, Register.X1);
                     break;
 
                 default:
