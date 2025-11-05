@@ -72,11 +72,9 @@ namespace System.Globalization
                         bufferIndex += extension.Length;
                     }
 
-                    int collationIndex = name.IndexOf("collation=", i + 1, StringComparison.Ordinal);
+                    int collationIndex = FindCollationValueIndex(name, i + 1);
                     if (collationIndex > 0)
                     {
-                        collationIndex += "collation=".Length;
-
                         // format of the locale properties is @key=value;collation=collationName;key=value;key=value
                         int endOfCollation = name.IndexOf(';', collationIndex);
                         if (endOfCollation < 0)
@@ -104,6 +102,38 @@ namespace System.Globalization
             }
 
             return changed ? new string(buffer.Slice(0, bufferIndex)) : name;
+        }
+
+        private static int FindCollationValueIndex(string name, int searchStart)
+        {
+            int index = searchStart;
+            while (index < name.Length)
+            {
+                int equalsIndex = name.IndexOf('=', index);
+                if (equalsIndex < 0)
+                {
+                    break;
+                }
+
+                // The legacy POSIX-style "collation" keyword is still supported on the input in ICU 72
+                // even though the new BCP47-compliant "co" keyword is preferred.
+                ReadOnlySpan<char> keySpan = name.AsSpan(index, equalsIndex - index);
+                if (keySpan.Equals("collation", StringComparison.OrdinalIgnoreCase) ||
+                    keySpan.Equals("co", StringComparison.OrdinalIgnoreCase))
+                {
+                    return equalsIndex + 1;
+                }
+
+                int separatorIndex = name.IndexOf(';', equalsIndex + 1);
+                if (separatorIndex < 0)
+                {
+                    break;
+                }
+
+                index = separatorIndex + 1;
+            }
+
+            return -1;
         }
 
         /// <summary>
