@@ -4183,6 +4183,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     int32_t newObjDVar = -1;
     InterpType ctorType = InterpTypeO;
     int32_t vtsize = 0;
+    bool injectRet = false;
 
     if (newObjThisArgLocation != INT_MAX)
     {
@@ -4393,7 +4394,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             {
                 // Tail call target needs to be IL
                 if (tailcall && isPInvoke && !isMarshaledPInvoke)
+                {
                     tailcall = false;
+                    // We need to inject ret after a jmp when we can't use a tail call
+                    injectRet = isJmp;
+                }
 
                 // Normal call
                 InterpOpcode opcode;
@@ -4529,6 +4534,28 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
     m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+
+    if (injectRet)
+    {
+        // Jmp to PInvoke was converted to normal pinvoke, so we need to inject a ret after the call
+        switch (GetInterpType(callInfo.sig.retType))
+        {
+            case InterpTypeVT:
+            {
+                AddIns(INTOP_RET_VT);
+                m_pLastNewIns->SetSVar(dVar);
+                m_pLastNewIns->data[0] = m_pVars[dVar].size;
+                break;
+            }
+            case InterpTypeVoid:
+                AddIns(INTOP_RET_VOID);
+                break;
+            default:
+                AddIns(INTOP_RET);
+                m_pLastNewIns->SetSVar(dVar);
+                break;
+        }
+    }
 
     m_ip += 5;
 }
