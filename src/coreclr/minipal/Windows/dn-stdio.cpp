@@ -21,9 +21,7 @@ int64_t fgetsize(FILE* stream)
 
 int64_t ftell_64(FILE* stream)
 {
-    fpos_t pos;
-    fgetpos(stream, &pos);
-    return pos;
+    return _ftelli64(stream);
 }
 
 int fsetpos_64(FILE* stream, int64_t pos)
