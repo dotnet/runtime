@@ -56,7 +56,7 @@ namespace System.IO.Compression
         {
             int inputSize = 1000;
 
-            int maxLength = ZstandardEncoder.GetMaxCompressedLength(inputSize);
+            long maxLength = ZstandardEncoder.GetMaxCompressedLength(inputSize);
 
             Assert.True(maxLength > 0);
             Assert.True(maxLength >= inputSize); // Compressed size should be at least input size for worst case

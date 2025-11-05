@@ -42,7 +42,7 @@ namespace System.IO.Compression
             ReadOnlyMemory<byte> emptyBuffer = ReadOnlyMemory<byte>.Empty;
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Create(emptyBuffer));
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Create(emptyBuffer.Span));
         }
 
         [Fact]
@@ -53,7 +53,7 @@ namespace System.IO.Compression
             int quality = 5;
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Create(emptyBuffer, quality));
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Create(emptyBuffer.Span, quality));
         }
 
         [Fact]
@@ -66,49 +66,6 @@ namespace System.IO.Compression
             // Act & Assert - Should not throw
             dictionary.Dispose();
             dictionary.Dispose();
-        }
-
-        [Fact]
-        public void Dispose_WithUsing_ProperlyDisposes()
-        {
-            // Arrange
-            byte[] dictionaryData = CreateSampleDictionary();
-
-            // Act & Assert - Should not throw
-            using (ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData))
-            {
-                Assert.NotNull(dictionary);
-            }
-            // Dictionary should be disposed here
-        }
-
-        [Fact]
-        public void Create_WithReadOnlyMemory_Succeeds()
-        {
-            // Arrange
-            byte[] dictionaryData = CreateSampleDictionary();
-            ReadOnlyMemory<byte> memory = new ReadOnlyMemory<byte>(dictionaryData);
-
-            // Act
-            using ZstandardDictionary dictionary = ZstandardDictionary.Create(memory);
-
-            // Assert
-            Assert.NotNull(dictionary);
-        }
-
-        [Fact]
-        public void Create_WithReadOnlyMemoryAndQuality_Succeeds()
-        {
-            // Arrange
-            byte[] dictionaryData = CreateSampleDictionary();
-            ReadOnlyMemory<byte> memory = new ReadOnlyMemory<byte>(dictionaryData);
-            int quality = 10;
-
-            // Act
-            using ZstandardDictionary dictionary = ZstandardDictionary.Create(memory, quality);
-
-            // Assert
-            Assert.NotNull(dictionary);
         }
 
         private static byte[] CreateSampleDictionary() => ZstandardTestUtils.CreateSampleDictionary();

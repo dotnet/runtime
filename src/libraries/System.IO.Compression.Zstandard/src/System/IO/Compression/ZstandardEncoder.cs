@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
@@ -8,10 +9,58 @@ using Microsoft.Win32.SafeHandles;
 namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties to compress data using Zstandard compression.</summary>
-    public struct ZstandardEncoder : IDisposable
+    public class ZstandardEncoder : IDisposable
     {
         internal SafeZstdCompressHandle? _context;
         private bool _disposed;
+
+        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with default settings.</summary>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
+        public ZstandardEncoder()
+        {
+            _disposed = false;
+            InitializeEncoder();
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with the specified quality level.</summary>
+        /// <param name="quality">The compression quality level.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> is not between the minimum and maximum allowed values.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
+        public ZstandardEncoder(int quality)
+        {
+            _disposed = false;
+            InitializeEncoder();
+
+            try
+            {
+                SetQuality(quality);
+            }
+            catch
+            {
+                _context!.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with the specified dictionary.</summary>
+        /// <param name="dictionary">The compression dictionary to use.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
+        public ZstandardEncoder(ZstandardDictionary dictionary)
+        {
+            _disposed = false;
+            InitializeEncoder();
+
+            try
+            {
+                SetDictionary(dictionary);
+            }
+            catch
+            {
+                _context!.Dispose();
+                throw;
+            }
+        }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with the specified quality and window size.</summary>
         /// <param name="quality">The compression quality level.</param>
@@ -44,15 +93,12 @@ namespace System.IO.Compression
         {
             ArgumentNullException.ThrowIfNull(dictionary);
 
-            if (dictionary.CompressionDictionary == null)
-                throw new ArgumentException(SR.ZstandardEncoder_InvalidDictionary);
-
             _disposed = false;
             InitializeEncoder();
 
             try
             {
-                _context!.SetDictionary(dictionary.CompressionDictionary);
+                SetDictionary(dictionary);
                 SetWindow(window);
             }
             catch
@@ -63,41 +109,46 @@ namespace System.IO.Compression
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with the specified compression options.</summary>
-        /// <param name="options">The compression options to use.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="options"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">The quality or window size in <paramref name="options"/> is not between the minimum and maximum allowed values.</exception>
+        /// <param name="compressionOptions">The compression options to use.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="compressionOptions"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The quality or window size in <paramref name="compressionOptions"/> is not between the minimum and maximum allowed values.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
-        public ZstandardEncoder(ZstandardCompressionOptions options)
+        public ZstandardEncoder(ZstandardCompressionOptions compressionOptions)
         {
-            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(compressionOptions);
 
             _disposed = false;
             InitializeEncoder();
 
             try
             {
-                if (options.Dictionary is not null)
+                if (compressionOptions.Dictionary is not null)
                 {
-                    _context!.SetDictionary(options.Dictionary.CompressionDictionary);
+                    SetDictionary(compressionOptions.Dictionary);
                 }
                 else
                 {
-                    SetQuality(options.Quality);
+                    SetQuality(compressionOptions.Quality);
                 }
 
-                if (options.Window != 0)
+                if (compressionOptions.Window != 0)
                 {
-                    SetWindow(options.Window);
+                    SetWindow(compressionOptions.Window);
                 }
 
-                if (options.AppendChecksum)
+                if (compressionOptions.AppendChecksum)
                 {
                     SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_checksumFlag, 1);
                 }
 
-                if (options.EnableLongDistanceMatching)
+                if (compressionOptions.EnableLongDistanceMatching)
                 {
                     SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_enableLongDistanceMatching, 1);
+                }
+
+                if (compressionOptions.TargetBlockSize != 0)
+                {
+                    SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_targetCBlockSize, compressionOptions.TargetBlockSize);
                 }
             }
             catch
@@ -112,20 +163,9 @@ namespace System.IO.Compression
         /// </summary>
         internal void InitializeEncoder()
         {
-            EnsureNotDisposed();
-
             _context = Interop.Zstd.ZSTD_createCCtx();
             if (_context.IsInvalid)
                 throw new IOException(SR.ZstandardEncoder_Create);
-        }
-
-        internal void EnsureInitialized()
-        {
-            EnsureNotDisposed();
-            if (_context == null)
-            {
-                InitializeEncoder();
-            }
         }
 
         /// <summary>Compresses the specified data.</summary>
@@ -138,7 +178,7 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
         public OperationStatus Compress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock)
         {
-            EnsureInitialized();
+            EnsureNotDisposed();
 
             bytesConsumed = 0;
             bytesWritten = 0;
@@ -157,13 +197,13 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
         public OperationStatus Flush(Span<byte> destination, out int bytesWritten)
         {
-            EnsureInitialized();
+            EnsureNotDisposed();
 
             return CompressCore(ReadOnlySpan<byte>.Empty, destination, out _, out bytesWritten,
                 Interop.Zstd.ZstdEndDirective.ZSTD_e_flush);
         }
 
-        private readonly OperationStatus CompressCore(ReadOnlySpan<byte> source, Span<byte> destination,
+        private OperationStatus CompressCore(ReadOnlySpan<byte> source, Span<byte> destination,
             out int bytesConsumed, out int bytesWritten, Interop.Zstd.ZstdEndDirective endDirective)
         {
             bytesConsumed = 0;
@@ -210,7 +250,7 @@ namespace System.IO.Compression
         /// <param name="inputSize">The size of the input data.</param>
         /// <returns>The maximum possible compressed size.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputSize"/> is less than 0.</exception>
-        public static int GetMaxCompressedLength(int inputSize)
+        public static long GetMaxCompressedLength(long inputSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(inputSize);
 
@@ -225,7 +265,7 @@ namespace System.IO.Compression
                 throw new ArgumentOutOfRangeException(nameof(inputSize));
             }
 
-            return (int)result;
+            return (long)result;
         }
 
         /// <summary>Attempts to compress the specified data.</summary>
@@ -308,11 +348,29 @@ namespace System.IO.Compression
 
         /// <summary>References a prefix for the next compression operation.</summary>
         /// <remarks>The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called.</remarks>
-        public void ReferencePrefix(ReadOnlyMemory<byte> prefix)
+        public void SetPrefix(ReadOnlyMemory<byte> prefix)
         {
-            EnsureInitialized();
+            EnsureNotDisposed();
 
             _context!.SetPrefix(prefix);
+        }
+
+        /// <summary>Sets the pledged source size for the next compression operation.</summary>
+        /// <param name="size">The size of the data to be compressed.</param>
+        /// <remarks>
+        /// May be called only before the first <see cref="Compress"/> method call, or after <see cref="Reset"/>.
+        /// Calling <see cref="Reset"/> clears the size. The size is validated during compression and not respecting
+        /// the value causes <see cref="OperationStatus.InvalidData"/>.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is negative.</exception>
+        /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
+        public void SetSourceSize(long size)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(size);
+
+            EnsureNotDisposed();
+
+            Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context!, (nuint)size);
         }
 
         /// <summary>Releases all resources used by the <see cref="ZstandardEncoder"/>.</summary>
@@ -322,7 +380,7 @@ namespace System.IO.Compression
             _context?.Dispose();
         }
 
-        private readonly void EnsureNotDisposed()
+        private void EnsureNotDisposed()
         {
             ObjectDisposedException.ThrowIf(_disposed, nameof(ZstandardEncoder));
         }
@@ -347,9 +405,18 @@ namespace System.IO.Compression
             SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_windowLog, window);
         }
 
+        internal void SetDictionary(ZstandardDictionary dictionary)
+        {
+            Debug.Assert(_context != null);
+            ArgumentNullException.ThrowIfNull(dictionary);
+
+            _context!.SetDictionary(dictionary.CompressionDictionary);
+        }
+
         internal void SetParameter(Interop.Zstd.ZstdCParameter parameter, int value)
         {
-            EnsureInitialized();
+            Debug.Assert(_context != null);
+
             nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_context!, parameter, value);
             ZstandardUtils.ThrowIfError(result);
         }

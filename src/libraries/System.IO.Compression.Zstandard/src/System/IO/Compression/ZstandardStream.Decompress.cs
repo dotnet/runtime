@@ -10,7 +10,7 @@ namespace System.IO.Compression
 {
     public sealed partial class ZstandardStream
     {
-        private ZstandardDecoder _decoder;
+        private ZstandardDecoder? _decoder;
         private int _bufferOffset;
         private int _bufferCount;
         private bool _nonEmptyInput;
@@ -21,14 +21,15 @@ namespace System.IO.Compression
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="stream"/> does not support reading.</exception>
-        public ZstandardStream(Stream stream, ZstandardDecoder decoder, bool leaveOpen = false) : this(stream, CompressionMode.Decompress, leaveOpen)
+        public ZstandardStream(Stream stream, ZstandardDecoder decoder, bool leaveOpen = false) : this(stream, CompressionMode.Decompress, leaveOpen, decoder)
         {
-            _decoder = decoder;
-            _decoderOwned = false;
+            _encoderOwned = false;
         }
 
         private bool TryDecompress(Span<byte> destination, out int bytesWritten)
         {
+            Debug.Assert(_decoder != null);
+
             // Decompress any data we may have in our buffer.
             OperationStatus lastResult = _decoder.Decompress(new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount), destination, out int bytesConsumed, out bytesWritten);
             if (lastResult == OperationStatus.InvalidData)

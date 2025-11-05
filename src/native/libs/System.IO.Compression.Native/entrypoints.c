@@ -14,6 +14,7 @@
 
 #define ZSTD_STATIC_LINKING_ONLY
 #include <zstd.h>
+#include <zdict.h>
 #endif // !TARGET_WASM
 
 static const Entry s_compressionNative[] =
@@ -72,6 +73,8 @@ static const Entry s_compressionNative[] =
     DllImportEntry(ZSTD_getErrorName)
     DllImportEntry(ZSTD_DCtx_refPrefix)
     DllImportEntry(ZSTD_CCtx_refPrefix)
+    DllImportEntry(ZSTD_CCtx_setPledgedSrcSize)
+    DllImportEntry(ZDICT_trainFromBuffer)
 #endif // !TARGET_WASM
 };
 

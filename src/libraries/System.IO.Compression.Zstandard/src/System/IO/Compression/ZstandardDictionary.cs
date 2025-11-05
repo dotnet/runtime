@@ -25,14 +25,14 @@ namespace System.IO.Compression
         /// <param name="buffer">The buffer containing the dictionary data.</param>
         /// <returns>A new <see cref="ZstandardDictionary"/> instance.</returns>
         /// <exception cref="ArgumentException">The buffer is empty.</exception>
-        public static ZstandardDictionary Create(ReadOnlyMemory<byte> buffer) => Create(buffer, ZstandardUtils.Quality_Default);
+        public static ZstandardDictionary Create(ReadOnlySpan<byte> buffer) => Create(buffer, ZstandardUtils.Quality_Default);
 
-        /// <summary>Creates a Zstandard dictionary from the specified buffer with the specified quality level.</summary>
+        /// <summary>Creates a Zstandard dictionary from the specified buffer with the specified quality level and dictionary type.</summary>
         /// <param name="buffer">The buffer containing the dictionary data.</param>
         /// <param name="quality">The quality level for dictionary creation.</param>
         /// <returns>A new <see cref="ZstandardDictionary"/> instance.</returns>
         /// <exception cref="ArgumentException">The buffer is empty.</exception>
-        public static ZstandardDictionary Create(ReadOnlyMemory<byte> buffer, int quality)
+        public static ZstandardDictionary Create(ReadOnlySpan<byte> buffer, int quality)
         {
             if (buffer.IsEmpty)
                 throw new ArgumentException(SR.ZstandardDictionary_EmptyBuffer, nameof(buffer));
@@ -65,6 +65,55 @@ namespace System.IO.Compression
             }
         }
 
+        /// <summary>Creates a dictionary by training on the provided samples.</summary>
+        /// <param name="samples">All training samples concatenated in one large buffer.</param>
+        /// <param name="sampleLengths">The lengths of the individual samples.</param>
+        /// <param name="maxDictionarySize">The maximum size of the dictionary to create.</param>
+        /// <returns>A new <see cref="ZstandardDictionary"/> instance.</returns>
+        /// <exception cref="ArgumentException">Invalid sample data or lengths.</exception>
+        /// <exception cref="IOException">Failed to train the dictionary.</exception>
+        /// <remarks>
+        /// Recommended maximum dictionary size is 100KB, and that the size of the training data
+        /// should be approximately 100 times the size of the resulting dictionary.
+        /// </remarks>
+        public static ZstandardDictionary Train(ReadOnlySpan<byte> samples, ReadOnlySpan<long> sampleLengths, int maxDictionarySize)
+        {
+            if (samples.IsEmpty)
+                throw new ArgumentException(SR.ZstandardDictionary_EmptyBuffer, nameof(samples));
+            if (sampleLengths.IsEmpty)
+                throw new ArgumentException("Sample lengths cannot be empty.", nameof(sampleLengths));
+            if (maxDictionarySize <= 0)
+                throw new ArgumentOutOfRangeException(nameof(maxDictionarySize), "Dictionary size must be positive.");
+
+            byte[] dictionaryBuffer = new byte[maxDictionarySize];
+
+            unsafe
+            {
+                fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
+                fixed (long* lengthsPtr = &MemoryMarshal.GetReference(sampleLengths))
+                fixed (byte* dictPtr = dictionaryBuffer)
+                {
+                    nuint dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
+                        (IntPtr)dictPtr, (nuint)maxDictionarySize,
+                        (IntPtr)samplesPtr, (IntPtr)lengthsPtr, (uint)sampleLengths.Length);
+
+                    if (Interop.Zstd.ZSTD_isError(dictSize) != 0)
+                        throw new IOException("Failed to train dictionary from samples.");
+
+                    if (dictSize == 0)
+                        throw new IOException("Dictionary training produced empty dictionary.");
+
+                    // Resize dictionary to actual size
+                    if (dictSize < (nuint)maxDictionarySize)
+                    {
+                        Array.Resize(ref dictionaryBuffer, (int)dictSize);
+                    }
+
+                    return Create(dictionaryBuffer);
+                }
+            }
+        }
+
         /// <summary>Gets the compression dictionary handle.</summary>
         internal SafeZstdCDictHandle CompressionDictionary
         {
@@ -85,8 +134,9 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Gets the dictionary data as a read-only span.</summary>
-        internal ReadOnlySpan<byte> Data
+        /// <summary>Gets the dictionary data.</summary>
+        /// <value>The raw dictionary bytes.</value>
+        public ReadOnlyMemory<byte> Data
         {
             get
             {

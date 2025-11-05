@@ -19,43 +19,47 @@ namespace System.IO.Compression
         public static int MinQuality { get { throw null; } }
         public static int MinWindow { get { throw null; } }
         public int Quality { get { throw null; } set { } }
+        public int TargetBlockSize { get { throw null; } set { } }
         public int Window { get { throw null; } set { } }
     }
-    public partial struct ZstandardDecoder : System.IDisposable
+    public partial class ZstandardDecoder : System.IDisposable
     {
-        private object _dummy;
-        private int _dummyPrimitive;
-        public ZstandardDecoder(int maxWindow) { throw null; }
-        public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary) { throw null; }
-        public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary, int maxWindow) { throw null; }
+        public ZstandardDecoder() { }
+        public ZstandardDecoder(int maxWindow) { }
+        public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary) { }
+        public ZstandardDecoder(System.IO.Compression.ZstandardDictionary dictionary, int maxWindow) { }
         public System.Buffers.OperationStatus Decompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten) { throw null; }
         public void Dispose() { }
-        public static bool TryGetMaxDecompressedLength(System.ReadOnlySpan<byte> data, out int maxLength) { throw null; }
-        public void ReferencePrefix(System.ReadOnlyMemory<byte> prefix) { }
         public void Reset() { }
+        public void SetPrefix(System.ReadOnlyMemory<byte> prefix) { }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.IO.Compression.ZstandardDictionary dictionary, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryDecompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public static bool TryGetMaxDecompressedLength(System.ReadOnlySpan<byte> data, out long length) { throw null; }
     }
     public sealed partial class ZstandardDictionary : System.IDisposable
     {
         internal ZstandardDictionary() { }
-        public static System.IO.Compression.ZstandardDictionary Create(System.ReadOnlyMemory<byte> buffer) { throw null; }
-        public static System.IO.Compression.ZstandardDictionary Create(System.ReadOnlyMemory<byte> buffer, int quality) { throw null; }
+        public System.ReadOnlyMemory<byte> Data { get { throw null; } }
+        public static System.IO.Compression.ZstandardDictionary Create(System.ReadOnlySpan<byte> buffer) { throw null; }
+        public static System.IO.Compression.ZstandardDictionary Create(System.ReadOnlySpan<byte> buffer, int quality) { throw null; }
         public void Dispose() { }
+        public static System.IO.Compression.ZstandardDictionary Train(System.ReadOnlySpan<byte> samples, System.ReadOnlySpan<long> sampleLengths, int maxDictionarySize) { throw null; }
     }
-    public partial struct ZstandardEncoder : System.IDisposable
+    public partial class ZstandardEncoder : System.IDisposable
     {
-        private object _dummy;
-        private int _dummyPrimitive;
-        public ZstandardEncoder(int quality, int window) { throw null; }
-        public ZstandardEncoder(System.IO.Compression.ZstandardCompressionOptions options) { throw null; }
-        public ZstandardEncoder(System.IO.Compression.ZstandardDictionary dictionary, int window) { throw null; }
+        public ZstandardEncoder() { }
+        public ZstandardEncoder(int quality) { }
+        public ZstandardEncoder(int quality, int window) { }
+        public ZstandardEncoder(System.IO.Compression.ZstandardCompressionOptions options) { }
+        public ZstandardEncoder(System.IO.Compression.ZstandardDictionary dictionary) { }
+        public ZstandardEncoder(System.IO.Compression.ZstandardDictionary dictionary, int window) { }
         public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
         public void Dispose() { }
         public System.Buffers.OperationStatus Flush(System.Span<byte> destination, out int bytesWritten) { throw null; }
-        public static int GetMaxCompressedLength(int inputSize) { throw null; }
-        public void ReferencePrefix(System.ReadOnlyMemory<byte> prefix) { }
+        public static long GetMaxCompressedLength(long inputSize) { throw null; }
         public void Reset() { }
+        public void SetPrefix(System.ReadOnlyMemory<byte> prefix) { }
+        public void SetSourceSize(long size) { }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, int quality, int window) { throw null; }
         public static bool TryCompress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten, System.IO.Compression.ZstandardDictionary dictionary, int window) { throw null; }
@@ -66,6 +70,7 @@ namespace System.IO.Compression
         public ZstandardStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel, bool leaveOpen) { }
         public ZstandardStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode) { }
         public ZstandardStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode, bool leaveOpen) { }
+        public ZstandardStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode, System.IO.Compression.ZstandardDictionary dictionary, bool leaveOpen = false) { }
         public ZstandardStream(System.IO.Stream stream, System.IO.Compression.ZstandardCompressionOptions compressionOptions, bool leaveOpen = false) { }
         public ZstandardStream(System.IO.Stream stream, System.IO.Compression.ZstandardDecoder decoder, bool leaveOpen = false) { }
         public ZstandardStream(System.IO.Stream stream, System.IO.Compression.ZstandardEncoder encoder, bool leaveOpen = false) { }
@@ -90,6 +95,7 @@ namespace System.IO.Compression
         public override int ReadByte() { throw null; }
         public override long Seek(long offset, System.IO.SeekOrigin origin) { throw null; }
         public override void SetLength(long value) { }
+        public void SetSourceSize(long size) { }
         public override void Write(byte[] buffer, int offset, int count) { }
         public override void Write(System.ReadOnlySpan<byte> buffer) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }

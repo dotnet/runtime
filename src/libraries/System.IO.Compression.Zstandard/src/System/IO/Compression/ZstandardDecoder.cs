@@ -2,18 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties to decompress data using Zstandard decompression.</summary>
-    public struct ZstandardDecoder : IDisposable
+    public class ZstandardDecoder : IDisposable
     {
-        private SafeZstdDecompressHandle? _context;
+        private SafeZstdDecompressHandle _context;
         private bool _disposed;
         // True if we finished decompressing the entire input.
         private bool _finished;
+
+        /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with default settings.</summary>
+        /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
+        public ZstandardDecoder()
+        {
+            _disposed = false;
+            _finished = false;
+            InitializeDecoder();
+        }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified maximum window size.</summary>
         /// <param name="maxWindow">The maximum window size to use for decompression.</param>
@@ -21,13 +32,19 @@ namespace System.IO.Compression
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
         public ZstandardDecoder(int maxWindow)
         {
-            if (maxWindow <= 0)
-                throw new ArgumentOutOfRangeException(nameof(maxWindow), "Max window size must be positive.");
-
             _disposed = false;
 
             InitializeDecoder();
-            SetWindow(maxWindow);
+
+            try
+            {
+                SetWindow(maxWindow);
+            }
+            catch
+            {
+                _context.Dispose();
+                throw;
+            }
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified dictionary.</summary>
@@ -43,11 +60,11 @@ namespace System.IO.Compression
 
             try
             {
-                _context!.SetDictionary(dictionary.DecompressionDictionary);
+                SetDictionary(dictionary);
             }
             catch
             {
-                _context!.Dispose();
+                _context.Dispose();
                 throw;
             }
         }
@@ -65,31 +82,25 @@ namespace System.IO.Compression
             _disposed = false;
 
             InitializeDecoder();
-            SetWindow(maxWindow);
 
             try
             {
-                _context!.SetDictionary(dictionary.DecompressionDictionary);
+                SetWindow(maxWindow);
+                SetDictionary(dictionary);
             }
             catch
             {
-                _context!.Dispose();
+                _context.Dispose();
                 throw;
             }
         }
 
+        [MemberNotNull(nameof(_context))]
         internal void InitializeDecoder()
         {
             _context = Interop.Zstd.ZSTD_createDCtx();
             if (_context.IsInvalid)
                 throw new IOException(SR.ZstandardDecoder_Create);
-        }
-
-        internal void EnsureInitialized()
-        {
-            EnsureNotDisposed();
-            if (_context == null)
-                InitializeDecoder();
         }
 
         /// <summary>Decompresses the specified data.</summary>
@@ -101,13 +112,13 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The decoder has been disposed.</exception>
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
-            bytesConsumed = 0;
             bytesWritten = 0;
+            bytesConsumed = 0;
 
             if (_finished)
                 return OperationStatus.Done;
 
-            EnsureInitialized();
+            EnsureNotDisposed();
 
             if (destination.IsEmpty)
                 return OperationStatus.DestinationTooSmall;
@@ -156,15 +167,15 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Gets the maximum decompressed length for the specified compressed data.</summary>
+        /// <summary>Attempts to get the maximum decompressed length for the specified compressed data.</summary>
         /// <param name="data">The compressed data.</param>
-        /// <param name="maxLength">The maximum decompressed length.</param>
+        /// <param name="length">The maximum decompressed length when this method returns true.</param>
         /// <returns>True if the maximum decompressed length was successfully determined; otherwise, false.</returns>
-        public static bool TryGetMaxDecompressedLength(ReadOnlySpan<byte> data, out int maxLength)
+        public static bool TryGetMaxDecompressedLength(ReadOnlySpan<byte> data, out long length)
         {
             if (data.IsEmpty)
             {
-                maxLength = 0;
+                length = 0;
                 return true;
             }
 
@@ -178,11 +189,11 @@ namespace System.IO.Compression
                     const ulong ZSTD_CONTENTSIZE_ERROR = unchecked(0UL - 2);
                     if (frameContentSize == ZSTD_CONTENTSIZE_UNKNOWN || frameContentSize == ZSTD_CONTENTSIZE_ERROR || frameContentSize > int.MaxValue)
                     {
-                        maxLength = 0;
+                        length = 0;
                         return false;
                     }
 
-                    maxLength = (int)frameContentSize;
+                    length = (int)frameContentSize;
                     return true;
                 }
             }
@@ -272,9 +283,9 @@ namespace System.IO.Compression
 
         /// <summary>References a prefix for the next compression operation.</summary>
         /// <remarks>The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called.</remarks>
-        public void ReferencePrefix(ReadOnlyMemory<byte> prefix)
+        public void SetPrefix(ReadOnlyMemory<byte> prefix)
         {
-            EnsureInitialized();
+            EnsureNotDisposed();
 
             _context!.SetPrefix(prefix);
         }
@@ -286,12 +297,12 @@ namespace System.IO.Compression
             _context?.Dispose();
         }
 
-        private readonly void EnsureNotDisposed()
+        private void EnsureNotDisposed()
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
-        private readonly void ThrowIfDisposed()
+        private void ThrowIfDisposed()
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(ZstandardDecoder), SR.ZstandardDecoder_Disposed);
@@ -299,17 +310,23 @@ namespace System.IO.Compression
 
         internal void SetWindow(int maxWindow)
         {
-            EnsureNotDisposed();
-            if (maxWindow < ZstandardUtils.WindowBits_Min || maxWindow > ZstandardUtils.WindowBits_Max)
+            Debug.Assert(_context != null);
+
+            if (maxWindow == 0 || maxWindow < ZstandardUtils.WindowBits_Min || maxWindow > ZstandardUtils.WindowBits_Max)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxWindow), string.Format(SR.ZstandardEncoder_InvalidWindow, ZstandardUtils.WindowBits_Min, ZstandardUtils.WindowBits_Max));
             }
-            if (_context == null || _context.IsInvalid || _context.IsClosed)
-            {
-                InitializeDecoder();
-            }
+
             nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context!, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindow);
             ZstandardUtils.ThrowIfError(result);
+        }
+
+        internal void SetDictionary(ZstandardDictionary dictionary)
+        {
+            Debug.Assert(_context != null);
+            ArgumentNullException.ThrowIfNull(dictionary);
+
+            _context!.SetDictionary(dictionary.DecompressionDictionary);
         }
     }
 }

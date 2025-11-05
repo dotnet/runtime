@@ -10,7 +10,7 @@ namespace System.IO.Compression
 {
     public sealed partial class ZstandardStream
     {
-        private ZstandardEncoder _encoder;
+        private ZstandardEncoder? _encoder;
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression level.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
@@ -21,28 +21,13 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        public ZstandardStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, CompressionMode.Compress, leaveOpen)
-        {
-            _encoder.SetQuality(ZstandardUtils.GetQualityFromCompressionLevel(compressionLevel));
-        }
+        public ZstandardStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, CompressionMode.Compress, leaveOpen, new ZstandardEncoder(ZstandardUtils.GetQualityFromCompressionLevel(compressionLevel))) { }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream, options, and optionally leaves the stream open.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="compressionOptions">The options to use for Zstandard compression or decompression.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        public ZstandardStream(Stream stream, ZstandardCompressionOptions compressionOptions, bool leaveOpen = false) : this(stream, CompressionMode.Compress, leaveOpen)
-        {
-            ArgumentNullException.ThrowIfNull(compressionOptions);
-
-            if (compressionOptions.Dictionary is ZstandardDictionary dictionary)
-            {
-                _encoder = new ZstandardEncoder(dictionary, ZstandardUtils.WindowBits_Default);
-            }
-            else
-            {
-                _encoder.SetQuality(compressionOptions.Quality);
-            }
-        }
+        public ZstandardStream(Stream stream, ZstandardCompressionOptions compressionOptions, bool leaveOpen = false) : this(stream, CompressionMode.Compress, leaveOpen, new ZstandardEncoder(compressionOptions)) { }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and encoder instance.</summary>
         /// <param name="stream">The stream to which compressed data is written.</param>
@@ -50,10 +35,29 @@ namespace System.IO.Compression
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="stream"/> does not support writing.</exception>
-        public ZstandardStream(Stream stream, ZstandardEncoder encoder, bool leaveOpen = false) : this(stream, CompressionMode.Compress, leaveOpen)
+        public ZstandardStream(Stream stream, ZstandardEncoder encoder, bool leaveOpen = false) : this(stream, CompressionMode.Compress, leaveOpen, encoder)
         {
-            _encoder = encoder;
             _encoderOwned = false;
+        }
+
+        /// <summary>
+        /// Sets the size of the source data to be compressed.
+        /// </summary>
+        /// <param name="size">The size of the source data in bytes.</param>
+        /// <remarks>
+        /// This method must be called before writing data to the stream.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">Attempting to set the source size on a decompression stream, or compression has already started.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is negative.</exception>
+        /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
+        public void SetSourceSize(long size)
+        {
+            if (_mode != CompressionMode.Compress)
+                throw new InvalidOperationException(SR.CannotWriteToDecompressionStream);
+            EnsureNotDisposed();
+            Debug.Assert(_encoder != null);
+
+            _encoder.SetSourceSize(size);
         }
 
         private void WriteCore(ReadOnlySpan<byte> buffer, bool isFinalBlock = false, bool flush = false, bool checkActiveRWOps = true)
@@ -61,6 +65,7 @@ namespace System.IO.Compression
             if (_mode != CompressionMode.Compress)
                 throw new InvalidOperationException(SR.CannotWriteToDecompressionStream);
             EnsureNotDisposed();
+            Debug.Assert(_encoder != null);
 
             try
             {
@@ -109,6 +114,7 @@ namespace System.IO.Compression
             if (_mode != CompressionMode.Compress)
                 throw new InvalidOperationException(SR.CannotWriteToDecompressionStream);
             EnsureNotDisposed();
+            Debug.Assert(_encoder != null);
 
             try
             {

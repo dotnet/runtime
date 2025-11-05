@@ -36,6 +36,10 @@ internal static partial class Interop
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial nuint ZSTD_freeDDict(IntPtr ddict);
 
+        // Dictionary training functions
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static partial nuint ZDICT_trainFromBuffer(IntPtr dictBuffer, nuint dictBufferCapacity, IntPtr samplesBuffer, IntPtr samplesSizes, uint nbSamples);
+
         // Compression functions
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial nuint ZSTD_compressBound(nuint srcSize);
@@ -87,6 +91,9 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial nuint ZSTD_CCtx_reset(SafeZstdCompressHandle cctx, ZstdResetDirective reset);
+
+        [LibraryImport(Libraries.CompressionNative)]
+        internal static partial nuint ZSTD_CCtx_setPledgedSrcSize(SafeZstdCompressHandle cctx, nuint pledgedSrcSize);
 
         // Compression level functions
         [LibraryImport(Libraries.CompressionNative)]

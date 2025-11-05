@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,21 +19,11 @@ namespace System.IO.Compression
         private readonly CompressionMode _mode;
         private volatile bool _activeRwOperation;
 
-        // These fields track whether the encoder/decoder are owned by this stream instance
+        // Tracks whether the encoder/decoder are owned by this stream instance
         // When owned, they are disposed; when not owned, they are reset
         private bool _encoderOwned = true;
-        private bool _decoderOwned = true;
 
-        /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression mode.</summary>
-        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
-        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
-        public ZstandardStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false) { }
-
-        /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
-        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
-        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
-        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        public ZstandardStream(Stream stream, CompressionMode mode, bool leaveOpen)
+        private ZstandardStream(Stream stream, CompressionMode mode, bool leaveOpen, object encoderOrDecoder)
         {
             ArgumentNullException.ThrowIfNull(stream);
 
@@ -46,6 +37,8 @@ namespace System.IO.Compression
                     {
                         throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(stream));
                     }
+                    Debug.Assert(encoderOrDecoder is ZstandardEncoder);
+                    _encoder = (ZstandardEncoder)encoderOrDecoder;
                     break;
 
                 case CompressionMode.Decompress:
@@ -53,6 +46,8 @@ namespace System.IO.Compression
                     {
                         throw new ArgumentException(SR.Stream_FalseCanRead, nameof(stream));
                     }
+                    Debug.Assert(encoderOrDecoder is ZstandardDecoder);
+                    _decoder = (ZstandardDecoder)encoderOrDecoder;
                     break;
 
                 default:
@@ -62,6 +57,26 @@ namespace System.IO.Compression
             _stream = stream;
             _buffer = ArrayPool<byte>.Shared.Rent(DefaultInternalBufferSize);
         }
+
+        /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
+        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
+        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+        public ZstandardStream(Stream stream, CompressionMode mode, bool leaveOpen) : this(stream, mode, leaveOpen, mode == CompressionMode.Compress ? new ZstandardEncoder() : new ZstandardDecoder()) { }
+
+        /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression mode.</summary>
+        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
+        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
+        public ZstandardStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false) { }
+
+        /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream, compression mode, and dictionary.</summary>
+        /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
+        /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
+        /// <param name="dictionary">The compression or decompression dictionary to use.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="dictionary"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="mode"/> is not a valid <see cref="CompressionMode"/> value, or the stream does not support the required operation.</exception>
+        public ZstandardStream(Stream stream, CompressionMode mode, ZstandardDictionary dictionary, bool leaveOpen = false) : this(stream, mode, leaveOpen, mode == CompressionMode.Compress ? new ZstandardEncoder(dictionary) : new ZstandardDecoder(dictionary)) { }
 
         /// <summary>Gets a reference to the underlying stream.</summary>
         /// <value>A stream object that represents the underlying stream.</value>
@@ -171,20 +186,13 @@ namespace System.IO.Compression
 
             if (_encoderOwned)
             {
-                _encoder.Dispose();
+                _encoder?.Dispose();
+                _decoder?.Dispose();
             }
             else
             {
-                _encoder.Reset();
-            }
-
-            if (_decoderOwned)
-            {
-                _decoder.Dispose();
-            }
-            else
-            {
-                _decoder.Reset();
+                _encoder?.Reset();
+                _decoder?.Reset();
             }
 
             byte[] buffer = _buffer;
