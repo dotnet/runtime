@@ -164,7 +164,8 @@ namespace DotnetFuzzing.Fuzzers
                     int[] indices = new int[arrayRecord.Rank];
 
                     long flatIndex = 0;
-                    for (; flatIndex < totalElementsCount; flatIndex++)
+                    int maxIndex = 1_000_000; // to prevent long loops timing out the fuzzer
+                    for (; flatIndex < Math.Min(totalElementsCount, maxIndex); flatIndex++)
                     {
                         object? rawValue = array.GetValue(indices);
                         if (rawValue is not null)
@@ -195,7 +196,7 @@ namespace DotnetFuzzing.Fuzzers
                     }
 
                     // We track the flat index to ensure that we have enumerated over all elements.
-                    Assert.Equal(totalElementsCount, flatIndex);
+                    Assert.Equal(Math.Min(totalElementsCount, maxIndex), flatIndex);
                 }
                 else
                 {
