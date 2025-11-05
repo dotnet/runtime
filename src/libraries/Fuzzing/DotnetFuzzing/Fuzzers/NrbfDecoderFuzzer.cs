@@ -16,7 +16,7 @@ namespace DotnetFuzzing.Fuzzers
 
         public string[] TargetCoreLibPrefixes => [];
 
-        public string Dictionary => "nrbfdecoder.dict";
+        public string Corpus => "nrbf";
 
         public void FuzzTarget(ReadOnlySpan<byte> bytes)
         {
@@ -104,7 +104,7 @@ namespace DotnetFuzzing.Fuzzers
                             // It was a reference to a non-existing record, just continue.
                             continue;
                         }
-                        
+
                         if (rawValue is not null)
                         {
                             if (rawValue is SerializationRecord nestedRecord)
@@ -114,7 +114,7 @@ namespace DotnetFuzzing.Fuzzers
                             else
                             {
                                 ConsumePrimitiveValue(rawValue);
-                            }    
+                            }
                         }
                     }
                 }
