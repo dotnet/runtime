@@ -1185,12 +1185,12 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
 
         if (structSizeMightRepresentSIMDType(originalSize))
         {
-            CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-            var_types   simdType        = getSIMDType(structHnd, &simdBaseJitType);
-            if (simdBaseJitType != CORINFO_TYPE_UNDEF && simdType != TYP_UNDEF)
+            unsigned int sizeBytes;
+            CorInfoType  simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
+            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
             {
-                assert(getSizeOfSIMDType(simdType) == originalSize);
-                structType = simdType;
+                assert(sizeBytes == originalSize);
+                structType = getSIMDTypeForSize(sizeBytes);
                 if (pSimdBaseJitType != nullptr)
                 {
                     *pSimdBaseJitType = simdBaseJitType;
@@ -3709,7 +3709,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
     // for our call to CORINFO_HELP_NEW_MDARR.
-    if (dimensionsSize > lvaLclExactSize(&lvaTable[lvaNewObjArrayArgs]))
+    if (dimensionsSize > lvaTable[lvaNewObjArrayArgs].lvExactSize())
     {
         lvaTable[lvaNewObjArrayArgs].GrowBlockLayout(typGetBlkLayout(dimensionsSize));
     }

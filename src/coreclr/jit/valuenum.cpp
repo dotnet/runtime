@@ -6037,7 +6037,7 @@ ValueNum ValueNumStore::VNForLoadStoreBitCast(ValueNum value, var_types indType,
 
     if (typeOfValue != indType)
     {
-        assert((typeOfValue == TYP_STRUCT) || (indType == TYP_STRUCT) || (m_pComp->getSizeOfType(indType) == indSize));
+        assert((typeOfValue == TYP_STRUCT) || (indType == TYP_STRUCT) || (genTypeSize(indType) == indSize));
 
         value = VNForBitCast(value, indType, indSize);
 
@@ -6249,7 +6249,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
             {
                 // TYP_STRUCT can represent the general case where the value could be of any size.
                 var_types fieldStoreType = TYP_STRUCT;
-                if (vnStore->LoadStoreIsEntire(getSizeOfType(fieldVarDsc->TypeGet()), fieldStoreOffset, fieldStoreSize))
+                if (vnStore->LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset, fieldStoreSize))
                 {
                     // Avoid redundant bitcasts for the common case of a full definition.
                     fieldStoreType = fieldVarDsc->TypeGet();
@@ -6312,9 +6312,8 @@ void Compiler::fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc
 
     unsigned  elemSize = (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemType);
     var_types loadType = loadTree->TypeGet();
-    unsigned  loadSize = gtGetSizeOfIndirection(loadTree->AsIndir());
-
-    ValueNum loadValueVN = vnStore->VNForLoad(VNK_Liberal, wholeElem, elemSize, loadType, offset, loadSize);
+    unsigned  loadSize = loadTree->AsIndir()->Size();
+    ValueNum  loadValueVN = vnStore->VNForLoad(VNK_Liberal, wholeElem, elemSize, loadType, offset, loadSize);
 
     loadTree->gtVNPair.SetLiberal(loadValueVN);
 
@@ -6363,7 +6362,7 @@ void Compiler::fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFu
     ValueNum hAtArrTypeAtArr = vnStore->VNForMapSelect(VNK_Liberal, TYP_MEM, hAtArrType, arrVN);
     JITDUMP("  GcHeap[elemTypeEq][array: " FMT_VN "] is " FMT_VN "\n", arrVN, hAtArrTypeAtArr);
 
-    unsigned elemSize = (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemTypeEq) : getSizeOfType(elemType);
+    unsigned elemSize = (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemType);
 
     // This is the value that should be stored at "arr[inx]".
     ValueNum newWholeElem = ValueNumStore::NoVN;
@@ -6442,10 +6441,9 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
     ValueNum fieldValueVN = vnStore->VNForMapSelect(VNK_Liberal, fieldType, fieldMapVN, fieldValueSelectorVN);
 
     // Finally, account for the struct fields and type mismatches.
-    var_types loadType = loadTree->TypeGet();
-    unsigned  loadSize = gtGetSizeOfIndirection(loadTree->AsIndir());
-
-    ValueNum loadValueVN = vnStore->VNForLoad(VNK_Liberal, fieldValueVN, fieldSize, loadType, offset, loadSize);
+    var_types loadType    = loadTree->TypeGet();
+    unsigned  loadSize    = loadTree->OperIsBlk() ? loadTree->AsBlk()->Size() : genTypeSize(loadTree);
+    ValueNum  loadValueVN = vnStore->VNForLoad(VNK_Liberal, fieldValueVN, fieldSize, loadType, offset, loadSize);
 
     loadTree->gtVNPair.SetLiberal(loadValueVN);
     loadTree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, loadType));
@@ -8930,7 +8928,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
             {
                 // TODO-SVE: We shouldn't see this intrinsic operating on Vector<T> after porting to SVE
                 assert(TypeOfVN(arg0VN) == type || (type == TYP_SIMDSV && TypeOfVN(arg0VN) == TYP_SIMD16 &&
-                                                    m_pComp->getSizeOfType(TYP_SIMDSV) == genTypeSize(TYP_SIMD16)));
+                                                    genTypeSize(TYP_SIMDSV) == genTypeSize(TYP_SIMD16)));
                 assert(TypeOfVN(arg1VN) == TYP_SIMD8);
 
                 if (!varTypeIsFloating(baseType))
@@ -9180,28 +9178,28 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
     return VNForFunc(type, func, arg0VN, arg1VN, resultTypeVN);
 }
 
-ValueNum ValueNumStore::EvaluateSimdWithElementFloating(
-    var_types simdType, var_types baseType, ValueNum arg0VN, int32_t arg1, double arg2)
+ValueNum EvaluateSimdWithElementFloating(
+    ValueNumStore* vns, var_types simdType, var_types baseType, ValueNum arg0VN, int32_t arg1, double arg2)
 {
     assert(varTypeIsFloating(baseType));
-    assert(IsVNConstant(arg0VN));
-    assert(simdType == TypeOfVN(arg0VN));
-    assert(static_cast<uint32_t>(arg1) < GenTreeVecCon::ElementCount(m_pComp->getSizeOfType(simdType), baseType));
+    assert(vns->IsVNConstant(arg0VN));
+    assert(simdType == vns->TypeOfVN(arg0VN));
+    assert(static_cast<uint32_t>(arg1) < GenTreeVecCon::ElementCount(genTypeSize(simdType), baseType));
 
     switch (simdType)
     {
         case TYP_SIMD8:
         {
             simd8_t result = {};
-            EvaluateWithElementFloating<simd8_t>(baseType, &result, GetConstantSimd8(arg0VN), arg1, arg2);
-            return VNForSimd8Con(result);
+            EvaluateWithElementFloating<simd8_t>(baseType, &result, vns->GetConstantSimd8(arg0VN), arg1, arg2);
+            return vns->VNForSimd8Con(result);
         }
 
         case TYP_SIMD12:
         {
             simd12_t result = {};
-            EvaluateWithElementFloating<simd12_t>(baseType, &result, GetConstantSimd12(arg0VN), arg1, arg2);
-            return VNForSimd12Con(result);
+            EvaluateWithElementFloating<simd12_t>(baseType, &result, vns->GetConstantSimd12(arg0VN), arg1, arg2);
+            return vns->VNForSimd12Con(result);
         }
 
         case TYP_SIMD16:
@@ -9210,23 +9208,23 @@ ValueNum ValueNumStore::EvaluateSimdWithElementFloating(
 #endif
         {
             simd16_t result = {};
-            EvaluateWithElementFloating<simd16_t>(baseType, &result, GetConstantSimd16(arg0VN), arg1, arg2);
-            return VNForSimd16Con(result);
+            EvaluateWithElementFloating<simd16_t>(baseType, &result, vns->GetConstantSimd16(arg0VN), arg1, arg2);
+            return vns->VNForSimd16Con(result);
         }
 
 #if defined TARGET_XARCH
         case TYP_SIMD32:
         {
             simd32_t result = {};
-            EvaluateWithElementFloating<simd32_t>(baseType, &result, GetConstantSimd32(arg0VN), arg1, arg2);
-            return VNForSimd32Con(result);
+            EvaluateWithElementFloating<simd32_t>(baseType, &result, vns->GetConstantSimd32(arg0VN), arg1, arg2);
+            return vns->VNForSimd32Con(result);
         }
 
         case TYP_SIMD64:
         {
             simd64_t result = {};
-            EvaluateWithElementFloating<simd64_t>(baseType, &result, GetConstantSimd64(arg0VN), arg1, arg2);
-            return VNForSimd64Con(result);
+            EvaluateWithElementFloating<simd64_t>(baseType, &result, vns->GetConstantSimd64(arg0VN), arg1, arg2);
+            return vns->VNForSimd64Con(result);
         }
 #endif // TARGET_XARCH
 
@@ -9237,28 +9235,28 @@ ValueNum ValueNumStore::EvaluateSimdWithElementFloating(
     }
 }
 
-ValueNum ValueNumStore::EvaluateSimdWithElementIntegral(
-    var_types simdType, var_types baseType, ValueNum arg0VN, int32_t arg1, int64_t arg2)
+ValueNum EvaluateSimdWithElementIntegral(
+    ValueNumStore* vns, var_types simdType, var_types baseType, ValueNum arg0VN, int32_t arg1, int64_t arg2)
 {
     assert(varTypeIsIntegral(baseType));
-    assert(simdType == TypeOfVN(arg0VN));
-    assert(IsVNConstant(arg0VN));
-    assert(static_cast<uint32_t>(arg1) < GenTreeVecCon::ElementCount(m_pComp->getSizeOfType(simdType), baseType));
+    assert(simdType == vns->TypeOfVN(arg0VN));
+    assert(vns->IsVNConstant(arg0VN));
+    assert(static_cast<uint32_t>(arg1) < GenTreeVecCon::ElementCount(genTypeSize(simdType), baseType));
 
     switch (simdType)
     {
         case TYP_SIMD8:
         {
             simd8_t result = {};
-            EvaluateWithElementIntegral<simd8_t>(baseType, &result, GetConstantSimd8(arg0VN), arg1, arg2);
-            return VNForSimd8Con(result);
+            EvaluateWithElementIntegral<simd8_t>(baseType, &result, vns->GetConstantSimd8(arg0VN), arg1, arg2);
+            return vns->VNForSimd8Con(result);
         }
 
         case TYP_SIMD12:
         {
             simd12_t result = {};
-            EvaluateWithElementIntegral<simd12_t>(baseType, &result, GetConstantSimd12(arg0VN), arg1, arg2);
-            return VNForSimd12Con(result);
+            EvaluateWithElementIntegral<simd12_t>(baseType, &result, vns->GetConstantSimd12(arg0VN), arg1, arg2);
+            return vns->VNForSimd12Con(result);
         }
 
         case TYP_SIMD16:
@@ -9267,23 +9265,23 @@ ValueNum ValueNumStore::EvaluateSimdWithElementIntegral(
 #endif
         {
             simd16_t result = {};
-            EvaluateWithElementIntegral<simd16_t>(baseType, &result, GetConstantSimd16(arg0VN), arg1, arg2);
-            return VNForSimd16Con(result);
+            EvaluateWithElementIntegral<simd16_t>(baseType, &result, vns->GetConstantSimd16(arg0VN), arg1, arg2);
+            return vns->VNForSimd16Con(result);
         }
 
 #if defined TARGET_XARCH
         case TYP_SIMD32:
         {
             simd32_t result = {};
-            EvaluateWithElementIntegral<simd32_t>(baseType, &result, GetConstantSimd32(arg0VN), arg1, arg2);
-            return VNForSimd32Con(result);
+            EvaluateWithElementIntegral<simd32_t>(baseType, &result, vns->GetConstantSimd32(arg0VN), arg1, arg2);
+            return vns->VNForSimd32Con(result);
         }
 
         case TYP_SIMD64:
         {
             simd64_t result = {};
-            EvaluateWithElementIntegral<simd64_t>(baseType, &result, GetConstantSimd64(arg0VN), arg1, arg2);
-            return VNForSimd64Con(result);
+            EvaluateWithElementIntegral<simd64_t>(baseType, &result, vns->GetConstantSimd64(arg0VN), arg1, arg2);
+            return vns->VNForSimd64Con(result);
         }
 #endif // TARGET_XARCH
 
@@ -9388,7 +9386,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 
             int32_t index = GetConstantInt32(arg1VN);
 
-            if (static_cast<uint32_t>(index) >= GenTreeVecCon::ElementCount(m_pComp->getSizeOfType(type), baseType))
+            if (static_cast<uint32_t>(index) >= GenTreeVecCon::ElementCount(genTypeSize(type), baseType))
             {
                 // Nothing to fold for out of range indexes
                 break;
@@ -9406,7 +9404,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
                 {
                     value = GetConstantDouble(arg2VN);
                 }
-                return EvaluateSimdWithElementFloating(type, baseType, arg0VN, index, value);
+                return EvaluateSimdWithElementFloating(this, type, baseType, arg0VN, index, value);
             }
             else
             {
@@ -9421,7 +9419,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
                 {
                     value = GetConstantInt32(arg2VN);
                 }
-                return EvaluateSimdWithElementIntegral(type, baseType, arg0VN, index, value);
+                return EvaluateSimdWithElementIntegral(this, type, baseType, arg0VN, index, value);
             }
         }
 
@@ -12166,7 +12164,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
         case GT_STORE_LCL_FLD:
         {
             GenTreeLclFld* lclFld = store->AsLclFld();
-            fgValueNumberLocalStore(store, lclFld, lclFld->GetLclOffs(), lclFld->GetSize(this), valueVNPair);
+            fgValueNumberLocalStore(store, lclFld, lclFld->GetLclOffs(), lclFld->GetSize(), valueVNPair);
         }
         break;
 
@@ -12186,7 +12184,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
 
             GenTreeLclVarCommon* lclVarTree = nullptr;
             ssize_t              offset     = 0;
-            unsigned             storeSize  = gtGetSizeOfIndirection(store->AsIndir());
+            unsigned             storeSize  = store->AsIndir()->Size();
             GenTree*             baseAddr   = nullptr;
             FieldSeq*            fldSeq     = nullptr;
 
@@ -12255,7 +12253,7 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
     // Account for type mismatches.
     if (genActualType(varDsc) != genActualType(lcl))
     {
-        if (getSizeOfType(varDsc->TypeGet()) != getSizeOfType(lcl->TypeGet()))
+        if (genTypeSize(varDsc) != genTypeSize(lcl))
         {
             assert(varDsc->TypeIs(TYP_LONG) && lcl->TypeIs(TYP_INT));
             lcl->gtVNPair = vnStore->VNPairForCast(wholeLclVarVNP, lcl->TypeGet(), varDsc->TypeGet());
@@ -12469,7 +12467,7 @@ bool Compiler::fgValueNumberConstLoad(GenTreeIndir* tree)
     ssize_t               byteOffset     = 0;
     FieldSeq*             fieldSeq       = nullptr;
     CORINFO_OBJECT_HANDLE obj            = nullptr;
-    int                   size           = (int)gtGetSizeOfIndirection(tree);
+    int                   size           = (int)genTypeSize(tree->TypeGet());
     const int             maxElementSize = sizeof(simd_t);
 
     if (!tree->TypeIs(TYP_BYREF, TYP_STRUCT) &&
@@ -12652,7 +12650,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     ValueNumPair lclVarValue = varDsc->GetPerSsaData(lclFld->GetSsaNum())->m_vnPair;
                     lclFld->gtVNPair = vnStore->VNPairForLoad(lclVarValue, lvaLclExactSize(lclNum), lclFld->TypeGet(),
-                                                              lclFld->GetLclOffs(), lclFld->GetSize(this));
+                                                              lclFld->GetLclOffs(), lclFld->GetSize());
                 }
                 else if (varDsc->IsAddressExposed())
                 {
@@ -12835,7 +12833,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 var_types loadType = tree->TypeGet();
                 ssize_t   offset   = 0;
-                unsigned  loadSize = gtGetSizeOfIndirection(tree->AsIndir());
+                unsigned  loadSize = tree->AsIndir()->Size();
                 VNFuncApp funcApp{VNF_COUNT};
 
                 if (fgValueNumberConstLoad(tree->AsIndir()))
@@ -13562,8 +13560,7 @@ ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
 
     // For integral unchecked casts, only the "int -> long" upcasts use
     // "srcIsUnsigned", to decide whether to use sign or zero extension.
-    if (!hasOverflowCheck && !varTypeIsFloating(castToType) &&
-        (m_pComp->getSizeOfType(castToType) <= m_pComp->getSizeOfType(castFromType)))
+    if (!hasOverflowCheck && !varTypeIsFloating(castToType) && (genTypeSize(castToType) <= genTypeSize(castFromType)))
     {
         srcIsUnsigned = false;
     }
@@ -13658,7 +13655,7 @@ ValueNum ValueNumStore::EncodeBitCastType(var_types castToType, unsigned size)
 {
     if (castToType != TYP_STRUCT)
     {
-        assert(size == m_pComp->getSizeOfType(castToType));
+        assert(size == genTypeSize(castToType));
         return VNForIntCon(castToType);
     }
 

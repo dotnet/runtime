@@ -71,7 +71,7 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
 
         if (hfaType != TYP_UNDEF)
         {
-            unsigned              elemSize = comp->getSizeOfType(hfaType);
+            unsigned              elemSize = genTypeSize(hfaType);
             unsigned              slots    = structLayout->GetSize() / elemSize;
             ABIPassingInformation info;
             if (m_floatRegs.Count() >= slots)
@@ -122,9 +122,9 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
     }
     else
     {
-        assert(comp->getSizeOfType(type) <= TARGET_POINTER_SIZE);
+        assert(genTypeSize(type) <= TARGET_POINTER_SIZE);
         slots      = 1;
-        passedSize = comp->getSizeOfType(type);
+        passedSize = genTypeSize(type);
     }
 
     assert((slots == 1) || (slots == 2));
@@ -182,7 +182,7 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
             unsigned          alignment;
             if (compAppleArm64Abi())
             {
-                alignment      = varTypeIsStruct(type) ? TARGET_POINTER_SIZE : comp->getSizeOfType(type);
+                alignment      = varTypeIsStruct(type) ? TARGET_POINTER_SIZE : genTypeSize(type);
                 m_stackArgSize = roundUp(m_stackArgSize, alignment);
                 segment        = alignment < TARGET_POINTER_SIZE
                                      ? ABIPassingSegment::OnStackWithoutConsumingFullSlot(m_stackArgSize, 0, passedSize)

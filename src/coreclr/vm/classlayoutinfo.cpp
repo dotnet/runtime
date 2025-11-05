@@ -1187,7 +1187,7 @@ CorInfoHFAElemType EEClassNativeLayoutInfo::GetNativeHFATypeRaw() const
     case CORINFO_HFA_ELEM_VECTOR64: elemSize = 8; break;
     case CORINFO_HFA_ELEM_VECTOR128: elemSize = 16; break;
     case CORINFO_HFA_ELEM_VECTORT:
-        elemSize = g_vectorTByteLength;
+        elemSize = EEJitManager::GetSizeOfVectorT();
         _ASSERTE(elemSize != 0);
         break;
 #endif

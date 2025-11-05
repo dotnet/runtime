@@ -107,11 +107,12 @@ inline bool _our_GetThreadCycles(uint64_t* cycleOut)
 
 #endif // which host OS
 
-const BYTE genTypeSizes[] = {
+BYTE _initGenTypeSizes[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
+const BYTE (&genTypeSizes)[TYP_COUNT] = _initGenTypeSizes;
 
 const BYTE genTypeAlignments[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) al,
@@ -614,7 +615,7 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 #ifdef TARGET_ARM64
             // Can pass in V register if structSize == 16, and Z registers for structs with sizes in
             // multiples of 16-bytes, depending on hardware availability.
-            || structSize == 16 || ((structSize % 16 == 0) && (structSize == getSizeOfType(TYP_SIMDSV)))
+            || structSize == 16 || ((structSize % 16 == 0) && (structSize == genTypeSize(TYP_SIMDSV)))
 #endif
         )
         {
@@ -622,17 +623,21 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             // We're only interested in the case where the struct size is equal to the size of the hfaType.
             if (varTypeIsValidHfaType(hfaType))
             {
-                if (getSizeOfType(hfaType) == structSize)
+                var_types hfaType = GetHfaType(clsHnd);
+                // We're only interested in the case where the struct size is equal to the size of the hfaType.
+                if (varTypeIsValidHfaType(hfaType))
                 {
-                    useType = hfaType;
-                }
-                else
-                {
-                    return TYP_UNKNOWN;
+                    if (genTypeSize(hfaType) == structSize)
+                    {
+                        useType = hfaType;
+                    }
+                    else
+                    {
+                        return TYP_UNKNOWN;
+                    }
                 }
             }
         }
-
         if (useType != TYP_UNKNOWN)
         {
             return useType;
@@ -881,7 +886,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
         if (useType != TYP_UNKNOWN)
         {
-            if (structSize == getSizeOfType(useType))
+            if (structSize == genTypeSize(useType))
             {
                 // Currently: 1, 2, 4, or 8 byte structs
                 howToReturnStruct = SPK_PrimitiveType;
@@ -7093,6 +7098,14 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 #endif
 
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+    // Initialize the size of Vector<T> from the EE.
+    _initGenTypeSizes[TYP_SIMDSV] = getVectorTByteLength();
+    _initGenTypeSizes[TYP_MASK]   = getMaskByteLength();
+    assert(genTypeSize(TYP_SIMDSV) >= 16);
+    assert(genTypeSize(TYP_MASK) >= 2);
+#endif
+
     compCompile(methodCodePtr, methodCodeSize, compileFlags);
 
 #ifdef DEBUG
@@ -10893,35 +10906,3 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_externallyVisibleImplicitly, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS
-
-// Get the size of a JIT internal type.
-//
-// This function will resolve the size of types that aren't necessarily determinable
-// from a static context, for example ARM64 scalable vector types. For primitive types
-// and types that are obviously fixed size, use genTypeSize instead.
-unsigned Compiler::getSizeOfType(var_types type)
-{
-#ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(type))
-    {
-        return getSizeOfSIMDType(type);
-    }
-#endif
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
-    if (type == TYP_MASK)
-    {
-        // A predicate register has a bit for each byte in the vector register.
-        // We need to overallocate for 128-bit VL because the JIT makes assumptions
-        // about types being larger than an integer at the moment.
-        return roundUp((size_t)(getVectorTByteLength() / 8), sizeof(int));
-    }
-#endif
-
-    return genTypeSize(type);
-}
-
-unsigned Compiler::getSizeOfType(GenTree* tree)
-{
-    return getSizeOfType(tree->TypeGet());
-}

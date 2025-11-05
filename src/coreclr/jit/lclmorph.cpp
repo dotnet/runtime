@@ -1504,8 +1504,8 @@ private:
                 callUser->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
                 defFlag = GTF_VAR_DEF;
 
-                if ((val.Offset() != 0) || (m_compiler->lvaLclExactSize(varDsc) !=
-                                            m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
+                if ((val.Offset() != 0) ||
+                    (varDsc->lvExactSize() != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
                 {
                     defFlag |= GTF_VAR_USEASG;
                 }
@@ -1521,7 +1521,7 @@ private:
                 escapeAddr = false;
                 defFlag    = GTF_VAR_DEF;
 
-                if ((val.Offset() != 0) || (m_compiler->lvaLclExactSize(varDsc) != 1))
+                if ((val.Offset() != 0) || (varDsc->lvExactSize() != 1))
                 {
                     defFlag |= GTF_VAR_USEASG;
                 }
@@ -1591,7 +1591,7 @@ private:
         unsigned   lclNum    = val.LclNum();
         unsigned   offset    = val.Offset();
         LclVarDsc* varDsc    = m_compiler->lvaGetDesc(lclNum);
-        unsigned   indirSize = m_compiler->gtGetSizeOfIndirection(node->AsIndir());
+        unsigned   indirSize = node->AsIndir()->Size();
         bool       isWide;
 
         // TODO-Cleanup: delete "indirSize == 0", use "Compiler::IsValidLclAddr".
@@ -1733,9 +1733,8 @@ private:
                     {
                         // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
-                        hwiNode =
-                            m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode, CORINFO_TYPE_FLOAT,
-                                                                m_compiler->getSizeOfType(varDsc->TypeGet()));
+                        hwiNode            = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
+                                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
                         break;
                     }
 
@@ -1792,9 +1791,9 @@ private:
                     {
                         // Handle case 1 or the float field of case 2
                         GenTree* indexNode = m_compiler->gtNewIconNode(offset / genTypeSize(elementType));
-                        hwiNode = m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode,
-                                                                       elementNode, CORINFO_TYPE_FLOAT,
-                                                                       m_compiler->getSizeOfType(varDsc->TypeGet()));
+                        hwiNode =
+                            m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
+                                                                 CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
                         break;
                     }
 
@@ -2020,11 +2019,8 @@ private:
                     return IndirTransform::NarrowCast;
                 }
 
-                unsigned indirTypeSize = m_compiler->getSizeOfType(indir->TypeGet());
-
-                if ((indirTypeSize == m_compiler->getSizeOfType(varDsc->TypeGet())) &&
-                    (indirTypeSize <= TARGET_POINTER_SIZE) && (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)) &&
-                    !varDsc->lvPromoted)
+                if ((genTypeSize(indir) == genTypeSize(varDsc)) && (genTypeSize(indir) <= TARGET_POINTER_SIZE) &&
+                    (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)) && !varDsc->lvPromoted)
                 {
                     return IndirTransform::BitCast;
                 }
@@ -2066,7 +2062,7 @@ private:
             return false;
         }
 
-        unsigned fieldLclNum = MorphStructFieldAddress(addr, m_compiler->gtGetSizeOfIndirection(node));
+        unsigned fieldLclNum = MorphStructFieldAddress(addr, node->Size());
         if (fieldLclNum == BAD_VAR_NUM)
         {
             return false;
@@ -2147,7 +2143,7 @@ private:
 
                 // Retargeting the indirection to reference the promoted field would make it "wide", exposing
                 // the whole parent struct (with all of its fields).
-                if (accessSize > m_compiler->getSizeOfType(fieldVarDsc->TypeGet()))
+                if (accessSize > genTypeSize(fieldVarDsc))
                 {
                     return BAD_VAR_NUM;
                 }

@@ -5076,8 +5076,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             uint32_t             lclOffs = lclVar->GetLclOffs() + (imm8 * elemSize);
             LclVarDsc*           lclDsc  = comp->lvaGetDesc(lclVar);
 
-            if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) &&
-                ((lclOffs + elemSize) <= comp->lvaLclExactSize(lclDsc)))
+            if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) && ((lclOffs + elemSize) <= lclDsc->lvExactSize()))
             {
                 GenTree* lclFld = comp->gtNewLclFldNode(lclVar->GetLclNum(), JITtype2varType(simdBaseJitType),
                                                         static_cast<uint16_t>(lclOffs));
@@ -6308,8 +6307,7 @@ GenTree* Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
             uint32_t             lclOffs = lclVar->GetLclOffs() + (0 * elemSize);
             LclVarDsc*           lclDsc  = comp->lvaGetDesc(lclVar);
 
-            if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) &&
-                ((lclOffs + elemSize) <= comp->lvaLclExactSize(lclDsc)))
+            if (lclDsc->lvDoNotEnregister && (lclOffs <= 0xFFFF) && ((lclOffs + elemSize) <= lclDsc->lvExactSize()))
             {
                 GenTree* lclFld =
                     comp->gtNewLclFldNode(lclVar->GetLclNum(), JITtype2varType(simdBaseJitType), lclVar->GetLclOffs());
@@ -7278,7 +7276,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), comp->gtGetSizeOfIndirection(node)))
+    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), node->Size()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
@@ -8239,7 +8237,7 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
         // If it is a GT_LCL_VAR, it still needs the reg to hold the address.
         // We would still need a reg for GT_CNS_INT if it doesn't fit within addressing mode base.
         if (indirCandidateChild->OperIs(GT_LCL_ADDR) &&
-            IsContainableLclAddr(indirCandidateChild->AsLclFld(), comp->gtGetSizeOfIndirection(storeInd)))
+            IsContainableLclAddr(indirCandidateChild->AsLclFld(), storeInd->Size()))
         {
             indirDst->SetContained();
         }

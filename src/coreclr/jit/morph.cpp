@@ -288,7 +288,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     GenTree*  oper    = tree->CastOp();
     var_types srcType = genActualType(oper);
     var_types dstType = tree->CastToType();
-    unsigned  dstSize = getSizeOfType(dstType);
+    unsigned  dstSize = genTypeSize(dstType);
 
     // See if the cast has to be done in two steps.  R -> I
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
@@ -6896,7 +6896,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*  tree,
 
                 if (varTypeIsArithmetic(elementType) && ((fieldOffset % elementSize) == 0))
                 {
-                    *simdSizeOut = lvaLclExactSize(varDsc);
+                    *simdSizeOut = varDsc->lvExactSize();
                     *indexOut    = fieldOffset / elementSize;
 
                     return objRef;
@@ -8546,7 +8546,7 @@ GenTree* Compiler::fgMorphFinalizeIndir(GenTreeIndir* indir)
 
     if (!indir->IsVolatile() && !indir->TypeIs(TYP_STRUCT) && addr->OperIs(GT_LCL_ADDR))
     {
-        unsigned size    = gtGetSizeOfIndirection(indir);
+        unsigned size    = indir->Size();
         unsigned offset  = addr->AsLclVarCommon()->GetLclOffs();
         unsigned extent  = offset + size;
         unsigned lclSize = lvaLclExactSize(addr->AsLclVarCommon()->GetLclNum());
@@ -10856,7 +10856,7 @@ GenTree* Compiler::fgMorphRetInd(GenTreeOp* ret)
     if (fgGlobalMorph && varTypeIsStruct(lclFld) && !lvaIsImplicitByRefLocal(lclNum))
     {
         LclVarDsc* varDsc     = lvaGetDesc(lclNum);
-        unsigned   indSize    = lclFld->GetSize(this);
+        unsigned   indSize    = lclFld->GetSize();
         unsigned   lclVarSize = lvaLclExactSize(lclNum);
 
         // TODO: change conditions in `canFold` to `indSize <= lclVarSize`, but currently do not support `BITCAST

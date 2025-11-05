@@ -1502,7 +1502,9 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE 
     {
         if (!varTypeIsSIMD(argType))
         {
-            argType = getSIMDType(argClass);
+            unsigned int argSizeBytes;
+            (void)getBaseJitTypeAndSizeOfSIMDType(argClass, &argSizeBytes);
+            argType = getSIMDTypeForSize(argSizeBytes);
         }
         assert(varTypeIsSIMD(argType));
 
@@ -1887,20 +1889,29 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
     GenTree*               retNode         = nullptr;
 
-    if (retType == TYP_STRUCT && !HWIntrinsicInfo::IsMultiReg(intrinsic))
+    if (retType == TYP_STRUCT)
     {
-        retType = impNormStructType(sig->retTypeSigClass, &simdBaseJitType);
+        unsigned int sizeBytes;
+        simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(sig->retTypeSigClass, &sizeBytes);
+
+        if (HWIntrinsicInfo::IsMultiReg(intrinsic))
+        {
+            assert(sizeBytes == 0);
+        }
 
 #ifdef TARGET_ARM64
-        if ((intrinsic == NI_AdvSimd_LoadAndInsertScalar) || (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalar))
+        else if ((intrinsic == NI_AdvSimd_LoadAndInsertScalar) || (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalar))
         {
-            if (retType == TYP_STRUCT)
+            CorInfoType pSimdBaseJitType = CORINFO_TYPE_UNDEF;
+            var_types   retFieldType     = impNormStructType(sig->retTypeSigClass, &pSimdBaseJitType);
+
+            if (retFieldType == TYP_STRUCT)
             {
                 CORINFO_CLASS_HANDLE structType;
                 unsigned int         sizeBytes = 0;
 
                 // LoadAndInsertScalar that returns 2,3 or 4 vectors
-                assert(simdBaseJitType == CORINFO_TYPE_UNDEF);
+                assert(pSimdBaseJitType == CORINFO_TYPE_UNDEF);
                 unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sig->retTypeSigClass);
                 assert(fieldCount > 1);
                 CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(sig->retTypeClass, 0);
@@ -1926,20 +1937,24 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
             else
             {
-                assert((retType == TYP_SIMD8) || (retType == TYP_SIMD16));
+                assert((retFieldType == TYP_SIMD8) || (retFieldType == TYP_SIMD16));
                 assert(isSupportedBaseType(intrinsic, simdBaseJitType));
+                retType = getSIMDTypeForSize(sizeBytes);
             }
         }
-        else
 #endif
+        else
+        {
             // We want to return early here for cases where retType was TYP_STRUCT as per method signature and
             // rather than deferring the decision after getting the simdBaseJitType of arg.
-            if (retType == TYP_UNDEF || !isSupportedBaseType(intrinsic, simdBaseJitType))
+            if (!isSupportedBaseType(intrinsic, simdBaseJitType))
             {
                 return nullptr;
             }
 
-        assert((varTypeIsSIMD(retType) || varTypeIsStruct(retType)) && isSupportedBaseType(intrinsic, simdBaseJitType));
+            assert(sizeBytes != 0);
+            retType = getSIMDTypeForSize(sizeBytes);
+        }
     }
 
     simdBaseJitType   = getBaseJitTypeFromArgIfNeeded(intrinsic, sig, simdBaseJitType);

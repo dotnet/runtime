@@ -1880,7 +1880,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         }
 #endif
 
-        assert((thisFieldOffset + compiler->getSizeOfType(type)) <= areaSize);
+        assert((thisFieldOffset + genTypeSize(type)) <= areaSize);
 #endif
     }
 }
@@ -2273,7 +2273,7 @@ void CodeGen::genCodeForCast(GenTreeOp* tree)
     else if (targetType == TYP_SIMDSV || tree->gtOp1->TypeGet() == TYP_SIMDSV)
     {
         // TODO-SVE: Can we avoid generating these casts altogether?
-        assert(compiler->getSizeOfType(tree->CastToType()) == compiler->getSizeOfType(tree->CastFromType()));
+        assert(genTypeSize(tree->CastToType()) == genTypeSize(tree->CastFromType()));
         genConsumeOperands(tree);
         inst_Mov(tree->CastToType(), tree->GetRegNum(), tree->gtOp1->GetRegNum(), true);
         genProduceReg(tree);

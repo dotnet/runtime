@@ -271,7 +271,7 @@ private:
         {
             const Entry& entry = m_entries.BottomRef(i);
 
-            segments.Subtract(SegmentList::Segment(entry.Offset, entry.Offset + m_compiler->getSizeOfType(entry.Type)));
+            segments.Subtract(SegmentList::Segment(entry.Offset, entry.Offset + genTypeSize(entry.Type)));
         }
 
 #ifdef DEBUG
@@ -931,15 +931,14 @@ private:
                 for (int i = 0; i < m_entries.Height(); i++)
                 {
                     const Entry& entry = m_entries.BottomRef(i);
-                    if (entry.Offset + m_compiler->getSizeOfType(entry.Type) <= remainderStrategy.PrimitiveOffset)
+                    if (entry.Offset + genTypeSize(entry.Type) <= remainderStrategy.PrimitiveOffset)
                     {
                         // Entry ends before remainder starts
                         continue;
                     }
 
                     // Remainder ends before entry starts
-                    if (remainderStrategy.PrimitiveOffset +
-                            m_compiler->getSizeOfType(remainderStrategy.PrimitiveType) <=
+                    if (remainderStrategy.PrimitiveOffset + genTypeSize(remainderStrategy.PrimitiveType) <=
                         entry.Offset)
                     {
                         continue;
@@ -1024,8 +1023,7 @@ private:
         {
             if (m_addr != nullptr)
             {
-                GenTreeIndir* indir =
-                    comp->gtNewIndir(type, GrabAddress(offs, comp), GetIndirFlags(comp->getSizeOfType(type)));
+                GenTreeIndir* indir = comp->gtNewIndir(type, GrabAddress(offs, comp), GetIndirFlags(type));
                 return indir;
             }
 
@@ -1058,8 +1056,7 @@ private:
         {
             if (m_addr != nullptr)
             {
-                GenTreeIndir* indir = comp->gtNewStoreIndNode(type, GrabAddress(offs, comp), src,
-                                                              GetIndirFlags(comp->getSizeOfType(type)));
+                GenTreeIndir* indir = comp->gtNewStoreIndNode(type, GrabAddress(offs, comp), src, GetIndirFlags(type));
                 return indir;
             }
 
@@ -1224,7 +1221,7 @@ private:
             {
                 var_types regPromFieldType =
                     m_compiler->lvaGetDesc(srcPromField != BAD_VAR_NUM ? srcPromField : storePromField)->TypeGet();
-                if (m_compiler->getSizeOfType(regPromFieldType) == m_compiler->getSizeOfType(primitiveType))
+                if (genTypeSize(regPromFieldType) == genTypeSize(primitiveType))
                 {
                     primitiveType = regPromFieldType;
                 }
@@ -1379,7 +1376,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
             if (dstEndRep > dstFirstRep)
             {
                 Replacement* dstLastRep = dstEndRep - 1;
-                if (dstLastRep->Offset + m_compiler->getSizeOfType(dstLastRep->AccessType) > dstLclOffs + dstLclSize)
+                if (dstLastRep->Offset + genTypeSize(dstLastRep->AccessType) > dstLclOffs + dstLclSize)
                 {
                     JITDUMP("*** Block operation partially overlaps with end replacement of destination V%02u (%s)\n",
                             dstLastRep->LclNum, dstLastRep->Description);
@@ -1420,7 +1417,7 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
             if (srcEndRep > srcFirstRep)
             {
                 Replacement* srcLastRep = srcEndRep - 1;
-                if (srcLastRep->Offset + m_compiler->getSizeOfType(srcLastRep->AccessType) > srcLclOffs + srcLclSize)
+                if (srcLastRep->Offset + genTypeSize(srcLastRep->AccessType) > srcLclOffs + srcLclSize)
                 {
                     JITDUMP("*** Block operation partially overlaps with end replacement of source V%02u (%s)\n",
                             srcLastRep->LclNum, srcLastRep->Description);
@@ -1492,7 +1489,7 @@ bool ReplaceVisitor::OverlappingReplacements(GenTreeLclVarCommon* lcl,
 
     unsigned offs = lcl->GetLclOffs();
     unsigned size = lcl->GetLayout(m_compiler)->GetSize();
-    return agg->OverlappingReplacements(m_compiler, offs, size, firstReplacement, endReplacement);
+    return agg->OverlappingReplacements(offs, size, firstReplacement, endReplacement);
 }
 
 //------------------------------------------------------------------------
@@ -1672,8 +1669,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
 
         if ((dstRep < dstEndRep) && (srcRep < srcEndRep))
         {
-            if (srcRep->Offset - srcBaseOffs + m_compiler->getSizeOfType(srcRep->AccessType) <=
-                dstRep->Offset - dstBaseOffs)
+            if (srcRep->Offset - srcBaseOffs + genTypeSize(srcRep->AccessType) <= dstRep->Offset - dstBaseOffs)
             {
                 // This source replacement ends before the next destination replacement starts.
                 // Write it directly to the destination struct local.
@@ -1685,8 +1681,7 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                 continue;
             }
 
-            if (dstRep->Offset - dstBaseOffs + m_compiler->getSizeOfType(dstRep->AccessType) <=
-                srcRep->Offset - srcBaseOffs)
+            if (dstRep->Offset - dstBaseOffs + genTypeSize(dstRep->AccessType) <= srcRep->Offset - srcBaseOffs)
             {
                 // Destination replacement ends before the next source replacement starts.
                 // Read it directly from the source struct local.

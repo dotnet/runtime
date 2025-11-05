@@ -194,7 +194,7 @@ void MorphInitBlockHelper::PrepareDst()
     }
     else
     {
-        m_blockSize = m_comp->getSizeOfType(m_store->TypeGet());
+        m_blockSize = genTypeSize(m_store);
     }
 
     assert(m_blockSize != 0);
@@ -355,7 +355,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
         return;
     }
 
-    if (m_comp->lvaLclExactSize(destLclVar) != blockSize)
+    if (destLclVar->lvExactSize() != blockSize)
     {
         JITDUMP(" dest size mismatch.\n");
         return;
@@ -711,7 +711,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             noway_assert(varTypeIsStruct(m_dstVarDsc));
             noway_assert(!m_comp->opts.MinOpts());
 
-            if (m_blockSize == m_comp->lvaLclExactSize(m_dstVarDsc))
+            if (m_blockSize == m_dstVarDsc->lvExactSize())
             {
                 JITDUMP(" (m_dstDoFldStore=true)");
                 // We may decide later that a copyblk is required when this struct has holes
@@ -731,7 +731,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             noway_assert(varTypeIsStruct(m_srcVarDsc));
             noway_assert(!m_comp->opts.MinOpts());
 
-            if (m_blockSize == m_comp->lvaLclExactSize(m_srcVarDsc))
+            if (m_blockSize == m_srcVarDsc->lvExactSize())
             {
                 JITDUMP(" (m_srcDoFldStore=true)");
                 // We may decide later that a copyblk is required when this struct has holes
@@ -995,7 +995,7 @@ void MorphCopyBlockHelper::TryPrimitiveCopy()
     // Can we use the LHS local directly?
     if (m_store->OperIs(GT_STORE_LCL_FLD))
     {
-        if (m_blockSize == m_comp->getSizeOfType(m_dstVarDsc->TypeGet()))
+        if (m_blockSize == genTypeSize(m_dstVarDsc))
         {
             storeType = m_dstVarDsc->TypeGet();
         }
@@ -1308,9 +1308,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     {
                         noway_assert(m_srcLclNode != nullptr);
                         assert(destType != TYP_STRUCT);
-                        unsigned destSize = m_comp->getSizeOfType(destType);
+                        unsigned destSize = genTypeSize(destType);
                         m_srcVarDsc       = m_comp->lvaGetDesc(m_srcLclNum);
-                        unsigned srcSize  = m_comp->lvaLclExactSize(m_srcVarDsc);
+                        unsigned srcSize  = m_srcVarDsc->lvExactSize();
                         if (destSize == srcSize)
                         {
                             m_srcLclNode->ChangeOper(GT_LCL_FLD);

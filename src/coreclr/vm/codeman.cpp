@@ -1139,8 +1139,6 @@ EECodeGenManager::EECodeGenManager()
 EEJitManager::EEJitManager()
     : m_CPUCompileFlags()
     , m_JitLoadLock( CrstSingleUseLock )
-    , m_vectorTByteLength(0)
-    , m_useScalableVectorT(false)
 {
     CONTRACTL {
         THROWS;
@@ -1548,40 +1546,6 @@ void EEJitManager::SetCpuInfo()
 #endif // TARGET_X86 || TARGET_AMD64
 
     m_CPUCompileFlags = CPUCompileFlags;
-
-    g_vectorTIsScalable = false;
-    g_vectorTByteLength = 0;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    if (m_CPUCompileFlags.IsSet(InstructionSet_VectorT512))
-    {
-        g_vectorTByteLength = 64;
-    }
-    else if (m_CPUCompileFlags.IsSet(InstructionSet_VectorT256))
-    {
-        g_vectorTByteLength = 32;
-    }
-    else if (m_CPUCompileFlags.IsSet(InstructionSet_VectorT128))
-    {
-        g_vectorTByteLength = 16;
-    }
-#elif defined(TARGET_ARM64)
-    if (m_CPUCompileFlags.IsSet(InstructionSet_VectorT128))
-    {
-        g_vectorTByteLength = 16;
-    }
-
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitUseScalableVectorT)
-        && m_CPUCompileFlags.IsSet(InstructionSet_Sve_Arm64))
-    {
-        uint64_t sveLengthFromOS = GetSveLengthFromOS();
-        if (sveLengthFromOS != 0)
-        {
-            g_vectorTIsScalable = true;
-            g_vectorTByteLength = static_cast<uint32_t>(sveLengthFromOS);
-        }
-    }
-#endif
 }
 
 // Define some data that we can use to get a better idea of what happened when we get a Watson dump that indicates the JIT failed to load.

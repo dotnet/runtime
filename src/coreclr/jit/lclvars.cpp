@@ -102,8 +102,8 @@ void Compiler::lvaInitTypeRef()
                varTypeIsStruct(info.compRetType) ? eeGetClassName(retClass) : "");
         for (unsigned i = 0; i < returnRegCount; i++)
         {
-            unsigned offset = GetReturnFieldOffset(compRetTypeDesc, i);
-            unsigned size   = getSizeOfType(compRetTypeDesc.GetReturnRegType(i));
+            unsigned offset = compRetTypeDesc.GetReturnFieldOffset(i);
+            unsigned size   = genTypeSize(compRetTypeDesc.GetReturnRegType(i));
             printf("  [%02u..%02u) reg %s\n", offset, offset + size,
                    getRegName(compRetTypeDesc.GetABIReturnReg(i, info.compCallConv)));
         }
@@ -1435,10 +1435,15 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
 #ifdef FEATURE_SIMD
         if (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName))
         {
-            var_types type = compiler->getSIMDType(node.simdTypeHnd);
-            if (type != TYP_UNDEF)
+            unsigned    simdSize;
+            CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(node.simdTypeHnd, &simdSize);
+            // We will only promote fields of SIMD types that fit into a SIMD register.
+            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
             {
-                return type;
+                if (compiler->structSizeMightRepresentSIMDType(simdSize))
+                {
+                    return compiler->getSIMDTypeForSize(simdSize);
+                }
             }
         }
 #endif
@@ -1993,8 +1998,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                 if (varTypeIsValidHfaType(hfaType))
                 {
                     fieldVarDsc->lvIsMultiRegArg =
-                        (varDsc->lvIsMultiRegArg != 0) &&
-                        (compiler->lvaLclExactSize(fieldVarDsc) > compiler->getSizeOfType(hfaType));
+                        (varDsc->lvIsMultiRegArg != 0) && (fieldVarDsc->lvExactSize() > genTypeSize(hfaType));
                 }
             }
         }
@@ -2737,13 +2741,6 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
     LclVarDsc* varDsc  = lvaGetDesc(varNum);
     var_types  varType = varDsc->TypeGet();
 
-#ifdef TARGET_ARM64
-    if (varType == TYP_SIMDSV)
-    {
-        return getSizeOfSIMDType(varType);
-    }
-#endif
-
     if (!varTypeIsStruct(varType))
     {
 #ifdef TARGET_64BIT
@@ -2772,7 +2769,7 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
         // There are other cases where the caller has allocated space for the
         // parameter, like windows-x64 with shadow space for register
         // parameters, but in those cases this rounding is fine.
-        return roundUp(lvaLclExactSize(varDsc), TARGET_POINTER_SIZE);
+        return roundUp(varDsc->lvExactSize(), TARGET_POINTER_SIZE);
     }
 
 #if defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
@@ -2786,7 +2783,7 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
     }
 #endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
 
-    return roundUp(lvaLclExactSize(varDsc), TARGET_POINTER_SIZE);
+    return roundUp(varDsc->lvExactSize(), TARGET_POINTER_SIZE);
 }
 
 //
@@ -2796,19 +2793,7 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
 unsigned Compiler::lvaLclExactSize(unsigned varNum)
 {
     assert(varNum < lvaCount);
-    return lvaLclExactSize(lvaGetDesc(varNum));
-}
-
-//------------------------------------------------------------------------
-// lvaLclExactSize: Get the exact size of the type of this local.
-//
-// Return Value:
-//    Size in bytes. Always non-zero, but not necessarily a multiple of the
-//    stack slot size.
-//
-unsigned Compiler::lvaLclExactSize(const LclVarDsc* desc)
-{
-    return (desc->lvType == TYP_STRUCT) ? desc->GetLayout()->GetSize() : getSizeOfType(desc->lvType);
+    return lvaGetDesc(varNum)->lvExactSize();
 }
 
 // LclVarDsc "less" comparer used to compare the weight of two locals, when optimizing for small code.
@@ -3239,6 +3224,18 @@ void Compiler::lvaSortByRefCount()
 #ifdef DEBUG
     VarSetOps::AssignNoCopy(this, lvaTrackedVars, VarSetOps::MakeFull(this));
 #endif
+}
+
+//------------------------------------------------------------------------
+// lvExactSize: Get the exact size of the type of this local.
+//
+// Return Value:
+//    Size in bytes. Always non-zero, but not necessarily a multiple of the
+//    stack slot size.
+//
+unsigned LclVarDsc::lvExactSize() const
+{
+    return (lvType == TYP_STRUCT) ? GetLayout()->GetSize() : genTypeSize(lvType);
 }
 
 //------------------------------------------------------------------------
@@ -6338,7 +6335,7 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
                refCntWtd2str(varDsc->lvRefCntWtd(lvaRefCountState), /* padForDecimalPlaces */ true));
 
         printf(" %7s ", varTypeName(type));
-        if (getSizeOfType(type) == 0)
+        if (genTypeSize(type) == 0)
         {
             printf("(%2d) ", lvaLclStackHomeSize(lclNum));
         }
@@ -7016,7 +7013,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // node with the accurate small type. If we bash lvaTable[].lvType,
         // then there will be no indication that it was ever a small type.
 
-        if (pComp->getSizeOfType(varType) != pComp->getSizeOfType(genActualType(varType)))
+        if (genTypeSize(varType) != genTypeSize(genActualType(varType)))
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_CONTINUE;

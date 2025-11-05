@@ -1585,7 +1585,7 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
 
         assert(varTypeIsSIMD(indexedElementOpType));
 
-        const unsigned int indexedElementSimdSize = compiler->getSizeOfType(indexedElementOpType);
+        const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
         HWIntrinsicInfo::lookupImmBounds(intrin.id, indexedElementSimdSize, intrin.baseType, 1, &immLowerBound,
                                          &immUpperBound);
     }

@@ -404,10 +404,6 @@ private:
 
     ValueNum EvalUsingMathIdentity(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
 
-    ValueNum EvaluateSimdWithElementIntegral(
-        var_types simdType, var_types baseType, ValueNum arg0VN, int32_t arg1, int64_t arg2);
-    ValueNum EvaluateSimdWithElementFloating(
-        var_types simdType, var_types baseType, ValueNum arg0VN, int32_t arg1, double arg2);
 // This is the constant value used for the default value of m_mapSelectBudget
 #define DEFAULT_MAP_SELECT_BUDGET 100 // used by JitVNMapSelBudget
 

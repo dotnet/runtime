@@ -1692,7 +1692,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
                 break;
             }
 
-            if (use.GetOffset() + comp->getSizeOfType(use.GetType()) > stackSeg.Offset)
+            if (use.GetOffset() + genTypeSize(use.GetType()) > stackSeg.Offset)
             {
                 // Field overlaps partially into the stack segment, cannot
                 // handle this without spilling.
@@ -1932,7 +1932,7 @@ void Lowering::InsertBitCastIfNecessary(GenTree** argNode, const ABIPassingSegme
     // such cases we cut off the end of the segment to get an appropriate
     // register type for the bitcast.
     ABIPassingSegment cutRegisterSegment = registerSegment;
-    unsigned          argNodeSize        = comp->getSizeOfType(genActualType(*argNode));
+    unsigned          argNodeSize        = genTypeSize(genActualType(*argNode));
     if (registerSegment.Size > argNodeSize)
     {
         cutRegisterSegment =
@@ -2304,7 +2304,7 @@ bool Lowering::LowerCallMemset(GenTreeCall* call, GenTree** next)
         valueArg              = valueCallArg->GetNode();
 
         // Get that <T> from the signature
-        lengthScale = comp->getSizeOfType(valueCallArg->GetSignatureType());
+        lengthScale = genTypeSize(valueCallArg->GetSignatureType());
         // NOTE: structs and TYP_REF will be ignored by the "Value is not a constant" check
         // Some of those cases can be enabled in future, e.g. s
     }
@@ -2612,10 +2612,10 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
                         {
                             assert(type == TYP_INT);
                             return comp->gtNewSimdCmpOpAllNode(oper, TYP_INT, op1, op2, CORINFO_TYPE_NATIVEUINT,
-                                                               comp->getSizeOfType(op1));
+                                                               genTypeSize(op1));
                         }
                         return comp->gtNewSimdBinOpNode(oper, op1->TypeGet(), op1, op2, CORINFO_TYPE_NATIVEUINT,
-                                                        comp->getSizeOfType(op1));
+                                                        genTypeSize(op1));
                     }
 #endif
                     return comp->gtNewOperNode(oper, type, op1, op2);
@@ -4364,7 +4364,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                     andOp1->gtType = TYP_UBYTE;
                     andOp2->gtType = TYP_UBYTE;
                 }
-                else if (FitsIn<UINT16>(mask) && comp->getSizeOfType(andOp1) == 2)
+                else if (FitsIn<UINT16>(mask) && genTypeSize(andOp1) == 2)
                 {
                     andOp1->gtType = TYP_USHORT;
                     andOp2->gtType = TYP_USHORT;
@@ -4564,7 +4564,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             cc      = cond->OperIs(GT_LT) ? GenCondition(GenCondition::NE) : GenCondition(GenCondition::EQ);
             // x < 0 => (x & signBit) != 0. Update the constant to be the sign bit.
             relopOp2->AsIntConCommon()->SetIntegralValue(
-                (static_cast<INT64>(1) << (8 * comp->getSizeOfType(genActualType(relopOp1)) - 1)));
+                (static_cast<INT64>(1) << (8 * genTypeSize(genActualType(relopOp1)) - 1)));
         }
         else if (cond->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
         {
@@ -4995,9 +4995,8 @@ void Lowering::LowerRet(GenTreeOp* ret)
                 var_types retActualType    = genActualType(comp->info.compRetNativeType);
                 var_types retValActualType = genActualType(retVal->TypeGet());
 
-                bool constStructInit = retVal->IsConstInitVal();
-                bool implicitCastFromSameOrBiggerSize =
-                    (comp->getSizeOfType(retActualType) <= comp->getSizeOfType(retValActualType));
+                bool constStructInit                  = retVal->IsConstInitVal();
+                bool implicitCastFromSameOrBiggerSize = (genTypeSize(retActualType) <= genTypeSize(retValActualType));
 
                 // This could happen if we have retyped op1 as a primitive type during struct promotion.
                 bool actualTypesMatch = (retActualType == retValActualType);
@@ -5056,7 +5055,7 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
     unsigned              numRegs = retDesc.GetReturnRegCount();
 
     auto getRegInfo = [=, &retDesc](unsigned regIndex) {
-        unsigned  offset  = comp->GetReturnFieldOffset(retDesc, regIndex);
+        unsigned  offset  = retDesc.GetReturnFieldOffset(regIndex);
         var_types regType = retDesc.GetReturnRegType(regIndex);
         return LowerFieldListRegisterInfo(offset, regType);
     };
@@ -5199,7 +5198,7 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
         LowerFieldListRegisterInfo regInfo  = getRegInfo(i);
         unsigned                   regStart = regInfo.Offset;
         var_types                  regType  = regInfo.RegType;
-        unsigned                   regEnd   = regStart + comp->getSizeOfType(regType);
+        unsigned                   regEnd   = regStart + genTypeSize(regType);
 
         if ((i == numRegs - 1) && !varTypeUsesFloatReg(regType))
         {
@@ -5231,7 +5230,7 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
                 break;
             }
 
-            unsigned fieldEnd = fieldStart + comp->getSizeOfType(use->GetType());
+            unsigned fieldEnd = fieldStart + genTypeSize(use->GetType());
             if (fieldEnd > regEnd)
             {
                 JITDUMP("it is not; field [%06u] ends after register %u\n", Compiler::dspTreeID(use->GetNode()), i);
@@ -5249,10 +5248,10 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
             // int -> float is currently only supported if we can do it as a single bitcast (i.e. without insertions
             // required)
             if (varTypeUsesIntReg(use->GetNode()) && varTypeUsesFloatReg(regType) &&
-                (comp->getSizeOfType(regType) > TARGET_POINTER_SIZE))
+                (genTypeSize(regType) > TARGET_POINTER_SIZE))
             {
                 JITDUMP("it is not; field [%06u] requires an insertion into float register %u of size %d\n",
-                        Compiler::dspTreeID(use->GetNode()), i, comp->getSizeOfType(regType));
+                        Compiler::dspTreeID(use->GetNode()), i, genTypeSize(regType));
                 return false;
             }
 
@@ -5292,7 +5291,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
         LowerFieldListRegisterInfo regInfo  = getRegInfo(i);
         unsigned                   regStart = regInfo.Offset;
         var_types                  regType  = regInfo.RegType;
-        unsigned                   regEnd   = regStart + comp->getSizeOfType(regType);
+        unsigned                   regEnd   = regStart + genTypeSize(regType);
 
         if ((i == numRegs - 1) && !varTypeUsesFloatReg(regType))
         {
@@ -5326,7 +5325,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
             // First ensure the value does not have upper bits set that
             // interfere with the next field.
             if ((nextUse != nullptr) && (nextUse->GetOffset() < regEnd) &&
-                (fieldStart + comp->getSizeOfType(genActualType(fieldType)) > nextUse->GetOffset()))
+                (fieldStart + genTypeSize(genActualType(fieldType)) > nextUse->GetOffset()))
             {
                 assert(varTypeIsSmall(fieldType));
                 // This value may interfere with the next field. Ensure that doesn't happen.
@@ -5340,13 +5339,13 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
             // If this is a float -> int insertion, then we need the bitcast now.
             if (varTypeUsesFloatReg(value) && varTypeUsesIntReg(regInfo.RegType))
             {
-                assert((comp->getSizeOfType(value->TypeGet()) == 4) || (comp->getSizeOfType(value->TypeGet()) == 8));
-                var_types castType = comp->getSizeOfType(value->TypeGet()) == 4 ? TYP_INT : TYP_LONG;
+                assert((genTypeSize(value) == 4) || (genTypeSize(value) == 8));
+                var_types castType = genTypeSize(value) == 4 ? TYP_INT : TYP_LONG;
                 value              = comp->gtNewBitCastNode(castType, value);
                 BlockRange().InsertBefore(fieldList, value);
             }
 
-            if (insertOffset + comp->getSizeOfType(fieldType) > comp->getSizeOfType(genActualType(value)))
+            if (insertOffset + genTypeSize(fieldType) > genTypeSize(genActualType(value)))
             {
                 value = comp->gtNewCastNode(TYP_LONG, value, true, TYP_LONG);
                 BlockRange().InsertBefore(fieldList, value);
@@ -5400,7 +5399,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
             // ABIs for structs.
             while (node->OperIs(GT_CAST) && !node->gtOverflow() && (genActualType(node->CastFromType()) == TYP_INT) &&
                    (genActualType(node->CastToType()) == TYP_INT) &&
-                   (comp->getSizeOfType(regType) <= comp->getSizeOfType(node->CastToType())))
+                   (genTypeSize(regType) <= genTypeSize(node->CastToType())))
             {
                 GenTree* op = node->AsCast()->CastOp();
                 regEntry->SetNode(op);
@@ -5687,8 +5686,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             if (varTypeUsesFloatReg(nativeReturnType))
             {
                 // ZeroObj assertion propagation can create INT zeros for DOUBLE returns.
-                assert((comp->getSizeOfType(retVal) == comp->getSizeOfType(nativeReturnType)) ||
-                       retVal->IsIntegralConst(0));
+                assert((genTypeSize(retVal) == genTypeSize(nativeReturnType)) || retVal->IsIntegralConst(0));
                 int64_t value = retVal->AsIntCon()->IconValue();
 
                 if (nativeReturnType == TYP_FLOAT)
@@ -5712,7 +5710,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         {
             // Spill to a local if sizes don't match so we can avoid the "load more than requested"
             // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
-            if (comp->getSizeOfType(nativeReturnType) > comp->gtGetSizeOfIndirection(retVal->AsIndir()))
+            if (genTypeSize(nativeReturnType) > retVal->AsIndir()->Size())
             {
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
                 unsigned tmpNum = comp->lvaGrabTemp(true DEBUGARG("mis-sized struct return"));
@@ -5783,9 +5781,9 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
 
         // We are returning as a primitive type and the lcl is of struct type.
         assert(comp->info.compRetNativeType != TYP_STRUCT);
-        assert((comp->getSizeOfType(comp->info.compRetNativeType) == comp->getSizeOfType(ret)) ||
+        assert((genTypeSize(comp->info.compRetNativeType) == genTypeSize(ret)) ||
                (varTypeIsIntegral(ret) && varTypeIsIntegral(comp->info.compRetNativeType) &&
-                (comp->getSizeOfType(comp->info.compRetNativeType) <= comp->getSizeOfType(ret))));
+                (genTypeSize(comp->info.compRetNativeType) <= genTypeSize(ret))));
         // If the actual return type requires normalization, then make sure we
         // do so by using the correct small type for the GT_LCL_FLD. It would
         // be conservative to check just compRetNativeType for this since small
@@ -5793,7 +5791,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
         // registers, so we would normalize for them as well.
         if (varTypeIsSmall(comp->info.compRetType))
         {
-            assert(comp->getSizeOfType(comp->info.compRetNativeType) == comp->getSizeOfType(comp->info.compRetType));
+            assert(genTypeSize(comp->info.compRetNativeType) == genTypeSize(comp->info.compRetType));
             lclVar->ChangeType(comp->info.compRetType);
         }
         else
@@ -7373,7 +7371,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
     //   *(ulong*)(data + index * 7); - can not be optimized
     //     *(int*)(data + index * 2); - can not be optimized
     //
-    naturalMul = comp->getSizeOfType(targetType);
+    naturalMul = genTypeSize(targetType);
 #endif
 
     // Find out if an addressing mode can be constructed
@@ -7516,7 +7514,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
             // 'scale' and 'offset' have to be unset since we're going to use [base + index * SXTW/UXTW scale] form
             // where there is no room for additional offsets/scales on ARM64. 'shiftBy' has to match target's width.
             if (cast->CastOp()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) &&
-                (comp->getSizeOfType(targetType) == (1U << shiftBy)) && (scale == 1) && (offset == 0))
+                (genTypeSize(targetType) == (1U << shiftBy)) && (scale == 1) && (offset == 0))
             {
                 if (IsInvariantInRange(index, parent))
                 {
@@ -7606,7 +7604,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                 int64_t c2 = cns2->IntegralValue();
 
                 int64_t result;
-                if (comp->getSizeOfType(node) == sizeof(int64_t))
+                if (genTypeSize(node) == sizeof(int64_t))
                 {
                     result = c1 + c2;
                 }
@@ -8160,7 +8158,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
             adjusted = mulhi;
         }
 
-        GenTree* shiftBy = comp->gtNewIconNode(comp->getSizeOfType(type) * 8 - 1, type);
+        GenTree* shiftBy = comp->gtNewIconNode(genTypeSize(type) * 8 - 1, type);
         GenTree* signBit = comp->gtNewOperNode(GT_RSZ, type, adjusted, shiftBy);
         BlockRange().InsertBefore(divMod, shiftBy, signBit);
 
@@ -8427,10 +8425,9 @@ void Lowering::LowerShift(GenTreeOp* shift)
             cast->CastOp()->TypeIs(TYP_LONG, TYP_INT))
         {
             // Cast is either "TYP_LONG <- TYP_INT" or "TYP_INT <- %SMALL_INT% <- TYP_INT" (signed or unsigned)
-            unsigned dstBits = comp->getSizeOfType(cast) * BITS_PER_BYTE;
-            unsigned srcBits = varTypeIsSmall(cast->CastToType())
-                                   ? comp->getSizeOfType(cast->CastToType()) * BITS_PER_BYTE
-                                   : comp->getSizeOfType(cast->CastOp()) * BITS_PER_BYTE;
+            unsigned dstBits = genTypeSize(cast) * BITS_PER_BYTE;
+            unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                                  : genTypeSize(cast->CastOp()) * BITS_PER_BYTE;
 
             // It has to be an upcast and CNS must be in [1..srcBits) range
             if ((srcBits < dstBits) && (cns->IconValue() > 0) && (cns->IconValue() < srcBits))
@@ -8618,7 +8615,7 @@ void Lowering::MapParameterRegisterLocals()
                     continue;
                 }
 
-                if (fieldDsc->lvFldOffset + comp->lvaLclExactSize(fieldDsc) <= segment.Offset)
+                if (fieldDsc->lvFldOffset + fieldDsc->lvExactSize() <= segment.Offset)
                 {
                     // This register does not map to this field (starts after the field ends)
                     continue;
@@ -8756,7 +8753,7 @@ void Lowering::FindInducedParameterRegisterLocals()
 
             assert(fld->GetLclOffs() <= comp->lvaLclExactSize(fld->GetLclNum()));
             unsigned structAccessedSize =
-                min(comp->getSizeOfType(fld), comp->lvaLclExactSize(fld->GetLclNum()) - fld->GetLclOffs());
+                min(genTypeSize(fld), comp->lvaLclExactSize(fld->GetLclNum()) - fld->GetLclOffs());
             if ((fld->GetLclOffs() < segment.Offset) ||
                 (fld->GetLclOffs() + structAccessedSize > segment.Offset + segment.Size))
             {
@@ -8863,17 +8860,16 @@ void Lowering::FindInducedParameterRegisterLocals()
             // Insert explicit normalization for small types (the LCL_FLD we
             // are replacing comes with this normalization). This is only required
             // if we didn't get the normalization via a right shift.
-            if (varTypeIsSmall(fld) &&
-                (regSegment->Offset + comp->getSizeOfType(fld) != comp->getSizeOfType(registerType)))
+            if (varTypeIsSmall(fld) && (regSegment->Offset + genTypeSize(fld) != genTypeSize(registerType)))
             {
                 value = comp->gtNewCastNode(TYP_INT, value, false, fld->TypeGet());
             }
 
             // If the node is still too large then get it to the right size
-            if (comp->getSizeOfType(value) != comp->getSizeOfType(genActualType((fld))))
+            if (genTypeSize(value) != genTypeSize(genActualType((fld))))
             {
-                assert(comp->getSizeOfType(value) == 8);
-                assert(comp->getSizeOfType(genActualType(fld)) == 4);
+                assert(genTypeSize(value) == 8);
+                assert(genTypeSize(genActualType(fld)) == 4);
 
                 if (value->OperIsScalarLocal())
                 {
@@ -9611,7 +9607,7 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
     }
 
     GenTree* op = node->gtGetOp1();
-    assert(comp->getSizeOfType(node) == comp->getSizeOfType(genActualType(op)));
+    assert(genTypeSize(node) == genTypeSize(genActualType(op)));
 
     bool changed = false;
 #ifdef FEATURE_SIMD
@@ -9623,17 +9619,17 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
     if (isConst)
     {
         uint8_t bits[sizeof(simd_t)];
-        assert(sizeof(bits) >= comp->getSizeOfType(genActualType(op)));
+        assert(sizeof(bits) >= genTypeSize(genActualType(op)));
         if (op->OperIs(GT_CNS_INT))
         {
             ssize_t cns = op->AsIntCon()->IconValue();
-            assert(sizeof(ssize_t) >= comp->getSizeOfType(genActualType(op)));
-            memcpy(bits, &cns, comp->getSizeOfType(genActualType(op)));
+            assert(sizeof(ssize_t) >= genTypeSize(genActualType(op)));
+            memcpy(bits, &cns, genTypeSize(genActualType(op)));
         }
 #ifdef FEATURE_SIMD
         else if (op->OperIs(GT_CNS_VEC))
         {
-            memcpy(bits, &op->AsVecCon()->gtSimdVal, comp->getSizeOfType(op));
+            memcpy(bits, &op->AsVecCon()->gtSimdVal, genTypeSize(op));
         }
 #endif
         else
@@ -9692,7 +9688,7 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
 void Lowering::ContainCheckBitCast(GenTreeUnOp* node)
 {
     GenTree* const op1 = node->gtGetOp1();
-    if (op1->OperIs(GT_LCL_VAR) && (comp->getSizeOfType(op1) == comp->getSizeOfType(node)))
+    if (op1->OperIs(GT_LCL_VAR) && (genTypeSize(op1) == genTypeSize(node)))
     {
         if (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))
         {
@@ -10182,7 +10178,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 
         // Otherwise, the difference between two offsets has to match the size of the type.
         // We don't support overlapping stores.
-        if (abs(prevData.offset - currData.offset) != (int)comp->getSizeOfType(prevData.targetType))
+        if (abs(prevData.offset - currData.offset) != (int)genTypeSize(prevData.targetType))
         {
             return;
         }
@@ -10208,7 +10204,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             allowsNonAtomic = true;
         }
 
-        if (!allowsNonAtomic && (comp->getSizeOfType(ind) > 1) && !varTypeIsSIMD(ind))
+        if (!allowsNonAtomic && (genTypeSize(ind) > 1) && !varTypeIsSIMD(ind))
         {
             // TODO-CQ: if we see that the target is a local memory (non address exposed)
             // we can use any type (including SIMD) for a new load.
@@ -10227,10 +10223,10 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             }
 
             // Check whether the combined indir is still aligned.
-            bool isCombinedIndirAtomic = (comp->getSizeOfType(ind) < TARGET_POINTER_SIZE) &&
-                                         (min(prevData.offset, currData.offset) % (comp->getSizeOfType(ind) * 2)) == 0;
+            bool isCombinedIndirAtomic = (genTypeSize(ind) < TARGET_POINTER_SIZE) &&
+                                         (min(prevData.offset, currData.offset) % (genTypeSize(ind) * 2)) == 0;
 
-            if (comp->getSizeOfType(ind) == TARGET_POINTER_SIZE)
+            if (genTypeSize(ind) == TARGET_POINTER_SIZE)
             {
 #ifdef TARGET_ARM64
                 // Per Arm Architecture Reference Manual for A-profile architecture:
@@ -10388,7 +10384,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             }
 
             simd_t   newCns   = {};
-            uint32_t oldWidth = comp->getSizeOfType(oldType);
+            uint32_t oldWidth = genTypeSize(oldType);
             memcpy(newCns.i8, lowerCns, oldWidth);
             memcpy(newCns.i8 + oldWidth, upperCns, oldWidth);
 
@@ -10426,15 +10422,15 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 
         // Trim the constants to the size of the type, e.g. for TYP_SHORT and TYP_USHORT
         // the mask will be 0xFFFF, for TYP_INT - 0xFFFFFFFF.
-        size_t mask = ~(size_t(0)) >> (sizeof(size_t) - comp->getSizeOfType(oldType)) * BITS_PER_BYTE;
+        size_t mask = ~(size_t(0)) >> (sizeof(size_t) - genTypeSize(oldType)) * BITS_PER_BYTE;
         lowerCns &= mask;
         upperCns &= mask;
 
-        size_t val = (lowerCns | (upperCns << (comp->getSizeOfType(oldType) * BITS_PER_BYTE)));
+        size_t val = (lowerCns | (upperCns << (genTypeSize(oldType) * BITS_PER_BYTE)));
         JITDUMP("Coalesced two stores into a single store with value %lld\n", (int64_t)val);
 
         ind->Data()->AsIntCon()->gtIconVal = (ssize_t)val;
-        if (comp->getSizeOfType(oldType) == 1)
+        if (genTypeSize(oldType) == 1)
         {
             // A mark for future foldings that this IND doesn't need to be atomic.
             ind->gtFlags |= GTF_IND_ALLOW_NON_ATOMIC;
@@ -10648,7 +10644,7 @@ bool Lowering::OptimizeForLdpStp(GenTreeIndir* ind)
 
         JITDUMP("[%06u] and [%06u] are indirs off the same base with offsets +%03u and +%03u\n",
                 Compiler::dspTreeID(ind), Compiler::dspTreeID(prevIndir), (unsigned)offs, (unsigned)prev.Offset);
-        if (std::abs(offs - prev.Offset) == comp->getSizeOfType(ind))
+        if (std::abs(offs - prev.Offset) == genTypeSize(ind))
         {
             JITDUMP("  ..and they are amenable to ldp/stp optimization\n");
             if (TryMakeIndirsAdjacent(prevIndir, ind))
@@ -10847,25 +10843,23 @@ bool Lowering::TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indi
                 target_ssize_t storeOffs = 0;
                 comp->gtPeelOffsets(&storeAddr, &storeOffs);
 
-                unsigned storeSize = comp->gtGetSizeOfIndirection(store);
-                unsigned indirSize = comp->gtGetSizeOfIndirection(indir);
-                bool     distinct =
-                    (storeOffs + (target_ssize_t)storeSize <= offs) || (offs + (target_ssize_t)indirSize <= storeOffs);
+                bool distinct = (storeOffs + (target_ssize_t)store->Size() <= offs) ||
+                                (offs + (target_ssize_t)indir->Size() <= storeOffs);
 
                 if (checkLocal && GenTree::Compare(indirAddr, storeAddr) && distinct)
                 {
                     JITDUMP("Cannot interfere with [%06u] since they are off the same local V%02u and indir range "
                             "[%03u..%03u) does not interfere with store range [%03u..%03u)\n",
                             Compiler::dspTreeID(node), indirAddr->AsLclVarCommon()->GetLclNum(), (unsigned)offs,
-                            (unsigned)offs + indirSize, (unsigned)storeOffs, (unsigned)storeOffs + storeSize);
+                            (unsigned)offs + indir->Size(), (unsigned)storeOffs, (unsigned)storeOffs + store->Size());
                 }
                 // Two indirs off of TYP_REFs cannot overlap if their offset ranges are distinct.
                 else if (indirAddr->TypeIs(TYP_REF) && storeAddr->TypeIs(TYP_REF) && distinct)
                 {
                     JITDUMP("Cannot interfere with [%06u] since they are both off TYP_REF bases and indir range "
                             "[%03u..%03u) does not interfere with store range [%03u..%03u)\n",
-                            Compiler::dspTreeID(node), (unsigned)offs, (unsigned)offs + indirSize, (unsigned)storeOffs,
-                            (unsigned)storeOffs + storeSize);
+                            Compiler::dspTreeID(node), (unsigned)offs, (unsigned)offs + indir->Size(),
+                            (unsigned)storeOffs, (unsigned)storeOffs + store->Size());
                 }
                 else
                 {

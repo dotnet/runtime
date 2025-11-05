@@ -366,7 +366,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
         case INS_sve_str:
         {
             assert(size == EA_SCALABLE);
-            ssize_t count = imm / compiler->getSizeOfType(TYP_SIMDSV);
+            ssize_t count = imm / genTypeSize(TYP_SIMDSV);
             immFitsInIns  = (-256 <= count && count < 256);
         }
         break;
@@ -3007,7 +3007,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
                 var_types op1Type = genActualType(op1->TypeGet());
                 var_types lclType = genActualType(varDsc->TypeGet());
 
-                if (compiler->getSizeOfType(op1Type) < compiler->getSizeOfType(lclType))
+                if (genTypeSize(op1Type) < genTypeSize(lclType))
                 {
                     movRequired = true;
                 }

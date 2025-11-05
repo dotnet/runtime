@@ -134,8 +134,6 @@ DEFINE_DACVAR(PTR_JITNotification, dac__g_pNotificationTable, ::g_pNotificationT
 DEFINE_DACVAR(ULONG32, dac__g_dacNotificationFlags, ::g_dacNotificationFlags)
 
 DEFINE_DACVAR(DWORD, dac__g_gcNotificationFlags, g_gcNotificationFlags)
-DEFINE_DACVAR(DWORD, dac__g_vectorTByteLength, ::g_vectorTByteLength)
-DEFINE_DACVAR(BOOL,  dac__g_vectorTIsScalable, ::g_vectorTIsScalable)
 
 DEFINE_DACVAR(PTR_EEConfig, dac__g_pConfig, ::g_pConfig)
 

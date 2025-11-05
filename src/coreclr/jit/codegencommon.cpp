@@ -2850,13 +2850,13 @@ public:
             for (RegNodeEdge* incoming = regNode->incoming; incoming != nullptr; incoming = incoming->nextIncoming)
             {
                 unsigned destStart = incoming->destOffset;
-                unsigned destEnd   = destStart + m_comp->getSizeOfType(incoming->type);
+                unsigned destEnd   = destStart + genTypeSize(incoming->type);
 
                 for (RegNodeEdge* otherIncoming = incoming->nextIncoming; otherIncoming != nullptr;
                      otherIncoming              = otherIncoming->nextIncoming)
                 {
                     unsigned otherDestStart = otherIncoming->destOffset;
-                    unsigned otherDestEnd   = otherDestStart + m_comp->getSizeOfType(otherIncoming->type);
+                    unsigned otherDestEnd   = otherDestStart + genTypeSize(otherIncoming->type);
                     if (otherDestEnd <= destStart)
                     {
                         continue;
@@ -2972,8 +2972,7 @@ void CodeGen::genSpillOrAddRegisterParam(
         LclVarDsc* paramVarDsc = compiler->lvaGetDesc(paramLclNum);
 
         var_types storeType = genParamStackType(paramVarDsc, segment);
-        if (!varDsc->TypeIs(TYP_STRUCT) &&
-            (compiler->getSizeOfType(genActualType(varDsc)) < compiler->getSizeOfType(storeType)))
+        if (!varDsc->TypeIs(TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
         {
             // Can happen for struct fields due to padding.
             storeType = genActualType(varDsc);
@@ -2992,7 +2991,7 @@ void CodeGen::genSpillOrAddRegisterParam(
     // Some parameters can be passed in multiple registers but enregistered
     // in a single one (e.g. SIMD types on arm64). In this case the edges
     // we add here represent insertions of each element.
-    if (segment.Size < compiler->getSizeOfType(edgeType))
+    if (segment.Size < genTypeSize(edgeType))
     {
         edgeType = segment.GetRegisterType();
     }
@@ -3269,7 +3268,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             // registers while we can enregister them as single registers.
             // TODO-SVE: Ensure this works for Z registers as well.
             GetEmitter()->emitIns_R_R_I_I(INS_mov, emitTypeSize(edge->type), node->reg, sourceReg,
-                                          edge->destOffset / compiler->getSizeOfType(edge->type), 0);
+                                          edge->destOffset / genTypeSize(edge->type), 0);
 #elif defined(UNIX_AMD64_ABI)
             // For SysV x64 the only insertions we should have is to offset 8,
             // which happens for example for Vector3 which can be passed in
@@ -3528,7 +3527,7 @@ void CodeGen::genCheckUseBlockInit()
                         else
                         {
                             // Var is partially enregistered
-                            noway_assert(compiler->getSizeOfType(varDsc->TypeGet()) > sizeof(int) &&
+                            noway_assert(genTypeSize(varDsc->TypeGet()) > sizeof(int) &&
                                          varDsc->GetOtherReg() == REG_STK);
                             initStkLclCnt += genTypeStSz(TYP_INT);
                             counted = true;
@@ -3829,7 +3828,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                          compiler->opts.compDbgCode);
 
             if (varDsc->TypeIs(TYP_STRUCT) && !compiler->info.compInitMem &&
-                (compiler->lvaLclExactSize(varDsc) >= TARGET_POINTER_SIZE))
+                (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
             {
                 // We only initialize the GC variables in the TYP_STRUCT
                 const unsigned slots  = (unsigned)compiler->lvaLclStackHomeSize(varNum) / REGSIZE_BYTES;
@@ -5908,7 +5907,7 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
     var_types hfaType   = GetHfaType(hClass);
     unsigned  classSize = info.compCompHnd->getClassSize(hClass);
     // Note that the retail build issues a warning about a potential division by zero without the Max function
-    unsigned elemSize = Max((unsigned)1, getSizeOfType(genActualType(hfaType)));
+    unsigned elemSize = Max((unsigned)1, genTypeSize(genActualType(hfaType)));
     return classSize / elemSize;
 #endif // TARGET_ARM64
 }
@@ -7181,7 +7180,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 #endif
 
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
-            offset += compiler->getSizeOfType(type);
+            offset += genTypeSize(type);
         }
 #endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
     }
@@ -7581,7 +7580,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             // It could rewrite memory outside of the fields but local on the stack are rounded to POINTER_SIZE so
             // it is safe to store a long register into a byte field as it is known that we have enough padding after.
             GetEmitter()->emitIns_S_R(ins_Store(srcType), emitTypeSize(srcType), reg, lclNum, offset);
-            offset += compiler->getSizeOfType(srcType);
+            offset += genTypeSize(srcType);
 
 #ifdef DEBUG
             unsigned stackHomeSize = compiler->lvaLclStackHomeSize(lclNum);

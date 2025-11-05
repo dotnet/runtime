@@ -1157,6 +1157,10 @@ MethodTableBuilder::CopyParentVtable()
      }
 }
 
+#ifdef TARGET_ARM64
+extern "C" uint64_t GetSveLengthFromOS();
+#endif
+
 //*******************************************************************************
 // Determine if this is the special SIMD type System.Numerics.Vector<T>, whose
 // size is determined dynamically based on the hardware and the presence of JIT
@@ -1185,7 +1189,29 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     if (strcmp(className, "Vector`1") != 0 || strcmp(nameSpace, "System.Numerics") != 0)
         return false;
 
-    uint32_t vectorTSize = g_vectorTByteLength;
+    uint32_t vectorTSize = 0;
+    CORJIT_FLAGS CPUCompileFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
+    {
+        vectorTSize = 64;
+    }
+    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT256))
+    {
+        vectorTSize = 32;
+    }
+#elif defined(TARGET_ARM64)
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitUseScalableVectorT)
+            && CPUCompileFlags.IsSet(InstructionSet_Sve_Arm64))
+    {
+        vectorTSize = (uint32_t) GetSveLengthFromOS();
+    }
+    else if (CPUCompileFlags.IsSet(InstructionSet_VectorT128))
+    {
+        vectorTSize = 16;
+    }
+#endif
 
     if (vectorTSize > 0 && vectorTSize != 16)
     {

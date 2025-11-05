@@ -1699,7 +1699,7 @@ CorInfoHFAElemType MethodTable::GetVectorHFA()
         {
             _ASSERTE(strcmp(namespaceName, "System.Numerics") == 0);
 #ifdef TARGET_ARM64
-            hfaType = g_vectorTIsScalable ? CORINFO_HFA_ELEM_VECTORT : CORINFO_HFA_ELEM_VECTOR128;
+            hfaType = ExecutionManager::GetEEJitManager()->UseScalableVectorT() ? CORINFO_HFA_ELEM_VECTORT : CORINFO_HFA_ELEM_VECTOR128;
 #else
             switch (GetNumInstanceFieldBytes())
             {
@@ -1950,7 +1950,7 @@ EEClass::CheckForHFA()
         elemSize = 16;
         break;
     case CORINFO_HFA_ELEM_VECTORT:
-        elemSize = g_vectorTByteLength;
+        elemSize = EEJitManager::GetSizeOfVectorT();
         _ASSERTE(elemSize != 0);
         break;
 #endif

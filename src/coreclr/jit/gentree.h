@@ -3959,7 +3959,7 @@ public:
         m_layout = layout;
     }
 
-    unsigned GetSize(Compiler* comp) const;
+    unsigned GetSize() const;
 
 #ifdef TARGET_ARM
     bool IsOffsetMisaligned() const;
@@ -4574,9 +4574,7 @@ public:
 #endif
     }
 
-#ifndef TARGET_ARM64
     unsigned GetReturnFieldOffset(unsigned index) const;
-#endif
 
     // Get i'th ABI return register
     regNumber GetABIReturnReg(unsigned idx, CorInfoCallConvExtension callConv) const;
@@ -7960,6 +7958,8 @@ struct GenTreeIndir : public GenTreeOp
     GenTree* Index();
     unsigned Scale();
     ssize_t  Offset();
+
+    unsigned Size() const;
 
     GenTreeIndir(genTreeOps oper, var_types type, GenTree* addr, GenTree* data)
         : GenTreeOp(oper, type, addr, data)

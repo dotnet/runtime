@@ -988,6 +988,8 @@ public:
         lvStkOffs = offset;
     }
 
+    unsigned lvExactSize() const;
+
     unsigned lvSlotNum; // original slot # (if remapped)
 
     // class handle for the local or null if not known or not a class
@@ -3639,8 +3641,6 @@ public:
     void gtGetLclFldNodeCost(GenTreeLclFld* node, int* pCostEx, int* pCostSz);
     bool gtGetIndNodeCost(GenTreeIndir* node, int* pCostEx, int* pCostSz);
 
-    unsigned gtGetSizeOfIndirection(GenTreeIndir* indir);
-
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
 
@@ -4188,7 +4188,6 @@ public:
 
     unsigned lvaLclStackHomeSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
-    unsigned lvaLclExactSize(const LclVarDsc* varDsc);
 
     bool lvaHaveManyLocals(float percent = 1.0f) const;
 
@@ -9088,10 +9087,6 @@ private:
         return isSIMDClass(clsHnd) || isHWSIMDClass(clsHnd);
     }
 
-    var_types getSIMDType(CORINFO_CLASS_HANDLE typeHnd, CorInfoType* baseType = nullptr);
-
-    unsigned getSizeOfSIMDType(var_types simdType);
-
     // Get the base (element) type and size in bytes for a SIMD type. Returns CORINFO_TYPE_UNDEF
     // if it is not a SIMD type or is an unsupported base JIT type.
     CorInfoType getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
@@ -9176,6 +9171,16 @@ public:
         unreached();
 #endif
     }
+
+#ifdef TARGET_ARM64
+    uint32_t getMaskByteLength()
+    {
+        // Predicate registers have 1 bit for each byte in the vector register.
+        // We round up to an int as the CLR prefers to work in integers.
+        assert((getVectorTByteLength() % 8) == 0);
+        return (uint32_t)roundUp((size_t)getVectorTByteLength() / 8, sizeof(int));
+    }
+#endif
 
     // The minimum and maximum possible number of bytes in a SIMD vector.
 
@@ -9438,9 +9443,6 @@ public:
 #endif
         return result;
     }
-
-    unsigned getSizeOfType(var_types type);
-    unsigned getSizeOfType(GenTree* tree);
 
     enum UnrollKind
     {
@@ -10658,8 +10660,6 @@ public:
         return false;
     }
 #endif // !DEBUG
-
-    unsigned GetReturnFieldOffset(const ReturnTypeDesc& retDesc, unsigned index);
 
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
 
@@ -12425,7 +12425,7 @@ const instruction INS_BREAKPOINT = INS_ebreak;
 
 /*****************************************************************************/
 
-extern const BYTE genTypeSizes[];
+extern const BYTE (&genTypeSizes)[TYP_COUNT];
 extern const BYTE genTypeAlignments[];
 extern const BYTE genTypeStSzs[];
 extern const BYTE genActualTypes[];

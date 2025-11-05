@@ -82,7 +82,7 @@ CodeGen::HWIntrinsicImmOpHelper::HWIntrinsicImmOpHelper(CodeGen*            code
 
             assert(varTypeIsSIMD(indexedElementOpType));
 
-            const unsigned int indexedElementSimdSize = codeGen->compiler->getSizeOfType(indexedElementOpType);
+            const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
             HWIntrinsicInfo::lookupImmBounds(intrin->GetHWIntrinsicId(), indexedElementSimdSize,
                                              intrin->GetSimdBaseType(), 1, &immLowerBound, &immUpperBound);
         }

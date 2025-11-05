@@ -37,7 +37,7 @@ struct Replacement
     {
     }
 
-    bool Overlaps(Compiler* comp, unsigned otherStart, unsigned otherSize) const;
+    bool Overlaps(unsigned otherStart, unsigned otherSize) const;
 };
 
 // Represents information about an aggregate that now has replacements in it.
@@ -59,8 +59,10 @@ struct AggregateInfo
     {
     }
 
-    bool OverlappingReplacements(
-        Compiler* comp, unsigned offset, unsigned size, Replacement** firstReplacement, Replacement** endReplacement);
+    bool OverlappingReplacements(unsigned      offset,
+                                 unsigned      size,
+                                 Replacement** firstReplacement,
+                                 Replacement** endReplacement);
 };
 
 // Map that stores information about promotions made for each local.

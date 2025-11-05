@@ -1137,18 +1137,12 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
  *  Return the size in bytes of the given type.
  */
 
-extern const BYTE genTypeSizes[TYP_COUNT];
+extern const BYTE (&genTypeSizes)[TYP_COUNT];
 
 template <class T>
 inline unsigned genTypeSize(T value)
 {
-#ifdef TARGET_ARM64
-    // The size of these types cannot be evaluated in static contexts.
-    noway_assert(TypeGet(value) != TYP_SIMDSV);
-    noway_assert(TypeGet(value) != TYP_MASK);
-#endif
     assert((unsigned)TypeGet(value) < ArrLen(genTypeSizes));
-
     return genTypeSizes[TypeGet(value)];
 }
 
@@ -1714,7 +1708,7 @@ inline GenTreeIndexAddr* Compiler::gtNewIndexAddr(GenTree*             arrayOp,
                                                   unsigned             lengthOffset)
 {
     unsigned elemSize =
-        (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : getSizeOfType(elemType);
+        (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : genTypeSize(elemType);
 
 #ifdef DEBUG
     bool boundsCheck = JitConfig.JitSkipArrayBoundCheck() != 1;
@@ -4709,7 +4703,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
     if (OperIs(GT_STORE_LCL_FLD))
     {
         GenTreeLclFld* fld = AsLclFld();
-        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetSize(comp)));
+        return visitor(LocalDef(fld, !fld->IsPartialLclFld(comp), fld->GetLclOffs(), fld->GetSize()));
     }
     if (OperIs(GT_CALL))
     {

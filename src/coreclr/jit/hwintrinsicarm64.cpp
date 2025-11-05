@@ -612,9 +612,9 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
                     unreached();
             }
 
-            GenTree* tmpOp = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, getSizeOfType(simdType));
+            GenTree* tmpOp = gtNewSimdCreateBroadcastNode(simdType, op2, simdBaseJitType, genTypeSize(simdType));
             return gtNewSimdHWIntrinsicNode(simdType, op1, tmpOp, fallbackIntrinsic, simdBaseJitType,
-                                            getSizeOfType(simdType));
+                                            genTypeSize(simdType));
         }
 
         default:
@@ -1361,10 +1361,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (!varTypeIsLong(simdBaseType))
             {
+                var_types simdType = getSIMDTypeForSize(simdSize);
+
                 op2 = impSIMDPopStack();
                 op1 = impSIMDPopStack();
 
-                retNode = gtNewSimdDotProdNode(op1->TypeGet(), op1, op2, simdBaseJitType, simdSize);
+                retNode = gtNewSimdDotProdNode(simdType, op1, op2, simdBaseJitType, simdSize);
                 retNode = gtNewSimdGetElementNode(retType, retNode, gtNewIconNode(0), simdBaseJitType, simdSize);
             }
             break;
