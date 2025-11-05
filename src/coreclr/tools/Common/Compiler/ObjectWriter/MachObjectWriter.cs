@@ -724,10 +724,10 @@ namespace ILCompiler.ObjectWriter
             foreach (SymbolicRelocation symbolicRelocation in relocationList)
             {
                 if (symbolicRelocation.Type == RelocType.IMAGE_REL_SYMBOL_SIZE
-                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (string, string) range))
+                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (string, string, int) range))
                 {
                     // Represent as ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED.
-                    (string StartNode, string EndNode) = range;
+                    (string StartNode, string EndNode, _) = range;
                     uint startSymbolIndex = _symbolNameToIndex[StartNode];
                     uint endSymbolIndex = _symbolNameToIndex[EndNode];
                     sectionRelocations.Add(
