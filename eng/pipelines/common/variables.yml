@@ -59,5 +59,3 @@ variables:
                 eq(variables['isRollingBuild'], true))) ]
 
 - template: /eng/common/${{ parameters.templatePath }}/variables/pool-providers.yml
-
-- template: /eng/pipelines/helix-platforms.yml
