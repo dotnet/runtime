@@ -10,6 +10,9 @@ parameters:
   shouldContinueOnError: false
   jobParameters: {}
 
+variables:
+  - template: /eng/pipelines/helix-platforms.yml
+
 jobs:
 - template: ${{ parameters.jobTemplate }}
   parameters:
