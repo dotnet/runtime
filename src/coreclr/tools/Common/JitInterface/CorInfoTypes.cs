@@ -378,7 +378,7 @@ namespace Internal.JitInterface
         CORINFO_CALLCONV_HASTHIS = 0x20,
         CORINFO_CALLCONV_EXPLICITTHIS = 0x40,
         CORINFO_CALLCONV_PARAMTYPE = 0x80,     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
-        CORINFO_CALLCONV_ASYNCCALL = 0x100,    // Is this a call to an async function?
+        CORINFO_CALLCONV_ASYNCCALL = 0x100,    // Is this a call with async calling convention?
     }
 
     // Represents the calling conventions supported with the extensible calling convention syntax
