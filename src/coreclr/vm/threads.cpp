@@ -7007,17 +7007,25 @@ namespace
 
     DWORD WINAPI ForeignThreadCleanupThreadStart(LPVOID lpParameter)
     {
-        INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
-        {
-            while (!CleanupThreadShouldStop)
-            {
-                ManagedThreadBase::KickOff(ForeignThreadCleanupWorker, NULL);
-            }
-            _ASSERTE(g_fEEShutDown);
-            CleanupThreadShutdownEvent->Set();
-        }
-        UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+        bool cleanupThreadOk = ((Thread*)lpParameter)->HasStarted();
 
+        _ASSERTE(cleanupThreadOk);
+
+        // finalizer should always park in default domain
+
+        if (cleanupThreadOk)
+        {
+            INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+            {
+                while (!CleanupThreadShouldStop)
+                {
+                    ManagedThreadBase::KickOff(ForeignThreadCleanupWorker, NULL);
+                }
+                _ASSERTE(g_fEEShutDown);
+                CleanupThreadShutdownEvent->Set();
+            }
+            UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+        }
         return 0;
     }
 }
@@ -7038,7 +7046,7 @@ ThreadCleanupThread::EnsureCleanupThreadExists()
 
     Thread* pCleanupThread = SetupUnstartedThread();
 
-    if (pCleanupThread->CreateNewThread(0, &ForeignThreadCleanupThreadStart, NULL, W(".NET External Thread Cleanup Thread")))
+    if (pCleanupThread->CreateNewThread(0, &ForeignThreadCleanupThreadStart, pCleanupThread, W(".NET External Thread Cleanup Thread")))
     {
         DWORD dwRet = pCleanupThread->StartThread();
 
