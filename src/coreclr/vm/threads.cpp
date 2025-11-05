@@ -701,11 +701,6 @@ Thread* SetupThread()
     ETW::ThreadLog::FireThreadCreated(pThread);
 #endif // FEATURE_EVENT_TRACE
 
-    // We have now had at least one external thread enter the runtime.
-    // Ensure we have the cleanup thread started to clean up this thread's
-    // managed resources after it exits.
-    ThreadCleanupThread::EnsureCleanupThreadExists();
-
     return pThread;
 }
 
@@ -6982,6 +6977,8 @@ PTR_GCFrame Thread::GetGCFrame()
 #ifndef DACCESS_COMPILE
 namespace
 {
+    bool CleanupThreadShouldStop = false;
+    CLREvent* CleanupThreadShutdownEvent = nullptr;
     CLREvent* ForeignThreadsToCleanUpEvent = nullptr;
 
     void ForeignThreadCleanupWorker(LPVOID args)
@@ -7012,10 +7009,12 @@ namespace
     {
         INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
         {
-            while (true)
+            while (!CleanupThreadShouldStop)
             {
                 ManagedThreadBase::KickOff(ForeignThreadCleanupWorker, NULL);
             }
+            _ASSERTE(g_fEEShutDown);
+            CleanupThreadShutdownEvent->Set();
         }
         UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
 
@@ -7026,34 +7025,36 @@ namespace
 void
 ThreadCleanupThread::EnsureCleanupThreadExists()
 {
-    if (ForeignThreadsToCleanUpEvent == nullptr)
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    ForeignThreadsToCleanUpEvent = new CLREvent();
+    ForeignThreadsToCleanUpEvent->CreateAutoEvent(FALSE);
+    CleanupThreadShutdownEvent = new CLREvent();
+    CleanupThreadShutdownEvent ->CreateAutoEvent(FALSE);
+
+    Thread* pCleanupThread = SetupUnstartedThread();
+
+    if (pCleanupThread->CreateNewThread(0, &ForeignThreadCleanupThreadStart, NULL, W(".NET External Thread Cleanup Thread")))
     {
-        NewHolder<CLREvent> pEvent = new CLREvent();
-        pEvent->CreateAutoEvent(FALSE);
-        if (InterlockedCompareExchangeT(&ForeignThreadsToCleanUpEvent, pEvent.GetValue(), nullptr) == nullptr)
-        {
-            pEvent.SuppressRelease();
-            Thread* pCleanupThread = SetupUnstartedThread();
+        DWORD dwRet = pCleanupThread->StartThread();
 
-            if (pCleanupThread->CreateNewThread(0, &ForeignThreadCleanupThreadStart, NULL, W(".NET External Thread Cleanup Thread")))
-            {
-                DWORD dwRet = pCleanupThread->StartThread();
-
-                // When running under a user mode native debugger there is a race
-                // between the moment we've created the thread (in CreateNewThread) and
-                // the moment we resume it (in StartThread); the debugger may receive
-                // the "ct" (create thread) notification, and it will attempt to
-                // suspend/resume all threads in the process.  Now imagine the debugger
-                // resumes this thread first, and only later does it try to resume the
-                // newly created thread (the finalizer thread).  In these conditions our
-                // call to ResumeThread may come before the debugger's call to ResumeThread
-                // actually causing dwRet to equal 2.
-                // We cannot use IsDebuggerPresent() in the condition below because the
-                // debugger may have been detached between the time it got the notification
-                // and the moment we execute the test below.
-                _ASSERTE(dwRet == 1 || dwRet == 2);
-            }
-        }
+        // When running under a user mode native debugger there is a race
+        // between the moment we've created the thread (in CreateNewThread) and
+        // the moment we resume it (in StartThread); the debugger may receive
+        // the "ct" (create thread) notification, and it will attempt to
+        // suspend/resume all threads in the process.  Now imagine the debugger
+        // resumes this thread first, and only later does it try to resume the
+        // newly created thread (the finalizer thread).  In these conditions our
+        // call to ResumeThread may come before the debugger's call to ResumeThread
+        // actually causing dwRet to equal 2.
+        // We cannot use IsDebuggerPresent() in the condition below because the
+        // debugger may have been detached between the time it got the notification
+        // and the moment we execute the test below.
+        _ASSERTE(dwRet == 1 || dwRet == 2);
     }
 }
 void
@@ -7061,6 +7062,20 @@ ThreadCleanupThread::SetHasThreadsToCleanUp()
 {
     _ASSERT(ForeignThreadsToCleanUpEvent != nullptr);
     ForeignThreadsToCleanUpEvent->Set();
+}
+
+void
+ThreadCleanupThread::ShutdownCleanupThread()
+{
+    WRAPPER_NO_CONTRACT;
+
+    CleanupThreadShouldStop = true;
+
+    // Wake up the cleanup thread if it's waiting
+    ForeignThreadsToCleanUpEvent->Set();
+
+    // Wait for the cleanup thread to exit
+    CleanupThreadShutdownEvent->Wait(INFINITE, FALSE);
 }
 #endif // DACCESS_COMPILE
 
