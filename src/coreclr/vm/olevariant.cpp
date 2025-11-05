@@ -4340,7 +4340,7 @@ BSTR OleVariant::AllocateEmptyBSTRForString(STRINGREF *pStringObj)
     CONTRACT(BSTR)
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStringObj));
         PRECONDITION(*pStringObj != NULL);
@@ -4379,7 +4379,7 @@ void OleVariant::ConvertContentsStringToBSTR(STRINGREF *pStringObj, BSTR bstr)
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStringObj));
         PRECONDITION(*pStringObj != NULL);
@@ -4421,13 +4421,13 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
     CONTRACT(BSTR)
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStringObj));
 
         // A null BSTR should only be returned if the input string is null.
         POSTCONDITION(RETVAL != NULL || *pStringObj == NULL);
-}
+    }
     CONTRACT_END;
 
     // Initiatilize the return BSTR value to null.
