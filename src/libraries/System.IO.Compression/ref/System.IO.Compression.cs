@@ -137,6 +137,9 @@ namespace System.IO.Compression
         {
             None = (byte)0,
             ZipCrypto = (byte)1,
+            Aes128 = (byte)2,
+            Aes192 = (byte)3,
+            Aes256 = (byte)4,
         }
     }
     public enum ZipArchiveMode

@@ -265,8 +265,7 @@ namespace System.IO.Compression.Tests
         {
             string ZipPath = @"C:\Users\spahontu\Downloads\test.zip";
             string EntryName = "hello.txt";
-            ReadOnlyMemory<char> CorrectPassword = "123456789".AsMemory();
-
+            
             string tempFile = Path.Combine(Path.GetTempPath(), "hello_extracted.txt");
             if (File.Exists(tempFile)) File.Delete(tempFile);
 
@@ -391,15 +390,12 @@ namespace System.IO.Compression.Tests
             using var archive = ZipFile.OpenRead(zipPath);
             var entry = archive.Entries.First(e => e.FullName.EndsWith("test.jpg", StringComparison.OrdinalIgnoreCase));
 
-            // Act: open decrypted + decompressed stream
             using var stream = entry.Open("123456789");
 
-            // Read all bytes
             using var ms = new MemoryStream();
             stream.CopyTo(ms);
             byte[] actualBytes = ms.ToArray();
 
-            // Optional: compare with original file
             byte[] expectedBytes = File.ReadAllBytes(originalPath);
             Assert.Equal(expectedBytes.Length, actualBytes.Length);
             Assert.Equal(expectedBytes, actualBytes);
@@ -1243,13 +1239,11 @@ namespace System.IO.Compression.Tests
             {
                 var e = za.CreateEntry(entryName);
 
-                // OPEN → WRITE → DISPOSE (single scope)
                 using (var es = e.Open())
                 {
                     var bytes = Encoding.UTF8.GetBytes(payload);
                     es.Write(bytes, 0, bytes.Length);
                 }
-                // no other entry opened while this one was open
             }
 
             // Verify with the archive default password
@@ -1343,6 +1337,20 @@ namespace System.IO.Compression.Tests
                     using var _ = e.Open(archivePassword);
                 });
             }
+        }
+
+        [Fact]
+        public void OpenAESEncryptedTxtFile_ShouldReturnPlaintext()
+        {
+            string zipPath = Path.Join(DownloadsDir, "plainwr.zip");
+            using var archive = ZipFile.OpenRead(zipPath);
+
+            var entry = archive.Entries.First(e => e.FullName.EndsWith("source_plain.txt"));
+            using var stream = entry.Open("123456789");
+            using var reader = new StreamReader(stream);
+            string content = reader.ReadToEnd();
+
+            Assert.Equal("this is plain", content);
         }
 
     }

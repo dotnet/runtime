@@ -670,6 +670,58 @@ namespace System.IO.Compression
             bytesRead = stream.ReadAtLeast(blockBytes, blockBytes.Length, throwOnEndOfStream: false);
             return TrySkipBlockFinalize(stream, blockBytes, bytesRead);
         }
+
+        public static bool TrySkipBlockAESAware(Stream stream, out byte? aesStrength, out ushort? originalCompressionMethod)
+        {
+            aesStrength = null;
+            originalCompressionMethod = null;
+
+            BinaryReader reader = new BinaryReader(stream);
+
+            // Read the first 4 bytes (local file header signature)
+            byte[] signatureBytes = reader.ReadBytes(4);
+            if (!signatureBytes.AsSpan().SequenceEqual(ZipLocalFileHeader.SignatureConstantBytes))
+            {
+                return false; // Not a valid local file header
+            }
+            // Read fixed-size fields after signature
+            // Local file header layout:
+            // signature (4) + version (2) + flags (2) + compression (2) +
+            // mod time (2) + mod date (2) + CRC32 (4) + compressed size (4) +
+            // uncompressed size (4) + name length (2) + extra length (2)
+            reader.ReadBytes(22); // Skip version through sizes
+            ushort nameLength = reader.ReadUInt16();
+            ushort extraLength = reader.ReadUInt16();
+
+            // Skip file name
+            stream.Seek(nameLength, SeekOrigin.Current);
+
+            // Parse extra fields
+            long extraStart = stream.Position;
+            long extraEnd = extraStart + extraLength;
+            while (stream.Position < extraEnd)
+            {
+                ushort headerId = reader.ReadUInt16();
+                ushort dataSize = reader.ReadUInt16();
+
+                if (headerId == 0x9901) // AES extra field
+                {
+                    // AES extra field structure:
+                    // Vendor version (2) + Vendor ID (2) + AES strength (1) + Original compression (2)
+                    reader.ReadBytes(2);
+                    reader.ReadBytes(2); // Vendor ID
+                    aesStrength = reader.ReadByte(); // 1, 2, or 3
+                    originalCompressionMethod = reader.ReadUInt16();
+                }
+                else
+                {
+                    stream.Seek(dataSize, SeekOrigin.Current); // Skip unknown extra field
+                }
+            }
+
+            return true;
+        }
+
     }
 
     internal sealed partial class ZipCentralDirectoryFileHeader

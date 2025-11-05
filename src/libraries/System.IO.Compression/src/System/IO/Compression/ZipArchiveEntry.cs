@@ -440,7 +440,8 @@ namespace System.IO.Compression
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
-                    if (!_isEncrypted) {
+                    if (!IsEncrypted)
+                    {
                         throw new InvalidDataException("Entry is not encrypted");
                     }
                     return OpenInReadMode(checkOpenable: true, password.AsMemory());
@@ -488,13 +489,42 @@ namespace System.IO.Compression
         {
             if (_storedOffsetOfCompressedData == null)
             {
+                // Seek to local header
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-                // by calling this, we are using local header _storedEntryNameBytes.Length and extraFieldLength
-                // to find start of data, but still using central directory size information
-                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
-                    throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
-                _storedOffsetOfCompressedData = _archive.ArchiveStream.Position;
+
+                long baseOffset;
+
+                if (!IsEncrypted || IsZipCryptoEncrypted())
+                {
+                    // Non-AES case: just skip the local header
+                    if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
+                        throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+
+                    baseOffset = _archive.ArchiveStream.Position;
+                }
+                else
+                {
+                    // AES case
+                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out _, out _))
+                        throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
+
+                    baseOffset = _archive.ArchiveStream.Position;
+
+                    // Adjust for AES salt + password verifier using _encryptionMethod
+                    int saltSize = _encryptionMethod switch
+                    {
+                        EncryptionMethod.Aes128 => 8,
+                        EncryptionMethod.Aes192 => 12,
+                        EncryptionMethod.Aes256 => 16,
+                        _ => throw new InvalidDataException("Unknown AES encryption method")
+                    };
+
+                    baseOffset += saltSize + 2; // salt + password verifier
+                }
+
+                _storedOffsetOfCompressedData = baseOffset;
             }
+
             return _storedOffsetOfCompressedData.Value;
         }
 
@@ -891,11 +921,14 @@ namespace System.IO.Compression
         private bool IsZipCryptoEncrypted()
         {
             const ushort EncryptionFlag = 0x0001;
-            return ((ushort)_generalPurposeBitFlag & EncryptionFlag) != 0; //  && !UsesAes();
+            return ((ushort)_generalPurposeBitFlag & EncryptionFlag) != 0 && !IsAesEncrypted();
         }
 
-        // TODO: Change based on specs
-        // private static bool UsesAes() => false;
+        private bool IsAesEncrypted()
+        {
+            // Compression method 99 indicates AES encryption
+            return _storedCompressionMethod == CompressionMethodValues.Aes;
+        }
 
         private Stream GetDataDecompressor(Stream compressedStreamToRead, ReadOnlyMemory<char> password = default)
         {
@@ -903,9 +936,6 @@ namespace System.IO.Compression
             Stream toDecompress = compressedStreamToRead;
             if (IsZipCryptoEncrypted())
             {
-                // if (UsesAes()) for future
-                //   throw new NotSupportedException("AES-encrypted ZIP entries are not supported yet.");
-
                 if (password.IsEmpty)
                     throw new InvalidDataException("Password required for encrypted ZIP entry.");
 
@@ -913,6 +943,28 @@ namespace System.IO.Compression
 
                 toDecompress = new ZipCryptoStream(toDecompress, password, expectedCheckByte);
             }
+            else if (IsAesEncrypted())
+            {
+                if (password.IsEmpty)
+                    throw new InvalidDataException("Password required for AES-encrypted ZIP entry.");
+
+                // Determine key size based on encryption method
+                int keySizeBits = _encryptionMethod switch
+                {
+                    EncryptionMethod.Aes128 => 128,
+                    EncryptionMethod.Aes192 => 192,
+                    EncryptionMethod.Aes256 => 256,
+                    _ => throw new InvalidDataException($"Invalid AES encryption method: {_encryptionMethod}")
+                };
+
+                // For AES in ZIP, AE-2 format includes CRC-32 in the AES extra field
+                // The _crc32 field should contain the CRC value for AE-2
+                bool isAe2 = (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0;
+
+                // Read and parse the AES extra field to get necessary parameters
+                toDecompress = new AesStream(toDecompress, password, false, keySizeBits, isAe2, isAe2 ? _crc32 : null);
+            }
+
 
             Stream? uncompressedStream;
             switch (CompressionMethod)
@@ -993,6 +1045,7 @@ namespace System.IO.Compression
             });
         }
 
+
         private bool IsOpenable(bool needToUncompress, bool needToLoadIntoMemory, out string? message)
         {
             message = null;
@@ -1003,12 +1056,41 @@ namespace System.IO.Compression
                 {
                     return false;
                 }
-                if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
+                if (!IsEncrypted && !ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
                 {
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
                 }
+                else if (IsEncrypted && CompressionMethod == CompressionMethodValues.Aes)
+                {
+                    _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
 
+                    byte? aesStrength;
+                    ushort? originalCompressionMethod;
+
+                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out aesStrength, out originalCompressionMethod))
+                    {
+                        message = SR.LocalFileHeaderCorrupt;
+                        return false;
+                    }
+
+                    // Save encryption info for later use
+                    if (aesStrength.HasValue)
+                    {
+                        _encryptionMethod = aesStrength switch
+                        {
+                            1 => EncryptionMethod.Aes128,
+                            2 => EncryptionMethod.Aes192,
+                            3 => EncryptionMethod.Aes256,
+                            _ => throw new InvalidDataException("Unknown AES strength")
+                        };
+                    }
+
+                    if (originalCompressionMethod.HasValue)
+                    {
+                        _storedCompressionMethod = (CompressionMethodValues)originalCompressionMethod.Value;
+                    }
+                }
                 // when this property gets called, some duplicated work
                 long offsetOfCompressedData = GetOffsetOfCompressedData();
                 if (!IsOpenableFinalVerifications(needToLoadIntoMemory, offsetOfCompressedData, out message))
@@ -1027,7 +1109,8 @@ namespace System.IO.Compression
             message = null;
             if (needToUncompress)
             {
-                if (CompressionMethod != CompressionMethodValues.Stored &&
+                if (!IsEncrypted &&
+                    CompressionMethod != CompressionMethodValues.Stored &&
                     CompressionMethod != CompressionMethodValues.Deflate &&
                     CompressionMethod != CompressionMethodValues.Deflate64)
                 {
@@ -1037,6 +1120,13 @@ namespace System.IO.Compression
                         _ => SR.UnsupportedCompression,
                     };
                     return false;
+                }
+                else
+                {
+                    if (IsEncrypted && CompressionMethod == CompressionMethodValues.Aes)
+                    {
+                        return true;
+                    }
                 }
             }
             if (_diskNumberStart != _archive.NumberOfThisDisk)
@@ -1801,8 +1891,10 @@ namespace System.IO.Compression
         public enum EncryptionMethod : byte
         {
             None = 0,
-            ZipCrypto = 1
-            //Aes256 = 4,
+            ZipCrypto = 1,
+            Aes128 = 2,
+            Aes192 = 3,
+            Aes256 = 4
         }
 
 
@@ -1812,7 +1904,8 @@ namespace System.IO.Compression
             Deflate = 0x8,
             Deflate64 = 0x9,
             BZip2 = 0xC,
-            LZMA = 0xE
+            LZMA = 0xE,
+            Aes = 99
         }
 
         internal sealed class LocalHeaderOffsetComparer : Comparer<ZipArchiveEntry>

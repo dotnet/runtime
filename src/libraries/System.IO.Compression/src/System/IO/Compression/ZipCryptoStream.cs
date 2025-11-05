@@ -40,7 +40,7 @@ namespace System.IO.Compression
             ValidateHeader(expectedCheckByte); // reads & consumes 12 bytes
         }
 
-        // ENCRYPTION constructor (header is now deferred to first write)
+        // Encryption constructor
         public ZipCryptoStream(Stream baseStream,
                                ReadOnlyMemory<char> password,
                                ushort passwordVerifierLow2Bytes,
