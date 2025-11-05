@@ -215,7 +215,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 //  x1 == element count
     LEAF_ENTRY RhpNewPtrArrayFast, _Text
 
-        ; we want to limit the element count to the non-negative 32-bit int range
+        // we want to limit the element count to the non-negative 32-bit int range
         mov         x2, #0x7FFFFFFF
         cmp         x1, x2
 #if defined(__APPLE__)
