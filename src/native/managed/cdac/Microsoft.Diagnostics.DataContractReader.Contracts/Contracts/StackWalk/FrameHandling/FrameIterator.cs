@@ -189,6 +189,8 @@ internal sealed class FrameIterator
             ContextHolder<AMD64Context> contextHolder => new AMD64FrameHandler(target, contextHolder),
             ContextHolder<ARMContext> contextHolder => new ARMFrameHandler(target, contextHolder),
             ContextHolder<ARM64Context> contextHolder => new ARM64FrameHandler(target, contextHolder),
+            ContextHolder<RISCV64Context> contextHolder => new RISCV64FrameHandler(target, contextHolder),
+            ContextHolder<LoongArch64Context> contextHolder => new LoongArch64FrameHandler(target, contextHolder),
             _ => throw new InvalidOperationException("Unsupported context type"),
         };
     }
@@ -254,9 +256,9 @@ internal sealed class FrameIterator
 
     private static bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame, Target target)
     {
-        if (target.PointerSize == 4)
+        if (target.PointerSize == sizeof(ulong))
         {
-            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) != 0;
+            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) == 0;
         }
         else
         {

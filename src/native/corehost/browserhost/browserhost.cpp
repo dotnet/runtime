@@ -51,8 +51,6 @@ extern "C"
     const void* CompressionResolveDllImport(const char* name);
 
     bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
-    void BrowserHost_ResolveMain(int exitCode);
-    void BrowserHost_RejectMain(const char *reason);
 }
 
 // The current CoreCLR instance details.
@@ -138,33 +136,15 @@ extern "C" int BrowserHost_InitializeCoreCLR(void)
     return 0;
 }
 
-// WASM-TODO: browser needs async entrypoint
-// WASM-TODO: don't coreclr_shutdown_2 when browser
-extern "C" int BrowserHost_ExecuteAssembly(const char* assemblyPath)
+extern "C" int BrowserHost_ExecuteAssembly(const char* assemblyPath, int argc, const char** argv)
 {
-    int exit_code;
-    int retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, 0, nullptr, assemblyPath, (uint32_t*)&exit_code);
+    int ignore_exit_code = 0;
+    int retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, argc, argv, assemblyPath, (uint32_t*)&ignore_exit_code);
 
     if (retval < 0)
     {
         std::fprintf(stderr, "coreclr_execute_assembly failed - Error: 0x%08x\n", retval);
         return -1;
     }
-
-    int latched_exit_code = 0;
-
-    retval = coreclr_shutdown_2(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
-
-    if (retval < 0)
-    {
-        std::fprintf(stderr, "coreclr_shutdown_2 failed - Error: 0x%08x\n", retval);
-        exit_code = -1;
-        // WASM-TODO: this is too trivial
-        BrowserHost_RejectMain("coreclr_shutdown_2 failed");
-    }
-
-    // WASM-TODO: this is too trivial
-    // because nothing runs continuations yet and also coreclr_execute_assembly is sync looping
-    BrowserHost_ResolveMain(exit_code);
-    return retval;
+    return 0;
 }

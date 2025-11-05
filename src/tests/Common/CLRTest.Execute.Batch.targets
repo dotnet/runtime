@@ -81,6 +81,11 @@ IF NOT "%RunInterpreter%"=="" (
   popd
   Exit /b 0
 )
+IF NOT "%DOTNET_InterpMode%"=="" (
+  ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with the interpreter
+  popd
+  Exit /b 0
+)
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(TieringTestIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
@@ -345,7 +350,9 @@ if defined RunCrossGen2 (
 )
 
 if defined RunInterpreter (
-  SET "DOTNET_Interpreter=$(AssemblyName)^!*"
+  if "%DOTNET_InterpMode%"=="" (
+    SET "DOTNET_Interpreter=$(AssemblyName)^!*"
+  )
 )
 
 ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%

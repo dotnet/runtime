@@ -607,13 +607,13 @@ public:
     void dmpGetAddrOfCaptureThreadGlobal(DWORD key, DLDL value);
     int32_t* repGetAddrOfCaptureThreadGlobal(void** ppIndirection);
 
-    void recGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result);
+    void recGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, void* result);
     void dmpGetClassStaticDynamicInfo(DWORDLONG key, DLD value);
-    size_t repGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
+    void* repGetClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
 
-    void recGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, size_t result);
+    void recGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls, void* result);
     void dmpGetClassThreadStaticDynamicInfo(DWORDLONG key, DLD value);
-    size_t repGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
+    void* repGetClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls);
 
     void recGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* result);
     void dmpGetLocationOfThisType(DWORDLONG key, const Agnostic_CORINFO_LOOKUP_KIND& value);
@@ -866,6 +866,10 @@ public:
     void recGetAsyncResumptionStub(CORINFO_METHOD_HANDLE hnd);
     void dmpGetAsyncResumptionStub(DWORD key, DWORDLONG handle);
     CORINFO_METHOD_HANDLE repGetAsyncResumptionStub();
+
+    void recGetContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize, CORINFO_CLASS_HANDLE result);
+    void dmpGetContinuationType(const Agnostic_GetContinuationTypeIn& key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize);
 
     void recUpdateEntryPointForTailCall(const CORINFO_CONST_LOOKUP& origEntryPoint, const CORINFO_CONST_LOOKUP& newEntryPoint);
     void dmpUpdateEntryPointForTailCall(const Agnostic_CORINFO_CONST_LOOKUP& origEntryPoint, const Agnostic_CORINFO_CONST_LOOKUP& newEntryPoint);
@@ -1208,6 +1212,7 @@ enum mcPackets
     Packet_GetAsyncResumptionStub = 231,
     Packet_GetCookieForInterpreterCalliSig = 232,
     Packet_GetHelperFtn = 233,
+    Packet_GetContinuationType = 234,
 };
 
 void SetDebugDumpVariables();

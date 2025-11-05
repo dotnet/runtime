@@ -6,6 +6,7 @@
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
+    <DefineConstants Condition="'$(UseMonoRuntime)' != 'true'">$(DefineConstants);CORECLR_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <SelfContained>true</SelfContained>
@@ -28,6 +29,9 @@
 
   <ItemGroup>
     <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
+    <EnvironmentVariables Condition="'$(UseMonoRuntime)' != 'true'" Include="DOTNET_InterpMode=3" />
+    <EnvironmentVariables Condition="'$(UseMonoRuntime)' != 'true'" Include="DOTNET_ReadyToRun=0" />
+    <EnvironmentVariables Condition="'$(UseMonoRuntime)' != 'true'" Include="DOTNET_InterpDump=*!*" />
   </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />

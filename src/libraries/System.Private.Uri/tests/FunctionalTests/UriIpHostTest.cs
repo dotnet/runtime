@@ -369,18 +369,80 @@ namespace System.PrivateUri.Tests
 
             // TryCreate
             Assert.True(Uri.TryCreate($"http://[{ipv6String}]", UriKind.Absolute, out Uri testUri), ipv6String);
-            Assert.Equal(UriHostNameType.IPv6, testUri.HostNameType);
-            Assert.Equal(expectedResultWithBrackets, testUri.Host);
-            Assert.Equal(expected, testUri.DnsSafeHost);
+            CheckProperties(testUri);
 
             // Constructor
             testUri = new Uri($"http://[{ipv6String}]");
-            Assert.Equal(UriHostNameType.IPv6, testUri.HostNameType);
-            Assert.Equal(expectedResultWithBrackets, testUri.Host);
-            Assert.Equal(expected, testUri.DnsSafeHost);
+            CheckProperties(testUri);
 
             // CheckHostName
             Assert.Equal(UriHostNameType.IPv6, Uri.CheckHostName(ipv6String));
+
+            // Various combinations of different schemes and suffixes
+            TestSuffixes("http://", 80);
+            TestSuffixes("custom-scheme://", -1);
+            TestSuffixes("file://", -1, backslashIsAllowed: true); // UNC path
+            TestSuffixes("file:////", -1, backslashIsAllowed: true); // UNC path
+            TestSuffixes("\\\\", -1, backslashIsAllowed: true, implicitFile: true); // UNC path
+
+            if (!UriParser.IsKnownScheme("parse-ip-file-based-scheme"))
+            {
+                UriParser.Register(new FileStyleUriParser(), "parse-ip-file-based-scheme", -1);
+                UriParser.Register(new HttpStyleUriParser(), "parse-ip-http-based-scheme", 12345);
+            }
+
+            TestSuffixes("parse-ip-file-based-scheme://", -1, backslashIsAllowed: true);
+            TestSuffixes("parse-ip-http-based-scheme://", 12345);
+
+            void TestSuffixes(string prefix, int port, bool backslashIsAllowed = false, bool implicitFile = false)
+            {
+                // IP followed by extra chars without a valid delimiter is invalid
+                Assert.False(Uri.TryCreate($"{prefix}[{ipv6String}]extra", UriKind.Absolute, out _));
+                Assert.False(Uri.TryCreate($"{prefix}[{ipv6String}] extra", UriKind.Absolute, out _));
+
+                // Some schemes (particularly file) allow backslashes to separate the host and path
+                if (backslashIsAllowed)
+                {
+                    CheckProperties(new Uri($"{prefix}[{ipv6String}]\\extra"), port, path: "/extra");
+                }
+                else
+                {
+                    Assert.False(Uri.TryCreate($"{prefix}[{ipv6String}]\\extra", UriKind.Absolute, out _));
+                }
+
+                // Regular delimiters like ? and # are allowed
+                CheckProperties(new Uri($"{prefix}[{ipv6String}] "), port);
+                CheckProperties(new Uri($"{prefix}[{ipv6String}]/extra"), port, path: "/extra");
+
+                if (implicitFile)
+                {
+                    // Implicit files don't support queries or fragments
+                    Assert.False(Uri.TryCreate($"{prefix}[{ipv6String}]?extra", UriKind.Absolute, out _));
+                    Assert.False(Uri.TryCreate($"{prefix}[{ipv6String}]#extra", UriKind.Absolute, out _));
+                }
+                else
+                {
+                    CheckProperties(new Uri($"{prefix}[{ipv6String}]?extra"), port, query: "?extra");
+                    CheckProperties(new Uri($"{prefix}[{ipv6String}]#extra"), port, fragment: "#extra");
+                }
+
+                if (port >= 0)
+                {
+                    CheckProperties(new Uri($"{prefix}[{ipv6String}]:"), port);
+                    CheckProperties(new Uri($"{prefix}[{ipv6String}]:123"), 123);
+                }
+            }
+
+            void CheckProperties(Uri uri, int port = 80, string path = "/", string query = "", string fragment = "")
+            {
+                Assert.Equal(UriHostNameType.IPv6, uri.HostNameType);
+                Assert.Equal(expectedResultWithBrackets, uri.Host);
+                Assert.Equal(expected, uri.DnsSafeHost);
+                Assert.Equal(port, uri.Port);
+                Assert.Equal(path, uri.AbsolutePath);
+                Assert.Equal(query, uri.Query);
+                Assert.Equal(fragment, uri.Fragment);
+            }
         }
 
         private void ParseBadIPv6Address(string badIpv6String)

@@ -939,6 +939,7 @@ public:
     PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!IsContinuation());
         return m_pModule;
     }
 
@@ -1432,13 +1433,29 @@ public:
     // of the fully loaded type. This is to reduce the amount of type loading
     // performed at process startup.
     //
+    // When placed on a valuetype or a non-generic interface, the special marker will indicate that the interface should be considered instantiated over the valuetype
+    // When placed on an interface, the special marker will indicate that the interface should be considered instantiated over the first generic parameter of the interface
+    //
     // The current rule is that these interfaces can only appear
-    // on valuetypes that are not shared generic, and that the special
+    // on valuetypes and interfaces that are not shared generic, and that the special
     // marker type is the open generic type.
     //
     inline bool IsSpecialMarkerTypeForGenericCasting()
     {
         return IsGenericTypeDefinition();
+    }
+
+    // See comment on IsSpecialMarkerTypeForGenericCasting for details
+    inline TypeHandle GetSpecialInstantiationType()
+    {
+        if (IsInterface() && HasInstantiation())
+        {
+            return GetInstantiation()[0];
+        }
+        else
+        {
+            return TypeHandle(this);
+        }
     }
 
     static const DWORD MaxGenericParametersForSpecialMarkerType = 8;
@@ -2280,7 +2297,7 @@ public:
                     pMT->HasInstantiation() &&
                     pCurrentMethodTable->IsSpecialMarkerTypeForGenericCasting() &&
                     !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap() &&
-                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner))
+                    pMT->GetInstantiation().ContainsAllOneType(pMTOwner->GetSpecialInstantiationType()))
                 {
                     exactMatch = true;
 #ifndef DACCESS_COMPILE
@@ -2295,6 +2312,8 @@ public:
 
             RETURN (exactMatch);
         }
+
+        bool CurrentInterfaceEquivalentTo(MethodTable* pMTOwner, MethodTable* pMT);
 
         inline bool HasSameTypeDefAs(MethodTable* pMT)
         {
@@ -2787,6 +2806,8 @@ public:
         _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ValueType);
         SetFlag(enum_flag_Category_Nullable);
     }
+
+    inline BOOL IsContinuation();
 
     // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType()
