@@ -177,21 +177,6 @@ bool IntegralRange::Contains(int64_t value) const
             break;
         }
 
-        case GT_OR:
-        {
-            IntegralRange leftRange  = IntegralRange::ForNode(node->gtGetOp1(), compiler);
-            IntegralRange rightRange = IntegralRange::ForNode(node->gtGetOp2(), compiler);
-
-            if (leftRange.IsNonNegative() && rightRange.IsNonNegative())
-            {
-                // If both sides are known to be non-negative, the result is non-negative as the | cannot
-                // set a sign bit in this case.
-                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
-            }
-
-            break;
-        }
-
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
