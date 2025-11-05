@@ -483,20 +483,20 @@ bool WrapICorJitInfo::getIsClassInitedFlagAddress(
     return temp;
 }
 
-size_t WrapICorJitInfo::getClassThreadStaticDynamicInfo(
+void* WrapICorJitInfo::getClassThreadStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr)
 {
     API_ENTER(getClassThreadStaticDynamicInfo);
-    size_t temp = wrapHnd->getClassThreadStaticDynamicInfo(clr);
+    void* temp = wrapHnd->getClassThreadStaticDynamicInfo(clr);
     API_LEAVE(getClassThreadStaticDynamicInfo);
     return temp;
 }
 
-size_t WrapICorJitInfo::getClassStaticDynamicInfo(
+void* WrapICorJitInfo::getClassStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr)
 {
     API_ENTER(getClassStaticDynamicInfo);
-    size_t temp = wrapHnd->getClassStaticDynamicInfo(clr);
+    void* temp = wrapHnd->getClassStaticDynamicInfo(clr);
     API_LEAVE(getClassStaticDynamicInfo);
     return temp;
 }
@@ -1533,6 +1533,17 @@ bool WrapICorJitInfo::getTailCallHelpers(
     API_ENTER(getTailCallHelpers);
     bool temp = wrapHnd->getTailCallHelpers(callToken, sig, flags, pResult);
     API_LEAVE(getTailCallHelpers);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize)
+{
+    API_ENTER(getContinuationType);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getContinuationType(dataSize, objRefs, objRefsSize);
+    API_LEAVE(getContinuationType);
     return temp;
 }
 

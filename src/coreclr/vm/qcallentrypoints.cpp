@@ -9,6 +9,7 @@
 //
 #include "arraynative.h"
 #include "objectnative.h"
+#include "dllimport.h"
 #include "comdelegate.h"
 #include "customattribute.h"
 #include "comdynamic.h"
@@ -73,6 +74,10 @@
 #include "exceptionhandlingqcalls.h"
 
 #include "versionresilienthashcode.h"
+
+#ifdef TARGET_BROWSER
+#include "entrypoints.h"
+#endif // TARGET_BROWSER
 
 static const Entry s_QCall[] =
 {
@@ -300,6 +305,7 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
+    DllImportEntry(Monitor_GetOrCreateLockObject)
     DllImportEntry(WaitHandle_WaitOneCore)
     DllImportEntry(WaitHandle_WaitMultipleIgnoringSyncContext)
     DllImportEntry(WaitHandle_SignalAndWait)
@@ -402,13 +408,6 @@ static const Entry s_QCall[] =
     DllImportEntry(Interlocked_MemoryBarrierProcessWide)
     DllImportEntry(ObjectNative_GetHashCodeSlow)
     DllImportEntry(ObjectNative_AllocateUninitializedClone)
-    DllImportEntry(Monitor_Wait)
-    DllImportEntry(Monitor_Pulse)
-    DllImportEntry(Monitor_PulseAll)
-    DllImportEntry(Monitor_GetLockContentionCount)
-    DllImportEntry(Monitor_Enter_Slowpath)
-    DllImportEntry(Monitor_TryEnter_Slowpath)
-    DllImportEntry(Monitor_Exit_Slowpath)
     DllImportEntry(MetadataImport_Enum)
     DllImportEntry(ReflectionInvocation_RunClassConstructor)
     DllImportEntry(ReflectionInvocation_RunModuleConstructor)
@@ -466,6 +465,8 @@ static const Entry s_QCall[] =
     DllImportEntry(NativeRuntimeEventSource_LogContentionLockCreated)
     DllImportEntry(NativeRuntimeEventSource_LogContentionStart)
     DllImportEntry(NativeRuntimeEventSource_LogContentionStop)
+    DllImportEntry(NativeRuntimeEventSource_LogWaitHandleWaitStart)
+    DllImportEntry(NativeRuntimeEventSource_LogWaitHandleWaitStop)
     DllImportEntry(EventPipeInternal_Enable)
     DllImportEntry(EventPipeInternal_Disable)
     DllImportEntry(EventPipeInternal_GetSessionInfo)
@@ -478,7 +479,7 @@ static const Entry s_QCall[] =
     DllImportEntry(EventPipeInternal_GetNextEvent)
     DllImportEntry(EventPipeInternal_SignalSession)
     DllImportEntry(EventPipeInternal_WaitForSessionSignal)
-#endif
+#endif // FEATURE_PERFTRACING
 #if defined(TARGET_UNIX)
     DllImportEntry(CloseHandle)
     DllImportEntry(CreateEventExW)
@@ -529,10 +530,7 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_EH_FUNCLETS
     DllImportEntry(SfiInit)
     DllImportEntry(SfiNext)
-    DllImportEntry(CallCatchFunclet)
-    DllImportEntry(ResumeAtInterceptionLocation)
     DllImportEntry(CallFilterFunclet)
-    DllImportEntry(CallFinallyFunclet)
     DllImportEntry(EHEnumInitFromStackFrameIterator)
     DllImportEntry(EHEnumNext)
     DllImportEntry(AppendExceptionStackFrame)
@@ -546,6 +544,12 @@ static const Entry s_QCall[] =
     DllImportEntry(IsInstanceOf_NoCacheLookup)
     DllImportEntry(VersionResilientHashCode_TypeHashCode)
     DllImportEntry(TailCallHelp_AllocTailCallArgBufferInternal)
+#ifdef TARGET_BROWSER
+    DllImportEntry(SystemJS_ResolveMainPromise)
+    DllImportEntry(SystemJS_RejectMainPromise)
+    DllImportEntry(SystemJS_ScheduleTimer)
+    DllImportEntry(SystemJS_ScheduleBackgroundJob)
+#endif // TARGET_BROWSER
 };
 
 const void* QCallResolveDllImport(const char* name)

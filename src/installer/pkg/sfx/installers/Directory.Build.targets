@@ -3,7 +3,7 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(UseWix5)' == 'true'">
+  <ItemGroup Condition="'$(UseWix5)' == 'true' and '$(GenerateInstallers)' == 'true'">
     <!-- Microsoft.Wix is a dotnet tool package, so exclude its assets. -->
     <PackageReference Include="Microsoft.Wix" Version="$(MicrosoftWixVersion)" ExcludeAssets="all" />
     <!-- Installers needs the $(PkgMicrosoftWixToolsetUIwixext) property to locate the extension. -->

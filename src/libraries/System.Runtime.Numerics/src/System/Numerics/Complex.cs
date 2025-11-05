@@ -834,6 +834,14 @@ namespace System.Numerics
             return new Complex((double)value, 0.0);
         }
 
+        /// <summary>Implicitly converts a <see cref="BFloat16" /> value to a double-precision complex number.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a double-precision complex number.</returns>
+        public static implicit operator Complex(BFloat16 value)
+        {
+            return new Complex((double)value, 0.0);
+        }
+
         public static implicit operator Complex(short value)
         {
             return new Complex(value, 0.0);
@@ -1540,6 +1548,12 @@ namespace System.Numerics
                 result = actualValue;
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualValue = (BFloat16)(object)value;
+                result = actualValue;
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualValue = (short)(object)value;
@@ -1670,6 +1684,12 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (value.m_imaginary != 0) ? Half.NaN : (Half)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (value.m_imaginary != 0) ? BFloat16.NaN : (BFloat16)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1866,6 +1886,12 @@ namespace System.Numerics
                 result = (TOther)(object)actualResult;
                 return true;
             }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 short actualResult = (value.m_real >= short.MaxValue) ? short.MaxValue :
@@ -1999,6 +2025,12 @@ namespace System.Numerics
             else if (typeof(TOther) == typeof(Half))
             {
                 Half actualResult = (Half)value.m_real;
+                result = (TOther)(object)actualResult;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(BFloat16))
+            {
+                BFloat16 actualResult = (BFloat16)value.m_real;
                 result = (TOther)(object)actualResult;
                 return true;
             }

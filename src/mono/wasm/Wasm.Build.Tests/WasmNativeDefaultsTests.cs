@@ -144,7 +144,7 @@ namespace Wasm.Build.Tests
             CheckPropertyValues(line,
                                 wasmBuildNative: expectedWasmBuildNativeValue,
                                 wasmNativeStrip: expectedWasmNativeStripValue,
-                                wasmNativeDebugSymbols: config == Configuration.Debug && !expectedWasmNativeStripValue,
+                                wasmNativeDebugSymbols: true,
                                 wasmBuildingForNestedPublish: null);
         }
 
@@ -158,7 +158,7 @@ namespace Wasm.Build.Tests
             CheckPropertyValues(line,
                                 wasmBuildNative: expectedWasmBuildNativeValue,
                                 wasmNativeStrip: expectedWasmNativeStripValue,
-                                wasmNativeDebugSymbols: false,
+                                wasmNativeDebugSymbols: true,
                                 wasmBuildingForNestedPublish: true);
         }
 
@@ -233,7 +233,7 @@ namespace Wasm.Build.Tests
             }
             else
             {
-                expectedWasmNativeDebugSymbols = false;
+                expectedWasmNativeDebugSymbols = true;
                 expectedWasmNativeStripValue = true;
             }
 

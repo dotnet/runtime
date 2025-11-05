@@ -240,7 +240,7 @@ namespace System.Numerics.Tests
         [InlineData(uint.MaxValue, 0)]
         public static void BitOps_LeadingZeroCount_nuint_32(uint n, int expected)
         {
-            int actual = BitOperations.LeadingZeroCount(n);
+            int actual = BitOperations.LeadingZeroCount((nuint)n);
             Assert.Equal(expected, actual);
         }
 
@@ -263,7 +263,7 @@ namespace System.Numerics.Tests
         [InlineData(ulong.MaxValue, 0)]
         public static void BitOps_LeadingZeroCount_nuint_64(ulong n, int expected)
         {
-            int actual = BitOperations.LeadingZeroCount(n);
+            int actual = BitOperations.LeadingZeroCount((nuint)n);
             Assert.Equal(expected, actual);
         }
 
@@ -756,15 +756,15 @@ namespace System.Numerics.Tests
                 if (Environment.Is64BitProcess)
                 {
                     const ulong value = 0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101ul;
-                    Assert.Equal(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010ul,
-                        BitOperations.RotateRight(value, 1));
-                    Assert.Equal(0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101ul,
-                        BitOperations.RotateRight(value, 2));
-                    Assert.Equal(0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010ul,
-                        BitOperations.RotateRight(value, 3));
-                    Assert.Equal(value, BitOperations.RotateRight(value, int.MinValue)); // % 64 = 0
-                    Assert.Equal(BitOperations.RotateLeft(value, 63),
-                        BitOperations.RotateRight(value, int.MaxValue)); // % 64 = 63
+                    Assert.Equal((nuint)0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010ul,
+                        BitOperations.RotateRight((nuint)value, 1));
+                    Assert.Equal((nuint)0b01010101_01010101_01010101_01010101_01010101_01010101_01010101_01010101ul,
+                        BitOperations.RotateRight((nuint)value, 2));
+                    Assert.Equal((nuint)0b10101010_10101010_10101010_10101010_10101010_10101010_10101010_10101010ul,
+                        BitOperations.RotateRight((nuint)value, 3));
+                    Assert.Equal((nuint)value, BitOperations.RotateRight((nuint)value, int.MinValue)); // % 64 = 0
+                    Assert.Equal(BitOperations.RotateLeft((nuint)value, 63),
+                        BitOperations.RotateRight((nuint)value, int.MaxValue)); // % 64 = 63
                 }
                 else
                 {

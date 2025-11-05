@@ -111,8 +111,7 @@
   #define REG_TMP_0                REG_T0
 
   // Temporary registers used for the GS cookie check.
-  #define REG_GSCOOKIE_TMP_0       REG_T0
-  #define REG_GSCOOKIE_TMP_1       REG_T1
+  #define RBM_GSCOOKIE_TMP         (RBM_T0 | RBM_T1)
 
   // register to hold shift amount; no special register is required on ARM64.
   #define REG_SHIFT                REG_NA
@@ -274,6 +273,9 @@
 
   extern const regNumber fltArgRegs [MAX_FLOAT_REG_ARG];
   extern const regMaskTP fltArgMasks[MAX_FLOAT_REG_ARG];
+
+  #define J_DIST_SMALL_MAX_NEG  (-(1 << 20))
+  #define J_DIST_SMALL_MAX_POS  (+(1 << 20) - 1)
 
   #define B_DIST_SMALL_MAX_NEG  (-4096)
   #define B_DIST_SMALL_MAX_POS  (+4095)

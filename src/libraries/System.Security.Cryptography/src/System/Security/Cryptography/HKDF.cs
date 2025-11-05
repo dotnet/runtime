@@ -35,7 +35,7 @@ namespace System.Security.Cryptography
             int hashLength = Helpers.HashLength(hashAlgorithmName);
             byte[] prk = new byte[hashLength];
 
-            Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
+            ExtractCore(hashAlgorithmName, ikm, salt, prk);
             return prk;
         }
 
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography
                 prk = prk.Slice(0, hashLength);
             }
 
-            Extract(hashAlgorithmName, hashLength, ikm, salt, prk);
+            ExtractCore(hashAlgorithmName, ikm, salt, prk);
             return hashLength;
         }
 

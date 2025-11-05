@@ -5,7 +5,8 @@
         "removeComments": false,
         "module": "esnext",
         "sourceMap": true,
-        "target": "ES2018",
+        // keep in sync with src/native/rollup.config.defines.js
+        "target": "ES2020",
         "moduleResolution": "Node",
         "strict": true,
         "lib": [
