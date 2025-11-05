@@ -64,7 +64,7 @@ void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoade
 {
     LoaderHeap *pHeap = pLoaderAllocator->GetHighFrequencyHeap();
 
-    m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, pLoaderAllocator, m_pImageLayout, pHeader, this, pamTracker);
+    m_pReadyToRunInfo = new ReadyToRunInfo(/*pModule*/ NULL, pLoaderAllocator, pHeader, this, m_pImageLayout, pamTracker);
     m_pComponentAssemblies = m_pReadyToRunInfo->FindSection(ReadyToRunSectionType::ComponentAssemblies);
     m_componentAssemblyCount = m_pComponentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
 
@@ -239,7 +239,7 @@ NativeImage *NativeImage::Open(
 
     NewHolder<ReadyToRunLoadedImage> peLoadedImageHolder = new ReadyToRunLoadedImage(
         (TADDR)peLoadedImage->GetBase(),
-        peLoadedImage->GetSize(),
+        peLoadedImage->GetVirtualSize(),
         peLoadedImage.Extract(),
         [](void* img) { delete (PEImageLayout*)img; });
 

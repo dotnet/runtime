@@ -146,7 +146,7 @@ class ReadyToRunInfo
     PTR_ReadyToRunInfo              m_pNextR2RForUnrelatedCode;
 
 public:
-    ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, ReadyToRunLoadedImage * pLayout, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, AllocMemTracker *pamTracker);
+    ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage * pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker);
 
     static PTR_ReadyToRunInfo ComputeAlternateGenericLocationForR2RCode(MethodDesc *pMethod);
     static PTR_ReadyToRunInfo GetUnrelatedR2RModules();
@@ -434,12 +434,7 @@ public:
         return m_imageSize;
     }
 
-    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY* pDir) const
-    {
-        return m_pImageBase + pDir->VirtualAddress;
-    }
-
-    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY* pDir, uint32_t* pSize) const
+    TADDR GetDirectoryData(IMAGE_DATA_DIRECTORY* pDir, uint32_t* pSize = nullptr) const
     {
         if (pSize != nullptr)
             *pSize = pDir->Size;
