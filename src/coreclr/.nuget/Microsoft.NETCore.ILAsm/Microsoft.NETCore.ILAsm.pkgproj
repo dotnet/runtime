@@ -39,11 +39,27 @@ Usage:
 
   <!-- For primary (non-RID-specific) package, generate and include manifest that references RID-specific packages -->
   <Target Name="GeneratePrimaryToolManifest" BeforeTargets="GetPackageFiles" Condition="'$(PackageTargetRuntime)' == ''">
+    <!-- Define official RID list -->
+    <ItemGroup>
+      <_OfficialRID Include="win-x64" />
+      <_OfficialRID Include="win-x86" />
+      <_OfficialRID Include="win-arm64" />
+      <_OfficialRID Include="linux-x64" />
+      <_OfficialRID Include="linux-arm" />
+      <_OfficialRID Include="linux-arm64" />
+      <_OfficialRID Include="linux-musl-x64" />
+      <_OfficialRID Include="linux-musl-arm64" />
+      <_OfficialRID Include="osx-x64" />
+      <_OfficialRID Include="osx-arm64" />
+      <_OfficialRID Include="freebsd-x64" />
+      <_OfficialRID Include="freebsd-arm64" />
+      <!-- Add TargetRid if not already in the official list -->
+      <_OfficialRID Include="$(TargetRid)" Exclude="@(_OfficialRID)" />
+    </ItemGroup>
+    
     <PropertyGroup>
       <_GeneratedManifestPath>$(IntermediateOutputPath)DotnetToolSettings.xml</_GeneratedManifestPath>
-      <!-- Check if TargetRid should be included (not empty and not already in the official list) -->
-      <_IncludeTargetRid Condition="'$(TargetRid)' != '' and '$(TargetRid)' != 'win-x64' and '$(TargetRid)' != 'win-x86' and '$(TargetRid)' != 'win-arm64' and '$(TargetRid)' != 'linux-x64' and '$(TargetRid)' != 'linux-arm' and '$(TargetRid)' != 'linux-arm64' and '$(TargetRid)' != 'linux-musl-x64' and '$(TargetRid)' != 'linux-musl-arm64' and '$(TargetRid)' != 'osx-x64' and '$(TargetRid)' != 'osx-arm64' and '$(TargetRid)' != 'freebsd-x64' and '$(TargetRid)' != 'freebsd-arm64'">true</_IncludeTargetRid>
-      <_TargetRidEntry Condition="'$(_IncludeTargetRid)' == 'true'">    &lt;RuntimeIdentifierPackage RuntimeIdentifier="$(TargetRid)" Id="runtime.$(TargetRid).Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" /&gt;</_TargetRidEntry>
+      <_RidPackagesXml>@(_OfficialRID->'    &lt;RuntimeIdentifierPackage RuntimeIdentifier=&quot;%(Identity)&quot; Id=&quot;runtime.%(Identity).Microsoft.NETCore.ILAsm&quot; Version=&quot;$(PackageVersion)&quot; /&gt;', '%0a')</_RidPackagesXml>
       <_ManifestContent>
 <![CDATA[<?xml version="1.0" encoding="utf-8"?>
 <DotNetCliTool Version="2">
@@ -51,19 +67,7 @@ Usage:
     <Command Name="ilasm" />
   </Commands>
   <RuntimeIdentifierPackages>
-    <RuntimeIdentifierPackage RuntimeIdentifier="win-x64" Id="runtime.win-x64.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-    <RuntimeIdentifierPackage RuntimeIdentifier="win-x86" Id="runtime.win-x86.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-    <RuntimeIdentifierPackage RuntimeIdentifier="win-arm64" Id="runtime.win-arm64.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-    <RuntimeIdentifierPackage RuntimeIdentifier="linux-x64" Id="runtime.linux-x64.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-    <RuntimeIdentifierPackage RuntimeIdentifier="linux-arm" Id="runtime.linux-arm.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-    <RuntimeIdentifierPackage RuntimeIdentifier="linux-arm64" Id="runtime.linux-arm64.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-    <RuntimeIdentifierPackage RuntimeIdentifier="linux-musl-x64" Id="runtime.linux-musl-x64.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-    <RuntimeIdentifierPackage RuntimeIdentifier="linux-musl-arm64" Id="runtime.linux-musl-arm64.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-    <RuntimeIdentifierPackage RuntimeIdentifier="osx-x64" Id="runtime.osx-x64.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-    <RuntimeIdentifierPackage RuntimeIdentifier="osx-arm64" Id="runtime.osx-arm64.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-    <RuntimeIdentifierPackage RuntimeIdentifier="freebsd-x64" Id="runtime.freebsd-x64.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-    <RuntimeIdentifierPackage RuntimeIdentifier="freebsd-arm64" Id="runtime.freebsd-arm64.Microsoft.NETCore.ILAsm" Version="$(PackageVersion)" />
-]]>$(_TargetRidEntry)<![CDATA[
+]]>$(_RidPackagesXml)<![CDATA[
   </RuntimeIdentifierPackages>
 </DotNetCliTool>]]>
       </_ManifestContent>
