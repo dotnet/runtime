@@ -285,8 +285,8 @@ static void MergeWorkerMCLs(char* mclFilename, PerWorkerData* workerData, int wo
 
 static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::* csvPath)
 {
-    FileWriter fw;
-    if (!FileWriter::CreateNew(csvFilename, &fw))
+    FILE* fpWriter = fopen(csvFilename, "w");
+    if (fpWriter == NULL)
     {
         LogError("Could not create file %s", csvFilename);
         return;
@@ -308,24 +308,29 @@ static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int wo
                 continue;
         }
 
-        FileLineReader reader;
-        if (!FileLineReader::Open(workerData[i].*csvPath, &reader))
+        FILE* fpReader = fopen(workerData[i].*csvPath, "r");
+
+        if (fpReader == NULL)
         {
             LogError("Could not open child CSV file %s", workerData[i].*csvPath);
             continue;
         }
 
-        if (hasHeader && !reader.AdvanceLine())
+        char buffer[512];
+        if (hasHeader)
         {
-            continue;
+            // Skip the title line
+            fgets(buffer, 511, fpReader);
         }
 
-        while (reader.AdvanceLine())
+        while (!feof(fpReader))
         {
-             fw.Printf("%s\n", reader.GetCurrentLine());
+            fgets(buffer, 511, fpReader);
+            fputs(buffer, fpReader);
         }
 
         hasHeader = true;
+        fclose(fpReader);
     }
 }
 
