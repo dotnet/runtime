@@ -115,6 +115,16 @@ namespace TestNeg
                 fail = true;
             }
 
+            if (NegsGreaterThanIntMinValue())
+            {
+                fail = true;
+            }
+
+            if (NegsGreaterThanLongMinValue())
+            {
+                fail = true;
+            }
+
             if (fail)
             {
                 return 101;
@@ -266,33 +276,65 @@ namespace TestNeg
             //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}, LSL #1
             return (-(a >> 1) != 0) | (-(b << 1) != 0);
         }
-        
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool NegsGreaterThan(int a)
         {
-            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: neg {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
             return -a > 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool NegsGreaterThanEq(int a)
         {
-            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: neg {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
             return -a >= 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool NegsLessThan(int a)
         {
-            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: neg {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}}, #31
             return -a < 0;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static bool NegsLessThanEq(int a)
         {
-            //ARM64-FULL-LINE: negs {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: neg {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
             return -a <= 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool NegsGreaterThanIntMinValue()
+        {
+            //ARM64-FULL-LINE: neg {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #0
+            return -IntMinValue() > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool NegsGreaterThanLongMinValue()
+        {
+            //ARM64-FULL-LINE: neg {{x[0-9]+}}, {{x[0-9]+}}
+            //ARM64-FULL-LINE: cmp {{x[0-9]+}}, #0
+            return -LongMinValue() > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int IntMinValue()
+        {
+            return int.MinValue;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long LongMinValue()
+        {
+            return long.MinValue;
         }
     }
 }
