@@ -8,7 +8,6 @@
 #include "lightweightmap.h"
 #include "commandline.h"
 #include "errorhandling.h"
-#include "fileio.h"
 #include <minipal/random.h>
 
 // Forward declare the conversion method. Including spmiutil.h pulls in other headers

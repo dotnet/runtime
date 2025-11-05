@@ -18,7 +18,7 @@
 #include "mclist.h"
 #include "methodstatsemitter.h"
 #include "spmiutil.h"
-#include "fileio.h"
+#include <fstream>
 
 extern int doParallelSuperPMI(CommandLine::Options& o);
 extern int doStreamingSuperPMI(CommandLine::Options& o);
@@ -141,80 +141,106 @@ static const char* ResultToString(ReplayResult result)
     }
 }
 
-static void PrintDiffsCsvHeader(FileWriter& fw)
+static void PrintDiffsCsvHeader(std::ofstream& fs)
 {
-    fw.Print("Context,Context size,Method full name,Tier name,Base result,Diff result,MinOpts,Has diff,Base instructions,Diff instructions");
+    fs << "Context,Context size,Method full name,Tier name,Base result,Diff result,MinOpts,Has diff,Base instructions,Diff instructions";
 
 #define JITMETADATAINFO(name, type, flags)
-#define JITMETADATAMETRIC(name, type, flags) fw.Print(",Base " #name ",Diff " #name);
+#define JITMETADATAMETRIC(name, type, flags) fs << ",Base " #name ",Diff " #name;
 
 #include "jitmetadatalist.h"
 
-    fw.Print("\n");
+    fs << std::endl;
+}
+
+static void PrintQuotedCsvField(std::ofstream& fs, const char* value)
+{
+    size_t numQuotes = 0;
+    for (const char* p = value; *p != '\0'; p++)
+    {
+        if (*p == '"')
+        {
+            numQuotes++;
+        }
+    }
+
+    if (numQuotes == 0)
+    {
+        fs << '\"' << value << '\"';
+    }
+    else
+    {
+        fs << '\"';
+        for (const char* p = value; *p != '\0'; p++)
+        {
+            if (*p == '"')
+            {
+                fs << '"';
+            }
+            fs << *p;
+        }
+
+        fs << '"';
+    }
 }
 
 static void PrintDiffsCsvRow(
-    FileWriter& fw,
+    std::ofstream& fs,
     int context, uint32_t contextSize,
     const ReplayResults& baseRes,
     const ReplayResults& diffRes,
     bool hasDiff)
 {
-    fw.Printf("%d,%u,", context, contextSize);
-    fw.PrintQuotedCsvField(diffRes.CompileResults->MethodFullName == nullptr ? "" : diffRes.CompileResults->MethodFullName);
-    fw.Printf(
-        ",%s,%s,%s,%s,%s,%lld,%lld",
-        diffRes.CompileResults->TieringName == nullptr ? "" : diffRes.CompileResults->TieringName,
-        ResultToString(baseRes.Result), ResultToString(diffRes.Result),
-        diffRes.IsMinOpts ? "True" : "False",
-        hasDiff ? "True" : "False",
-        baseRes.NumExecutedInstructions, diffRes.NumExecutedInstructions);
+    fs << context << ',' << contextSize << ',';
+    PrintQuotedCsvField(fs, diffRes.CompileResults->MethodFullName == nullptr ? "" : diffRes.CompileResults->MethodFullName);
+    fs  
+        << (diffRes.CompileResults->TieringName == nullptr ? "" : diffRes.CompileResults->TieringName) << ','
+        << ResultToString(baseRes.Result) << ResultToString(diffRes.Result) << ','
+        << (diffRes.IsMinOpts ? "True" : "False") << ','
+        << (hasDiff ? "True" : "False") << ','
+        << baseRes.NumExecutedInstructions, diffRes.NumExecutedInstructions;
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) \
-    fw.Print(",");                           \
-    fw.Print(baseRes.CompileResults->name);  \
-    fw.Print(",");                           \
-    fw.Print(diffRes.CompileResults->name);
+    fs << ',' << baseRes.CompileResults->name << ',' << diffRes.CompileResults->name;
 
 #include "jitmetadatalist.h"
 
-    fw.Print("\n");
+    fs << std::endl;
 }
 
-static void PrintReplayCsvHeader(FileWriter& fw)
+static void PrintReplayCsvHeader(std::ofstream& fs)
 {
-    fw.Printf("Context,Context size,Method full name,Tier name,Result,MinOpts,Instructions");
+    fs << "Context,Context size,Method full name,Tier name,Result,MinOpts,Instructions";
 
 #define JITMETADATAINFO(name, type, flags)
-#define JITMETADATAMETRIC(name, type, flags) fw.Print("," #name);
+#define JITMETADATAMETRIC(name, type, flags) fs << "," #name;
 
 #include "jitmetadatalist.h"
 
-    fw.Print("\n");
+    fs << std::endl;
 }
 
 static void PrintReplayCsvRow(
-    FileWriter& fw,
+    std::ofstream& fs,
     int context, uint32_t contextSize,
     const ReplayResults& res)
 {
-    fw.Printf("%d,%u,", context, contextSize);
-    fw.PrintQuotedCsvField(res.CompileResults->MethodFullName == nullptr ? "" : res.CompileResults->MethodFullName);
-    fw.Printf(",%s,%s,%s,%lld",
-        res.CompileResults->TieringName == nullptr ? "" : res.CompileResults->TieringName,
-        ResultToString(res.Result),
-        res.IsMinOpts ? "True" : "False",
-        res.NumExecutedInstructions);
+    fs << context << ',' << contextSize << ',';
+    PrintQuotedCsvField(fs, res.CompileResults->MethodFullName == nullptr ? "" : res.CompileResults->MethodFullName);
+    fs
+        << (res.CompileResults->TieringName == nullptr ? "" : res.CompileResults->TieringName) << ','
+        << ResultToString(res.Result) << ','
+        << (res.IsMinOpts ? "True" : "False") << ','
+        << res.NumExecutedInstructions;
 
 #define JITMETADATAINFO(name, type, flags)
 #define JITMETADATAMETRIC(name, type, flags) \
-    fw.Print(",");                           \
-    fw.Print(res.CompileResults->name);
+    fs << ',' << res.CompileResults->name;
 
 #include "jitmetadatalist.h"
 
-    fw.Print("\n");
+    fs << std::endl;
 }
 
 // Run superpmi. The return value is as follows:
@@ -260,7 +286,7 @@ int __cdecl main(int argc, char* argv[])
 
     bool   collectThroughput = false;
     MCList failingToReplayMCL;
-    FileWriter detailsCsv;
+    std::ofstream detailsCsv;
 
     CommandLine::Options o;
     if (!CommandLine::Parse(argc, argv, &o))
@@ -324,7 +350,8 @@ int __cdecl main(int argc, char* argv[])
     }
     if (o.details != nullptr)
     {
-        if (!FileWriter::CreateNew(o.details, &detailsCsv))
+        detailsCsv.open(o.details);
+        if (!detailsCsv.is_open())
         {
             LogError("Could not create file %s", o.details);
             return (int)SpmiResult::GeneralFailure;
