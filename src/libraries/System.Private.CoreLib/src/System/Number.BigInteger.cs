@@ -943,7 +943,7 @@ namespace System
                             // representation with the correct structure and alignment.
 
                             int pow10BigNumTableIndex = Pow10BigNumTableIndices[index];
-                            Debug.Assert((pow10BigNumTableIndex + sizeof(BigInteger)) < Pow10BigNumTable.Length);
+                            Debug.Assert((pow10BigNumTableIndex + ((sizeof(BigInteger) + sizeof(uint) - 1) / sizeof(uint))) < Pow10BigNumTable.Length);
 
                             ref BigInteger rhs = ref Unsafe.As<uint, BigInteger>(ref Unsafe.AsRef(in Pow10BigNumTable[pow10BigNumTableIndex]));
                             Multiply(ref lhs, ref rhs, out product);
