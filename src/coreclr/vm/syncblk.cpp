@@ -1765,6 +1765,8 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
         return existingHandle;
     }
 
+    MemoryBarrier(); // Ensure that subsequent reads of m_Lock see the handle before we clear the thin lock info.
+
     // Our lock instance is in the sync block now.
     // Don't release it.
     lockHandle.SuppressRelease();
