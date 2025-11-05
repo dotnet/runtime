@@ -669,7 +669,7 @@ namespace
     }
 }
 
-LPVOID GetCookieForCalliSig(MetaSig metaSig)
+void* GetCookieForCalliSig(MetaSig metaSig)
 {
     STANDARD_VM_CONTRACT;
 
@@ -682,7 +682,7 @@ LPVOID GetCookieForCalliSig(MetaSig metaSig)
     return thunk;
 }
 
-LPVOID GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
+void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(pMD != NULL);

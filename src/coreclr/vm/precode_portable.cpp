@@ -132,7 +132,7 @@ namespace
 }
 
 // Forward declaration
-LPVOID GetUnmanagedCallersOnlyThunk(MethodDesc* pMD);
+void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD);
 
 bool PortableEntryPoint::HasUnmanagedCallersOnlyAttribute()
 {
