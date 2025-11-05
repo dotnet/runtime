@@ -694,10 +694,10 @@ HRESULT CorHost2::CreateDelegate(
     EMPTY_STRING_TO_NULL(wszClassName);
     EMPTY_STRING_TO_NULL(wszMethodName);
 
-    if (fnPtr == 0)
+    if (fnPtr == NULL)
        return E_POINTER;
 
-    *fnPtr = NULL;
+    *fnPtr = 0;
 
     if(wszAssemblyName == NULL)
         return E_INVALIDARG;
