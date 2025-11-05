@@ -237,7 +237,7 @@ inline PCODE GetLR(const T_CONTEXT * context) {
     return PCODE(context->Lr);
 }
 
-extern "C" LPVOID __stdcall GetCurrentSP();
+extern "C" void* GetCurrentSP();
 
 inline void SetSP(T_CONTEXT *context, TADDR esp) {
     LIMITED_METHOD_DAC_CONTRACT;

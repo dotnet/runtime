@@ -9324,7 +9324,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		names = g_new (char *, sig->param_count);
 		mono_method_get_param_names_internal (method, (const char **) names);
 		for (guint16 i = 0; i < sig->param_count; ++i)
-			buffer_add_string (buf, names [i]);
+			buffer_add_string (buf, names [i] ? names [i] : "");
 		g_free (names);
 
 		break;
