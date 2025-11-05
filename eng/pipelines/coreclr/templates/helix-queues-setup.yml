@@ -10,9 +10,6 @@ parameters:
   shouldContinueOnError: false
   jobParameters: {}
 
-variables:
-  - template: /eng/pipelines/helix-platforms.yml
-
 # parameters.jobParameters.helixQueueGroup values:
 # 'pr' -- pull request
 # 'ci' -- continuous integration ("merge")
