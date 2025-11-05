@@ -2,11 +2,11 @@
   <Import Project="Version.Details.props" Condition="Exists('Version.Details.props')" />
   <PropertyGroup>
     <!-- The .NET product branding version -->
-    <ProductVersion>10.0.0</ProductVersion>
+    <ProductVersion>10.0.1</ProductVersion>
     <!-- File version numbers -->
     <MajorVersion>10</MajorVersion>
     <MinorVersion>0</MinorVersion>
-    <PatchVersion>0</PatchVersion>
+    <PatchVersion>1</PatchVersion>
     <SdkBandVersion>$(MajorVersion).0.100</SdkBandVersion>
     <PackageVersionNet9>9.0.3</PackageVersionNet9>
     <PackageVersionNet8>8.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet9)').Build),11))</PackageVersionNet8>
