@@ -55,11 +55,13 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs" Link="Interop\IL\MarshalHelpers.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalUtils.cs" Link="Interop\IL\MarshalUtils.cs" />
     <Compile Include="..\..\Common\TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs" Link="MetadataEmitter\TypeSystemMetadataEmitter.cs" />
+    <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.cs" Link="Compiler\AsyncMethodVariant.cs" />
     <Compile Include="..\..\Common\Compiler\CodeGenerationFailedException.cs" Link="Compiler\CodeGenerationFailedException.cs" />
     <Compile Include="..\..\Common\Compiler\CompilationBuilder.cs" Link="Compiler\CompilationBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\CompilationModuleGroup.cs" Link="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.cs" Link="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
+    <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Async.cs" Link="Compiler\CompilerTypeSystemContext.Async.cs" />
     <Compile Include="..\..\Common\Compiler\NativeAotNameMangler.cs" Link="Compiler\NativeAotNameMangler.cs" />
     <Compile Include="..\..\Common\Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" Link="Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" />
     <Compile Include="..\..\Common\Compiler\Dataflow\EcmaExtensions.cs" Link="Compiler\Dataflow\EcmaExtensions.cs" />
@@ -353,12 +355,6 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\UnboxingMethodDescFactory.cs">
       <Link>JitInterface\UnboxingMethodDescFactory.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\JitInterface\AsyncMethodDesc.cs">
-      <Link>JitInterface\AsyncMethodDesc.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\JitInterface\AsyncMethodDescFactory.cs">
-      <Link>JitInterface\AsyncMethodDesc.cs</Link>
     </Compile>
   </ItemGroup>
 

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using ILCompiler.DependencyAnalysis;
-
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -134,6 +134,24 @@ namespace ILCompiler
                 !owningType.IsArrayTypeWithoutGenericInterfaces() && /* Type loader can make these at runtime */
                 (owningType is not MetadataType mdType || !mdType.IsModuleType) && /* Compiler parks some instance methods on the <Module> type */
                 !method.IsSharedByGenericInstantiations; /* Current impl limitation; can be lifted */
+        }
+
+        public static bool ReturnsTaskOrValueTask(this MethodSignature method)
+        {
+            TypeDesc ret = method.ReturnType;
+
+            if (ret is MetadataType md
+                && md.Module == method.Context.SystemModule
+                && md.Namespace.SequenceEqual("System.Threading.Tasks"u8))
+            {
+                ReadOnlySpan<byte> name = md.Name;
+                if (name.SequenceEqual("Task"u8) || name.SequenceEqual("Task`1"u8)
+                    || name.SequenceEqual("ValueTask"u8) || name.SequenceEqual("ValueTask`1"u8))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }
