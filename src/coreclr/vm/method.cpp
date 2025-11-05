@@ -31,6 +31,10 @@
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
 
+#ifdef FEATURE_INTERPRETER
+#include "interpreter.h"
+#endif // FEATURE_INTERPRETER
+
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
@@ -2310,6 +2314,13 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
             return pFCallMD;
         }
 
+#ifdef FEATURE_INTERPRETER
+        MethodDesc* pMethodDesc = Interpreter::InterpretationStubToMethodInfo(entryPoint);
+        if (pMethodDesc != NULL)
+        {
+            return pMethodDesc;
+        }
+#endif // FEATURE_INTERPRETER
         return NULL;
     }
 

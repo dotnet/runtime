@@ -18,6 +18,8 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- https://github.com/dotnet/runtime/issues/53321 -->
     <JitOptimizationSensitive Condition="'$(TargetArchitecture)' == 'arm64' And '$(TargetOS)' == 'osx'">true</JitOptimizationSensitive>
+    <!-- This test takes a long time to complete -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 's390x'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

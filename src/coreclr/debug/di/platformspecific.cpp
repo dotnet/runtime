@@ -39,6 +39,9 @@
 #elif TARGET_RISCV64
 #include "riscv64/cordbregisterset.cpp"
 #include "riscv64/primitives.cpp"
+#elif TARGET_S390X
+#include "s390x/cordbregisterset.cpp"
+#include "s390x/primitives.cpp"
 #else
 #error Unsupported platform
 #endif

@@ -213,6 +213,24 @@ public:
         REGNUM_T5,
         REGNUM_T6,
         REGNUM_PC,
+#elif TARGET_S390X
+        REGNUM_R0,
+        REGNUM_R1,
+        REGNUM_R2,
+        REGNUM_R3,
+        REGNUM_R4,
+        REGNUM_R5,
+        REGNUM_R6,
+        REGNUM_R7,
+        REGNUM_R8,
+        REGNUM_R9,
+        REGNUM_R10,
+        REGNUM_R11,
+        REGNUM_R12,
+        REGNUM_R13,
+        REGNUM_R14,
+        REGNUM_R15,
+        REGNUM_PC,
 #else
         PORTABILITY_WARNING("Register numbers not defined on this platform")
 #endif
@@ -233,6 +251,8 @@ public:
         //Nothing to do here. FP is already alloted.
 #elif TARGET_RISCV64
         //Nothing to do here. FP is already alloted.
+#elif TARGET_S390X
+        REGNUM_SP = REGNUM_R15,
 #else
         // RegNum values should be properly defined for this platform
         REGNUM_FP = 0,

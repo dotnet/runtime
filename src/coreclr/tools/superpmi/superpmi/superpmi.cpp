@@ -58,6 +58,10 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
         {
             SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
         }
+        else if (0 == _stricmp(targetArchitecture, "s390x"))
+        {
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_S390X);
+        }
         else
         {
             LogError("Illegal target architecture '%s'", targetArchitecture);

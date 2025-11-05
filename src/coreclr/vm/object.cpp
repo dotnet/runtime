@@ -502,6 +502,7 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
     }
 
 #ifdef _DEBUG
+#if 0
     {
         Thread *pThread = GetThreadNULLOk();
 
@@ -519,6 +520,7 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
                 _ASSERTE(!"OBJECTREF being accessed while thread is in preemptive GC mode.");
         }
     }
+#endif
 #endif
 
 

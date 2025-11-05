@@ -25,6 +25,8 @@
 #define ELF_ARCH  EM_LOONGARCH
 #elif defined(__riscv)
 #define ELF_ARCH  EM_RISCV
+#elif defined(__s390x__)
+#define ELF_ARCH  EM_S390
 #endif
 
 #define PH_HDR_CANARY 0xFFFF

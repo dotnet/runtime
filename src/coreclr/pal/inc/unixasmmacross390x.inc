@@ -34,3 +34,7 @@ C_FUNC(\Name\()_End):
         .global C_FUNC(\Name\()_End)
         LEAF_END \Name, \Section
 .endm
+
+.macro PREPARE_EXTERNAL_VAR Name, HelperReg
+        lgrl \HelperReg, C_FUNC(\Name)@GOT
+.endm

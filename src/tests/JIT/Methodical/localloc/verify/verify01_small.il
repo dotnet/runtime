@@ -65,7 +65,7 @@
   .method private hidebysig static void  func() cil managed
   {
     // Code size       13 (0xd)
-    .maxstack  2
+    .maxstack  3
     .locals init(int32* V_0,
              int32* V_1)
     IL_0000:  ldc.i4.4

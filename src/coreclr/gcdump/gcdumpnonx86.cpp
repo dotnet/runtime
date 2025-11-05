@@ -145,6 +145,9 @@ PCSTR GetRegName (UINT32 regnum)
     }
 
     return "???";
+#elif defined(TARGET_S390X)
+    assert(!"unimplemented on S390X yet");
+    return "???";
 #endif
 }
 

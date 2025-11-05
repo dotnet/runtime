@@ -2,6 +2,8 @@
   <PropertyGroup>
     <!-- Needed for mechanical merging of all remaining tests, this particular project may not actually need process isolation -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Endian assumptions in test -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 's390x'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>

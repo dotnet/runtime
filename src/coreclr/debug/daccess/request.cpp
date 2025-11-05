@@ -721,6 +721,14 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
         W("S8"), W("S9"), W("S10"), W("S11"),
         W("T3"), W("T4"), W("T5"), W("T6")
     };
+#elif defined(TARGET_S390X)
+    static const WCHAR *regs[] =
+    {
+        W("R0"), W("R1"), W("R2"), W("R3"),
+        W("R4"), W("R5"), W("R6"), W("R7"),
+        W("R8"), W("R9"), W("R10"), W("R11"),
+        W("R12"), W("R13"), W("R14"), W("R15")
+    };
 #endif
 
     // Caller frame registers are encoded as "-(reg+1)".

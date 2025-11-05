@@ -53,7 +53,7 @@ inline void Interpreter::LdFromMemAddr(void* addr, InterpreterType tp)
         {
             // Large struct case.
             void* ptr = LargeStructOperandStackPush(sz);
-            memcpy(ptr, addr, sz);
+            memmove(ptr, addr, sz);
             OpStackSet<void*>(stackHt, ptr);
         }
         else
@@ -123,7 +123,31 @@ inline void Interpreter::LdLoc(int locNum)
 
     unsigned stackHt = m_curStackHt;
     GCX_FORBID();
-    OpStackSet<INT64>(stackHt, *FixedSizeLocalSlot(locNum));
+
+    // Small types might have been modified via a pointer handed out by LdLocA.
+    // Ensure values are properly normalized when pushed to the stack.
+    INT64 val = *FixedSizeLocalSlot(locNum);
+    switch (m_methInfo->m_localDescs[locNum].m_type.ToCorInfoType())
+    {
+    case CORINFO_TYPE_BOOL:
+    case CORINFO_TYPE_BYTE:
+        OpStackSet<INT32>(stackHt, static_cast<INT8>(val));
+        break;
+    case CORINFO_TYPE_UBYTE:
+        OpStackSet<UINT32>(stackHt, static_cast<UINT8>(val));
+        break;
+    case CORINFO_TYPE_SHORT:
+        OpStackSet<INT32>(stackHt, static_cast<INT16>(val));
+        break;
+    case CORINFO_TYPE_USHORT:
+    case CORINFO_TYPE_CHAR:
+        OpStackSet<UINT32>(stackHt, static_cast<UINT16>(val));
+        break;
+    default:
+        OpStackSet<INT64>(stackHt, val);
+        break;
+    }
+
     InterpreterType tp = m_methInfo->m_localDescs[locNum].m_typeStackNormal;
     OpStackTypeSet(stackHt, tp);
     m_curStackHt = stackHt + 1;
@@ -190,7 +214,7 @@ void Interpreter::StLoc(int locNum)
 
         // Now we can do the copy.
         void* srcAddr = OpStackGet<void*>(ind);
-        memcpy(addr, srcAddr, sz);
+        memmove(addr, srcAddr, sz);
         LargeStructOperandStackPop(sz, srcAddr);
     }
     else
@@ -228,7 +252,7 @@ void Interpreter::StToLocalMemAddr(void* addr, InterpreterType tp)
         {
             // Large struct case.
             void* srcAddr = OpStackGet<void*>(m_curStackHt);
-            memcpy(addr, srcAddr, sz);
+            memmove(addr, srcAddr, sz);
             LargeStructOperandStackPop(sz, srcAddr);
         }
         else
@@ -455,6 +479,7 @@ void Interpreter::ThrowOnInvalidPointer(void* ptr)
 
     EX_TRY
     {
+        CatchHardwareExceptionHolder __catchHardwareException;
         AVInRuntimeImplOkayHolder AVOkay;
         good = *(BOOL*)ptr;
 

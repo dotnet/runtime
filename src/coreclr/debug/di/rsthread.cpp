@@ -8560,6 +8560,9 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
 #elif defined(TARGET_RISCV64)
         hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_RISCV64_F0,
                                                        type, ppValue);
+#elif defined(TARGET_S390X)
+        hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_S390X_V0,
+                                                       type, ppValue);
 #else
 #error Platform not implemented
 #endif  // TARGET_ARM @ARMTODO
@@ -9000,6 +9003,8 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
     const CorDebugRegister floatRegister = REGISTER_LOONGARCH64_F0;
 #elif  defined(TARGET_RISCV64)
     const CorDebugRegister floatRegister = REGISTER_RISCV64_F0;
+#elif  defined(TARGET_S390X)
+    const CorDebugRegister floatRegister = REGISTER_S390X_V0;
 #endif
 
 #if defined(TARGET_X86)
@@ -9016,6 +9021,8 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
     const CorDebugRegister ptrRegister = REGISTER_LOONGARCH64_A0;
 #elif  defined(TARGET_RISCV64)
     const CorDebugRegister ptrRegister = REGISTER_RISCV64_A0;
+#elif  defined(TARGET_S390X)
+    const CorDebugRegister ptrRegister = REGISTER_S390X_R2;
 #endif
 
     CorElementType corReturnType = pType->GetElementType();

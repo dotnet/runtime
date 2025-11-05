@@ -9629,7 +9629,10 @@ CorInfoHFAElemType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 
     TypeHandle VMClsHnd(hClass);
 
-    result = VMClsHnd.GetHFAType();
+    if (VMClsHnd.IsHFA())
+    {
+        result = VMClsHnd.GetHFAType();
+    }
 
     EE_TO_JIT_TRANSITION();
 
@@ -11213,7 +11216,7 @@ void CEEJitInfo::allocUnwindInfo (
 
     RUNTIME_FUNCTION__SetBeginAddress(pRuntimeFunction, currentCodeOffset + startOffset);
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_S390X)
     pRuntimeFunction->EndAddress        = currentCodeOffset + endOffset;
 #endif
 
@@ -12420,6 +12423,10 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     bool isInterpreterStub   = false;
     bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
     bool forceInterpreter    = (s_ForceInterpreter.val(CLRConfig::INTERNAL_ForceInterpreter) != 0);
+#ifdef TARGET_S390X
+    interpreterFallback = false;
+    forceInterpreter = true;
+#endif
 
     if (interpreterFallback == false)
     {
@@ -12428,7 +12435,15 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         if (FAILED(ret) &&
             (forceInterpreter || !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE)))
         {
-            if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
+            // FIXME: GenerateInterpreterStub holds on to the method info longer than
+            // its life time (in particular in dynamic modules).  Allocate a new copy.
+            MethodDesc *pMD = reinterpret_cast<MethodDesc*>(info->ftn);
+            CEEInfo *jitInfo = new CEEInfo(pMD, true);
+
+            CORINFO_METHOD_INFO methInfo;
+            jitInfo->getMethodInfo(CORINFO_METHOD_HANDLE(pMD), &methInfo, NULL);
+
+            if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, &methInfo, nativeEntry, nativeSizeOfCode)))
             {
                 isInterpreterStub = true;
             }
@@ -12805,6 +12820,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     timer.Start();
 
     EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
+#ifndef TARGET_S390X
     if (!jitMgr->LoadJIT())
     {
 #ifdef ALLOW_SXS_JIT
@@ -12823,6 +12839,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load JIT compiler"));
 #endif // ALLOW_SXS_JIT
     }
+#endif
 
 #ifdef _DEBUG
     // This is here so we can see the name and class easily in the debugger

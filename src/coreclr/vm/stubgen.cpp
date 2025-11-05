@@ -613,7 +613,7 @@ ILStubLinker::LogILStubWorker(
         }
         else
         {
-            LOG((LF_STUBS, LL_INFO1000, "IL_%04zx:\n", *pcbCode));
+            LOG((LF_STUBS, LL_INFO1000, "IL_%04x:\n", (uint32_t)*pcbCode));
         }
     }
 }
@@ -2056,7 +2056,7 @@ FunctionSigBuilder::FunctionSigBuilder() :
     STANDARD_VM_CONTRACT;
     m_qbCallConvModOpts.Init();
     m_qbReturnSig.ReSizeThrows(1);
-    *(CorElementType *)m_qbReturnSig.Ptr() = ELEMENT_TYPE_VOID;
+    *(BYTE *)m_qbReturnSig.Ptr() = (BYTE)ELEMENT_TYPE_VOID;
 }
 
 
@@ -2167,7 +2167,7 @@ FunctionSigBuilder::AddCallConvModOpt(mdToken token)
     int temp;
     ULONG len = CorSigCompressToken(token, &temp);
     m_qbCallConvModOpts.ReSizeThrows(m_qbCallConvModOpts.Size() + 1 + len);
-    SET_UNALIGNED_PTR((BYTE*)m_qbCallConvModOpts.Ptr() + m_qbCallConvModOpts.Size() - len - 1, (BYTE)ELEMENT_TYPE_CMOD_OPT);
+    *((BYTE*)m_qbCallConvModOpts.Ptr() + m_qbCallConvModOpts.Size() - len - 1) = (BYTE)ELEMENT_TYPE_CMOD_OPT;
     memcpyNoGCRefs((BYTE*)m_qbCallConvModOpts.Ptr() + m_qbCallConvModOpts.Size() - len, &temp, len);
 }
 

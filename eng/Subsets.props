@@ -351,14 +351,14 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.tools+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\runincontext\runincontext.csproj;
+<!--    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\runincontext\runincontext.csproj;
                              $(CoreClrProjectRoot)tools\tieringtest\tieringtest.csproj;
                              $(CoreClrProjectRoot)tools\r2rdump\R2RDump.csproj;
                              $(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo.csproj;
                              $(CoreClrProjectRoot)tools\aot\ILCompiler\repro\repro.csproj;
                              $(CoreClrProjectRoot)tools\r2rtest\R2RTest.csproj;
                              $(CoreClrProjectRoot)tools\PdbChecker\PdbChecker.csproj;
-                             $(CoreClrProjectRoot)tools\AssemblyChecker\AssemblyChecker.csproj" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
+                             $(CoreClrProjectRoot)tools\AssemblyChecker\AssemblyChecker.csproj" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/> -->
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
@@ -411,12 +411,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativecorelib+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" />
+<!--    <ProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" Category="clr" /> -->
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.packages+')) and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\coreclr-packages.proj" Pack="true" Category="clr" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(RuntimeFlavor)' != 'Mono'"/>
+<!--    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\dotnet-pgo\dotnet-pgo-pack.proj" Pack="true" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true' and '$(RuntimeFlavor)' != 'Mono'"/> -->
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(NativeAotSupported)' == 'true'">

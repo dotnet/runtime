@@ -632,7 +632,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     SIZE_T newILOffset,
     CONTEXT *pOrigContext)
 {
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
     return E_NOTIMPL;
 #else
     LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction for %s::%s at IL offset 0x%zx\n",

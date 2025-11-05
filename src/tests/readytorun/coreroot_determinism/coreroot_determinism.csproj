@@ -9,6 +9,8 @@
     <CrossGenTest>false</CrossGenTest>
     <!-- We skip the ReadyToRun tests when sanitized due to build complexity -->
     <DisableProjectBuild Condition="'$(EnableNativeSanitizers)' != ''">true</DisableProjectBuild>
+    <!-- Not supported in interpreter-only mode -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 's390x'">true</CLRTestTargetUnsupported>
     <OldToolsVersion>2.0</OldToolsVersion>
   </PropertyGroup>
   <ItemGroup>

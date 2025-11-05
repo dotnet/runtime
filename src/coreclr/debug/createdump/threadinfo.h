@@ -59,6 +59,11 @@ struct user_vfpregs_struct
 #define user_fpregs_struct lasx_context
 #endif
 
+#if defined(__s390x__)
+#define user_regs_struct s390_regs
+#define user_fpregs_struct s390_fp_regs
+#endif
+
 #define STACK_OVERFLOW_EXCEPTION    0x800703e9
 
 class ThreadInfo
@@ -87,8 +92,8 @@ private:
     arm_neon_state64_t m_fpRegisters;           // MacOS floating point arm64 registers
 #endif
 #else // __APPLE__
-    struct user_regs_struct m_gpRegisters;      // general purpose registers
-    struct user_fpregs_struct m_fpRegisters;    // floating point registers
+    user_regs_struct m_gpRegisters;             // general purpose registers
+    user_fpregs_struct m_fpRegisters;           // floating point registers
 #if defined(__i386__)
     struct user_fpxregs_struct m_fpxRegisters;  // x86 floating point registers
 #elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
@@ -168,6 +173,10 @@ public:
     inline const uint64_t GetInstructionPointer() const { return MCREG_Pc(m_gpRegisters); }
     inline const uint64_t GetStackPointer() const { return MCREG_Sp(m_gpRegisters); }
     inline const uint64_t GetFramePointer() const { return MCREG_Fp(m_gpRegisters); }
+#elif defined(__s390x__)
+    inline const uint64_t GetInstructionPointer() const { return m_gpRegisters.psw.addr; }
+    inline const uint64_t GetStackPointer() const { return m_gpRegisters.gprs[15]; }
+    inline const uint64_t GetFramePointer() const { return m_gpRegisters.gprs[11]; }
 #endif
 #endif // __APPLE__
     bool IsCrashThread() const;

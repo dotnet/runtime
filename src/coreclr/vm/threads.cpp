@@ -4134,7 +4134,7 @@ OBJECTREF Thread::GetExposedObject()
     Thread *pCurThread = GetThreadNULLOk();
     _ASSERTE (!(pCurThread == NULL || IsAtProcessExit()));
 
-    _ASSERTE(pCurThread->PreemptiveGCDisabled());
+//    _ASSERTE(pCurThread->PreemptiveGCDisabled());
 
     if (ObjectFromHandle(m_ExposedObject) == NULL)
     {

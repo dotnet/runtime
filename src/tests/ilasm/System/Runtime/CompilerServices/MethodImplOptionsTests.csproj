@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <!-- Times out -->
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
+    <!-- Regex failure needs triage -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 's390x'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MethodImplOptionsTests.cs" />

@@ -2,6 +2,8 @@
   <PropertyGroup>
     <!-- Only needed to run GCStress out-of-proc -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Interpreter-only stack overflow -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 's390x'">true</CLRTestTargetUnsupported>
 
     <DebugType>None</DebugType>
     <Optimize>False</Optimize>

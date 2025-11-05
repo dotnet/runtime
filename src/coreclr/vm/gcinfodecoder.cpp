@@ -92,7 +92,7 @@ bool GcInfoDecoder::PredecodeFatHeader(int remainingFlags)
     m_ReturnKind = (ReturnKind)((UINT32)m_Reader.Read(SIZE_OF_RETURN_KIND_IN_FAT_HEADER));
 
     remainingFlags &= ~(DECODE_RETURN_KIND | DECODE_VARARG);
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
     remainingFlags &= ~DECODE_HAS_TAILCALLS;
 #endif
     if (remainingFlags == 0)
@@ -300,7 +300,7 @@ GcInfoDecoder::GcInfoDecoder(
         m_ReturnKind = (ReturnKind)((UINT32)m_Reader.Read(SIZE_OF_RETURN_KIND_IN_SLIM_HEADER));
 
         remainingFlags &= ~(DECODE_RETURN_KIND | DECODE_VARARG);
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
         remainingFlags &= ~DECODE_HAS_TAILCALLS;
 #endif
 
@@ -457,7 +457,7 @@ bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
     if(m_NumSafePoints == 0)
         return false;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
     // Safepoints are encoded with a -1 adjustment
     codeOffset--;
 #endif
@@ -507,7 +507,7 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
     const size_t savedPos = m_Reader.GetCurrentPos();
     const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
     // Safepoints are encoded with a -1 adjustment
     if ((breakOffset & 1) != 0)
 #endif
@@ -555,7 +555,7 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
         UINT32 normOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
         UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset) + 2;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
         // Safepoints are encoded with a -1 adjustment
         offset--;
 #endif
@@ -641,13 +641,13 @@ bool GcInfoDecoder::GetIsVarArg()
     return m_headerFlags & GC_INFO_IS_VARARG;
 }
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
 bool GcInfoDecoder::HasTailCalls()
 {
     _ASSERTE( m_Flags & DECODE_HAS_TAILCALLS );
     return ((m_headerFlags & GC_INFO_HAS_TAILCALLS) != 0);
 }
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64 || TARGET_S390X
 
 bool GcInfoDecoder::WantsReportOnlyLeaf()
 {
@@ -2138,6 +2138,17 @@ void GcInfoDecoder::ReportRegisterToGC(
 
 #else // Unknown platform
 
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
+OBJECTREF* GcInfoDecoder::GetCapturedRegister(
+    int             regNum,
+    PREGDISPLAY     pRD
+    )
+{
+    PORTABILITY_ASSERT("GcInfoDecoder::GetCapturedRegister");
+    return NULL;
+}
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT
+
 OBJECTREF* GcInfoDecoder::GetRegisterSlot(
                         int             regNum,
                         PREGDISPLAY     pRD
@@ -2225,6 +2236,8 @@ int GcInfoDecoder::GetStackReg(int spBase)
     int esp = 3;
 #elif defined(TARGET_RISCV64)
     int esp = 2;
+#elif defined(TARGET_S390X)
+    int esp = 15;
 #endif
 
     if( GC_SP_REL == spBase )

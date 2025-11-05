@@ -96,6 +96,10 @@ public class Co1245GetBytes_double
 
                 byArr2 = null;
                 byArr2 = BitConverter.GetBytes(do9z);
+                if (!BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(byArr2);
+                }
 
                 ++inCountTestcases;
                 if (byArr2.Length != inNumByteArrElems)
@@ -134,6 +138,10 @@ public class Co1245GetBytes_double
 
                 byArr2 = null;
                 byArr2 = BitConverter.GetBytes(do9z);
+                if (!BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(byArr2);
+                }
 
                 ++inCountTestcases;
                 if (byArr2.Length != inNumByteArrElems)
@@ -172,6 +180,10 @@ public class Co1245GetBytes_double
 
                 byArr2 = null;
                 byArr2 = BitConverter.GetBytes(do9z);
+                if (!BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(byArr2);
+                }
 
                 ++inCountTestcases;
                 if (byArr2.Length != inNumByteArrElems)
@@ -210,6 +222,10 @@ public class Co1245GetBytes_double
 
                 byArr2 = null;
                 byArr2 = BitConverter.GetBytes(do9z);
+                if (!BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(byArr2);
+                }
 
                 ++inCountTestcases;
                 if (byArr2.Length != inNumByteArrElems)
@@ -251,6 +267,10 @@ public class Co1245GetBytes_double
 
                 byArr2 = null;
                 byArr2 = BitConverter.GetBytes(do9z);
+                if (!BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(byArr2);
+                }
 
                 ++inCountTestcases;
                 if (byArr2.Length != inNumByteArrElems)
@@ -330,7 +350,6 @@ public class Co1245GetBytes_double
 
 
                 do8y = BitConverter.ToDouble(byArr3Expected, 0);
-
 
                 ++inCountTestcases;
                 if (Double.NaN == do9z)

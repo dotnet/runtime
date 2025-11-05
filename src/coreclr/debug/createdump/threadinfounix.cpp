@@ -61,6 +61,8 @@ ThreadInfo::Initialize()
     TRACE("Thread %04x PC %016llx SP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.csr_era, (unsigned long long)m_gpRegisters.regs[3]);
 #elif defined(__riscv)
     TRACE("Thread %04x PC %016llx SP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.pc, (unsigned long long)m_gpRegisters.sp);
+#elif defined(__s390x__)
+    TRACE("Thread %04x PC %016llx SP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.psw.addr, (unsigned long long)m_gpRegisters.gprs[15]);
 #else
 #error "Unsupported architecture"
 #endif
@@ -291,6 +293,35 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
         assert(sizeof(context->F) == sizeof(m_fpRegisters.fpregs));
         memcpy(context->F, m_fpRegisters.fpregs, sizeof(context->F));
         context->Fcsr = m_fpRegisters.fcsr;
+    }
+#elif defined(__s390x__)
+    if ((flags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
+    {
+        context->PSWAddr = m_gpRegisters.psw.addr;
+        context->PSWMask = m_gpRegisters.psw.mask;
+        context->R15 = m_gpRegisters.gprs[15];
+    }
+    if ((flags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
+    {
+        context->R0 = m_gpRegisters.gprs[0];
+        context->R1 = m_gpRegisters.gprs[1];
+        context->R2 = m_gpRegisters.gprs[2];
+        context->R3 = m_gpRegisters.gprs[3];
+        context->R4 = m_gpRegisters.gprs[4];
+        context->R5 = m_gpRegisters.gprs[5];
+        context->R6 = m_gpRegisters.gprs[6];
+        context->R7 = m_gpRegisters.gprs[7];
+        context->R8 = m_gpRegisters.gprs[8];
+        context->R9 = m_gpRegisters.gprs[9];
+        context->R10 = m_gpRegisters.gprs[10];
+        context->R11 = m_gpRegisters.gprs[11];
+        context->R12 = m_gpRegisters.gprs[12];
+        context->R13 = m_gpRegisters.gprs[13];
+        context->R14 = m_gpRegisters.gprs[14];
+    }
+    if ((flags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    {
+        memcpy(context->Fpr, m_fpRegisters.fprs, sizeof(context->Fpr));
     }
 #else
 #error Platform not supported

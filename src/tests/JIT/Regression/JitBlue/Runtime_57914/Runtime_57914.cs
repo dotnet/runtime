@@ -40,7 +40,8 @@ public class Program
         if (buffer.Length > 0)
         {
             int n = Unsafe.ReadUnaligned<int>(ref buffer[0]);
-            if (n != 0x4030201)
+            //if (n != 0x4030201)
+            if (n != 0x01020304)
                 result = false;
             Consume(n);
         }

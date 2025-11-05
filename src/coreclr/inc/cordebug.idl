@@ -287,7 +287,8 @@ interface ICorDebugDataTarget : IUnknown
         CORDB_PLATFORM_POSIX_ARM,         // Posix supporting OS on ARM32
         CORDB_PLATFORM_POSIX_ARM64,       // Posix supporting OS on ARM64
         CORDB_PLATFORM_POSIX_LOONGARCH64, // Posix supporting OS on LoongArch64
-        CORDB_PLATFORM_POSIX_RISCV64      // Posix supporting OS on RISC64
+        CORDB_PLATFORM_POSIX_RISCV64,     // Posix supporting OS on RISC64
+        CORDB_PLATFORM_POSIX_S390X        // Posix supporting OS on S390X
     } CorDebugPlatform;
 
     HRESULT GetPlatform([out] CorDebugPlatform * pTargetPlatform);
@@ -4051,6 +4052,58 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_RISCV64_F29,
         REGISTER_RISCV64_F30,
         REGISTER_RISCV64_F31
+
+        // S390X registers
+        REGISTER_S390X_PC = 0,
+        REGISTER_S390X_R0,
+        REGISTER_S390X_R1,
+        REGISTER_S390X_R2,
+        REGISTER_S390X_R3,
+        REGISTER_S390X_R4,
+        REGISTER_S390X_R5,
+        REGISTER_S390X_R6,
+        REGISTER_S390X_R7,
+        REGISTER_S390X_R8,
+        REGISTER_S390X_R9,
+        REGISTER_S390X_R10,
+        REGISTER_S390X_R11,
+        REGISTER_S390X_R12,
+        REGISTER_S390X_R13,
+        REGISTER_S390X_R14,
+        REGISTER_S390X_R15,
+
+        REGISTER_S390X_V0,
+        REGISTER_S390X_V1,
+        REGISTER_S390X_V2,
+        REGISTER_S390X_V3,
+        REGISTER_S390X_V4,
+        REGISTER_S390X_V5,
+        REGISTER_S390X_V6,
+        REGISTER_S390X_V7,
+        REGISTER_S390X_V8,
+        REGISTER_S390X_V9,
+        REGISTER_S390X_V10,
+        REGISTER_S390X_V11,
+        REGISTER_S390X_V12,
+        REGISTER_S390X_V13,
+        REGISTER_S390X_V14,
+        REGISTER_S390X_V15,
+        REGISTER_S390X_V16,
+        REGISTER_S390X_V17,
+        REGISTER_S390X_V18,
+        REGISTER_S390X_V19,
+        REGISTER_S390X_V20,
+        REGISTER_S390X_V21,
+        REGISTER_S390X_V22,
+        REGISTER_S390X_V23,
+        REGISTER_S390X_V24,
+        REGISTER_S390X_V25,
+        REGISTER_S390X_V26,
+        REGISTER_S390X_V27,
+        REGISTER_S390X_V28,
+        REGISTER_S390X_V29,
+        REGISTER_S390X_V30,
+        REGISTER_S390X_V31,
 
         // other architectures here
 

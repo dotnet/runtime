@@ -48,30 +48,30 @@ set(SOURCES
   GenericsNative.SpanF.cpp
   GenericsNative.SpanL.cpp
   GenericsNative.SpanU.cpp
-  GenericsNative.Vector64B.cpp
-  GenericsNative.Vector64C.cpp
-  GenericsNative.Vector64D.cpp
-  GenericsNative.Vector64F.cpp
-  GenericsNative.Vector64L.cpp
-  GenericsNative.Vector64U.cpp
-  GenericsNative.Vector128B.cpp
-  GenericsNative.Vector128C.cpp
-  GenericsNative.Vector128D.cpp
-  GenericsNative.Vector128F.cpp
-  GenericsNative.Vector128L.cpp
-  GenericsNative.Vector128U.cpp
-  GenericsNative.Vector256B.cpp
-  GenericsNative.Vector256C.cpp
-  GenericsNative.Vector256D.cpp
-  GenericsNative.Vector256F.cpp
-  GenericsNative.Vector256L.cpp
-  GenericsNative.Vector256U.cpp
-  GenericsNative.VectorB.cpp
-  GenericsNative.VectorC.cpp
-  GenericsNative.VectorD.cpp
-  GenericsNative.VectorF.cpp
-  GenericsNative.VectorL.cpp
-  GenericsNative.VectorU.cpp
+#  GenericsNative.Vector64B.cpp
+#  GenericsNative.Vector64C.cpp
+#  GenericsNative.Vector64D.cpp
+#  GenericsNative.Vector64F.cpp
+#  GenericsNative.Vector64L.cpp
+#  GenericsNative.Vector64U.cpp
+#  GenericsNative.Vector128B.cpp
+#  GenericsNative.Vector128C.cpp
+#  GenericsNative.Vector128D.cpp
+#  GenericsNative.Vector128F.cpp
+#  GenericsNative.Vector128L.cpp
+#  GenericsNative.Vector128U.cpp
+#  GenericsNative.Vector256B.cpp
+#  GenericsNative.Vector256C.cpp
+#  GenericsNative.Vector256D.cpp
+#  GenericsNative.Vector256F.cpp
+#  GenericsNative.Vector256L.cpp
+#  GenericsNative.Vector256U.cpp
+#  GenericsNative.VectorB.cpp
+#  GenericsNative.VectorC.cpp
+#  GenericsNative.VectorD.cpp
+#  GenericsNative.VectorF.cpp
+#  GenericsNative.VectorL.cpp
+#  GenericsNative.VectorU.cpp
 )
 add_library (GenericsNative SHARED ${SOURCES})
 install (TARGETS GenericsNative DESTINATION bin)

@@ -713,7 +713,12 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
             else
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             {
-                CopyValueClass(gc.retVal->GetData(), &callDescrData.returnValue, gc.retVal->GetMethodTable());
+		BYTE *retVal = (BYTE *)&callDescrData.returnValue;
+                MethodTable *pMT = gc.retVal->GetMethodTable();
+#ifdef BIGENDIAN
+                retVal += sizeof(callDescrData.returnValue) - pMT->GetNumInstanceFieldBytes();
+#endif
+                CopyValueClass(gc.retVal->GetData(), retVal, pMT);
             }
         }
         // From here on out, it is OK to have GCs since the return object (which may have had

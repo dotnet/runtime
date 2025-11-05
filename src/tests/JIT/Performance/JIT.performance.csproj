@@ -1,4 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Test runs too long in interpreter-only mode -->
+    <DisableProjectBuild Condition="'$(TargetArchitecture)' == 's390x'">true</DisableProjectBuild>
+  </PropertyGroup>
+
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
   </ItemGroup>

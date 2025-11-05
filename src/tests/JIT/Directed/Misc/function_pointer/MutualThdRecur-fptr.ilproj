@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <CLRTestPriority>2</CLRTestPriority>
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>

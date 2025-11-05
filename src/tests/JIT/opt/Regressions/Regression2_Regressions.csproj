@@ -5,6 +5,9 @@
     <!-- Test simply runs for too long under GCStress -->
     <GCStressIncompatible>true</GCStressIncompatible>
 
+    <!-- Test runs too long in interpreter-only mode -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 's390x'">true</CLRTestTargetUnsupported>
+
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <PropertyGroup>

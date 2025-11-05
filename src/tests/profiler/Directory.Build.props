@@ -3,5 +3,7 @@
 
   <PropertyGroup>
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- Test runs too long in interpreter-only mode -->
+    <DisableProjectBuild Condition="'$(TargetArchitecture)' == 's390x'">true</DisableProjectBuild>
   </PropertyGroup>
 </Project>

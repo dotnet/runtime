@@ -43,8 +43,8 @@
 #define ByteSwap32 _byteswap_ulong
 #define ByteSwap64 _byteswap_uint64
 #else
-#define ByteSwap16 __bulitin_bswap16
-#define ByteSwap32 __bulitin_bswap32
+#define ByteSwap16 __builtin_bswap16
+#define ByteSwap32 __builtin_bswap32
 #define ByteSwap64 __builtin_bswap64
 #endif // MSC_VER
 

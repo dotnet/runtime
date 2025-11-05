@@ -5,6 +5,8 @@
 
     <!-- Not even printf is AOT compatible in F# -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- Interpreter-only stack overflow -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 's390x'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <Optimize>True</Optimize>

@@ -23,6 +23,10 @@ public class Writer
         var writer = new Writer();
         object temp = writer.Data;
         byte[] data = Unsafe.As<object, byte[]>(ref temp);
+        if (!BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(data);
+        }
         return new ArraySegment<byte>(data, 0, writer.Position);
     }
     

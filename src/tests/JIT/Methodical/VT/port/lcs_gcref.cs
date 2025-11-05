@@ -101,6 +101,7 @@ namespace JitTest_lcs_gcref_port
 
         [Fact]
         [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
+        [ActiveIssue("Test runs too long in interpreter-only mode", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsS390xProcess))]
         public static int TestEntryPoint()
         {
             Console.WriteLine("Test searches for longest common subsequence of 4 strings\n\n");

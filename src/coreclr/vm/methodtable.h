@@ -363,8 +363,13 @@ struct MethodTableAuxiliaryData
         DWORD      m_dwFlags;                  // Lot of empty bits here.
         struct
         {
+#if BIGENDIAN
+            int16_t m_offsetToNonVirtualSlots;
+            uint16_t m_loFlags;
+#else
             uint16_t m_loFlags;
             int16_t m_offsetToNonVirtualSlots;
+#endif
         };
     };
 

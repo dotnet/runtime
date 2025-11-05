@@ -5,9 +5,11 @@
     <ProjectReference Include="dotnet-ilverify\dotnet-ilverify.pkgproj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 
+<!--
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(DotNetBuildSourceOnly)' != 'true'">
     <ProjectReference Include="ILCompiler.Reflection.ReadyToRun.Experimental\ILCompiler.Reflection.ReadyToRun.Experimental.pkgproj" />
   </ItemGroup>
+-->
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <ProjectReference Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.proj" />

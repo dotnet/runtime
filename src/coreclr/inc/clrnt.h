@@ -501,4 +501,37 @@ RtlVirtualUnwind(
 
 #endif // TARGET_RISCV64
 
+#ifdef TARGET_S390X
+
+#define UNW_FLAG_NHANDLER               0x0             /* any handler */
+#define UNW_FLAG_EHANDLER               0x1             /* filter handler */
+#define UNW_FLAG_UHANDLER               0x2             /* unwind handler */
+
+typedef struct _UNWIND_INFO {
+    // dummy
+} UNWIND_INFO, *PUNWIND_INFO;
+
+#define RUNTIME_FUNCTION__BeginAddress(prf)             (prf)->BeginAddress
+#define RUNTIME_FUNCTION__SetBeginAddress(prf,address)  ((prf)->BeginAddress = (address))
+
+#define RUNTIME_FUNCTION__EndAddress(prf, ImageBase)    (prf)->EndAddress
+
+#define RUNTIME_FUNCTION__GetUnwindInfoAddress(prf) (prf)->UnwindData
+#define RUNTIME_FUNCTION__SetUnwindInfoAddress(prf,address) do { (prf)->UnwindData = (address); } while (0)
+#define OFFSETOF__RUNTIME_FUNCTION__UnwindInfoAddress offsetof(T_RUNTIME_FUNCTION, UnwindData)
+
+PEXCEPTION_ROUTINE
+RtlVirtualUnwind(
+    IN ULONG HandlerType,
+    IN ULONG64 ImageBase,
+    IN ULONG64 ControlPc,
+    IN PT_RUNTIME_FUNCTION FunctionEntry,
+    IN OUT PCONTEXT ContextRecord,
+    OUT PVOID *HandlerData,
+    OUT PULONG64 EstablisherFrame,
+    IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
+    );
+
+#endif // TARGET_S390X
+
 #endif  // CLRNT_H_

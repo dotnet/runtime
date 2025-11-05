@@ -22,7 +22,8 @@ public static class Statics
         }
         else
         {
-            Console.WriteLine($"Scenario {scenario} succeeded ({expectedResult ?? "<null>"}) Success ({Successes})");
+            // Don't report sucesses - console output is very slow under the interpreter
+            // Console.WriteLine($"Scenario {scenario} succeeded ({expectedResult ?? "<null>"}) Success ({Successes})");
             Successes++;
         }
     }

@@ -396,6 +396,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         LPBYTE pAlloc = (LPBYTE)_alloca(dwAllocaSize);
 
         pTransitionBlock = pAlloc + TransitionBlock::GetNegSpaceSize();
+memset (pTransitionBlock, 0, sizeof(TransitionBlock));
 
 #ifdef CALLDESCR_REGTYPEMAP
         dwRegTypeMap            = 0;
@@ -514,6 +515,27 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                         else
                             *((INT64*)pDest) = (INT32)pArguments[arg];
 #endif // TARGET_RISCV64
+                        break;
+#elif defined(TARGET_S390X)
+                    case 1:
+                        if (m_argIt.GetArgType() == ELEMENT_TYPE_U1 || m_argIt.GetArgType() == ELEMENT_TYPE_BOOLEAN)
+                            *((INT64*)pDest) = (UINT8)pArguments[arg];
+                        else
+                            *((INT64*)pDest) = (INT8)pArguments[arg];
+                        break;
+                    case 2:
+                        if (m_argIt.GetArgType() == ELEMENT_TYPE_U2 || m_argIt.GetArgType() == ELEMENT_TYPE_CHAR)
+                            *((INT64*)pDest) = (UINT16)pArguments[arg];
+                        else
+                            *((INT64*)pDest) = (INT16)pArguments[arg];
+                        break;
+                    case 4:
+                        if (TransitionBlock::IsFloatArgumentRegisterOffset(ofs))
+                            *((UINT32*)pDest) = (UINT32)pArguments[arg];
+                        else if (m_argIt.GetArgType() == ELEMENT_TYPE_U4)
+                            *((INT64*)pDest) = (UINT32)pArguments[arg];
+                        else
+                            *((INT64*)pDest) = (INT32)pArguments[arg];
                         break;
 #else
                     case 1:

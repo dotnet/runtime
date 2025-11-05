@@ -43,6 +43,7 @@ namespace JitTest_virtcall_cs
 
         [Fact]
         [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
+        [ActiveIssue("Interpreter-only stack overflow", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsS390xProcess))]
         public static int TestEntryPoint()
         {
             try

@@ -207,9 +207,11 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk)
         CREATETHREAD_IF_NULL_FAILFAST(pThread, W("Failed to setup new thread during reverse P/Invoke"));
     }
 
+#ifndef FEATURE_INTERPRETER // FIXME
     // Verify the current thread isn't in COOP mode.
     if (pThread->PreemptiveGCDisabled())
         ReversePInvokeBadTransition();
+#endif
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this method is called by stubs which are called by managed code,

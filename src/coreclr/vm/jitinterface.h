@@ -385,7 +385,7 @@ extern "C"
 #endif // TARGET_AMD64 || TARGET_ARM
 
     void STDMETHODCALLTYPE JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle);
-#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_S390X)
     void STDCALL JIT_StackProbe();
 #endif // TARGET_ARM64
 };

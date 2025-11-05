@@ -58,6 +58,8 @@
 #define DTCONTEXT_IS_LOONGARCH64
 #elif defined (TARGET_RISCV64)
 #define DTCONTEXT_IS_RISCV64
+#elif defined (TARGET_S390X)
+#define DTCONTEXT_IS_S390X
 #endif
 
 #define CONTEXT_AREA_MASK 0xffff
@@ -613,6 +615,93 @@ typedef struct DECLSPEC_ALIGN(16) {
 } DT_CONTEXT;
 
 static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size");
+
+#elif defined(DTCONTEXT_IS_S390X)
+
+// There is no context for s390x defined in winnt.h,
+// so we re-use the amd64 values.
+#define DT_CONTEXT_S390X   0x100000
+
+#define DT_CONTEXT_CONTROL (DT_CONTEXT_S390X | 0x1L)
+#define DT_CONTEXT_INTEGER (DT_CONTEXT_S390X | 0x2L)
+#define DT_CONTEXT_FLOATING_POINT  (DT_CONTEXT_S390X | 0x4L)
+#define DT_CONTEXT_DEBUG_REGISTERS  (DT_CONTEXT_S390X | 0x8L)
+
+#define DT_CONTEXT_FULL (DT_CONTEXT_CONTROL | DT_CONTEXT_INTEGER | DT_CONTEXT_FLOATING_POINT)
+
+#define DT_CONTEXT_ALL (DT_CONTEXT_CONTROL | DT_CONTEXT_INTEGER | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_DEBUG_REGISTERS)
+
+#define DT_S390X_MAX_BREAKPOINTS     8
+#define DT_S390X_MAX_WATCHPOINTS     1
+
+typedef DECLSPEC_ALIGN(8) struct {
+
+    //
+    // Control flags.
+    //
+
+    DWORD ContextFlags;
+
+    //
+    // Integer registers.
+    //
+
+    union {
+        DWORD64 Gpr[16];
+        struct {
+            DWORD64 R0;
+            DWORD64 R1;
+            DWORD64 R2;
+            DWORD64 R3;
+            DWORD64 R4;
+            DWORD64 R5;
+            DWORD64 R6;
+            DWORD64 R7;
+            DWORD64 R8;
+            DWORD64 R9;
+            DWORD64 R10;
+            DWORD64 R11;
+            DWORD64 R12;
+            DWORD64 R13;
+            DWORD64 R14;
+            DWORD64 R15;
+        };
+    };
+
+    //
+    // Floating-point registers.
+    //
+
+    union {
+        DWORD64 Fpr[16];
+        struct {
+            DWORD64 F0;
+            DWORD64 F1;
+            DWORD64 F2;
+            DWORD64 F3;
+            DWORD64 F4;
+            DWORD64 F5;
+            DWORD64 F6;
+            DWORD64 F7;
+            DWORD64 F8;
+            DWORD64 F9;
+            DWORD64 F10;
+            DWORD64 F11;
+            DWORD64 F12;
+            DWORD64 F13;
+            DWORD64 F14;
+            DWORD64 F15;
+        };
+    };
+
+    //
+    // Control registers.
+    //
+
+    DWORD64 PSWMask;
+    DWORD64 PSWAddr;
+
+} DT_CONTEXT;
 
 #else
 #error Unsupported platform

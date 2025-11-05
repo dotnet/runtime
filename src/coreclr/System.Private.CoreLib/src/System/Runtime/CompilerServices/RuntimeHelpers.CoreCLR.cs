@@ -110,14 +110,39 @@ namespace System.Runtime.CompilerServices
             if (((nuint)data & (targetTypeSize - 1)) != 0)
                 throw new ArgumentException(SR.Argument_BadFieldForInitializeArray);
 
-            if (!BitConverter.IsLittleEndian)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
             count = (int)(totalSize / targetTypeSize);
             ref byte dataRef = ref *(byte*)data; // Ref is extending the lifetime of the static field.
             GC.KeepAlive(fldInfo);
+
+            if (!BitConverter.IsLittleEndian && targetTypeSize != sizeof(byte))
+            {
+                // FIXME: cache results
+                ref byte dst = ref MemoryMarshal.GetArrayDataReference(new byte[totalSize]);
+
+                switch (targetTypeSize)
+                {
+                    case sizeof(ushort):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<ushort>(ref Unsafe.As<byte, ushort>(ref dataRef), count),
+                            new Span<ushort>(ref Unsafe.As<byte, ushort>(ref dst), count));
+                        break;
+                    case sizeof(uint):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<uint>(ref Unsafe.As<byte, uint>(ref dataRef), count),
+                            new Span<uint>(ref Unsafe.As<byte, uint>(ref dst), count));
+                        break;
+                    case sizeof(ulong):
+                        BinaryPrimitives.ReverseEndianness(
+                            new ReadOnlySpan<ulong>(ref Unsafe.As<byte, ulong>(ref dataRef), count),
+                            new Span<ulong>(ref Unsafe.As<byte, ulong>(ref dst), count));
+                        break;
+                    default:
+                        Debug.Fail("Incorrect primitive type size!");
+                        break;
+                }
+
+                return ref dst;
+            }
 
             return ref dataRef;
         }
@@ -579,7 +604,11 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// The low WORD of the first field is the component size for array and string types.
         /// </summary>
+#if BIGENDIAN
+        [FieldOffset(2)]
+#else
         [FieldOffset(0)]
+#endif
         public ushort ComponentSize;
 
         /// <summary>

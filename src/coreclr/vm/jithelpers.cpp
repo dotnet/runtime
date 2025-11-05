@@ -4817,9 +4817,11 @@ NOINLINE static void JIT_ReversePInvokeEnterRare(ReversePInvokeFrame* frame, voi
     if (thread == NULL)
         CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
 
+#ifndef FEATURE_INTERPRETER   // FIXME !!!
     // Verify the current thread isn't in COOP mode.
     if (thread->PreemptiveGCDisabled())
         ReversePInvokeBadTransition();
+#endif
 
     frame->currentThread = thread;
 

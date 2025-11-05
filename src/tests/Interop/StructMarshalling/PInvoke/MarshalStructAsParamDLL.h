@@ -186,7 +186,7 @@ struct OUTER3
 static_assert_no_msg(sizeof(OUTER3) == 28);
 #endif
 #else // WINDOWS
-#if defined(__x86_64__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv) || defined(__s390x__)
 union OUTER3
 {
     struct InnerSequential arr[2];

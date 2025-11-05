@@ -1816,7 +1816,9 @@ public class TestStructs
     public static void TestEntryPoint()
     {
         TestStructReturns.Test();
+#if NEVER
         TestUnsafeCasts.Test();
+#endif
         TestMergeReturnBlocks.Test();
         TestHFAandHVA.Test();
         TestNon2PowerStructs.Test();

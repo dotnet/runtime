@@ -860,6 +860,9 @@ def run_tests(args,
         per_test_timeout *= 8
         print("Running GCStress, extending test timeout to cater for slower runtime.")
 
+    # FIXME: s390 fully interpreted for now
+    per_test_timeout *= 8
+
     # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.
     # This is read by the test wrapper invoker, in src\tests\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
     print("Setting __TestTimeout=%s" % str(per_test_timeout))

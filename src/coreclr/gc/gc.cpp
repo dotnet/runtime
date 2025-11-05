@@ -18923,7 +18923,7 @@ enter_msl_status gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
     }
 #endif //MULTIPLE_HEAPS
 
-    vm_heap->GarbageCollectGeneration (gen_number, gr);
+// FIXME s390x    vm_heap->GarbageCollectGeneration (gen_number, gr);
 
 #ifdef MULTIPLE_HEAPS
     if (!loh_p)
@@ -35875,7 +35875,7 @@ void gc_heap::make_unused_array (uint8_t* x, size_t size, BOOL clearp, BOOL rese
 #ifdef HOST_64BIT
 
 #if BIGENDIAN
-#error "This won't work on big endian platforms"
+//#error "This won't work on big endian platforms"
 #endif
 
     size_t size_as_object = (uint32_t)(size - free_object_base_size) + free_object_base_size;
@@ -35921,7 +35921,7 @@ void gc_heap::clear_unused_array (uint8_t* x, size_t size)
 #ifdef HOST_64BIT
 
 #if BIGENDIAN
-#error "This won't work on big endian platforms"
+//#error "This won't work on big endian platforms"
 #endif
 
     // The memory could have been cleared in the meantime. We have to mirror the algorithm
@@ -49907,7 +49907,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
                 uint8_t* freeObj = ((uint8_t*) str) + sizeToNextObj - sizeOfNewObj;
                 pGenGCHeap->make_unused_array (freeObj, sizeOfNewObj);
 
-#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
+#if !defined(TARGET_AMD64) && !defined(TARGET_X86) && !defined(TARGET_S390X)
                 // ensure that the write to the new free object is seen by
                 // background GC *before* the write to the string length below
                 MemoryBarrier();
@@ -50231,6 +50231,8 @@ BOOL should_collect_optimized (dynamic_data* dd, BOOL low_memory_p)
 HRESULT
 GCHeap::GarbageCollect (int generation, bool low_memory_p, int mode)
 {
+    return S_OK; // FIXME s390
+
 #if defined(HOST_64BIT)
     if (low_memory_p)
     {
@@ -52034,9 +52036,11 @@ size_t CFinalize::GetPromotedCount ()
 inline
 void CFinalize::EnterFinalizeLock()
 {
+#if 0
     _ASSERTE(dbgOnly_IsSpecialEEThread() ||
              GCToEEInterface::GetThread() == 0 ||
              GCToEEInterface::IsPreemptiveGCDisabled());
+#endif
 
 retry:
     if (Interlocked::CompareExchange(&lock, 0, -1) >= 0)
@@ -52073,9 +52077,11 @@ retry:
 inline
 void CFinalize::LeaveFinalizeLock()
 {
+#if 0
     _ASSERTE(dbgOnly_IsSpecialEEThread() ||
              GCToEEInterface::GetThread() == 0 ||
              GCToEEInterface::IsPreemptiveGCDisabled());
+#endif
 
 #ifdef _DEBUG
     lockowner_threadid.Clear();

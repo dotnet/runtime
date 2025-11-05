@@ -134,6 +134,7 @@ public class string1
     }
 
     [Fact]
+    [ActiveIssue("Test runs too long in interpreter-only mode", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsS390xProcess))]
     public static int TestEntryPoint()
     {
         bool pass = false;
