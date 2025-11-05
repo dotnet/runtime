@@ -522,7 +522,7 @@ extern "C" INT32 QCALLTYPE ThreadNative_SetApartmentState(QCall::ObjectHandleOnS
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 #if TARGET_WINDOWS
-extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t);
+extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t)
 {
     QCALL_CONTRACT;
 
