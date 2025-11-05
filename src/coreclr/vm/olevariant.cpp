@@ -4304,7 +4304,7 @@ void OleVariant::ConvertContentsBSTRToString(BSTR bstr, STRINGREF *pStringObj)
         args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
         args[ARGNUM_1] = INT8_TO_ARGHOLDER(buff[length-1]);
 
-        CALL_MANAGED_METHOD_NORET(METHOD__BSTRMARSHALER__SET_TRAIL_BYTE, args);
+        CALL_MANAGED_METHOD_NORET(args);
     }
 
     // null terminate the StringRef
@@ -4360,7 +4360,8 @@ BSTR OleVariant::AllocateEmptyBSTRForString(STRINGREF *pStringObj)
     args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
     BYTE trailByte;
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&trailByte);
-    CLR_BOOL hasTrailByte = CALL_MANAGED_METHOD(CLR_BOOL, METHOD__BSTRMARSHALER__TRY_GET_TRAIL_BYTE, args);
+    CLR_BOOL hasTrailByte;
+    CALL_MANAGED_METHOD(hasTrailByte, CLR_BOOL, args);
 
     if (hasTrailByte)
     {
@@ -4401,7 +4402,8 @@ void OleVariant::ConvertContentsStringToBSTR(STRINGREF *pStringObj, BSTR bstr)
     args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
     BYTE trailByte;
     args[ARGNUM_1] = PTR_TO_ARGHOLDER(&trailByte);
-    CLR_BOOL hasTrailByte = CALL_MANAGED_METHOD(CLR_BOOL, METHOD__BSTRMARSHALER__TRY_GET_TRAIL_BYTE, args);
+    CLR_BOOL hasTrailByte;
+    CALL_MANAGED_METHOD(hasTrailByte, CLR_BOOL, args);
 
     if (hasTrailByte)
     {

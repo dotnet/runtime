@@ -11,6 +11,7 @@ using System.Runtime.InteropServices.CustomMarshalers;
 using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Threading;
 
 namespace System.StubHelpers
 {
@@ -229,7 +230,7 @@ namespace System.StubHelpers
 
     internal static class BSTRMarshaler
     {
-        private class TrailByte(byte trailByte)
+        private sealed class TrailByte(byte trailByte)
         {
             public readonly byte Value = trailByte;
         }
@@ -239,11 +240,11 @@ namespace System.StubHelpers
         // To support this scenario, we need to use a ConditionalWeakTable for this special case and
         // save the trail character in here.
         // This stores the trail character when a BSTR is used as an array
-        private static readonly ConditionalWeakTable<string, TrailByte> s_trailByteTable = new();
+        private static ConditionalWeakTable<string, TrailByte>? s_trailByteTable;
 
         internal static bool TryGetTrailByte(string strManaged, out byte trailByte)
         {
-            if (s_trailByteTable.TryGetValue(strManaged, out TrailByte? trailByteObj))
+            if (s_trailByteTable?.TryGetValue(strManaged, out TrailByte? trailByteObj) == true)
             {
                 trailByte = trailByteObj.Value;
                 return true;
@@ -252,9 +253,14 @@ namespace System.StubHelpers
             trailByte = 0;
             return false;
         }
+
         internal static void SetTrailByte(string strManaged, byte trailByte)
         {
-            s_trailByteTable.AddOrUpdate(strManaged, new TrailByte(trailByte));
+            if (s_trailByteTable == null)
+            {
+                Interlocked.CompareExchange(ref s_trailByteTable, new ConditionalWeakTable<string, TrailByte>(), null);
+            }
+            s_trailByteTable!.AddOrUpdate(strManaged, new TrailByte(trailByte));
         }
 
         internal static unsafe IntPtr ConvertToNative(string strManaged, IntPtr pNativeBuffer)
@@ -265,7 +271,7 @@ namespace System.StubHelpers
             }
             else
             {
-                bool hasTrailByte = s_trailByteTable.TryGetValue(strManaged, out TrailByte? trailByte);
+                bool hasTrailByte = TryGetTrailByte(strManaged, out byte trailByte);
 
                 uint lengthInBytes = (uint)strManaged.Length * 2;
 
@@ -304,7 +310,7 @@ namespace System.StubHelpers
                 // copy the trail byte if present
                 if (hasTrailByte)
                 {
-                    ptrToFirstChar[lengthInBytes - 1] = trailByte.Value;
+                    ptrToFirstChar[lengthInBytes - 1] = trailByte;
                 }
 
                 // return ptr to first character
@@ -348,7 +354,7 @@ namespace System.StubHelpers
 
                 if ((length & 1) == 1)
                 {
-                    s_trailByteTable.Add(ret, new TrailByte(((byte*)bstr)[length - 1]));
+                    SetTrailByte(ret, ((byte*)bstr)[length - 1]);
                 }
 
                 return ret;
