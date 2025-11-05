@@ -260,7 +260,7 @@ namespace System.StubHelpers
             {
                 Interlocked.CompareExchange(ref s_trailByteTable, new ConditionalWeakTable<string, TrailByte>(), null);
             }
-            s_trailByteTable!.AddOrUpdate(strManaged, new TrailByte(trailByte));
+            s_trailByteTable!.Add(strManaged, new TrailByte(trailByte));
         }
 
         internal static unsafe IntPtr ConvertToNative(string strManaged, IntPtr pNativeBuffer)
