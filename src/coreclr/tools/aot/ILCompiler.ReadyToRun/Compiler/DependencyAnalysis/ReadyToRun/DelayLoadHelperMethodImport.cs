@@ -59,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     if (useDependency)
                     {
-                        ISymbolNode canonMethodNode = factory.CompiledMethodNode(canonMethod);
+                        ISymbolNode canonMethodNode = factory.CompiledMethodNode(canonMethod, _method.AsyncVariant);
                         yield return new DependencyListEntry(canonMethodNode, "Canonical method for instantiating stub");
                     }
                 }

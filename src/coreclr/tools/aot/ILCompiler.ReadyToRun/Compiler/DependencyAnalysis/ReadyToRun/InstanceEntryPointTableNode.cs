@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunInstanceEntryPointTable"u8);
         }
 
-        public static byte[] BuildSignatureForMethodDefinedInModule(MethodDesc method, NodeFactory factory)
+        public static byte[] BuildSignatureForMethodDefinedInModule(MethodDesc method, NodeFactory factory, bool asyncVariant = false)
         {
             EcmaMethod typicalMethod = (EcmaMethod)method.GetTypicalMethodDefinition();
 
@@ -70,7 +70,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
             signatureBuilder.EmitMethodSignature(
-                new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null),
+                new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, asyncVariant: asyncVariant, context: null),
                 enforceDefEncoding: true,
                 enforceOwningType: moduleToken.Module is EcmaModule ? factory.CompilationModuleGroup.EnforceOwningType((EcmaModule)moduleToken.Module) : true,
                 factory.SignatureContext,
@@ -81,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private byte[] BuildSignatureForMethod(MethodWithGCInfo method, NodeFactory factory)
         {
-            return BuildSignatureForMethodDefinedInModule(method.Method, factory);
+            return BuildSignatureForMethodDefinedInModule(method.Method, factory, method.AsyncVariant);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
 using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
@@ -58,21 +59,27 @@ namespace Internal.TypeSystem
             return type.InstantiateSignature(default(Instantiation), _instantiation);
         }
 
+        private void InitializeSignature()
+        {
+            var template = _methodDef.Signature;
+            _signature = InstantiateSignature(template);
+        }
+
+        private MethodSignature InstantiateSignature(MethodSignature template)
+        {
+            var builder = new MethodSignatureBuilder(template);
+            builder.ReturnType = Instantiate(template.ReturnType);
+            for (int i = 0; i < template.Length; i++)
+                builder[i] = Instantiate(template[i]);
+            return builder.ToSignature();
+        }
+
         public override MethodSignature Signature
         {
             get
             {
                 if (_signature == null)
-                {
-                    MethodSignature template = _methodDef.Signature;
-                    MethodSignatureBuilder builder = new MethodSignatureBuilder(template);
-
-                    builder.ReturnType = Instantiate(template.ReturnType);
-                    for (int i = 0; i < template.Length; i++)
-                        builder[i] = Instantiate(template[i]);
-
-                    _signature = builder.ToSignature();
-                }
+                    InitializeSignature();
 
                 return _signature;
             }
@@ -133,7 +140,6 @@ namespace Internal.TypeSystem
                 return _methodDef.IsAsync;
             }
         }
-
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {

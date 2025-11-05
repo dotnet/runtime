@@ -264,6 +264,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedMethod.cs">
       <Link>TypeSystem\Common\InstantiatedMethod.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedMethod.Async.cs">
+      <Link>TypeSystem\Common\InstantiatedMethod.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedMethod.Diagnostic.cs">
       <Link>TypeSystem\Common\InstantiatedMethod.Diagnostic.cs</Link>
     </Compile>
@@ -311,6 +314,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodForInstantiatedType.cs">
       <Link>TypeSystem\Common\MethodForInstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\MethodForInstantiatedType.Async.cs">
+      <Link>TypeSystem\Common\MethodForInstantiatedType.Async.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodForInstantiatedType.Diagnostic.cs">
       <Link>TypeSystem\Common\MethodForInstantiatedType.Diagnostic.cs</Link>
@@ -378,11 +384,17 @@
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDelegator.cs">
       <Link>TypeSystem\Common\MethodDelegator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\MethodDelegator.Async.cs">
+      <Link>TypeSystem\Common\MethodDelegator.Async.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDelegator.Diagnostic.cs">
       <Link>TypeSystem\Common\MethodDelegator.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.cs">
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.Async.cs">
+      <Link>TypeSystem\Common\MethodDesc.Async.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.Diagnostic.cs">
       <Link>TypeSystem\Common\MethodDesc.Diagnostic.cs</Link>
@@ -479,6 +491,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaMethod.cs">
       <Link>Ecma\EcmaMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaMethod.Async.cs">
+      <Link>Ecma\EcmaMethod.Async.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaMethod.Diagnostic.cs">
       <Link>Ecma\EcmaMethod.cs</Link>
