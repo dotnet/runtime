@@ -160,7 +160,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             X509KeyUsageFlags.DigitalSignature,
                         false)
                 };
-                foreach (X509Extension ext in intermediate2Extensions) int2Req.CertificateExtensions.Add(ext);
+                foreach (X509Extension ext in intermediate2Extensions)
+                {
+                    int2Req.CertificateExtensions.Add(ext);
+                }
                 certs[2] = int2Req.Create(
                     lastSubject,
                     lastGenerator,
@@ -183,7 +186,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             X509KeyUsageFlags.DigitalSignature,
                         false)
                 };
-                foreach (X509Extension ext in intermediate1Extensions) int1Req.CertificateExtensions.Add(ext);
+                foreach (X509Extension ext in intermediate1Extensions)
+                {
+                    int1Req.CertificateExtensions.Add(ext);
+                }
                 certs[1] = int1Req.Create(
                     lastSubject,
                     lastGenerator,
@@ -206,7 +212,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             X509KeyUsageFlags.KeyEncipherment,
                         false)
                 };
-                foreach (X509Extension ext in endEntityExtensions) eeReq.CertificateExtensions.Add(ext);
+                foreach (X509Extension ext in endEntityExtensions)
+                {
+                    eeReq.CertificateExtensions.Add(ext);
+                }
                 certs[0] = eeReq.Create(lastSubject, lastGenerator, eeStart, eeEnd, CreateSerial());
 
                 endEntityCert = certs[0];
