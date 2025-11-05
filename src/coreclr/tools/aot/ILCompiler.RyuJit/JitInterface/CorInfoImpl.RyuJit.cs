@@ -33,6 +33,7 @@ namespace Internal.JitInterface
 
         private RyuJitCompilation _compilation;
         private MethodDebugInformation _debugInfo;
+        private MethodDesc _asyncResumptionStub;
         private MethodCodeNode _methodCodeNode;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
@@ -758,6 +759,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.MonitorExit;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION:
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null));
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
                     return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Threading"u8, "Monitor"u8, "GetSyncObjectFromClassHandle"u8, null));
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
@@ -802,6 +806,14 @@ namespace Internal.JitInterface
                 entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
 
             return entryPoint;
+        }
+
+        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
+        {
+            Debug.Assert(!isUnsafeFunctionPointer);
+
+            MethodDesc method = HandleToObject(ftn);
+            pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(method));
         }
 
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)

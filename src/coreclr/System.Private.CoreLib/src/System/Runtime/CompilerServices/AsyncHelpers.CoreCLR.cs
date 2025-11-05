@@ -12,6 +12,10 @@ using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
+#if NATIVEAOT
+using Internal.Runtime;
+#endif
+
 namespace System.Runtime.CompilerServices
 {
     internal struct ExecutionAndSyncBlockStore
@@ -144,11 +148,16 @@ namespace System.Runtime.CompilerServices
 
         private static unsafe Continuation AllocContinuation(Continuation prevContinuation, MethodTable* contMT)
         {
-            Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
+#if NATIVEAOT
+            Continuation newContinuation = (Continuation)RuntimeImports.RhNewObject(contMT);
+#else
+            Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);       
+#endif
             prevContinuation.Next = newContinuation;
             return newContinuation;
         }
 
+#if !NATIVEAOT
         private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodDesc* method)
         {
             LoaderAllocator loaderAllocator = RuntimeMethodHandle.GetLoaderAllocator(new RuntimeMethodHandleInternal((IntPtr)method));
@@ -170,6 +179,7 @@ namespace System.Runtime.CompilerServices
             }
             return newContinuation;
         }
+#endif
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]

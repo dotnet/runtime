@@ -38,6 +38,7 @@ namespace ILCompiler
         private readonly VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
         private readonly Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
         private readonly TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
+        private readonly ContinuationTypeFieldLayoutAlgorithm _continuationTypeFieldLayoutAlgorithm = new ContinuationTypeFieldLayoutAlgorithm();
 
         private TypeDesc[] _arrayOfTInterfaces;
         private TypeDesc[] _arrayEnumeratorOfTInterfaces;
@@ -59,6 +60,7 @@ namespace ILCompiler
             _typeWithRepeatedFieldsFieldLayoutAlgorithm = new TypeWithRepeatedFieldsFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
             _delegateInfoHashtable = new DelegateInfoHashtable(delegateFeatures);
+            _continuationTypeHashtable = new ContinuationTypeHashtable(this);
 
             _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(genericCycleDepthCutoff, genericCycleBreadthCutoff);
 
@@ -115,6 +117,8 @@ namespace ILCompiler
                 return _int128FieldLayoutAlgorithm;
             else if (type is TypeWithRepeatedFields)
                 return _typeWithRepeatedFieldsFieldLayoutAlgorithm;
+            else if (type is ContinuationType)
+                return _continuationTypeFieldLayoutAlgorithm;
             else
                 return _metadataFieldLayoutAlgorithm;
         }

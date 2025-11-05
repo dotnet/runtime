@@ -685,6 +685,7 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
             _debugInfo = null;
+            _asyncResumptionStub = null;
 #endif
 
             _debugLocInfos = null;
@@ -3393,7 +3394,19 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
         {
             Debug.Assert(objRefsSize == (dataSize + (nuint)(PointerSize - 1)) / (nuint)PointerSize);
+#if READYTORUN
             throw new NotImplementedException("getContinuationType");
+#else
+            GCPointerMapBuilder gcMapBuilder = new GCPointerMapBuilder((int)dataSize, PointerSize);
+            ReadOnlySpan<bool> bools = MemoryMarshal.CreateReadOnlySpan(ref objRefs, (int)objRefsSize);
+            for (int i = 0; i < bools.Length; i++)
+            {
+                if (bools[i])
+                    gcMapBuilder.MarkGCPointer(i * PointerSize);
+            }
+
+            return ObjectToHandle(_compilation.TypeSystemContext.GetContinuationType(gcMapBuilder.ToGCMap()));
+#endif
         }
 
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
@@ -3630,9 +3643,6 @@ namespace Internal.JitInterface
             return res;
         }
 
-        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
-        { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
-
 #pragma warning disable CA1822 // Mark members as static
         private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
 #pragma warning restore CA1822 // Mark members as static
@@ -3748,7 +3758,11 @@ namespace Internal.JitInterface
         private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
 #pragma warning restore CA1822 // Mark members as static
         {
+#if READYTORUN
             throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
+#else
+            return ObjectToHandle(_asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled));
+#endif
         }
 
         private byte[] _code;
