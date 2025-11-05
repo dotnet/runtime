@@ -1060,7 +1060,7 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-          buildConfig: Checked
+          buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
             - ios_arm64
