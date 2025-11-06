@@ -1130,8 +1130,6 @@ DEFINE_CLASS(BSTRMARSHALER,         StubHelpers,            BSTRMarshaler)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_NATIVE,      ConvertToNative,            SM_Str_IntPtr_RetIntPtr)
 DEFINE_METHOD(BSTRMARSHALER,        CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtr_RetStr)
 DEFINE_METHOD(BSTRMARSHALER,        CLEAR_NATIVE,           ClearNative,                SM_IntPtr_RetVoid)
-DEFINE_METHOD(BSTRMARSHALER,        SET_TRAIL_BYTE,         SetTrailByte,               SM_Str_Byte_RetVoid)
-DEFINE_METHOD(BSTRMARSHALER,        TRY_GET_TRAIL_BYTE,     TryGetTrailByte,            SM_Str_RefByte_RetBool)
 
 DEFINE_CLASS(ANSIBSTRMARSHALER,     StubHelpers,            AnsiBSTRMarshaler)
 DEFINE_METHOD(ANSIBSTRMARSHALER,    CONVERT_TO_NATIVE,      ConvertToNative,            SM_Int_Str_RetIntPtr)

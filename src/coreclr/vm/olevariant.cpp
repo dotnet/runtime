@@ -4247,71 +4247,6 @@ TypeHandle OleVariant::GetElementTypeForRecordSafeArray(SAFEARRAY* pSafeArray)
 }
 #endif //FEATURE_COMINTEROP
 
-void OleVariant::AllocateEmptyStringForBSTR(BSTR bstr, STRINGREF *pStringObj)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(bstr));
-        PRECONDITION(CheckPointer(pStringObj));
-    }
-    CONTRACTL_END;
-
-    // The BSTR isn't null so allocate a managed string of the appropriate length.
-    ULONG length = SysStringByteLen(bstr);
-
-    if (length > MAX_SIZE_FOR_INTEROP)
-        COMPlusThrow(kMarshalDirectiveException, IDS_EE_STRING_TOOLONG);
-
-    length = length / sizeof(WCHAR);
-    SetObjectReference((OBJECTREF*)pStringObj, (OBJECTREF)StringObject::NewString(length));
-}
-
-void OleVariant::ConvertContentsBSTRToString(BSTR bstr, STRINGREF *pStringObj)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(bstr));
-        PRECONDITION(CheckPointer(pStringObj));
-    }
-    CONTRACTL_END;
-
-    // this is the right thing to do, but sometimes we
-    // end up thinking we're marshaling a BSTR when we're not, because
-    // it's the default type.
-    ULONG length = SysStringByteLen((BSTR)bstr);
-    if (length > MAX_SIZE_FOR_INTEROP)
-        COMPlusThrow(kMarshalDirectiveException, IDS_EE_STRING_TOOLONG);
-
-    ULONG charLength = length/sizeof(WCHAR);
-    BOOL hasTrailByte = (length%sizeof(WCHAR) != 0);
-
-    memcpyNoGCRefs((*pStringObj)->GetBuffer(), bstr, charLength*sizeof(WCHAR));
-
-    if (hasTrailByte)
-    {
-        BYTE* buff = (BYTE*)bstr;
-
-        ASSERT_PROTECTED(pStringObj);
-
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__SET_TRAIL_BYTE);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-        args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
-        args[ARGNUM_1] = INT8_TO_ARGHOLDER(buff[length-1]);
-
-        CALL_MANAGED_METHOD_NORET(args);
-    }
-
-    // null terminate the StringRef
-    WCHAR* wstr = (WCHAR *)(*pStringObj)->GetBuffer();
-    wstr[charLength] = '\0';
-}
-
 void OleVariant::ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj)
 {
     CONTRACTL
@@ -4331,89 +4266,10 @@ void OleVariant::ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj)
     if (bstr == NULL)
         return;
 
-    AllocateEmptyStringForBSTR(bstr, pStringObj);
-    ConvertContentsBSTRToString(bstr, pStringObj);
-}
-
-BSTR OleVariant::AllocateEmptyBSTRForString(STRINGREF *pStringObj)
-{
-    CONTRACT(BSTR)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pStringObj));
-        PRECONDITION(*pStringObj != NULL);
-        POSTCONDITION(RETVAL != NULL);
-    }
-    CONTRACT_END;
-
-    ULONG length = (*pStringObj)->GetStringLength();
-    if (length > MAX_SIZE_FOR_INTEROP)
-        COMPlusThrow(kMarshalDirectiveException, IDS_EE_STRING_TOOLONG);
-
-    length = length*sizeof(WCHAR);
-
-    ASSERT_PROTECTED(pStringObj);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__TRY_GET_TRAIL_BYTE);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
-    BYTE trailByte;
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&trailByte);
-    CLR_BOOL hasTrailByte;
-    CALL_MANAGED_METHOD(hasTrailByte, CLR_BOOL, args);
-
-    if (hasTrailByte)
-    {
-        length += 1;
-    }
-    BSTR bstr = SysAllocStringByteLen(NULL, length);
-    if (bstr == NULL)
-        ThrowOutOfMemory();
-
-    RETURN bstr;
-}
-
-void OleVariant::ConvertContentsStringToBSTR(STRINGREF *pStringObj, BSTR bstr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pStringObj));
-        PRECONDITION(*pStringObj != NULL);
-        PRECONDITION(CheckPointer(bstr));
-    }
-    CONTRACTL_END;
-
-    DWORD length = (DWORD)(*pStringObj)->GetStringLength();
-    if (length > MAX_SIZE_FOR_INTEROP)
-        COMPlusThrow(kMarshalDirectiveException, IDS_EE_STRING_TOOLONG);
-
-    BYTE *buff = (BYTE*)bstr;
-    ULONG byteLen = length * sizeof(WCHAR);
-
-    memcpyNoGCRefs(bstr, (*pStringObj)->GetBuffer(), byteLen);
-
-    ASSERT_PROTECTED(pStringObj);
-    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__TRY_GET_TRAIL_BYTE);
-    DECLARE_ARGHOLDER_ARRAY(args, 2);
-    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
-    BYTE trailByte;
-    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&trailByte);
-    CLR_BOOL hasTrailByte;
-    CALL_MANAGED_METHOD(hasTrailByte, CLR_BOOL, args);
-
-    if (hasTrailByte)
-    {
-        buff[byteLen] = trailByte;
-    }
-    else
-    {
-        // copy the null terminator
-        bstr[length] = W('\0');
-    }
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__CONVERT_TO_MANAGED);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(bstr);
+    CALL_MANAGED_METHOD_RETREF(*pStringObj, STRINGREF, args);
 }
 
 BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
@@ -4433,13 +4289,15 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
     // Initiatilize the return BSTR value to null.
     BSTR bstr = NULL;
 
-    // If the string object isn't null then we convert it to a BSTR. Otherwise we will return null.
-    if (*pStringObj != NULL)
+    if (*pStringObj == NULL)
     {
-        bstr = AllocateEmptyBSTRForString(pStringObj);
-        ConvertContentsStringToBSTR(pStringObj, bstr);
+        RETURN NULL;
     }
 
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__BSTRMARSHALER__CONVERT_TO_MANAGED);
+    DECLARE_ARGHOLDER_ARRAY(args, 1);
+    args[ARGNUM_0] = STRINGREF_TO_ARGHOLDER(*pStringObj);
+    CALL_MANAGED_METHOD(bstr, BSTR, args);
     RETURN bstr;
 }
 #endif // FEATURE_COMINTEROP
