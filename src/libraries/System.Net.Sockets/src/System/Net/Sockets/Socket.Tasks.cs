@@ -735,42 +735,18 @@ namespace System.Net.Sockets
                 return ValueTask.FromException(ex);
             }
 
-            // Calculate the number of packets needed for the file (may need partitioning for large files)
-            int filePacketsCount = 0;
-            long fileLength = 0;
+            int packetsCount = 0;
+
             if (fileName is not null)
             {
-                try
-                {
-                    fileLength = new FileInfo(fileName).Length;
-                }
-                catch
-                {
-                    // If we can't get the file length, let it fail later during the actual send
-                    filePacketsCount = 1;
-                }
-
-                if (fileLength > 0)
-                {
-                    // On Windows, TransmitPackets has the same int.MaxValue limitation as TransmitFile
-                    // So we need to partition files larger than int.MaxValue into multiple packets
-                    if (OperatingSystem.IsWindows() && fileLength > int.MaxValue)
-                    {
-                        filePacketsCount = (int)((fileLength + int.MaxValue - 1) / int.MaxValue);
-                    }
-                    else
-                    {
-                        filePacketsCount = 1;
-                    }
-                }
+                packetsCount++;
             }
 
-            int packetsCount = 0;
             if (!preBuffer.IsEmpty)
             {
                 packetsCount++;
             }
-            packetsCount += filePacketsCount;
+
             if (!postBuffer.IsEmpty)
             {
                 packetsCount++;
@@ -785,39 +761,19 @@ namespace System.Net.Sockets
                 : new SendPacketsElement[packetsCount];
 
             int index = 0;
-            bool hasFilePackets = fileName is not null && filePacketsCount > 0;
-
             if (!preBuffer.IsEmpty)
             {
-                sendPacketsElements[index++] = new SendPacketsElement(preBuffer, endOfPacket: !hasFilePackets && postBuffer.IsEmpty);
+                sendPacketsElements[index++] = new SendPacketsElement(preBuffer, endOfPacket: index == packetsCount);
             }
 
-            if (hasFilePackets)
+            if (fileName is not null)
             {
-                if (filePacketsCount == 1)
-                {
-                    // File is small enough to send in one packet
-                    sendPacketsElements[index++] = new SendPacketsElement(fileName!, 0, 0, endOfPacket: postBuffer.IsEmpty);
-                }
-                else
-                {
-                    // File needs to be partitioned into multiple packets
-                    long offset = 0;
-                    long remaining = fileLength;
-                    for (int i = 0; i < filePacketsCount; i++)
-                    {
-                        int chunkSize = (int)Math.Min(remaining, int.MaxValue);
-                        bool isLastChunk = i == filePacketsCount - 1;
-                        sendPacketsElements[index++] = new SendPacketsElement(fileName!, offset, chunkSize, endOfPacket: isLastChunk && postBuffer.IsEmpty);
-                        offset += chunkSize;
-                        remaining -= chunkSize;
-                    }
-                }
+                sendPacketsElements[index++] = new SendPacketsElement(fileName, 0, 0, endOfPacket: index == packetsCount);
             }
 
             if (!postBuffer.IsEmpty)
             {
-                sendPacketsElements[index++] = new SendPacketsElement(postBuffer, endOfPacket: true);
+                sendPacketsElements[index++] = new SendPacketsElement(postBuffer, endOfPacket: index == packetsCount);
             }
 
             Debug.Assert(index == packetsCount);
