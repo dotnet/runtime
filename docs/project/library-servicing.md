@@ -2,10 +2,15 @@
 
 This document provides the steps that need to be followed after modifying a library in a servicing branch.
 
-Servicing branches represent shipped versions of .NET, and their name is in the format `release/X.0-staging`. Examples:
+Servicing branches represent shipped versions of .NET. The branch naming convention varies by version:
 
-- `release/9.0-staging`
-- `release/8.0-staging`
+- **For .NET 8 and .NET 9**: Branch names use the format `release/X.0-staging`. Examples:
+  - `release/9.0-staging`
+  - `release/8.0-staging`
+  
+- **For .NET 10+**: Branch names use the format `release/X.0` (no `-staging` suffix). Examples:
+  - `release/10.0`
+  - `release/11.0`
 
 IMPORTANT: Starting with .NET 9, you no longer need to edit a NuGet package's csproj to enable building and bump the version.
 Keep in mind that we still need package authoring in .NET 8 and older versions.
@@ -26,10 +31,15 @@ Develop and test your change as normal.  For packages, you may want to test them
 All the servicing change must go through an approval process. You have two ways to submit your PR:
 
 - By manually creating your PR using [this template](https://raw.githubusercontent.com/dotnet/runtime/main/.github/PULL_REQUEST_TEMPLATE/servicing_pull_request_template.md).
-- Or by asking the bot to automatically create the servicing PR for you using a merged `main` PR as source. This method requires typing an AzDO backport command as a comment of your merged PR using the format `/backport to release/X.0-staging`. Examples:
+- Or by asking the bot to automatically create the servicing PR for you using a merged `main` PR as source. This method requires typing an AzDO backport command as a comment of your merged PR. The format depends on the target version:
 
+  For .NET 8 and .NET 9 (use `-staging` suffix):
   - `/backport to release/9.0-staging`
   - `/backport to release/8.0-staging`
+  
+  For .NET 10+ (no `-staging` suffix):
+  - `/backport to release/10.0`
+  - `/backport to release/11.0`
 
 For all cases, you must:
 

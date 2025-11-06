@@ -3,6 +3,8 @@
 
 using System;
 
+using ILCompiler;
+
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -309,6 +311,20 @@ namespace Internal.IL
                         return result;
                 }
 
+                if (ecmaMethod.IsAsync)
+                {
+                    if (ecmaMethod.Signature.ReturnsTaskOrValueTask())
+                    {
+                        return AsyncThunkILEmitter.EmitTaskReturningThunk(ecmaMethod, ((CompilerTypeSystemContext)ecmaMethod.Context).GetAsyncVariantMethod(ecmaMethod));
+                    }
+                    else
+                    {
+                        // We only allow non-Task returning runtime async methods in CoreLib
+                        if (ecmaMethod.OwningType.Module != ecmaMethod.Context.SystemModule)
+                            ThrowHelper.ThrowBadImageFormatException();
+                    }
+                }
+
                 MethodIL methodIL = EcmaMethodIL.Create(ecmaMethod);
                 if (methodIL != null)
                     return methodIL;
@@ -352,6 +368,19 @@ namespace Internal.IL
             if (method is ArrayMethod)
             {
                 return ArrayMethodILEmitter.EmitIL((ArrayMethod)method);
+            }
+            else
+            if (method is AsyncMethodVariant asyncVariantImpl)
+            {
+                if (asyncVariantImpl.IsAsync)
+                {
+                    return EcmaMethodIL.Create(asyncVariantImpl.Target);
+                }
+                else
+                {
+                    // TODO: Emit thunk with async calling convention
+                    throw new NotImplementedException();
+                }
             }
             else
             {
