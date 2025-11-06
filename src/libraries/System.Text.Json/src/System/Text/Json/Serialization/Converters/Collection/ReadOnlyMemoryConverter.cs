@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Converters
             scoped ref ReadStack state,
             out ReadOnlyMemory<T> value)
         {
-            if (reader.TokenType is JsonTokenType.Null)
+            if (reader.TokenType is JsonTokenType.Null && !state.IsContinuation)
             {
                 value = default;
                 return true;

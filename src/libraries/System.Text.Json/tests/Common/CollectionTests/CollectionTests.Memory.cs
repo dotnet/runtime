@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -136,6 +137,84 @@ namespace System.Text.Json.Serialization.Tests
 
             MemoryOfTClass<byte> memoryOfByteClass = await Serializer.DeserializeWrapper<MemoryOfTClass<byte>>(json);
             AssertExtensions.SequenceEqual<byte>(s_testData.AsSpan(), memoryOfByteClass.Memory.Span);
+        }
+
+        [Fact]
+        public async Task DeserializeMemoryFromStreamWithNullElements()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/118346
+            // Tests that ReadOnlyMemory/Memory converters handle null elements correctly during streaming deserialization
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
+            string json = """[{"Name":"Alice"},null,{"Name":"Bob"}]""";
+            using var stream = new Utf8MemoryStream(json);
+
+            ReadOnlyMemory<SimpleClass?> result = await StreamingSerializer.DeserializeWrapper<ReadOnlyMemory<SimpleClass?>>(stream);
+            
+            Assert.Equal(3, result.Length);
+            Assert.NotNull(result.Span[0]);
+            Assert.Equal("Alice", result.Span[0]!.Name);
+            Assert.Null(result.Span[1]);
+            Assert.NotNull(result.Span[2]);
+            Assert.Equal("Bob", result.Span[2]!.Name);
+        }
+
+        [Fact]
+        public async Task DeserializeReadOnlyMemoryFromStreamWithNullElements()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/118346
+            // Tests that Memory converters handle null elements correctly during streaming deserialization
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
+            string json = """[{"Name":"Alice"},null,{"Name":"Bob"}]""";
+            using var stream = new Utf8MemoryStream(json);
+
+            Memory<SimpleClass?> result = await StreamingSerializer.DeserializeWrapper<Memory<SimpleClass?>>(stream);
+            
+            Assert.Equal(3, result.Length);
+            Assert.NotNull(result.Span[0]);
+            Assert.Equal("Alice", result.Span[0]!.Name);
+            Assert.Null(result.Span[1]);
+            Assert.NotNull(result.Span[2]);
+            Assert.Equal("Bob", result.Span[2]!.Name);
+        }
+
+        [Fact]
+        public async Task DeserializeMemoryFromStreamManyElements()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/118346
+            // Tests that ReadOnlyMemory/Memory converters handle streaming deserialization with nulls
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
+            // Create a JSON array with nulls that may trigger continuation
+            string json = """[{"Name":"Alice"},null,{"Name":"Bob"},null,{"Name":"Charlie"}]""";
+            using var stream = new Utf8MemoryStream(json);
+
+            ReadOnlyMemory<SimpleClass?> result = await StreamingSerializer.DeserializeWrapper<ReadOnlyMemory<SimpleClass?>>(stream);
+            
+            Assert.Equal(5, result.Length);
+            Assert.NotNull(result.Span[0]);
+            Assert.Equal("Alice", result.Span[0]!.Name);
+            Assert.Null(result.Span[1]);
+            Assert.NotNull(result.Span[2]);
+            Assert.Equal("Bob", result.Span[2]!.Name);
+            Assert.Null(result.Span[3]);
+            Assert.NotNull(result.Span[4]);
+            Assert.Equal("Charlie", result.Span[4]!.Name);
+        }
+
+        public class SimpleClass
+        {
+            public string? Name { get; set; }
         }
     }
 }
