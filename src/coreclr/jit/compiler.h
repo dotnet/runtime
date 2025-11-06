@@ -9595,8 +9595,11 @@ public:
 
     // Use to determine if a struct *might* be a SIMD type. As this function only takes a size, many
     // structs will fit the criteria.
-    bool structSizeMightRepresentSIMDType(size_t structSize)
+    bool structSizeMightRepresentAcceleratedType(size_t structSize)
     {
+        if (structSize == 2)
+            return true;
+
 #ifdef FEATURE_SIMD
         return (structSize >= getMinVectorByteLength()) && (structSize <= getMaxVectorByteLength());
 #else

@@ -297,6 +297,9 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
         case TYP_SIMD64:
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
+#if defined(TARGET_XARCH)
+        case TYP_HALF:
+#endif
 #ifdef TARGET_64BIT
         case TYP_LONG:
         case TYP_DOUBLE:
