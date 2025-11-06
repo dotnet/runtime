@@ -33,9 +33,9 @@ variables:
     value: OSX.13.Arm64
 
   # macOS on x64 (Intel)
-  # Latest: Ventura 13
+  # Latest: Sequoia 15 (macOS 26.x kernel)
   - name: helix_macos_x64_latest
-    value: OSX.13.Amd64.Open
+    value: OSX.26.Amd64.Open
 
   - name: helix_macos_x64_latest_internal
     value: OSX.13.Amd64
@@ -299,16 +299,16 @@ variables:
   # NB: These must be at the bottom of the file to reference the above variables.
 
   - name: helix_macos_arm64
-    value: $(helix_macos_arm64_latest)
+    value: ${{ variables.helix_macos_arm64_latest }}
 
   - name: helix_macos_x64
-    value: $(helix_macos_x64_latest)
+    value: ${{ variables.helix_macos_x64_latest }}
 
   - name: helix_linux_x64
-    value: $(helix_linux_x64_latest)
+    value: ${{ variables.helix_linux_x64_latest }}
 
   - name: helix_windows_x64
-    value: $(helix_windows_x64_latest)
+    value: ${{ variables.helix_windows_x64_latest }}
 
   - name: helix_windows_arm64
-    value: $(helix_windows_arm64_latest)
+    value: ${{ variables.helix_windows_arm64_latest }}
