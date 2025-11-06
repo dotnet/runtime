@@ -45,8 +45,6 @@ public class Async2Struct
 
         public S(int value) => Value = value;
 
-        // Roslyn NYI - async in structs. Remove opt-out once supported.
-        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         public async Task Test()
         {
             AssertEqual(100, this.Value);
@@ -58,8 +56,6 @@ public class Async2Struct
             AssertEqual(102, this.Value);
         }
 
-        // Roslyn NYI - async in structs. Remove opt-out once supported.
-        [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
         private async Task InstanceCall()
         {
             AssertEqual(101, this.Value);
