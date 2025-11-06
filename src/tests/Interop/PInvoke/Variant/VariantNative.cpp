@@ -1114,7 +1114,7 @@ extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE Marshal_Struct_ByRef_Null(VariantWr
 
 #define TRAILING_BYTE 0xFF
 
-extern "C" VARIANT DLL_EXPORT STDMETHODCALLTYPE GetBSTRWithTrailingByteInVariant()
+extern "C" void DLL_EXPORT STDMETHODCALLTYPE GetBSTRWithTrailingByteInVariant(VARIANT* pVariant)
 {
     VARIANT variant;
     VariantInit(&variant);
@@ -1130,7 +1130,7 @@ extern "C" VARIANT DLL_EXPORT STDMETHODCALLTYPE GetBSTRWithTrailingByteInVariant
     variant.vt = VT_BSTR;
     variant.bstrVal = bstr;
 
-    return variant;
+    *pVariant = variant;
 }
 
 extern "C" BOOL DLL_EXPORT STDMETHODCALLTYPE VerifyBSTRWithTrailingByteInVariant(VARIANT variant)

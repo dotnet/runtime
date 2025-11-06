@@ -382,7 +382,7 @@ partial class Test_VariantTest
     private unsafe static void TestBSTRWithTrailingByte()
     {
         // Get a VARIANT containing a BSTR from native code that has a trailing byte after the null terminator
-        object variant = GetBSTRWithTrailingByteInVariant();
+        GetBSTRWithTrailingByteInVariant(out object variant);
 
         // The VARIANT should unmarshal as a string
         Assert.IsType<string>(variant);
@@ -392,6 +392,6 @@ partial class Test_VariantTest
         Assert.Equal("Test", bstr);
 
         // Pass the string back to native code wrapped in a VARIANT to verify the trailing byte is preserved
-        Assert.True(VerifyBSTRWithTrailingByteInVariant(bstr));
+        Assert.True(VerifyBSTRWithTrailingByteInVariant(new BStrWrapper(bstr)));
     }
 }
