@@ -3038,5 +3038,27 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("Provider2A", result.A); // Value should come from the last provider
             Assert.Equal("Provider1B", result.B); // B should not be overridden by the second provider
         }
+
+        [Fact]
+        public void TestBindingEmptyArrayToNullIEnumerable()
+        {
+            string jsonConfig1 = @"
+            {
+                ""MyService"": {
+                    ""IEnumerableProperty"": [],
+                    ""StringArray"": []
+                },
+            }";
+
+            var configuration = new ConfigurationBuilder()
+                        .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(jsonConfig1)))
+                        .Build().GetSection("MyService");
+
+            MyOptionsWithNullableEnumerable? result = configuration.Get<MyOptionsWithNullableEnumerable>();
+
+            Assert.NotNull(result);
+            Assert.Equal(Array.Empty<int>(), result.IEnumerableProperty);
+            Assert.Equal(Array.Empty<string>(), result.StringArray);
+        }
     }
 }

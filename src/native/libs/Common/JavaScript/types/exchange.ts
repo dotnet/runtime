@@ -4,7 +4,7 @@
 import type { registerDllBytes } from "../../../../corehost/browserhost/host/host";
 import type { check, error, info, warn } from "../../../../corehost/browserhost/loader/logging";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
-import type { stringToUTF16, stringToUTF16Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
+import type { stringToUTF16, stringToUTF16Ptr, stringToUTF8Ptr, utf16ToString } from "../../../System.Native.Browser/utils/strings";
 
 export type RuntimeExports = {
 }
@@ -23,9 +23,9 @@ export type AssertType = {
 }
 
 export type LoaderExports = {
-    resolveRunMainPromise:typeof resolveRunMainPromise,
-    rejectRunMainPromise:typeof rejectRunMainPromise,
-    getRunMainPromise:typeof getRunMainPromise,
+    resolveRunMainPromise: typeof resolveRunMainPromise,
+    rejectRunMainPromise: typeof rejectRunMainPromise,
+    getRunMainPromise: typeof getRunMainPromise,
 }
 
 export type LoaderExportsTable = [
@@ -62,10 +62,12 @@ export type BrowserUtilsExports = {
     utf16ToString: typeof utf16ToString,
     stringToUTF16: typeof stringToUTF16,
     stringToUTF16Ptr: typeof stringToUTF16Ptr,
+    stringToUTF8Ptr: typeof stringToUTF8Ptr,
 }
 
 export type BrowserUtilsExportsTable = [
     typeof utf16ToString,
     typeof stringToUTF16,
     typeof stringToUTF16Ptr,
+    typeof stringToUTF8Ptr,
 ]

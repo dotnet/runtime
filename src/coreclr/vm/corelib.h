@@ -750,6 +750,17 @@ DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTINUATION_CONTEXT, CaptureContinuat
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS, CaptureContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS, RestoreContexts, NoSig)
 
+#ifdef TARGET_BROWSER
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT, HandleAsyncEntryPoint, SM_TaskOfInt_RetInt)
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT_VOID, HandleAsyncEntryPoint, SM_Task_RetVoid)
+
+DEFINE_CLASS(TIMER_QUEUE,         Threading, TimerQueue)
+DEFINE_METHOD(TIMER_QUEUE,        TIMER_HANDLER, TimerHandler, SM_RetVoid)
+
+DEFINE_CLASS(THREAD_POOL,         Threading, ThreadPool)
+DEFINE_METHOD(THREAD_POOL,        BACKGROUND_JOB_HANDLER, BackgroundJobHandler, SM_RetVoid)
+#endif // TARGET_BROWSER
+
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
 DEFINE_METHOD(SPAN_HELPERS,         MEMZERO,                ClearWithoutReferences, SM_RefByte_UIntPtr_RetVoid)
@@ -867,7 +878,7 @@ DEFINE_FIELD_U(ArgBuffer,                  TailCallTls,           m_argBuffer)
 
 DEFINE_CLASS(CONTINUATION,              CompilerServices,   Continuation)
 DEFINE_FIELD(CONTINUATION,              NEXT,               Next)
-DEFINE_FIELD(CONTINUATION,              RESUME,             Resume)
+DEFINE_FIELD(CONTINUATION,              RESUME_INFO,        ResumeInfo)
 DEFINE_FIELD(CONTINUATION,              STATE,              State)
 DEFINE_FIELD(CONTINUATION,              FLAGS,              Flags)
 

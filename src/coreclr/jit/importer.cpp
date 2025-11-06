@@ -2100,11 +2100,10 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
         {
             // Report the debug info. impImportBlockCode won't treat the actual handler as exception block and thus
             // won't do it for us.
-            // TODO-DEBUGINFO: Previous code always set stack as non-empty
-            // here. Can we not just use impCurStmtOffsSet? Are we out of sync
-            // here with the stack?
-            impCurStmtDI = DebugInfo(compInlineContext, ILLocation(newBlk->bbCodeOffs, false, false));
-            argStmt      = gtNewStmt(argStore, impCurStmtDI);
+            // TODO-Bug: Should be reported with ICorDebugInfo::CALL_SITE?
+            impCurStmtDI =
+                DebugInfo(compInlineContext, ILLocation(newBlk->bbCodeOffs, ICorDebugInfo::SOURCE_TYPE_INVALID));
+            argStmt = gtNewStmt(argStore, impCurStmtDI);
         }
         else
         {
@@ -2175,8 +2174,18 @@ DebugInfo Compiler::impCreateDIWithCurrentStackInfo(IL_OFFSET offs, bool isCall)
 {
     assert(offs != BAD_IL_OFFSET);
 
-    bool isStackEmpty = stackState.esStackDepth <= 0;
-    return DebugInfo(compInlineContext, ILLocation(offs, isStackEmpty, isCall));
+    unsigned sourceTypes = 0;
+
+    if (isCall)
+    {
+        sourceTypes |= ICorDebugInfo::CALL_INSTRUCTION;
+    }
+    if (stackState.esStackDepth <= 0)
+    {
+        sourceTypes |= ICorDebugInfo::STACK_EMPTY;
+    }
+
+    return DebugInfo(compInlineContext, ILLocation(offs, (ICorDebugInfo::SourceTypes)sourceTypes));
 }
 
 //------------------------------------------------------------------------
@@ -5980,15 +5989,19 @@ bool Compiler::impBlockIsInALoop(BasicBlock* block)
 //   optimized for runtime async
 //
 // Arguments:
-//   codeAddr - IL after call[virt]     NB: pointing at unconsumed token.
-//   codeEndp - End of IL code stream
-//   configVal - [out] set to 0 or 1, accordingly, if we saw ConfigureAwait(0|1)
+//   codeAddr    - IL after call[virt]     NB: pointing at unconsumed token.
+//   codeEndp    - End of IL code stream
+//   configVal   - [out] set to 0 or 1, accordingly, if we saw ConfigureAwait(0|1)
+//   awaitOffset - [out] IL offset of await call
 //
 // Returns:
-//    NULL if we did not recognise an Await pattern that we can optimize
+//    nullptr if we did not recognise an Await pattern that we can optimize
 //    Otherwise returns position at the end of the Await pattern with one token left unconsumed.
 //
-const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr, const BYTE* codeEndp, int* configVal)
+const BYTE* Compiler::impMatchTaskAwaitPattern(const BYTE* codeAddr,
+                                               const BYTE* codeEndp,
+                                               int*        configVal,
+                                               IL_OFFSET*  awaitOffset)
 {
     // If we see the following code pattern in runtime async methods:
     //
@@ -6134,6 +6147,7 @@ checkForAwait:
         if (eeIsIntrinsic(nextCallTok.hMethod) &&
             lookupNamedIntrinsic(nextCallTok.hMethod) == NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
         {
+            *awaitOffset = (IL_OFFSET)(nextOpcode - info.compCode);
             // yes, this is an Await
             // Consume the call opcode, but not the token.
             // The call importer always consumes one token before moving to the next opcode.
@@ -9178,15 +9192,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     bool        isAwait            = false;
                     int         configVal          = -1; // -1 not configured, 0/1 configured to false/true
-                    const BYTE* codeAddrAfterMatch = NULL;
+                    const BYTE* codeAddrAfterMatch = nullptr;
+                    IL_OFFSET   awaitOffset        = BAD_IL_OFFSET;
 #ifdef DEBUG
                     if (compIsAsync() && JitConfig.JitOptimizeAwait())
 #else
                     if (compIsAsync())
 #endif
                     {
-                        codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal);
-                        if (codeAddrAfterMatch != NULL)
+                        codeAddrAfterMatch = impMatchTaskAwaitPattern(codeAddr, codeEndp, &configVal, &awaitOffset);
+                        if (codeAddrAfterMatch != nullptr)
                         {
                             isAwait = true;
                             prefixFlags |= PREFIX_IS_TASK_AWAIT;
@@ -9200,11 +9215,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (isAwait)
                     {
                         _impResolveToken(CORINFO_TOKENKIND_Await);
-                        if (resolvedToken.hMethod != NULL)
+                        if (resolvedToken.hMethod != nullptr)
                         {
                             // There is a runtime async variant that is implicitly awaitable, just call that.
                             // skip the await pattern to the last token.
-                            codeAddr = codeAddrAfterMatch;
+                            codeAddr   = codeAddrAfterMatch;
+                            opcodeOffs = awaitOffset;
                         }
                         else
                         {
