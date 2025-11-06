@@ -299,16 +299,16 @@ variables:
   # NB: These must be at the bottom of the file to reference the above variables.
 
   - name: helix_macos_arm64
-    value: ${{ variables.helix_macos_arm64_latest }}
+    value: $(helix_macos_arm64_latest)
 
   - name: helix_macos_x64
-    value: ${{ variables.helix_macos_x64_latest }}
+    value: $(helix_macos_x64_latest)
 
   - name: helix_linux_x64
-    value: ${{ variables.helix_linux_x64_latest }}
+    value: $(helix_linux_x64_latest)
 
   - name: helix_windows_x64
-    value: ${{ variables.helix_windows_x64_latest }}
+    value: $(helix_windows_x64_latest)
 
   - name: helix_windows_arm64
-    value: ${{ variables.helix_windows_arm64_latest }}
+    value: $(helix_windows_arm64_latest)
