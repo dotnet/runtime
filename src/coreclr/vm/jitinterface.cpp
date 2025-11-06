@@ -9158,7 +9158,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     }
     else
     {
-        ret = (void*)ftn->TryGetMultiCallableAddrOfCode(accessFlags | CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
+        ret = (void*)ftn->TryGetMultiCallableAddrOfCode((CORINFO_ACCESS_FLAGS)(accessFlags | CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE));
 
         // TryGetMultiCallableAddrOfCode returns NULL if indirect access is desired
         if (ret == NULL)
