@@ -4673,7 +4673,6 @@ enum class WellKnownArg : unsigned
     X86TailCallSpecialArg,
     StackArrayLocal,
     RuntimeMethodHandle,
-    AsyncSuspendedIndicator,
 };
 
 #ifdef DEBUG

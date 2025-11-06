@@ -13199,8 +13199,6 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "&lcl arr";
         case WellKnownArg::RuntimeMethodHandle:
             return "meth hnd";
-        case WellKnownArg::AsyncSuspendedIndicator:
-            return "async susp";
         default:
             return nullptr;
     }
@@ -19515,32 +19513,6 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 
     // This may be called very late to check validity of LIR.
     node = node->gtSkipReloadOrCopy();
-
-    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
-
-    return node->AsLclVarCommon();
-}
-
-//------------------------------------------------------------------------
-// gtCallGetDefinedAsyncSuspendedIndicatorLclAddr:
-//   Get the tree corresponding to the address of the indicator local that this call defines.
-//
-// Parameters:
-//   call - the Call node
-//
-// Returns:
-//   A tree representing the address of a local.
-//
-GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call)
-{
-    if (!call->IsAsync() || !call->GetAsyncInfo().HasSuspensionIndicatorDef)
-    {
-        return nullptr;
-    }
-
-    CallArg* asyncSuspensionIndicatorArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
-    assert(asyncSuspensionIndicatorArg != nullptr);
-    GenTree* node = asyncSuspensionIndicatorArg->GetNode();
 
     assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
 

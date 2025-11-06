@@ -678,8 +678,6 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "StackArrayLocal";
         case WellKnownArg::RuntimeMethodHandle:
             return "RuntimeMethodHandle";
-        case WellKnownArg::AsyncSuspendedIndicator:
-            return "AsyncSuspendedIndicator";
     }
 
     return "N/A";
@@ -1857,15 +1855,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         if (nonStdRegNum == REG_NA)
         {
-            if (arg.GetWellKnownArg() == WellKnownArg::AsyncSuspendedIndicator)
-            {
-                // Represents definition of a local. Expanded out by async transformation.
-                arg.AbiInfo = ABIPassingInformation(comp, 0);
-            }
-            else
-            {
-                arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
-            }
+            arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
         }
         else
         {
@@ -1930,13 +1920,6 @@ void CallArgs::DetermineABIInfo(Compiler* comp, GenTreeCall* call)
 
     for (CallArg& arg : Args())
     {
-        if (arg.GetWellKnownArg() == WellKnownArg::AsyncSuspendedIndicator)
-        {
-            // Represents definition of a local. Expanded out by async transformation.
-            arg.AbiInfo = ABIPassingInformation(comp, 0);
-            continue;
-        }
-
         const var_types            argSigType  = arg.GetSignatureType();
         const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
         ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
@@ -14014,7 +13997,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         // We'll jump to the genReturnBB.
 
 #if !defined(TARGET_X86)
-        if ((info.compFlags & CORINFO_FLG_SYNCH) || compIsAsync())
+        if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
         {
             fgConvertSyncReturnToLeave(block);
         }

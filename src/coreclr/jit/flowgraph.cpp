@@ -2618,12 +2618,12 @@ PhaseStatus Compiler::fgAddInternal()
         fgAddSyncMethodEnterExit();
     }
 
-    // Add async context save/restore try/finally for async methods.
-    // This must happen before the one BBJ_RETURN block is created, similar to synchronized methods.
-    if (UsesFunclets() && compIsAsync())
-    {
-        fgAddAsyncContextSaveRestore();
-    }
+    //// Add async context save/restore try/finally for async methods.
+    //// This must happen before the one BBJ_RETURN block is created, similar to synchronized methods.
+    //if (UsesFunclets() && compIsAsync())
+    //{
+    //    fgAddAsyncContextSaveRestore();
+    //}
 
     //
     //  We will generate just one epilog (return block)
@@ -2635,7 +2635,7 @@ PhaseStatus Compiler::fgAddInternal()
     //
     BasicBlock* lastBlockBeforeGenReturns = fgLastBB;
     if (compIsProfilerHookNeeded() || compMethodRequiresPInvokeFrame() || opts.IsReversePInvoke() ||
-        ((info.compFlags & CORINFO_FLG_SYNCH) != 0) || compIsAsync())
+        ((info.compFlags & CORINFO_FLG_SYNCH) != 0))
     {
         // We will generate only one return block
         // We will transform the BBJ_RETURN blocks

@@ -3742,7 +3742,6 @@ public:
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
     GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
-    GenTreeLclVarCommon* gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
@@ -5556,6 +5555,7 @@ public:
 #endif
 
     PhaseStatus SaveAsyncContexts();
+    BasicBlock* CreateReturnBB(unsigned* mergedReturnLcl);
     BasicBlock* InsertTryFinallyForContextRestore(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void ValidateNoAsyncSavesNecessary();
     void ValidateNoAsyncSavesNecessaryInStatement(Statement* stmt);

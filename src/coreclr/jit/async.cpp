@@ -60,9 +60,234 @@
 //
 PhaseStatus Compiler::SaveAsyncContexts()
 {
-    // Context save/restore is now handled in fgAddInternal by fgAddAsyncContextSaveRestore()
-    JITDUMP("SaveAsyncContexts phase is now a no-op; context handling moved to fgAddInternal\n");
-    return PhaseStatus::MODIFIED_NOTHING;
+    if (!compIsAsync())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // Create locals for ExecutionContext and SynchronizationContext
+    lvaAsyncExecutionContextVar = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
+    lvaGetDesc(lvaAsyncExecutionContextVar)->lvType = TYP_REF;
+
+    lvaAsyncSynchronizationContextVar = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
+    lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
+
+    // Create try-fault structure
+    BasicBlock* const tryBegBB  = fgSplitBlockAtBeginning(fgFirstBB);
+    BasicBlock* const tryLastBB = fgLastBB;
+
+    // Create fault handler block
+    BasicBlock* faultBB = fgNewBBafter(BBJ_EHFAULTRET, tryLastBB, false);
+    faultBB->bbRefs = 1; // Artificial ref count
+
+    EHblkDsc* newEntry = nullptr;
+    unsigned  XTnew    = compHndBBtabCount;
+
+    newEntry = fgTryAddEHTableEntries(XTnew);
+
+    if (newEntry == nullptr)
+    {
+        IMPL_LIMITATION("too many exception clauses");
+    }
+
+    // Initialize the new entry
+    newEntry->ebdID          = impInlineRoot()->compEHID++;
+    newEntry->ebdHandlerType = EH_HANDLER_FAULT;
+
+    newEntry->ebdTryBeg  = tryBegBB;
+    newEntry->ebdTryLast = tryLastBB;
+
+    newEntry->ebdHndBeg  = faultBB;
+    newEntry->ebdHndLast = faultBB;
+
+    newEntry->ebdTyp = 0; // unused for fault
+
+    newEntry->ebdEnclosingTryIndex = EHblkDsc::NO_ENCLOSING_INDEX;
+    newEntry->ebdEnclosingHndIndex = EHblkDsc::NO_ENCLOSING_INDEX;
+
+    newEntry->ebdTryBegOffset    = tryBegBB->bbCodeOffs;
+    newEntry->ebdTryEndOffset    = tryLastBB->bbCodeOffsEnd;
+    newEntry->ebdFilterBegOffset = 0;
+    newEntry->ebdHndBegOffset    = 0;
+    newEntry->ebdHndEndOffset    = 0;
+
+    // Set flags on new region
+    tryBegBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
+    faultBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
+    faultBB->bbCatchTyp = BBCT_FAULT;
+
+    tryBegBB->setTryIndex(XTnew);
+    tryBegBB->clearHndIndex();
+
+    faultBB->clearTryIndex();
+    faultBB->setHndIndex(XTnew);
+
+    // Walk user code blocks and set try index
+    for (BasicBlock* tmpBB = tryBegBB->Next(); tmpBB != faultBB; tmpBB = tmpBB->Next())
+    {
+        if (!tmpBB->hasTryIndex())
+        {
+            tmpBB->setTryIndex(XTnew);
+        }
+    }
+
+    // Walk EH table and update enclosing try indices
+    for (unsigned XTnum = 0; XTnum < XTnew; XTnum++)
+    {
+        EHblkDsc* HBtab = &compHndBBtab[XTnum];
+        if (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+        {
+            HBtab->ebdEnclosingTryIndex = (unsigned short)XTnew;
+        }
+    }
+
+    JITDUMP("Created EH descriptor EH#%u for try/fault wrapping body to save/restore async contexts\n", XTnew);
+    INDEBUG(fgVerifyHandlerTab());
+
+    // Get async helper methods
+    CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
+
+    // Insert CaptureContexts call before the try (keep it before so the
+    // try/finally can be removed if there is no exception side effects)
+    GenTreeCall* captureCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
+    captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
+    captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
+    lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvHasLdAddrOp = true;
+    lvaGetDesc(lvaAsyncExecutionContextVar)->lvHasLdAddrOp = true;
+
+    CORINFO_CALL_INFO callInfo = {};
+    callInfo.hMethod           = captureCall->gtCallMethHnd;
+    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+    impMarkInlineCandidate(captureCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+
+    Statement* captureStmt = fgNewStmtFromTree(captureCall);
+    fgInsertStmtAtBeg(fgFirstBB, captureStmt);
+
+    JITDUMP("Inserted capture\n");
+    DISPSTMT(captureStmt);
+
+    // Insert RestoreContexts call in fault (exceptional case)
+    // First argument: suspended = (continuation != null)
+    GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
+    GenTree* nullCheck    = gtNewZeroConNode(TYP_REF);
+    GenTree* suspended    = gtNewOperNode(GT_NE, TYP_INT, continuation, nullCheck);
+
+    GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(suspended));
+
+    Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
+    fgInsertStmtAtEnd(faultBB, restoreStmt);
+
+    // Now convert BBJ_RETURNs into an exit to a block outside the region.
+    BasicBlock* newReturnBB = nullptr;
+    unsigned mergedReturnLcl = BAD_VAR_NUM;
+
+    for (BasicBlock* block : Blocks())
+    {
+        if (!block->KindIs(BBJ_RETURN) || (block == newReturnBB))
+        {
+            continue;
+        }
+
+        if (newReturnBB == nullptr)
+        {
+            newReturnBB = CreateReturnBB(&mergedReturnLcl);
+        }
+
+        // Store return value to common local
+        Statement* retStmt = block->lastStmt();
+        assert((retStmt != nullptr) && retStmt->GetRootNode()->OperIs(GT_RETURN));
+
+        if (mergedReturnLcl != BAD_VAR_NUM)
+        {
+            GenTree* retVal = retStmt->GetRootNode()->AsOp()->GetReturnValue();
+            Statement* insertAfter = retStmt;
+            GenTree* storeRetVal = gtNewTempStore(mergedReturnLcl, retVal, CHECK_SPILL_NONE, &insertAfter, retStmt->GetDebugInfo(), block);
+            Statement* storeStmt = fgNewStmtFromTree(storeRetVal);
+            fgInsertStmtAtEnd(block, storeStmt);
+            JITDUMP("Inserted store to common return local\n");
+            DISPSTMT(storeStmt);
+        }
+
+        retStmt->GetRootNode()->gtBashToNOP();
+
+        // Jump to new shared restore + return block
+        block->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(newReturnBB, block));
+        fgReturnCount--;
+    }
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
+{
+    BasicBlock* newReturnBB = fgNewBBafter(BBJ_RETURN, fgLastBB, /* extendRegion */ false);
+    newReturnBB->bbTryIndex = 0; // EH region
+    newReturnBB->bbHndIndex = 0;
+    fgReturnCount++;
+    JITDUMP("Created new BBJ_RETURN block " FMT_BB "\n", newReturnBB->bbNum);
+
+    // Insert "restore" call
+    CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
+
+    GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
+    GenTree* nullCheck    = gtNewZeroConNode(TYP_REF);
+    GenTree* suspended    = gtNewOperNode(GT_NE, TYP_INT, continuation, nullCheck);
+
+    GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(suspended));
+
+    // This restore is an inline candidate (unlike the fault one)
+    CORINFO_CALL_INFO callInfo = {};
+    callInfo.hMethod           = restoreCall->gtCallMethHnd;
+    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+    impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+
+    Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
+    fgInsertStmtAtEnd(newReturnBB, restoreStmt);
+    JITDUMP("Inserted restore statement in return block\n");
+    DISPSTMT(restoreStmt);
+
+    GenTree* ret;
+    if (compMethodHasRetVal())
+    {
+        *mergedReturnLcl = lvaGrabTemp(false DEBUGARG("Async merged return local"));
+
+        var_types  retLclType =
+            compMethodReturnsRetBufAddr() ? TYP_BYREF : genActualType(info.compRetType);
+
+        if (varTypeIsStruct(retLclType))
+        {
+            lvaSetStruct(*mergedReturnLcl, info.compMethodInfo->args.retTypeClass, false);
+
+            if (compMethodReturnsMultiRegRetType())
+            {
+                lvaGetDesc(*mergedReturnLcl)->lvIsMultiRegRet = true;
+            }
+        }
+        else
+        {
+            lvaGetDesc(*mergedReturnLcl)->lvType = retLclType;
+        }
+
+        GenTree* retTemp = gtNewLclVarNode(*mergedReturnLcl);
+        ret = gtNewOperNode(GT_RETURN, retTemp->TypeGet(), retTemp);
+    }
+    else
+    {
+        ret = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
+    }
+
+    Statement* retStmt = fgNewStmtFromTree(ret);
+
+    fgInsertStmtAtEnd(newReturnBB, retStmt);
+    JITDUMP("Inserted return statement in return block\n");
+    DISPSTMT(retStmt);
+    return newReturnBB;
 }
 
 //------------------------------------------------------------------------

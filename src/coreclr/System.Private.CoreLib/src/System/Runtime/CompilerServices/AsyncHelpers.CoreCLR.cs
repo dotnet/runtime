@@ -626,16 +626,19 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void RestoreContexts(bool suspended, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
         {
-            Thread thread = Thread.CurrentThreadAssumedInitialized;
-            if (!suspended && previousSyncCtx != thread._synchronizationContext)
+            if (!suspended)
             {
-                thread._synchronizationContext = previousSyncCtx;
-            }
+                Thread thread = Thread.CurrentThreadAssumedInitialized;
+                if (previousSyncCtx != thread._synchronizationContext)
+                {
+                    thread._synchronizationContext = previousSyncCtx;
+                }
 
-            ExecutionContext? currentExecCtx = thread._executionContext;
-            if (previousExecCtx != currentExecCtx)
-            {
-                ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
+                ExecutionContext? currentExecCtx = thread._executionContext;
+                if (previousExecCtx != currentExecCtx)
+                {
+                    ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
+                }
             }
         }
 
