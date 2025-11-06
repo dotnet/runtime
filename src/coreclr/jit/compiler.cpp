@@ -6809,6 +6809,14 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
             break;
     }
 
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+    // Initialize the size of Vector<T> from the EE.
+    _initGenTypeSizes[TYP_SIMDSV] = (BYTE)getVectorTByteLength();
+    _initGenTypeSizes[TYP_MASK]   = (BYTE)getMaskByteLength();
+    assert(genTypeSize(TYP_SIMDSV) >= 16);
+    assert(genTypeSize(TYP_MASK) >= 2);
+#endif
+
     info.compRetType = JITtype2varType(methodInfo->args.retType);
     if (info.compRetType == TYP_STRUCT)
     {
@@ -7096,14 +7104,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         compGenTreeID   = impInlineInfo->InlinerCompiler->compGenTreeID;
         compStatementID = impInlineInfo->InlinerCompiler->compStatementID;
     }
-#endif
-
-#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
-    // Initialize the size of Vector<T> from the EE.
-    _initGenTypeSizes[TYP_SIMDSV] = getVectorTByteLength();
-    _initGenTypeSizes[TYP_MASK]   = getMaskByteLength();
-    assert(genTypeSize(TYP_SIMDSV) >= 16);
-    assert(genTypeSize(TYP_MASK) >= 2);
 #endif
 
     compCompile(methodCodePtr, methodCodeSize, compileFlags);
