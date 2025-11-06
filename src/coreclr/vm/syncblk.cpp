@@ -1403,6 +1403,32 @@ namespace
 
         InterlockedAnd((LONG*)pLock, ~BIT_SBLK_SPIN_LOCK);
     }
+
+    struct HeaderSpinLockHolder
+    {
+        Volatile<DWORD>*   m_pLock;
+
+        HeaderSpinLockHolder(Volatile<DWORD>* pLock)
+            : m_pLock(pLock)
+        {
+            // Acquire the spin-lock in preemptive mode with GC_NOTRIGGER
+            // to avoid deadlocks with the GC.
+            CONTRACTL
+            {
+                GC_NOTRIGGER;
+                NOTHROW;
+                MODE_PREEMPTIVE;
+            }
+            CONTRACTL_END;
+            EnterSpinLock(m_pLock);
+        }
+
+        ~HeaderSpinLockHolder()
+        {
+            LIMITED_METHOD_CONTRACT;
+            ReleaseSpinLock(m_pLock);
+        }
+    }
 }
 #endif //!DACCESS_COMPILE
 
@@ -1758,36 +1784,14 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
     // Create the handle here.
     OBJECTHANDLEHolder lockHandle = GetAppDomain()->CreateHandle(lockObj);
 
-    struct HeaderSpinLockHolder
-    {
-        Volatile<DWORD>*   m_pLock;
+    // Switch to preemptive so we can grab the spin-lock.
+    // Use the NO_DTOR version so we don't do a coop->preemptive->coop transition on return.
+    GCX_PREEMP_NO_DTOR();
 
-        HeaderSpinLockHolder(Volatile<DWORD>* pLock)
-            : m_pLock(pLock)
-        {
-            CONTRACTL
-            {
-                GC_TRIGGERS;
-                THROWS;
-                MODE_COOPERATIVE;
-            }
-            CONTRACTL_END;
+    HeaderSpinLockHolder lock(std::addressof(m_thinLock));
 
-            // Acquire the spin-lock in preemptive mode with GC_NOTRIGGER
-            // to avoid deadlocks with the GC.
-            GCX_PREEMP();
-            GCX_NOTRIGGER();
-            FAULT_FORBID();
-
-            EnterSpinLock(m_pLock);
-        }
-
-        ~HeaderSpinLockHolder()
-        {
-            LIMITED_METHOD_CONTRACT;
-            ReleaseSpinLock(m_pLock);
-        }
-    } lock(std::addressof(m_thinLock));
+    // We don't need to be in preemptive any more here.
+    GCX_PREEMP_NO_DTOR_END();
 
     // Check again now that we hold the spin-lock
     OBJECTHANDLE existingLock = VolatileLoad(&m_Lock);
@@ -1797,13 +1801,13 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
     }
 
     // We need to create a new lock
-    DWORD thinLock = m_thinLock;
+    // Grab the bits that are interesting for thin-lock info.
+    // This way we only call back into managed code
+    // to initialize the lock when necessary.
+    DWORD thinLock = (m_thinLock & ((SBLK_MASK_LOCK_THREADID) | (SBLK_MASK_LOCK_RECLEVEL)));
 
     if (thinLock != 0)
     {
-        // lockObj wasn't protected before this call
-        // and we switched GC modes when acquiring the spin-lock.
-        // Get the object to pass from our local handle.
 
         // We have thin-lock info that needs to be transferred to the lock object.
         DWORD lockThreadId = thinLock & SBLK_MASK_LOCK_THREADID;
