@@ -25,7 +25,7 @@
     <!-- TODO-WASM: we will have WASM R2R after https://github.com/dotnet/runtime/issues/121257 -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</PublishReadyToRun>
 
-    <CrossgenTargetName Condition="!$(PublishReadyToRun)">CopyCoreLib</CrossgenTargetName>
+    <CrossgenTargetName Condition="!$(PublishReadyToRun)">CopyILCoreLib</CrossgenTargetName>
 
     <BuildPdb>false</BuildPdb>
     <BuildPdb Condition="'$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'windows'">true</BuildPdb>
@@ -36,10 +36,10 @@
     <_MergeMibcFilesCacheFile>$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/merge_mibc_files.cache</_MergeMibcFilesCacheFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and $(PublishReadyToRun)">
     <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
     <UseComposite>true</UseComposite>
-    <CrossgenTargetName>$(CrossgenTargetName);LinkCoreLibMachO</CrossgenTargetName>
+    <CrossgenTargetName>$(CrossgenTargetName);LinkCoreLibMachO;CopyR2RComponentCoreLib</CrossgenTargetName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -113,7 +113,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="CopyCoreLib"
+  <Target Name="CopyILCoreLib"
           DependsOnTargets="ResolveProjectReferences"
           Inputs="@(CoreLib)"
           Outputs="$(CoreLibOutputPath)">
@@ -165,6 +165,13 @@
 
     <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded." />
     <Message Importance="High" Text="Product binaries are available at $(BinDir)" />
+  </Target>
+
+  <Target Name="CopyR2RComponentCoreLib"
+          DependsOnTargets="InvokeCrossgen2"
+          Inputs="$(CrossgenCoreLibOutputPath)"
+          Outputs="$(CoreLibOutputPath)">
+    <Copy SourceFiles="$(CrossgenCoreLibOutputPath)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
   </Target>
 
   <Target
