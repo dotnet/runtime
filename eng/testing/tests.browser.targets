@@ -170,12 +170,17 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="LinkContentToWwwroot" AfterTargets="AssignTargetPaths" BeforeTargets="ResolveProjectStaticWebAssets">
+  <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets">
     <ItemGroup>
       <WasmFilesToIncludeInFileSystem Include="%(Content.TargetPath)" Condition="('%(Content.CopyToOutputDirectory)' == 'PreserveNewest' or '%(Content.CopyToOutputDirectory)' == 'Always') and '%(Content.TargetPath)' != ''" />
       <Content Condition="('%(Content.CopyToOutputDirectory)' == 'PreserveNewest' or '%(Content.CopyToOutputDirectory)' == 'Always') and '%(Content.TargetPath)' != ''">
         <ContentRoot>$([MSBuild]::ValueOrDefault('%(Content.Identity)', '').Replace('%(Content.TargetPath)', ''))</ContentRoot>
         <TargetPath>wwwroot\%(Content.TargetPath)</TargetPath>
+      </Content>
+      <WasmFilesToIncludeInFileSystem Include="%(Content.Identity)" Condition="('%(Content.CopyToOutputDirectory)' == 'PreserveNewest' or '%(Content.CopyToOutputDirectory)' == 'Always') and '%(Content.Link)' == ''" />
+      <Content Condition="('%(Content.CopyToOutputDirectory)' == 'PreserveNewest' or '%(Content.CopyToOutputDirectory)' == 'Always') and '%(Content.Link)' == ''">
+        <ContentRoot>$(MSBuildProjectDirectory)</ContentRoot>
+        <TargetPath>wwwroot\%(Content.Identity)</TargetPath>
       </Content>
     </ItemGroup>
   </Target>
