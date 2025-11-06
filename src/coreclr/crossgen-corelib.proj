@@ -194,7 +194,7 @@
       <_AppleTripleAbi Condition="$(TargetOS.EndsWith('simulator'))">simulator</_AppleTripleAbi>
 
       <TargetTriple Condition="'$(_AppleTripleAbi)' == ''">$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)</TargetTriple>
-      <TargetTriple>$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)-$(_AppleTripleAbi)</TargetTriple>
+      <TargetTriple Condition="'$(_AppleTripleAbi)' != ''">$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)-$(_AppleTripleAbi)</TargetTriple>
     </PropertyGroup>
 
     <PropertyGroup>

@@ -569,7 +569,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_AppleTripleAbi Condition="$(_appleTargetOS.EndsWith('simulator'))">simulator</_AppleTripleAbi>
 
       <TargetTriple Condition="'$(_AppleTripleAbi)' == ''">$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)</TargetTriple>
-      <TargetTriple>$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)-$(_AppleTripleAbi)</TargetTriple>
+      <TargetTriple Condition="'$(_AppleTripleAbi)' != ''">$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)-$(_AppleTripleAbi)</TargetTriple>
     </PropertyGroup>
 
     <PropertyGroup>

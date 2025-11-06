@@ -216,6 +216,7 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = compilationModuleGroup.Resolver;
+            Format = format;
 
             Header = new GlobalHeaderNode(flags, associatedModule);
             ImageBase = imageBase;
@@ -780,7 +781,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null, 
+            InliningInfoNode crossModuleInliningInfoTable = new InliningInfoNode(null,
                 CompilationModuleGroup.IsCompositeBuildMode ? InliningInfoNode.InfoType.CrossModuleInliningForCrossModuleDataOnly : InliningInfoNode.InfoType.CrossModuleAllMethods);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CrossModuleInlineInfo, crossModuleInliningInfoTable, crossModuleInliningInfoTable);
             this.CrossModuleInlningInfo = crossModuleInliningInfoTable;

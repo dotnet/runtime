@@ -351,7 +351,7 @@ namespace Microsoft.NET.Build.Tasks
                     ItemSpec = compositeR2RImageFinal
                 };
                 compositeR2RFileToPublish.RemoveMetadata(MetadataKeys.OriginalItemSpec);
-                compositeR2RFileToPublish.SetMetadata(MetadataKeys.RelativePath, compositeR2RImageRelativePath);
+                compositeR2RFileToPublish.SetMetadata(MetadataKeys.RelativePath, compositeR2RImageFinalRelativePath);
 
                 if (compositeR2RImageFinal != compositeR2RImage)
                 {
