@@ -178,7 +178,7 @@ set( JIT_SOURCES
   valuenum.cpp
 )
 
-set ( JIT_PHYSICAL_TARGET_SOURCES
+set ( JIT_NATIVE_TARGET_SOURCES
   lsra.cpp
   lsrabuild.cpp
   regalloc.cpp
@@ -198,7 +198,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 # Define all the architecture-specific source files
 
 set( JIT_AMD64_SOURCES
-  ${JIT_PHYSICAL_TARGET_SOURCES}
+  ${JIT_NATIVE_TARGET_SOURCES}
   codegenxarch.cpp
   emitxarch.cpp
   lowerxarch.cpp
@@ -212,7 +212,7 @@ set( JIT_AMD64_SOURCES
 )
 
 set( JIT_ARM_SOURCES
-  ${JIT_PHYSICAL_TARGET_SOURCES}
+  ${JIT_NATIVE_TARGET_SOURCES}
   codegenarmarch.cpp
   codegenarm.cpp
   decomposelongs.cpp
@@ -225,7 +225,7 @@ set( JIT_ARM_SOURCES
 )
 
 set( JIT_I386_SOURCES
-  ${JIT_PHYSICAL_TARGET_SOURCES}
+  ${JIT_NATIVE_TARGET_SOURCES}
   codegenxarch.cpp
   decomposelongs.cpp
   emitxarch.cpp
@@ -240,7 +240,7 @@ set( JIT_I386_SOURCES
 )
 
 set( JIT_ARM64_SOURCES
-  ${JIT_PHYSICAL_TARGET_SOURCES}
+  ${JIT_NATIVE_TARGET_SOURCES}
   codegenarmarch.cpp
   codegenarm64.cpp
   codegenarm64test.cpp
@@ -270,7 +270,7 @@ set( JIT_POWERPC64_SOURCES
 )
 
 set( JIT_LOONGARCH64_SOURCES
-  ${JIT_PHYSICAL_TARGET_SOURCES}
+  ${JIT_NATIVE_TARGET_SOURCES}
   codegenloongarch64.cpp
   emitloongarch64.cpp
   lowerloongarch64.cpp
@@ -280,7 +280,7 @@ set( JIT_LOONGARCH64_SOURCES
 )
 
 set( JIT_RISCV64_SOURCES
-  ${JIT_PHYSICAL_TARGET_SOURCES}
+  ${JIT_NATIVE_TARGET_SOURCES}
   codegenriscv64.cpp
   emitriscv64.cpp
   lowerriscv64.cpp

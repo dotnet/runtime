@@ -66,7 +66,7 @@ CodeGenInterface* getCodeGenerator(Compiler* comp)
 // TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
 // 1. Everything shared by all codegen backends (incl. WASM) stays here.
 // 2. Everything else goes into codegenlinear.cpp.
-// 3. This file gets renamed to codegen.cpp, codegenlinear.cpp - to codegenphysical.cpp.
+// 3. codegenlinear.cpp gets renamed to codegennative.cpp.
 //
 #ifndef TARGET_WASM
 NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
