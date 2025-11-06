@@ -1,11 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
-
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -66,8 +61,7 @@ namespace ILCompiler
                 => value1.PointerMap.Equals(value2.PointerMap);
             protected override AsyncContinuationType CreateValueFromKey(GCPointerMap key)
             {
-                if (_continuationType == null)
-                    _continuationType = _parent.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
+                _continuationType ??= _parent.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
                 return new AsyncContinuationType(_continuationType, key);
             }
         }
