@@ -740,6 +740,10 @@ const size_t g_wasmThunksCount = sizeof(g_wasmThunks) / sizeof(g_wasmThunks[0]);
 
 // Entry point for interpreted method execution from unmanaged code
 class MethodDesc;
+
+// WASM-TODO: The method lookup would ideally be fully qualified assembly and then methodDef token.
+// The current approach has limitations with overloaded methods.
+extern "C" void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret);
 
 // static MethodDesc* MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32 = nullptr;
@@ -750,7 +754,13 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
 //         (int64_t)a,
 //         (int64_t)b
 //     };
-
+//
+//     // Lazy lookup of MethodDesc for the function export scenario.
+//     if (!MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32)
+//     {
+//         LookupMethodByName("MyType, MyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", "MyMethod_I32_I32_RetI32", &MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32);
+//     }
+//
 //     int result;
 //     ExecuteInterpretedMethodFromUnmanaged(MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
 //     return result;
@@ -758,7 +768,7 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
 
 extern const ReverseThunkMapEntry g_ReverseThunks[] =
 {
-    /// { 0xee78b850, { &MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32, (void*)&Call_MyAssembly_MyType_MyMethod_I32_I32_RetI32 } },
+//    { 0xee78b850, { &MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32, (void*)&Call_MyAssembly_MyType_MyMethod_I32_I32_RetI32 } },
 };
 
 const size_t g_ReverseThunksCount = sizeof(g_ReverseThunks) / sizeof(g_ReverseThunks[0]);
