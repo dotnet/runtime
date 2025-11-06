@@ -1428,7 +1428,7 @@ namespace
             LIMITED_METHOD_CONTRACT;
             ReleaseSpinLock(m_pLock);
         }
-    }
+    };
 }
 #endif //!DACCESS_COMPILE
 
@@ -1773,9 +1773,10 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
     }
     CONTRACTL_END;
 
-    if (m_Lock != (OBJECTHANDLE)NULL)
+    OBJECTHANDLE existingLock = VolatileLoad(&m_Lock);
+    if (existingLock != (OBJECTHANDLE)NULL)
     {
-        return m_Lock;
+        return existingLock;
     }
 
     SetPrecious();
@@ -1794,7 +1795,7 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
     GCX_PREEMP_NO_DTOR_END();
 
     // Check again now that we hold the spin-lock
-    OBJECTHANDLE existingLock = VolatileLoad(&m_Lock);
+    existingLock = m_Lock;
     if (existingLock != (OBJECTHANDLE)NULL)
     {
         return existingLock;
@@ -1804,7 +1805,7 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
     // Grab the bits that are interesting for thin-lock info.
     // This way we only call back into managed code
     // to initialize the lock when necessary.
-    DWORD thinLock = (m_thinLock & ((SBLK_MASK_LOCK_THREADID) | (SBLK_MASK_LOCK_RECLEVEL)));
+    DWORD thinLock = (m_thinLock.LoadWithoutBarrier() & ((SBLK_MASK_LOCK_THREADID) | (SBLK_MASK_LOCK_RECLEVEL)));
 
     if (thinLock != 0)
     {
@@ -1831,7 +1832,7 @@ OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
     // It won't be used any more, but it will look out of date.
     // Only clear the relevant bits, as the spin-lock bit is used to lock this method.
     // That bit will be reset upon return.
-    m_thinLock &= ~((SBLK_MASK_LOCK_THREADID) | (SBLK_MASK_LOCK_RECLEVEL));
+    m_thinLock.StoreWithoutBarrier(m_thinLock.LoadWithoutBarrier() & ~((SBLK_MASK_LOCK_THREADID) | (SBLK_MASK_LOCK_RECLEVEL)));
 
     return lockHandle;
 }
