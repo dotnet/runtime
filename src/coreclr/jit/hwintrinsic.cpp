@@ -1949,9 +1949,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_ARM64
         else if ((intrinsic == NI_AdvSimd_LoadAndInsertScalar) || (intrinsic == NI_AdvSimd_Arm64_LoadAndInsertScalar))
         {
-            var_types pSimdBaseType = TYP_UNDEF;
+            var_types retFieldBaseType = TYP_UNDEF;
 
-            var_types retFieldType = impNormStructType(sig->retTypeSigClass, &pSimdBaseType);
+            var_types retFieldType = impNormStructType(sig->retTypeSigClass, &retFieldBaseType);
 
             if (retFieldType == TYP_STRUCT)
             {
@@ -1959,7 +1959,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                 unsigned int         sizeBytes = 0;
 
                 // LoadAndInsertScalar that returns 2,3 or 4 vectors
-                assert(pSimdBaseType == TYP_UNDEF);
+                assert(retFieldBaseType == TYP_UNDEF);
                 unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(sig->retTypeSigClass);
                 assert(fieldCount > 1);
                 CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(sig->retTypeClass, 0);

@@ -6419,34 +6419,6 @@ public:
 
     var_types GetAuxiliaryType() const;
 
-    var_types GetNormalizedSimdBaseType() const
-    {
-        var_types simdBaseType = GetSimdBaseType();
-        switch (simdBaseType)
-        {
-            case TYP_I_IMPL:
-            {
-#ifdef TARGET_64BIT
-                return TYP_LONG;
-#else
-                return TYP_INT;
-#endif
-            }
-
-            case TYP_U_IMPL:
-            {
-#ifdef TARGET_64BIT
-                return TYP_ULONG;
-#else
-                return TYP_UINT;
-#endif
-            }
-
-            default:
-                return simdBaseType;
-        }
-    }
-
     // The invariant here is that simdBaseType is a converted
     // CorInfoType using JitType2PreciseVarType.
     void SetSimdBaseType(var_types simdBaseType)
@@ -6458,8 +6430,6 @@ public:
     var_types GetSimdBaseType() const;
 
     var_types GetSimdBaseTypeAsVarType() const;
-
-    var_types GetSimdBaseTypeAsPreciseVarType() const;
 
     unsigned char GetSimdSize() const
     {

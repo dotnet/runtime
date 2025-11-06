@@ -20234,11 +20234,6 @@ var_types GenTreeJitIntrinsic::GetSimdBaseTypeAsVarType() const
             return simdBaseType;
     }
 }
-
-var_types GenTreeJitIntrinsic::GetSimdBaseTypeAsPreciseVarType() const
-{
-    return GetSimdBaseType();
-}
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -21811,6 +21806,7 @@ GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, var_types sim
 // Arguments:
 //    type            -- The type of the node to convert to
 //    op1             -- The node to convert
+//    simdBaseType    -- The base type of the converted node
 //    simdSize        -- the simd size of the converted node
 //
 // Return Value:
@@ -26157,19 +26153,19 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
 
         assert(op2DupSafe != nullptr);
 
-        // get the CorInfoType used for the index comparison
-        var_types corType = TYP_UBYTE;
+        // get the var_types used for the index comparison
+        var_types baseType = TYP_UBYTE;
         if (elementSize == 2)
         {
-            corType = TYP_USHORT;
+            baseType = TYP_USHORT;
         }
         else if (elementSize == 4)
         {
-            corType = TYP_UINT;
+            baseType = TYP_UINT;
         }
         else if (elementSize == 8)
         {
-            corType = TYP_ULONG;
+            baseType = TYP_ULONG;
         }
 
         // track whether we need to xor the high bit from the comparand
@@ -26179,18 +26175,18 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         // if the hardware doesn't support direct unsigned comparison, we attempt to use signed comparison
         if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
         {
-            corType = TYP_BYTE;
+            baseType = TYP_BYTE;
             if (elementSize == 2)
             {
-                corType = TYP_SHORT;
+                baseType = TYP_SHORT;
             }
             else if (elementSize == 4)
             {
-                corType = TYP_INT;
+                baseType = TYP_INT;
             }
             else if (elementSize == 8)
             {
-                corType = TYP_LONG;
+                baseType = TYP_LONG;
             }
 
             // if we can't use signed comparison for free, update the comparand and op2DupSafe appropriately.
@@ -26200,9 +26196,9 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
                 subComparandNode          = true;
                 uint64_t subtractionValue = static_cast<uint64_t>(1) << (elementSize * 8 - 1);
                 GenTree* subtraction =
-                    gtNewSimdCreateBroadcastNode(type, gtNewLconNode(subtractionValue), corType, simdSize);
+                    gtNewSimdCreateBroadcastNode(type, gtNewLconNode(subtractionValue), baseType, simdSize);
 
-                op2DupSafe = gtNewSimdBinOpNode(GT_SUB, type, op2DupSafe, subtraction, corType, simdSize);
+                op2DupSafe = gtNewSimdBinOpNode(GT_SUB, type, op2DupSafe, subtraction, baseType, simdSize);
             }
         }
 #endif
@@ -26214,12 +26210,12 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
             uint64_t subtraction = (uint64_t)1 << (elementSize * 8 - 1);
             comparandValue -= subtraction;
         }
-        GenTree* comparand = gtNewSimdCreateBroadcastNode(type, gtNewLconNode(comparandValue), corType, simdSize);
+        GenTree* comparand = gtNewSimdCreateBroadcastNode(type, gtNewLconNode(comparandValue), baseType, simdSize);
 
-        assert(genTypeSize(corType) == elementSize);
+        assert(genTypeSize(baseType) == elementSize);
 
         // create the mask node (op2 < comparand), and the result node (mask & nativeResult)
-        GenTree* mask = gtNewSimdCmpOpNode(GT_LT, type, op2DupSafe, comparand, corType, simdSize);
+        GenTree* mask = gtNewSimdCmpOpNode(GT_LT, type, op2DupSafe, comparand, baseType, simdSize);
         retNode       = gtNewSimdBinOpNode(GT_AND, type, retNode, mask, simdBaseType, simdSize);
     }
     else
@@ -27257,6 +27253,7 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(
 //  Arguments:
 //    type                - The return type of SIMD node being created.
 //    op1                 - The SIMD operand.
+//    simdBaseType        - The base type of SIMD type of the intrinsic.
 //    simdSize            - The size of the SIMD type of the intrinsic.
 //
 // Returns:
