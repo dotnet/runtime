@@ -38,6 +38,7 @@
 
   <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
     <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
+    <UseComposite>true</UseComposite>
     <CrossgenTargetName>$(CrossgenTargetName);LinkCoreLibMachO</CrossgenTargetName>
   </PropertyGroup>
 
@@ -135,7 +136,8 @@
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CrossgenCoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
-      <CrossGenDllCmd  Condition="'$(PublishReadyToRunContainerFormat)' != 'pe'">$(CrossGenDllCmd) --composite --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
+      <CrossGenDllCmd  Condition="'$(PublishReadyToRunContainerFormat)' != ''">$(CrossGenDllCmd) --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
+      <CrossGenDllCmd  Condition="'$(UseComposite)' == 'true'">$(CrossGenDllCmd) --composite</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(TargetsAndroid)' != 'true'">$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
       <!-- Unless and until Android requires R2R specific customizations, we're just dealing with another linux -->
       <CrossGenDllCmd Condition="'$(TargetsAndroid)' == 'true'">$(CrossGenDllCmd) --targetos:linux</CrossGenDllCmd>
