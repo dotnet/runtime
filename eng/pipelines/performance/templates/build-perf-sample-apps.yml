@@ -189,7 +189,7 @@ steps:
           artifactName:  iOSCoreCLRInterpreterArm64StripSymbolsBuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Debug-iphoneos/HelloiOS.app
+          rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
           includeRootFolder: true
           displayName: iOS Sample App CoreCLR Interpreter NoSymbols
           artifactName: iOSSampleAppCoreCLRInterpreterNoSymbols
