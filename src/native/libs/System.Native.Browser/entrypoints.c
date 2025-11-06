@@ -11,11 +11,15 @@
 // implemented in JavaScript
 EXTERN_C int32_t SystemJS_RandomBytes(uint8_t* buffer, int32_t bufferLength);
 EXTERN_C uint16_t* SystemJS_GetLocaleInfo (const uint16_t* locale, int32_t localeLength, const uint16_t* culture, int32_t cultureLength, const uint16_t* result, int32_t resultMaxLength, int *resultLength);
+EXTERN_C void SystemJS_ScheduleTimer (int shortestDueTimeMs);
+EXTERN_C void SystemJS_ScheduleBackgroundJob ();
 
 static const Entry s_browserNative[] =
 {
     DllImportEntry(SystemJS_RandomBytes)
     DllImportEntry(SystemJS_GetLocaleInfo)
+    DllImportEntry(SystemJS_ScheduleTimer)
+    DllImportEntry(SystemJS_ScheduleBackgroundJob)
 };
 
 EXTERN_C const void* SystemJSResolveDllImport(const char* name);

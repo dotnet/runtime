@@ -1024,7 +1024,7 @@ namespace System
                     string str = (IsImplicitFile && _info.Offset.Host == (IsDosPath ? 0 : 2) &&
                         _info.Offset.Query == _info.Offset.End)
                             ? _string
-                            : (IsDosPath && (_string[start] == '/' || _string[start] == '\\'))
+                            : (IsDosPath && _string[start] is '/' or '\\')
                                 ? _string.Substring(start + 1, _info.Offset.Query - start - 1)
                                 : _string.Substring(start, _info.Offset.Query - start);
 
@@ -1042,39 +1042,39 @@ namespace System
                     return str;
                 }
 
-                char[] result;
-                int count = 0;
-                start = _info.Offset.Path;
+                var result = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
 
                 string host = _info.Host;
-                result = new char[host.Length + 3 + _info.Offset.Fragment - _info.Offset.Path];
+                start = _info.Offset.Path;
 
                 if (IsUncPath)
                 {
-                    result[0] = '\\';
-                    result[1] = '\\';
-                    count = 2;
-
-                    UriHelper.UnescapeString(host, 0, host.Length, result, ref count, c_DummyChar, c_DummyChar,
-                        c_DummyChar, UnescapeMode.CopyOnly, _syntax, false);
+                    result.Append('\\');
+                    result.Append('\\');
+                    result.Append(host);
                 }
                 else
                 {
                     // Dos path
-                    if (_string[start] == '/' || _string[start] == '\\')
+                    if (_string[start] is '/' or '\\')
                     {
                         // Skip leading slash for a DOS path
-                        ++start;
+                        start++;
                     }
                 }
 
+                int pathStart = result.Length; // save for optional Compress() call
 
-                int pathStart = count; // save for optional Compress() call
+                ReadOnlySpan<char> path = _string.AsSpan(start, _info.Offset.Query - start);
 
-                UnescapeMode mode = (InFact(Flags.PathNotCanonical) && !IsImplicitFile)
-                    ? (UnescapeMode.Unescape | UnescapeMode.UnescapeAll) : UnescapeMode.CopyOnly;
-                UriHelper.UnescapeString(_string, start, _info.Offset.Query, result, ref count, c_DummyChar,
-                    c_DummyChar, c_DummyChar, mode, _syntax, true);
+                if (InFact(Flags.PathNotCanonical) && !IsImplicitFile)
+                {
+                    UriHelper.Unescape(path, ref result);
+                }
+                else
+                {
+                    result.Append(path);
+                }
 
                 // Possibly convert c|\ into c:\
                 if (result[1] == '|')
@@ -1084,16 +1084,16 @@ namespace System
                 {
                     // suspecting not compressed path
                     // For a dos path we won't compress the "x:" part if found /../ sequences
-                    Compress(result, IsDosPath ? pathStart + 2 : pathStart, ref count, _syntax);
+                    Compress(ref result, IsDosPath ? pathStart + 2 : pathStart, _syntax);
                 }
 
                 // We don't know whether all slashes were the back ones
                 // Plus going through Compress will turn them into / anyway
                 // Converting / back into \
-                Span<char> slashSpan = result.AsSpan(0, count);
+                Span<char> slashSpan = result.RawChars.Slice(0, result.Length);
                 slashSpan.Replace('/', '\\');
 
-                return new string(result, 0, count);
+                return result.ToString();
             }
             else
             {
@@ -1243,15 +1243,7 @@ namespace System
                     // It might be a registry-based host from RFC 2396 Section 3.2.1
                     else if (hostType == Flags.BasicHostType && InFact(Flags.HostNotCanonical | Flags.E_HostNotCanonical))
                     {
-                        // Unescape everything
-                        var dest = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
-
-                        UriHelper.UnescapeString(host, 0, host.Length, ref dest,
-                            c_DummyChar, c_DummyChar, c_DummyChar,
-                            UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
-                            _syntax, isQuery: false);
-
-                        host = dest.ToString();
+                        host = UnescapeDataString(host);
                     }
 
                     _info.IdnHost = host;
@@ -1318,49 +1310,38 @@ namespace System
                 return UriHostNameType.Unknown;
             }
 
-            int end = name.Length;
-            unsafe
+            int end;
+            if (name.StartsWith('[') && name.EndsWith(']'))
             {
-                fixed (char* fixedName = name)
-                {
-                    if (name.StartsWith('[') && name.EndsWith(']'))
-                    {
-                        // we require that _entire_ name is recognized as ipv6 address
-                        if (IPv6AddressHelper.IsValid(fixedName, 1, ref end) && end == name.Length)
-                        {
-                            return UriHostNameType.IPv6;
-                        }
-                    }
-
-                    end = name.Length;
-                    if (IPv4AddressHelper.IsValid(fixedName, 0, ref end, false, false, false) && end == name.Length)
-                    {
-                        return UriHostNameType.IPv4;
-                    }
-                }
-
-                if (DomainNameHelper.IsValid(name, iri: false, notImplicitFile: false, out int length) && length == name.Length)
-                {
-                    return UriHostNameType.Dns;
-                }
-
-                if (DomainNameHelper.IsValid(name, iri: true, notImplicitFile: false, out length) && length == name.Length)
-                {
-                    return UriHostNameType.Dns;
-                }
-
-                //This checks the form without []
-                end = name.Length + 2;
                 // we require that _entire_ name is recognized as ipv6 address
-                name = "[" + name + "]";
-                fixed (char* newFixedName = name)
+                if (IPv6AddressHelper.IsValid(name, out end) && end == name.Length)
                 {
-                    if (IPv6AddressHelper.IsValid(newFixedName, 1, ref end) && end == name.Length)
-                    {
-                        return UriHostNameType.IPv6;
-                    }
+                    return UriHostNameType.IPv6;
                 }
             }
+
+            if (IPv4AddressHelper.IsValid(name.AsSpan(), out end, false, false, false) && end == name.Length)
+            {
+                return UriHostNameType.IPv4;
+            }
+
+            if (DomainNameHelper.IsValid(name, iri: false, notImplicitFile: false, out end) && end == name.Length)
+            {
+                return UriHostNameType.Dns;
+            }
+
+            if (DomainNameHelper.IsValid(name, iri: true, notImplicitFile: false, out end) && end == name.Length)
+            {
+                return UriHostNameType.Dns;
+            }
+
+            // This checks the form without []
+            // we require that _entire_ name is recognized as ipv6 address
+            if (IPv6AddressHelper.IsValid($"[{name}]", out end) && end - 2 == name.Length)
+            {
+                return UriHostNameType.IPv6;
+            }
+
             return UriHostNameType.Unknown;
         }
 
@@ -2865,10 +2846,7 @@ namespace System
                             break;
 
                         case UriFormat.Unescaped:
-                            UriHelper.UnescapeString(slice,
-                                ref dest, c_DummyChar, c_DummyChar, c_DummyChar,
-                                UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
-                                _syntax, isQuery: false);
+                            UriHelper.Unescape(slice, ref dest);
                             break;
 
                         default: //V1ToStringUnescape
@@ -2895,20 +2873,6 @@ namespace System
 
                 if (host.Length != 0)
                 {
-                    UnescapeMode mode;
-                    if (formatAs != UriFormat.UriEscaped && HostType == Flags.BasicHostType
-                        && (nonCanonical & (ushort)UriComponents.Host) != 0)
-                    {
-                        // only Basic host could be in the escaped form
-                        mode = formatAs == UriFormat.Unescaped
-                            ? (UnescapeMode.Unescape | UnescapeMode.UnescapeAll) :
-                                (InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape);
-                    }
-                    else
-                    {
-                        mode = UnescapeMode.CopyOnly;
-                    }
-
                     var hostBuilder = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
 
                     // NormalizedHost
@@ -2923,10 +2887,27 @@ namespace System
                         }
                     }
 
-                    UriHelper.UnescapeString(hostBuilder.Length == 0 ? host : hostBuilder.AsSpan(),
-                        ref dest, '/', '?', '#',
-                        mode,
-                        _syntax, isQuery: false);
+                    ReadOnlySpan<char> hostSlice = hostBuilder.Length == 0 ? host : hostBuilder.AsSpan();
+
+                    if (formatAs != UriFormat.UriEscaped && HostType == Flags.BasicHostType && (nonCanonical & (ushort)UriComponents.Host) != 0)
+                    {
+                        // only Basic host could be in the escaped form
+                        if (formatAs == UriFormat.Unescaped)
+                        {
+                            UriHelper.Unescape(hostSlice, ref dest);
+                        }
+                        else
+                        {
+                            UriHelper.UnescapeString(hostSlice,
+                                ref dest, '/', '?', '#',
+                                InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape,
+                                _syntax, isQuery: false);
+                        }
+                    }
+                    else
+                    {
+                        dest.Append(hostSlice);
+                    }
 
                     hostBuilder.Dispose();
 
@@ -2981,37 +2962,8 @@ namespace System
                 if (parts != UriComponents.Query)
                     dest.Append('?');
 
-                UnescapeMode mode = UnescapeMode.CopyOnly;
-
-                if ((nonCanonical & (ushort)UriComponents.Query) != 0)
-                {
-                    if (formatAs == UriFormat.UriEscaped)
-                    {
-                        if (NotAny(Flags.UserEscaped))
-                        {
-                            UriHelper.EscapeString(
-                                str.AsSpan(offset, _info.Offset.Fragment - offset),
-                                ref dest, checkExistingEscaped: true, UriHelper.UnreservedReservedExceptHash);
-
-                            goto AfterQuery;
-                        }
-                    }
-                    else
-                    {
-                        mode = formatAs switch
-                        {
-                            V1ToStringUnescape => (InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape) | UnescapeMode.V1ToStringFlag,
-                            UriFormat.Unescaped => UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
-                            _ => InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape
-                        };
-                    }
-                }
-
-                UriHelper.UnescapeString(str, offset, _info.Offset.Fragment,
-                    ref dest, '#', c_DummyChar, c_DummyChar,
-                    mode, _syntax, isQuery: true);
+                FormatQueryOrFragment(str.AsSpan(offset, _info.Offset.Fragment - offset), ref dest, nonCanonical, formatAs, isQuery: true);
             }
-        AfterQuery:
 
             //Fragment (possibly strip the '#' delimiter)
             if ((parts & UriComponents.Fragment) != 0 && _info.Offset.Fragment < _info.Offset.End)
@@ -3020,39 +2972,49 @@ namespace System
                 if (parts != UriComponents.Fragment)
                     dest.Append('#');
 
-                UnescapeMode mode = UnescapeMode.CopyOnly;
+                FormatQueryOrFragment(str.AsSpan(offset, _info.Offset.End - offset), ref dest, nonCanonical, formatAs, isQuery: false);
+            }
 
-                if ((nonCanonical & (ushort)UriComponents.Fragment) != 0)
+            return dest.AsSpan();
+
+            void FormatQueryOrFragment(ReadOnlySpan<char> slice, ref ValueStringBuilder dest, ushort nonCanonical, UriFormat formatAs, bool isQuery)
+            {
+                if ((nonCanonical & (ushort)(isQuery ? UriComponents.Query : UriComponents.Fragment)) == 0)
+                {
+                    dest.Append(slice);
+                }
+                else
                 {
                     if (formatAs == UriFormat.UriEscaped)
                     {
                         if (NotAny(Flags.UserEscaped))
                         {
-                            UriHelper.EscapeString(
-                                str.AsSpan(offset, _info.Offset.End - offset),
-                                ref dest, checkExistingEscaped: true, UriHelper.UnreservedReserved);
-
-                            goto AfterFragment;
+                            UriHelper.EscapeString(slice, ref dest, checkExistingEscaped: true, isQuery ? UriHelper.UnreservedReservedExceptHash : UriHelper.UnreservedReserved);
                         }
+                        else
+                        {
+                            dest.Append(slice);
+                        }
+                    }
+                    else if (formatAs == UriFormat.Unescaped)
+                    {
+                        UriHelper.Unescape(slice, ref dest);
                     }
                     else
                     {
-                        mode = formatAs switch
+                        UnescapeMode mode = InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape;
+
+                        if (formatAs == V1ToStringUnescape)
                         {
-                            V1ToStringUnescape => (InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape) | UnescapeMode.V1ToStringFlag,
-                            UriFormat.Unescaped => UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
-                            _ => InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape
-                        };
+                            mode |= UnescapeMode.V1ToStringFlag;
+                        }
+
+                        UriHelper.UnescapeString(slice,
+                            ref dest, '#', c_DummyChar, c_DummyChar,
+                            mode, _syntax, isQuery);
                     }
                 }
-
-                UriHelper.UnescapeString(str, offset, _info.Offset.End,
-                    ref dest, '#', c_DummyChar, c_DummyChar,
-                    mode, _syntax, isQuery: false);
             }
-
-        AfterFragment:
-            return dest.AsSpan();
         }
 
         //
@@ -3886,11 +3848,13 @@ namespace System
             }
 
             if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host) &&
-                IPv6AddressHelper.IsValid(pString, start + 1, ref end))
+                IPv6AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), out int seqEnd))
             {
-                if (end < length && pString[end] is not (':' or '/' or '?' or '#'))
+                end = start + seqEnd;
+                if (end < length && pString[end] is not ('/' or '\\') && (IsImplicitFile || pString[end] is not (':' or '?' or '#')))
                 {
                     // A valid IPv6 address wasn't followed by a valid delimiter (e.g. http://[::]extra).
+                    // For implicit files we also disallow ? or #.
                     flags |= Flags.UnknownHostType;
                     err = ParsingError.BadHostName;
                     return idx;
@@ -3904,8 +3868,9 @@ namespace System
                 }
             }
             else if (char.IsAsciiDigit(ch) && syntax.InFact(UriSyntaxFlags.AllowIPv4Host) &&
-                IPv4AddressHelper.IsValid(pString, start, ref end, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
+                IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), out int endSeq, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
             {
+                end = start + endSeq;
                 flags |= Flags.IPv4HostType;
 
                 if (hasUnicode)
@@ -4449,10 +4414,7 @@ namespace System
             if (InFact(Flags.ShouldBeCompressed) && dest.Length - offset > 0)
             {
                 // It will also convert back slashes if needed
-                dest.Length = offset + UriHelper.Compress(
-                    dest.RawChars.Slice(offset, dest.Length - offset),
-                    _syntax.InFact(UriSyntaxFlags.ConvertPathSlashes),
-                    _syntax.InFact(UriSyntaxFlags.CanonicalizeAsFilePath));
+                Compress(ref dest, offset, _syntax);
 
                 if (dest[start] == '\\')
                     dest[start] = '/';
@@ -4477,46 +4439,48 @@ namespace System
 
             if (formatAs != UriFormat.UriEscaped && InFact(Flags.PathNotCanonical))
             {
-                UnescapeMode mode;
-                switch (formatAs)
+                ReadOnlySpan<char> slice = dest.AsSpan(start, dest.Length - start);
+
+                if (formatAs == UriFormat.Unescaped)
                 {
-                    case V1ToStringUnescape:
-
-                        mode = (InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape)
-                            | UnescapeMode.V1ToStringFlag;
-                        if (IsImplicitFile)
-                            mode &= ~UnescapeMode.Unescape;
-                        break;
-
-                    case UriFormat.Unescaped:
-                        mode = IsImplicitFile ? UnescapeMode.CopyOnly
-                            : UnescapeMode.Unescape | UnescapeMode.UnescapeAll;
-                        break;
-
-                    default: // UriFormat.SafeUnescaped
-
-                        mode = InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape;
-                        if (IsImplicitFile)
-                            mode &= ~UnescapeMode.Unescape;
-                        break;
-                }
-
-                if (mode != UnescapeMode.CopyOnly)
-                {
-                    // We can't do an in-place unescape, create a copy
-                    var copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
-                    copy.Append(dest.AsSpan(start, dest.Length - start));
-
-                    dest.Length = start;
-                    fixed (char* pCopy = copy)
+                    if (!IsImplicitFile)
                     {
-                        UriHelper.UnescapeString(pCopy, 0, copy.Length,
+                        // Unescape in-place
+                        dest.Length = start;
+                        UriHelper.Unescape(slice, ref dest);
+                        Debug.Assert(slice.Overlaps(dest.RawChars));
+                    }
+                }
+                else
+                {
+                    // UriFormat.SafeUnescaped / V1ToStringUnescape
+                    UnescapeMode mode = InFact(Flags.UserEscaped) ? UnescapeMode.Unescape : UnescapeMode.EscapeUnescape;
+
+                    if (IsImplicitFile)
+                    {
+                        mode &= ~UnescapeMode.Unescape;
+                    }
+
+                    if (formatAs == V1ToStringUnescape)
+                    {
+                        mode |= UnescapeMode.V1ToStringFlag;
+                    }
+
+                    if (mode != UnescapeMode.None)
+                    {
+                        // We can't do an in-place escape/unescape, create a copy
+                        var copy = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                        copy.Append(slice);
+
+                        dest.Length = start;
+
+                        UriHelper.UnescapeString(copy.AsSpan(),
                             ref dest, '?', '#', c_DummyChar,
                             mode,
                             _syntax, isQuery: false);
-                    }
 
-                    copy.Dispose();
+                        copy.Dispose();
+                    }
                 }
             }
         }
@@ -4587,6 +4551,16 @@ namespace System
             }
             *pnew++ = *pch++;
             end -= (int)(pch - pnew);
+        }
+
+        private static void Compress(ref ValueStringBuilder dest, int start, UriParser syntax)
+        {
+            Debug.Assert(start <= dest.Length);
+
+            dest.Length = start + UriHelper.Compress(
+                dest.RawChars.Slice(start, dest.Length - start),
+                syntax.InFact(UriSyntaxFlags.ConvertPathSlashes),
+                syntax.InFact(UriSyntaxFlags.CanonicalizeAsFilePath));
         }
 
         private static void Compress(char[] dest, int start, ref int destLength, UriParser syntax)
@@ -4953,11 +4927,7 @@ namespace System
             // to the derived class without any permission demand.
             // Should be deprecated and removed asap.
 
-            char[] dest = new char[path.Length];
-            int count = 0;
-            dest = UriHelper.UnescapeString(path, 0, path.Length, dest, ref count, c_DummyChar, c_DummyChar,
-                c_DummyChar, UnescapeMode.Unescape | UnescapeMode.UnescapeAll, null, false);
-            return new string(dest, 0, count);
+            return UnescapeDataString(path);
         }
 
         [Obsolete("Uri.EscapeString has been deprecated. Use GetComponents() or Uri.EscapeDataString to escape a Uri component or a string.")]

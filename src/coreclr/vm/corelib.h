@@ -652,14 +652,25 @@ DEFINE_CLASS(OLE_AUT_BINDER,        System,                 OleAutBinder)
 END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
-DEFINE_METHOD(MONITOR,              ENTER,                  Enter,                      SM_Obj_RetVoid)
-DEFINE_METHOD(MONITOR,              EXIT,                   Exit,                       SM_Obj_RetVoid)
-DEFINE_METHOD(MONITOR,              RELIABLEENTER,          Enter,                      SM_Obj_RefBool_RetVoid)
-DEFINE_METHOD(MONITOR,              EXIT_IF_TAKEN,          ExitIfLockTaken,            SM_Obj_RefBool_RetVoid)
+DEFINE_FIELD(MONITOR,               CONDITION_TABLE,        s_conditionTable)
+DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_ENTER, SynchronizedMethodEnter, SM_Obj_RefBool_RetVoid)
+DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_EXIT,  SynchronizedMethodExit,  SM_Obj_RefBool_RetVoid)
 
-DEFINE_CLASS(THREAD_BLOCKING_INFO,  Threading,              ThreadBlockingInfo)
-DEFINE_FIELD(THREAD_BLOCKING_INFO,  OFFSET_OF_LOCK_OWNER_OS_THREAD_ID, s_monitorObjectOffsetOfLockOwnerOSThreadId)
-DEFINE_FIELD(THREAD_BLOCKING_INFO,  FIRST,                  t_first)
+DEFINE_CLASS(LOCK,                  Threading,              Lock)
+DEFINE_FIELD(LOCK,                  OWNING_THREAD_ID,       _owningThreadId)
+DEFINE_FIELD(LOCK,                  STATE,                  _state)
+DEFINE_FIELD(LOCK,                  RECURSION_COUNT,        _recursionCount)
+DEFINE_METHOD(LOCK,                 CTOR,                   .ctor,                IM_RetVoid)
+DEFINE_METHOD(LOCK,                 INITIALIZE_FOR_MONITOR, InitializeForMonitor, NoSig)
+
+DEFINE_CLASS(CONDITION,             Threading,              Condition)
+DEFINE_FIELD(CONDITION,             WAITERS_HEAD,           _waitersHead)
+DEFINE_FIELD(CONDITION,             CURRENT_THREAD_WAITER,  t_waiterForCurrentThread)
+
+DEFINE_CLASS(WAITER,                Threading,              Condition+Waiter)
+DEFINE_FIELD(WAITER,                NEXT,                   next)
+
+DEFINE_CLASS(THREADID,              Threading,              ManagedThreadId)
 
 DEFINE_CLASS(PARAMETER,             Reflection,             ParameterInfo)
 
@@ -738,6 +749,17 @@ DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_EXECUTION_CONTEXT, RestoreExecutionCon
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTINUATION_CONTEXT, CaptureContinuationContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS, CaptureContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS, RestoreContexts, NoSig)
+
+#ifdef TARGET_BROWSER
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT, HandleAsyncEntryPoint, SM_TaskOfInt_RetInt)
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT_VOID, HandleAsyncEntryPoint, SM_Task_RetVoid)
+
+DEFINE_CLASS(TIMER_QUEUE,         Threading, TimerQueue)
+DEFINE_METHOD(TIMER_QUEUE,        TIMER_HANDLER, TimerHandler, SM_RetVoid)
+
+DEFINE_CLASS(THREAD_POOL,         Threading, ThreadPool)
+DEFINE_METHOD(THREAD_POOL,        BACKGROUND_JOB_HANDLER, BackgroundJobHandler, SM_RetVoid)
+#endif // TARGET_BROWSER
 
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
@@ -856,7 +878,7 @@ DEFINE_FIELD_U(ArgBuffer,                  TailCallTls,           m_argBuffer)
 
 DEFINE_CLASS(CONTINUATION,              CompilerServices,   Continuation)
 DEFINE_FIELD(CONTINUATION,              NEXT,               Next)
-DEFINE_FIELD(CONTINUATION,              RESUME,             Resume)
+DEFINE_FIELD(CONTINUATION,              RESUME_INFO,        ResumeInfo)
 DEFINE_FIELD(CONTINUATION,              STATE,              State)
 DEFINE_FIELD(CONTINUATION,              FLAGS,              Flags)
 

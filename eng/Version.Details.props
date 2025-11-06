@@ -40,61 +40,61 @@ This file should be imported by eng/Versions.props
     <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkPackageVersion>19.1.0-alpha.1.25513.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkPackageVersion>
     <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsPackageVersion>19.1.0-alpha.1.25513.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsPackageVersion>
     <!-- dotnet/dotnet dependencies -->
-    <MicrosoftCodeAnalysisPackageVersion>5.3.0-1.25523.109</MicrosoftCodeAnalysisPackageVersion>
-    <MicrosoftCodeAnalysisAnalyzersPackageVersion>5.3.0-1.25523.109</MicrosoftCodeAnalysisAnalyzersPackageVersion>
-    <MicrosoftCodeAnalysisCSharpPackageVersion>5.3.0-1.25523.109</MicrosoftCodeAnalysisCSharpPackageVersion>
-    <MicrosoftCodeAnalysisNetAnalyzersPackageVersion>10.0.100-rc.2.25523.109</MicrosoftCodeAnalysisNetAnalyzersPackageVersion>
-    <MicrosoftDotNetApiCompatTaskPackageVersion>10.0.100-rc.2.25523.109</MicrosoftDotNetApiCompatTaskPackageVersion>
-    <MicrosoftDotNetArcadeSdkPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetArcadeSdkPackageVersion>
-    <MicrosoftDotNetBuildTasksArchivesPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetBuildTasksArchivesPackageVersion>
-    <MicrosoftDotNetBuildTasksFeedPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetBuildTasksFeedPackageVersion>
-    <MicrosoftDotNetBuildTasksInstallersPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetBuildTasksInstallersPackageVersion>
-    <MicrosoftDotNetBuildTasksPackagingPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetBuildTasksPackagingPackageVersion>
-    <MicrosoftDotNetBuildTasksTargetFrameworkPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetBuildTasksTargetFrameworkPackageVersion>
-    <MicrosoftDotNetBuildTasksTemplatingPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetBuildTasksTemplatingPackageVersion>
-    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
-    <MicrosoftDotNetCecilPackageVersion>0.11.5-alpha.25523.109</MicrosoftDotNetCecilPackageVersion>
-    <MicrosoftDotNetCodeAnalysisPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetCodeAnalysisPackageVersion>
-    <MicrosoftDotNetGenAPIPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetGenAPIPackageVersion>
-    <MicrosoftDotNetGenFacadesPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetGenFacadesPackageVersion>
-    <MicrosoftDotNetHelixSdkPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetHelixSdkPackageVersion>
-    <MicrosoftDotNetPackageTestingPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetPackageTestingPackageVersion>
-    <MicrosoftDotNetRemoteExecutorPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetRemoteExecutorPackageVersion>
-    <MicrosoftDotNetSharedFrameworkSdkPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetSharedFrameworkSdkPackageVersion>
-    <MicrosoftDotNetXliffTasksPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetXliffTasksPackageVersion>
-    <MicrosoftDotNetXUnitAssertPackageVersion>2.9.3-beta.25523.109</MicrosoftDotNetXUnitAssertPackageVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.9.3-beta.25523.109</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
-    <MicrosoftDotNetXUnitExtensionsPackageVersion>11.0.0-beta.25523.109</MicrosoftDotNetXUnitExtensionsPackageVersion>
-    <MicrosoftNetCompilersToolsetPackageVersion>5.3.0-1.25523.109</MicrosoftNetCompilersToolsetPackageVersion>
-    <MicrosoftNETSdkILPackageVersion>10.0.0-rc.1.25523.109</MicrosoftNETSdkILPackageVersion>
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportPackageVersion>10.0.100-rc.2.25523.109</MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportPackageVersion>
-    <MicrosoftNETCoreAppRefPackageVersion>10.0.0-rc.1.25523.109</MicrosoftNETCoreAppRefPackageVersion>
-    <MicrosoftNETCoreILAsmPackageVersion>10.0.0-rc.1.25523.109</MicrosoftNETCoreILAsmPackageVersion>
-    <NuGetFrameworksPackageVersion>7.0.0-preview.1.2409</NuGetFrameworksPackageVersion>
-    <NuGetPackagingPackageVersion>7.0.0-preview.1.2409</NuGetPackagingPackageVersion>
-    <NuGetProjectModelPackageVersion>7.0.0-preview.1.2409</NuGetProjectModelPackageVersion>
-    <NuGetVersioningPackageVersion>7.0.0-preview.1.2409</NuGetVersioningPackageVersion>
-    <runtimenativeSystemIOPortsPackageVersion>10.0.0-rc.1.25523.109</runtimenativeSystemIOPortsPackageVersion>
-    <SystemCommandLinePackageVersion>2.0.0-rc.1.25523.109</SystemCommandLinePackageVersion>
-    <SystemReflectionMetadataPackageVersion>10.0.0-rc.1.25523.109</SystemReflectionMetadataPackageVersion>
-    <SystemReflectionMetadataLoadContextPackageVersion>10.0.0-rc.1.25523.109</SystemReflectionMetadataLoadContextPackageVersion>
-    <SystemTextJsonPackageVersion>10.0.0-rc.1.25523.109</SystemTextJsonPackageVersion>
+    <MicrosoftCodeAnalysisPackageVersion>5.3.0-1.25528.108</MicrosoftCodeAnalysisPackageVersion>
+    <MicrosoftCodeAnalysisAnalyzersPackageVersion>5.3.0-1.25528.108</MicrosoftCodeAnalysisAnalyzersPackageVersion>
+    <MicrosoftCodeAnalysisCSharpPackageVersion>5.3.0-1.25528.108</MicrosoftCodeAnalysisCSharpPackageVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersPackageVersion>10.0.100-rc.2.25528.108</MicrosoftCodeAnalysisNetAnalyzersPackageVersion>
+    <MicrosoftDotNetApiCompatTaskPackageVersion>10.0.100-rc.2.25528.108</MicrosoftDotNetApiCompatTaskPackageVersion>
+    <MicrosoftDotNetArcadeSdkPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetArcadeSdkPackageVersion>
+    <MicrosoftDotNetBuildTasksArchivesPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetBuildTasksArchivesPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetBuildTasksFeedPackageVersion>
+    <MicrosoftDotNetBuildTasksInstallersPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetBuildTasksInstallersPackageVersion>
+    <MicrosoftDotNetBuildTasksPackagingPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetBuildTasksPackagingPackageVersion>
+    <MicrosoftDotNetBuildTasksTargetFrameworkPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetBuildTasksTargetFrameworkPackageVersion>
+    <MicrosoftDotNetBuildTasksTemplatingPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetBuildTasksTemplatingPackageVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
+    <MicrosoftDotNetCecilPackageVersion>0.11.5-alpha.25528.108</MicrosoftDotNetCecilPackageVersion>
+    <MicrosoftDotNetCodeAnalysisPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetCodeAnalysisPackageVersion>
+    <MicrosoftDotNetGenAPIPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetGenAPIPackageVersion>
+    <MicrosoftDotNetGenFacadesPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetGenFacadesPackageVersion>
+    <MicrosoftDotNetHelixSdkPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetHelixSdkPackageVersion>
+    <MicrosoftDotNetPackageTestingPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetPackageTestingPackageVersion>
+    <MicrosoftDotNetRemoteExecutorPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetRemoteExecutorPackageVersion>
+    <MicrosoftDotNetSharedFrameworkSdkPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetSharedFrameworkSdkPackageVersion>
+    <MicrosoftDotNetXliffTasksPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetXliffTasksPackageVersion>
+    <MicrosoftDotNetXUnitAssertPackageVersion>2.9.3-beta.25528.108</MicrosoftDotNetXUnitAssertPackageVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.9.3-beta.25528.108</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsPackageVersion>11.0.0-beta.25528.108</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <MicrosoftNetCompilersToolsetPackageVersion>5.3.0-1.25528.108</MicrosoftNetCompilersToolsetPackageVersion>
+    <MicrosoftNETSdkILPackageVersion>10.0.0-rc.1.25528.108</MicrosoftNETSdkILPackageVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportPackageVersion>10.0.100-rc.2.25528.108</MicrosoftNETWorkloadEmscriptenCurrentManifest100100TransportPackageVersion>
+    <MicrosoftNETCoreAppRefPackageVersion>10.0.0-rc.1.25528.108</MicrosoftNETCoreAppRefPackageVersion>
+    <MicrosoftNETCoreILAsmPackageVersion>10.0.0-rc.1.25528.108</MicrosoftNETCoreILAsmPackageVersion>
+    <NuGetFrameworksPackageVersion>7.0.0-preview.1.2908</NuGetFrameworksPackageVersion>
+    <NuGetPackagingPackageVersion>7.0.0-preview.1.2908</NuGetPackagingPackageVersion>
+    <NuGetProjectModelPackageVersion>7.0.0-preview.1.2908</NuGetProjectModelPackageVersion>
+    <NuGetVersioningPackageVersion>7.0.0-preview.1.2908</NuGetVersioningPackageVersion>
+    <runtimenativeSystemIOPortsPackageVersion>10.0.0-rc.1.25528.108</runtimenativeSystemIOPortsPackageVersion>
+    <SystemCommandLinePackageVersion>2.0.0-rc.1.25528.108</SystemCommandLinePackageVersion>
+    <SystemReflectionMetadataPackageVersion>10.0.0-rc.1.25528.108</SystemReflectionMetadataPackageVersion>
+    <SystemReflectionMetadataLoadContextPackageVersion>10.0.0-rc.1.25528.108</SystemReflectionMetadataLoadContextPackageVersion>
+    <SystemTextJsonPackageVersion>10.0.0-rc.1.25528.108</SystemTextJsonPackageVersion>
     <!-- dotnet/runtime-assets dependencies -->
-    <MicrosoftDotNetCilStripSourcesPackageVersion>11.0.0-beta.25467.3</MicrosoftDotNetCilStripSourcesPackageVersion>
-    <MicrosoftNETHostModelTestDataPackageVersion>11.0.0-beta.25467.3</MicrosoftNETHostModelTestDataPackageVersion>
-    <SystemComponentModelTypeConverterTestDataPackageVersion>11.0.0-beta.25467.3</SystemComponentModelTypeConverterTestDataPackageVersion>
-    <SystemDataCommonTestDataPackageVersion>11.0.0-beta.25467.3</SystemDataCommonTestDataPackageVersion>
-    <SystemDrawingCommonTestDataPackageVersion>11.0.0-beta.25467.3</SystemDrawingCommonTestDataPackageVersion>
-    <SystemFormatsTarTestDataPackageVersion>11.0.0-beta.25467.3</SystemFormatsTarTestDataPackageVersion>
-    <SystemIOCompressionTestDataPackageVersion>11.0.0-beta.25467.3</SystemIOCompressionTestDataPackageVersion>
-    <SystemIOPackagingTestDataPackageVersion>11.0.0-beta.25467.3</SystemIOPackagingTestDataPackageVersion>
-    <SystemNetTestDataPackageVersion>11.0.0-beta.25467.3</SystemNetTestDataPackageVersion>
-    <SystemPrivateRuntimeUnicodeDataPackageVersion>11.0.0-beta.25467.3</SystemPrivateRuntimeUnicodeDataPackageVersion>
-    <SystemRuntimeNumericsTestDataPackageVersion>11.0.0-beta.25467.3</SystemRuntimeNumericsTestDataPackageVersion>
-    <SystemRuntimeTimeZoneDataPackageVersion>11.0.0-beta.25467.3</SystemRuntimeTimeZoneDataPackageVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>11.0.0-beta.25467.3</SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>
-    <SystemTextRegularExpressionsTestDataPackageVersion>11.0.0-beta.25467.3</SystemTextRegularExpressionsTestDataPackageVersion>
-    <SystemWindowsExtensionsTestDataPackageVersion>11.0.0-beta.25467.3</SystemWindowsExtensionsTestDataPackageVersion>
+    <MicrosoftDotNetCilStripSourcesPackageVersion>11.0.0-beta.25553.1</MicrosoftDotNetCilStripSourcesPackageVersion>
+    <MicrosoftNETHostModelTestDataPackageVersion>11.0.0-beta.25553.1</MicrosoftNETHostModelTestDataPackageVersion>
+    <SystemComponentModelTypeConverterTestDataPackageVersion>11.0.0-beta.25553.1</SystemComponentModelTypeConverterTestDataPackageVersion>
+    <SystemDataCommonTestDataPackageVersion>11.0.0-beta.25553.1</SystemDataCommonTestDataPackageVersion>
+    <SystemDrawingCommonTestDataPackageVersion>11.0.0-beta.25553.1</SystemDrawingCommonTestDataPackageVersion>
+    <SystemFormatsTarTestDataPackageVersion>11.0.0-beta.25553.1</SystemFormatsTarTestDataPackageVersion>
+    <SystemIOCompressionTestDataPackageVersion>11.0.0-beta.25553.1</SystemIOCompressionTestDataPackageVersion>
+    <SystemIOPackagingTestDataPackageVersion>11.0.0-beta.25553.1</SystemIOPackagingTestDataPackageVersion>
+    <SystemNetTestDataPackageVersion>11.0.0-beta.25553.1</SystemNetTestDataPackageVersion>
+    <SystemPrivateRuntimeUnicodeDataPackageVersion>11.0.0-beta.25553.1</SystemPrivateRuntimeUnicodeDataPackageVersion>
+    <SystemRuntimeNumericsTestDataPackageVersion>11.0.0-beta.25553.1</SystemRuntimeNumericsTestDataPackageVersion>
+    <SystemRuntimeTimeZoneDataPackageVersion>11.0.0-beta.25553.1</SystemRuntimeTimeZoneDataPackageVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>11.0.0-beta.25553.1</SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>
+    <SystemTextRegularExpressionsTestDataPackageVersion>11.0.0-beta.25553.1</SystemTextRegularExpressionsTestDataPackageVersion>
+    <SystemWindowsExtensionsTestDataPackageVersion>11.0.0-beta.25553.1</SystemWindowsExtensionsTestDataPackageVersion>
     <!-- dotnet/xharness dependencies -->
     <MicrosoftDotNetXHarnessCLIPackageVersion>10.0.0-prerelease.25506.2</MicrosoftDotNetXHarnessCLIPackageVersion>
     <MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>10.0.0-prerelease.25506.2</MicrosoftDotNetXHarnessTestRunnersCommonPackageVersion>
@@ -107,7 +107,7 @@ This file should be imported by eng/Versions.props
     <optimizationwindows_ntx64MIBCRuntimePackageVersion>1.0.0-prerelease.25502.1</optimizationwindows_ntx64MIBCRuntimePackageVersion>
     <optimizationwindows_ntx86MIBCRuntimePackageVersion>1.0.0-prerelease.25502.1</optimizationwindows_ntx86MIBCRuntimePackageVersion>
     <!-- dotnet/hotreload-utils dependencies -->
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>11.0.0-alpha.0.25479.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>11.0.0-alpha.0.25528.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>
     <!-- dotnet/node dependencies -->
     <runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>10.0.0-alpha.1.25169.1</runtimelinuxarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
     <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>10.0.0-alpha.1.25169.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion>
