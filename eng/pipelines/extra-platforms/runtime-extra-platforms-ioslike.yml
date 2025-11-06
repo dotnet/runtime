@@ -159,6 +159,7 @@ jobs:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
             testGroup: innerloop
+            useNativeAOTRuntime: true
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
