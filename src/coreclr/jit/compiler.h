@@ -9096,11 +9096,11 @@ private:
         return getBaseTypeAndSizeOfSIMDType(typeHnd, nullptr);
     }
 
-    CorInfoType getCorBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
+    CorInfoType getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
 
-    CorInfoType getCorBaseTypeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd)
+    CorInfoType getBaseJitTypeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd)
     {
-        return getCorBaseTypeAndSizeOfSIMDType(typeHnd, nullptr);
+        return getBaseJitTypeAndSizeOfSIMDType(typeHnd, nullptr);
     }
 
     GenTree* impSIMDPopStack();

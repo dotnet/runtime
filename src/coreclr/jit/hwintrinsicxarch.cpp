@@ -5373,7 +5373,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             CORINFO_ARG_LIST_HANDLE arg3 = info.compCompHnd->getArgNext(arg2);
 
             argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-            CorInfoType op3BaseJitType = getCorBaseTypeOfSIMDType(argClass);
+            CorInfoType op3BaseJitType = getBaseJitTypeOfSIMDType(argClass);
             GenTree*    op3            = getArgForHWIntrinsic(argType, argClass);
 
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
@@ -5475,7 +5475,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             SetOpLclRelatedToSIMDIntrinsic(op4);
 
             argType                      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
-            CorInfoType indexBaseJitType = getCorBaseTypeOfSIMDType(argClass);
+            CorInfoType indexBaseJitType = getBaseJitTypeOfSIMDType(argClass);
             GenTree*    op3              = getArgForHWIntrinsic(argType, argClass);
             SetOpLclRelatedToSIMDIntrinsic(op3);
 

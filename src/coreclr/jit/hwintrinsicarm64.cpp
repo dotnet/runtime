@@ -3139,7 +3139,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             CORINFO_ARG_LIST_HANDLE arg   = sig->args;
             arg                           = info.compCompHnd->getArgNext(arg);
             CORINFO_CLASS_HANDLE argClass = info.compCompHnd->getArgClass(sig, arg);
-            CorInfoType          ptrType  = getCorBaseTypeAndSizeOfSIMDType(argClass);
+            CorInfoType          ptrType  = getBaseJitTypeOfSIMDType(argClass);
             CORINFO_CLASS_HANDLE tmpClass = NO_CLASS_HANDLE;
 
             // The size of narrowed target elements is determined from the second argument of StoreNarrowing().
@@ -3226,7 +3226,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = impPopStack().val;
 
-            CorInfoType op1BaseJitType = getCorBaseTypeOfSIMDType(argClass);
+            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
 
             // HWInstrinsic requires a mask for op2
             if (!varTypeIsMask(op2))
@@ -3273,7 +3273,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
                 op2                        = getArgForHWIntrinsic(argType, argClass);
-                CorInfoType op2BaseJitType = getCorBaseTypeOfSIMDType(argClass);
+                CorInfoType op2BaseJitType = getBaseJitTypeOfSIMDType(argClass);
                 argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
                 op1                        = impPopStack().val;
 
@@ -3303,7 +3303,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
                 op3                        = getArgForHWIntrinsic(argType, argClass);
-                CorInfoType op3BaseJitType = getCorBaseTypeOfSIMDType(argClass);
+                CorInfoType op3BaseJitType = getBaseJitTypeOfSIMDType(argClass);
                 argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
                 op2                        = getArgForHWIntrinsic(argType, argClass);
                 argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
@@ -3335,7 +3335,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op3                        = getArgForHWIntrinsic(argType, argClass);
             argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                        = getArgForHWIntrinsic(argType, argClass);
-            CorInfoType op2BaseJitType = getCorBaseTypeOfSIMDType(argClass);
+            CorInfoType op2BaseJitType = getBaseJitTypeOfSIMDType(argClass);
             argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1                        = getArgForHWIntrinsic(argType, argClass);
 
@@ -3362,7 +3362,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2                        = getArgForHWIntrinsic(argType, argClass);
-            CorInfoType op2BaseJitType = getCorBaseTypeOfSIMDType(argClass);
+            CorInfoType op2BaseJitType = getBaseJitTypeOfSIMDType(argClass);
             argType                    = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1                        = getArgForHWIntrinsic(argType, argClass);
 
@@ -3431,7 +3431,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             var_types argType1 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             var_types argType2 = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
 
-            CorInfoType op1BaseJitType = getCorBaseTypeOfSIMDType(argClass);
+            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -3463,7 +3463,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
-            CorInfoType op1BaseJitType = getCorBaseTypeOfSIMDType(argClass);
+            CorInfoType op1BaseJitType = getBaseJitTypeOfSIMDType(argClass);
             retNode                    = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
             retNode->AsHWIntrinsic()->SetSimdBaseType(simdBaseType);
             retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op1BaseJitType);
