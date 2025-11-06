@@ -5488,7 +5488,6 @@ class ThreadCleanupThread
     public:
     static void EnsureCleanupThreadExists();
     static void SetHasThreadsToCleanUp();
-    static void ShutdownCleanupThread();
 };
 
 #ifndef DACCESS_COMPILE

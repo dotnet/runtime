@@ -6977,8 +6977,6 @@ PTR_GCFrame Thread::GetGCFrame()
 #ifndef DACCESS_COMPILE
 namespace
 {
-    bool CleanupThreadShouldStop = false;
-    CLREvent* CleanupThreadShutdownEvent = nullptr;
     CLREvent* ForeignThreadsToCleanUpEvent = nullptr;
 
     void ForeignThreadCleanupWorker(LPVOID args)
@@ -7017,12 +7015,10 @@ namespace
         {
             INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
             {
-                while (!CleanupThreadShouldStop)
+                while (true)
                 {
                     ManagedThreadBase::KickOff(ForeignThreadCleanupWorker, NULL);
                 }
-                _ASSERTE(g_fEEShutDown);
-                CleanupThreadShutdownEvent->Set();
             }
             UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
         }
@@ -7041,8 +7037,6 @@ ThreadCleanupThread::EnsureCleanupThreadExists()
 
     ForeignThreadsToCleanUpEvent = new CLREvent();
     ForeignThreadsToCleanUpEvent->CreateAutoEvent(FALSE);
-    CleanupThreadShutdownEvent = new CLREvent();
-    CleanupThreadShutdownEvent ->CreateAutoEvent(FALSE);
 
     Thread* pCleanupThread = SetupUnstartedThread();
 
@@ -7070,20 +7064,6 @@ ThreadCleanupThread::SetHasThreadsToCleanUp()
 {
     _ASSERT(ForeignThreadsToCleanUpEvent != nullptr);
     ForeignThreadsToCleanUpEvent->Set();
-}
-
-void
-ThreadCleanupThread::ShutdownCleanupThread()
-{
-    WRAPPER_NO_CONTRACT;
-
-    CleanupThreadShouldStop = true;
-
-    // Wake up the cleanup thread if it's waiting
-    ForeignThreadsToCleanUpEvent->Set();
-
-    // Wait for the cleanup thread to exit
-    CleanupThreadShutdownEvent->Wait(INFINITE, FALSE);
 }
 #endif // DACCESS_COMPILE
 

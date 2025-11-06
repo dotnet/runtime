@@ -1248,7 +1248,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         {
             // Wait for the finalizer thread to deliver process exit event
             GCX_PREEMP();
-            ThreadCleanupThread::ShutdownCleanupThread();
             FinalizerThread::RaiseShutdownEvents();
         }
 
