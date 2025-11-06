@@ -220,10 +220,35 @@ namespace System.Runtime.CompilerServices
         public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { throw new NotImplementedException(); }
         [RequiresPreviewFeatures]
         public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { throw new NotImplementedException(); }
+#if NATIVEAOT
+        [RequiresPreviewFeatures]
+        public static void Await(System.Threading.Tasks.Task task)
+        {
+            TaskAwaiter awaiter = task.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                throw new NotImplementedException();
+            }
+
+            awaiter.GetResult();
+        }
+        [RequiresPreviewFeatures]
+        public static T Await<T>(System.Threading.Tasks.Task<T> task)
+        {
+            TaskAwaiter<T> awaiter = task.GetAwaiter();
+            if (!awaiter.IsCompleted)
+            {
+                throw new NotImplementedException();
+            }
+
+            return awaiter.GetResult();
+        }
+#else
         [RequiresPreviewFeatures]
         public static void Await(System.Threading.Tasks.Task task) { throw new NotImplementedException(); }
         [RequiresPreviewFeatures]
         public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw new NotImplementedException(); }
+#endif
         [RequiresPreviewFeatures]
         public static void Await(System.Threading.Tasks.ValueTask task) { throw new NotImplementedException(); }
         [RequiresPreviewFeatures]

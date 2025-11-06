@@ -1366,6 +1366,9 @@ namespace Internal.JitInterface
 
         // token comes from resolved static virtual method
         CORINFO_TOKENKIND_ResolvedStaticVirtualMethod = 0x1000 | CORINFO_TOKENKIND_Method,
+
+        // token comes from runtime async awaiting pattern
+        CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
     };
 
     // These are error codes returned by CompileMethod
