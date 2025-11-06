@@ -15,7 +15,6 @@ jobs:
   parameters:
     variables:
     - ${{ parameters.variables }}
-    - template: /eng/pipelines/helix-platforms.yml
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
@@ -80,11 +79,11 @@ jobs:
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - ${{ variables.helix_macos_arm64 }}
+      - $(helix_macos_arm64)
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
-      - ${{ variables.helix_macos_x64 }}
+      - $(helix_macos_x64)
 
     # Android
     - ${{ if in(parameters.platform, 'android_x86', 'android_x64', 'linux_bionic_x64') }}:
