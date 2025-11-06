@@ -12,6 +12,7 @@
 
 // for numeric_limits
 #include <limits>
+#include <functional>
 
 #ifdef TARGET_WASM
 // Unused on WASM
@@ -35,6 +36,36 @@ LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
     return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
         ? EXCEPTION_CONTINUE_SEARCH
         : EXCEPTION_EXECUTE_HANDLER;
+}
+
+template<typename Function>
+std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
+{
+    struct Local
+    {
+        Function function;
+        std::invoke_result_t<Function> result;
+    } local { function };
+
+    PAL_TRY(Local *, pParam, &local)
+    {
+        pParam->result = pParam->function();
+    }
+    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    {
+        // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
+        // from the called method's call chain.
+        // We need to process only managed ones here, the C++ ones are handled by the
+        // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
+        // The managed ones are represented by SEH exception, which cannot be handled there
+        // because it is not possible to handle both SEH and C++ exceptions in the same frame.
+        GCX_COOP_NO_DTOR();
+        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
+        DispatchManagedException(ohThrowable);
+    }
+    PAL_ENDTRY
+
+    return local.result;
 }
 
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
@@ -697,74 +728,6 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
         return GenericHandleCommon(pMD, pMT, pLookup->signature);
     }
     return result;
-}
-
-// Wrapper around MethodDesc::DoPrestub to handle possible managed exceptions thrown by it.
-static void CallPreStub(MethodDesc *pMD)
-{
-    STATIC_STANDARD_VM_CONTRACT;
-    _ASSERTE(pMD != NULL);
-
-    if (!pMD->ShouldCallPrestub())
-        return;
-
-    struct Param
-    {
-        MethodDesc *pMethodDesc;
-    }
-    param = { pMD };
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        (void)pParam->pMethodDesc->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
-    }
-    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
-    {
-        // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
-        // from the PrepareInitialCode call chain.
-        // We need to process only managed ones here, the C++ ones are handled by the
-        // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
-        // The managed ones are represented by SEH exception, which cannot be handled there
-        // because it is not possible to handle both SEH and C++ exceptions in the same frame.
-        GCX_COOP_NO_DTOR();
-        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
-        DispatchManagedException(ohThrowable);
-    }
-    PAL_ENDTRY
-}
-
-MethodDesc* CallGetMethodDescOfVirtualizedCode(MethodDesc *pMD, OBJECTREF *orThis)
-{
-    STATIC_STANDARD_VM_CONTRACT;
-    _ASSERTE(pMD != NULL);
-
-    struct Param
-    {
-        MethodDesc *pMD;
-        OBJECTREF *orThis;
-        MethodDesc *pRetMD;
-    }
-    param = { pMD, orThis, NULL };
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        pParam->pRetMD = pParam->pMD->GetMethodDescOfVirtualizedCode(pParam->orThis, pParam->pMD->GetMethodTable());
-    }
-    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
-    {
-        // There can be both C++ (thrown by the COMPlusThrow) and managed exceptions thrown
-        // from the GetMethodDescOfVirtualizedCode call chain.
-        // We need to process only managed ones here, the C++ ones are handled by the
-        // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
-        // The managed ones are represented by SEH exception, which cannot be handled there
-        // because it is not possible to handle both SEH and C++ exceptions in the same frame.
-        GCX_COOP_NO_DTOR();
-        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
-        DispatchManagedException(ohThrowable);
-    }
-    PAL_ENDTRY
-
-    return param.pRetMD;
 }
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
@@ -2460,7 +2423,11 @@ MAIN_LOOP:
                     // Interpreter-TODO
                     // This needs to be optimized, not operating at MethodDesc level, rather with ftnptr
                     // slots containing the interpreter IR pointer
-                    targetMethod = CallGetMethodDescOfVirtualizedCode(pMD, pThisArg);
+                    targetMethod = CallWithSEHWrapper(
+                        [&pMD, &pThisArg]() {
+                            return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
+                        });
+
                     ip += 4;
                     goto CALL_INTERP_METHOD;
                 }
@@ -2601,7 +2568,11 @@ MAIN_LOOP:
                         if (isOpenVirtual)
                         {
                             targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
-                            targetMethod = CallGetMethodDescOfVirtualizedCode(targetMethod, LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF));
+                            targetMethod = CallWithSEHWrapper(
+                                [&targetMethod, &callArgsOffset, &stack]() {
+                                    return targetMethod->GetMethodDescOfVirtualizedCode(LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF), targetMethod->GetMethodTable());
+                                });
+
                         }
                         else
                         {
@@ -2709,7 +2680,14 @@ CALL_INTERP_METHOD:
                             // small subset of frames high.
                             pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                             GCX_PREEMP();
-                            CallPreStub(targetMethod);
+
+                            if (targetMethod->ShouldCallPrestub())
+                            {
+                                CallWithSEHWrapper(
+                                    [&targetMethod]() {
+                                        return targetMethod->DoPrestub(nullptr, CallerGCMode::Coop);
+                                    });
+                            }
 
                             targetIp = targetMethod->GetInterpreterCode();
                             if (targetIp == NULL)
