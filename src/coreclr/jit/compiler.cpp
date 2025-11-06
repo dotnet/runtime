@@ -5015,6 +5015,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);
 #endif
 
+#ifdef DEBUG
     // Optionally, simulate generating wasm control flow
     // (eventually this will become part of the wasm target)
     //
@@ -5022,6 +5023,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     {
         DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
     }
+#endif
 
     // The common phase checks and dumps are no longer relevant past this point.
     //
