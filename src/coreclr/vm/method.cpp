@@ -2115,8 +2115,8 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         _ASSERTE(!RequiresInstArg());
         _ASSERTE(!IsSharedByGenericMethodInstantiations());
 
-        // Validate LDFTN flags are valid
-        _ASSERTE((accessFlags & ~CORINFO_ACCESS_LDFTN_MASK) == 0);
+        // No other access flags are valid with CORINFO_ACCESS_LDFTN
+        _ASSERTE((accessFlags & ~CORINFO_ACCESS_LDFTN) == 0);
     }
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS

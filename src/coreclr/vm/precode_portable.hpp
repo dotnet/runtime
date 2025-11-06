@@ -32,7 +32,7 @@ private:
         kUnmanagedCallersOnly_Has = 0x1,
         kUnmanagedCallersOnly_Checked = 0x2,
     };
-    Volatile<LONG> _flags;
+    Volatile<int32_t> _flags;
 
     // We keep the canary value last to ensure a stable ABI across build flavors
     INDEBUG(size_t _canary);

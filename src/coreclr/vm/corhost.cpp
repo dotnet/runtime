@@ -752,7 +752,7 @@ HRESULT CorHost2::CreateDelegate(
         if (pMD->HasUnmanagedCallersOnlyAttribute())
         {
             pMD->PrepareForUseAsAFunctionPointer();
-            *fnPtr = pMD->GetMultiCallableAddrOfCode((CORINFO_ACCESS_FLAGS)(CORINFO_ACCESS_LDFTN | CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE));
+            *fnPtr = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
         }
         else
         {

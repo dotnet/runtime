@@ -118,13 +118,13 @@ void PortableEntryPoint::Init(void* nativeEntryPoint)
 
 namespace
 {
-    bool HasFlags(Volatile<LONG>& flags, LONG flagMask)
+    bool HasFlags(Volatile<int32_t>& flags, int32_t flagMask)
     {
         LIMITED_METHOD_CONTRACT;
         return (flags.Load() & flagMask) == flagMask;
     }
 
-    void SetFlags(Volatile<LONG>& flags, LONG flagMask)
+    void SetFlags(Volatile<int32_t>& flags, int32_t flagMask)
     {
         LIMITED_METHOD_CONTRACT;
         ::InterlockedOr(flags.GetPointer(), flagMask);
