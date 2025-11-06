@@ -140,81 +140,55 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task DeserializeMemoryFromStreamWithNullElements()
+        public async Task DeserializeReadOnlyMemoryFromStreamWithManyNulls()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/118346
-            // Tests that ReadOnlyMemory/Memory converters handle null elements correctly during streaming deserialization
+            // Tests ReadOnlyMemory converters handle null elements during streaming with small buffer
             if (StreamingSerializer is null)
             {
                 return;
             }
 
-            string json = """[{"Name":"Alice"},null,{"Name":"Bob"}]""";
+            // Create an array of ~200 null elements to force resumptions with smallest buffer size
+            var nullElements = new string[200];
+            Array.Fill(nullElements, "null");
+            string json = $"[{string.Join(",", nullElements)}]";
             using var stream = new Utf8MemoryStream(json);
 
-            ReadOnlyMemory<SimpleClass?> result = await StreamingSerializer.DeserializeWrapper<ReadOnlyMemory<SimpleClass?>>(stream);
+            JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
+            ReadOnlyMemory<int?> result = await StreamingSerializer.DeserializeWrapper<ReadOnlyMemory<int?>>(stream, options);
             
-            Assert.Equal(3, result.Length);
-            Assert.NotNull(result.Span[0]);
-            Assert.Equal("Alice", result.Span[0]!.Name);
-            Assert.Null(result.Span[1]);
-            Assert.NotNull(result.Span[2]);
-            Assert.Equal("Bob", result.Span[2]!.Name);
+            Assert.Equal(200, result.Length);
+            for (int i = 0; i < 200; i++)
+            {
+                Assert.Null(result.Span[i]);
+            }
         }
 
         [Fact]
-        public async Task DeserializeReadOnlyMemoryFromStreamWithNullElements()
+        public async Task DeserializeMemoryFromStreamWithManyNulls()
         {
             // Regression test for https://github.com/dotnet/runtime/issues/118346
-            // Tests that Memory converters handle null elements correctly during streaming deserialization
+            // Tests Memory converters handle null elements during streaming with small buffer
             if (StreamingSerializer is null)
             {
                 return;
             }
 
-            string json = """[{"Name":"Alice"},null,{"Name":"Bob"}]""";
+            // Create an array of ~200 null elements to force resumptions with smallest buffer size
+            var nullElements = new string[200];
+            Array.Fill(nullElements, "null");
+            string json = $"[{string.Join(",", nullElements)}]";
             using var stream = new Utf8MemoryStream(json);
 
-            Memory<SimpleClass?> result = await StreamingSerializer.DeserializeWrapper<Memory<SimpleClass?>>(stream);
+            JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
+            Memory<int?> result = await StreamingSerializer.DeserializeWrapper<Memory<int?>>(stream, options);
             
-            Assert.Equal(3, result.Length);
-            Assert.NotNull(result.Span[0]);
-            Assert.Equal("Alice", result.Span[0]!.Name);
-            Assert.Null(result.Span[1]);
-            Assert.NotNull(result.Span[2]);
-            Assert.Equal("Bob", result.Span[2]!.Name);
-        }
-
-        [Fact]
-        public async Task DeserializeMemoryFromStreamManyElements()
-        {
-            // Regression test for https://github.com/dotnet/runtime/issues/118346
-            // Tests that ReadOnlyMemory/Memory converters handle streaming deserialization with nulls
-            if (StreamingSerializer is null)
+            Assert.Equal(200, result.Length);
+            for (int i = 0; i < 200; i++)
             {
-                return;
+                Assert.Null(result.Span[i]);
             }
-
-            // Create a JSON array with nulls that may trigger continuation
-            string json = """[{"Name":"Alice"},null,{"Name":"Bob"},null,{"Name":"Charlie"}]""";
-            using var stream = new Utf8MemoryStream(json);
-
-            ReadOnlyMemory<SimpleClass?> result = await StreamingSerializer.DeserializeWrapper<ReadOnlyMemory<SimpleClass?>>(stream);
-            
-            Assert.Equal(5, result.Length);
-            Assert.NotNull(result.Span[0]);
-            Assert.Equal("Alice", result.Span[0]!.Name);
-            Assert.Null(result.Span[1]);
-            Assert.NotNull(result.Span[2]);
-            Assert.Equal("Bob", result.Span[2]!.Name);
-            Assert.Null(result.Span[3]);
-            Assert.NotNull(result.Span[4]);
-            Assert.Equal("Charlie", result.Span[4]!.Name);
-        }
-
-        public class SimpleClass
-        {
-            public string? Name { get; set; }
         }
     }
 }
