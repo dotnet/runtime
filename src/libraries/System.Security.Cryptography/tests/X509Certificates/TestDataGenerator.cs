@@ -103,7 +103,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 [
                     rootKey,
                     intermediateKey1,
-                    intermediateKey1,
+                    intermediateKey2,
                     endEntityKey,
                 ];
 
