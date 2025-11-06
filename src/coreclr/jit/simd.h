@@ -4,6 +4,10 @@
 #ifndef _SIMD_H_
 #define _SIMD_H_
 
+#include "float16.h"
+
+#define SIZE_UNKNOWN UINT8_MAX
+
 template <typename T>
 static bool ElementsAreSame(T* array, size_t size)
 {
@@ -142,17 +146,18 @@ struct simd16_t
 {
     union
     {
-        float    f32[4];
-        double   f64[2];
-        int8_t   i8[16];
-        int16_t  i16[8];
-        int32_t  i32[4];
-        int64_t  i64[2];
-        uint8_t  u8[16];
-        uint16_t u16[8];
-        uint32_t u32[4];
-        uint64_t u64[2];
-        simd8_t  v64[2];
+        float16_t f16[8];
+        float     f32[4];
+        double    f64[2];
+        int8_t    i8[16];
+        int16_t   i16[8];
+        int32_t   i32[4];
+        int64_t   i64[2];
+        uint8_t   u8[16];
+        uint16_t  u16[8];
+        uint32_t  u32[4];
+        uint64_t  u64[2];
+        simd8_t   v64[2];
     };
 
     bool operator==(const simd16_t& other) const
@@ -197,18 +202,19 @@ struct simd32_t
 {
     union
     {
-        float    f32[8];
-        double   f64[4];
-        int8_t   i8[32];
-        int16_t  i16[16];
-        int32_t  i32[8];
-        int64_t  i64[4];
-        uint8_t  u8[32];
-        uint16_t u16[16];
-        uint32_t u32[8];
-        uint64_t u64[4];
-        simd8_t  v64[4];
-        simd16_t v128[2];
+        float16_t f16[16];
+        float     f32[8];
+        double    f64[4];
+        int8_t    i8[32];
+        int16_t   i16[16];
+        int32_t   i32[8];
+        int64_t   i64[4];
+        uint8_t   u8[32];
+        uint16_t  u16[16];
+        uint32_t  u32[8];
+        uint64_t  u64[4];
+        simd8_t   v64[4];
+        simd16_t  v128[2];
     };
 
     bool operator==(const simd32_t& other) const
@@ -252,19 +258,20 @@ struct simd64_t
 {
     union
     {
-        float    f32[16];
-        double   f64[8];
-        int8_t   i8[64];
-        int16_t  i16[32];
-        int32_t  i32[16];
-        int64_t  i64[8];
-        uint8_t  u8[64];
-        uint16_t u16[32];
-        uint32_t u32[16];
-        uint64_t u64[8];
-        simd8_t  v64[8];
-        simd16_t v128[4];
-        simd32_t v256[2];
+        float16_t f16[32];
+        float     f32[16];
+        double    f64[8];
+        int8_t    i8[64];
+        int16_t   i16[32];
+        int32_t   i32[16];
+        int64_t   i64[8];
+        uint8_t   u8[64];
+        uint16_t  u16[32];
+        uint32_t  u32[16];
+        uint64_t  u64[8];
+        simd8_t   v64[8];
+        simd16_t  v128[4];
+        simd32_t  v256[2];
     };
 
     bool operator==(const simd64_t& other) const

@@ -2266,6 +2266,89 @@ uint64_t FloatingPointUtils::convertDoubleToUInt64(double d)
     return (uint64_t)d;
 }
 
+static constexpr uint64_t DBL_SIGN_MASK      = 0x8000000000000000ULL;
+static constexpr uint64_t DBL_EXP_MASK       = 0x7FF0000000000000ULL;
+static constexpr uint64_t DBL_MANTISSA_MASK  = 0x000FFFFFFFFFFFFFULL;
+static constexpr int      DBL_EXP_SHIFT      = 52;
+static constexpr int      DBL_MAX_BIASED_EXP = 0x7FF;
+
+static constexpr uint16_t HALF_SIGN_MASK = 0x8000;
+static constexpr uint16_t HALF_EXP_MASK  = 0x7C00;
+
+static constexpr uint64_t HALF_POSITIVE_INFINITY_BITS = 0x7C00;
+static constexpr uint64_t HALF_NEGATIVE_INFINITY_BITS = 0xFC00;
+
+static constexpr int16_t HALF_EXP_BIAS_ADJUST = 0x3F1;
+
+static constexpr uint16_t IMPLICIT_BIT = 0x4000; // Leading 1 for normalized numbers
+
+static uint64_t shiftRightJam(uint64_t l, int32_t dist)
+{
+    return dist < 63 ? (l >> dist) | (l << (-dist & 63) != 0 ? 1UL : 0UL) : (l != 0 ? 1UL : 0UL);
+}
+
+static float16_t roundPackToHalf(bool sign, int16_t exp, uint16_t sig)
+{
+    const int RoundIncrement = 0x8;
+    int       roundBits      = sig & 0xF;
+
+    if ((uint16_t)exp >= 0x1D)
+    {
+        if (exp < 0)
+        {
+            sig       = (uint16_t)shiftRightJam(sig, -exp);
+            exp       = 0;
+            roundBits = sig & 0xF;
+        }
+        else if (exp > 0x1D || sig + RoundIncrement >= 0x8000) // Overflow
+        {
+            return sign ? HALF_NEGATIVE_INFINITY_BITS : HALF_POSITIVE_INFINITY_BITS;
+        }
+    }
+
+    sig = (uint16_t)((sig + RoundIncrement) >> 4);
+    sig &= (uint16_t) ~(((roundBits ^ 8) != 0 ? 0 : 1) & 1);
+
+    if (sig == 0)
+    {
+        exp = 0;
+    }
+
+    return (((sign ? 1 : 0) << 15) + (exp << 10) + sig);
+}
+
+float16_t FloatingPointUtils::convertDoubleToFloat16(double value)
+{
+    uint64_t doubleInt;
+    memcpy(&doubleInt, &value, sizeof(double));
+
+    bool     sign = (doubleInt & DBL_SIGN_MASK) != 0;
+    int      exp  = static_cast<int>((doubleInt & DBL_EXP_MASK) >> DBL_EXP_SHIFT);
+    uint64_t sig  = doubleInt & DBL_MANTISSA_MASK;
+
+    // Handle NaN / Infinity
+    if (exp == DBL_MAX_BIASED_EXP)
+    {
+        if (sig != 0)
+        {
+            const uint16_t NaNBits = HALF_EXP_MASK | 0x200; // Most significant significand bit
+            uint16_t       signInt = (sign ? 1U : 0U) << 15;
+            uint16_t       sigInt  = (uint16_t)((sig << 12) >> 54);
+            return signInt | NaNBits | sigInt;
+        }
+        return (sign ? HALF_NEGATIVE_INFINITY_BITS : HALF_POSITIVE_INFINITY_BITS);
+    }
+
+    uint32_t sigHalf = static_cast<uint32_t>(shiftRightJam(sig, 38));
+    if ((exp | (int32_t)sigHalf) == 0)
+    {
+        return (sign ? HALF_SIGN_MASK : 0);
+    }
+
+    return roundPackToHalf(sign, static_cast<int16_t>(exp - HALF_EXP_BIAS_ADJUST),
+                           static_cast<uint16_t>(sigHalf | IMPLICIT_BIT));
+}
+
 //------------------------------------------------------------------------
 // convertToDouble: Convert a single to a double with platform independent
 // preservation of payload bits.

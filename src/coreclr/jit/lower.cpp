@@ -6153,7 +6153,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 
             case GT_STOREIND:
 #ifdef FEATURE_SIMD
-                if (varTypeIsSIMD(user))
+                if (varTypeIsSIMD(user) || user->TypeIs(TYP_HALF))
                 {
                     user->ChangeType(returnType);
                     break;
@@ -11834,7 +11834,7 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 {
     assert(store->OperIsStore());
 
-    if (!varTypeIsFloating(store))
+    if (!varTypeIsFloating(store) || store->TypeIs(TYP_HALF))
     {
         return;
     }

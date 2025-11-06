@@ -471,6 +471,7 @@ public:
     ValueNum VNForIntCon(INT32 cnsVal);
     ValueNum VNForIntPtrCon(ssize_t cnsVal);
     ValueNum VNForLongCon(INT64 cnsVal);
+    ValueNum VNForHalfCon(float cnsVal);
     ValueNum VNForFloatCon(float cnsVal);
     ValueNum VNForDoubleCon(double cnsVal);
     ValueNum VNForByrefCon(target_size_t byrefVal);
@@ -2073,6 +2074,14 @@ struct ValueNumStore::VarTypConv<TYP_INT>
     typedef INT32 Type;
     typedef int   Lang;
 };
+
+template <>
+struct ValueNumStore::VarTypConv<TYP_HALF>
+{
+    typedef INT32 Type;
+    typedef float Lang;
+};
+
 template <>
 struct ValueNumStore::VarTypConv<TYP_FLOAT>
 {

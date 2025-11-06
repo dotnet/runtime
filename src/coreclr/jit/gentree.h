@@ -3604,7 +3604,7 @@ public:
     GenTreeDblCon(double val, var_types type = TYP_DOUBLE)
         : GenTree(GT_CNS_DBL, type)
     {
-        assert(varTypeIsFloating(type));
+        assert(varTypeIsFloating(type) || type == TYP_HALF);
         SetDconValue(val);
     }
 #if DEBUGGABLE_GENTREE
@@ -7012,6 +7012,22 @@ struct GenTreeVecCon : public GenTree
                 {
                     // We expect the constant to have been already zeroed
                     assert(simdVal.i64[argIdx] == 0);
+                }
+                break;
+            }
+
+            case TYP_HALF:
+            {
+                if (arg->IsCnsFltOrDbl())
+                {
+                    simdVal.f16[argIdx] = FloatingPointUtils::convertDoubleToFloat16(arg->AsDblCon()->DconValue());
+                    return true;
+                }
+                else
+                {
+                    // We expect the constant to have been already zeroed
+                    // We check against the i16, rather than f16, to account for -0.0
+                    assert(simdVal.i16[argIdx] == 0);
                 }
                 break;
             }
