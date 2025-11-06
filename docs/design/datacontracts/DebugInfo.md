@@ -40,7 +40,6 @@ Data descriptors used:
 Contracts used:
 | Contract Name |
 | --- |
-| `CodeVersions` |
 | `ExecutionManager` |
 
 Constants:
@@ -217,3 +216,52 @@ private static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader)
     }
 }
 ```
+
+## Version 2
+
+Version 2 introduces a unified header format that replaces the flag byte of Version 1 with a "fat" or "slim" chunk table. The underlying nibble-encoded variable-length integer stream and the bounds bit-packing described in the Version 1 sections ([DebugInfo Stream Encoding](#debuginfo-stream-encoding) and [Bounds Data Encoding](#bounds-data-encoding-r2r-major-version-16)) are unchanged; only the initial header (size/chunk enumeration) format differs.
+
+Data descriptors used:
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| _(none)_ | | |
+
+Contracts used:
+| Contract Name |
+| --- |
+| `ExecutionManager` |
+
+Constants:
+| Constant Name | Meaning | Value |
+| --- | --- | --- |
+| IL_OFFSET_BIAS | IL offsets bias (unchanged from Version 1) | `0xfffffffd` (-3) |
+| DEBUG_INFO_FAT | Marker value in first nibble-coded integer indicating a fat header follows | `0x0` |
+
+### Header Encoding
+
+The first nibble-decoded unsigned integer (`countBoundsOrFatMarker`):
+
+* If `countBoundsOrFatMarker` is equal to `DEBUG_INFO_FAT` (0), the header is FAT and the next 6 nibble-decoded unsigned integers are, in order:
+  1. `BoundsSize`
+  2. `VarsSize`
+  3. `UninstrumentedBoundsSize`
+  4. `PatchpointInfoSize`
+  5. `RichDebugInfoSize`
+  6. `AsyncInfoSize`
+* Otherwise, the value is the `BoundsSize` for a SLIM header. The next nibble-decoded unsigned integer is `VarsSize`. All other sizes are implicitly 0.
+
+After decoding sizes, the start pointer of each chunk is computed by linear accumulation beginning at the first byte after the header stream:
+
+```
+BoundsStart = debugInfo + headerBytesConsumed
+VarsStart = BoundsStart + BoundsSize
+UninstrumentedBoundsStart = VarsStart + VarsSize
+PatchpointInfoStart = UninstrumentedBoundsStart + UninstrumentedBoundsSize
+RichDebugInfoStart = PatchpointInfoStart + PatchpointInfoSize
+AsyncInfoStart = RichDebugInfoStart + RichDebugInfoSize
+DebugInfoEnd = AsyncInfoStart + AsyncInfoSize
+```
+
+### Chunk Decoding (Same as Version 1)
+
+Once the start and size of each chunk are known, the decoding logic for the actual contents is identical to Version 1.
