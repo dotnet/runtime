@@ -4432,10 +4432,11 @@ bool Compiler::impIsImplicitTailCallCandidate(
         return false;
     }
 
-    // We keep finding cases where tailcalling awaits is problematic.
-    // Perhaps at the end there will be a set of conditions when tailcalling is ok.
-    // For now we will just forbid.
-    if (prefixFlags & PREFIX_IS_TASK_AWAIT)
+    // We cannot tailcall ValueTask returning methods as we need to preserve
+    // the Continuation instance for ValueTaskSource handling (the BCL needs
+    // to look at continuation.Next). We cannot easily differentiate between
+    // ValueTask and Task here, so we just disable it more generally.
+    if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
     {
         return false;
     }
