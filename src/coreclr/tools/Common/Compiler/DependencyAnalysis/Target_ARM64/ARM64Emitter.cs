@@ -49,6 +49,14 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             Builder.EmitUInt((uint)(0b1_0_0_100010_0_000000000000_00000_00000 | ((byte)regDst << 5) | (byte)regDst));
         }
 
+        // adrp regDst, symbol
+        public void EmitADRP(Register regDst, ISymbolNode symbol)
+        {
+            Debug.Assert((uint)regDst <= 0x1f);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21);
+            Builder.EmitUInt(0x90000000u | (uint)regDst);
+        }
+
         // ldr regDst, [PC + imm19]
         public void EmitLDR(Register regDst, short offset)
         {
@@ -88,6 +96,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
             {
                 throw new NotImplementedException();
             }
+        }
+
+        // ldr regDst, [regAddr, symbol page offset]
+        public void EmitLDR(Register regDst, Register regAddr, ISymbolNode symbol)
+        {
+            Debug.Assert((uint)regDst <= 0x1f);
+            Debug.Assert((uint)regAddr <= 0x1f);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L);
+            Builder.EmitUInt(0xf9400000 | ((uint)regAddr << 5) | (uint)regDst);
         }
 
         // ldar regDst, [regAddr]
@@ -150,24 +167,15 @@ namespace ILCompiler.DependencyAnalysis.ARM64
         {
             if (symbol.RepresentsIndirectionCell)
             {
-                Builder.RequireInitialPointerAlignment();
+                // Use ADRP/LDR pair to load the indirection cell address
+                // adrp x12, symbol
+                EmitADRP(Register.X12, symbol);
 
-                if (Builder.CountBytes % Builder.TargetPointerSize == 0)
-                {
-                    // Emit a NOP instruction to align the 64-bit reloc below.
-                    EmitNOP();
-                }
-
-                // ldr x12, [PC+0xc]
-                EmitLDR(Register.X12, 0xc);
-
-                // ldr x12, [x12]
-                EmitLDR(Register.X12, Register.X12);
+                // ldr x12, [x12, symbol page offset]
+                EmitLDR(Register.X12, Register.X12, symbol);
 
                 // br x12
                 EmitJMP(Register.X12);
-
-                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64);
             }
             else
             {

@@ -7995,6 +7995,54 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
     return secOffs;
 }
 
+//---------------------------------------------------------------------------
+// emitAsyncResumeTable:
+//   Allocate space for an async resumption info table in the data sections.
+//
+// Arguments:
+//    numEntries    - Number of entries in the table
+//    dataSecOffset - [out] Offset of the data section that was allocated
+//    dataSec       - [out] Information about the data section that was allocated
+//
+void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecOffs, emitter::dataSection** dataSec)
+{
+    UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
+    unsigned       emittedSize = sizeof(emitter::dataAsyncResumeInfo) * numEntries;
+    emitConsDsc.dsdOffs += emittedSize;
+
+    dataSection* secDesc = (dataSection*)emitGetMem(roundUp(sizeof(dataSection) + numEntries * sizeof(emitLocation)));
+
+    for (unsigned i = 0; i < numEntries; i++)
+        new (secDesc->dsCont + i * sizeof(emitLocation), jitstd::placement_t()) emitLocation();
+
+    secDesc->dsSize     = emittedSize;
+    secDesc->dsType     = dataSection::asyncResumeInfo;
+    secDesc->dsDataType = TYP_UNKNOWN;
+    secDesc->dsNext     = nullptr;
+
+    if (emitConsDsc.dsdLast)
+    {
+        emitConsDsc.dsdLast->dsNext = secDesc;
+    }
+    else
+    {
+        emitConsDsc.dsdList = secDesc;
+    }
+
+    emitConsDsc.dsdLast   = secDesc;
+    emitConsDsc.alignment = std::max(emitConsDsc.alignment, (UNATIVE_OFFSET)TARGET_POINTER_SIZE);
+
+    *dataSecOffs = secOffs;
+    *dataSec     = secDesc;
+
+    // We will need the resume stub. Get it from the EE now so we can display
+    // it before we emit the actual table later.
+    if (emitAsyncResumeStub == NO_METHOD_HANDLE)
+    {
+        emitAsyncResumeStub = emitCmpHandle->getAsyncResumptionStub(&emitAsyncResumeStubEntryPoint);
+    }
+}
+
 /*****************************************************************************
  *
  *  Emit the given block of bits into the current data section.
@@ -8465,7 +8513,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 bDstRW[i] = (target_size_t)(size_t)target;
                 if (emitComp->opts.compReloc)
                 {
-                    emitRecordRelocation(&(bDstRW[i]), target, IMAGE_REL_BASED_HIGHLOW);
+                    uint16_t relocType = TARGET_POINTER_SIZE == 8 ? IMAGE_REL_BASED_DIR64 : IMAGE_REL_BASED_HIGHLOW;
+                    emitRecordRelocation(&(bDstRW[i]), target, relocType);
                 }
 
                 JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDstRW[i]);
@@ -8491,6 +8540,30 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 uDstRW[i] = lab->igOffs - labFirst->igOffs;
 
                 JITDUMP("  " FMT_BB ": 0x%x\n", block->bbNum, uDstRW[i]);
+            }
+        }
+        else if (dsc->dsType == dataSection::asyncResumeInfo)
+        {
+            JITDUMP("  section %u, size %u, async resume info\n", secNum++, dscSize);
+
+            size_t numElems = dscSize / sizeof(emitter::dataAsyncResumeInfo);
+
+            emitter::dataAsyncResumeInfo* aDstRW = (emitter::dataAsyncResumeInfo*)dstRW;
+            for (size_t i = 0; i < numElems; i++)
+            {
+                emitLocation* emitLoc = &((emitLocation*)dsc->dsCont)[i];
+
+                BYTE* target           = emitOffsetToPtr(emitLoc->CodeOffset(this));
+                aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
+                aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
+                if (emitComp->opts.compReloc)
+                {
+                    uint16_t relocType = TARGET_POINTER_SIZE == 8 ? IMAGE_REL_BASED_DIR64 : IMAGE_REL_BASED_HIGHLOW;
+                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, relocType);
+                    emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, relocType);
+                }
+
+                JITDUMP("  Resume=%p, FinalResumeIP=%p\n", emitAsyncResumeStubEntryPoint, (void*)target);
             }
         }
         else
@@ -8627,6 +8700,40 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                 if (!emitComp->opts.disDiffable)
                 {
                     printf(" ; case %s\n", blockLabel);
+                }
+            }
+        }
+        else if (data->dsType == dataSection::asyncResumeInfo)
+        {
+            assert(emitAsyncResumeStub != NO_METHOD_HANDLE);
+            assert(emitAsyncResumeStubEntryPoint != nullptr);
+
+            char        nameBuffer[256];
+            const char* resumeStubName =
+                emitComp->eeGetMethodFullName(emitAsyncResumeStub, true, true, nameBuffer, sizeof(nameBuffer));
+
+            size_t infoCount = data->dsSize / sizeof(emitLocation);
+            for (size_t i = 0; i < infoCount; i++)
+            {
+                if (i > 0)
+                {
+                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(dataAsyncResumeInfo));
+                    printf(labelFormat, label);
+                }
+
+                emitLocation* emitLoc = &((emitLocation*)data->dsCont)[i];
+
+                printf("\tdq\t%s\n", resumeStubName);
+
+                UNATIVE_OFFSET codeOffset = emitLoc->CodeOffset(this);
+                if (codeOffset != emitLoc->GetIG()->igOffs)
+                {
+                    printf("\tdq\t%s + %zu\n", emitLabelString(emitLoc->GetIG()),
+                           static_cast<size_t>(codeOffset - emitLoc->GetIG()->igOffs));
+                }
+                else
+                {
+                    printf("\tdq\t%s\n", emitLabelString(emitLoc->GetIG()));
                 }
             }
         }
