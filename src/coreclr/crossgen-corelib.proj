@@ -37,7 +37,6 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
-    <PublishReadyToRunComposite>true</PublishReadyToRunComposite>
     <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
     <CrossgenTargetName>$(CrossgenTargetName);LinkCoreLibMachO</CrossgenTargetName>
   </PropertyGroup>
@@ -51,6 +50,8 @@
     <CoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dll'))</CoreLibOutputPath>
     <CoreLibObjOutputPath Condition="'$(TargetsAppleMobile)' == 'true'">$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', '$(CoreLibAssemblyName).o'))</CoreLibObjOutputPath>
     <CoreLibDylibOutputPath Condition="'$(TargetsAppleMobile)' == 'true'">$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dylib'))</CoreLibDylibOutputPath>
+    <CrossgenCoreLibOutputPath>$(CoreLibOutputPath)</CrossgenCoreLibOutputPath>
+    <CrossgenCoreLibOutputPath Condition="'$(TargetsAppleMobile)' == 'true'">$(CoreLibObjOutputPath)</CrossgenCoreLibOutputPath>
     <CoreLibNiPdbPath></CoreLibNiPdbPath>
     <CoreLibPerfMapPath></CoreLibPerfMapPath>
     <CoreLibNiPdbPath Condition="$(BuildPdb)">$([MSBuild]::NormalizePath('$(BinDir)', 'PDB', '$(CoreLibAssemblyName).ni.pdb'))</CoreLibNiPdbPath>
@@ -121,7 +122,7 @@
   <Target Name="InvokeCrossgen2"
           DependsOnTargets="PrepareInvokeCrossgen2;CreateMergedMibcFile"
           Inputs="@(Crossgen2Inputs)"
-          Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath)">
+          Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath);$(CrossgenCoreLibOutputPath)">
 
     <MakeDir
       Directories="$(BinDir);$(IntermediatesDir);$(LogsDir)" />
@@ -131,11 +132,10 @@
 
     <PropertyGroup>
       <CrossGenDllCmd>@(Crossgen2Files->Metadata('OutputPath')->WithMetadataValue('Filename','crossgen2')->WithMetadataValue('Extension','$(ExeSuffix)'))</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CrossgenCoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
-      <CrossGenDllCmd  Condition="'$(PublishReadyToRunComposite)' == 'true'">$(CrossGenDllCmd) --composite</CrossGenDllCmd>
-      <CrossGenDllCmd  Condition="'$(PublishReadyToRunContainerFormat)' != ''">$(CrossGenDllCmd) --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
+      <CrossGenDllCmd  Condition="'$(PublishReadyToRunContainerFormat)' != 'pe'">$(CrossGenDllCmd) --composite --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(TargetsAndroid)' != 'true'">$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
       <!-- Unless and until Android requires R2R specific customizations, we're just dealing with another linux -->
       <CrossGenDllCmd Condition="'$(TargetsAndroid)' == 'true'">$(CrossGenDllCmd) --targetos:linux</CrossGenDllCmd>
