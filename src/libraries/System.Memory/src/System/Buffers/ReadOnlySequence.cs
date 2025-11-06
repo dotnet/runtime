@@ -531,7 +531,7 @@ namespace System.Buffers
         /// <exception cref="System.ArgumentOutOfRangeException">The position is out of range.</exception>
         /// <remarks>
         /// The returned offset is not a zero-based index from the start.
-        /// Subtract <code>mySequence.GetOffset(mySequence.Start)</code> from the returned offset to obtain the zero-based index offset.
+        /// To obtain the zero-based index offset, subtract <code>mySequence.GetOffset(mySequence.Start)</code> from the returned offset.
         /// </remarks>
         public long GetOffset(SequencePosition position)
         {
