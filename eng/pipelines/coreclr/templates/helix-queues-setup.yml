@@ -22,8 +22,7 @@ parameters:
 jobs:
 - template: ${{ parameters.jobTemplate }}
   parameters:
-    variables:
-    - ${{ parameters.variables }}
+    variables: ${{ parameters.variables }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
@@ -106,7 +105,7 @@ jobs:
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
-        - ${{ variables.helix_macos_arm64 }}
+        - $(helix_macos_arm64)
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
         - OSX.14.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -115,7 +114,7 @@ jobs:
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - ${{ variables.helix_macos_x64 }}
+        - $(helix_macos_x64)
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.13.Amd64
 

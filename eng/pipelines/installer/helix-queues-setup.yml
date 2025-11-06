@@ -13,8 +13,7 @@ parameters:
 jobs:
 - template: ${{ parameters.jobTemplate }}
   parameters:
-    variables:
-    - ${{ parameters.variables }}
+    variables: ${{ parameters.variables }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
@@ -46,11 +45,11 @@ jobs:
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - ${{ variables.helix_macos_arm64 }}
+      - $(helix_macos_arm64)
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'osx_x64') }}:
-      - ${{ variables.helix_macos_x64 }}
+      - $(helix_macos_x64)
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
