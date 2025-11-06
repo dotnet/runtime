@@ -550,23 +550,23 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
 
     <PropertyGroup>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_appleTargetOS)' == 'osx'">12.0</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_appleTargetOS)' == 'maccatalyst'">15.0</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_appleTargetOS.StartsWith('ios')) or $(_appleTargetOS.StartsWith('tvos')))">12.2</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_AppleTargetOS)' == 'osx'">12.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_AppleTargetOS)' == 'maccatalyst'">15.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_AppleTargetOS.StartsWith('ios')) or $(_AppleTargetOS.StartsWith('tvos')))">12.2</AppleMinOSVersion>
 
-      <_AppleSdkName Condition="'$(_appleTargetOS)' == 'ios'">iphoneos</_AppleSdkName>
-      <_AppleSdkName Condition="'$(_appleTargetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
-      <_AppleSdkName Condition="'$(_appleTargetOS)' == 'tvos'">appletvos</_AppleSdkName>
-      <_AppleSdkName Condition="'$(_appleTargetOS)' == 'tvossimulator'">appletvsimulator</_AppleSdkName>
-      <_AppleSdkName Condition="'$(_appleTargetOS)' == 'maccatalyst' or '$(_appleTargetOS)' == 'osx'">macosx</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_AppleTargetOS)' == 'ios'">iphoneos</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_AppleTargetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_AppleTargetOS)' == 'tvos'">appletvos</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_AppleTargetOS)' == 'tvossimulator'">appletvsimulator</_AppleSdkName>
+      <_AppleSdkName Condition="'$(_AppleTargetOS)' == 'maccatalyst' or '$(_AppleTargetOS)' == 'osx'">macosx</_AppleSdkName>
 
-      <_AppleTripleOS Condition="'$(_appleTargetOS)' == 'osx'">macos</_AppleTripleOS>
-      <_AppleTripleOS Condition="'$(_appleTargetOS)' == 'maccatalyst' or $(_appleTargetOS.StartsWith('ios'))">ios</_AppleTripleOS>
-      <_AppleTripleOS Condition="$(_appleTargetOS.StartsWith('tvos'))">tvos</_AppleTripleOS>
+      <_AppleTripleOS Condition="'$(_AppleTargetOS)' == 'osx'">macos</_AppleTripleOS>
+      <_AppleTripleOS Condition="'$(_AppleTargetOS)' == 'maccatalyst' or $(_AppleTargetOS.StartsWith('ios'))">ios</_AppleTripleOS>
+      <_AppleTripleOS Condition="$(_AppleTargetOS.StartsWith('tvos'))">tvos</_AppleTripleOS>
 
-      <_AppleTripleAbi Condition="'$(_appleTargetOS)' == 'ios' or '$(_appleTargetOS)' == 'tvos'">macho</_AppleTripleAbi>
-      <_AppleTripleAbi Condition="'$(_appleTargetOS)' == 'maccatalyst'">macabi</_AppleTripleAbi>
-      <_AppleTripleAbi Condition="$(_appleTargetOS.EndsWith('simulator'))">simulator</_AppleTripleAbi>
+      <_AppleTripleAbi Condition="'$(_AppleTargetOS)' == 'ios' or '$(_AppleTargetOS)' == 'tvos'">macho</_AppleTripleAbi>
+      <_AppleTripleAbi Condition="'$(_AppleTargetOS)' == 'maccatalyst'">macabi</_AppleTripleAbi>
+      <_AppleTripleAbi Condition="$(_AppleTargetOS.EndsWith('simulator'))">simulator</_AppleTripleAbi>
 
       <TargetTriple Condition="'$(_AppleTripleAbi)' == ''">$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)</TargetTriple>
       <TargetTriple Condition="'$(_AppleTripleAbi)' != ''">$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)-$(_AppleTripleAbi)</TargetTriple>
