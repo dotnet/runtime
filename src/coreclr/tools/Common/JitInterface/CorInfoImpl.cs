@@ -833,9 +833,7 @@ namespace Internal.JitInterface
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig, scope);
 
-            // Get_CORINFO_SIG_INFO above will have correctly set CORINFO_CALLCONV_ASYNCCALL for async variants,
-            // however the special async intrinsics don't set the async bit in their signature. Compensate for that.
-            if (method.IsAsync && !method.Signature.ReturnsTaskOrValueTask())
+            if (method.IsAsyncCall())
                 sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
 
             // Does the method have a hidden parameter?
@@ -882,7 +880,6 @@ namespace Internal.JitInterface
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
             if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
-            if (signature.IsAsyncCall) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
 
             TypeDesc returnType = signature.ReturnType;
 
@@ -4337,10 +4334,7 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
 
-            // Signature.IsAsyncCall will do the right thing for async variants, however the special async
-            // intrinsics don't set the async bit in their signature. Compensate for that.
-            if (this.MethodBeingCompiled.Signature.IsAsyncCall
-                || (this.MethodBeingCompiled.IsAsync && !this.MethodBeingCompiled.Signature.ReturnsTaskOrValueTask()))
+            if (this.MethodBeingCompiled.IsAsyncCall())
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
