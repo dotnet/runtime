@@ -54,5 +54,3 @@ For all cases, you must:
   - Add the `Servicing-approved` label.
 
 The area owner can then merge the PR once the CI looks good (it's either green or the failures are investigated and determined to be unrelated to the PR).
-
-**Note**: Applying the `Servicing-approved` label ensures the `check-service-labels` CI job passes, which is a mandatory requirement for merging a PR in a servicing branch.
