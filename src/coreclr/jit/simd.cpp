@@ -447,40 +447,11 @@ var_types Compiler::getSIMDType(CORINFO_CLASS_HANDLE typeHnd, CorInfoType* baseT
 
     if (simdBaseJitType != CORINFO_TYPE_UNDEF)
     {
-        assert(getSizeOfSIMDType(type) == info.compCompHnd->getClassSize(typeHnd));
+        assert(genTypeSize(type) == info.compCompHnd->getClassSize(typeHnd));
         setUsesSIMDTypes(true);
     }
 
     return type;
-}
-
-unsigned Compiler::getSizeOfSIMDType(var_types simdType)
-{
-    assert(varTypeIsSIMD(simdType));
-    unsigned size = 0;
-    switch (simdType)
-    {
-        case TYP_SIMD8:
-        case TYP_SIMD12:
-        case TYP_SIMD16:
-#ifdef TARGET_XARCH
-        case TYP_SIMD32:
-        case TYP_SIMD64:
-#endif
-            size = genTypeSize(simdType);
-            break;
-
-#ifdef TARGET_ARM64
-        case TYP_SIMDSV:
-            size = getVectorTByteLength();
-            break;
-#endif
-
-        default:
-            unreached();
-    }
-    assert(size != 0);
-    return size;
 }
 
 //----------------------------------------------------------------------------------
@@ -520,7 +491,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
 
     if (sizeBytes != nullptr && type != TYP_UNDEF)
     {
-        *sizeBytes = getSizeOfSIMDType(type);
+        *sizeBytes = genTypeSize(type);
     }
 
     return baseType;

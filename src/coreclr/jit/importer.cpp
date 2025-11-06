@@ -1189,7 +1189,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
             var_types   simdType        = getSIMDType(structHnd, &simdBaseJitType);
             if (simdBaseJitType != CORINFO_TYPE_UNDEF && simdType != TYP_UNDEF)
             {
-                assert(getSizeOfSIMDType(simdType) == originalSize);
+                assert(genTypeSize(simdType) == originalSize);
                 structType = simdType;
                 if (pSimdBaseJitType != nullptr)
                 {

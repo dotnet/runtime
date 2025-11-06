@@ -9089,8 +9089,6 @@ private:
 
     var_types getSIMDType(CORINFO_CLASS_HANDLE typeHnd, CorInfoType* baseType = nullptr);
 
-    unsigned getSizeOfSIMDType(var_types simdType);
-
     // Get the base (element) type and size in bytes for a SIMD type. Returns CORINFO_TYPE_UNDEF
     // if it is not a SIMD type or is an unsupported base JIT type.
     CorInfoType getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
