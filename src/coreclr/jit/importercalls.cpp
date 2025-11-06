@@ -276,7 +276,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         exactContextHnd                = callInfo->contextHandle;
         exactContextNeedsRuntimeLookup = callInfo->exactContextNeedsRuntimeLookup;
 
-        switch (callInfo->kind)
+          switch (callInfo->kind)
         {
             case CORINFO_VIRTUALCALL_STUB:
             {
@@ -1894,7 +1894,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
     var_types simdReturnType = impNormStructType(call->gtRetClsHnd);
     if (simdReturnType != call->TypeGet())
     {
-        assert(varTypeIsSIMD(simdReturnType));
+        assert(varTypeIsAccelerated(simdReturnType));
         JITDUMP("changing the type of a call [%06u] from %s to %s\n", dspTreeID(call), varTypeName(call->TypeGet()),
                 varTypeName(simdReturnType));
         call->ChangeType(simdReturnType);
@@ -4414,6 +4414,35 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 #endif // FEATURE_HW_INTRINSICS
+
+            case NI_System_Half_op_Addition:
+            {
+#ifdef TARGET_XARCH
+                if(compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    GenTree* op2 = impPopStack().val;
+                    GenTree* op1 = impPopStack().val;
+                    assert(op1->TypeGet() == TYP_HALF);
+                    assert(op2->TypeGet() == TYP_HALF);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_HALF, op1, op2, NI_AVX10v1_HalfAdd, TYP_HALF, 16);
+                }
+#endif
+                break;
+            }
+
+            case NI_System_Half_op_Explicit:
+            {
+#ifdef TARGET_XARCH
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    GenTree* op1 = impPopStack().val;
+                    assert(op1->TypeGet() == TYP_FLOAT);
+                    // todo-half: these intrinsics follow the same size (though it is unused) as AVX512_ConvertToUInt32
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_HALF, op1, NI_AVX10v1_ConvertFloatToHalf, TYP_FLOAT, 16);
+                }
+#endif
+                break;
+            }
 
             case NI_System_Math_Abs:
             case NI_System_Math_Acos:
@@ -10372,6 +10401,23 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_Enum_HasFlag;
                         }
+                    }
+                    break;
+                }
+
+                case 'H':
+                {
+                    if (strcmp(className, "Half") == 0)
+                    {
+                        if (strcmp(methodName, "op_Explicit") == 0)
+                        {
+                            result = NI_System_Half_op_Explicit;
+                        }
+                        else if (strcmp(methodName, "op_Addition") == 0)
+                        {
+                            result = NI_System_Half_op_Addition;
+                        }
+                        break;
                     }
                     break;
                 }

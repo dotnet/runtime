@@ -2972,7 +2972,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     }
 
 #ifdef FEATURE_SIMD
-    if (varTypeIsStruct(elemTyp) && structSizeMightRepresentSIMDType(elemSize))
+    if (varTypeIsStruct(elemTyp) && structSizeMightRepresentAcceleratedType(elemSize))
     {
         elemTyp = impNormStructType(elemStructType);
     }
@@ -14979,6 +14979,10 @@ PhaseStatus Compiler::fgPromoteStructs()
         // If we have marked this as lvUsedInSIMDIntrinsic, then we do not want to promote
         // its fields.  Instead, we will attempt to enregister the entire struct.
         if (varTypeIsSIMD(varDsc) && (varDsc->lvIsUsedInSIMDIntrinsic() || isOpaqueSIMDLclVar(varDsc)))
+        {
+            varDsc->lvRegStruct = true;
+        }
+        else if (varDsc->TypeGet() == TYP_HALF)
         {
             varDsc->lvRegStruct = true;
         }

@@ -8179,6 +8179,7 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
             return gtNewLconNode(0);
         }
 
+        case TYP_HALF:
         case TYP_FLOAT:
         case TYP_DOUBLE:
         {

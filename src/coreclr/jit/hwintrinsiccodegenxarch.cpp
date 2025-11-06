@@ -1013,6 +1013,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX512v2:
         case InstructionSet_AVXVNNIINT:
         case InstructionSet_AVXVNNIINT_V512:
+        case InstructionSet_AVX10v1:
         {
             genAvxFamilyIntrinsic(node, instOptions);
             break;
@@ -3732,6 +3733,17 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             }
 
             genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3, instOptions);
+            break;
+        }
+
+        case NI_AVX10v1_ConvertFloatToHalf:
+        case NI_AVX10v1_ConvertHalfToFloat:
+        {
+            assert(baseType == TYP_HALF || baseType == TYP_FLOAT);
+            emitAttr attr = emitTypeSize(targetType);
+
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+            genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
             break;
         }
 
