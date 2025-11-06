@@ -833,6 +833,11 @@ namespace Internal.JitInterface
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig, scope);
 
+            // Get_CORINFO_SIG_INFO above will have correctly set CORINFO_CALLCONV_ASYNCCALL for async variants,
+            // however the special async intrinsics don't set the async bit in their signature. Compensate for that.
+            if (method.IsAsync && !method.Signature.ReturnsTaskOrValueTask())
+                sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
+
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
 
@@ -4332,7 +4337,10 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
 
-            if (this.MethodBeingCompiled.Signature.IsAsyncCall)
+            // Signature.IsAsyncCall will do the right thing for async variants, however the special async
+            // intrinsics don't set the async bit in their signature. Compensate for that.
+            if (this.MethodBeingCompiled.Signature.IsAsyncCall
+                || (this.MethodBeingCompiled.IsAsync && !this.MethodBeingCompiled.Signature.ReturnsTaskOrValueTask()))
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
