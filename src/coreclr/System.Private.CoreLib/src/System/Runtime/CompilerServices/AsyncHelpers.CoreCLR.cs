@@ -216,6 +216,7 @@ namespace System.Runtime.CompilerServices
             static abstract void SetContinuationState(T task, Continuation value);
             static abstract bool SetCompleted(T task);
             static abstract void PostToSyncContext(T task, SynchronizationContext syncCtx);
+            static abstract void ValueTaskSourceOnCompleted(T task, IValueTaskSourceNotifier vtsNotifier, ValueTaskSourceOnCompletedFlags configFlags);
             static abstract ref byte GetResultStorage(T task);
         }
 
@@ -262,6 +263,12 @@ namespace System.Runtime.CompilerServices
                 ((RuntimeAsyncTask<T>)state).MoveNext();
             };
 
+            public static readonly Action<object?> s_runContinuationAction = static state =>
+            {
+                Debug.Assert(state is RuntimeAsyncTask<T>);
+                ((RuntimeAsyncTask<T>)state).MoveNext();
+            };
+
             private struct Ops : IRuntimeAsyncTaskOps<RuntimeAsyncTask<T>>
             {
                 public static Action GetContinuationAction(RuntimeAsyncTask<T> task) => (Action)task.m_action!;
@@ -279,6 +286,11 @@ namespace System.Runtime.CompilerServices
                 public static void PostToSyncContext(RuntimeAsyncTask<T> task, SynchronizationContext syncContext)
                 {
                     syncContext.Post(s_postCallback, task);
+                }
+
+                public static void ValueTaskSourceOnCompleted(RuntimeAsyncTask<T> task, IValueTaskSourceNotifier vtsNotifier, ValueTaskSourceOnCompletedFlags configFlags)
+                {
+                    vtsNotifier.OnCompleted(s_runContinuationAction, task, configFlags);
                 }
 
                 public static ref byte GetResultStorage(RuntimeAsyncTask<T> task) => ref Unsafe.As<T?, byte>(ref task.m_result);
@@ -328,6 +340,12 @@ namespace System.Runtime.CompilerServices
                 ((RuntimeAsyncTask)state).MoveNext();
             };
 
+            public static readonly Action<object?> s_runContinuationAction = static state =>
+            {
+                Debug.Assert(state is RuntimeAsyncTask);
+                ((RuntimeAsyncTask)state).MoveNext();
+            };
+
             private struct Ops : IRuntimeAsyncTaskOps<RuntimeAsyncTask>
             {
                 public static Action GetContinuationAction(RuntimeAsyncTask task) => (Action)task.m_action!;
@@ -345,6 +363,11 @@ namespace System.Runtime.CompilerServices
                 public static void PostToSyncContext(RuntimeAsyncTask task, SynchronizationContext syncContext)
                 {
                     syncContext.Post(s_postCallback, task);
+                }
+
+                public static void ValueTaskSourceOnCompleted(RuntimeAsyncTask task, IValueTaskSourceNotifier vtsNotifier, ValueTaskSourceOnCompletedFlags configFlags)
+                {
+                    vtsNotifier.OnCompleted(s_runContinuationAction, task, configFlags);
                 }
 
                 public static ref byte GetResultStorage(RuntimeAsyncTask task) => ref Unsafe.NullRef<byte>();
@@ -509,8 +532,7 @@ namespace System.Runtime.CompilerServices
 
                         // Clear continuation flags, so that continuation runs transparently
                         headContinuation.Next!.Flags &= ~continueFlags;
-
-                        vtsNotifier.OnCompleted(o => TOps.GetContinuationAction((T)o!).Invoke(), task, configFlags);
+                        TOps.ValueTaskSourceOnCompleted(task, vtsNotifier, configFlags);
                     }
                     else
                     {
