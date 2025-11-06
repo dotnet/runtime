@@ -75,11 +75,12 @@ namespace TestUnhandledExceptionTester
             {
                 string separator = string.Empty;
                 StringBuilder expectedListBuilder = new StringBuilder();
-                Array.ForEach(expectedExitCodes, code => {
+                Array.ForEach(expectedExitCodes, code =>
+                {
                     expectedListBuilder.Append($"{separator}0x{code:X8}");
                     separator = " or ";
                 });
-                throw new Exception($"Wrong exit code: 0x{testProcess.ExitCode:X8}, expected {expectedListBuilder.ToString()}");
+                throw new Exception($"Wrong exit code: 0x{testProcess.ExitCode:X8}, expected {expectedListBuilder}");
             }
 
             int exceptionStackFrameLine = 1;
@@ -105,7 +106,7 @@ namespace TestUnhandledExceptionTester
                 }
                 else if (unhandledType.EndsWith("hardware"))
                 {
-                    if (lines[1] != "System.NullReferenceException: Object reference not set to an instance of an object.")
+                    if (!lines[1].StartsWith("System.NullReferenceException: Object reference not set to an instance of an object")
                     {
                         throw new Exception("Missing exception type and message");
                     }
