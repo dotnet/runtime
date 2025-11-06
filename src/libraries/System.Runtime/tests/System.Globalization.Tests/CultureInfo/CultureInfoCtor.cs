@@ -480,12 +480,12 @@ namespace System.Globalization.Tests
         }
 
         [InlineData("zh-TW-u-co-zhuyin", "zh-TW", "zh-TW_zhuyin")]
-        [InlineData("de-DE-u-co-phonebk", "de-DE", "de-DE_phonebk")]
-        [InlineData("de-DE-u-co-phonebk-u-xx", "de-DE-u-xx", "de-DE-u-xx_phonebk")]
+        [InlineData("de-DE-u-co-phonebk", "de-DE", "de-DE_phoneboo")]
+        [InlineData("de-DE-u-co-phonebk-u-xx", "de-DE-u-xx", "de-DE-u-xx_phoneboo")]
         [InlineData("de-DE-u-xx-u-co-phonebk", "de-DE-u-xx-u-co-phonebk", "de-DE-u-xx-u-co-phonebk")]
-        [InlineData("de-DE-t-xx-u-co-phonebk", "de-DE-t-xx-u-co-phonebk", "de-DE-t-xx-u-co-phonebk_phonebk")]
-        [InlineData("de-DE-u-co-phonebk-t-xx", "de-DE-t-xx", "de-DE-t-xx_phonebk")]
-        [InlineData("de-DE-u-co-phonebk-t-xx-u-yy", "de-DE-t-xx-u-yy", "de-DE-t-xx-u-yy_phonebk")]
+        [InlineData("de-DE-t-xx-u-co-phonebk", "de-DE-t-xx-u-co-phonebk", "de-DE-t-xx-u-co-phonebk_phoneboo")]
+        [InlineData("de-DE-u-co-phonebk-t-xx", "de-DE-t-xx", "de-DE-t-xx_phoneboo")]
+        [InlineData("de-DE-u-co-phonebk-t-xx-u-yy", "de-DE-t-xx-u-yy", "de-DE-t-xx-u-yy_phoneboo")]
         [InlineData("de-DE", "de-DE", "de-DE")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         public void TestCreationWithMangledSortName(string cultureName, string expectedCultureName, string expectedSortName)
