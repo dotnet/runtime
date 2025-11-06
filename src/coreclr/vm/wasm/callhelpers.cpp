@@ -758,7 +758,7 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
 //     // Lazy lookup of MethodDesc for the function export scenario.
 //     if (!MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32)
 //     {
-//         LookupMethodByName("MyType, MyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", "MyMethod_I32_I32_RetI32", &MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32);
+//         LookupMethodByName("MyType, MyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", "MyMethod", &MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32);
 //     }
 //
 //     int result;

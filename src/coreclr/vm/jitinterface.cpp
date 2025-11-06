@@ -13936,7 +13936,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
         MethodEntry:
-            result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+            result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
         }
         break;
 
