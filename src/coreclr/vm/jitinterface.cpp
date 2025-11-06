@@ -9158,7 +9158,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     }
     else
     {
-        ret = (void *)ftn->TryGetMultiCallableAddrOfCode(accessFlags);
+        ret = (void*)ftn->TryGetMultiCallableAddrOfCode(accessFlags | CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
 
         // TryGetMultiCallableAddrOfCode returns NULL if indirect access is desired
         if (ret == NULL)
@@ -9166,7 +9166,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
             // should never get here for EnC methods or if interception via remoting stub is required
             _ASSERTE(!ftn->InEnCEnabledModule());
 
-            ret = (void *)ftn->GetAddrOfSlot();
+            ret = (void*)ftn->GetAddrOfSlot();
 
             accessType = IAT_PVALUE;
         }
