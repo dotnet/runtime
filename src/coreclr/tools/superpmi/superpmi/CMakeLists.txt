@@ -35,6 +35,7 @@ set(SUPERPMI_SOURCES
     parallelsuperpmi.cpp
     streamingsuperpmi.cpp
     superpmi.cpp
+    fileio.cpp
     jithost.cpp
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp

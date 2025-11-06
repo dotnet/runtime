@@ -12,6 +12,7 @@
 #include "methodcontext.h"
 #include "methodcontextreader.h"
 #include "spmiutil.h"
+#include "fileio.h"
 #include "commandline.h"
 
 #if defined(_WIN32)
