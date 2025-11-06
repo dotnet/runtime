@@ -43,10 +43,26 @@ namespace System.Text.Json.SourceGeneration
                 .Combine(knownTypeSymbols)
                 .Select(static (tuple, cancellationToken) =>
                 {
-                    Parser parser = new(tuple.Right);
-                    ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(tuple.Left.ContextClass, tuple.Left.SemanticModel, cancellationToken);
-                    ImmutableEquatableArray<DiagnosticInfo> diagnostics = parser.Diagnostics.ToImmutableEquatableArray();
-                    return (contextGenerationSpec, diagnostics);
+                    // Ensure the source generator parses using invariant culture.
+                    // This prevents issues such as locale-specific negative signs (e.g., U+2212 in fi-FI)
+                    // from being written to generated source files.
+#pragma warning disable RS1035 // CultureInfo.CurrentCulture is banned in analyzers
+                    CultureInfo originalCulture = CultureInfo.CurrentCulture;
+                    CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+                    try
+                    {
+#pragma warning restore RS1035
+                        Parser parser = new(tuple.Right);
+                        ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(tuple.Left.ContextClass, tuple.Left.SemanticModel, cancellationToken);
+                        ImmutableEquatableArray<DiagnosticInfo> diagnostics = parser.Diagnostics.ToImmutableEquatableArray();
+                        return (contextGenerationSpec, diagnostics);
+#pragma warning disable RS1035
+                    }
+                    finally
+                    {
+                        CultureInfo.CurrentCulture = originalCulture;
+                    }
+#pragma warning restore RS1035
                 })
 #if ROSLYN4_4_OR_GREATER
                 .WithTrackingName(SourceGenerationSpecTrackingName)

@@ -44,43 +44,7 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="executionContext"></param>
         public void Execute(GeneratorExecutionContext executionContext)
         {
-            if (executionContext.SyntaxContextReceiver is not SyntaxContextReceiver receiver || receiver.ContextClassDeclarations == null)
-            {
-                // nothing to do yet
-                return;
-            }
-
-            // Stage 1. Parse the identified JsonSerializerContext classes and store the model types.
-            KnownTypeSymbols knownSymbols = new(executionContext.Compilation);
-            Parser parser = new(knownSymbols);
-
-            List<ContextGenerationSpec>? contextGenerationSpecs = null;
-            foreach ((ClassDeclarationSyntax? contextClassDeclaration, SemanticModel semanticModel) in receiver.ContextClassDeclarations)
-            {
-                ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(contextClassDeclaration, semanticModel, executionContext.CancellationToken);
-                if (contextGenerationSpec is null)
-                {
-                    continue;
-                }
-
-                (contextGenerationSpecs ??= new()).Add(contextGenerationSpec);
-            }
-
-            // Stage 2. Report any diagnostics gathered by the parser.
-            foreach (DiagnosticInfo diagnosticInfo in parser.Diagnostics)
-            {
-                executionContext.ReportDiagnostic(diagnosticInfo.CreateDiagnostic());
-            }
-
-            if (contextGenerationSpecs is null)
-            {
-                return;
-            }
-
-            // Stage 3. Emit source code from the spec models.
-            OnSourceEmitting?.Invoke(contextGenerationSpecs.ToImmutableArray());
-
-            // Ensure the source generator emits number literals using invariant culture.
+            // Ensure the source generator parses and emits using invariant culture.
             // This prevents issues such as locale-specific negative signs (e.g., U+2212 in fi-FI)
             // from being written to generated source files.
             // Note: RS1035 is already disabled at the file level for this Roslyn version.
@@ -88,6 +52,42 @@ namespace System.Text.Json.SourceGeneration
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
             try
             {
+                if (executionContext.SyntaxContextReceiver is not SyntaxContextReceiver receiver || receiver.ContextClassDeclarations == null)
+                {
+                    // nothing to do yet
+                    return;
+                }
+
+                // Stage 1. Parse the identified JsonSerializerContext classes and store the model types.
+                KnownTypeSymbols knownSymbols = new(executionContext.Compilation);
+                Parser parser = new(knownSymbols);
+
+                List<ContextGenerationSpec>? contextGenerationSpecs = null;
+                foreach ((ClassDeclarationSyntax? contextClassDeclaration, SemanticModel semanticModel) in receiver.ContextClassDeclarations)
+                {
+                    ContextGenerationSpec? contextGenerationSpec = parser.ParseContextGenerationSpec(contextClassDeclaration, semanticModel, executionContext.CancellationToken);
+                    if (contextGenerationSpec is null)
+                    {
+                        continue;
+                    }
+
+                    (contextGenerationSpecs ??= new()).Add(contextGenerationSpec);
+                }
+
+                // Stage 2. Report any diagnostics gathered by the parser.
+                foreach (DiagnosticInfo diagnosticInfo in parser.Diagnostics)
+                {
+                    executionContext.ReportDiagnostic(diagnosticInfo.CreateDiagnostic());
+                }
+
+                if (contextGenerationSpecs is null)
+                {
+                    return;
+                }
+
+                // Stage 3. Emit source code from the spec models.
+                OnSourceEmitting?.Invoke(contextGenerationSpecs.ToImmutableArray());
+
                 Emitter emitter = new(executionContext);
                 foreach (ContextGenerationSpec contextGenerationSpec in contextGenerationSpecs)
                 {
