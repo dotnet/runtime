@@ -417,9 +417,13 @@ namespace System.PrivateUri.Tests
 
             yield return ["[::]/path", true];
             yield return ["::]/path", true];
-            yield return ["::/path", false];
-            yield return ["::?query", false];
-            yield return ["::#fragment", false];
+            yield return ["::/path", true];
+            yield return ["::?query", true];
+            yield return ["::#fragment", true];
+            yield return ["[0::%/64]/path", true];
+
+            yield return ["[host]", true];
+            yield return ["[127.0.0.1]", true];
         }
 
         [Theory]
