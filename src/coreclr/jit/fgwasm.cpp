@@ -219,7 +219,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Wasm control flow.
     //
     unsigned numHotBlocks  = 0;
-    auto     addToSequence = [this, initialLayout, &numHotBlocks](BasicBlock* block) {
+    auto     addToSequence = [initialLayout, &numHotBlocks](BasicBlock* block) {
         // Skip funclets for now
         //
         if (block->hasHndIndex())
