@@ -2,7 +2,20 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <PropertyGroup>
-    <PackageDescription>The .NET IL Disassembler.</PackageDescription>
+    <PackageDescription>The .NET IL Disassembler.
+
+Usage:
+  Install as a global tool:
+    dotnet tool install -g Microsoft.NETCore.ILDAsm
+
+  Invoke the tool:
+    ildasm [options] &lt;file&gt;
+
+  For help on ildasm command-line options:
+    ildasm -?
+</PackageDescription>
+    <!-- Configure as a dotnet tool -->
+    <PackageType>DotnetTool</PackageType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
@@ -10,10 +23,65 @@
     <PackageTargetRuntime Condition="'$(_packageTargetOSGroup)' == 'windows'">$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
   </PropertyGroup>
 
-  <ItemGroup>
-    <NativeBinary Condition="'$(PackCrossComponent)' != 'true'" Include="$(RuntimeBinDir)ildasm$(ExeSuffix)" />
-    <NativeBinary Condition="'$(PackCrossComponent)' == 'true'" Include="$(RuntimeBinDir)$(BuildArchitecture)/ildasm$(ExeSuffix)" />
+  <!-- For RID-specific tool packages, include the native binary in tools folder -->
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <File Include="$(RuntimeBinDir)ildasm$(ExeSuffix)" Condition="'$(PackCrossComponent)' != 'true'">
+      <TargetPath>tools/$(NetCoreAppToolCurrent)/$(PackageTargetRuntime)/</TargetPath>
+    </File>
+    <File Include="$(RuntimeBinDir)$(BuildArchitecture)/ildasm$(ExeSuffix)" Condition="'$(PackCrossComponent)' == 'true'">
+      <TargetPath>tools/$(NetCoreAppToolCurrent)/$(PackageTargetRuntime)/</TargetPath>
+    </File>
+    <!-- Include tool settings manifest for RID-specific packages -->
+    <File Include="$(MSBuildThisFileDirectory)DotnetToolSettings.xml">
+      <TargetPath>tools/$(NetCoreAppToolCurrent)/$(PackageTargetRuntime)/</TargetPath>
+    </File>
   </ItemGroup>
+
+  <!-- For primary (non-RID-specific) package, generate and include manifest that references RID-specific packages -->
+  <Target Name="GeneratePrimaryToolManifest" BeforeTargets="GetPackageFiles" Condition="'$(PackageTargetRuntime)' == ''">
+    <!-- Define official RID list -->
+    <ItemGroup>
+      <_OfficialRID Include="win-x64" />
+      <_OfficialRID Include="win-x86" />
+      <_OfficialRID Include="win-arm64" />
+      <_OfficialRID Include="linux-x64" />
+      <_OfficialRID Include="linux-arm" />
+      <_OfficialRID Include="linux-arm64" />
+      <_OfficialRID Include="linux-musl-x64" />
+      <_OfficialRID Include="linux-musl-arm64" />
+      <_OfficialRID Include="osx-x64" />
+      <_OfficialRID Include="osx-arm64" />
+      <_OfficialRID Include="freebsd-x64" />
+      <_OfficialRID Include="freebsd-arm64" />
+      <!-- Add TargetRid if not already in the official list -->
+      <_OfficialRID Include="$(TargetRid)" Exclude="@(_OfficialRID)" />
+    </ItemGroup>
+    
+    <PropertyGroup>
+      <_GeneratedManifestPath>$(IntermediateOutputPath)DotnetToolSettings.xml</_GeneratedManifestPath>
+      <_RidPackagesXml>@(_OfficialRID->'    &lt;RuntimeIdentifierPackage RuntimeIdentifier=&quot;%(Identity)&quot; Id=&quot;runtime.%(Identity).Microsoft.NETCore.ILDAsm&quot; Version=&quot;$(PackageVersion)&quot; /&gt;', '%0a')</_RidPackagesXml>
+      <_ManifestContent>
+<![CDATA[<?xml version="1.0" encoding="utf-8"?>
+<DotNetCliTool Version="2">
+  <Commands>
+    <Command Name="ildasm" />
+  </Commands>
+  <RuntimeIdentifierPackages>
+]]>$(_RidPackagesXml)<![CDATA[
+  </RuntimeIdentifierPackages>
+</DotNetCliTool>]]>
+      </_ManifestContent>
+    </PropertyGroup>
+    
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile File="$(_GeneratedManifestPath)" Lines="$(_ManifestContent)" Overwrite="true" />
+    
+    <ItemGroup>
+      <File Include="$(_GeneratedManifestPath)">
+        <TargetPath>tools/$(NetCoreAppToolCurrent)/any/DotnetToolSettings.xml</TargetPath>
+      </File>
+    </ItemGroup>
+  </Target>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>
