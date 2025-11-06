@@ -14,7 +14,6 @@ jobs:
 - template: ${{ parameters.jobTemplate }}
   parameters:
     variables:
-    - template: /eng/pipelines/helix-platforms.yml
     - ${{ parameters.variables }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
