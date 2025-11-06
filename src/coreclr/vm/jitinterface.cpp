@@ -9205,7 +9205,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
         pMD->PrepareForUseAsAFunctionPointer();
 
     pResult->accessType = IAT_VALUE;
-    pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
+    pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode((CORINFO_ACCESS_FLAGS)(CORINFO_ACCESS_LDFTN | CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE));
 
     EE_TO_JIT_TRANSITION();
 }

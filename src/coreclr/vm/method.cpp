@@ -2107,21 +2107,24 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     if (accessFlags & CORINFO_ACCESS_LDFTN)
     {
         // Whenever we use LDFTN on shared-generic-code-which-requires-an-extra-parameter
-        // we need to give out the address of an instantiating stub.  This is why we give
-        // out GetStableEntryPoint() for the IsInstantiatingStub() case: this is
-        // safe.  But first we assert that we only use GetMultiCallableAddrOfCode on
+        // we need to give out the address of an instantiating stub. This is why we give
+        // out GetStableEntryPoint() for IsInstantiatingStub() via the IsWrapperStub() case: this is
+        // safe. But first we assert that we only use GetMultiCallableAddrOfCode on
         // the instantiating stubs and not on the shared code itself.
         _ASSERTE(!RequiresInstArg());
         _ASSERTE(!IsSharedByGenericMethodInstantiations());
 
-        // No other access flags are valid with CORINFO_ACCESS_LDFTN
-        _ASSERTE((accessFlags & ~CORINFO_ACCESS_LDFTN) == 0);
+        // Validate LDFTN flags are valid
+        _ASSERTE((accessFlags & ~CORINFO_ACCESS_LDFTN_MASK) == 0);
     }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     PCODE entryPoint = GetPortableEntryPoint();
-    if (PortableEntryPoint::ToPortableEntryPoint(entryPoint)->HasUnmanagedCallersOnlyAttribute())
+    if (accessFlags & CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE
+        && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->HasUnmanagedCallersOnlyAttribute())
+    {
         entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+    }
 
     return entryPoint;
 
