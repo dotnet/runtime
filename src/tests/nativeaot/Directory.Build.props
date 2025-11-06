@@ -6,16 +6,4 @@
     <!-- We expect trimming to be fully enabled in these tests -->
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
   </PropertyGroup>
-
-  <!-- When runtime tests are brought up for Android, the logic that's common
-       to nativeaot and runtime tests should be moved into the parent
-       Directory.Build.props. -->
-  <PropertyGroup Condition="'$(TargetsAndroid)' == 'true'">
-    <!-- We need the library import generator when running android tests. -->
-    <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
-    <!-- Treat as merged runners so that each assembly gets its own apk -->
-    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
-    <HasMergedInTests>true</HasMergedInTests>
-    <ExpectedExitCode>100</ExpectedExitCode>
-  </PropertyGroup>
 </Project>
