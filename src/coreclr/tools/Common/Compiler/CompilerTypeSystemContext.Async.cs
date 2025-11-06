@@ -15,7 +15,7 @@ namespace ILCompiler
         {
             Debug.Assert(taskReturningMethod.Signature.ReturnsTaskOrValueTask());
             MethodDesc asyncMetadataMethodDef = taskReturningMethod.GetTypicalMethodDefinition();
-            MethodDesc result = _asyncVariantImplHashtable.GetOrCreateValue((EcmaMethod)asyncMetadataMethodDef);
+            MethodDesc result = _asyncVariantHashtable.GetOrCreateValue((EcmaMethod)asyncMetadataMethodDef);
 
             if (asyncMetadataMethodDef != taskReturningMethod)
             {
@@ -30,7 +30,7 @@ namespace ILCompiler
             return result;
         }
 
-        private sealed class AsyncVariantImplHashtable : LockFreeReaderHashtable<EcmaMethod, AsyncMethodVariant>
+        private sealed class AsyncVariantHashtable : LockFreeReaderHashtable<EcmaMethod, AsyncMethodVariant>
         {
             protected override int GetKeyHashCode(EcmaMethod key) => key.GetHashCode();
             protected override int GetValueHashCode(AsyncMethodVariant value) => value.Target.GetHashCode();
@@ -39,7 +39,7 @@ namespace ILCompiler
                 => value1.Target == value2.Target;
             protected override AsyncMethodVariant CreateValueFromKey(EcmaMethod key) => new AsyncMethodVariant(key);
         }
-        private AsyncVariantImplHashtable _asyncVariantImplHashtable = new AsyncVariantImplHashtable();
+        private AsyncVariantHashtable _asyncVariantHashtable = new AsyncVariantHashtable();
 
         public MetadataType GetContinuationType(GCPointerMap pointerMap)
         {
