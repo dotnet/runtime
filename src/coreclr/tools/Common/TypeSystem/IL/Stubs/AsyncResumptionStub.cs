@@ -18,7 +18,8 @@ namespace ILCompiler
 
         public AsyncResumptionStub(MethodDesc owningMethod)
         {
-            Debug.Assert(owningMethod.Signature.IsAsyncCall);
+            Debug.Assert(owningMethod.IsAsyncVariant()
+                || (owningMethod.IsAsync && !owningMethod.Signature.ReturnsTaskOrValueTask()));
             _owningMethod = owningMethod;
         }
 

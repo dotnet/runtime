@@ -3651,6 +3651,9 @@ namespace Internal.JitInterface
             return res;
         }
 
+        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
+        { throw new NotImplementedException("getFunctionFixedEntryPoint"); }
+
 #pragma warning disable CA1822 // Mark members as static
         private CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_STRUCT_* handle)
 #pragma warning restore CA1822 // Mark members as static
@@ -3769,7 +3772,10 @@ namespace Internal.JitInterface
 #if READYTORUN
             throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
 #else
-            return ObjectToHandle(_asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled));
+            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled);
+
+            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
+            return ObjectToHandle(_asyncResumptionStub);
 #endif
         }
 

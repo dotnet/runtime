@@ -808,14 +808,6 @@ namespace Internal.JitInterface
             return entryPoint;
         }
 
-        private void getFunctionFixedEntryPoint(CORINFO_METHOD_STRUCT_* ftn, bool isUnsafeFunctionPointer, ref CORINFO_CONST_LOOKUP pResult)
-        {
-            Debug.Assert(!isUnsafeFunctionPointer);
-
-            MethodDesc method = HandleToObject(ftn);
-            pResult = CreateConstLookupToSymbol(_compilation.NodeFactory.MethodEntrypoint(method));
-        }
-
         private void getFunctionEntryPoint(CORINFO_METHOD_STRUCT_* ftn, ref CORINFO_CONST_LOOKUP pResult, CORINFO_ACCESS_FLAGS accessFlags)
         {
             MethodDesc method = HandleToObject(ftn);
