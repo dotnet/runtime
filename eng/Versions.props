@@ -94,7 +94,6 @@
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemSecurityPermissionsVersion>7.0.0</SystemSecurityPermissionsVersion>
-    <SystemThreadingAccessControlVersion>7.0.0</SystemThreadingAccessControlVersion>
     <!-- Keep toolset versions in sync with dotnet/msbuild and dotnet/sdk -->
     <MicrosoftBclAsyncInterfacesToolsetVersion>8.0.0</MicrosoftBclAsyncInterfacesToolsetVersion>
     <MicrosoftIoRedistToolsetVersion>6.0.1</MicrosoftIoRedistToolsetVersion>
