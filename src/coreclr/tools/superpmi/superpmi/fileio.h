@@ -56,22 +56,22 @@ private:
     HandleType m_handle;
 };
 
-struct FileHandleSpec
+struct FILEPtrSpec
 {
-    using Type = HANDLE;
-    static HANDLE Invalid() { return INVALID_HANDLE_VALUE; }
-    static void Close(HANDLE h) { CloseHandle(h); }
+    using Type = FILE*;
+    static FILE* Invalid() { return NULL; }
+    static void Close(FILE* fp) { fclose(fp); }
 };
 
-typedef HandleWrapper<FileHandleSpec> FileHandle;
+typedef HandleWrapper<FILEPtrSpec>    FILEHandle;
 
 class FileWriter
 {
-    FileHandle m_file;
+    FILEHandle        m_file;
     std::vector<char> m_buffer;
     size_t m_bufferIndex = 0;
 
-    explicit FileWriter(FileHandle file)
+    explicit FileWriter(FILEHandle file)
         : m_file(std::move(file))
         , m_buffer(8192)
     {

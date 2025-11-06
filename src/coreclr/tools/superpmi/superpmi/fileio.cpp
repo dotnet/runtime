@@ -124,17 +124,15 @@ bool FileWriter::Flush()
     if (m_bufferIndex <= 0)
         return true;
 
-    DWORD numWritten;
-    bool result =
-        WriteFile(m_file.Get(), m_buffer.data(), static_cast<DWORD>(m_bufferIndex), &numWritten, nullptr) &&
-        (numWritten == static_cast<DWORD>(m_bufferIndex));
+    size_t numWritten = fwrite(m_buffer.data(), 1, m_bufferIndex, m_file.Get());
+    bool result = (numWritten == m_bufferIndex);
     m_bufferIndex = 0;
     return result;
 }
 
 bool FileWriter::CreateNew(const char* path, FileWriter* fw)
 {
-    FileHandle handle(CreateFile(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr));
+    FILEHandle handle(fopen(path, "wb"));
     if (!handle.IsValid())
     {
         return false;
