@@ -2056,9 +2056,28 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     return frames.interpMethodContextFrame.pRetVal;
 }
 
+void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff)
+{
+    // Copy arguments to the stack
+    if (argSize > 0)
+    {
+        _ASSERTE(args != NULL);
+        InterpThreadContext *threadContext = GetInterpThreadContext();
+        int8_t* sp = threadContext->pStackPointer;
+        memcpy(sp, args, argSize);
+    }
+
+    TransitionBlock dummy{};
+    (void)ExecuteInterpretedMethod(&dummy, (TADDR)targetIp, retBuff);
+}
+
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret)
 {
     _ASSERTE(pMD != NULL);
+
+    // This path assumes the caller is unmanaged code. This assumption is important for
+    // because the DoPrestub call may trigger a GC. If a GC occurs, there would be no explicit
+    // protection for the arguments, but since this from an unmanaged caller, no protection is needed.
 
     InterpByteCodeStart* targetIp = pMD->GetInterpreterCode();
     if (targetIp == NULL)
@@ -2067,17 +2086,7 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
         (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
         targetIp = pMD->GetInterpreterCode();
     }
-
-    // Copy arguments to the stack
-    if (argSize > 0 && args != nullptr)
-    {
-        InterpThreadContext *threadContext = GetInterpThreadContext();
-        int8_t* sp = threadContext->pStackPointer;
-        memcpy(sp, args, argSize);
-    }
-
-    TransitionBlock dummy{};
-    (void)ExecuteInterpretedMethod(&dummy, (TADDR)targetIp, ret);
+    (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret);
 }
 #endif // FEATURE_INTERPRETER
 
