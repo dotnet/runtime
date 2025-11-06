@@ -86,7 +86,7 @@ int verbMerge::AppendFileRaw(FILE* fpOut, LPCWSTR fileFullPath, unsigned char* b
     }
 
     int64_t offset = 0;
-    while (feof(fpIn))
+    while (!feof(fpIn))
     {
         size_t bytesRead = fread(buffer, 1, bufferSize, fpIn);
         if (bytesRead <= 0)

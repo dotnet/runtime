@@ -159,20 +159,17 @@ void MethodContextReader::ReleaseLock()
     minipal_mutex_leave(&this->mutex);
 }
 
-bool MethodContextReader::atEof()
-{
-    return feof(fp);
-}
-
 MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
 {
     char         buff[512];
     unsigned int totalLen = 0;
-    if (atEof())
+
+    size_t bytesRead = fread(buff, 1, 2 + sizeof(unsigned int), this->fp);
+    if (bytesRead == 0)
     {
         return MethodContextBuffer();
     }
-    Assert(fread(buff, 1, 2 + sizeof(unsigned int), this->fp) == 2 + sizeof(unsigned int));
+    Assert(bytesRead == 2 + sizeof(unsigned int));
     AssertMsg((buff[0] == 'm') && (buff[1] == 'c'), "Didn't find magic number");
     memcpy(&totalLen, &buff[2], sizeof(unsigned int));
     if (justSkip)

@@ -106,9 +106,6 @@ private:
                                           const std::string& origSuffix,
                                           const std::string& newSuffix);
 
-    // are we're at the end of the file...
-    bool atEof();
-
     // Do we have a valid TOC?
     bool hasTOC();
 
