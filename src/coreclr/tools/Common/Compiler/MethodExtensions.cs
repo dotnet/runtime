@@ -153,5 +153,7 @@ namespace ILCompiler
             }
             return false;
         }
+
+        public static bool IsAsyncCall(this MethodDesc method) => method.IsAsync && (method.IsAsyncVariant() || !method.Signature.ReturnsTaskOrValueTask());
     }
 }
