@@ -768,6 +768,15 @@ void interceptor_ICJI::reportRichMappings(
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
+void interceptor_ICJI::reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars)
+{
+    original_ICorJitInfo->reportAsyncDebugInfo(asyncInfo, suspensionPoints, vars, numVars);
+}
+
 void interceptor_ICJI::reportMetadata(
           const char* key,
           const void* value,
@@ -1119,9 +1128,10 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(
     return original_ICorJitInfo->getContinuationType(dataSize, objRefs, objRefsSize);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub(
+          void** entryPoint)
 {
-    return original_ICorJitInfo->getAsyncResumptionStub();
+    return original_ICorJitInfo->getAsyncResumptionStub(entryPoint);
 }
 
 bool interceptor_ICJI::convertPInvokeCalliToCall(

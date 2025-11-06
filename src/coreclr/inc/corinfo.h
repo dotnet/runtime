@@ -1735,8 +1735,8 @@ struct CORINFO_ASYNC_INFO
     CORINFO_CLASS_HANDLE continuationClsHnd;
     // 'Next' field
     CORINFO_FIELD_HANDLE continuationNextFldHnd;
-    // 'Resume' field
-    CORINFO_FIELD_HANDLE continuationResumeFldHnd;
+    // 'ResumeInfo' field
+    CORINFO_FIELD_HANDLE continuationResumeInfoFldHnd;
     // 'State' field
     CORINFO_FIELD_HANDLE continuationStateFldHnd;
     // 'Flags' field
@@ -2913,6 +2913,16 @@ public:
             uint32_t                          numMappings         // [IN] Number of rich mappings
             ) = 0;
 
+    // Report async debug information to EE.
+    // The arrays are expected to be allocated with allocateArray
+    // and ownership is transferred to the EE with this call.
+    virtual void reportAsyncDebugInfo(
+            ICorDebugInfo::AsyncInfo*             asyncInfo,         // [IN] Async method information
+            ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,  // [IN] Array of async suspension points, indexed by state number
+            ICorDebugInfo::AsyncContinuationVarInfo* vars,           // [IN] Array of async continuation variable info
+            uint32_t                              numVars            // [IN] Number of entries in the async vars array
+            ) = 0;
+
     // Report back some metadata about the compilation to the EE -- for
     // example, metrics about the compilation.
     virtual void reportMetadata(
@@ -3341,7 +3351,7 @@ public:
             CORINFO_TAILCALL_HELPERS* pResult
             ) = 0;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() = 0;
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) = 0;
 
     virtual CORINFO_CLASS_HANDLE getContinuationType(
         size_t dataSize,
