@@ -162,9 +162,21 @@
     <WasmNestedPublishAppDependsOn>PrepareForWasmBuildApp;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
   </PropertyGroup>
 
-  <Target Name="IncludeTestAssemblyInVFS" BeforeTargets="PrepareForWasmBuildApp">
+  <Target Name="IncludeTestAssemblyInVFS" BeforeTargets="PrepareForWasmBuildApp;ResolveProjectStaticWebAssets">
     <ItemGroup>
-      <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" Exclude="@(WasmFilesToIncludeFromPublishDir)" />
+      <!-- <Content Include="$(OutDir)$(AssemblyName).dll" Link="wwwroot\vfs\$(AssemblyName).dll" /> -->
+      <!-- <WasmFilesToIncludeFromPublishDir Include="vfs\$(AssemblyName).dll" Exclude="@(WasmFilesToIncludeFromPublishDir)" /> -->
+      <!-- <WasmFilesToIncludeInFileSystem Include="vfs/$(AssemblyName).dll" /> -->
+    </ItemGroup>
+  </Target>
+
+  <Target Name="LinkContentToWwwroot" AfterTargets="AssignTargetPaths" BeforeTargets="ResolveProjectStaticWebAssets">
+    <ItemGroup>
+      <WasmFilesToIncludeInFileSystem Include="%(Content.TargetPath)" Condition="('%(Content.CopyToOutputDirectory)' == 'PreserveNewest' or '%(Content.CopyToOutputDirectory)' == 'Always') and '%(Content.TargetPath)' != ''" />
+      <Content Condition="('%(Content.CopyToOutputDirectory)' == 'PreserveNewest' or '%(Content.CopyToOutputDirectory)' == 'Always') and '%(Content.TargetPath)' != ''">
+        <ContentRoot>$([MSBuild]::ValueOrDefault('%(Content.Identity)', '').Replace('%(Content.TargetPath)', ''))</ContentRoot>
+        <TargetPath>wwwroot\%(Content.TargetPath)</TargetPath>
+      </Content>
     </ItemGroup>
   </Target>
 
@@ -192,7 +204,6 @@
 
       <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" Condition="'$(BuildAOTTestsOnHelix)' == 'true'" />
       <WasmAssembliesToBundle Condition="'%(WasmAssembliesToBundle.FileName)' == 'WasmSymbolicator'" AOT_InternalForceToInterpret="true" />
-      <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
 
       <_CopyLocalPaths
               Include="@(PublishItemsOutputGroupOutputs)"
@@ -205,7 +216,7 @@
 
       <!-- Include files specified by test projects from publish dir -->
       <WasmFilesToIncludeInFileSystem
-              Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
+              Include="%(WasmFilesToIncludeFromPublishDir.Identity)"
               TargetPath="%(WasmFilesToIncludeFromPublishDir.TargetDir)/%(WasmFilesToIncludeFromPublishDir.Identity)"
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>

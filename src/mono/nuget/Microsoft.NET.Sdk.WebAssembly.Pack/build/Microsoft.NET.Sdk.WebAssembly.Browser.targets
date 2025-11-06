@@ -356,9 +356,12 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ItemGroup>
       <!-- Update the boot config static web asset since we've given it a trait -->
+      <_WasmFilesToIncludeInFileSystemOriginalAssetsWithChangedIdentity Include="%(_WasmFilesToIncludeInFileSystemStaticWebAsset.OriginalItemSpec)" Condition="'%(_WasmFilesToIncludeInFileSystemStaticWebAsset.OriginalItemSpec)' != '%(_WasmFilesToIncludeInFileSystemStaticWebAsset.Identity)'" /> 
+
       <StaticWebAsset Remove="@(_WasmJsConfigStaticWebAsset)" />
       <StaticWebAsset Include="@(_WasmJsConfigStaticWebAsset)" />
       <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
+      <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemOriginalAssetsWithChangedIdentity)" />
       <StaticWebAsset Include="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(_WasmJsConfigStaticWebAssetEndpoint)" />
       <StaticWebAssetEndpoint Include="@(_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint)" />
