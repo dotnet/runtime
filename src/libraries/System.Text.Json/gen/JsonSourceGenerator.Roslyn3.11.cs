@@ -87,7 +87,6 @@ namespace System.Text.Json.SourceGeneration
 
                 // Stage 3. Emit source code from the spec models.
                 OnSourceEmitting?.Invoke(contextGenerationSpecs.ToImmutableArray());
-
                 Emitter emitter = new(executionContext);
                 foreach (ContextGenerationSpec contextGenerationSpec in contextGenerationSpecs)
                 {
