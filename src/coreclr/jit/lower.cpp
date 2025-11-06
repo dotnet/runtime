@@ -6002,7 +6002,9 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
     var_types returnType = comp->getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
     assert(returnType != TYP_STRUCT && returnType != TYP_UNKNOWN);
     var_types origType = call->TypeGet();
-    call->gtType       = genActualType(returnType);
+    call->gtType = genActualType(returnType);
+    //if (origType != TYP_HALF)
+    //    call->gtType       = genActualType(returnType);
 
     LIR::Use callUse;
     if (BlockRange().TryGetUse(call, &callUse))
@@ -6031,7 +6033,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 
             case GT_STOREIND:
 #ifdef FEATURE_SIMD
-                if (varTypeIsSIMD(user))
+                if (varTypeIsSIMD(user) || user->TypeGet() == TYP_HALF)
                 {
                     user->ChangeType(returnType);
                     break;
@@ -9776,6 +9778,12 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
     {
         return false;
     }
+    
+    // todo-half: cheating
+    if (node->TypeGet() == TYP_HALF)
+    {
+        return false;
+    }
 
     GenTree* op = node->gtGetOp1();
     assert(genTypeSize(node) == genTypeSize(genActualType(op)));
@@ -11628,7 +11636,7 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 {
     assert(store->OperIsStore());
 
-    if (!varTypeIsFloating(store))
+    if (!varTypeIsFloating(store) || store->TypeGet() == TYP_HALF)
     {
         return;
     }

@@ -3077,7 +3077,8 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         //                          1. An escape byte 0F (For isa before AVX10.2)
         //                          2. A map number from 0 to 7 (For AVX10.2 and above)
         leadingBytes = check;
-        assert((leadingBytes == 0x0F) || ((emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
+        assert((leadingBytes == 0x0F) || ((emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) ||
+                                            emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
                                            (emitComp->compIsaSupportedDebugOnly(InstructionSet_APX))) &&
                                           (leadingBytes >= 0x00) && (leadingBytes <= 0x07)));
 
@@ -3104,7 +3105,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         // 0x0000RM11.
         leadingBytes = (code >> 16) & 0xFF;
         assert(leadingBytes == 0x0F ||
-               (emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) && leadingBytes >= 0x00 &&
+               ((emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) || emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2)) && leadingBytes >= 0x00 &&
                 leadingBytes <= 0x07) ||
                (IsApxExtendedEvexInstruction(ins) && leadingBytes == 0));
         code &= 0xFFFF;
@@ -3159,7 +3160,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
         case 0x05:
         {
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) || emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
             evexPrefix |= (0x05 << 16);
             break;
         }
@@ -5388,10 +5389,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 
         assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE)                               // Only for x64
                || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) || (attrSize == EA_64BYTE) // only for x64
-               || (ins == INS_movzx) || (ins == INS_movsx) ||
-               (ins == INS_cmpxchg)
-               // kmov instructions reach this path with EA_8BYTE size, even on x86
-               || IsKMOVInstruction(ins)
+               || (ins == INS_movzx) || (ins == INS_movsx) || (ins == INS_vmovsh)
+               || (ins == INS_cmpxchg)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
                || isPrefetch(ins));
 
@@ -7430,6 +7429,7 @@ bool emitter::IsMovInstruction(instruction ins)
 
 #if defined(TARGET_AMD64)
         case INS_movsxd:
+        case INS_vmovsh:
         {
             return true;
         }
@@ -7619,6 +7619,12 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         {
             // Zero-extends the source
             hasSideEffect = true;
+            break;
+        }
+
+        case INS_vmovsh:
+        {
+            hasSideEffect = false;
             break;
         }
 
@@ -7892,6 +7898,12 @@ bool emitter::emitIns_Mov(
         case INS_kmovq_gpr:
         {
             assert(isGeneralRegister(dstReg) || isGeneralRegister(srcReg));
+            break;
+        }
+
+        case INS_vmovsh:
+        {
+            assert(isFloatReg(dstReg) && isFloatReg(srcReg));
             break;
         }
 
@@ -11798,7 +11810,11 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) con
         case EA_2BYTE:
         {
 #if defined(TARGET_AMD64)
-            if (reg > REG_RDI)
+            if (IsXMMReg(reg))
+            {
+                return emitXMMregName(reg);
+            }
+            else if (reg > REG_RDI)
             {
                 suffix = 'w';
                 goto APPEND_SUFFIX;
@@ -14520,7 +14536,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Is this a 'big' opcode?
     else if (code & 0xFF000000)
     {
-        if (size == EA_2BYTE)
+        if (size == EA_2BYTE && ins != INS_vmovsh)
         {
             assert(ins == INS_movbe);
 
@@ -15388,7 +15404,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Is this a 'big' opcode?
     else if (code & 0xFF000000)
     {
-        if (size == EA_2BYTE)
+        if (size == EA_2BYTE && (ins != INS_vmovsh && ins != INS_vaddsh))
         {
             assert(ins == INS_movbe);
 
@@ -20892,6 +20908,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_movups:
         case INS_movapd:
         case INS_movupd:
+        // todo-xarch-half: come back to fix
+        case INS_vmovsh:
         {
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
@@ -21382,6 +21400,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
             assert((unsigned)ins < ArrLen(insLatencyInfos));
             float insLatency = insLatencyInfos[ins];
+            
+            // todo-xarch-half: hacking an exit on the unhandled ins to make prototyping easier
+            if (ins == INS_vcvtss2sh || ins == INS_vaddsh)
+            {
+                result.insLatency = PERFSCORE_LATENCY_1C;
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                break;
+            }
 
             if ((insLatency == PERFSCORE_LATENCY_ILLEGAL) || (insThroughput == PERFSCORE_THROUGHPUT_ILLEGAL))
             {
