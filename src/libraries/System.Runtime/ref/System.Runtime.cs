@@ -1089,6 +1089,7 @@ namespace System
         public static int ConvertToUtf32(char highSurrogate, char lowSurrogate) { throw null; }
         public static int ConvertToUtf32(string s, int index) { throw null; }
         public bool Equals(char obj) { throw null; }
+        public bool Equals(char other, System.StringComparison comparisonType) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static double GetNumericValue(char c) { throw null; }
@@ -5706,6 +5707,8 @@ namespace System
         public int IndexOf(char value, int startIndex) { throw null; }
         public int IndexOf(char value, int startIndex, int count) { throw null; }
         public int IndexOf(char value, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(char value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(char value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int IndexOf(string value) { throw null; }
         public int IndexOf(string value, int startIndex) { throw null; }
         public int IndexOf(string value, int startIndex, int count) { throw null; }
@@ -5716,6 +5719,8 @@ namespace System
         public int IndexOf(System.Text.Rune value, int startIndex) { throw null; }
         public int IndexOf(System.Text.Rune value, int startIndex, int count) { throw null; }
         public int IndexOf(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(System.Text.Rune value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int IndexOf(System.Text.Rune value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int IndexOfAny(char[] anyOf) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex) { throw null; }
         public int IndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
@@ -5742,6 +5747,9 @@ namespace System
         public int LastIndexOf(char value) { throw null; }
         public int LastIndexOf(char value, int startIndex) { throw null; }
         public int LastIndexOf(char value, int startIndex, int count) { throw null; }
+        public int LastIndexOf(char value, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(char value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(char value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOf(string value) { throw null; }
         public int LastIndexOf(string value, int startIndex) { throw null; }
         public int LastIndexOf(string value, int startIndex, int count) { throw null; }
@@ -5752,6 +5760,8 @@ namespace System
         public int LastIndexOf(System.Text.Rune value, int startIndex) { throw null; }
         public int LastIndexOf(System.Text.Rune value, int startIndex, int count) { throw null; }
         public int LastIndexOf(System.Text.Rune value, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(System.Text.Rune value, int startIndex, System.StringComparison comparisonType) { throw null; }
+        public int LastIndexOf(System.Text.Rune value, int startIndex, int count, System.StringComparison comparisonType) { throw null; }
         public int LastIndexOfAny(char[] anyOf) { throw null; }
         public int LastIndexOfAny(char[] anyOf, int startIndex) { throw null; }
         public int LastIndexOfAny(char[] anyOf, int startIndex, int count) { throw null; }
@@ -10282,6 +10292,7 @@ namespace System.IO
         public static System.IO.FileStream Create(string path) { throw null; }
         public static System.IO.FileStream Create(string path, int bufferSize) { throw null; }
         public static System.IO.FileStream Create(string path, int bufferSize, System.IO.FileOptions options) { throw null; }
+        public static System.IO.FileSystemInfo CreateHardLink(string path, string pathToTarget) { throw null; }
         public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
         public static System.IO.StreamWriter CreateText(string path) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -10413,6 +10424,7 @@ namespace System.IO
         public System.IO.FileInfo CopyTo(string destFileName) { throw null; }
         public System.IO.FileInfo CopyTo(string destFileName, bool overwrite) { throw null; }
         public System.IO.FileStream Create() { throw null; }
+        public void CreateAsHardLink(string pathToTarget) { }
         public System.IO.StreamWriter CreateText() { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void Decrypt() { }
@@ -14138,7 +14150,6 @@ namespace System.Runtime.CompilerServices
         public delegate void TryCode(object? userData);
     }
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public static partial class AsyncHelpers
     {
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
@@ -14161,6 +14172,8 @@ namespace System.Runtime.CompilerServices
         public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
         public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw null; }
+        public static void HandleAsyncEntryPoint(System.Threading.Tasks.Task task) { }
+        public static int HandleAsyncEntryPoint(System.Threading.Tasks.Task<int> task) { throw null; }
     }
     public sealed partial class RuntimeWrappedException : System.Exception
     {

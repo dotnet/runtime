@@ -42,8 +42,10 @@ CordbFunction::CordbFunction(CordbModule * m,
     m_fIsNativeImpl(kUnknownImpl),
     m_fCachedMethodValuesValid(FALSE),
     m_argCountCached(0),
-    m_fIsStaticCached(FALSE),
-    m_reJitILCodes(1)
+    m_fIsStaticCached(FALSE)
+#ifdef FEATURE_CODE_VERSIONING
+    , m_reJitILCodes(1)
+#endif // FEATURE_CODE_VERSIONING
 {
     m_methodSigParserCached = SigParser(NULL, 0);
 
@@ -108,7 +110,9 @@ void CordbFunction::Neuter()
     m_pClass = NULL;
 
     m_nativeCode.Clear();
+#ifdef FEATURE_CODE_VERSIONING
     m_reJitILCodes.NeuterAndClear(GetProcess()->GetProcessLock());
+#endif // FEATURE_CODE_VERSIONING
 
     CordbBase::Neuter();
 }
@@ -559,6 +563,7 @@ HRESULT CordbFunction::GetVersionNumber(ULONG32 *pnVersion)
 //-----------------------------------------------------------------------------
 HRESULT CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode **ppReJitedILCode)
 {
+#ifdef FEATURE_CODE_VERSIONING
     HRESULT hr = S_OK;
     VALIDATE_POINTER_TO_OBJECT(ppReJitedILCode, ICorDebugILCode **);
     PUBLIC_API_BEGIN(this);
@@ -576,6 +581,9 @@ HRESULT CordbFunction::GetActiveReJitRequestILCode(ICorDebugILCode **ppReJitedIL
     }
     PUBLIC_API_END(hr);
     return hr;
+#else
+    return E_NOTIMPL;
+#endif // FEATURE_CODE_VERSIONING
 }
 
 //-----------------------------------------------------------------------------
@@ -1274,6 +1282,7 @@ VOID CordbFunction::NotifyCodeCreated(CordbNativeCode* nativeCode)
 // If the CordbReJitILCode doesn't exist, it creates it.
 //
 //
+#ifdef FEATURE_CODE_VERSIONING
 HRESULT CordbFunction::LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCodeVersionNode, CordbReJitILCode** ppILCode)
 {
     INTERNAL_API_ENTRY(this);
@@ -1298,3 +1307,4 @@ HRESULT CordbFunction::LookupOrCreateReJitILCode(VMPTR_ILCodeVersionNode vmILCod
     *ppILCode = pILCode;
     return S_OK;
 }
+#endif // FEATURE_CODE_VERSIONING

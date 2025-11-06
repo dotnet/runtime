@@ -286,10 +286,10 @@ namespace Internal.JitInterface
                     }
 
                     lookup.runtimeLookup.indirections = (ushort)genericLookup.NumberOfIndirections;
-                    lookup.runtimeLookup.offset0 = (IntPtr)genericLookup[0];
+                    lookup.runtimeLookup.offset0 = genericLookup[0];
                     if (genericLookup.NumberOfIndirections > 1)
                     {
-                        lookup.runtimeLookup.offset1 = (IntPtr)genericLookup[1];
+                        lookup.runtimeLookup.offset1 = genericLookup[1];
                     }
                     lookup.runtimeLookup.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
                     lookup.runtimeLookup.testForNull = false;
@@ -759,9 +759,9 @@ namespace Internal.JitInterface
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
-                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers"u8, "GetSyncFromClassHandle"u8));
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Threading"u8, "Monitor"u8, "GetSyncObjectFromClassHandle"u8, null));
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
-                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers"u8, "GetClassFromMethodParam"u8));
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Threading"u8, "Monitor"u8, "GetClassHandleFromMethodParam"u8, null));
 
                 case CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
                     id = ReadyToRunHelper.GVMLookupForSlot;

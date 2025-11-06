@@ -339,146 +339,6 @@
                                                                                                          00 )
 } // end of class TailcallVerify.Unsafe
 
-.class private auto ansi beforefieldinit TailcallVerify.Condition17
-       extends [mscorlib]System.Object
-{
-  .field private static int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) zero
-  .field private static int32 Result
-  .method public hidebysig static int32  Test1() cil managed nooptimization
-  {
-    // Code size       162 (0xa2)
-    .maxstack  3
-    .locals init ([0] valuetype TailcallVerify.Unsafe u,
-             [1] class [mscorlib]System.Exception e)
-    IL_0000:  ldstr      "Executing Condition17.Test1 - Caller: Arguments: N"
-    + "one - ReturnType: 3 byte struct; Callee: Arguments: None - ReturnType: "
-    + "void"
-    IL_0005:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_000a:  ldc.i4.s   100
-    IL_000c:  stsfld     int32 TailcallVerify.Condition17::Result
-    .try
-    {
-      IL_0011:  ldloca.s   u
-      IL_0013:  initobj    TailcallVerify.Unsafe
-      IL_0019:  ldloc.0
-      IL_001a:  call       void TailcallVerify.Condition17::Caller1(valuetype TailcallVerify.Unsafe)
-      IL_001f:  leave.s    IL_0078
-
-    }  // end .try
-    catch [mscorlib]System.Exception
-    {
-      IL_0021:  stloc.1
-      IL_0022:  ldloc.1
-      IL_0023:  isinst     [mscorlib]System.DivideByZeroException
-      IL_0028:  brtrue.s   IL_0033
-
-      IL_002a:  ldc.i4.s   101
-      IL_002c:  stsfld     int32 TailcallVerify.Condition17::Result
-      IL_0031:  rethrow
-      IL_0033:  ldloc.1
-      IL_0034:  callvirt   instance string [mscorlib]System.Exception::get_StackTrace()
-      IL_0039:  ldstr      "Caller"
-      IL_003e:  callvirt   instance int32 [mscorlib]System.String::IndexOf(string)
-      IL_0043:  ldc.i4.m1
-      IL_0044:  bne.un.s   IL_0076
-
-      IL_0046:  ldstr      "FAILED: DID NOT find the word 'Caller' in the stac"
-      + "ktrace."
-      IL_004b:  call       void [System.Console]System.Console::WriteLine(string)
-      IL_0050:  ldstr      "------------------------------------------------"
-      IL_0055:  call       void [System.Console]System.Console::WriteLine(string)
-      IL_005a:  call       void [System.Console]System.Console::WriteLine()
-      IL_005f:  ldloc.1
-      IL_0060:  callvirt   instance string [mscorlib]System.Exception::get_StackTrace()
-      IL_0065:  call       void [System.Console]System.Console::WriteLine(string)
-      IL_006a:  call       void [System.Console]System.Console::WriteLine()
-      IL_006f:  ldc.i4.s   101
-      IL_0071:  stsfld     int32 TailcallVerify.Condition17::Result
-      IL_0076:  leave.s    IL_0078
-
-    }  // end handler
-    IL_0078:  ldstr      "Execution finished - Test "
-    IL_007d:  ldsfld     int32 TailcallVerify.Condition17::Result
-    IL_0082:  ldc.i4.s   100
-    IL_0084:  beq.s      IL_008d
-
-    IL_0086:  ldstr      "FAILED"
-    IL_008b:  br.s       IL_0092
-
-    IL_008d:  ldstr      "PASSED"
-    IL_0092:  call       string [mscorlib]System.String::Concat(string,
-                                                                string)
-    IL_0097:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_009c:  ldsfld     int32 TailcallVerify.Condition17::Result
-    IL_00a1:  ret
-  } // end of method Condition17::Test1
-
-  .method private hidebysig static void  Caller1(valuetype TailcallVerify.Unsafe u) cil managed
-  {
-    // Code size       74 (0x4a)
-    .maxstack  2
-    IL_0000:  ldc.i4.0
-    IL_0001:  newobj     instance void [mscorlib]System.Diagnostics.StackFrame::.ctor(bool)
-    IL_0006:  callvirt   instance class [mscorlib]System.Reflection.MethodBase [mscorlib]System.Diagnostics.StackFrame::GetMethod()
-    IL_000b:  callvirt   instance string [mscorlib]System.Reflection.MemberInfo::get_Name()
-    IL_0010:  ldstr      "Caller"
-    IL_0015:  callvirt   instance int32 [mscorlib]System.String::IndexOf(string)
-    IL_001a:  ldc.i4.m1
-    IL_001b:  bne.un.s   IL_002e
-
-    IL_001d:  ldstr      "Failed, Method was inlined..."
-    IL_0022:  call       void [System.Console]System.Console::WriteLine(string)
-    IL_0027:  ldc.i4.s   101
-    IL_0029:  stsfld     int32 TailcallVerify.Condition17::Result
-    IL_002e:  ldarga.s   u
-    IL_0030:  ldflda     valuetype TailcallVerify.Unsafe/'<data>e__FixedBuffer0' TailcallVerify.Unsafe::data
-    IL_0035:  ldflda     uint8 TailcallVerify.Unsafe/'<data>e__FixedBuffer0'::FixedElementField
-    IL_003a:  conv.u
-    IL_003b:  volatile.
-    IL_003d:  ldsfld     int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) TailcallVerify.Condition17::zero
-    IL_0042:  conv.u1
-    IL_0043:  stind.i1
-    IL_0044:  tail. call       void TailcallVerify.Condition17::Callee1()
-    IL_0049:  ret
-  } // end of method Condition17::Caller1
-
-  .method private hidebysig static void  Callee1() cil managed noinlining
-  {
-    // Code size       11 (0xb)
-    .maxstack  8
-    IL_0000:  ldc.i4.1
-    IL_0001:  volatile.
-    IL_0003:  ldsfld     int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) TailcallVerify.Condition17::zero
-    IL_0008:  div
-    IL_0009:  pop
-    IL_000a:  ret
-  } // end of method Condition17::Callee1
-
-  .method public hidebysig specialname rtspecialname
-          instance void  .ctor() cil managed
-  {
-    // Code size       7 (0x7)
-    .maxstack  8
-    IL_0000:  ldarg.0
-    IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
-    IL_0006:  ret
-  } // end of method Condition17::.ctor
-
-  .method private hidebysig specialname rtspecialname static
-          void  .cctor() cil managed
-  {
-    // Code size       16 (0x10)
-    .maxstack  8
-    IL_0000:  ldc.i4.0
-    IL_0001:  volatile.
-    IL_0003:  stsfld     int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) TailcallVerify.Condition17::zero
-    IL_0008:  ldc.i4.s   100
-    IL_000a:  stsfld     int32 TailcallVerify.Condition17::Result
-    IL_000f:  ret
-  } // end of method Condition17::.cctor
-
-} // end of class TailcallVerify.Condition17
-
 .class private auto ansi beforefieldinit TailcallVerify.Condition16
        extends [mscorlib]System.Object
 {
@@ -2093,24 +1953,10 @@
     IL_054a:  ldloc.0
     IL_054b:  call       bool [mscorlib]System.String::op_Equality(string,
                                                                    string)
-    IL_0550:  brfalse.s  IL_055c
+    IL_0550:  brfalse.s  IL_057c
 
     IL_0552:  call       int32 TailcallVerify.Condition16::Test1()
     IL_0557:  call       void TailcallVerify.Program::set_Result(int32)
-    IL_055c:  ldloc.1
-    IL_055d:  ldstr      "Condition17.Test1"
-    IL_0562:  call       bool [mscorlib]System.String::op_Equality(string,
-                                                                   string)
-    IL_0567:  brtrue.s   IL_0572
-
-    IL_0569:  ldloc.1
-    IL_056a:  ldloc.0
-    IL_056b:  call       bool [mscorlib]System.String::op_Equality(string,
-                                                                   string)
-    IL_0570:  brfalse.s  IL_057c
-
-    IL_0572:  call       int32 TailcallVerify.Condition17::Test1()
-    IL_0577:  call       void TailcallVerify.Program::set_Result(int32)
     IL_057c:  ldloc.1
     IL_057d:  ldstr      "Condition18.Test1"
     IL_0582:  call       bool [mscorlib]System.String::op_Equality(string,
@@ -2323,9 +2169,6 @@
     call       int32 TailcallVerify.Program::Run(string)
     pop
     ldstr      "Condition16.Test1"
-    call       int32 TailcallVerify.Program::Run(string)
-    pop
-    ldstr      "Condition17.Test1"
     call       int32 TailcallVerify.Program::Run(string)
     pop
     ldstr      "Condition18.Test1"

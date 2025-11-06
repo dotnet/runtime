@@ -53,19 +53,15 @@ else()
         target_link_libraries(corerun PRIVATE
             coreclr_static
             System.Native-Static
-            System.Native.TimeZoneData)
+            System.Native.TimeZoneData.Invariant)
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
-            target_compile_options(corerun PRIVATE
-                -fwasm-exceptions
-                -msimd128
-                )
             target_link_libraries(corerun PRIVATE
                 System.Native.Browser-Static)
             set(JS_SYSTEM_NATIVE_BROWSER
-                "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
+                "${STATIC_LIB_DESTINATION}/libSystem.Native.Browser.js")
             set(JS_SYSTEM_BROWSER_UTILS
-                "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Browser.Utils.js")
+                "${STATIC_LIB_DESTINATION}/libSystem.Browser.Utils.js")
             set(JS_CORE_RUN_PRE
                 "${CMAKE_CURRENT_SOURCE_DIR}/wasm/libCorerun.pre.js")
             set_target_properties(corerun PROPERTIES
@@ -73,10 +69,14 @@ else()
                 LINK_FLAGS "--pre-js ${JS_CORE_RUN_PRE} --js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS}"
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
-                -fwasm-exceptions
-                -sEXIT_RUNTIME=1
+                -sEXIT_RUNTIME=0
                 -sINITIAL_MEMORY=134217728
+                -sMAXIMUM_MEMORY=2147483648
+                -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
+                -sWASM_BIGINT=1
+                -sEXPORTED_RUNTIME_METHODS=cwrap,ccall,HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64,safeSetTimeout,maybeExit,exitJS,abort,lengthBytesUTF8,UTF8ToString,stringToUTF8Array
+                -sEXPORTED_FUNCTIONS=_main,_GetDotNetRuntimeContractDescriptor
                 -sENVIRONMENT=node,shell,web
                 -Wl,-error-limit=0)
 
