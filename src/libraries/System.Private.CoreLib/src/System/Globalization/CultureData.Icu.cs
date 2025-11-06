@@ -72,9 +72,11 @@ namespace System.Globalization
                         bufferIndex += extension.Length;
                     }
 
-                    int collationIndex = FindCollationValueIndex(name, i + 1);
+                    int collationIndex = name.IndexOf("collation=", i + 1, StringComparison.Ordinal);
                     if (collationIndex > 0)
                     {
+                        collationIndex += "collation=".Length;
+
                         // format of the locale properties is @key=value;collation=collationName;key=value;key=value
                         int endOfCollation = name.IndexOf(';', collationIndex);
                         if (endOfCollation < 0)
@@ -102,38 +104,6 @@ namespace System.Globalization
             }
 
             return changed ? new string(buffer.Slice(0, bufferIndex)) : name;
-        }
-
-        private static int FindCollationValueIndex(string name, int searchStart)
-        {
-            int index = searchStart;
-            while (index < name.Length)
-            {
-                int equalsIndex = name.IndexOf('=', index);
-                if (equalsIndex < 0)
-                {
-                    break;
-                }
-
-                // The legacy POSIX-style "collation" keyword is still supported on the input in ICU 72
-                // even though the new BCP47-compliant "co" keyword is preferred.
-                ReadOnlySpan<char> keySpan = name.AsSpan(index, equalsIndex - index);
-                if (keySpan.Equals("collation", StringComparison.OrdinalIgnoreCase) ||
-                    keySpan.Equals("co", StringComparison.OrdinalIgnoreCase))
-                {
-                    return equalsIndex + 1;
-                }
-
-                int separatorIndex = name.IndexOf(';', equalsIndex + 1);
-                if (separatorIndex < 0)
-                {
-                    break;
-                }
-
-                index = separatorIndex + 1;
-            }
-
-            return -1;
         }
 
         /// <summary>
@@ -496,7 +466,7 @@ namespace System.Globalization
         }
 
         private const uint DigitSubstitutionMask = 0x0000FFFF;
-        private const uint ListSeparatorMask     = 0xFFFF0000;
+        private const uint ListSeparatorMask = 0xFFFF0000;
 
         private static int IcuGetDigitSubstitution(string cultureName)
         {
@@ -590,7 +560,7 @@ namespace System.Globalization
                 return Array.Empty<CultureInfo>();
             }
 
-            bool enumNeutrals   = (types & CultureTypes.NeutralCultures) != 0;
+            bool enumNeutrals = (types & CultureTypes.NeutralCultures) != 0;
             bool enumSpecifics = (types & CultureTypes.SpecificCultures) != 0;
 
             List<CultureInfo> list = new List<CultureInfo>();
