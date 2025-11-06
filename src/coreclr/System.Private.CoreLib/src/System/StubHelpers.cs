@@ -239,10 +239,10 @@ namespace System.StubHelpers
         // The way this was done was by adding a trail byte at the end of the BSTR
         // To support this scenario, we need to use a ConditionalWeakTable for this special case and
         // save the trail character in here.
-        // This stores the trail character when a BSTR is used as an array
+        // This stores the trail character when a BSTR is used as an array.
         private static ConditionalWeakTable<string, TrailByte>? s_trailByteTable;
 
-        internal static bool TryGetTrailByte(string strManaged, out byte trailByte)
+        private static bool TryGetTrailByte(string strManaged, out byte trailByte)
         {
             if (s_trailByteTable?.TryGetValue(strManaged, out TrailByte? trailByteObj) == true)
             {
@@ -254,7 +254,7 @@ namespace System.StubHelpers
             return false;
         }
 
-        internal static void SetTrailByte(string strManaged, byte trailByte)
+        private static void SetTrailByte(string strManaged, byte trailByte)
         {
             if (s_trailByteTable == null)
             {
