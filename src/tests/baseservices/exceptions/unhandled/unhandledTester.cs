@@ -106,7 +106,7 @@ namespace TestUnhandledExceptionTester
                 }
                 else if (unhandledType.EndsWith("hardware"))
                 {
-                    if (!lines[1].StartsWith("System.NullReferenceException: Object reference not set to an instance of an object")
+                    if (!lines[1].StartsWith("System.NullReferenceException: Object reference not set to an instance of an object"))
                     {
                         throw new Exception("Missing exception type and message");
                     }
