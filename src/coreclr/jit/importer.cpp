@@ -4441,6 +4441,15 @@ bool Compiler::impIsImplicitTailCallCandidate(
         return false;
     }
 
+    // We cannot tailcall ValueTask returning methods as we need to preserve
+    // the Continuation instance for ValueTaskSource handling (the BCL needs
+    // to look at continuation.Next). We cannot easily differentiate between
+    // ValueTask and Task here, so we just disable it more generally.
+    if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
+    {
+        return false;
+    }
+
 #if !FEATURE_TAILCALL_OPT_SHARED_RETURN
     // the block containing call is marked as BBJ_RETURN
     // We allow shared ret tail call optimization on recursive calls even under

@@ -6165,6 +6165,26 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     pFrame->Pop(CURRENT_THREAD);
 }
 
+EXTERN_C void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        ENTRY_POINT;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(fullQualifiedTypeName != nullptr);
+    _ASSERTE(methodName != nullptr);
+    _ASSERTE(ppMD != nullptr);
+
+    SString fullQualifiedTypeNameUtf8(SString::Utf8, fullQualifiedTypeName);
+    TypeHandle type = TypeName::GetTypeFromAsmQualifiedName(fullQualifiedTypeNameUtf8.GetUnicode(), /*bThrowIfNotFound*/ TRUE);
+    _ASSERTE(!type.IsTypeDesc());
+
+    *ppMD = MemberLoader::FindMethodByName(type.GetMethodTable(), methodName);
+}
+
 namespace
 {
     //-------------------------------------------------------------------------------------

@@ -352,7 +352,6 @@ FCFuncEnd()
 
 FCFuncStart(gStubHelperFuncs)
     FCFuncElement("GetDelegateTarget", StubHelpers::GetDelegateTarget)
-    FCFuncElement("TryGetStringTrailByte", StubHelpers::TryGetStringTrailByte)
     FCFuncElement("SetLastError", StubHelpers::SetLastError)
     FCFuncElement("ClearLastError", StubHelpers::ClearLastError)
 #ifdef FEATURE_COMINTEROP
