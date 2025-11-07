@@ -35,10 +35,10 @@ struct host_runtime_contract_native_code_context
 // Data returned by get_native_code_data callback
 struct host_runtime_contract_native_code_data
 {
-   size_t size;           // size of this struct
-   void* r2r_header_ptr;  // ReadyToRun header
-   size_t image_size;     // size of the image
-   void* image_base;      // base address where the image was loaded
+    size_t size;           // size of this struct
+    void* r2r_header_ptr;  // ReadyToRun header
+    size_t image_size;     // size of the image
+    void* image_base;      // base address where the image was loaded
 };
 
 // Any callbacks set on this contract are expected to be valid for the lifetime of the process

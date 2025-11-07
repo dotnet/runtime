@@ -263,7 +263,7 @@ NativeImage *NativeImage::Open(
             // Match failure behaviour for failing to load from PE
 #ifdef LOGGING
             SString path { componentModulePath };
-            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load platform-native image '%s' for component assembly '%s' using host callback'\n",
+            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load platform-native image '%s' for component assembly '%s' using host callback\n",
                 nativeImageFileName,
                 path.GetUTF8()));
 #endif // LOGGING

@@ -40,7 +40,7 @@ public class PlatformNativeR2R
                 string stderr = process.StandardError.ReadToEnd();
                 Console.WriteLine($"R2RDump failed with exit code {process.ExitCode}");
                 Console.WriteLine($"stdout: {output}");
-                Console.WriteLine($"stderr: {process.StandardError.ReadToEnd()}");
+                Console.WriteLine($"stderr: {stderr}");
                 Assert.Fail("R2RDump failed to execute");
             }
 
