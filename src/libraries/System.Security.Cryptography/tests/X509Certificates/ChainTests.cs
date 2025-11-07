@@ -288,11 +288,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     // Check some known conditions.
 
-                    if (OperatingSystem.IsLinux())
-                    {
-                        Assert.Equal(2, chain.ChainElements.Count);
-                    }
-                    else if (PlatformDetection.IsApplePlatform)
+                    if (OperatingSystem.IsLinux() || PlatformDetection.IsApplePlatform)
                     {
                         Assert.Equal(3, chain.ChainElements.Count);
                     }
@@ -497,7 +493,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 bool builtSuccessfully = chain.Build(microsoftDotCom);
 
-                Assert.Equal(shouldBeValid, builtSuccessfully);
+                if (shouldBeValid != builtSuccessfully)
+                {
+                    Assert.Fail($"Expected chain validity to be '{shouldBeValid}' but was '{builtSuccessfully}'. Chain flags: '{chain.AllStatusFlags()}'.");
+                }
 
                 // If we failed to build the chain, validate the chain status
                 if (!shouldBeValid)
