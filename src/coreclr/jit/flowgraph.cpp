@@ -1704,10 +1704,10 @@ void Compiler::fgAddAsyncContextSaveRestore()
 
     // Create locals for ExecutionContext and SynchronizationContext
     // These are allocated similarly to lvaMonAcquired for synchronized methods
-    lvaAsyncExecutionContextVar = lvaGrabTemp(true DEBUGARG("Async ExecutionContext"));
+    lvaAsyncExecutionContextVar                  = lvaGrabTemp(true DEBUGARG("Async ExecutionContext"));
     lvaTable[lvaAsyncExecutionContextVar].lvType = TYP_REF;
 
-    lvaAsyncSynchronizationContextVar = lvaGrabTemp(true DEBUGARG("Async SynchronizationContext"));
+    lvaAsyncSynchronizationContextVar                  = lvaGrabTemp(true DEBUGARG("Async SynchronizationContext"));
     lvaTable[lvaAsyncSynchronizationContextVar].lvType = TYP_REF;
 
     // Note: No need to initialize these to null - TYP_REF locals are automatically zero-initialized
@@ -1831,7 +1831,8 @@ void Compiler::fgAddAsyncContextSaveRestore()
     GenTree* suspended    = gtNewOperNode(GT_NE, TYP_INT, continuation, nullCheck);
 
     GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
-    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this,
+                                  NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(suspended));
 
@@ -1862,14 +1863,17 @@ void Compiler::fgAddAsyncContextSaveRestore()
             GenTree* suspended2    = gtNewOperNode(GT_NE, TYP_INT, continuation2, nullCheck2);
 
             GenTreeCall* restoreCall2 = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
-            restoreCall2->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
-            restoreCall2->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
+            restoreCall2->gtArgs.PushFront(this, NewCallArg::Primitive(
+                                                     gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
+            restoreCall2->gtArgs.PushFront(this, NewCallArg::Primitive(
+                                                     gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
             restoreCall2->gtArgs.PushFront(this, NewCallArg::Primitive(suspended2));
 
             callInfo             = {};
             callInfo.hMethod     = restoreCall2->gtCallMethHnd;
             callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-            impMarkInlineCandidate(restoreCall2, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+            impMarkInlineCandidate(restoreCall2, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo,
+                                   compInlineContext);
 
             if (block->lastStmt()->GetRootNode()->OperIs(GT_RETURN))
             {
@@ -2620,10 +2624,10 @@ PhaseStatus Compiler::fgAddInternal()
 
     //// Add async context save/restore try/finally for async methods.
     //// This must happen before the one BBJ_RETURN block is created, similar to synchronized methods.
-    //if (UsesFunclets() && compIsAsync())
+    // if (UsesFunclets() && compIsAsync())
     //{
-    //    fgAddAsyncContextSaveRestore();
-    //}
+    //     fgAddAsyncContextSaveRestore();
+    // }
 
     //
     //  We will generate just one epilog (return block)

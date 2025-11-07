@@ -4396,8 +4396,8 @@ struct AsyncCallInfo
     // call and restored after it. This happens consistently regardless of whether the callee finishes synchronously or
     // not. This is represented by "ExecutionContextHandling == SaveAndRestore".
     //
-    ExecutionContextHandling    ExecutionContextHandling                  = ExecutionContextHandling::None;
-    ContinuationContextHandling ContinuationContextHandling               = ContinuationContextHandling::None;
+    ExecutionContextHandling    ExecutionContextHandling    = ExecutionContextHandling::None;
+    ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -4851,10 +4851,10 @@ class CallArgs
     bool m_alignmentDone : 1;
 #endif
 
-    void  AddedWellKnownArg(WellKnownArg arg);
-    void  RemovedWellKnownArg(WellKnownArg arg);
-    bool  GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg, regNumber* reg);
-    void  SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
+    void AddedWellKnownArg(WellKnownArg arg);
+    void RemovedWellKnownArg(WellKnownArg arg);
+    bool GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg, regNumber* reg);
+    void SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
 
 public:
     CallArgs();

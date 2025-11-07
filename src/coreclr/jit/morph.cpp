@@ -1944,7 +1944,7 @@ void CallArgs::DetermineABIInfo(Compiler* comp, GenTreeCall* call)
             if (nonStdRegNum != REG_NA)
             {
                 ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-                arg.AbiInfo = ABIPassingInformation::FromSegmentByValue(comp, segment);
+                arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
             }
             else
             {

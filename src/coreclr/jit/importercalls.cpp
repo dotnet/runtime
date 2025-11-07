@@ -6814,7 +6814,7 @@ void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall*     call,
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;
     newSourceTypes |= (unsigned)callDI.GetLocation().GetSourceTypes() & ~ICorDebugInfo::CALL_INSTRUCTION;
     ILLocation newILLocation(callDI.GetLocation().GetOffset(), (ICorDebugInfo::SourceTypes)newSourceTypes);
-    asyncInfo.CallAsyncDebugInfo = DebugInfo(callDI.GetInlineContext(), newILLocation);
+    asyncInfo.CallAsyncDebugInfo       = DebugInfo(callDI.GetInlineContext(), newILLocation);
     asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
 
     if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
