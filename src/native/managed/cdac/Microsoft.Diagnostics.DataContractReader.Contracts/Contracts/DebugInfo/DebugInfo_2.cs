@@ -144,7 +144,7 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
                 if ((mappingDataEncoded & 0x2) != 0) sourceType |= SourceTypes.StackEmpty;
                 if ((mappingDataEncoded & 0x4) != 0) sourceType |= SourceTypes.Async;
 
-                mappingDataEncoded >>= 2;
+                mappingDataEncoded >>= (int)SOURCE_TYPE_BITS;
                 uint nativeOffsetDelta = (uint)(mappingDataEncoded & ((1UL << (int)bitsForNativeDelta) - 1));
                 previousNativeOffset += nativeOffsetDelta;
                 uint nativeOffset = previousNativeOffset;

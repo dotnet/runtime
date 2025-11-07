@@ -199,7 +199,7 @@ private static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader)
                 _ => throw new InvalidOperationException($"Unknown source type encoding: {mappingDataEncoded & 0x3}")
             };
 
-            mappingDataEncoded >>= 2;
+            mappingDataEncoded >>= (int)SOURCE_TYPE_BITS;
             uint nativeOffsetDelta = (uint)(mappingDataEncoded & ((1UL << (int)bitsForNativeDelta) - 1));
             previousNativeOffset += nativeOffsetDelta;
             uint nativeOffset = previousNativeOffset;
