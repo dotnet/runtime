@@ -231,11 +231,8 @@ function Limit-Text {
 }
 
 # Function to execute a script block with a temporary GITHUB_TOKEN
-function Invoke-WithGitHubToken {
-    param(
-        [string]$ApiKey,
-        [scriptblock]$ScriptBlock
-    )
+function  Enter-GitHubSession {
+    param([string]$ApiKey)
 
     if (-not $ApiKey) {
         # No API key provided, execute without modification
@@ -244,29 +241,22 @@ function Invoke-WithGitHubToken {
 
     # Store original token
     $originalGitHubToken = $env:GH_TOKEN
+    
+    # Set temporary token
+    $env:GH_TOKEN = $ApiKey
 
-    try {
-        # Set temporary token
-        $env:GH_TOKEN = $ApiKey
-
-        # Execute the script block
-        return & $ScriptBlock
-    }
-    finally {
-        # Restore original token
-        if ($originalGitHubToken) {
-            $env:GH_TOKEN = $originalGitHubToken
-        } else {
-            Remove-Item env:GH_TOKEN -ErrorAction SilentlyContinue
-        }
-    }
+    return $originalGitHubToken
 }
 
-# Function to URL encode text for GitHub issue URLs
-function Get-UrlEncodedText {
-    param([string]$text)
+function Exit-GitHubSession {
+    param([string]$OriginalGitHubToken)
 
-    return [System.Web.HttpUtility]::UrlEncode($text)
+    # Restore original token
+    if ($OriginalGitHubToken) {
+        $env:GH_TOKEN = $OriginalGitHubToken
+    } else {
+        Remove-Item env:GH_TOKEN -ErrorAction SilentlyContinue
+    }
 }
 
 # Function to fetch issue template from GitHub
@@ -315,6 +305,108 @@ Body: $(Limit-Text -text $issue.body -maxLength 800)
     }
 }
 
+# Function to parse a .NET runtime tag into its components
+function ConvertFrom-DotNetTag {
+    param([string]$tagName)
+
+    if (-not $tagName -or $tagName -eq "Unknown") {
+        return $null
+    }
+
+    # Parse v(major).(minor).(build)(-prerelease)
+    if ($tagName -match '^v(\d+)\.(\d+)\.(\d+)(?:-(.+))?$') {
+        $major = [int]$matches[1]
+        $minor = [int]$matches[2] 
+        $build = [int]$matches[3]
+        $prerelease = if ($matches[4]) { $matches[4] } else { $null }
+
+        # Parse prerelease into type and number using single regex
+        $prereleaseType = $null
+        $prereleaseNumber = $null
+        
+        if ($prerelease -and $prerelease -match '^([a-zA-Z]+)\.(\d+)') {
+            $rawType = $matches[1]
+            $prereleaseNumber = [int]$matches[2]
+            
+            # Normalize prerelease type casing
+            if ($rawType -ieq "rc") {
+                $prereleaseType = "RC"
+            } else {
+                # Capitalize first letter for other types
+                $prereleaseType = $rawType.Substring(0,1).ToUpper() + $rawType.Substring(1).ToLower()
+            }
+        }
+
+        return @{
+            Major = $major
+            Minor = $minor
+            Build = $build
+            Prerelease = $prerelease
+            PrereleaseType = $prereleaseType
+            PrereleaseNumber = $prereleaseNumber
+            IsRelease = $null -eq $prerelease
+        }
+    }
+
+    return $null
+}
+
+# Function to format a parsed tag as a readable .NET version
+function Format-DotNetVersion {
+    param($parsedTag)
+
+    if (-not $parsedTag) {
+        return "Next release"
+    }
+
+    $baseVersion = ".NET $($parsedTag.Major).$($parsedTag.Minor)"
+    
+    if ($parsedTag.IsRelease) {
+        return $baseVersion
+    }
+
+    if ($parsedTag.PrereleaseType -and $parsedTag.PrereleaseNumber) {
+        return "$baseVersion $($parsedTag.PrereleaseType) $($parsedTag.PrereleaseNumber)"
+    }
+
+    # Fallback for unknown prerelease formats
+    return "$baseVersion ($($parsedTag.Prerelease))"
+}
+
+# Function to estimate the next version based on current tag and branch
+function Get-EstimatedNextVersion {
+    param($parsedTag, [string]$baseRef)
+
+    if (-not $parsedTag) {
+        return "Next release"
+    }
+
+    $isMainBranch = $baseRef -eq "main"
+
+    # If this is a release version
+    if ($parsedTag.IsRelease) {
+        if ($isMainBranch) {
+            # Assume changes to main when last tag is release go to next release.
+            $nextMajor = $parsedTag.Major + 1
+            return ".NET $nextMajor.0 Preview 1"
+        } else {
+            # Next patch/build
+            return ".NET $($parsedTag.Major).$($parsedTag.Minor)"
+        }
+    }
+
+    # If this is a prerelease version
+    if ($isMainBranch -and $parsedTag.PrereleaseType -eq "RC") {
+        # Assume changes to main when last tag is RC go to next release.
+        $nextMajor = $parsedTag.Major + 1
+        return ".NET $nextMajor.0 Preview 1"
+    } else {
+        # Next preview
+        $nextPreview = $parsedTag.PrereleaseNumber + 1
+        return ".NET $($parsedTag.Major).$($parsedTag.Minor) $($parsedTag.PrereleaseType) $nextPreview"
+    }
+}
+
 # Function to find the closest tag by commit distance
 function Find-ClosestTagByDistance {
     param([string]$targetCommit, [int]$maxTags = 10)
@@ -360,98 +452,64 @@ function Get-VersionInfo {
             # Ensure we have latest info
             git fetch --tags 2>$null | Out-Null
 
-            # For merged PRs, try to find the merge commit and get version info
+            # Determine the target commit for version analysis
+            $targetCommit = $null
+            $firstTagWith = "Not yet released"
+
             if ($prNumber -and $mergedAt) {
-                # Get the merge commit for this PR
-                $mergeCommit = gh pr view $prNumber --repo $Config.SourceRepo --json mergeCommit --jq '.mergeCommit.oid' 2>$null
-
-                if ($mergeCommit) {
-                    # Find the closest tag by commit distance (not time)
-                    $closestTag = Find-ClosestTagByDistance -targetCommit $mergeCommit
-                    $lastTagBefore = if ($closestTag) { $closestTag } else { "Unknown" }
-
+                # For merged PRs, try to get the merge commit
+                $targetCommit = gh pr view $prNumber --repo $Config.SourceRepo --json mergeCommit --jq '.mergeCommit.oid' 2>$null
+                
+                if ($targetCommit) {
                     # Get the first tag that includes this commit
-                    $firstTagWith = git describe --tags --contains $mergeCommit 2>$null
+                    $firstTagWith = git describe --tags --contains $targetCommit 2>$null
                     if ($firstTagWith -and $firstTagWith -match '^([^~^]+)') {
                         $firstTagWith = $matches[1]
                     }
+                }
+            }
+            
+            # If no target commit yet (unmerged PR or failed to get merge commit), use branch head
+            if (-not $targetCommit) {
+                $targetCommit = git rev-parse "origin/$baseRef" 2>$null
+            }
+
+            # Find the last tag before this commit
+            $lastTagBefore = "Unknown"
+            if ($targetCommit) {
+                $closestTag = Find-ClosestTagByDistance -targetCommit $targetCommit
+                if ($closestTag) {
+                    $lastTagBefore = $closestTag
                 } else {
-                    # Fallback: use the target branch approach
+                    # Fallback strategies
                     if ($baseRef -eq "main") {
+                        # Try git describe on the target branch
                         $lastTagBefore = git describe --tags --abbrev=0 "origin/$baseRef" 2>$null
                         if (-not $lastTagBefore) {
-                            $allMainTags = git tag --merged "origin/$baseRef" --sort=-version:refname 2>$null
-                            if ($allMainTags) {
-                                $lastTagBefore = ($allMainTags | Select-Object -First 1)
-                            }
+                            # Final fallback: most recent tag overall
+                            $lastTagBefore = git tag --sort=-version:refname | Select-Object -First 1 2>$null
                         }
                     } else {
                         $lastTagBefore = git describe --tags --abbrev=0 "origin/$baseRef" 2>$null
                     }
-                    $firstTagWith = "Not yet released"
                 }
-            } else {
-                # For unmerged PRs, get the most recent tag available
-                # Use the same commit-distance approach as for merged PRs
-                if ($baseRef -eq "main") {
-                    # Get the HEAD of main branch and find closest tag
-                    $mainHead = git rev-parse "origin/$baseRef" 2>$null
-
-                    if ($mainHead) {
-                        $closestTag = Find-ClosestTagByDistance -targetCommit $mainHead
-                        $lastTagBefore = if ($closestTag) { $closestTag } else {
-                            # Fallback to the most recent tag overall
-                            git tag --sort=-version:refname | Select-Object -First 1 2>$null
-                        }
-                    } else {
-                        # Final fallback
-                        $lastTagBefore = git tag --sort=-version:refname | Select-Object -First 1 2>$null
-                    }
-                } else {
-                    $lastTagBefore = git describe --tags --abbrev=0 "origin/$baseRef" 2>$null
-                }
-                $firstTagWith = "Not yet released"
             }
 
             # Clean up tag names and estimate version
             $lastTagBefore = if ($lastTagBefore) { $lastTagBefore.Trim() } else { "Unknown" }
             $firstTagWith = if ($firstTagWith -and $firstTagWith -ne "Not yet released") { $firstTagWith.Trim() } else { "Not yet released" }
 
-            # Estimate version from the most recent tag
+            # Determine the estimated version using new tag parsing logic
             $estimatedVersion = "Next release"
+            
             if ($firstTagWith -ne "Not yet released") {
-                if ($firstTagWith -match "v?(\d+)\.(\d+)") {
-                    $major = [int]$matches[1]
-                    $minor = [int]$matches[2]
-                    $estimatedVersion = ".NET $major.$minor"
-                }
-            } elseif ($lastTagBefore -ne "Unknown") {
-                # Estimate version from last tag
-                if ($lastTagBefore -match 'v(\d+)\.(\d+)\.(\d+)-rc\.(\d+)\.') {
-                    # RC tag found - breaking change will be in next major release
-                    $nextMajor = [int]$matches[1] + 1
-                    if ($baseRef -eq "main") {
-                        $estimatedVersion = ".NET $nextMajor Preview 1"
-                    } else {
-                        $estimatedVersion = ".NET $nextMajor"
-                    }
-                } elseif ($lastTagBefore -match 'v(\d+)\.(\d+)\.(\d+)-preview\.(\d+)\.') {
-                    $major = $matches[1]
-                    $estimatedVersion = ".NET $major"
-                } elseif ($lastTagBefore -match 'v(\d+)\.(\d+)\.(\d+)$') {
-                    # Release tag - next will be next major
-                    $nextMajor = [int]$matches[1] + 1
-                    $estimatedVersion = ".NET $nextMajor"
-                } elseif ($lastTagBefore -match "v?(\d+)\.(\d+)") {
-                    $major = [int]$matches[1]
-                    $minor = [int]$matches[2]
-                    # For main branch, it's usually the next major version
-                    if ($baseRef -eq "main") {
-                        $estimatedVersion = ".NET $($major + 1)"
-                    } else {
-                        $estimatedVersion = ".NET $major.$minor"
-                    }
-                }
+                # If we know the first tag that contains this change, use it directly
+                $parsedFirstTag = ConvertFrom-DotNetTag $firstTagWith
+                $estimatedVersion = Format-DotNetVersion $parsedFirstTag
+            } else {
+                # Estimate based on the last tag before this change
+                $parsedLastTag = ConvertFrom-DotNetTag $lastTagBefore
+                $estimatedVersion = Get-EstimatedNextVersion $parsedLastTag $baseRef
             }
 
             return @{
@@ -493,9 +551,12 @@ function Invoke-LlmApi {
                 if ($SystemPrompt) {
                     $ghArgs += @("--system-prompt", $SystemPrompt)
                 }
-
-                $response = Invoke-WithGitHubToken -ApiKey $apiKey -ScriptBlock {
+                
+                try {
+                    $gitHubSession = Enter-GitHubSession $apiKey
                     gh @ghArgs
+                } finally {
+                    Exit-GitHubSession $gitHubSession
                 }
 
                 return $response -join "`n"
@@ -515,8 +576,11 @@ function Invoke-LlmApi {
                     "IMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
                 }
 
-                $rawResponse = Invoke-WithGitHubToken -ApiKey $apiKey -ScriptBlock {
+                try {
+                    $gitHubSession = Enter-GitHubSession $apiKey
                     copilot -p $fullPrompt --log-level none
+                } finally {
+                    Exit-GitHubSession $gitHubSession
                 }
 
                 # Parse the response to extract just the content, removing usage statistics
@@ -746,19 +810,10 @@ foreach ($pr in $prs) {
         }
     }
 
-    # If no area labels found, fall back to file path analysis
-    if ($featureAreas.Count -eq 0) {
-        foreach ($file in $pr.files) {
-            if ($file.path -match "src/libraries/([^/]+)" -and $file.path -match "\.cs$") {
-                $namespace = $matches[1] -replace "System\.", ""
-                if ($namespace -eq "Private.CoreLib") { $namespace = "System.Runtime" }
-                $featureAreas += $namespace
-            }
-        }
-    }
-
     $featureAreas = $featureAreas | Select-Object -Unique
-    if ($featureAreas.Count -eq 0) { $featureAreas = @("Runtime") }
+    if ($featureAreas.Count -eq 0) {
+        Write-Error "Unable to determine feature area for PR #$($pr.Number).  Please set an 'area-' label."
+    }
 
     $analysisData += @{
         Number = $pr.number
@@ -1021,9 +1076,9 @@ $issueBody
     $commentFile = Join-Path $commentDraftsDir "comment_pr_$($pr.Number).md"
 
     # URL encode the title and full issue body
-    $encodedTitle = Get-UrlEncodedText -text $issueTitle
-    $encodedBody = Get-UrlEncodedText -text $issueBody
-    $encodedLabels = Get-UrlEncodedText -text ($Config.IssueTemplate.Labels -join ",")
+    $encodedTitle = [Uri]::EscapeDataString($issueTitle)
+    $encodedBody = [Uri]::EscapeDataString($issueBody)
+    $encodedLabels = [Uri]::EscapeDataString($Config.IssueTemplate.Labels -join ",")
 
     # Create GitHub issue creation URL with full content and labels
     $createIssueUrl = "https://github.com/$($Config.DocsRepo)/issues/new?title=$encodedTitle&body=$encodedBody&labels=$encodedLabels"
