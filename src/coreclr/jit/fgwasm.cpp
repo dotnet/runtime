@@ -134,7 +134,7 @@ public:
 // arrange the block begins so we have proper nesting of Wasm blocks and Wasm loops.
 //
 // Since we have linear order of basic blocks, each non-contiguous forward branch can be characterized
-// by the source and destination basic block indices in the order. Eg [0, 4]. So an inteval begins at
+// by the source and destination basic block indices in the order. Eg [0, 4]. So an interval begins at
 // the start of the first block and ends at the start of the second.
 //
 // Each basic block start may be the end of some loops and /or a block. Or both. Note multiple
@@ -156,7 +156,7 @@ public:
 // will need to emit them as b:[0,6], a[0,4].
 //
 // To save some time we also create a union-find like setup to identify the first interval in a set of
-// conflicting intevals. Say we have a:[0,4] b:[2,6] c:[5,7]. When we see that b conflicts with a,
+// conflicting intervals. Say we have a:[0,4] b:[2,6] c:[5,7]. When we see that b conflicts with a,
 // we note 'a' as the conflict "chain" for b, and also track the conflict extent in a. Then when
 // we scan intervals for c, we see it conflicts with the chain starting at a, and we add it to the chain.
 // The net result is a:[0,4(7)], b:[2,6]-->a, c:[5,7]-->a.
