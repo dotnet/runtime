@@ -10,7 +10,8 @@ public enum SourceTypes : uint
 {
     SourceTypeInvalid = 0x00, // To indicate that nothing else applies
     StackEmpty = 0x01, // The stack is empty here
-    CallInstruction = 0x02  // The actual instruction of a call.
+    CallInstruction = 0x02  // The actual instruction of a call
+    Async = 0x04 // (Version 2+) Indicates suspension/resumption for an async call
 }
 ```
 
@@ -219,7 +220,12 @@ private static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader)
 
 ## Version 2
 
-Version 2 introduces a unified header format that replaces the flag byte of Version 1 with a "fat" or "slim" chunk table. The underlying nibble-encoded variable-length integer stream and the bounds bit-packing described in the Version 1 sections ([DebugInfo Stream Encoding](#debuginfo-stream-encoding) and [Bounds Data Encoding](#bounds-data-encoding-r2r-major-version-16)) are unchanged; only the initial header (size/chunk enumeration) format differs.
+Version 2 introduces two distinct changes:
+
+1. A unified header format ("fat" vs "slim") replacing the Version 1 flag byte and implicit layout.
+2. An additional `SourceTypes.Async` flag, expanding the per-entry source type encoding from 2 bits to a 3-bit bitfield.
+
+The nibble-encoded variable-length integer mechanism is unchanged; only the header and bounds entry source-type packing differ.
 
 Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
@@ -241,16 +247,16 @@ Constants:
 
 The first nibble-decoded unsigned integer (`countBoundsOrFatMarker`):
 
-* If `countBoundsOrFatMarker` is equal to `DEBUG_INFO_FAT` (0), the header is FAT and the next 6 nibble-decoded unsigned integers are, in order:
-  1. `BoundsSize`
-  2. `VarsSize`
-  3. `UninstrumentedBoundsSize`
-  4. `PatchpointInfoSize`
-  5. `RichDebugInfoSize`
-  6. `AsyncInfoSize`
-* Otherwise, the value is the `BoundsSize` for a SLIM header. The next nibble-decoded unsigned integer is `VarsSize`. All other sizes are implicitly 0.
+* If `countBoundsOrFatMarker == DEBUG_INFO_FAT` (0), the header is FAT and the next 6 nibble-decoded unsigned integers are, in order:
+    1. `BoundsSize`
+    2. `VarsSize`
+    3. `UninstrumentedBoundsSize`
+    4. `PatchpointInfoSize`
+    5. `RichDebugInfoSize`
+    6. `AsyncInfoSize`
+* Otherwise (SLIM header), the value is `BoundsSize` and the next nibble-decoded unsigned integer is `VarsSize`; all other sizes are implicitly 0.
 
-After decoding sizes, the start pointer of each chunk is computed by linear accumulation beginning at the first byte after the header stream:
+After decoding sizes, chunk start addresses are computed by linear accumulation beginning at the first byte after the header stream:
 
 ```
 BoundsStart = debugInfo + headerBytesConsumed
@@ -262,6 +268,27 @@ AsyncInfoStart = RichDebugInfoStart + RichDebugInfoSize
 DebugInfoEnd = AsyncInfoStart + AsyncInfoSize
 ```
 
-### Chunk Decoding (Same as Version 1)
+### Bounds Entry Encoding Differences from Version 1
 
-Once the start and size of each chunk are known, the decoding logic for the actual contents is identical to Version 1.
+Version 1 packs each bounds entry using: `[2 bits sourceType][nativeDeltaBits][ilOffsetBits]`.
+
+Version 2 extends this to three independent flag bits for source type and so uses: `[3 bits sourceFlags][nativeDeltaBits][ilOffsetBits]`.
+
+Source type bits (low → high):
+| Bit | Mask | Meaning |
+| --- | --- | --- |
+| 0 | 0x1 | `CallInstruction` |
+| 1 | 0x2 | `StackEmpty` |
+| 2 | 0x4 | `Async` (new in Version 2) |
+
+`SourceTypeInvalid` is represented by all three bits clear (0). Combinations are produced by OR-ing masks (e.g., `StackEmpty | CallInstruction`).
+
+Pseudo-code for Version 2 source type extraction:
+```csharp
+SourceTypes sourceType = 0;
+if ((encoded & 0x1) != 0) sourceType |= SourceTypes.CallInstruction;
+if ((encoded & 0x2) != 0) sourceType |= SourceTypes.StackEmpty;
+if ((encoded & 0x4) != 0) sourceType |= SourceTypes.Async; // New bit
+```
+
+After masking the 3 bits, shift them out before reading native delta and IL offset fields as before.

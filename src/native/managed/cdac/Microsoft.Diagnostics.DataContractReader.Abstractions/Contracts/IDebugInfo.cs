@@ -21,6 +21,10 @@ public enum SourceTypes : uint
     /// The actual instruction of a call
     /// </summary>
     CallInstruction = 0x02,
+    /// <summary>
+    /// Indicates suspension/resumption for an async call
+    /// </summary>
+    Async = 0x04,
 }
 
 public readonly struct OffsetMapping
