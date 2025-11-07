@@ -1839,10 +1839,6 @@ namespace Internal.JitInterface
                     throw new NotImplementedException("RuntimeAsync methods are not supported by nativeaot yet");
 #endif
                 }
-                pResolvedToken.hMethod = ObjectToHandle(method);
-
-                TypeDesc owningClass = method.OwningType;
-                pResolvedToken.hClass = ObjectToHandle(owningClass);
 
 #if !SUPPORT_JIT
                 _compilation.TypeSystemContext.EnsureLoadableMethod(method);
