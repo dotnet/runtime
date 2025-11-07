@@ -94,13 +94,9 @@ FlowGraphDfsTree* Compiler::fgWasmDfs()
 
     jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_Wasm));
 
-    // Main entry is an entry
-    //
-    entryBlocks.push_back(fgFirstBB);
-
     // We can ignore OSR/genReturnBB "entries"
     //
-    assert(fgEntryBB != nullptr);
+    assert(fgEntryBB == nullptr);
     assert(fgGlobalMorphDone);
 
     // All funclets are entries. For now we assume finallys are funclets.
@@ -114,9 +110,22 @@ FlowGraphDfsTree* Compiler::fgWasmDfs()
         }
     }
 
+    // Main entry is an entry. We add it last so it ends up first in the RPO.
+    //
+    entryBlocks.push_back(fgFirstBB);
+
+    JITDUMP("Running Wasm DFS\n");
+    JITDUMP("Entry blocks: ");
+    for (BasicBlock* const entry : entryBlocks)
+    {
+        JITDUMP(" " FMT_BB, entry->bbNum);
+    }
+    JITDUMP("\n");
+
     unsigned numBlocks =
         fgRunDfs<WasmSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
                  /* useProfile */ true>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
+
     return new (this, CMK_Wasm)
         FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, /* useProfile */ true, /* forWasm */ true);
 }
@@ -315,8 +324,10 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Our interval ends are at the starts of blocks, so we need a block that
     // comes after all existing blocks. So allocate one extra slot.
     //
-    JITDUMP("\nCreating loop-aware RPO\n");
-    BasicBlock** const initialLayout = new (this, CMK_Wasm) BasicBlock*[dfsTree->GetPostOrderCount() + 1];
+    const unsigned dfsCount = dfsTree->GetPostOrderCount();
+    JITDUMP("\nCreating loop-aware RPO (%u blocks)\n", dfsCount);
+
+    BasicBlock** const initialLayout = new (this, CMK_Wasm) BasicBlock*[dfsCount + 1];
 
     // Note this DFS includes funclets, they should each be contiguous and appear after
     // the main method in the order.
@@ -330,6 +341,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     };
 
     fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+    assert(numBlocks == dfsCount);
 
     // Splice in a fake BB0
     //
@@ -378,15 +390,8 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
         // Now see where block branches to...
         //
-        if (block->KindIs(BBJ_CALLFINALLY))
-        {
-            // We ignore these and treat them as if they fall through to the tail (if there is a tail).
-            // Since the tail cannot be a join we don't need a block.
-            //
-            continue;
-        }
-
-        for (BasicBlock* const succ : block->Succs())
+        WasmSuccessorEnumerator successors(this, block, /* useProfile */ true);
+        for (BasicBlock* const succ : successors)
         {
             unsigned const succNum = succ->bbPreorderNum;
 
@@ -660,6 +665,8 @@ PhaseStatus Compiler::fgWasmControlFlow()
             return ~0;
         };
 
+        // This somewhat duplicates the logic in WasmSuccessorEnumerator.
+        //
         switch (block->GetKind())
         {
             case BBJ_RETURN:
@@ -884,21 +891,11 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
     for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
     {
-        BasicBlock* const block = initialLayout[cursor];
-
-        if (block->KindIs(BBJ_CALLFINALLY))
+        BasicBlock* const       block = initialLayout[cursor];
+        WasmSuccessorEnumerator successors(this, block, /* useProfile */ true);
+        for (BasicBlock* const succ : successors)
         {
-            if (block->isBBCallFinallyPair())
-            {
-                JITDUMP("   " FMT_BB " -> " FMT_BB " [style=dotted];\n", block->bbNum, block->Next()->bbNum);
-            }
-        }
-        else
-        {
-            for (BasicBlock* const succ : block->Succs())
-            {
-                JITDUMP("   " FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
-            }
+            JITDUMP("   " FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
         }
     }
 

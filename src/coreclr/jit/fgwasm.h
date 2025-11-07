@@ -141,6 +141,60 @@ public:
 
         return m_pSuccessors[m_curSucc];
     }
+
+    // iterator support
+    // for (BasicBlock* const succ : WasmSuccessorEnumerator(...))
+
+    class Iterator
+    {
+    private:
+        WasmSuccessorEnumerator* m_enumerator;
+        BasicBlock*              m_block;
+
+        void advance()
+        {
+            if (m_enumerator != nullptr)
+            {
+                m_block = m_enumerator->NextSuccessor();
+            }
+        }
+
+    public:
+
+        Iterator(WasmSuccessorEnumerator* enumerator)
+            : m_enumerator(enumerator)
+            , m_block(nullptr)
+        {
+            advance();
+        }
+
+        BasicBlock* operator*() const
+        {
+            assert(m_block != nullptr);
+            return m_block;
+        }
+
+        Iterator& operator++()
+        {
+            advance();
+            return *this;
+        }
+
+        bool operator!=(const Iterator& other) const
+        {
+            return m_block != other.m_block;
+        }
+    };
+
+    Iterator begin()
+    {
+        return Iterator(this);
+    }
+
+    Iterator end()
+    {
+        return Iterator(nullptr);
+    }
 };
 
 #endif // FGWASM_H
