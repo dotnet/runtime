@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 encoder.EmitCMP(result, 0);
                 encoder.EmitRETIfNotEqual();
-                encoder.EmitJMP(GetBadSlotHelper(factory));
+                encoder.EmitJMP(GetBadSlotHelper(factory), factory.Target.CodeDelta);
             }
         }
 
@@ -83,7 +83,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitSUB(encoder.TargetRegister.Arg0, (byte)cctorContextSize);
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase));
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase), factory.Target.CodeDelta);
                         }
                     }
                     break;
@@ -116,7 +116,7 @@ namespace ILCompiler.DependencyAnalysis
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitMOV(encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg2);
                             encoder.EmitSUB(encoder.TargetRegister.Arg0, cctorContextSize);
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase), factory.Target.CodeDelta);
                         }
                     }
                     break;
@@ -155,7 +155,7 @@ namespace ILCompiler.DependencyAnalysis
                         // Second arg: index of the type in the ThreadStatic section of the modules
                         encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Arg1, factory.Target.PointerSize);
 
-                        encoder.EmitJMP(helperEntrypoint);
+                        encoder.EmitJMP(helperEntrypoint, factory.Target.CodeDelta);
                     }
                     break;
 
@@ -182,7 +182,7 @@ namespace ILCompiler.DependencyAnalysis
                             Debug.Assert(target.Constructor.Method.Signature.Length == 2);
                         }
 
-                        encoder.EmitJMP(target.Constructor);
+                        encoder.EmitJMP(target.Constructor, factory.Target.CodeDelta);
                     }
                     break;
 

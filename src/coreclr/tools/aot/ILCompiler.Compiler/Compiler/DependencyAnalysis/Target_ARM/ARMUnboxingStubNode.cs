@@ -10,7 +10,7 @@ namespace ILCompiler.DependencyAnalysis
         protected override void EmitCode(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)
         {
             encoder.EmitADD(encoder.TargetRegister.Arg0, (byte)factory.Target.PointerSize); // add r0, sizeof(void*);
-            encoder.EmitJMP(GetUnderlyingMethodEntrypoint(factory)); // b methodEntryPoint
+            encoder.EmitJMP(GetUnderlyingMethodEntrypoint(factory), factory.Target.CodeDelta); // b methodEntryPoint
         }
     }
 }
