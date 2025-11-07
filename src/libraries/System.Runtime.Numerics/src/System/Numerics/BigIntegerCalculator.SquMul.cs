@@ -12,13 +12,12 @@ namespace System.Numerics
     {
 #if DEBUG
         // Mutable for unit testing...
-        internal static
+        internal static int MultiplyKaratsubaThreshold = 32;
+        internal static int MultiplyToom3Threshold = 256;
 #else
-        internal const
+        internal const int MultiplyKaratsubaThreshold = 32;
+        internal const int MultiplyToom3Threshold = 256;
 #endif
-            int
-            MultiplyKaratsubaThreshold = 32,
-            MultiplyToom3Threshold = 256;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Square(ReadOnlySpan<uint> value, Span<uint> bits)
