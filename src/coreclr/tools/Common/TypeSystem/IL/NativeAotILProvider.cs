@@ -378,8 +378,7 @@ namespace Internal.IL
                 }
                 else
                 {
-                    // TODO: Emit thunk with async calling convention
-                    throw new NotImplementedException();
+                    return AsyncThunkILEmitter.EmitAsyncMethodThunk(asyncVariantImpl, asyncVariantImpl.Target);
                 }
             }
             else

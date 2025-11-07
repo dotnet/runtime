@@ -79,12 +79,9 @@ namespace ILCompiler
 
     public static class AsyncMethodVariantExtensions
     {
-        /// <summary>
-        /// Returns true if this MethodDesc is an AsyncMethodVariant, which should not escape the jit interface.
-        /// </summary>
         public static bool IsAsyncVariant(this MethodDesc method)
         {
-            return method is AsyncMethodVariant;
+            return method.GetMethodDefinition() is AsyncMethodVariant;
         }
     }
 }
