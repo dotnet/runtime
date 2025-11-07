@@ -1657,9 +1657,9 @@ HRESULT ClrDataAccess::EnumMemDataDescriptors(CLRDataEnumMemoryFlags flags)
     // Assume that subdescriptors will be the n last pointers in the pointer_data array
     // Must be updated if further subdescriptors are added
     // This could be improved by iterating all of the pointer data recursively and identifying subdescriptors by
-    // the magic field in ContractDescriptor, but given it will eventually move to the cDAC, this is good enough for now.
-    PTR_ContractDescriptor pContractDescriptor = dac_cast<PTR_ContractDescriptor>((TADDR)contractDescriptorAddr);
+    // the magic field in ContractDescriptor. Given the low number of subdescriptors, this is not necessary right now.
     int cSubDescriptors = 1;
+    PTR_ContractDescriptor pContractDescriptor = dac_cast<PTR_ContractDescriptor>((TADDR)contractDescriptorAddr);
     for (int i = 0; i < cSubDescriptors; i++)
     {
         int subDescriptorIndex = (pContractDescriptor->pointer_data_count - 1) - i;
