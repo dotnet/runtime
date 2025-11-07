@@ -21,6 +21,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 instructionEncoder.EmitJMP(_helperCell);
                 return;
             }
+            if (relocsOnly)
+            {
+                // When doing relocs only, we don't need to generate the actual instructions
+                // as they will be ignored. Just emit the module import load and jump so we record the dependencies.
+                instructionEncoder.EmitLD(Register.R5, factory.ModuleImport);
+                instructionEncoder.EmitJMP(_helperCell);
+                return;
+            }
 
             switch (_thunkKind)
             {
