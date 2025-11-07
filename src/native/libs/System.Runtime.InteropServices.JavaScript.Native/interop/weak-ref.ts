@@ -9,7 +9,7 @@ export function createWeakRef<T extends object>(jsObj: T): WeakRefInternal<T> {
     if (useWeakRef) {
         return new WeakRef(jsObj);
     } else {
-        // this is trivial WeakRef replacement, which holds strong refrence, instead of weak one, when the browser doesn't support it
+        // this is trivial WeakRef replacement, which holds strong reference, instead of weak one, when the browser doesn't support it
         return createStrongRef(jsObj);
     }
 }
