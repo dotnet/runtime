@@ -380,7 +380,7 @@ public:
 #if defined(TARGET_APPLE)
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
-#elif defined(TARGET_LINUX)
+#elif !defined(TARGET_WASM)
 #include <link.h>
 #include <elf.h>
 #include <cstring>
@@ -665,7 +665,7 @@ namespace pal
 
             return image_size;
         }
-#elif defined(TARGET_LINUX)
+#elif !defined(TARGET_WASM)
         ElfW(Ehdr)* ehdr = reinterpret_cast<ElfW(Ehdr)*>(base_address);
         if (std::memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0)
             return 0;
