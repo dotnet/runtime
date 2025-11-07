@@ -15,7 +15,6 @@ namespace ILCompiler
     {
         private readonly MethodDesc _owningMethod;
         private MethodSignature _signature;
-        private MethodIL _methodIL;
 
         public AsyncResumptionStub(MethodDesc owningMethod)
         {
@@ -41,9 +40,8 @@ namespace ILCompiler
             return _signature = new MethodSignature(0, 0, objectType, [objectType, byrefByte]);
         }
 
-        private MethodIL InitializeMethodIL()
+        public override MethodIL EmitIL()
         {
-            Debug.Assert(_methodIL == null);
             ILEmitter ilEmitter = new ILEmitter();
             ILCodeStream ilStream = ilEmitter.NewCodeStream();
 
@@ -99,12 +97,7 @@ namespace ILCompiler
             ilStream.EmitLdLoc(newContinuationLocal);
             ilStream.Emit(ILOpcode.ret);
 
-            return _methodIL = ilEmitter.Link(this);
-        }
-
-        public override MethodIL EmitIL()
-        {
-            return _methodIL ?? InitializeMethodIL();
+            return ilEmitter.Link(this);
         }
 
         protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
