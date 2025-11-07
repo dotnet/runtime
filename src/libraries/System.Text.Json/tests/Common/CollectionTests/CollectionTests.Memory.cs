@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -150,9 +151,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             // Create an array of ~200 null elements to force resumptions with smallest buffer size
-            var nullElements = new string[200];
-            Array.Fill(nullElements, "null");
-            string json = $"[{string.Join(",", nullElements)}]";
+            string json = $"[{string.Join(",", Enumerable.Repeat("null", 200))}]";
             using var stream = new Utf8MemoryStream(json);
 
             JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
@@ -176,9 +175,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             // Create an array of ~200 null elements to force resumptions with smallest buffer size
-            var nullElements = new string[200];
-            Array.Fill(nullElements, "null");
-            string json = $"[{string.Join(",", nullElements)}]";
+            string json = $"[{string.Join(",", Enumerable.Repeat("null", 200))}]";
             using var stream = new Utf8MemoryStream(json);
 
             JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
