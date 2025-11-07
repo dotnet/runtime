@@ -341,6 +341,38 @@ namespace System.IO.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(TestData.ValidFileNames), MemberType = typeof(TestData))]
+        public void CreateWithProblematicNames(string fileName)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            using (Create(filePath))
+            {
+                Assert.True(File.Exists(filePath));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.WindowsTrailingProblematicFileNames), MemberType = typeof(TestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsCreateWithTrailingSpacePeriod_ViaExtendedSyntax(string fileName)
+        {
+            // Windows path normalization strips trailing spaces/periods unless using \\?\ extended syntax.
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string filePath = Path.Combine(testDir.FullName, fileName);
+            string extendedPath = @"\\?\" + filePath;
+            
+            using (Create(extendedPath))
+            {
+                Assert.True(File.Exists(extendedPath));
+            }
+            
+            // Verify the file can be found via enumeration
+            string[] files = Directory.GetFiles(testDir.FullName);
+            Assert.Contains(files, f => Path.GetFileName(f) == fileName);
+        }
+
         #endregion
     }
 
