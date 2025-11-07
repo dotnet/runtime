@@ -370,7 +370,11 @@ namespace ILCompiler.ObjectWriter
                 sectionWriter.EmitAlignment(nodeContents.Alignment);
 
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
+#if !READYTORUN
                 bool recordSize = isMethod;
+#else
+                bool recordSize = true;
+#endif
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
                     string mangledName = n == node ? currentSymbolName : GetMangledName(n);
