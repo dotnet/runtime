@@ -420,17 +420,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             // The test will be using the chain for TestData.MicrosoftDotComSslCertBytes
             DateTime notBefore = new DateTime(2025, 10, 01, 05, 17, 14, DateTimeKind.Utc);
-
-            // One second before the NotAfter value
-            DateTime notAfter = new DateTime(2026, 03, 30, 05, 17, 14, DateTimeKind.Utc).AddSeconds(-1);
-
-            DateTime[] validTimes = [notBefore, notAfter];
+            DateTime notAfter = new DateTime(2026, 03, 30, 05, 17, 14, DateTimeKind.Utc);
 
             // The NotAfter value as a boundary condition differs on Windows and OpenSSL.
             // Windows considers it valid (<= NotAfter).
             // OpenSSL considers it invalid (< NotAfter), with a comment along the lines of
             //   "it'll be invalid in a millisecond, why bother with the <="
             // So that boundary condition is not being tested.
+            DateTime[] validTimes = [notBefore, notAfter.AddSeconds(-1)];
 
             DateTime[] invalidTimes =
             [
