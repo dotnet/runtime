@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 using (var chainHolder = new ChainHolder())
                 {
                     X509Chain chain = chainHolder.Chain;
-                    chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                    chain.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                     return chain.Build(microsoftDotCom);
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComRoot);
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     // Re-set the ChainPolicy properties
                     chain2.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                    chain2.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                    chain2.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                     chain2.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                     valid = chain2.Build(microsoftDotCom);
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.ExtraStore.Add(microsoftDotComIssuer);
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
 
-                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 chain = chainHolder.Chain;
                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
-                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                 chain.Build(microsoftDotCom);
 
@@ -740,7 +740,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         }
 
                         X509Chain chainValidator = chainHolder.Chain;
-                        chainValidator.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                        chainValidator.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                         chainValidator.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                         bool chainBuildResult = chainValidator.Build(microsoftDotCom);
