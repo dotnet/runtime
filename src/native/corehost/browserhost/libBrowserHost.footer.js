@@ -68,6 +68,10 @@
             if (name === "dotnetInitializeModule") continue;
             lib[name] = () => "dummy";
             assignExportsBuilder += `_${String(name)} = exports.${String(name)};\n`;
+            const fn = exports[name];
+            if (fn.__deps) {
+                lib[name + "__deps"] = fn.__deps;
+            }
         }
         lib.$BROWSER_HOST.assignExports = new Function("exports", assignExportsBuilder);
 

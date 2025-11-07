@@ -56,10 +56,6 @@ else()
             System.Native.TimeZoneData.Invariant)
         # linker options for NodeJs, link in JavaScript helper, access to local filesystem
         if (CLR_CMAKE_TARGET_BROWSER)
-            target_compile_options(corerun PRIVATE
-                -fwasm-exceptions
-                -msimd128
-                )
             target_link_libraries(corerun PRIVATE
                 System.Native.Browser-Static)
             set(JS_SYSTEM_NATIVE_BROWSER
@@ -73,17 +69,22 @@ else()
                 LINK_FLAGS "--pre-js ${JS_CORE_RUN_PRE} --js-library ${JS_SYSTEM_NATIVE_BROWSER} --js-library ${JS_SYSTEM_BROWSER_UTILS}"
                 RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
             target_link_options(corerun PRIVATE
-                -fwasm-exceptions
-                -sEXIT_RUNTIME=1
+                -sEXIT_RUNTIME=0
                 -sINITIAL_MEMORY=134217728
                 -sMAXIMUM_MEMORY=2147483648
                 -sALLOW_MEMORY_GROWTH=1
                 -sSTACK_SIZE=5MB
+                -sEXPORTED_RUNTIME_METHODS=cwrap,ccall,HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64,safeSetTimeout,maybeExit,exitJS,abort,lengthBytesUTF8,UTF8ToString,stringToUTF8Array
                 -sEXPORTED_FUNCTIONS=_main,_GetDotNetRuntimeContractDescriptor
                 -sENVIRONMENT=node,shell,web
                 -Wl,-error-limit=0)
 
             if (CORERUN_IN_BROWSER)
+                # Node.js doesn't have good support for WASM_BIGINT
+                # so it only is added when running in the browser.
+                target_link_options(corerun PRIVATE
+                    -sWASM_BIGINT=1)
+
                 # Include the virtual file system data for the
                 # browser scenario.
                 set(WASM_PRELOAD_DIR "${CMAKE_INSTALL_PREFIX}/IL")

@@ -654,6 +654,21 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    CORINFO_FIELD_HANDLE fieldOffs = genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1);
+    assert(compiler->eeIsJitDataOffs(fieldOffs));
+    genMov32RelocatableDataLabel(compiler->eeGetJitDataOffs(fieldOffs), treeNode->GetRegNum());
+
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
 // genGetInsForOper: Return instruction encoding of the operation tree.
 //
 instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)

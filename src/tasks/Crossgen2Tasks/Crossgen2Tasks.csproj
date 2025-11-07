@@ -3,8 +3,21 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <NoWarn>$(NoWarn);CA1050;CA1852;CA1861;CA2249;IDE0059;IDE0060;IDE0074</NoWarn>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <!--
+      This repository generally does not use global usings, but the SDK does.
+      Use the minimum set of usings required to avoid modifying the copied code.
+    -->
+    <Using Include="System" />
+    <Using Include="System.Collections.Generic" />
+    <Using Include="System.IO" />
+    <Using Include="System.Linq" />
+    <Using Include="System.Runtime.InteropServices" />
+    <Using Include="System.Text" />
+  </ItemGroup>
   <ItemGroup>
     <!-- Bring in references for these assemblies which are provided by the SDK.
          We do this to avoid bringing the package closure for assemblies we don't use here. -->
