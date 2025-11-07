@@ -13518,6 +13518,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         {
             case WellKnownArg::RetBuffer:
             case WellKnownArg::AsyncContinuation:
+            case WellKnownArg::AsyncExecutionContext:
+            case WellKnownArg::AsyncSynchronizationContext:
                 // These do not appear in the table of inline arg info; do not include them
                 continue;
             case WellKnownArg::InstParam:

@@ -722,6 +722,7 @@ enum CorInfoOptions
                                                CORINFO_GENERICS_CTXT_FROM_METHODDESC |
                                                CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
     CORINFO_GENERICS_CTXT_KEEP_ALIVE        = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
+    CORINFO_ASYNC_SAVE_CONTEXTS             = 0x00000200, // Runtime async method must save and restore contexts
 };
 
 //
@@ -1712,23 +1713,21 @@ enum CorInfoContinuationFlags
     // If this bit is set the continuation resumes inside a try block and
     // thus if an exception is being propagated, needs to be resumed.
     CORINFO_CONTINUATION_HAS_EXCEPTION = 2,
-    // If this bit is set the continuation has a continuation context.
-    CORINFO_CONTINUATION_HAS_EXECUTION_CONTEXT = 4,
     // If this bit is set the continuation has space for a continuation
     // context.
-    CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 8,
+    CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 4,
     // If this bit is set the continuation has space to store a result
     // returned by the callee.
-    CORINFO_CONTINUATION_HAS_RESULT = 16,
+    CORINFO_CONTINUATION_HAS_RESULT = 8,
     // If this bit is set the continuation should continue on the thread
     // pool.
-    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 32,
+    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 16,
     // If this bit is set the continuation context is a
     // SynchronizationContext that we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 64,
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 32,
     // If this bit is set the continuation context is a TaskScheduler that
     // we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 128,
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 64,
 };
 
 struct CORINFO_ASYNC_INFO

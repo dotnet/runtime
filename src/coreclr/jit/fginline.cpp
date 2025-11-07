@@ -2320,6 +2320,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         {
             case WellKnownArg::RetBuffer:
             case WellKnownArg::AsyncContinuation:
+            case WellKnownArg::AsyncExecutionContext:
+            case WellKnownArg::AsyncSynchronizationContext:
                 continue;
             case WellKnownArg::InstParam:
                 argInfo = inlineInfo->inlInstParamArgInfo;

@@ -61,7 +61,7 @@
 //
 PhaseStatus Compiler::SaveAsyncContexts()
 {
-    if (!compIsAsync())
+    if ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0)
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
@@ -80,6 +80,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     // Create fault handler block
     BasicBlock* faultBB = fgNewBBafter(BBJ_EHFAULTRET, tryLastBB, false);
     faultBB->bbRefs = 1; // Artificial ref count
+    faultBB->inheritWeightPercentage(tryBegBB, 0);
 
     EHblkDsc* newEntry = nullptr;
     unsigned  XTnew    = compHndBBtabCount;
@@ -92,7 +93,8 @@ PhaseStatus Compiler::SaveAsyncContexts()
     }
 
     // Initialize the new entry
-    newEntry->ebdID          = impInlineRoot()->compEHID++;
+    asyncContextRestoreEHID = impInlineRoot()->compEHID++;
+    newEntry->ebdID          = asyncContextRestoreEHID;
     newEntry->ebdHandlerType = EH_HANDLER_FAULT;
 
     newEntry->ebdTryBeg  = tryBegBB;
@@ -201,6 +203,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
         if (newReturnBB == nullptr)
         {
             newReturnBB = CreateReturnBB(&mergedReturnLcl);
+            newReturnBB->inheritWeightPercentage(block, 0);
         }
 
         // Store return value to common local
@@ -223,6 +226,11 @@ PhaseStatus Compiler::SaveAsyncContexts()
         // Jump to new shared restore + return block
         block->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(newReturnBB, block));
         fgReturnCount--;
+    }
+
+    if (newReturnBB != nullptr)
+    {
+        newReturnBB->bbWeight = newReturnBB->computeIncomingWeight();
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
@@ -1118,9 +1126,18 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 
     if (block->hasTryIndex())
     {
-        layout.ExceptionOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
-        JITDUMP("  " FMT_BB " is in try region %u; exception will be at offset %u\n", block->bbNum,
+        // If we are enclosed in any try region that isn't our special "context
+        // restore" try region then we need to rethrow an exception. For our
+        // special "context restore" try region we know that it is a no-op on
+        // the resumption path.
+        EHblkDsc* ehDsc = m_comp->ehGetDsc(block->getTryIndex());
+        if ((ehDsc->ebdID != m_comp->asyncContextRestoreEHID) ||
+            (ehDsc->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX))
+        {
+            layout.ExceptionOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+            JITDUMP("  " FMT_BB " is in try region %u; exception will be at offset %u\n", block->bbNum,
                 block->getTryIndex(), layout.ExceptionOffset);
+        }
     }
 
     if (call->GetAsyncInfo().ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext)

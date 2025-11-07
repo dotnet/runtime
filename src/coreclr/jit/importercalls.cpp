@@ -66,6 +66,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // to see any imperative security.
     // Reverse P/Invokes need a call to CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
     // at the end, so tailcalls should be disabled.
+    // Async methods need to restore contexts, so tailcalls should be disabled.
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
         canTailCall             = false;
@@ -75,6 +76,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         canTailCall             = false;
         szCanTailCallFailReason = "Caller is Reverse P/Invoke";
+    }
+    else if (compIsAsync())
+    {
+        canTailCall             = false;
+        szCanTailCallFailReason = "Caller is async method";
     }
 #if !FEATURE_FIXED_OUT_ARGS
     else if (info.compIsVarArgs)

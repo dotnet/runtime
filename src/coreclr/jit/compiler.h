@@ -3968,6 +3968,8 @@ public:
     unsigned lvaAsyncExecutionContextVar = BAD_VAR_NUM;       // ExecutionContext local for async methods
     unsigned lvaAsyncSynchronizationContextVar = BAD_VAR_NUM; // SynchronizationContext local for async methods
 
+    unsigned short asyncContextRestoreEHID = USHRT_MAX;
+
     unsigned lvaArg0Var = BAD_VAR_NUM; // The lclNum of arg0. Normally this will be info.compThisArg.
                          // However, if there is a "ldarga 0" or "starg 0" in the IL,
                          // we will redirect all "ldarg(a) 0" and "starg 0" to this temp.
