@@ -4345,11 +4345,7 @@ enum class ExecutionContextHandling
 {
     // No special handling of execution context is required.
     None,
-    // Always save and restore ExecutionContext around this await.
-    // Used for task awaits.
-    SaveAndRestore,
-    // Save and restore execution context on suspension/resumption only.
-    // Used for custom awaitables.
+    // Save and restore execution context on suspension/resumption.
     AsyncSaveAndRestore,
 };
 
@@ -4402,7 +4398,6 @@ struct AsyncCallInfo
     //
     ExecutionContextHandling    ExecutionContextHandling                  = ExecutionContextHandling::None;
     ContinuationContextHandling ContinuationContextHandling               = ContinuationContextHandling::None;
-    bool                        SaveAndRestoreSynchronizationContextField = false;
 };
 
 // Return type descriptor of a GT_CALL node.
@@ -5137,8 +5132,6 @@ struct GenTreeCall final : public GenTree
         assert(IsAsync());
         return *asyncInfo;
     }
-
-    bool IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const;
 
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th return register allocated to this call node.

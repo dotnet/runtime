@@ -1433,35 +1433,10 @@ DONE_CALL:
 
                 // Propagate retExpr as the placeholder for the call.
                 call = retExpr;
-
-                if (origCall->IsAsyncAndAlwaysSavesAndRestoresExecutionContext())
-                {
-                    // Async calls that require save/restore of
-                    // ExecutionContext need to be top most so that we can
-                    // insert try-finally around them. We can inline these, so
-                    // we need to ensure that the RET_EXPR is findable when we
-                    // later expand this.
-
-                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG("async"));
-                    LclVarDsc* varDsc    = lvaGetDesc(resultLcl);
-                    // Keep the information about small typedness to avoid
-                    // inserting unnecessary casts around normalization.
-                    if (varTypeIsSmall(origCall->gtReturnType))
-                    {
-                        assert(origCall->NormalizesSmallTypesOnReturn());
-                        varDsc->lvType = origCall->gtReturnType;
-                    }
-
-                    impStoreToTemp(resultLcl, call, CHECK_SPILL_ALL);
-                    // impStoreToTemp can change src arg list and return type for call that returns struct.
-                    var_types type = genActualType(lvaGetDesc(resultLcl)->TypeGet());
-                    call           = gtNewLclvNode(resultLcl, type);
-                }
             }
             else
             {
-                if (call->IsCall() &&
-                    (isFatPointerCandidate || call->AsCall()->IsAsyncAndAlwaysSavesAndRestoresExecutionContext()))
+                if (call->IsCall() && isFatPointerCandidate)
                 {
                     // these calls should be in statements of the form call() or var = call().
                     // Such form allows to find statements with fat calls without walking through whole trees
@@ -6834,13 +6809,11 @@ void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall*     call,
     newSourceTypes |= (unsigned)callDI.GetLocation().GetSourceTypes() & ~ICorDebugInfo::CALL_INSTRUCTION;
     ILLocation newILLocation(callDI.GetLocation().GetOffset(), (ICorDebugInfo::SourceTypes)newSourceTypes);
     asyncInfo.CallAsyncDebugInfo = DebugInfo(callDI.GetInlineContext(), newILLocation);
+    asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
 
     if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
     {
         JITDUMP("Call is an async task await\n");
-
-        asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::SaveAndRestore;
-        asyncInfo.SaveAndRestoreSynchronizationContextField = true;
 
         if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
         {
@@ -6869,32 +6842,7 @@ void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall*     call,
         asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
     }
 
-    // For tailcalls the contexts does not need saving/restoring: they will be
-    // overwritten by the caller anyway.
-    //
-    // More specifically, if we can show that
-    // Thread.CurrentThread._executionContext is not accessed between the
-    // call and returning then we can omit save/restore of the execution
-    // context. We do not do that optimization yet.
-    if ((prefixFlags & PREFIX_TAILCALL) != 0)
-    {
-        asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
-        asyncInfo.ContinuationContextHandling               = ContinuationContextHandling::None;
-        asyncInfo.SaveAndRestoreSynchronizationContextField = false;
-    }
-
     call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
-
-    if (asyncInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore)
-    {
-        compMustSaveAsyncContexts = true;
-
-        // In this case we will need to save the context after the arguments are evaluated.
-        // Spill the arguments to accomplish that.
-        // (We could do this via splitting in SaveAsyncContexts, but since we need to
-        //  handle inline candidates we won't gain much.)
-        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Async await with execution context save and restore"));
-    }
 }
 
 //------------------------------------------------------------------------

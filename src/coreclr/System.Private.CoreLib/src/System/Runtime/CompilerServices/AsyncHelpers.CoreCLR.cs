@@ -666,9 +666,9 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreContexts(bool suspended, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        private static void RestoreContexts(bool started, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
         {
-            if (!suspended)
+            if (started)
             {
                 Thread thread = Thread.CurrentThreadAssumedInitialized;
                 if (previousSyncCtx != thread._synchronizationContext)

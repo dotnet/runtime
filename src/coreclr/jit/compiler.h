@@ -9840,7 +9840,6 @@ public:
     bool compSuppressedZeroInit       = false; // There are vars with lvSuppressedZeroInit set
     bool compMaskConvertUsed          = false; // Does the method have Convert Mask To Vector nodes.
     bool compUsesThrowHelper          = false; // There is a call to a THROW_HELPER for the compiled method.
-    bool compMustSaveAsyncContexts    = false; // There is an async call that needs capture/restore of async contexts.
 
     // NOTE: These values are only reliable after
     //       the importing is completely finished.
