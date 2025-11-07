@@ -24,4 +24,4 @@ export const dotnet: DotnetHostBuilder | undefined = new HostBuilder() as Dotnet
 export { exit };
 
 // Auto-start when in Node.js or Shell environment
-selfHostNodeJS(dotnet!);
+selfHostNodeJS(dotnet!).catch();
