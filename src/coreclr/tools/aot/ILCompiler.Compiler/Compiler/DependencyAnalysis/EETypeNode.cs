@@ -1079,9 +1079,9 @@ namespace ILCompiler.DependencyAnalysis
                 MethodDesc finalizerMethod = _type.GetFinalizer();
                 MethodDesc canonFinalizerMethod = finalizerMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (factory.Target.SupportsRelativePointers)
-                    objData.EmitReloc(factory.MethodEntrypoint(canonFinalizerMethod), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    objData.EmitReloc(factory.MethodEntrypoint(canonFinalizerMethod), RelocType.IMAGE_REL_BASED_RELPTR32, factory.Target.CodeDelta);
                 else
-                    objData.EmitPointerReloc(factory.MethodEntrypoint(canonFinalizerMethod));
+                    objData.EmitPointerReloc(factory.MethodEntrypoint(canonFinalizerMethod), factory.Target.CodeDelta);
             }
         }
 

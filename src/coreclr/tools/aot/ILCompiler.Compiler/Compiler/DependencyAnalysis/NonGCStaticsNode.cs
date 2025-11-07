@@ -206,7 +206,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     // Emit pointer to the cctor
                     MethodDesc cctorMethod = _type.GetStaticConstructor();
-                    builder.EmitPointerReloc(factory.ExactCallableAddress(cctorMethod));
+                    builder.EmitPointerReloc(factory.ExactCallableAddress(cctorMethod), factory.Target.CodeDelta);
                 }
             }
             else

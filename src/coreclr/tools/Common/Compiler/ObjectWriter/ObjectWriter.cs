@@ -152,20 +152,6 @@ namespace ILCompiler.ObjectWriter
                 // Resolve the relocation to already defined symbol and write it into data
                 fixed (byte *pData = data)
                 {
-                    // RyuJIT generates the Thumb bit in the addend and we also get it from
-                    // the symbol value. The AAELF ABI specification defines the R_ARM_THM_JUMP24
-                    // and R_ARM_THM_MOVW_PREL_NC relocations using the formula ((S + A) | T) – P.
-                    // The thumb bit is thus supposed to be only added once.
-                    // For R_ARM_THM_JUMP24 the thumb bit cannot be encoded, so mask it out.
-                    //
-                    // R2R doesn't use add the thumb bit to the symbol value, so we don't need to do this here.
-#if !READYTORUN
-                    long maskThumbBitOut = relocType is IMAGE_REL_BASED_THUMB_BRANCH24 or IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
-                    long maskThumbBitIn = relocType is IMAGE_REL_BASED_THUMB_MOV32_PCREL ? 1 : 0;
-#else
-                    long maskThumbBitOut = 0;
-                    long maskThumbBitIn = 0;
-#endif
                     long adjustedAddend = addend;
 
                     adjustedAddend -= relocType switch
@@ -176,9 +162,8 @@ namespace ILCompiler.ObjectWriter
                         _ => 0
                     };
 
-                    adjustedAddend += definedSymbol.Value & ~maskThumbBitOut;
+                    adjustedAddend += definedSymbol.Value;
                     adjustedAddend += Relocation.ReadValue(relocType, (void*)pData);
-                    adjustedAddend |= definedSymbol.Value & maskThumbBitIn;
                     adjustedAddend -= offset;
 
                     if (relocType is IMAGE_REL_BASED_THUMB_BRANCH24 && !Relocation.FitsInThumb2BlRel24((int)adjustedAddend))
@@ -385,20 +370,13 @@ namespace ILCompiler.ObjectWriter
                 sectionWriter.EmitAlignment(nodeContents.Alignment);
 
                 bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
-#if !READYTORUN
                 bool recordSize = isMethod;
-                long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
-#else
-                bool recordSize = true;
-                // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
-                long thumbBit = 0;
-#endif
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
                     string mangledName = n == node ? currentSymbolName : GetMangledName(n);
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,
-                        n.Offset + thumbBit,
+                        n.Offset,
                         n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0);
 
                     _outputInfoBuilder?.AddSymbol(new OutputSymbol(sectionWriter.SectionIndex, (ulong)(sectionWriter.Position + n.Offset), mangledName));
@@ -408,7 +386,7 @@ namespace ILCompiler.ObjectWriter
                         string alternateCName = ExternCName(alternateName);
                         sectionWriter.EmitSymbolDefinition(
                             alternateCName,
-                            n.Offset + thumbBit,
+                            n.Offset,
                             n.Offset == 0 && recordSize ? nodeContents.Data.Length : 0,
                             global: !isHidden);
 

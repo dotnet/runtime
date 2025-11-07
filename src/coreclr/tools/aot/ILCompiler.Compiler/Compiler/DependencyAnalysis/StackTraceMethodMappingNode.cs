@@ -128,7 +128,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 objData.EmitByte(commandReservation, command);
-                objData.EmitReloc(factory.MethodEntrypoint(entry.Method), RelocType.IMAGE_REL_BASED_RELPTR32);
+                objData.EmitReloc(factory.MethodEntrypoint(entry.Method), RelocType.IMAGE_REL_BASED_RELPTR32, factory.Target.CodeDelta);
             }
 
             _size = objData.CountBytes;

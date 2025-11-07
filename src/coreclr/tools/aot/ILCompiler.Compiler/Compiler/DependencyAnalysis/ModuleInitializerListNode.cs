@@ -137,9 +137,9 @@ namespace ILCompiler.DependencyAnalysis
             {
                 IMethodNode entrypoint = factory.MethodEntrypoint(module.GetGlobalModuleType().GetStaticConstructor());
                 if (factory.Target.SupportsRelativePointers)
-                    builder.EmitReloc(entrypoint, RelocType.IMAGE_REL_BASED_RELPTR32);
+                    builder.EmitReloc(entrypoint, RelocType.IMAGE_REL_BASED_RELPTR32, factory.Target.CodeDelta);
                 else
-                    builder.EmitPointerReloc(entrypoint);
+                    builder.EmitPointerReloc(entrypoint, factory.Target.CodeDelta);
             }
 
             var result = builder.ToObjectData();
