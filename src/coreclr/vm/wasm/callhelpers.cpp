@@ -759,7 +759,7 @@ static void Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJo
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid)
     {
-        LookupMethodByName("System.Threading.ThreadPool, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
+        LookupMethodByName("System.Threading.ThreadPool, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nullptr, 0, nullptr);
 }
@@ -775,7 +775,7 @@ static void Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid)
     {
-        LookupMethodByName("System.Threading.TimerQueue, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
+        LookupMethodByName("System.Threading.TimerQueue, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nullptr, 0, nullptr);
 }
