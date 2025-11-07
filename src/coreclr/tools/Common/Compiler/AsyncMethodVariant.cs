@@ -34,12 +34,10 @@ namespace ILCompiler
         private MethodSignature InitializeSignature()
         {
             var signature = _wrappedMethod.Signature;
-            Debug.Assert(!signature.IsAsyncCall);
             Debug.Assert(signature.ReturnsTaskOrValueTask());
             TypeDesc md = signature.ReturnType;
             MethodSignatureBuilder builder = new MethodSignatureBuilder(signature);
             builder.ReturnType = md.HasInstantiation ? md.Instantiation[0] : this.Context.GetWellKnownType(WellKnownType.Void);
-            builder.Flags = signature.Flags | MethodSignatureFlags.AsyncCall;
             return (_asyncSignature = builder.ToSignature());
         }
 

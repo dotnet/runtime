@@ -1271,7 +1271,7 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
     // Ensure the method is active and all types have been loaded so the function pointer can be used.
     pMethod->EnsureActive();
     pMethod->PrepareForUseAsAFunctionPointer();
-    funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
+    funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
 
     END_QCALL;
 
