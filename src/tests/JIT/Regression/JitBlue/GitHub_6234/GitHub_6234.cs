@@ -4,6 +4,9 @@
 // Repro for a failure to hoist an invariant expression due to bad
 // interaction between CSE and constant prop.
 
+
+namespace GitHub_6234;
+
 using System;
 using Xunit;
 

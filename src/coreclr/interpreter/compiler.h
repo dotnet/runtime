@@ -756,7 +756,7 @@ private:
     int32_t m_varsSize = 0;
     int32_t m_varsCapacity = 0;
     int32_t m_numILVars = 0;
-    int32_t m_paramArgIndex = 0; // Index of the type parameter argument in the m_pVars array.
+    int32_t m_paramArgIndex = -1; // Index of the type parameter argument in the m_pVars array.
     // For each catch or filter clause, we create a variable that holds the exception object.
     // This is the index of the first such variable.
     int32_t m_clauseVarsIndex = 0;
