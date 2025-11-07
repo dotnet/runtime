@@ -21,14 +21,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
-            if (relocsOnly)
-            {
-                // When doing relocs only, we don't need to generate the actual instructions
-                // as they will be ignored. Just emit the jump so we record the dependency.
-                instructionEncoder.EmitJMP(_helperCell);
-                return;
-            }
-
             switch (_thunkKind)
             {
                 case Kind.DelayLoadHelper:
