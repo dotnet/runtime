@@ -38,7 +38,7 @@ variables:
     value: OSX.26.Amd64.Open
 
   - name: helix_macos_x64_latest_internal
-    value: OSX.13.Amd64
+    value: OSX.26.Amd64
 
   # Oldest: Ventura 13
   - name: helix_macos_x64_oldest
