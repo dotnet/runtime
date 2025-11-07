@@ -12,6 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal sealed class DebugInfo_1(Target target) : IDebugInfo
 {
     private const uint DEBUG_INFO_BOUNDS_HAS_INSTRUMENTED_BOUNDS = 0xFFFFFFFF;
+    private const uint SOURCE_TYPE_BITS = 2;
     private const uint IL_OFFSET_BIAS = unchecked((uint)-3);
 
     [Flags]
@@ -110,7 +111,7 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
         uint bitsForNativeDelta = reader.ReadUInt() + 1; // Number of bits needed for native deltas
         uint bitsForILOffsets = reader.ReadUInt() + 1; // Number of bits needed for IL offsets
 
-        uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + 2; // 2 bits for source type
+        uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + SOURCE_TYPE_BITS; // 2 bits for source type
         ulong bitsMeaningfulMask = (1UL << ((int)bitsPerEntry)) - 1;
         int offsetOfActualBoundsData = reader.GetNextByteOffset();
 

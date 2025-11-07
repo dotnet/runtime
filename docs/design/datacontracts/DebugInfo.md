@@ -50,6 +50,7 @@ Constants:
 | DEBUG_INFO_BOUNDS_HAS_INSTRUMENTED_BOUNDS | Indicates bounds data contains instrumented bounds | `0xFFFFFFFF` |
 | EXTRA_DEBUG_INFO_PATCHPOINT | Indicates debug info contains patchpoint information | 0x1 |
 | EXTRA_DEBUG_INFO_RICH | Indicates debug info contains rich information | 0x2 |
+| SOURCE_TYPE_BITS | Number of bits per bounds entry used to encode source type flags | 2 |
 
 ### DebugInfo Stream Encoding
 
@@ -169,7 +170,7 @@ private static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader)
     uint bitsForNativeDelta = reader.ReadUInt() + 1; // Number of bits needed for native deltas
     uint bitsForILOffsets = reader.ReadUInt() + 1; // Number of bits needed for IL offsets
 
-    uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + 2; // 2 bits for source type
+    uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + SOURCE_TYPE_BITS; // 2 bits for source type
     ulong bitsMeaningfulMask = (1UL << ((int)bitsPerEntry)) - 1;
     int offsetOfActualBoundsData = reader.GetNextByteOffset();
 
@@ -242,6 +243,7 @@ Constants:
 | --- | --- | --- |
 | IL_OFFSET_BIAS | IL offsets bias (unchanged from Version 1) | `0xfffffffd` (-3) |
 | DEBUG_INFO_FAT | Marker value in first nibble-coded integer indicating a fat header follows | `0x0` |
+| SOURCE_TYPE_BITS | Number of bits per bounds entry used for source type flags | 3 |
 
 ### Header Encoding
 
