@@ -285,8 +285,7 @@ static void GetStackFrames(DebugStackTrace::GetStackFramesData *pData)
 }
 
 extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
-    void* resume,
-    uint32_t state,
+    void* diagnosticIP,
     QCall::ObjectHandleOnStack exception)
 {
     QCALL_CONTRACT;
@@ -309,16 +308,17 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
     // and populate the exception object
     // get the state
     OBJECTHANDLE handle = AppDomain::GetCurrentDomain()->CreateHandle(gc.pException);
-    MethodDesc* methodDesc = NonVirtualEntry2MethodDesc((PCODE)resume);
-    ILStubResolver *pResolver = methodDesc->AsDynamicMethodDesc()->GetILStubResolver();
-    MethodDesc* pTargetMethodDesc = pResolver->GetStubTargetMethodDesc();
-    AsyncResumeILStubResolver* pAsyncResumeResolver = (AsyncResumeILStubResolver*)pResolver;
-    StackTraceInfo::AppendElement(
-        handle,
-        (UINT_PTR)pAsyncResumeResolver->GetFinalResumeMethodStartAddress(),
-        state,
-        pTargetMethodDesc,
-        NULL);
+    EECodeInfo codeInfo((PCODE)diagnosticIP);
+    if (codeInfo.IsValid())
+    {
+        MethodDesc* methodDesc = codeInfo.GetMethodDesc();
+        StackTraceInfo::AppendElement(
+            handle,
+            (UINT_PTR)diagnosticIP,
+            NULL,
+            methodDesc,
+            NULL);
+    }
 
     GCPROTECT_END();
     END_QCALL;
@@ -1000,18 +1000,14 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 UINT_PTR ip = cur.ip;
                 if (cur.flags & STEF_CONTINUATION)
                 {
-                    if (ip != (PCODE)NULL)
-                    {
-                        DebugInfoRequest request;
-                        request.InitFromStartingAddr(pMD, ip);
-                        ICorDebugInfo::AsyncInfo asyncInfo = {};
-                        NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints(NULL);
-                        NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars(NULL);
-                        ULONG32 cAsyncVars = 0;
-                        DebugInfoManager::GetAsyncDebugInfo(request, DebugInfoStoreNew2, nullptr, &asyncInfo, &asyncSuspensionPoints, &asyncVars, &cAsyncVars);
-                        dwNativeOffset = asyncSuspensionPoints[cur.sp].NativeOffset;
-                        ip += dwNativeOffset;
-                    }
+                    DebugInfoRequest request;
+                    request.InitFromStartingAddr(pMD, ip);
+                    ICorDebugInfo::AsyncInfo asyncInfo = {};
+                    NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints(NULL);
+                    NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars(NULL);
+                    ULONG32 cAsyncVars = 0;
+                    DebugInfoManager::GetAsyncDebugInfo(request, DebugInfoStoreNew2, nullptr, &asyncInfo, &asyncSuspensionPoints, &asyncVars, &cAsyncVars);
+                    dwNativeOffset = asyncSuspensionPoints[cur.sp].DiagnosticNativeOffset;
                 }
 
                 else

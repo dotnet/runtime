@@ -169,10 +169,10 @@ namespace System.Runtime.CompilerServices
         private static RuntimeAsyncAwaitState t_runtimeAsyncAwaitState;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AsyncHelpers_AddContinuationToExInternal")]
-        private static unsafe partial void AddContinuationToExInternal(void* resume, uint state, ObjectHandleOnStack ex);
+        private static unsafe partial void AddContinuationToExInternal(void* diagnosticIP, ObjectHandleOnStack ex);
 
-        internal static unsafe void AddContinuationToExInternal(Continuation continuation, Exception e)
-            => AddContinuationToExInternal(continuation.Resume, continuation.State, ObjectHandleOnStack.Create(ref e));
+        internal static unsafe void AddContinuationToExInternal(void* diagnosticIP, Exception e)
+            => AddContinuationToExInternal(diagnosticIP, ObjectHandleOnStack.Create(ref e));
 
         private static unsafe Continuation AllocContinuation(Continuation prevContinuation, MethodTable* contMT)
         {
@@ -514,8 +514,8 @@ namespace System.Runtime.CompilerServices
             {
                 while (true)
                 {
-                    if (continuation.Resume != null)
-                        AddContinuationToExInternal(continuation, ex);
+                    if (continuation?.ResumeInfo != null && continuation.ResumeInfo->DiagnosticIP != null)
+                        AddContinuationToExInternal(continuation.ResumeInfo->DiagnosticIP, ex);
                     if (continuation == null || (continuation.Flags & ContinuationFlags.HasException) != 0)
                         return continuation;
 
