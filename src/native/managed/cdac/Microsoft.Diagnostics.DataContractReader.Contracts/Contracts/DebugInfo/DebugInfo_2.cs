@@ -139,15 +139,9 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
                 bitsCollected -= bitsPerEntry;
 
                 SourceTypes sourceType = 0;
-
-                if ((mappingDataEncoded & 0x1) != 0)
-                    sourceType |= SourceTypes.CallInstruction;
-
-                if ((mappingDataEncoded & 0x2) != 0)
-                    sourceType |= SourceTypes.StackEmpty;
-
-                if ((mappingDataEncoded & 0x4) != 0)
-                    sourceType |= SourceTypes.Async;
+                if ((mappingDataEncoded & 0x1) != 0) sourceType |= SourceTypes.CallInstruction;
+                if ((mappingDataEncoded & 0x2) != 0) sourceType |= SourceTypes.StackEmpty;
+                if ((mappingDataEncoded & 0x4) != 0) sourceType |= SourceTypes.Async;
 
                 mappingDataEncoded >>= 2;
                 uint nativeOffsetDelta = (uint)(mappingDataEncoded & ((1UL << (int)bitsForNativeDelta) - 1));
