@@ -141,7 +141,7 @@ namespace ILCompiler.DependencyAnalysis
             //
             foreach (DefType interfaceImpl in defType.RuntimeInterfaces)
             {
-                foreach (MethodDesc method in interfaceImpl.GetAllVirtualMethods())
+                foreach (MethodDesc method in interfaceImpl.EnumAllVirtualSlots())
                 {
                     if (!method.HasInstantiation)
                         continue;
@@ -369,56 +369,59 @@ namespace ILCompiler.DependencyAnalysis
             // If we're producing a full vtable, none of the dependencies are conditional.
             if (!factory.VTable(defType).HasKnownVirtualMethodUse)
             {
-                bool isNonInterfaceAbstractType = !defType.IsInterface && ((MetadataType)defType).IsAbstract;
-
-                foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
+                if (!defType.IsInterface)
                 {
-                    // Generic virtual methods are tracked by an orthogonal mechanism.
-                    if (decl.HasInstantiation)
-                        continue;
+                    bool isAbstractType = ((MetadataType)defType).IsAbstract;
 
-                    MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
-                    bool implOwnerIsAbstract = ((MetadataType)impl.OwningType).IsAbstract;
-
-                    // We add a conditional dependency in two situations:
-                    // 1. The implementation is on this type. This is pretty obvious.
-                    // 2. The implementation comes from an abstract base type. We do this
-                    //    because abstract types only request a TentativeMethodEntrypoint of the implementation.
-                    //    The actual method body of this entrypoint might still be trimmed away.
-                    //    We don't need to do this for implementations from non-abstract bases since
-                    //    non-abstract types will create a hard conditional reference to their virtual
-                    //    method implementations.
-                    //
-                    // We also skip abstract methods since they don't have a body to refer to.
-                    if ((impl.OwningType == defType || implOwnerIsAbstract) && !impl.IsAbstract)
+                    foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
                     {
-                        MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                        // Generic virtual methods are tracked by an orthogonal mechanism.
+                        if (decl.HasInstantiation)
+                            continue;
 
-                        // If this is an abstract type, only request a tentative entrypoint (whose body
-                        // might just be stubbed out). This lets us avoid generating method bodies for
-                        // virtual method on abstract types that are overridden in all their children.
+                        MethodDesc impl = defType.FindVirtualFunctionTargetMethodOnObjectType(decl);
+                        bool implOwnerIsAbstract = ((MetadataType)impl.OwningType).IsAbstract;
+
+                        // We add a conditional dependency in two situations:
+                        // 1. The implementation is on this type. This is pretty obvious.
+                        // 2. The implementation comes from an abstract base type. We do this
+                        //    because abstract types only request a TentativeMethodEntrypoint of the implementation.
+                        //    The actual method body of this entrypoint might still be trimmed away.
+                        //    We don't need to do this for implementations from non-abstract bases since
+                        //    non-abstract types will create a hard conditional reference to their virtual
+                        //    method implementations.
                         //
-                        // We don't do this if the method can be placed in the sealed vtable since
-                        // those can never be overridden by children anyway.
-                        bool canUseTentativeMethod = isNonInterfaceAbstractType
-                            && !decl.CanMethodBeInSealedVTable(factory)
-                            && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImpl);
-                        IMethodNode implNode = canUseTentativeMethod ?
-                            factory.TentativeMethodEntrypoint(canonImpl, impl.OwningType.IsValueType) :
-                            factory.MethodEntrypoint(canonImpl, impl.OwningType.IsValueType);
-                        result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
+                        // We also skip abstract methods since they don't have a body to refer to.
+                        if ((impl.OwningType == defType || implOwnerIsAbstract) && !impl.IsAbstract)
+                        {
+                            MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
-                        result.Add(new CombinedDependencyListEntry(
-                            factory.AddressTakenMethodEntrypoint(canonImpl, impl.OwningType.IsValueType),
-                            factory.DelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Slot is a delegate target"));
+                            // If this is an abstract type, only request a tentative entrypoint (whose body
+                            // might just be stubbed out). This lets us avoid generating method bodies for
+                            // virtual method on abstract types that are overridden in all their children.
+                            //
+                            // We don't do this if the method can be placed in the sealed vtable since
+                            // those can never be overridden by children anyway.
+                            bool canUseTentativeMethod = isAbstractType
+                                && !decl.CanMethodBeInSealedVTable(factory)
+                                && factory.CompilationModuleGroup.AllowVirtualMethodOnAbstractTypeOptimization(canonImpl);
+                            IMethodNode implNode = canUseTentativeMethod ?
+                                factory.TentativeMethodEntrypoint(canonImpl, impl.OwningType.IsValueType) :
+                                factory.MethodEntrypoint(canonImpl, impl.OwningType.IsValueType);
+                            result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
+
+                            result.Add(new CombinedDependencyListEntry(
+                                factory.AddressTakenMethodEntrypoint(canonImpl, impl.OwningType.IsValueType),
+                                factory.DelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Slot is a delegate target"));
+                        }
+
+                        if (impl.OwningType == defType)
+                        {
+                            factory.MetadataManager.NoteOverridingMethod(decl, impl);
+                        }
+
+                        factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, decl, impl);
                     }
-
-                    if (impl.OwningType == defType)
-                    {
-                        factory.MetadataManager.NoteOverridingMethod(decl, impl);
-                    }
-
-                    factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, decl, impl);
                 }
 
                 Debug.Assert(
@@ -448,7 +451,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     bool isVariantInterfaceImpl = VariantInterfaceMethodUseNode.IsVariantInterfaceImplementation(factory, _type, interfaceType);
 
-                    foreach (MethodDesc interfaceMethod in interfaceType.GetAllVirtualMethods())
+                    foreach (MethodDesc interfaceMethod in interfaceType.EnumAllVirtualSlots())
                     {
                         // Generic virtual methods are tracked by an orthogonal mechanism.
                         if (interfaceMethod.HasInstantiation)

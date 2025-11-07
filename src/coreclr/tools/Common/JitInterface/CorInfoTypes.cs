@@ -549,6 +549,7 @@ namespace Internal.JitInterface
         CORINFO_ACCESS_NONNULL = 0x0004, // Instance is guaranteed non-null
 
         CORINFO_ACCESS_LDFTN = 0x0010, // Accessed via ldftn
+        CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE = 0x0020, // Method might be attributed with UnmanagedCallersOnlyAttribute.
 
         // Field access flags
         CORINFO_ACCESS_GET = 0x0100, // Field get (ldfld)
