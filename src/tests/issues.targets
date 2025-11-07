@@ -1269,9 +1269,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_18144/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_18295/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
@@ -1282,9 +1279,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/34385</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_27169/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_27551/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_27678/**">
@@ -1299,14 +1293,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34587/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_72265/**">
-            <Issue>https://github.com/dotnet/runtime/issues/72016</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_72845/**">
             <Issue>FSharp Test</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/V1.2-M02/b10828/**">
-            <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/**">
             <Issue>needs triage</Issue>
@@ -1541,9 +1529,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleruntimeeventvalidation/**">
             <Issue>https://github.com/dotnet/runtime/issues/88499</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/*">
-            <Issue>https://github.com/dotnet/runtime/issues/90374</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Structs/MemsetMemcpyNullref/*">
             <Issue>https://github.com/dotnet/runtime/issues/98628</Issue>
         </ExcludeList>
@@ -1642,10 +1627,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_21990/**">
             <Issue>https://github.com/dotnet/runtime/issues/46622</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_34170/**">
-            <Issue>https://github.com/dotnet/runtime/issues/46622</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b59952/b59952/**">
+    <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b59952/b59952/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M09.5-PDC/b16499/b16499b/**">
@@ -1690,10 +1672,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b71120/b71120/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M12-Beta2/b50027/b50027/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_605447/DevDiv_605447/**">
+    <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_605447/DevDiv_605447/**">
             <Issue>https://github.com/dotnet/runtime/issues/54391</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/V1.2-M02/b102844/b102844/**">
@@ -1714,10 +1693,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_24846/GitHub_24846/**">
-            <Issue>https://github.com/dotnet/runtime/issues/54392</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_d/**">
+    <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Boxing/boxunbox/huge_filter_d/**">
             <Issue>https://github.com/dotnet/runtime/issues/54388</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/M00/b108366/b108366/**">
@@ -2627,10 +2603,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/cctor/misc/threads1_cs_do/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V1-M13-RTM/b99969/b99969/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/Misc/function_pointer/MutualThdRecur-fptr/**">
+    <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Misc/function_pointer/MutualThdRecur-fptr/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
         <!-- all JIT.performance disabled for now, due to https://github.com/dotnet/runtime/issues/86772 -->
@@ -2646,28 +2619,16 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76194/Runtime_76194/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_40444/Runtime_40444/**">
+    <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b426654/b426654/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_76273/Runtime_76273/**">
-            <Issue>Fuzzlyn</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b426654/b426654/**">
+    <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_27924/GitHub_27924/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/V1.2-M01/b10827/b10827/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/V2.0-Beta2/b425314/b425314/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_27924/GitHub_27924/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlbigleakthd/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-2/**">
+    <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-2/**">
             <Issue>https://github.com/dotnet/runtime/issues/56814</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/spectralnorm/spectralnorm-3/**">
@@ -2817,16 +2778,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportSearchPaths/DllImportSearchPathsTest/**">
             <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64883/Runtime_64883/*">
-            <Issue>Loads an assembly from file</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_66624/Runtime_66624/*">
-            <Issue>Loads an assembly from file</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/StartupHooks/**">
-            <Issue>Loads an assembly from file</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/*">
             <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_115667/**">

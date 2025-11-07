@@ -239,6 +239,7 @@ namespace UninitializedHighWord
         }
 
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

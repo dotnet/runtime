@@ -7,6 +7,9 @@
 // Reduced from 625.1 KiB to 1.5 KiB in 00:03:14
 // Debug: Outputs 0
 // Release: Outputs 1
+
+namespace Runtime_75442;
+
 using Xunit;
 using System;
 using System.Runtime.CompilerServices;

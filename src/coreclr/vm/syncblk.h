@@ -441,13 +441,6 @@ class SyncBlock
     // can never be 0. ObjectNative::GetHashCode in objectnative.cpp makes sure to enforce this.
     DWORD m_dwHashCode;
 
-    // In some early version of VB when there were no arrays developers used to use BSTR as arrays
-    // The way this was done was by adding a trail byte at the end of the BSTR
-    // To support this scenario, we need to use the sync block for this special case and
-    // save the trail character in here.
-    // This stores the trail character when a BSTR is used as an array
-    WCHAR m_BSTRTrailByte;
-
   public:
     SyncBlock(DWORD indx)
         : m_Lock((OBJECTHANDLE)NULL)
@@ -457,7 +450,6 @@ class SyncBlock
         , m_pEnCInfo(PTR_NULL)
 #endif // FEATURE_METADATA_UPDATER
         , m_dwHashCode(0)
-        , m_BSTRTrailByte(0)
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -596,22 +588,6 @@ class SyncBlock
         // nor re-created.
         SyncBlockPrecious   = 0x80000000,
     };
-
-    BOOL HasCOMBstrTrailByte()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_BSTRTrailByte!=0);
-    }
-    WCHAR GetCOMBstrTrailByte()
-    {
-        return m_BSTRTrailByte;
-    }
-    void SetCOMBstrTrailByte(WCHAR trailByte)
-    {
-        WRAPPER_NO_CONTRACT;
-        m_BSTRTrailByte = trailByte;
-        SetPrecious();
-    }
 
     private:
     void InitializeThinLock(DWORD recursionLevel, DWORD threadId);
