@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 case Kind.Lazy:
                 {
-                    // ld a1, a1, 0
+                    // Load Module* -> a1
                     instructionEncoder.EmitLD(Register.X11, factory.ModuleImport);
                     break;
                 }
