@@ -453,6 +453,12 @@ void reportRichMappings(
           ICorDebugInfo::RichOffsetMapping* mappings,
           uint32_t numMappings) override;
 
+void reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars) override;
+
 void reportMetadata(
           const char* key,
           const void* value,
@@ -655,7 +661,13 @@ bool getTailCallHelpers(
           CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
           CORINFO_TAILCALL_HELPERS* pResult) override;
 
-CORINFO_METHOD_HANDLE getAsyncResumptionStub() override;
+CORINFO_CLASS_HANDLE getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize) override;
+
+CORINFO_METHOD_HANDLE getAsyncResumptionStub(
+          void** entryPoint) override;
 
 bool convertPInvokeCalliToCall(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,

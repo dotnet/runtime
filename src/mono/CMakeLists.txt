@@ -532,8 +532,12 @@ if(GCC)
 
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
-  # We rely on signed overflow to behave
-  append("-fwrapv" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
+
+  # Make signed overflow well-defined. Implies the following flags in clang-20 and above.
+  # -fwrapv - Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
+  # using twos-complement representation (this is normally undefined according to the C++ spec).
+  # -fwrapv-pointer - The same as -fwrapv but for pointers.
+  append("-fno-strict-overflow" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
 
   set(WARNINGS "-Wall -Wunused -Wmissing-declarations -Wpointer-arith -Wno-cast-qual -Wwrite-strings -Wno-switch -Wno-switch-enum -Wno-unused-value -Wno-attributes -Wno-format-zero-length -Wno-unused-function")
   set(WARNINGS_C "-Wmissing-prototypes -Wstrict-prototypes -Wnested-externs")

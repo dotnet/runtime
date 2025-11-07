@@ -23,6 +23,8 @@ namespace Internal.TypeSystem
 
         Static = 0x0010,
         ExplicitThis = 0x0020,
+
+        AsyncCall                            = 0x0100,
     }
 
     public enum EmbeddedSignatureDataKind
@@ -135,6 +137,14 @@ namespace Internal.TypeSystem
             get
             {
                 return (_flags & MethodSignatureFlags.ExplicitThis) != 0;
+            }
+        }
+
+        public bool IsAsyncCall
+        {
+            get
+            {
+                return (_flags & MethodSignatureFlags.AsyncCall) != 0;
             }
         }
 
@@ -651,6 +661,14 @@ namespace Internal.TypeSystem
         }
 
         public virtual bool IsPublic
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public virtual bool IsAsync
         {
             get
             {

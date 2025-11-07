@@ -196,160 +196,6 @@ SyncBlockCache*& SyncBlockCache::GetSyncBlockCache()
     return s_pSyncBlockCache;
 }
 
-
-//----------------------------------------------------------------------------
-//
-//   ThreadQueue Implementation
-//
-//----------------------------------------------------------------------------
-#endif //!DACCESS_COMPILE
-
-// Given a link in the chain, get the Thread that it represents
-/* static */
-inline PTR_WaitEventLink ThreadQueue::WaitEventLinkForLink(PTR_SLink pLink)
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-    return (PTR_WaitEventLink) (((PTR_BYTE) pLink) - offsetof(WaitEventLink, m_LinkSB));
-}
-
-#ifndef DACCESS_COMPILE
-
-// Unlink the head of the Q.  We are always in the SyncBlock's critical
-// section.
-/* static */
-inline WaitEventLink *ThreadQueue::DequeueThread(SyncBlock *psb)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    // Be careful, the debugger inspects the queue from out of process and just looks at the memory...
-    // it must be valid even if the lock is held. Be careful if you change the way the queue is updated.
-    SyncBlockCache::LockHolder lh(SyncBlockCache::GetSyncBlockCache());
-
-    WaitEventLink      *ret = NULL;
-    SLink       *pLink = psb->m_Link.m_pNext;
-
-    if (pLink)
-    {
-        psb->m_Link.m_pNext = pLink->m_pNext;
-#ifdef _DEBUG
-        pLink->m_pNext = (SLink *)POISONC;
-#endif
-        ret = WaitEventLinkForLink(pLink);
-        _ASSERTE(ret->m_WaitSB == psb);
-    }
-    return ret;
-}
-
-// Enqueue is the slow one.  We have to find the end of the Q since we don't
-// want to burn storage for this in the SyncBlock.
-/* static */
-inline void ThreadQueue::EnqueueThread(WaitEventLink *pWaitEventLink, SyncBlock *psb)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE (pWaitEventLink->m_LinkSB.m_pNext == NULL);
-
-    // Be careful, the debugger inspects the queue from out of process and just looks at the memory...
-    // it must be valid even if the lock is held. Be careful if you change the way the queue is updated.
-    SyncBlockCache::LockHolder lh(SyncBlockCache::GetSyncBlockCache());
-
-    SLink       *pPrior = &psb->m_Link;
-
-    while (pPrior->m_pNext)
-    {
-        // We shouldn't already be in the waiting list!
-        _ASSERTE(pPrior->m_pNext != &pWaitEventLink->m_LinkSB);
-
-        pPrior = pPrior->m_pNext;
-    }
-    pPrior->m_pNext = &pWaitEventLink->m_LinkSB;
-}
-
-
-// Wade through the SyncBlock's list of waiting threads and remove the
-// specified thread.
-/* static */
-BOOL ThreadQueue::RemoveThread (Thread *pThread, SyncBlock *psb)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    BOOL res = FALSE;
-
-    // Be careful, the debugger inspects the queue from out of process and just looks at the memory...
-    // it must be valid even if the lock is held. Be careful if you change the way the queue is updated.
-    SyncBlockCache::LockHolder lh(SyncBlockCache::GetSyncBlockCache());
-
-    SLink       *pPrior = &psb->m_Link;
-    SLink       *pLink;
-    WaitEventLink *pWaitEventLink;
-
-    while ((pLink = pPrior->m_pNext) != NULL)
-    {
-        pWaitEventLink = WaitEventLinkForLink(pLink);
-        if (pWaitEventLink->m_Thread == pThread)
-        {
-            pPrior->m_pNext = pLink->m_pNext;
-#ifdef _DEBUG
-            pLink->m_pNext = (SLink *)POISONC;
-#endif
-            _ASSERTE(pWaitEventLink->m_WaitSB == psb);
-            res = TRUE;
-            break;
-        }
-        pPrior = pLink;
-    }
-    return res;
-}
-
-#endif //!DACCESS_COMPILE
-
-#ifdef DACCESS_COMPILE
-// Enumerates the threads in the queue from front to back by calling
-// pCallbackFunction on each one
-/* static */
-void ThreadQueue::EnumerateThreads(SyncBlock *psb, FP_TQ_THREAD_ENUMERATION_CALLBACK pCallbackFunction, void* pUserData)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    SUPPORTS_DAC;
-
-    PTR_SLink pLink = psb->m_Link.m_pNext;
-    PTR_WaitEventLink pWaitEventLink;
-
-    while (pLink != NULL)
-    {
-        pWaitEventLink = WaitEventLinkForLink(pLink);
-
-        pCallbackFunction(pWaitEventLink->m_Thread, pUserData);
-        pLink = pLink->m_pNext;
-    }
-}
 #endif //DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -664,14 +510,6 @@ void    SyncBlockCache::InsertCleanupSyncBlock(SyncBlock* psb)
     }
     CONTRACTL_END;
 
-    // free up the threads that are waiting before we use the link
-    // for other purposes
-    if (psb->m_Link.m_pNext != NULL)
-    {
-        while (ThreadQueue::DequeueThread(psb) != NULL)
-            continue;
-    }
-
 #if defined(FEATURE_COMINTEROP)
     if (psb->m_pInteropInfo)
     {
@@ -946,6 +784,14 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
     if (psb->m_pEnCInfo)
         psb->m_pEnCInfo->Cleanup();
 #endif // FEATURE_METADATA_UPDATER
+
+    // Cleanup lock info
+    psb->m_thinLock = 0;
+    if (psb->m_Lock)
+    {
+        DestroyHandle(psb->m_Lock);
+        psb->m_Lock = NULL;
+    }
 
     // Destruct the SyncBlock, but don't reclaim its memory.  (Overridden
     // operator delete).
@@ -1465,351 +1311,6 @@ void DumpSyncBlockCache()
 //
 // ***************************************************************************
 
-#if defined(ENABLE_CONTRACTS_IMPL)
-// The LOCK_TAKEN/RELEASED macros need a "pointer" to the lock object to do
-// comparisons between takes & releases (and to provide debugging info to the
-// developer).  Ask the syncblock for its lock contract pointer, if the
-// syncblock exists.  Otherwise, use the MethodTable* from the Object.  That's not great,
-// as it's not unique, so we might miss unbalanced lock takes/releases from
-// different objects of the same type.  However, our hands are tied, and we can't
-// do much better.
-void * ObjHeader::GetPtrForLockContract()
-{
-    if (GetHeaderSyncBlockIndex() == 0)
-    {
-        return (void *) GetBaseObject()->GetMethodTable();
-    }
-
-    return PassiveGetSyncBlock()->GetPtrForLockContract();
-}
-#endif // defined(ENABLE_CONTRACTS_IMPL)
-
-// this enters the monitor of an object
-void ObjHeader::EnterObjMonitor()
-{
-    WRAPPER_NO_CONTRACT;
-    GetSyncBlock()->EnterMonitor();
-}
-
-// Non-blocking version of above
-BOOL ObjHeader::TryEnterObjMonitor(INT32 timeOut)
-{
-    WRAPPER_NO_CONTRACT;
-    return GetSyncBlock()->TryEnterMonitor(timeOut);
-}
-
-AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurThread)
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    // Note: EnterObjMonitorHelper must be called before this function (see below)
-
-    if (g_SystemInfo.dwNumberOfProcessors == 1)
-    {
-        return AwareLock::EnterHelperResult::Contention;
-    }
-
-    YieldProcessorNormalizationInfo normalizationInfo;
-    const DWORD spinCount = g_SpinConstants.dwMonitorSpinCount;
-    for (DWORD spinIteration = 0; spinIteration < spinCount; ++spinIteration)
-    {
-        AwareLock::SpinWait(normalizationInfo, spinIteration);
-
-        LONG oldValue = m_SyncBlockValue.LoadWithoutBarrier();
-
-        // Since spinning has begun, chances are good that the monitor has already switched to AwareLock mode, so check for that
-        // case first
-        if (oldValue & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
-        {
-            // If we have a hash code already, we need to create a sync block
-            if (oldValue & BIT_SBLK_IS_HASHCODE)
-            {
-                return AwareLock::EnterHelperResult::UseSlowPath;
-            }
-
-            SyncBlock *syncBlock = g_pSyncTable[oldValue & MASK_SYNCBLOCKINDEX].m_SyncBlock;
-            _ASSERTE(syncBlock != NULL);
-            AwareLock *awareLock = &syncBlock->m_Monitor;
-
-            AwareLock::EnterHelperResult result = awareLock->TryEnterBeforeSpinLoopHelper(pCurThread);
-            if (result != AwareLock::EnterHelperResult::Contention)
-            {
-                return result;
-            }
-
-            ++spinIteration;
-            if (spinIteration < spinCount)
-            {
-                while (true)
-                {
-                    AwareLock::SpinWait(normalizationInfo, spinIteration);
-
-                    ++spinIteration;
-                    if (spinIteration >= spinCount)
-                    {
-                        // The last lock attempt for this spin will be done after the loop
-                        break;
-                    }
-
-                    result = awareLock->TryEnterInsideSpinLoopHelper(pCurThread);
-                    if (result == AwareLock::EnterHelperResult::Entered)
-                    {
-                        return AwareLock::EnterHelperResult::Entered;
-                    }
-                    if (result == AwareLock::EnterHelperResult::UseSlowPath)
-                    {
-                        break;
-                    }
-                }
-            }
-
-            if (awareLock->TryEnterAfterSpinLoopHelper(pCurThread))
-            {
-                return AwareLock::EnterHelperResult::Entered;
-            }
-            break;
-        }
-
-        DWORD tid = pCurThread->GetThreadId();
-        if ((oldValue & (BIT_SBLK_SPIN_LOCK +
-            SBLK_MASK_LOCK_THREADID +
-            SBLK_MASK_LOCK_RECLEVEL)) == 0)
-        {
-            if (tid > SBLK_MASK_LOCK_THREADID)
-            {
-                return AwareLock::EnterHelperResult::UseSlowPath;
-            }
-
-            LONG newValue = oldValue | tid;
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            if (FastInterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
-#else
-            if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
-#endif
-            {
-                return AwareLock::EnterHelperResult::Entered;
-            }
-
-            continue;
-        }
-
-        // EnterObjMonitorHelper handles the thin lock recursion case. If it's not that case, it won't become that case. If
-        // EnterObjMonitorHelper failed to increment the recursion level, it will go down the slow path and won't come here. So,
-        // no need to check the recursion case here.
-        _ASSERTE(
-            // The header is transitioning - treat this as if the lock was taken
-            oldValue & BIT_SBLK_SPIN_LOCK ||
-            // Here we know we have the "thin lock" layout, but the lock is not free.
-            // It can't be the recursion case though, because the call to EnterObjMonitorHelper prior to this would have taken
-            // the slow path in the recursive case.
-            tid != (DWORD)(oldValue & SBLK_MASK_LOCK_THREADID));
-    }
-
-    return AwareLock::EnterHelperResult::Contention;
-}
-
-BOOL ObjHeader::LeaveObjMonitor()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    //this function switch to preemp mode so we need to protect the object in some path
-    OBJECTREF thisObj = ObjectToOBJECTREF (GetBaseObject ());
-
-    DWORD dwSwitchCount = 0;
-
-    for (;;)
-    {
-        AwareLock::LeaveHelperAction action = thisObj->GetHeader()->LeaveObjMonitorHelper(GetThread());
-
-        switch(action)
-        {
-        case AwareLock::LeaveHelperAction::None:
-            // We are done
-            return TRUE;
-        case AwareLock::LeaveHelperAction::Signal:
-            {
-                // Signal the event
-                SyncBlock *psb = thisObj->GetHeader ()->PassiveGetSyncBlock();
-                if (psb != NULL)
-                    psb->QuickGetMonitor()->Signal();
-            }
-            return TRUE;
-        case AwareLock::LeaveHelperAction::Yield:
-            YieldProcessorNormalized();
-            continue;
-        case AwareLock::LeaveHelperAction::Contention:
-            // Some thread is updating the syncblock value.
-            {
-                //protect the object before switching mode
-                GCPROTECT_BEGIN (thisObj);
-                GCX_PREEMP();
-                __SwitchToThread(0, ++dwSwitchCount);
-                GCPROTECT_END ();
-            }
-            continue;
-        default:
-            // Must be an error otherwise - ignore it
-            _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
-            return FALSE;
-        }
-    }
-}
-
-// The only difference between LeaveObjMonitor and LeaveObjMonitorAtException is switch
-// to preemptive mode around __SwitchToThread
-BOOL ObjHeader::LeaveObjMonitorAtException()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    DWORD dwSwitchCount = 0;
-
-    for (;;)
-    {
-        AwareLock::LeaveHelperAction action = LeaveObjMonitorHelper(GetThread());
-
-        switch(action)
-        {
-        case AwareLock::LeaveHelperAction::None:
-            // We are done
-            return TRUE;
-        case AwareLock::LeaveHelperAction::Signal:
-            {
-                // Signal the event
-                SyncBlock *psb = PassiveGetSyncBlock();
-                if (psb != NULL)
-                    psb->QuickGetMonitor()->Signal();
-            }
-            return TRUE;
-        case AwareLock::LeaveHelperAction::Yield:
-            YieldProcessorNormalized();
-            continue;
-        case AwareLock::LeaveHelperAction::Contention:
-            // Some thread is updating the syncblock value.
-            //
-            // We never toggle GC mode while holding the spinlock (BeginNoTriggerGC/EndNoTriggerGC
-            // in EnterSpinLock/ReleaseSpinLock ensures it). Thus we do not need to switch to preemptive
-            // while waiting on the spinlock.
-            //
-            {
-                __SwitchToThread(0, ++dwSwitchCount);
-            }
-            continue;
-        default:
-            // Must be an error otherwise - ignore it
-            _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
-            return FALSE;
-        }
-    }
-}
-
-#endif //!DACCESS_COMPILE
-
-// Returns TRUE if the lock is owned and FALSE otherwise
-// threadId is set to the ID (Thread::GetThreadId()) of the thread which owns the lock
-// acquisitionCount is set to the number of times the lock needs to be released before
-// it is unowned
-BOOL ObjHeader::GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisitionCount)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-#ifndef DACCESS_COMPILE
-        if (!IsGCSpecialThread ()) {MODE_COOPERATIVE;} else {MODE_ANY;}
-#endif
-    }
-    CONTRACTL_END;
-    SUPPORTS_DAC;
-
-
-    DWORD bits = GetBits();
-
-    if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
-    {
-        if (bits & BIT_SBLK_IS_HASHCODE)
-        {
-            //
-            // This thread does not own the lock.
-            //
-            *pThreadId = 0;
-            *pAcquisitionCount = 0;
-            return FALSE;
-        }
-        else
-        {
-            //
-            // We have a syncblk
-            //
-            DWORD index = bits & MASK_SYNCBLOCKINDEX;
-            SyncBlock* psb = g_pSyncTable[(int)index].m_SyncBlock;
-
-            _ASSERTE(psb->GetMonitor() != NULL);
-            DWORD holdingThreadId = psb->GetMonitor()->GetHoldingThreadId();
-            // If the lock is orphaned during sync block creation, holdingThreadId would be assigned -1.
-            // Otherwise it would be the id of the holding thread if there is one or 0 if there isn't.
-            if (holdingThreadId == 0 || holdingThreadId == (DWORD)-1)
-            {
-                *pThreadId = 0;
-                *pAcquisitionCount = 0;
-                return FALSE;
-            }
-            else
-            {
-                // Notice this id now could have been reused for a different thread (in case the lock was orphaned),
-                // but orphaned locks shouldn't be expected to work correctly anyway.
-                *pThreadId = holdingThreadId;
-                *pAcquisitionCount = psb->GetMonitor()->GetRecursionLevel();
-                return TRUE;
-            }
-        }
-    }
-    else
-    {
-        //
-        // We have a thinlock
-        //
-
-        DWORD lockThreadId, recursionLevel;
-        lockThreadId = bits & SBLK_MASK_LOCK_THREADID;
-        recursionLevel = (bits & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
-        //if thread ID is 0, recursionLevel got to be zero
-        //but thread ID doesn't have to be valid because the lock could be orphanend
-        _ASSERTE (lockThreadId != 0 || recursionLevel == 0 );
-
-        *pThreadId = lockThreadId;
-        if(lockThreadId != 0)
-        {
-            // in the header, the recursionLevel of 0 means the lock is owned once
-            // (this differs from m_Recursion in the AwareLock)
-            *pAcquisitionCount = recursionLevel + 1;
-            return TRUE;
-        }
-        else
-        {
-            *pAcquisitionCount = 0;
-            return FALSE;
-        }
-    }
-}
-
-#ifndef DACCESS_COMPILE
-
 #ifdef MP_LOCKS
 DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
 {
@@ -2094,7 +1595,6 @@ SyncBlock *ObjHeader::GetSyncBlock()
         if (syncBlock)
             RETURN syncBlock;
 
-
         SyncBlockMemoryHolder syncBlockMemoryHolder(SyncBlockCache::GetSyncBlockCache()->GetNextFreeSyncBlock());
         syncBlock = syncBlockMemoryHolder;
 
@@ -2134,24 +1634,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
                         {
                             // recursionLevel can't be non-zero if thread id is 0
                             _ASSERTE(lockThreadId != 0);
-
-                            Thread *pThread = g_pThinLockThreadIdDispenser->IdToThreadWithValidation(lockThreadId);
-                            DWORD threadId = 0;
-                            SIZE_T osThreadId;
-
-                            if (pThread == NULL)
-                            {
-                                // The lock is orphaned.
-                                threadId = -1;
-                                osThreadId = (SIZE_T)-1;
-                            }
-                            else
-                            {
-                                threadId = pThread->GetThreadId();
-                                osThreadId = pThread->GetOSThreadId64();
-                            }
-
-                            syncBlock->InitState(recursionLevel + 1, threadId, osThreadId);
+                            syncBlock->InitializeThinLock(recursionLevel, lockThreadId);
                         }
                     }
                     else if ((bits & BIT_SBLK_IS_HASHCODE) != 0)
@@ -2187,694 +1670,11 @@ SyncBlock *ObjHeader::GetSyncBlock()
     RETURN syncBlock;
 }
 
-BOOL ObjHeader::Wait(INT32 timeOut)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    //  The following code may cause GC, so we must fetch the sync block from
-    //  the object now in case it moves.
-    SyncBlock *pSB = GetBaseObject()->GetSyncBlock();
-
-    // GetSyncBlock throws on failure
-    _ASSERTE(pSB != NULL);
-
-    // make sure we own the crst
-    if (!pSB->DoesCurrentThreadOwnMonitor())
-        COMPlusThrow(kSynchronizationLockException);
-
-    return pSB->Wait(timeOut);
-}
-
-void ObjHeader::Pulse()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    //  The following code may cause GC, so we must fetch the sync block from
-    //  the object now in case it moves.
-    SyncBlock *pSB = GetBaseObject()->GetSyncBlock();
-
-    // GetSyncBlock throws on failure
-    _ASSERTE(pSB != NULL);
-
-    // make sure we own the crst
-    if (!pSB->DoesCurrentThreadOwnMonitor())
-        COMPlusThrow(kSynchronizationLockException);
-
-    pSB->Pulse();
-}
-
-void ObjHeader::PulseAll()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    //  The following code may cause GC, so we must fetch the sync block from
-    //  the object now in case it moves.
-    SyncBlock *pSB = GetBaseObject()->GetSyncBlock();
-
-    // GetSyncBlock throws on failure
-    _ASSERTE(pSB != NULL);
-
-    // make sure we own the crst
-    if (!pSB->DoesCurrentThreadOwnMonitor())
-        COMPlusThrow(kSynchronizationLockException);
-
-    pSB->PulseAll();
-}
-
-
-// ***************************************************************************
-//
-//              AwareLock class implementation (GC-aware locking)
-//
-// ***************************************************************************
-
-#endif // !DACCESS_COMPILE
-
-// the DAC needs to have this method available
-PTR_Thread AwareLock::GetHoldingThread()
-{
-    LIMITED_METHOD_CONTRACT;
-    return g_pThinLockThreadIdDispenser->IdToThreadWithValidation(m_HoldingThreadId);
-}
-
-#ifndef DACCESS_COMPILE
-
-void AwareLock::AllocLockSemEvent()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    // Before we switch from cooperative, ensure that this syncblock won't disappear
-    // under us.  For something as expensive as an event, do it permanently rather
-    // than transiently.
-    SetPrecious();
-
-    GCX_PREEMP();
-
-    // No need to take a lock - CLREvent::CreateMonitorEvent is thread safe
-    m_SemEvent.CreateMonitorEvent((SIZE_T)this);
-}
-
-void AwareLock::Enter()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    Thread *pCurThread = GetThread();
-    LockState state = m_lockState.VolatileLoadWithoutBarrier();
-    if (!state.IsLocked() || m_HoldingThreadId != pCurThread->GetThreadId())
-    {
-        if (m_lockState.InterlockedTryLock_Or_RegisterWaiter(this, state))
-        {
-            // We get here if we successfully acquired the mutex.
-            m_HoldingThreadId = pCurThread->GetThreadId();
-            m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
-            m_Recursion = 1;
-
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-            // The best place to grab this is from the ECall frame
-            Frame   *pFrame = pCurThread->GetFrame();
-            int      caller = (pFrame && pFrame != FRAME_TOP
-                                ? (int)pFrame->GetReturnAddress()
-                                : -1);
-            pCurThread->m_pTrackSync->EnterSync(caller, this);
-#endif
-            return;
-        }
-
-        // Lock was not acquired and the waiter was registered
-
-        // Didn't manage to get the mutex, must wait.
-        // The precondition for EnterEpilog is that the count of waiters be bumped
-        // to account for this thread, which was done above.
-        EnterEpilog(pCurThread);
-        return;
-    }
-
-    // Got the mutex via recursive locking on the same thread.
-    _ASSERTE(m_Recursion >= 1);
-    m_Recursion++;
-
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-    // The best place to grab this is from the ECall frame
-    Frame   *pFrame = pCurThread->GetFrame();
-    int      caller = (pFrame && pFrame != FRAME_TOP ? (int)pFrame->GetReturnAddress() : -1);
-    pCurThread->m_pTrackSync->EnterSync(caller, this);
-#endif
-}
-
-BOOL AwareLock::TryEnter(INT32 timeOut)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        if (timeOut == 0) {MODE_ANY;} else {MODE_COOPERATIVE;}
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    Thread  *pCurThread = GetThread();
-
-    if (pCurThread->IsAbortRequested())
-    {
-        pCurThread->HandleThreadAbort();
-    }
-
-    LockState state = m_lockState.VolatileLoadWithoutBarrier();
-    if (!state.IsLocked() || m_HoldingThreadId != pCurThread->GetThreadId())
-    {
-        if (timeOut == 0
-                ? m_lockState.InterlockedTryLock(state)
-                : m_lockState.InterlockedTryLock_Or_RegisterWaiter(this, state))
-        {
-            // We get here if we successfully acquired the mutex.
-            m_HoldingThreadId = pCurThread->GetThreadId();
-            m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
-            m_Recursion = 1;
-
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-            // The best place to grab this is from the ECall frame
-            Frame   *pFrame = pCurThread->GetFrame();
-            int      caller = (pFrame && pFrame != FRAME_TOP ? (int)pFrame->GetReturnAddress() : -1);
-            pCurThread->m_pTrackSync->EnterSync(caller, this);
-#endif
-            return true;
-        }
-
-        // Lock was not acquired and the waiter was registered if the timeout is nonzero
-
-        // Didn't manage to get the mutex, return failure if no timeout, else wait
-        // for at most timeout milliseconds for the mutex.
-        if (timeOut == 0)
-        {
-            return false;
-        }
-
-        // The precondition for EnterEpilog is that the count of waiters be bumped
-        // to account for this thread, which was done above
-        return EnterEpilog(pCurThread, timeOut);
-    }
-
-    // Got the mutex via recursive locking on the same thread.
-    _ASSERTE(m_Recursion >= 1);
-    m_Recursion++;
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-    // The best place to grab this is from the ECall frame
-    Frame   *pFrame = pCurThread->GetFrame();
-    int      caller = (pFrame && pFrame != FRAME_TOP ? (int)pFrame->GetReturnAddress() : -1);
-    pCurThread->m_pTrackSync->EnterSync(caller, this);
-#endif
-    return true;
-}
-
-BOOL AwareLock::EnterEpilog(Thread* pCurThread, INT32 timeOut)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    // While we are in this frame the thread is considered blocked on the
-    // critical section of the monitor lock according to the debugger
-    DebugBlockingItem blockingMonitorInfo;
-    blockingMonitorInfo.dwTimeout = timeOut;
-    blockingMonitorInfo.pMonitor = this;
-    blockingMonitorInfo.pAppDomain = SystemDomain::GetCurrentDomain();
-    blockingMonitorInfo.type = DebugBlock_MonitorCriticalSection;
-    DebugBlockingItemHolder holder(pCurThread, &blockingMonitorInfo);
-
-    // We need a separate helper because it uses SEH and the holder has a
-    // destructor
-    return EnterEpilogHelper(pCurThread, timeOut);
-}
-
-#ifdef _DEBUG
-#define _LOGCONTENTION
-#endif // _DEBUG
-
-#ifdef  _LOGCONTENTION
-inline void LogContention()
-{
-    WRAPPER_NO_CONTRACT;
-#ifdef LOGGING
-    if (LoggingOn(LF_SYNC, LL_INFO100))
-    {
-        LogSpewAlways("Contention: Stack Trace Begin\n");
-        void LogStackTrace();
-        LogStackTrace();
-        LogSpewAlways("Contention: Stack Trace End\n");
-    }
-#endif
-}
-#else
-#define LogContention()
-#endif
-
-double ComputeElapsedTimeInNanosecond(int64_t startTicks, int64_t endTicks)
-{
-    static int64_t freq;
-    if (freq == 0)
-        freq = minipal_hires_tick_frequency();
-
-    const double NsPerSecond = 1000 * 1000 * 1000;
-    LONGLONG elapsedTicks = endTicks - startTicks;
-    return (elapsedTicks * NsPerSecond) / freq;
-}
-
-BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    // IMPORTANT!!!
-    // The caller has already registered a waiter. This function needs to unregister the waiter on all paths (exception paths
-    // included). On runtimes where thread-abort is supported, a thread-abort also needs to unregister the waiter. There may be
-    // a possibility for preemptive GC toggles below to handle a thread-abort, that should be taken into consideration when
-    // porting this code back to .NET Framework.
-
-    // Require all callers to be in cooperative mode.  If they have switched to preemptive
-    // mode temporarily before calling here, then they are responsible for protecting
-    // the object associated with this lock.
-    _ASSERTE(pCurThread->PreemptiveGCDisabled());
-
-    LogContention();
-    Thread::IncrementMonitorLockContentionCount(pCurThread);
-
-    OBJECTREF obj = GetOwningObject();
-
-    int64_t startTicks = 0;
-    bool isContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
-
-    if (isContentionKeywordEnabled)
-    {
-        startTicks = minipal_hires_ticks();
-
-        if (InterlockedCompareExchangeT(&m_emittedLockCreatedEvent, 1, 0) == 0)
-        {
-            FireEtwContentionLockCreated(this, OBJECTREFToObject(obj), GetClrInstanceId());
-        }
-
-        // Fire a contention start event for a managed contention
-        FireEtwContentionStart_V2(
-            ETW::ContentionLog::ContentionStructs::ManagedContention,
-            GetClrInstanceId(),
-            this,
-            OBJECTREFToObject(obj),
-            m_HoldingOSThreadId);
-    }
-
-    // We cannot allow the AwareLock to be cleaned up underneath us by the GC.
-    IncrementTransientPrecious();
-
-    DWORD ret;
-    GCPROTECT_BEGIN(obj);
-    {
-        if (!m_SemEvent.IsMonitorEventAllocated())
-        {
-            AllocLockSemEvent();
-        }
-        _ASSERTE(m_SemEvent.IsMonitorEventAllocated());
-
-        pCurThread->EnablePreemptiveGC();
-
-        for (;;)
-        {
-            // Measure the time we wait so that, in the case where we wake up
-            // and fail to acquire the mutex, we can adjust remaining timeout
-            // accordingly.
-            int64_t start = minipal_lowres_ticks();
-
-            // It is likely the case that An APC threw an exception, for instance Thread.Interrupt(). The wait subsystem
-            // guarantees that if a signal to the event being waited upon is observed by the woken thread, that thread's
-            // wait will return WAIT_OBJECT_0. So in any race between m_SemEvent being signaled and the wait throwing an
-            // exception, a thread that is woken by an exception would not observe the signal, and the signal would wake
-            // another thread as necessary.
-
-            // We must decrement the waiter count in the case an exception happened. This holder takes care of that
-            class UnregisterWaiterHolder
-            {
-                LockState* m_pLockState;
-            public:
-                UnregisterWaiterHolder(LockState* pLockState) : m_pLockState(pLockState)
-                {
-                }
-
-                ~UnregisterWaiterHolder()
-                {
-                    if (m_pLockState != NULL)
-                    {
-                        m_pLockState->InterlockedUnregisterWaiter();
-                    }
-                }
-
-                void SuppressRelease()
-                {
-                    m_pLockState = NULL;
-                }
-            } unregisterWaiterHolder(&m_lockState);
-
-            ret = m_SemEvent.Wait(timeOut, TRUE);
-            _ASSERTE((ret == WAIT_OBJECT_0) || (ret == WAIT_TIMEOUT));
-
-            if (ret != WAIT_OBJECT_0)
-            {
-                // We timed out
-                // (the holder unregisters the waiter here)
-                break;
-            }
-
-            unregisterWaiterHolder.SuppressRelease();
-
-            // Spin a bit while trying to acquire the lock. This has a few benefits:
-            // - Spinning helps to reduce waiter starvation. Since other non-waiter threads can take the lock while there are
-            //   waiters (see LockState::InterlockedTryLock()), once a waiter wakes it will be able to better compete
-            //   with other spinners for the lock.
-            // - If there is another thread that is repeatedly acquiring and releasing the lock, spinning before waiting again
-            //   helps to prevent a waiter from repeatedly context-switching in and out
-            // - Further in the same situation above, waking up and waiting shortly thereafter deprioritizes this waiter because
-            //   events release waiters in FIFO order. Spinning a bit helps a waiter to retain its priority at least for one
-            //   spin duration before it gets deprioritized behind all other waiters.
-            if (g_SystemInfo.dwNumberOfProcessors > 1)
-            {
-                bool acquiredLock = false;
-                YieldProcessorNormalizationInfo normalizationInfo;
-                const DWORD spinCount = g_SpinConstants.dwMonitorSpinCount;
-                for (DWORD spinIteration = 0; spinIteration < spinCount; ++spinIteration)
-                {
-                    if (m_lockState.InterlockedTry_LockAndUnregisterWaiterAndObserveWakeSignal(this))
-                    {
-                        acquiredLock = true;
-                        break;
-                    }
-
-                    SpinWait(normalizationInfo, spinIteration);
-                }
-                if (acquiredLock)
-                {
-                    break;
-                }
-            }
-
-            if (m_lockState.InterlockedObserveWakeSignal_Try_LockAndUnregisterWaiter(this))
-            {
-                break;
-            }
-
-            // When calculating duration we consider a couple of special cases.
-            // If the end tick is the same as the start tick we make the
-            // duration a millisecond, to ensure we make forward progress if
-            // there's a lot of contention on the mutex. Secondly, we have to
-            // cope with the case where the tick counter wrapped while we where
-            // waiting (we can cope with at most one wrap, so don't expect three
-            // month timeouts to be very accurate). Luckily for us, the latter
-            // case is taken care of by 32-bit modulo arithmetic automatically.
-            if (timeOut != (INT32)INFINITE)
-            {
-                int64_t end = minipal_lowres_ticks();
-                int64_t duration;
-                if (end == start)
-                {
-                    duration = 1;
-                }
-                else
-                {
-                    duration = end - start;
-                }
-                duration = min(duration, (int64_t)timeOut);
-                timeOut -= (INT32)duration;
-            }
-        }
-
-        pCurThread->DisablePreemptiveGC();
-    }
-    GCPROTECT_END();
-    DecrementTransientPrecious();
-
-    if (isContentionKeywordEnabled)
-    {
-        int64_t endTicks = minipal_hires_ticks();
-
-        double elapsedTimeInNanosecond = ComputeElapsedTimeInNanosecond(startTicks, endTicks);
-
-        // Fire a contention end event for a managed contention
-        FireEtwContentionStop_V1(ETW::ContentionLog::ContentionStructs::ManagedContention, GetClrInstanceId(), elapsedTimeInNanosecond);
-    }
-
-
-    if (ret == WAIT_TIMEOUT)
-    {
-        return false;
-    }
-
-    m_HoldingThreadId = pCurThread->GetThreadId();
-    m_HoldingOSThreadId = pCurThread->GetOSThreadId64();
-    m_Recursion = 1;
-
-#if defined(_DEBUG) && defined(TRACK_SYNC)
-    // The best place to grab this is from the ECall frame
-    Frame   *pFrame = pCurThread->GetFrame();
-    int      caller = (pFrame && pFrame != FRAME_TOP ? (int)pFrame->GetReturnAddress() : -1);
-    pCurThread->m_pTrackSync->EnterSync(caller, this);
-#endif
-    return true;
-}
-
-
-BOOL AwareLock::Leave()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    Thread* pThread = GetThread();
-
-    AwareLock::LeaveHelperAction action = LeaveHelper(pThread);
-
-    switch(action)
-    {
-    case AwareLock::LeaveHelperAction::None:
-        // We are done
-        return TRUE;
-    case AwareLock::LeaveHelperAction::Signal:
-        // Signal the event
-        Signal();
-        return TRUE;
-    default:
-        // Must be an error otherwise
-        _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
-        return FALSE;
-    }
-}
-
-LONG AwareLock::LeaveCompletely()
-{
-    WRAPPER_NO_CONTRACT;
-
-    LONG count = 0;
-    while (Leave()) {
-        count++;
-    }
-    _ASSERTE(count > 0);            // otherwise we were never in the lock
-
-    return count;
-}
-
-
-BOOL AwareLock::OwnedByCurrentThread()
-{
-    WRAPPER_NO_CONTRACT;
-    return (GetThread()->GetThreadId() == m_HoldingThreadId);
-}
-
 // ***************************************************************************
 //
 //              SyncBlock class implementation
 //
 // ***************************************************************************
-
-// We maintain two queues for SyncBlock::Wait.
-// 1. Inside SyncBlock we queue all threads that are waiting on the SyncBlock.
-//    When we pulse, we pick the thread from this queue using FIFO.
-// 2. We queue all SyncBlocks that a thread is waiting for in Thread::m_WaitEventLink.
-//    When we pulse a thread, we find the event from this queue to set, and we also
-//    or in a 1 bit in the syncblock value saved in the queue, so that we can return
-//    immediately from SyncBlock::Wait if the syncblock has been pulsed.
-BOOL SyncBlock::Wait(INT32 timeOut)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACTL_END;
-
-    Thread  *pCurThread = GetThread();
-    BOOL     isTimedOut = FALSE;
-    BOOL     isEnqueued = FALSE;
-    WaitEventLink waitEventLink;
-    WaitEventLink *pWaitEventLink;
-
-    // As soon as we flip the switch, we are in a race with the GC, which could clean
-    // up the SyncBlock underneath us -- unless we report the object.
-    _ASSERTE(pCurThread->PreemptiveGCDisabled());
-
-    // Does this thread already wait for this SyncBlock?
-    WaitEventLink *walk = pCurThread->WaitEventLinkForSyncBlock(this);
-    if (walk->m_Next) {
-        if (walk->m_Next->m_WaitSB == this) {
-            // Wait on the same lock again.
-            walk->m_Next->m_RefCount ++;
-            pWaitEventLink = walk->m_Next;
-        }
-        else if ((SyncBlock*)(((DWORD_PTR)walk->m_Next->m_WaitSB) & ~1)== this) {
-            // This thread has been pulsed.  No need to wait.
-            return TRUE;
-        }
-    }
-    else {
-        // First time this thread is going to wait for this SyncBlock.
-        CLREvent* hEvent;
-        if (pCurThread->m_WaitEventLink.m_Next == NULL) {
-            hEvent = &(pCurThread->m_EventWait);
-        }
-        else {
-            hEvent = GetEventFromEventStore();
-        }
-        waitEventLink.m_WaitSB = this;
-        waitEventLink.m_EventWait = hEvent;
-        waitEventLink.m_Thread = pCurThread;
-        waitEventLink.m_Next = NULL;
-        waitEventLink.m_LinkSB.m_pNext = NULL;
-        waitEventLink.m_RefCount = 1;
-        pWaitEventLink = &waitEventLink;
-        walk->m_Next = pWaitEventLink;
-
-        // Before we enqueue it (and, thus, before it can be dequeued), reset the event
-        // that will awaken us.
-        hEvent->Reset();
-
-        // This thread is now waiting on this sync block
-        ThreadQueue::EnqueueThread(pWaitEventLink, this);
-
-        isEnqueued = TRUE;
-    }
-
-    _ASSERTE ((SyncBlock*)((DWORD_PTR)walk->m_Next->m_WaitSB & ~1)== this);
-
-    // While we are in this frame the thread is considered blocked on the
-    // event of the monitor lock according to the debugger. DebugBlockingItemHolder
-    // can trigger a GC, so set it up before accessing the owning object.
-    DebugBlockingItem blockingMonitorInfo;
-    blockingMonitorInfo.dwTimeout = timeOut;
-    blockingMonitorInfo.pMonitor = &m_Monitor;
-    blockingMonitorInfo.pAppDomain = SystemDomain::GetCurrentDomain();
-    blockingMonitorInfo.type = DebugBlock_MonitorEvent;
-    DebugBlockingItemHolder holder(pCurThread, &blockingMonitorInfo);
-
-    PendingSync   syncState(walk);
-
-    OBJECTREF     obj = m_Monitor.GetOwningObject();
-    syncState.m_Object = OBJECTREFToObject(obj);
-
-    m_Monitor.IncrementTransientPrecious();
-
-    GCPROTECT_BEGIN(obj);
-    {
-        GCX_PREEMP();
-
-        // remember how many times we synchronized
-        syncState.m_EnterCount = LeaveMonitorCompletely();
-        _ASSERTE(syncState.m_EnterCount > 0);
-
-        isTimedOut = pCurThread->Block(timeOut, &syncState);
-    }
-    GCPROTECT_END();
-    m_Monitor.DecrementTransientPrecious();
-
-    return !isTimedOut;
-}
-
-void SyncBlock::Pulse()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    WaitEventLink  *pWaitEventLink;
-
-    if ((pWaitEventLink = ThreadQueue::DequeueThread(this)) != NULL)
-        pWaitEventLink->m_EventWait->Set();
-}
-
-void SyncBlock::PulseAll()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    WaitEventLink  *pWaitEventLink;
-
-    while ((pWaitEventLink = ThreadQueue::DequeueThread(this)) != NULL)
-        pWaitEventLink->m_EventWait->Set();
-}
 
 bool SyncBlock::SetInteropInfo(InteropSyncBlockInfo* pInteropInfo)
 {
@@ -2909,7 +1709,109 @@ void SyncBlock::SetEnCInfo(EnCSyncBlockInfo *pEnCInfo)
     m_pEnCInfo = pEnCInfo;
 }
 #endif // FEATURE_METADATA_UPDATER
+
+void SyncBlock::InitializeThinLock(DWORD recursionLevel, DWORD threadId)
+{
+    WRAPPER_NO_CONTRACT;
+
+    _ASSERTE(m_Lock == (OBJECTHANDLE)NULL);
+    _ASSERTE(m_thinLock == 0u);
+    m_thinLock = (threadId & SBLK_MASK_LOCK_THREADID) | (recursionLevel << SBLK_RECLEVEL_SHIFT);
+}
+
+OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
+{
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        THROWS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    if (m_Lock != (OBJECTHANDLE)NULL)
+    {
+        return m_Lock;
+    }
+
+    SetPrecious();
+
+    // We need to create a new lock
+    DWORD thinLock = m_thinLock;
+    OBJECTHANDLEHolder lockHandle = GetAppDomain()->CreateHandle(lockObj);
+
+    if (thinLock != 0)
+    {
+        GCPROTECT_BEGIN(lockObj);
+
+        // We have thin-lock info that needs to be transferred to the lock object.
+        DWORD lockThreadId = thinLock & SBLK_MASK_LOCK_THREADID;
+        DWORD recursionLevel = (thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
+        _ASSERTE(lockThreadId != 0);
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__LOCK__INITIALIZE_FOR_MONITOR);
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(lockObj);
+        args[ARGNUM_1] = DWORD_TO_ARGHOLDER(lockThreadId);
+        args[ARGNUM_2] = DWORD_TO_ARGHOLDER(recursionLevel);
+        CALL_MANAGED_METHOD_NORET(args);
+
+        GCPROTECT_END();
+    }
+
+    OBJECTHANDLE existingHandle = InterlockedCompareExchangeT(&m_Lock, lockHandle.GetValue(), NULL);
+
+    if (existingHandle != NULL)
+    {
+        return existingHandle;
+    }
+
+    // Our lock instance is in the sync block now.
+    // Don't release it.
+    lockHandle.SuppressRelease();
+    // Also, clear the thin lock info.
+    // It won't be used any more, but it will look out of date.
+    m_thinLock = 0u;
+
+    return lockHandle;
+}
 #endif // !DACCESS_COMPILE
+
+BOOL SyncBlock::TryGetLockInfo(DWORD *pThreadId, DWORD *pRecursionLevel)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (m_Lock != (OBJECTHANDLE)NULL)
+    {
+        GCX_COOP();
+        // Extract info from the lock object
+        OBJECTREF lockObj = ObjectFromHandle(m_Lock);
+        GCPROTECT_BEGIN(lockObj);
+
+        DWORD state = CoreLibBinder::GetField(FIELD__LOCK__STATE)->GetValue32(lockObj);
+        *pThreadId = CoreLibBinder::GetField(FIELD__LOCK__OWNING_THREAD_ID)->GetValue32(lockObj);
+        *pRecursionLevel = CoreLibBinder::GetField(FIELD__LOCK__RECURSION_COUNT)->GetValue32(lockObj);
+
+        return state & 1;
+
+        GCPROTECT_END();
+    }
+    else if (m_thinLock != 0u)
+    {
+        // Extract info from the thin lock
+        DWORD threadId = m_thinLock & SBLK_MASK_LOCK_THREADID;
+        *pThreadId = threadId;
+        *pRecursionLevel = (m_thinLock & SBLK_MASK_LOCK_RECLEVEL) >> SBLK_RECLEVEL_SHIFT;
+
+        return (threadId != 0);
+    }
+    else
+    {
+        // No lock info available
+        *pThreadId = 0;
+        *pRecursionLevel = 0;
+        return FALSE;
+    }
+}
 
 #if defined(HOST_64BIT) && defined(_DEBUG)
 void ObjHeader::IllegalAlignPad()

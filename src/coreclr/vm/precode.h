@@ -696,8 +696,8 @@ public:
 
 #ifdef TARGET_AMD64
         // Handle jump stubs
-        if (isJumpRel64(target)) {
-            target = decodeJump64(target);
+        if (isBackToBackJump(target)) {
+            target = decodeBackToBackJump(target);
             if (target == addr)
                 return TRUE;
         }
