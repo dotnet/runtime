@@ -95,7 +95,7 @@ export function http_wasm_transform_stream_write (controller: HttpController, bu
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     mono_assert(bufferLength > 0, "expected bufferLength > 0");
     // the bufferPtr is pinned by the caller
-    const view = new Span(<any>((bufferPtr as any) >>> 0), bufferLength, MemoryViewType.Byte);
+    const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     const copy = view.slice() as Uint8Array;
     return wrap_as_cancelable_promise(async () => {
         mono_assert(controller.streamWriter, "expected streamWriter");
@@ -136,7 +136,7 @@ export function http_wasm_fetch_stream (controller: HttpController, url: string,
 export function http_wasm_fetch_bytes (controller: HttpController, url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], bodyPtr: VoidPtr, bodyLength: number): ControllablePromise<void> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     // the bodyPtr is pinned by the caller
-    const view = new Span(<any>((bodyPtr as any) >>> 0), bodyLength, MemoryViewType.Byte);
+    const view = new Span(bodyPtr, bodyLength, MemoryViewType.Byte);
     const copy = view.slice() as Uint8Array;
     return http_wasm_fetch(controller, url, header_names, header_values, option_names, option_values, copy);
 }
@@ -239,7 +239,7 @@ export function http_wasm_get_response_bytes (controller: HttpController, view: 
 export function http_wasm_get_streamed_response_bytes (controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<number> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     // the bufferPtr is pinned by the caller
-    const view = new Span(<any>((bufferPtr as any) >>> 0), bufferLength, MemoryViewType.Byte);
+    const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     return wrap_as_cancelable_promise(async () => {
         await controller.responsePromise;
         mono_assert(controller.response, "expected response");
