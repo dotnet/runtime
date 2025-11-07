@@ -2,7 +2,7 @@ name: Breaking Change Documentation
 
 on:
   pull_request_target:
-    types: [labeled]
+    types: [closed, labeled]
 
 permissions:
   contents: read
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   generate-breaking-change-doc:
-    if: contains(github.event.label.name, 'needs-breaking-change-doc-created') && github.repository_owner == 'dotnet'
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created') && github.repository_owner == 'dotnet'
     runs-on: ubuntu-latest
 
     steps:
