@@ -6,10 +6,6 @@
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <RestoreAdditionalProjectSources>$(RestoreAdditionalProjectSources);https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-diagnostics-tests/nuget/v3/index.json</RestoreAdditionalProjectSources>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.OneCollect.RecordTrace" Version="$(MicrosoftOneCollectRecordTraceVersion)" PrivateAssets="All" Condition="'$(TargetOS)' == 'linux'" />
   </ItemGroup>
@@ -23,12 +19,11 @@
     <None Include="dotnet-common.script" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <Target Name="CopyRecordTraceBinary" AfterTargets="Build" Condition="'$(TargetOS)' == 'linux'">
-    <PropertyGroup>
-      <RecordTracePath>$(NuGetPackageRoot)microsoft.onecollect.recordtrace/$(MicrosoftOneCollectRecordTraceVersion)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/record-trace</RecordTracePath>
-    </PropertyGroup>
-
-    <Copy SourceFiles="$(RecordTracePath)" DestinationFolder="$(OutputPath)" Condition="Exists('$(RecordTracePath)')" />
-    <Error Text="record-trace not found at $(RecordTracePath)" Condition="!Exists('$(RecordTracePath)')" />
-  </Target>
+  <ItemGroup Condition="'$(TargetOS)' == 'linux'">
+    <None Include="$(NuGetPackageRoot)microsoft.onecollect.recordtrace/$(MicrosoftOneCollectRecordTraceVersion)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/record-trace">
+      <Link>record-trace</Link>
+      <Visible>false</Visible>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
