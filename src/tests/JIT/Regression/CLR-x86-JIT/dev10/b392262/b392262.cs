@@ -39,6 +39,7 @@ namespace b392262
             result = (vt.bool1 && vt.bool2 && vt.bool3 && vt.bool4);
         }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

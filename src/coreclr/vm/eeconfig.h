@@ -64,7 +64,6 @@ public:
     DWORD         SpinLimitProcFactor(void)       const {LIMITED_METHOD_CONTRACT;  return dwSpinLimitProcFactor; }
     DWORD         SpinLimitConstant(void)         const {LIMITED_METHOD_CONTRACT;  return dwSpinLimitConstant; }
     DWORD         SpinRetryCount(void)            const {LIMITED_METHOD_CONTRACT;  return dwSpinRetryCount; }
-    DWORD         MonitorSpinCount(void)          const {LIMITED_METHOD_CONTRACT;  return dwMonitorSpinCount; }
 
     // Jit-config
 
@@ -441,6 +440,11 @@ public:
 
     bool    RuntimeAsync()                 const { LIMITED_METHOD_CONTRACT; return runtimeAsync; }
 
+#ifdef FEATURE_INTERPRETER
+    bool    EnableInterpreter()            const { LIMITED_METHOD_CONTRACT; return enableInterpreter; }
+#endif
+    bool    EnableHWIntrinsic()            const { LIMITED_METHOD_CONTRACT; return enableHWIntrinsic; }
+
 private: //----------------------------------------------------------------
 
     bool fInited;                   // have we synced to the registry at least once?
@@ -532,7 +536,6 @@ private: //----------------------------------------------------------------
     DWORD dwSpinLimitProcFactor;
     DWORD dwSpinLimitConstant;
     DWORD dwSpinRetryCount;
-    DWORD dwMonitorSpinCount;
 
 #ifdef VERIFY_HEAP
     int  iGCHeapVerify;
@@ -610,6 +613,12 @@ private: //----------------------------------------------------------------
 
 #if defined(FEATURE_READYTORUN)
     bool fReadyToRun;
+#endif
+
+    bool enableHWIntrinsic;
+
+#ifdef FEATURE_INTERPRETER
+    bool enableInterpreter;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
