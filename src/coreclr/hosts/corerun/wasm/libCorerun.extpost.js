@@ -7,6 +7,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 var fetch = fetch || undefined; var dotnetNativeModuleLoaded = false; var dotnetInternals = null;
 export function selfRun() {
+    const Module = {};
     const corePreRun = () => {
         // copy all node/shell env variables to emscripten env
         if (globalThis.process && globalThis.process.env) {
@@ -17,11 +18,10 @@ export function selfRun() {
 
         Module.ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
     };
-    const Module = {
-        preRun: [corePreRun]
-    };
+    Module.preRun = [corePreRun];
+
     const runtimeApi = {
-        Module: Module,
+        Module,
         INTERNAL: {},
         runtimeId: 0,
         runtimeBuildInfo: {
