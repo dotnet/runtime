@@ -4,7 +4,12 @@
 import type { InternalExchange, RuntimeAPI, RuntimeExports, RuntimeExportsTable } from "./types";
 import { InternalExchangeIndex } from "../types";
 import { dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
-import { ENVIRONMENT_IS_NODE } from "./per-module";
+import { bindJSImportST, invokeJSFunction, invokeJSImportST, setModuleImports } from "./invoke-js";
+import { getAssemblyExports } from "./invoke-cs";
+import { initializeMarshalersToJs, resolveOrRejectPromise } from "./marshal-to-js";
+import { initializeMarshalersToCs } from "./marshal-to-cs";
+import { releaseCSOwnedObject } from "./gc-handles";
+import { cancelPromise } from "./cancelable-promise";
 
 export function dotnetInitializeModule(internals: InternalExchange): void {
     if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
@@ -17,25 +22,28 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     Object.assign(runtimeApi, runtimeApiLocal);
 
     internals[InternalExchangeIndex.RuntimeExportsTable] = runtimeExportsToTable({
+        bindJSImportST,
+        invokeJSImportST,
+        releaseCSOwnedObject,
+        resolveOrRejectPromise,
+        cancelPromise,
+        invokeJSFunction,
     });
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
+
+    initializeMarshalersToJs();
+    initializeMarshalersToCs();
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     function runtimeExportsToTable(map: RuntimeExports): RuntimeExportsTable {
         // keep in sync with runtimeExportsFromTable()
         return [
+            bindJSImportST,
+            invokeJSImportST,
+            releaseCSOwnedObject,
+            resolveOrRejectPromise,
+            cancelPromise,
+            invokeJSFunction,
         ];
     }
 }
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function getAssemblyExports(assemblyName: string): Promise<any> {
-    throw new Error("Not implemented");
-    return ENVIRONMENT_IS_NODE; // dummy
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function setModuleImports(moduleName: string, moduleImports: any): void {
-    throw new Error("Not implemented");
-}
-

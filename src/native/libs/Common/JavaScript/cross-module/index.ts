@@ -96,6 +96,12 @@ export function dotnetUpdateInternalsSubscriber() {
     // keep in sync with runtimeExportsToTable()
     function runtimeExportsFromTable(table: RuntimeExportsTable, runtime: RuntimeExports): void {
         const runtimerLocal: RuntimeExports = {
+            bindJSImportST: table[0],
+            invokeJSImportST: table[1],
+            releaseCSOwnedObject: table[2],
+            resolveOrRejectPromise: table[3],
+            cancelPromise: table[4],
+            invokeJSFunction: table[5],
         };
         Object.assign(runtime, runtimerLocal);
     }
@@ -136,6 +142,7 @@ export function dotnetUpdateInternalsSubscriber() {
     // keep in sync with interopJavaScriptExportsToTable()
     function interopJavaScriptExportsFromTable(table: InteropJavaScriptExportsTable, interop: InteropJavaScriptExports): void {
         const interopLocal: InteropJavaScriptExports = {
+            SystemInteropJS_GetManagedStackTrace: table[0],
         };
         Object.assign(interop, interopLocal);
     }

@@ -5,6 +5,7 @@
 // Run runtime tests under a JS shell or a browser
 //
 import { dotnet, exit } from './_framework/dotnet.js';
+import { config } from './_framework/dotnet.boot.js';
 
 
 /*****************************************************************************
@@ -253,6 +254,7 @@ globalThis.App = App; // Necessary as tests use it
 
 function configureRuntime(dotnet, runArgs) {
     dotnet
+        .withConfig(config)
         .withVirtualWorkingDirectory(runArgs.workingDirectory)
         .withEnvironmentVariables(runArgs.environmentVariables)
         .withDiagnosticTracing(runArgs.diagnosticTracing)

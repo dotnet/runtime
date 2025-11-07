@@ -785,6 +785,27 @@ extern "C" void SystemJS_ExecuteTimerCallback()
     Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler();
 }
 
+static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_IntPtr_RetVoid = nullptr;
+static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace(void* arg0)
+{
+    int64_t args[1] =
+    {
+        (int64_t)arg0
+    };
+
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_IntPtr_RetVoid)
+    {
+        LookupMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports", "GetManagedStackTrace", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_IntPtr_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_IntPtr_RetVoid, (int8_t*)args, sizeof(args), nullptr);
+}
+
+extern "C" void SystemInteropJS_GetManagedStackTrace(void* arg0)
+{
+    Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace(arg0);
+}
+
 extern const ReverseThunkMapEntry g_ReverseThunks[] =
 {
     { 100678287, { &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler } },
