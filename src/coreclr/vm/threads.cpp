@@ -6989,6 +6989,9 @@ namespace
         }
         CONTRACTL_END;
 
+        // If there's no threads to detach right now,
+        // go to sleep.
+        if (Thread::m_DetachCount == 0)
         {
             GCX_PREEMP();
 
@@ -7024,23 +7027,44 @@ namespace
     }
 }
 
-void
+BOOL
 ThreadCleanupThread::EnsureCleanupThreadExists()
 {
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    ForeignThreadsToCleanUpEvent = new CLREvent();
-    ForeignThreadsToCleanUpEvent->CreateAutoEvent(FALSE);
-
-    Thread* pCleanupThread = SetupUnstartedThread();
-
-    if (pCleanupThread->CreateNewThread(0, &ForeignThreadCleanupThreadStart, pCleanupThread, W(".NET External Thread Cleanup Thread")))
+    if (ForeignThreadsToCleanUpEvent != nullptr)
     {
-        DWORD dwRet = pCleanupThread->StartThread();
+        // Another thread created the event first.
+        // Set the event in case another thread just signaled the finalizer
+        // right before we were called.
+        ForeignThreadsToCleanUpEvent->Set();
+        return TRUE;
+    }
+
+    NewHolder<CLREvent> tempEvent = new CLREvent();
+    // We may have threads waiting to clean up already, so create the event in the signaled state.
+    tempEvent->CreateAutoEvent(TRUE);
+
+    if (InterlockedCompareExchangeT(&ForeignThreadsToCleanUpEvent, tempEvent.GetValue(), nullptr) != nullptr)
+    {
+        // Another thread created the event first, just return.
+        return TRUE;
+    }
+
+    tempEvent.SuppressRelease();
+
+    Holder<Thread*,DoNothing<Thread*>,DeleteThread> pCleanupThread(SetupUnstartedThread());
+
+    // Don't block process shutdown on the cleanup thread.
+    pCleanupThread.GetValue()->SetBackground(TRUE);
+
+    if (pCleanupThread.GetValue()->CreateNewThread(0, &ForeignThreadCleanupThreadStart, pCleanupThread.GetValue(), W(".NET Detached Cleanup Thread")))
+    {
+        DWORD dwRet = pCleanupThread.GetValue()->StartThread();
 
         // When running under a user mode native debugger there is a race
         // between the moment we've created the thread (in CreateNewThread) and
@@ -7048,20 +7072,38 @@ ThreadCleanupThread::EnsureCleanupThreadExists()
         // the "ct" (create thread) notification, and it will attempt to
         // suspend/resume all threads in the process.  Now imagine the debugger
         // resumes this thread first, and only later does it try to resume the
-        // newly created thread (the finalizer thread).  In these conditions our
+        // newly created thread.  In these conditions our
         // call to ResumeThread may come before the debugger's call to ResumeThread
         // actually causing dwRet to equal 2.
         // We cannot use IsDebuggerPresent() in the condition below because the
         // debugger may have been detached between the time it got the notification
         // and the moment we execute the test below.
         _ASSERTE(dwRet == 1 || dwRet == 2);
+        pCleanupThread.SuppressRelease();
+        return TRUE;
     }
+
+    return FALSE;
 }
 void
 ThreadCleanupThread::SetHasThreadsToCleanUp()
 {
-    _ASSERT(ForeignThreadsToCleanUpEvent != nullptr);
-    ForeignThreadsToCleanUpEvent->Set();
+    // If we don't have a dedicated cleanup thread,
+    // we will cleanup detached threads on the finalizer thread.
+    if (ForeignThreadsToCleanUpEvent == nullptr)
+    {
+        FinalizerThread::EnableFinalization();
+    }
+    else
+    {
+        ForeignThreadsToCleanUpEvent->Set();
+    }
+}
+
+bool
+ThreadCleanupThread::UsingExternalCleanupThread()
+{
+    return ForeignThreadsToCleanUpEvent != nullptr;
 }
 #endif // DACCESS_COMPILE
 

@@ -53,6 +53,15 @@ namespace System.Threading
                 return true;
             }
 
+            // If the current thread is the finalizer thread,
+            // we need to cleanup detached threads on another thread.
+            // We can't cleanup on the finalizer thread itself if we're on the finalizer thread,
+            // otherwise we could get into a deadlock waiting on the cleanup of a detached thread from a finalizer.
+            if (CurrentThreadIsFinalizerThread())
+            {
+                EnsureDetachedThreadCleanupThreadExists();
+            }
+
             // Prevent race condition with the finalizer
             try
             {
@@ -72,9 +81,34 @@ namespace System.Threading
                 waitHandle.DangerousRelease();
             }
         }
+
+        private void SetJoinHandle()
+        {
+            SafeWaitHandle waitHandle = GetJoinHandle();
+            Debug.Assert(!waitHandle.IsClosed);
+
+            waitHandle.DangerousAddRef();
+            try
+            {
+                WaitSubsystem.SetEvent(waitHandle.DangerousGetHandle());
+            }
+            finally
+            {
+                waitHandle.DangerousRelease();
+            }
+        }
 #endif
 
         // sched_getcpu doesn't exist on all platforms. On those it doesn't exist on, the shim returns -1
         internal static int GetCurrentProcessorNumber() => Interop.Sys.SchedGetCpu();
+
+        internal static void EnsureDetachedThreadCleanupThreadExists()
+        {
+            // We should only need to use a separate cleanup thread if we're on the finalizer thread.
+            Debug.Assert(CurrentThreadIsFinalizerThread());
+            EnsureDetachedThreadCleanupThreadExistsCore();
+        }
+
+        static partial void EnsureDetachedThreadCleanupThreadExistsCore();
     }
 }

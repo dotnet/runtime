@@ -1213,6 +1213,7 @@ private:
     OBJECTREF     m_StartHelper;
 #ifdef TARGET_UNIX
     OBJECTREF     m_WaitInfo;
+    OBJECTREF     m_joinEvent;
 #endif // TARGET_UNIX
 
     // The next field (m_InternalThread) is declared as IntPtr in the managed

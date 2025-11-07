@@ -441,10 +441,25 @@ namespace System.Threading
         private volatile ManualResetEvent? _joinEvent;
         private SafeWaitHandle GetJoinHandle()
         {
-            ManualResetEvent joinEvent = Interlocked.CompareExchange(ref _joinEvent, new ManualResetEvent(false), null)!;
+            ManualResetEvent newEvent = new ManualResetEvent(false);
+            ManualResetEvent joinEvent = Interlocked.CompareExchange(ref _joinEvent, newEvent, null) ?? newEvent;
             return joinEvent.SafeWaitHandle;
         }
 #endif
+
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
+        static partial void EnsureDetachedThreadCleanupThreadExistsCore()
+        {
+            if (!EnsureDetachedThreadCleanupThreadExistsInternal())
+            {
+                throw new OutOfMemoryException();
+            }
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_EnsureDetachedThreadCleanupThreadExists")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool EnsureDetachedThreadCleanupThreadExistsInternal();
+#endif // TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
 
         /// <summary>
         /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. This value is normalized to be
@@ -563,6 +578,7 @@ namespace System.Threading
             // Inform the wait subsystem that the thread is exiting. For instance, this would abandon any mutexes locked by
             // the thread.
             _waitInfo?.OnThreadExiting();
+            SetJoinHandle();
 #endif
         }
 

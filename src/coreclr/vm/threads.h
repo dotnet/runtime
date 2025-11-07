@@ -5486,7 +5486,8 @@ private:
 class ThreadCleanupThread
 {
     public:
-    static void EnsureCleanupThreadExists();
+    static bool UsingExternalCleanupThread();
+    static BOOL EnsureCleanupThreadExists();
     static void SetHasThreadsToCleanUp();
 };
 

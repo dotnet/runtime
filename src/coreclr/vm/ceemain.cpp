@@ -936,10 +936,6 @@ void EEStartupHelper()
         FinalizerThread::FinalizerThreadCreate();
 #endif // TARGET_WINDOWS
 
-        // Start the thread that will clean up managed resources for any non-.NET created threads
-        // that exit.
-        ThreadCleanupThread::EnsureCleanupThreadExists();
-
 #ifdef FEATURE_PERFTRACING
         // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
         // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
