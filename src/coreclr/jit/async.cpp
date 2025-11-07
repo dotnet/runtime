@@ -1507,7 +1507,7 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness&    
     // If VM requests that we report the method handle, or if we have a shared generic context method handle
     // that is live here, then we need to call a different helper to keep the loader alive.
     if (((m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODDESC) != 0) &&
-        life.IsLive(m_comp->info.compTypeCtxtArg))
+        life.IsLive(m_comp->info.compTypeCtxtArg) && !m_comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         assert(layout.KeepAliveOffset != UINT_MAX);
         GenTree* methodHandleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
@@ -1518,7 +1518,7 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness&    
                                            contClassHndNode, keepAliveOffsetNode, methodHandleArg);
     }
     else if (((m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODTABLE) != 0) &&
-             life.IsLive(m_comp->info.compTypeCtxtArg))
+             life.IsLive(m_comp->info.compTypeCtxtArg) && !m_comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         assert(layout.KeepAliveOffset != UINT_MAX);
         GenTree* classHandleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
