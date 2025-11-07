@@ -310,10 +310,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 // Android doesn't support an empty custom root
                 X509ChainStatusFlags flags = X509ChainStatusFlags.UntrustedRoot;
-                if (!SignatureSupport.SupportsX509Sha1Signatures)
-                {
-                    flags |= X509ChainStatusFlags.NotSignatureValid;
-                }
                 yield return new object[] { false, flags, BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot };
             }
 
