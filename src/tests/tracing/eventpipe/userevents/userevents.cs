@@ -13,11 +13,13 @@ namespace Tracing.Tests.UserEvents
 {
     public class UserEventsTest
     {
-        private static readonly string trace = "trace.nettrace";
         private const int SIGINT = 2;
 
-        [DllImport("libc", SetLastError = true)]
-        private static extern int kill(int pid, int sig);
+        [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
+        private static extern int Kill(int pid, int sig);
+
+        [DllImport("libc", EntryPoint = "geteuid", SetLastError = true)]
+        private static extern uint GetEffectiveUserId();
 
         public static int Main(string[] args)
         {
@@ -35,11 +37,27 @@ namespace Tracing.Tests.UserEvents
             string appBaseDir = AppContext.BaseDirectory;
             string recordTracePath = Path.Combine(appBaseDir, "record-trace");
             string scriptFilePath = Path.Combine(appBaseDir, "dotnet-common.script");
-            string traceFilePath = Path.Combine(appBaseDir, trace);
+            string traceFilePath = Path.GetTempFileName();
+            const string userEventsDataPath = "/sys/kernel/tracing/user_events_data";
 
-            if (!File.Exists(recordTracePath) || !File.Exists(scriptFilePath))
+            if (GetEffectiveUserId() != 0)
             {
-                Console.WriteLine("record-trace or dotnet-common.script not found. Test cannot run.");
+                Console.Error.WriteLine("This test requires elevated permissions.");
+                return -1;
+            }
+            if (!File.Exists(userEventsDataPath))
+            {
+                Console.Error.WriteLine($"user_events_data not found at `{userEventsDataPath}`. The environment does not support user_events.");
+                return -1;
+            }
+            if (!File.Exists(recordTracePath))
+            {
+                Console.Error.WriteLine($"record-trace not found at `{recordTracePath}`. Test cannot run.");
+                return -1;
+            }
+            if (!File.Exists(scriptFilePath))
+            {
+                Console.Error.WriteLine($"dotnet-common.script not found at `{scriptFilePath}`. Test cannot run.");
                 return -1;
             }
 
@@ -47,31 +65,48 @@ namespace Tracing.Tests.UserEvents
             traceeStartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
             traceeStartInfo.Arguments = $"{typeof(UserEventsTest).Assembly.Location} tracee";
             traceeStartInfo.WorkingDirectory = appBaseDir;
+            traceeStartInfo.RedirectStandardOutput = true;
+            traceeStartInfo.RedirectStandardError = true;
 
             ProcessStartInfo recordTraceStartInfo = new();
             recordTraceStartInfo.FileName = recordTracePath;
-            recordTraceStartInfo.Arguments = $"--script-file {scriptFilePath}";
+            recordTraceStartInfo.Arguments = $"--script-file {scriptFilePath} --out {traceFilePath}";
             recordTraceStartInfo.WorkingDirectory = appBaseDir;
             recordTraceStartInfo.RedirectStandardOutput = true;
             recordTraceStartInfo.RedirectStandardError = true;
 
-            using Process traceeProcess = Process.Start(traceeStartInfo);
+
+            Console.WriteLine($"Starting record-trace: {recordTraceStartInfo.FileName} {recordTraceStartInfo.Arguments}");
             using Process recordTraceProcess = Process.Start(recordTraceStartInfo);
+            Console.WriteLine($"record-trace started with PID: {recordTraceProcess.Id}");
             recordTraceProcess.OutputDataReceived += (_, args) => Console.WriteLine($"[record-trace] {args.Data}");
             recordTraceProcess.BeginOutputReadLine();
             recordTraceProcess.ErrorDataReceived += (_, args) => Console.Error.WriteLine($"[record-trace] {args.Data}");
             recordTraceProcess.BeginErrorReadLine();
 
-            if (!traceeProcess.HasExited && !traceeProcess.WaitForExit(15000))
+            Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {traceeStartInfo.Arguments}");
+            using Process traceeProcess = Process.Start(traceeStartInfo);
+            Console.WriteLine($"Tracee process started with PID: {traceeProcess.Id}");
+            traceeProcess.OutputDataReceived += (_, args) => Console.WriteLine($"[tracee] {args.Data}");
+            traceeProcess.BeginOutputReadLine();
+            traceeProcess.ErrorDataReceived += (_, args) => Console.Error.WriteLine($"[tracee] {args.Data}");
+            traceeProcess.BeginErrorReadLine();
+
+            Console.WriteLine($"Waiting for tracee process to exit...");
+            if (!traceeProcess.HasExited && !traceeProcess.WaitForExit(5000))
             {
+                Console.WriteLine($"Tracee process did not exit within the 5s timeout, killing it.");
                 traceeProcess.Kill();
             }
 
             // Until record-trace supports duration, the only way to stop it is to send SIGINT (ctrl+c)
-            kill(recordTraceProcess.Id, SIGINT);
+            Console.WriteLine($"Stopping record-trace with SIGINT.");
+            Kill(recordTraceProcess.Id, SIGINT);
+            Console.WriteLine($"Waiting for record-trace to exit...");
             if (!recordTraceProcess.HasExited && !recordTraceProcess.WaitForExit(20000))
             {
                 // record-trace needs to stop gracefully to generate the trace file
+                Console.WriteLine($"record-trace did not exit within the 20s timeout, killing it.");
                 recordTraceProcess.Kill();
             }
 
@@ -92,21 +127,19 @@ namespace Tracing.Tests.UserEvents
 
         private static bool ValidateTraceeEvents(string traceFilePath)
         {
-            string etlxPath = TraceLog.CreateFromEventPipeDataFile(traceFilePath);
-            using TraceLog log = new(etlxPath);
-            using TraceLogEventSource source = log.Events.GetSource();
+            using EventPipeEventSource source = new EventPipeEventSource(traceFilePath);
             bool startEventFound = false;
             bool stopEventFound = false;
 
-            source.AllEvents += (TraceEvent e) =>
+            source.Dynamic.All += (TraceEvent e) =>
             {
                 if (e.ProviderName == "Microsoft-Windows-DotNETRuntime")
                 {
-                    if (e.EventName == "GC/Start")
+                    if (e.EventName == "GC/Start" || (e.ID == (TraceEventID)1 && e.EventName.StartsWith("Unknown")))
                     {
                         startEventFound = true;
                     }
-                    else if (e.EventName == "GC/Stop")
+                    else if (e.EventName == "GC/Stop" || (e.ID == (TraceEventID)2 && e.EventName.StartsWith("Unknown")))
                     {
                         stopEventFound = true;
                     }

@@ -14,7 +14,7 @@ namespace Tracing.Tests.UserEvents
         public static void Run()
         {
             long startTimestamp = Stopwatch.GetTimestamp();
-            long targetTicks = Stopwatch.Frequency * 10; // 10s
+            long targetTicks = Stopwatch.Frequency; // 1s
 
             while (Stopwatch.GetTimestamp() - startTimestamp < targetTicks)
             {
