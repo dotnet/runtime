@@ -1682,236 +1682,19 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     return tree;
 }
 
-//------------------------------------------------------------------------
-// fgAddAsyncContextSaveRestore: add try-finally to async methods for context save/restore
-//
-// Remarks:
-//   Similar to fgAddSyncMethodEnterExit, this adds a try-finally around the entire
-//   method body to capture ExecutionContext/SynchronizationContext at method entry
-//   and restore them in the finally handler. The finally checks if the method actually
-//   suspended (continuation parameter is non-null) before restoring contexts.
-//
-void Compiler::fgAddAsyncContextSaveRestore()
-{
-    assert(compIsAsync());
-    assert(UsesFunclets());
-    assert(!fgFuncletsCreated);
-    assert(fgPredsComputed);
-
-#if !FEATURE_EH
-    NYI("No support for async context save/restore without EH");
-#endif
-
-    // Create locals for ExecutionContext and SynchronizationContext
-    // These are allocated similarly to lvaMonAcquired for synchronized methods
-    lvaAsyncExecutionContextVar                  = lvaGrabTemp(true DEBUGARG("Async ExecutionContext"));
-    lvaTable[lvaAsyncExecutionContextVar].lvType = TYP_REF;
-
-    lvaAsyncSynchronizationContextVar                  = lvaGrabTemp(true DEBUGARG("Async SynchronizationContext"));
-    lvaTable[lvaAsyncSynchronizationContextVar].lvType = TYP_REF;
-
-    // Note: No need to initialize these to null - TYP_REF locals are automatically zero-initialized
-
-    // Create try-fault structure (similar to synchronized methods)
-    BasicBlock* const tryBegBB  = fgSplitBlockAtBeginning(fgFirstBB);
-    BasicBlock* const tryLastBB = fgLastBB;
-
-    // Create fault handler block
-    BasicBlock* faultBB = fgNewBBafter(BBJ_EHFAULTRET, tryLastBB, false);
-    assert(tryLastBB->NextIs(faultBB));
-    assert(faultBB->IsLast());
-    assert(faultBB == fgLastBB);
-
-    faultBB->bbRefs = 1; // Artificial ref count
-
-    // Add EH table entry
-    {
-        EHblkDsc* newEntry = nullptr;
-        unsigned  XTnew    = compHndBBtabCount;
-
-        newEntry = fgTryAddEHTableEntries(XTnew);
-
-        if (newEntry == nullptr)
-        {
-            IMPL_LIMITATION("too many exception clauses");
-        }
-
-        // Initialize the new entry
-        newEntry->ebdID          = impInlineRoot()->compEHID++;
-        newEntry->ebdHandlerType = EH_HANDLER_FAULT;
-
-        newEntry->ebdTryBeg  = tryBegBB;
-        newEntry->ebdTryLast = tryLastBB;
-
-        newEntry->ebdHndBeg  = faultBB;
-        newEntry->ebdHndLast = faultBB;
-
-        newEntry->ebdTyp = 0; // unused for fault
-
-        newEntry->ebdEnclosingTryIndex = EHblkDsc::NO_ENCLOSING_INDEX;
-        newEntry->ebdEnclosingHndIndex = EHblkDsc::NO_ENCLOSING_INDEX;
-
-        newEntry->ebdTryBegOffset    = tryBegBB->bbCodeOffs;
-        newEntry->ebdTryEndOffset    = tryLastBB->bbCodeOffsEnd;
-        newEntry->ebdFilterBegOffset = 0;
-        newEntry->ebdHndBegOffset    = 0;
-        newEntry->ebdHndEndOffset    = 0;
-
-        // Set flags on new region
-        tryBegBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
-        faultBB->SetFlags(BBF_DONT_REMOVE | BBF_IMPORTED);
-        faultBB->bbCatchTyp = BBCT_FAULT;
-
-        tryBegBB->setTryIndex(XTnew);
-        tryBegBB->clearHndIndex();
-
-        faultBB->clearTryIndex();
-        faultBB->setHndIndex(XTnew);
-
-        // Walk user code blocks and set try index
-        for (BasicBlock* tmpBB = tryBegBB->Next(); tmpBB != faultBB; tmpBB = tmpBB->Next())
-        {
-            if (!tmpBB->hasTryIndex())
-            {
-                tmpBB->setTryIndex(XTnew);
-            }
-        }
-
-        // Walk EH table and update enclosing try indices
-        for (unsigned XTnum = 0; XTnum < XTnew; XTnum++)
-        {
-            EHblkDsc* HBtab = &compHndBBtab[XTnum];
-            if (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-            {
-                HBtab->ebdEnclosingTryIndex = (unsigned short)XTnew;
-            }
-        }
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            JITDUMP("Async method - created EH descriptor EH#%u for try/fault wrapping context save/restore\n", XTnew);
-            fgDispBasicBlocks();
-            fgDispHandlerTab();
-        }
-
-        fgVerifyHandlerTab();
-#endif
-    }
-
-    // Get async helper methods
-    CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
-
-    // Insert CaptureContexts call at beginning of try
-    GenTreeCall* captureCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->captureContextsMethHnd, TYP_VOID);
-    captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncSynchronizationContextVar, 0)));
-    captureCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclAddrNode(lvaAsyncExecutionContextVar, 0)));
-
-    CORINFO_CALL_INFO callInfo = {};
-    callInfo.hMethod           = captureCall->gtCallMethHnd;
-    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-    impMarkInlineCandidate(captureCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
-
-    Statement* captureStmt = fgNewStmtFromTree(captureCall);
-    fgInsertStmtAtBeg(tryBegBB, captureStmt);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nAsync method - Insert CaptureContexts call at beginning of try block %s\n", tryBegBB->dspToString());
-        gtDispStmt(captureStmt);
-        printf("\n");
-    }
-#endif
-
-    // Insert RestoreContexts call in fault (exceptional case)
-    // First argument: suspended = (continuation != null)
-    GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
-    GenTree* nullCheck    = gtNewZeroConNode(TYP_REF);
-    GenTree* suspended    = gtNewOperNode(GT_NE, TYP_INT, continuation, nullCheck);
-
-    GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
-    restoreCall->gtArgs.PushFront(this,
-                                  NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
-    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
-    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(suspended));
-
-    callInfo             = {};
-    callInfo.hMethod     = restoreCall->gtCallMethHnd;
-    callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-    impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
-
-    Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
-    fgInsertStmtAtEnd(faultBB, restoreStmt);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nAsync method - Insert RestoreContexts call in fault handler %s\n", faultBB->dspToString());
-        gtDispStmt(restoreStmt);
-        printf("\n");
-    }
-#endif
-
-    // Insert RestoreContexts call before each return (non-exceptional cases)
-    for (BasicBlock* const block : Blocks())
-    {
-        if (block->KindIs(BBJ_RETURN))
-        {
-            GenTree* continuation2 = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
-            GenTree* nullCheck2    = gtNewZeroConNode(TYP_REF);
-            GenTree* suspended2    = gtNewOperNode(GT_NE, TYP_INT, continuation2, nullCheck2);
-
-            GenTreeCall* restoreCall2 = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
-            restoreCall2->gtArgs.PushFront(this, NewCallArg::Primitive(
-                                                     gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
-            restoreCall2->gtArgs.PushFront(this, NewCallArg::Primitive(
-                                                     gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
-            restoreCall2->gtArgs.PushFront(this, NewCallArg::Primitive(suspended2));
-
-            callInfo             = {};
-            callInfo.hMethod     = restoreCall2->gtCallMethHnd;
-            callInfo.methodFlags = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-            impMarkInlineCandidate(restoreCall2, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo,
-                                   compInlineContext);
-
-            if (block->lastStmt()->GetRootNode()->OperIs(GT_RETURN))
-            {
-                fgNewStmtNearEnd(block, restoreCall2);
-            }
-            else
-            {
-                fgNewStmtAtEnd(block, restoreCall2);
-            }
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nAsync method - Insert RestoreContexts call in return block %s\n", block->dspToString());
-                DISPTREE(restoreCall2);
-                printf("\n");
-            }
-#endif
-        }
-    }
-
-    // Note: Similar to synchronized methods, returns will be converted to leaves during morph
-    // via fgMergeBlockReturn calling fgConvertSyncReturnToLeave.
-}
-
-// Convert a BBJ_RETURN block in a synchronized or async method to a BBJ_ALWAYS.
-// We've previously added a 'try' block around the original program code using fgAddSyncMethodEnterExit()
-// or fgAddAsyncContextSaveRestore(). Thus, we put BBJ_RETURN blocks inside a 'try'. In IL this is illegal.
-// Instead, we would see a 'leave' inside a 'try' that would get transformed into BBJ_CALLFINALLY/BBJ_CALLFINALLYRET
-// blocks during importing, and the BBJ_CALLFINALLYRET would point at an outer block with the BBJ_RETURN.
-// Here, we mimic some of the logic of importing a LEAVE to get the same effect for synchronized/async methods.
+// Convert a BBJ_RETURN block in a synchronized method to a BBJ_ALWAYS.
+// We've previously added a 'try' block around the original program code using fgAddSyncMethodEnterExit().
+// Thus, we put BBJ_RETURN blocks inside a 'try'. In IL this is illegal. Instead, we would
+// see a 'leave' inside a 'try' that would get transformed into BBJ_CALLFINALLY/BBJ_CALLFINALLYRET blocks
+// during importing, and the BBJ_CALLFINALLYRET would point at an outer block with the BBJ_RETURN.
+// Here, we mimic some of the logic of importing a LEAVE to get the same effect for synchronized methods.
 void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 {
     assert(!fgFuncletsCreated);
-    assert((info.compFlags & CORINFO_FLG_SYNCH) || compIsAsync());
+    assert(info.compFlags & CORINFO_FLG_SYNCH);
     assert(genReturnBB != nullptr);
     assert(genReturnBB != block);
-    assert(fgReturnCount <= 1); // We have a single return for synchronized/async methods
+    assert(fgReturnCount <= 1); // We have a single return for synchronized methods
     assert(block->KindIs(BBJ_RETURN));
     assert(!block->HasFlag(BBF_HAS_JMP));
     assert(block->hasTryIndex());
@@ -1934,8 +1717,8 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        printf("%s method - convert block " FMT_BB " to BBJ_ALWAYS [targets " FMT_BB "]\n",
-               compIsAsync() ? "Async" : "Synchronized", block->bbNum, block->GetTarget()->bbNum);
+        printf("Synchronized method - convert block " FMT_BB " to BBJ_ALWAYS [targets " FMT_BB "]\n", block->bbNum,
+               block->GetTarget()->bbNum);
     }
 #endif
 }
@@ -2622,20 +2405,12 @@ PhaseStatus Compiler::fgAddInternal()
         fgAddSyncMethodEnterExit();
     }
 
-    //// Add async context save/restore try/finally for async methods.
-    //// This must happen before the one BBJ_RETURN block is created, similar to synchronized methods.
-    // if (UsesFunclets() && compIsAsync())
-    //{
-    //     fgAddAsyncContextSaveRestore();
-    // }
-
     //
     //  We will generate just one epilog (return block)
     //   when we are asked to generate enter/leave callbacks
     //   or for methods with PInvoke
     //   or for methods calling into unmanaged code
     //   or for synchronized methods
-    //   or for async methods (context save/restore needs single return).
     //
     BasicBlock* lastBlockBeforeGenReturns = fgLastBB;
     if (compIsProfilerHookNeeded() || compMethodRequiresPInvokeFrame() || opts.IsReversePInvoke() ||

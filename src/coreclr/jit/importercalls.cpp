@@ -6814,8 +6814,7 @@ void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall*     call,
     unsigned newSourceTypes = ICorDebugInfo::ASYNC;
     newSourceTypes |= (unsigned)callDI.GetLocation().GetSourceTypes() & ~ICorDebugInfo::CALL_INSTRUCTION;
     ILLocation newILLocation(callDI.GetLocation().GetOffset(), (ICorDebugInfo::SourceTypes)newSourceTypes);
-    asyncInfo.CallAsyncDebugInfo       = DebugInfo(callDI.GetInlineContext(), newILLocation);
-    asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
+    asyncInfo.CallAsyncDebugInfo = DebugInfo(callDI.GetInlineContext(), newILLocation);
 
     if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
     {
@@ -6840,12 +6839,6 @@ void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall*     call,
     else
     {
         JITDUMP("Call is an async non-task await\n");
-        // Only expected non-task await to see in IL is one of the AsyncHelpers.AwaitAwaiter variants.
-        // These are awaits of custom awaitables, and they come with the behavior that the execution context
-        // is captured and restored on suspension/resumption.
-        // We could perhaps skip this for AwaitAwaiter (but not for UnsafeAwaitAwaiter) since it is expected
-        // that the safe INotifyCompletion will take care of flowing ExecutionContext.
-        asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
     }
 
     call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));

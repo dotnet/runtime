@@ -5402,8 +5402,6 @@ public:
 
     void fgAddSyncMethodEnterExit();
 
-    void fgAddAsyncContextSaveRestore();
-
     GenTree* fgCreateMonitorTree(unsigned lvaMonitorBool, unsigned lvaThisVar, BasicBlock* block, bool enter);
 
     void fgConvertSyncReturnToLeave(BasicBlock* block);

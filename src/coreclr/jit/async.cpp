@@ -1169,12 +1169,9 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
         JITDUMP("  Continuation needs keep alive object; will be at offset %u\n", layout.KeepAliveOffset);
     }
 
-    if (call->GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::AsyncSaveAndRestore)
-    {
-        layout.ExecutionContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
-        JITDUMP("  Call has async-only save and restore of ExecutionContext; ExecutionContext will be at offset %u\n",
-                layout.ExecutionContextOffset);
-    }
+    layout.ExecutionContextOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+    JITDUMP("  Call has async-only save and restore of ExecutionContext; ExecutionContext will be at offset %u\n",
+            layout.ExecutionContextOffset);
 
     for (LiveLocalInfo& inf : liveLocals)
     {
