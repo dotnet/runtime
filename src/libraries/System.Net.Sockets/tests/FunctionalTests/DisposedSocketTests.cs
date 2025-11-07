@@ -810,7 +810,7 @@ namespace System.Net.Sockets.Tests
         public async Task NonDisposedSocket_SafeHandlesCollected(bool clientAsync)
         {
             TimeSpan timeout = TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout);
-            List<WeakReference> handles = await CreateHandlesAsync(clientAsync).WaitAsync(timeout);
+            List<WeakReference> handles = await CreateHandlesAsyncWithTimeout(clientAsync, timeout);
             await RetryHelper.ExecuteAsync(() => Task.Run(() =>
             {
                 GC.Collect();
@@ -819,7 +819,11 @@ namespace System.Net.Sockets.Tests
             })).WaitAsync(timeout);
         }
 
+        // NoInlining is to strip off any posible state holding to sockets. We only want the List.
         [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<List<WeakReference>> CreateHandlesAsyncWithTimeout(bool clientAsync, TimeSpan timeout) =>
+            await CreateHandlesAsync(clientAsync).WaitAsync(timeout);
+
         private static async Task<List<WeakReference>> CreateHandlesAsync(bool clientAsync)
         {
             var handles = new List<WeakReference>();
