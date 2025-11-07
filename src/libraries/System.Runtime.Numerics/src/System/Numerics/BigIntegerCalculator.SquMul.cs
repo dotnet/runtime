@@ -36,11 +36,17 @@ namespace System.Numerics
             // which are smaller in DEBUG mode for testing purpose.
 
             if (value.Length < MultiplyKaratsubaThreshold)
+            {
                 Naive(value, bits);
+            }
             else if (value.Length < MultiplyToom3Threshold)
+            {
                 Karatsuba(value, bits);
+            }
             else
+            {
                 Toom3(value, bits);
+            }
 
             static void Toom3(ReadOnlySpan<uint> value, Span<uint> bits)
             {
