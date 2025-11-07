@@ -58,7 +58,7 @@ namespace System.Threading
         internal static void InitializeForThreadPoolThread() => t_threadCountHolder = new ThreadCountHolder();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void IncrementCompletedWorkItemCount() => ThreadInt64PersistentCounter.Increment(GetOrCreateThreadLocalCompletionCountNode());
+        internal static void IncrementCompletedWorkItemCount() => GetOrCreateThreadLocalCompletionCountNode().Increment();
 
         internal static ThreadInt64PersistentCounter.ThreadLocalNode GetOrCreateThreadLocalCompletionCountNode() =>
             t_completionCountNode ?? CreateThreadLocalCompletionCountNode();
@@ -134,7 +134,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool NotifyWorkItemComplete(ThreadInt64PersistentCounter.ThreadLocalNode threadLocalCompletionCountNode, int _ /*currentTimeMs*/)
         {
-            ThreadInt64PersistentCounter.Increment(threadLocalCompletionCountNode);
+            threadLocalCompletionCountNode.Increment();
             return true;
         }
 

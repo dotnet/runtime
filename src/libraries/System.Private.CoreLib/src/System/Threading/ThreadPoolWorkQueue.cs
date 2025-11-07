@@ -1411,8 +1411,7 @@ namespace System.Threading
                 if (stageBeforeUpdate == QueueProcessingStage.Determining)
                 {
                     // Discount a work item here to avoid counting this queue processing work item
-                    ThreadInt64PersistentCounter.Decrement(
-                        ThreadPoolWorkQueueThreadLocals.threadLocals!.threadLocalCompletionCountNode!);
+                    ThreadPoolWorkQueueThreadLocals.threadLocals!.threadLocalCompletionCountNode!.Decrement();
                     return;
                 }
             }
@@ -1455,7 +1454,7 @@ namespace System.Threading
             // Discount a work item here to avoid counting this queue processing work item
             if (completedCount > 1)
             {
-                ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountNode!, completedCount - 1);
+                tl.threadLocalCompletionCountNode!.Add(completedCount - 1);
             }
         }
     }

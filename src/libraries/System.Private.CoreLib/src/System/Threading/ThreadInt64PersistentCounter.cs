@@ -25,15 +25,6 @@ namespace System.Threading
             _nodes = new ThreadLocalNode(this);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Increment(ThreadLocalNode node) => node.Increment();
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Decrement(ThreadLocalNode node) => node.Decrement();
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Add(ThreadLocalNode node, uint count) => node.Add(count);
-
         public ThreadLocalNode CreateThreadLocalCountObject()
         {
             var node = new ThreadLocalNode(this);

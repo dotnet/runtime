@@ -332,7 +332,7 @@ namespace System.Threading
 
         private void NotifyWorkItemProgress(ThreadInt64PersistentCounter.ThreadLocalNode threadLocalCompletionCountNode, int currentTimeMs)
         {
-            ThreadInt64PersistentCounter.Increment(threadLocalCompletionCountNode);
+            threadLocalCompletionCountNode.Increment();
             _separated.lastDequeueTime = currentTimeMs;
 
             if (ShouldAdjustMaxWorkersActive(currentTimeMs))
