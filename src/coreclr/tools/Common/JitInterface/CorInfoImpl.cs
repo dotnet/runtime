@@ -1829,7 +1829,11 @@ namespace Internal.JitInterface
             {
                 if (method.IsAsync)
                 {
+#if READYTORUN
                     throw new RequiresRuntimeJitException("RuntimeAsync methods will be jitted at runtime");
+#else
+                    throw new NotImplementedException("RuntimeAsync methods are not supported in AOT compilation");
+#endif
                 }
                 pResolvedToken.hMethod = ObjectToHandle(method);
 
