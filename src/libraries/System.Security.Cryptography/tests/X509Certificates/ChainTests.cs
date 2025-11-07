@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // Halfway between microsoftDotCom's NotBefore and NotAfter
                 // This isn't a boundary condition test.
-                chain.ChainPolicy.VerificationTime = new DateTime(2021, 02, 26, 12, 01, 01, DateTimeKind.Local);
+                chain.ChainPolicy.VerificationTime = new DateTime(2025, 12, 25, 12, 01, 01, DateTimeKind.Local);
                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                 bool valid = chain.Build(microsoftDotCom);
@@ -288,11 +288,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     // Check some known conditions.
 
-                    if (PlatformDetection.UsesAppleCrypto)
+                    if (OperatingSystem.IsLinux())
                     {
-                        Assert.Equal(3, chain.ChainElements.Count);
+                        Assert.Equal(2, chain.ChainElements.Count);
                     }
-                    else if (OperatingSystem.IsLinux())
+                    else if (PlatformDetection.IsApplePlatform)
                     {
                         Assert.Equal(2, chain.ChainElements.Count);
                     }
@@ -418,15 +418,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static IEnumerable<object[]> VerifyExpirationData()
         {
             // The test will be using the chain for TestData.MicrosoftDotComSslCertBytes
-            // The leaf cert (microsoft.com) is valid from 2020-08-28 22:17:02Z to 2021-08-28 22:17:02Z
-            DateTime[] validTimes =
-            {
-                // The NotBefore value
-                new DateTime(2020, 08, 28, 22, 17, 02, DateTimeKind.Utc),
+            DateTime notBefore = new DateTime(2025, 10, 01, 05, 17, 14, DateTimeKind.Utc);
+            DateTime notAfter = new DateTime(2026, 03, 30, 05, 17, 14, DateTimeKind.Utc);
 
-                // One second before the NotAfter value
-                new DateTime(2021, 08, 28, 22, 17, 01, DateTimeKind.Utc),
-            };
+            DateTime[] validTimes = [notBefore, notAfter];
 
             // The NotAfter value as a boundary condition differs on Windows and OpenSSL.
             // Windows considers it valid (<= NotAfter).
@@ -435,13 +430,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // So that boundary condition is not being tested.
 
             DateTime[] invalidTimes =
-            {
+            [
                 // One second before the NotBefore time
-                new DateTime(2020, 08, 28, 22, 17, 01, DateTimeKind.Utc),
+                notBefore.AddSeconds(-1),
 
                 // One second after the NotAfter time
-                new DateTime(2021, 08, 28, 22, 17, 03, DateTimeKind.Utc),
-            };
+                notAfter.AddSeconds(1)
+            ];
 
             List<object[]> testCases = new List<object[]>((validTimes.Length + invalidTimes.Length) * 3);
 
