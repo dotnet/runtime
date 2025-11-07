@@ -39,7 +39,6 @@ class MethodDesc;
 class NativeCodeVersion;
 class FieldDesc;
 enum RuntimeExceptionKind;
-class AwareLock;
 class PtrArray;
 #if defined(FEATURE_GDBJIT)
 class CalledMethod;
@@ -169,17 +168,15 @@ EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, MethodTable* pMT, INT_PTR si
 EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, MethodTable* pMT);
 EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, MethodTable* pMT, INT_PTR size);
 
-EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
-EXTERN_C FCDECL3(void, JITutil_MonTryEnter, Object* obj, INT32 timeOut, BYTE* pbLockTaken);
-EXTERN_C FCDECL2(void, JITutil_MonReliableContention, AwareLock* awarelock, BYTE* pbLockTaken);
-
 EXTERN_C FCDECL1(void*, JIT_GetNonGCStaticBase_Helper, MethodTable *pMT);
 EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Helper, MethodTable *pMT);
 
-EXTERN_C void DoJITFailFast ();
+EXTERN_C void DoJITFailFast();
 EXTERN_C FCDECL0(void, JIT_FailFast);
 
 FCDECL0(int, JIT_GetCurrentManagedThreadId);
+
+EXTERN_C void ReversePInvokeBadTransition();
 
 #if !defined(FEATURE_USE_ASM_GC_WRITE_BARRIERS) && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
 // Extra argument for the classification of the checked barriers.
@@ -903,7 +900,7 @@ public:
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() override final;
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
 
 protected :
 

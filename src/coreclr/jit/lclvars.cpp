@@ -1128,6 +1128,11 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
+    if (varNum == lvaAsyncContinuationArg)
+    {
+        return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
+    }
+
     // Now mutate varNum to remove extra parameters from the count.
     if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) && (varNum > info.compTypeCtxtArg))
     {

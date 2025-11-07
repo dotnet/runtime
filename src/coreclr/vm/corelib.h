@@ -346,7 +346,7 @@ DEFINE_METHOD(THREAD_START_EXCEPTION,EX_CTOR,               .ctor,              
 DEFINE_CLASS(VALUETASK_1, Tasks, ValueTask`1)
 DEFINE_METHOD(VALUETASK_1, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 DEFINE_METHOD(VALUETASK_1, GET_RESULT, get_Result, NoSig)
-DEFINE_METHOD(VALUETASK_1, AS_TASK, AsTask, IM_RetTaskOfT)
+DEFINE_METHOD(VALUETASK_1, AS_TASK_OR_NOTIFIER, AsTaskOrNotifier, IM_RetObj)
 
 DEFINE_CLASS(VALUETASK, Tasks, ValueTask)
 DEFINE_METHOD(VALUETASK, FROM_EXCEPTION, FromException, SM_Exception_RetValueTask)
@@ -355,7 +355,7 @@ DEFINE_METHOD(VALUETASK, FROM_RESULT_T, FromResult, GM_T_RetValueTaskOfT)
 DEFINE_METHOD(VALUETASK, GET_COMPLETED_TASK, get_CompletedTask, SM_RetValueTask)
 DEFINE_METHOD(VALUETASK, GET_ISCOMPLETED, get_IsCompleted, NoSig)
 DEFINE_METHOD(VALUETASK, THROW_IF_COMPLETED_UNSUCCESSFULLY, ThrowIfCompletedUnsuccessfully, NoSig)
-DEFINE_METHOD(VALUETASK, AS_TASK, AsTask, IM_RetTask)
+DEFINE_METHOD(VALUETASK, AS_TASK_OR_NOTIFIER, AsTaskOrNotifier, IM_RetObj)
 
 DEFINE_CLASS(TASK_1, Tasks, Task`1)
 DEFINE_METHOD(TASK_1, GET_RESULTONSUCCESS, get_ResultOnSuccess, NoSig)
@@ -652,14 +652,25 @@ DEFINE_CLASS(OLE_AUT_BINDER,        System,                 OleAutBinder)
 END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
-DEFINE_METHOD(MONITOR,              ENTER,                  Enter,                      SM_Obj_RetVoid)
-DEFINE_METHOD(MONITOR,              EXIT,                   Exit,                       SM_Obj_RetVoid)
-DEFINE_METHOD(MONITOR,              RELIABLEENTER,          Enter,                      SM_Obj_RefBool_RetVoid)
-DEFINE_METHOD(MONITOR,              EXIT_IF_TAKEN,          ExitIfLockTaken,            SM_Obj_RefBool_RetVoid)
+DEFINE_FIELD(MONITOR,               CONDITION_TABLE,        s_conditionTable)
+DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_ENTER, SynchronizedMethodEnter, SM_Obj_RefBool_RetVoid)
+DEFINE_METHOD(MONITOR,              SYNCHRONIZED_METHOD_EXIT,  SynchronizedMethodExit,  SM_Obj_RefBool_RetVoid)
 
-DEFINE_CLASS(THREAD_BLOCKING_INFO,  Threading,              ThreadBlockingInfo)
-DEFINE_FIELD(THREAD_BLOCKING_INFO,  OFFSET_OF_LOCK_OWNER_OS_THREAD_ID, s_monitorObjectOffsetOfLockOwnerOSThreadId)
-DEFINE_FIELD(THREAD_BLOCKING_INFO,  FIRST,                  t_first)
+DEFINE_CLASS(LOCK,                  Threading,              Lock)
+DEFINE_FIELD(LOCK,                  OWNING_THREAD_ID,       _owningThreadId)
+DEFINE_FIELD(LOCK,                  STATE,                  _state)
+DEFINE_FIELD(LOCK,                  RECURSION_COUNT,        _recursionCount)
+DEFINE_METHOD(LOCK,                 CTOR,                   .ctor,                IM_RetVoid)
+DEFINE_METHOD(LOCK,                 INITIALIZE_FOR_MONITOR, InitializeForMonitor, NoSig)
+
+DEFINE_CLASS(CONDITION,             Threading,              Condition)
+DEFINE_FIELD(CONDITION,             WAITERS_HEAD,           _waitersHead)
+DEFINE_FIELD(CONDITION,             CURRENT_THREAD_WAITER,  t_waiterForCurrentThread)
+
+DEFINE_CLASS(WAITER,                Threading,              Condition+Waiter)
+DEFINE_FIELD(WAITER,                NEXT,                   next)
+
+DEFINE_CLASS(THREADID,              Threading,              ManagedThreadId)
 
 DEFINE_CLASS(PARAMETER,             Reflection,             ParameterInfo)
 
@@ -718,12 +729,11 @@ DEFINE_CLASS(ASYNC_HELPERS,       CompilerServices,          AsyncHelpers)
 DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION,        AllocContinuation, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION_METHOD, AllocContinuationMethod, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION_CLASS,  AllocContinuationClass, NoSig)
-DEFINE_METHOD(ASYNC_HELPERS,      ALLOC_CONTINUATION_RESULT_BOX, AllocContinuationResultBox, SM_VoidPtr_RetObj)
 
-DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK, FinalizeTaskReturningThunk, SM_Continuation_RetTask)
-DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK_1, FinalizeTaskReturningThunk, GM_Continuation_RetTaskOfT)
-DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK, FinalizeValueTaskReturningThunk, SM_Continuation_RetValueTask)
-DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK_1, FinalizeValueTaskReturningThunk, GM_Continuation_RetValueTaskOfT)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK, FinalizeTaskReturningThunk, SM_RetTask)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_TASK_RETURNING_THUNK_1, FinalizeTaskReturningThunk, GM_RetTaskOfT)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK, FinalizeValueTaskReturningThunk, SM_RetValueTask)
+DEFINE_METHOD(ASYNC_HELPERS,      FINALIZE_VALUETASK_RETURNING_THUNK_1, FinalizeValueTaskReturningThunk, GM_RetValueTaskOfT)
 
 DEFINE_METHOD(ASYNC_HELPERS,      TASK_FROM_EXCEPTION, TaskFromException, SM_Exception_RetTask)
 DEFINE_METHOD(ASYNC_HELPERS,      TASK_FROM_EXCEPTION_1, TaskFromException, GM_Exception_RetTaskOfT)
@@ -731,14 +741,25 @@ DEFINE_METHOD(ASYNC_HELPERS,      VALUETASK_FROM_EXCEPTION, ValueTaskFromExcepti
 DEFINE_METHOD(ASYNC_HELPERS,      VALUETASK_FROM_EXCEPTION_1, ValueTaskFromException, GM_Exception_RetValueTaskOfT)
 
 DEFINE_METHOD(ASYNC_HELPERS,      UNSAFE_AWAIT_AWAITER_1,    UnsafeAwaitAwaiter, GM_T_RetVoid)
-DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT_TASK,    TransparentAwaitTask, NoSig)
-DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK_RESULT,    CompletedTaskResult, NoSig)
-DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK,           CompletedTask, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      TRANSPARENT_AWAIT,         TransparentAwait, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK_RESULT,     CompletedTaskResult, NoSig)
+DEFINE_METHOD(ASYNC_HELPERS,      COMPLETED_TASK,            CompletedTask, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_EXECUTION_CONTEXT, CaptureExecutionContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_EXECUTION_CONTEXT, RestoreExecutionContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTINUATION_CONTEXT, CaptureContinuationContext, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      CAPTURE_CONTEXTS, CaptureContexts, NoSig)
 DEFINE_METHOD(ASYNC_HELPERS,      RESTORE_CONTEXTS, RestoreContexts, NoSig)
+
+#ifdef TARGET_BROWSER
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT, HandleAsyncEntryPoint, SM_TaskOfInt_RetInt)
+DEFINE_METHOD(ASYNC_HELPERS,      HANDLE_ASYNC_ENTRYPOINT_VOID, HandleAsyncEntryPoint, SM_Task_RetVoid)
+
+DEFINE_CLASS(TIMER_QUEUE,         Threading, TimerQueue)
+DEFINE_METHOD(TIMER_QUEUE,        TIMER_HANDLER, TimerHandler, SM_RetVoid)
+
+DEFINE_CLASS(THREAD_POOL,         Threading, ThreadPool)
+DEFINE_METHOD(THREAD_POOL,        BACKGROUND_JOB_HANDLER, BackgroundJobHandler, SM_RetVoid)
+#endif // TARGET_BROWSER
 
 DEFINE_CLASS(SPAN_HELPERS,          System,                 SpanHelpers)
 DEFINE_METHOD(SPAN_HELPERS,         MEMSET,                 Fill, SM_RefByte_Byte_UIntPtr_RetVoid)
@@ -857,11 +878,9 @@ DEFINE_FIELD_U(ArgBuffer,                  TailCallTls,           m_argBuffer)
 
 DEFINE_CLASS(CONTINUATION,              CompilerServices,   Continuation)
 DEFINE_FIELD(CONTINUATION,              NEXT,               Next)
-DEFINE_FIELD(CONTINUATION,              RESUME,             Resume)
+DEFINE_FIELD(CONTINUATION,              RESUME_INFO,        ResumeInfo)
 DEFINE_FIELD(CONTINUATION,              STATE,              State)
 DEFINE_FIELD(CONTINUATION,              FLAGS,              Flags)
-DEFINE_FIELD(CONTINUATION,              DATA,               Data)
-DEFINE_FIELD(CONTINUATION,              GCDATA,             GCData)
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_METHOD(RUNTIME_WRAPPED_EXCEPTION, OBJ_CTOR,          .ctor,                      IM_Obj_RetVoid)

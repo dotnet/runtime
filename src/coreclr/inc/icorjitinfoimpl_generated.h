@@ -219,10 +219,10 @@ bool getIsClassInitedFlagAddress(
           CORINFO_CONST_LOOKUP* addr,
           int* offset) override;
 
-size_t getClassThreadStaticDynamicInfo(
+void* getClassThreadStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr) override;
 
-size_t getClassStaticDynamicInfo(
+void* getClassStaticDynamicInfo(
           CORINFO_CLASS_HANDLE clr) override;
 
 bool getStaticBaseAddress(
@@ -661,7 +661,13 @@ bool getTailCallHelpers(
           CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
           CORINFO_TAILCALL_HELPERS* pResult) override;
 
-CORINFO_METHOD_HANDLE getAsyncResumptionStub() override;
+CORINFO_CLASS_HANDLE getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize) override;
+
+CORINFO_METHOD_HANDLE getAsyncResumptionStub(
+          void** entryPoint) override;
 
 bool convertPInvokeCalliToCall(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,

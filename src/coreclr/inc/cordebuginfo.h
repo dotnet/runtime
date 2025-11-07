@@ -45,7 +45,8 @@ public:
         STACK_EMPTY                = 0x02, // The stack is empty here
         CALL_SITE                  = 0x04, // This is a call site.
         NATIVE_END_OFFSET_UNKNOWN  = 0x08, // Indicates a epilog endpoint
-        CALL_INSTRUCTION           = 0x10  // The actual instruction of a call.
+        CALL_INSTRUCTION           = 0x10, // The actual instruction of a call.
+        ASYNC                      = 0x20, // Indicates suspension/resumption for an async call
 
     };
 
@@ -436,18 +437,17 @@ public:
     {
         // IL number of variable (or one of the special IL numbers, like TYPECTXT_ILNUM)
         uint32_t VarNumber;
-        // Index in continuation's byte[] data where this variable is stored, or 0xFFFFFFFF if the
-        // variable does not have any byte[] data
+        // Offset in continuation object where this variable is stored
         uint32_t Offset;
-        // Index in continuation's object[] data where this variable's GC pointers are stored, or 0xFFFFFFFF
-        // if the variable does not have any GC pointers
-        uint32_t GCIndex;
     };
 
     struct AsyncSuspensionPoint
     {
-        // Logical return address of the async call (join point of synchronous and resuming paths)
-        uint32_t NativeOffset;
+        // Offset of IP stored in ResumeInfo.DiagnosticIP. This offset maps to
+        // the IL call that resulted in the suspension point through an ASYNC
+        // mapping. Also used as a unique key for debug information about the
+        // suspension point. See ResumeInfo.DiagnosticIP in SPC for more info.
+        uint32_t DiagnosticNativeOffset;
         // Count of AsyncContinuationVarInfo in array of locals starting where
         // the previous suspension point's locals end.
         uint32_t NumContinuationVars;

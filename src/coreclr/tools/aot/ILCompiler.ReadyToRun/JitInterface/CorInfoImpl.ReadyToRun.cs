@@ -136,6 +136,7 @@ namespace Internal.JitInterface
         public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing, object context, TypeDesc devirtualizedMethodOwner = null)
         {
             Debug.Assert(!method.IsUnboxingThunk());
+            Debug.Assert(!method.IsAsyncVariant());
             Method = method;
             Token = token;
             ConstrainedType = constrainedType;
@@ -349,6 +350,8 @@ namespace Internal.JitInterface
             }
             if (Unboxing)
                 sb.Append("; UNBOXING"u8);
+            if (Method.IsAsyncVariant())
+                sb.Append("; ASYNC"u8);
         }
 
         public override string ToString()
@@ -365,6 +368,8 @@ namespace Internal.JitInterface
             debuggingName.Append(Token.ToString());
             if (Unboxing)
                 debuggingName.Append("; UNBOXING");
+            if (Method.IsAsyncVariant())
+                debuggingName.Append("; ASYNC");
 
             return debuggingName.ToString();
         }
@@ -1419,7 +1424,7 @@ namespace Internal.JitInterface
                     resultField = resultField.GetTypicalFieldDefinition();
 
                     Debug.Assert(resultField is EcmaField);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaField)resultField).OwningType) || ((MetadataType)resultField.OwningType).IsNonVersionable());
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(resultField.OwningType) || resultField.OwningType.IsNonVersionable());
                     token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultField).Handle);
                     module = ((EcmaField)resultField).Module;
                 }
@@ -1429,7 +1434,7 @@ namespace Internal.JitInterface
                     {
                         Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType));
                         token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);
-                        module = ecmaType.EcmaModule;
+                        module = ecmaType.Module;
                     }
                     else
                     {

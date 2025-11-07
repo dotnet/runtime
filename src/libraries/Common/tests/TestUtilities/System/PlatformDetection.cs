@@ -50,6 +50,7 @@ namespace System
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
+        public static bool IsWasm => IsBrowser || IsWasi;
         public static bool IsNotBrowser => !IsBrowser;
         public static bool IsNotWasi => !IsWasi;
         public static bool IsMobile => IsBrowser || IsWasi || IsAppleMobile || IsAndroid;

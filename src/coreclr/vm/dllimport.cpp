@@ -572,7 +572,6 @@ public:
         {
         default:
             UNREACHABLE_MSG("Unexpected element type found on native return type.");
-            break;
         case ELEMENT_TYPE_VOID:
             _ASSERTE(retvalLocalNum == (DWORD)-1);
             pcsExceptionHandler->EmitPOP();
@@ -2014,6 +2013,10 @@ void PInvokeStubLinker::Begin(DWORD dwStubFlags)
     {
         if (SF_IsDelegateStub(dwStubFlags))
         {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            _ASSERTE(!"Delegate reverse pinvoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS");
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
             //
             // recover delegate object from UMEntryThunk
 
@@ -2024,6 +2027,7 @@ void PInvokeStubLinker::Begin(DWORD dwStubFlags)
             m_pcsDispatch->EmitLDIND_I();      // get OBJECTHANDLE
             m_pcsDispatch->EmitLDIND_REF();    // get Delegate object
             m_pcsDispatch->EmitLDFLD(GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__TARGET)));
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
         }
     }
 
@@ -2186,6 +2190,10 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
     }
     else // native-to-managed
     {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        _ASSERTE(!"Delegate reverse pinvoke stubs not supported with FEATURE_PORTABLE_ENTRYPOINTS");
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         if (SF_IsDelegateStub(dwStubFlags)) // reverse P/Invoke via delegate
         {
             int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
@@ -2212,6 +2220,7 @@ void PInvokeStubLinker::DoPInvoke(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
             // pcsEmit->EmitADD();
             pcsEmit->EmitLDIND_I();  // Get UMEntryThunk::m_pManagedTarget
         }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     // For managed-to-native calls, the rest of the work is done by the JIT. It will
@@ -4748,8 +4757,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
             pStubClassMT,
             stubClassType.GetAssembly(),
             pStubMD->GetAttrs(),
-            pStubMD,
-            NULL))
+            pStubMD))
     {
         StackSString interopMethodName(SString::Utf8, pTargetMD->GetName());
 
@@ -5650,6 +5658,9 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
     {
         CONSISTENCY_CHECK(pNMD->IsVarArgs());
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         //
         // varargs goes through vararg PInvoke stub
         //
@@ -5657,6 +5668,7 @@ PCODE PInvoke::GetStubForILStub(PInvokeMethodDesc* pNMD, MethodDesc** ppStubMD, 
 
         // Only vararg P/Invoke use shared stubs, they need a precode to push the hidden argument.
         (void)pNMD->GetOrCreatePrecode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     if (pNMD->IsEarlyBound())
@@ -5918,7 +5930,7 @@ void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNati
 // it can reenter managed mode and throw a CLR exception if the DLL linking
 // fails.
 //==========================================================================
-EXTERN_C LPVOID STDCALL PInvokeImportWorker(PInvokeMethodDesc* pMD)
+EXTERN_C void* PInvokeImportWorker(PInvokeMethodDesc* pMD)
 {
     LPVOID ret = NULL;
 
@@ -6151,6 +6163,26 @@ EXTERN_C void STDCALL GenericPInvokeCalliStubWorker(TransitionBlock * pTransitio
     GetILStubForCalli(pVASigCookie, NULL);
 
     pFrame->Pop(CURRENT_THREAD);
+}
+
+EXTERN_C void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        ENTRY_POINT;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(fullQualifiedTypeName != nullptr);
+    _ASSERTE(methodName != nullptr);
+    _ASSERTE(ppMD != nullptr);
+
+    SString fullQualifiedTypeNameUtf8(SString::Utf8, fullQualifiedTypeName);
+    TypeHandle type = TypeName::GetTypeFromAsmQualifiedName(fullQualifiedTypeNameUtf8.GetUnicode(), /*bThrowIfNotFound*/ TRUE);
+    _ASSERTE(!type.IsTypeDesc());
+
+    *ppMD = MemberLoader::FindMethodByName(type.GetMethodTable(), methodName);
 }
 
 namespace

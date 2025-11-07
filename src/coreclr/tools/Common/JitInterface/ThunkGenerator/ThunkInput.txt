@@ -38,13 +38,13 @@ void
 void*
 const void *,void*
 JITINTERFACE_HRESULT,HRESULT
-size_t*,UIntPtr*
+size_t*,nuint*
 int
 int32_t,int
 uint32_t,uint
 unsigned,uint
 unsigned int, uint
-size_t,UIntPtr
+size_t,nuint
 uint16_t,ushort
 bool,[MarshalAs(UnmanagedType.I1)]bool
 const char *,byte*
@@ -217,8 +217,8 @@ FUNCTIONS
     void* LongLifetimeMalloc(size_t sz)
     void LongLifetimeFree(void* obj)
     bool getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, REF_CORINFO_CONST_LOOKUP addr, int* offset)
-    size_t getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE clr)
-    size_t getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE clr)
+    void* getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE clr)
+    void* getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE clr)
     bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, REF_CORINFO_CONST_LOOKUP addr)
     unsigned getClassSize(CORINFO_CLASS_HANDLE cls)
     unsigned getHeapClassSize(CORINFO_CLASS_HANDLE        cls)
@@ -325,7 +325,8 @@ FUNCTIONS
     CORINFO_METHOD_HANDLE GetDelegateCtor(CORINFO_METHOD_HANDLE  methHnd, CORINFO_CLASS_HANDLE   clsHnd, CORINFO_METHOD_HANDLE  targetMethodHnd, DelegateCtorArgs *     pCtorData);
     void MethodCompileComplete(CORINFO_METHOD_HANDLE methHnd);
     bool getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
-    CORINFO_METHOD_HANDLE getAsyncResumptionStub();
+    CORINFO_CLASS_HANDLE getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize);
+    CORINFO_METHOD_HANDLE getAsyncResumptionStub(void **entryPoint);
     bool convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool mustConvert);
     bool notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,bool supportEnabled);
     void updateEntryPointForTailCall(REF_CORINFO_CONST_LOOKUP entryPoint);
