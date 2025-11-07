@@ -786,7 +786,7 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
 #endif // FEATURE_METADATA_UPDATER
 
     // Cleanup lock info
-    psb->m_thinLock = 0;
+    psb->m_thinLock.StoreWithoutBarrier(0);
     if (psb->m_Lock)
     {
         DestroyHandle(psb->m_Lock);
@@ -1314,7 +1314,7 @@ void DumpSyncBlockCache()
 namespace
 {
 #ifdef MP_LOCKS
-    void EnterSpinLock(Volatile<DWORD>* pLock)
+    void EnterSpinLock(Volatile<DWORD>* pLock COMMA_INDEBUG(int spinTimeout = INFINITE_TIMEOUT))
     {
         STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -1327,13 +1327,7 @@ namespace
         while (TRUE)
         {
     #ifdef _DEBUG
-    #ifdef HOST_64BIT
-            // Give 64bit more time because there isn't a remoting fast path now, and we've hit this assert
-            // needlessly in CLRSTRESS.
-            if (i++ > 30000)
-    #else
-            if (i++ > 10000)
-    #endif // HOST_64BIT
+            if (spinTimeout != INFINITE_TIMEOUT && i++ > spinTimeout)
                 _ASSERTE(!"ObjHeader::EnterLock timed out");
     #endif
             // get the value so that it doesn't get changed under us.
@@ -1364,7 +1358,7 @@ namespace
         }
     }
 #else
-    void EnterSpinLock(Volatile<DWORD>* pLock)
+    void EnterSpinLock(Volatile<DWORD>* pLock COMMA_INDEBUG(int spinTimeout = INFINITE_TIMEOUT))
     {
         STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -1377,7 +1371,7 @@ namespace
         while (TRUE)
         {
 #ifdef _DEBUG
-            if (i++ > 10000)
+            if (spinTimeout != INFINITE_TIMEOUT && i++ > spinTimeout)
                 _ASSERTE(!"ObjHeader::EnterLock timed out");
 #endif
             // get the value so that it doesn't get changed under us.
@@ -1449,7 +1443,17 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
     // function, which will undo the BeginNoTriggerGC() call below.
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    ::EnterSpinLock(std::addressof(m_SyncBlockValue));
+#ifdef _DEBUG
+#ifdef HOST_64BIT
+    // Give 64bit more time because there isn't a remoting fast path now, and we've hit this assert
+    // needlessly in CLRSTRESS.
+    const int spinTimeout = 30000;
+#else
+    const int spinTimeout = 10000;
+#endif
+#endif
+
+    ::EnterSpinLock(std::addressof(m_SyncBlockValue) COMMA_INDEBUG(spinTimeout));
 
     INCONTRACT(Thread* pThread = GetThreadNULLOk());
     INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
@@ -1760,7 +1764,7 @@ void SyncBlock::InitializeThinLock(DWORD recursionLevel, DWORD threadId)
 
     _ASSERTE(m_Lock == (OBJECTHANDLE)NULL);
     _ASSERTE(m_thinLock == 0u);
-    m_thinLock = (threadId & SBLK_MASK_LOCK_THREADID) | (recursionLevel << SBLK_RECLEVEL_SHIFT);
+    m_thinLock.StoreWithoutBarrier((threadId & SBLK_MASK_LOCK_THREADID) | (recursionLevel << SBLK_RECLEVEL_SHIFT));
 }
 
 OBJECTHANDLE SyncBlock::GetOrCreateLock(OBJECTREF lockObj)
