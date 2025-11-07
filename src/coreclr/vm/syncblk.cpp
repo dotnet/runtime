@@ -1313,51 +1313,6 @@ void DumpSyncBlockCache()
 
 namespace
 {
-#ifdef MP_LOCKS
-    void EnterSpinLock(Volatile<DWORD>* pLock COMMA_INDEBUG(int spinTimeout = INFINITE_TIMEOUT))
-    {
-        STATIC_CONTRACT_GC_NOTRIGGER;
-
-    #ifdef _DEBUG
-        int i = 0;
-    #endif
-
-        DWORD dwSwitchCount = 0;
-
-        while (TRUE)
-        {
-    #ifdef _DEBUG
-            if (spinTimeout != INFINITE_TIMEOUT && i++ > spinTimeout)
-                _ASSERTE(!"ObjHeader::EnterLock timed out");
-    #endif
-            // get the value so that it doesn't get changed under us.
-            LONG curValue = pLock->LoadWithoutBarrier();
-
-            // check if lock taken
-            if (! (curValue & BIT_SBLK_SPIN_LOCK))
-            {
-                // try to take the lock
-                LONG newValue = curValue | BIT_SBLK_SPIN_LOCK;
-                LONG result = InterlockedCompareExchange((LONG*)pLock, newValue, curValue);
-                if (result == curValue)
-                    break;
-            }
-            if  (g_SystemInfo.dwNumberOfProcessors > 1)
-            {
-                for (int spinCount = 0; spinCount < BIT_SBLK_SPIN_COUNT; spinCount++)
-                {
-                    if  (! (*pLock & BIT_SBLK_SPIN_LOCK))
-                        break;
-                    YieldProcessorNormalized(); // indicate to the processor that we are spinning
-                }
-                if  (*pLock & BIT_SBLK_SPIN_LOCK)
-                    __SwitchToThread(0, ++dwSwitchCount);
-            }
-            else
-                __SwitchToThread(0, ++dwSwitchCount);
-        }
-    }
-#else
     void EnterSpinLock(Volatile<DWORD>* pLock COMMA_INDEBUG(int spinTimeout = INFINITE_TIMEOUT))
     {
         STATIC_CONTRACT_GC_NOTRIGGER;
@@ -1389,7 +1344,6 @@ namespace
             __SwitchToThread(0, ++dwSwitchCount);
         }
     }
-#endif //MP_LOCKS
 
     void ReleaseSpinLock(Volatile<DWORD>* pLock)
     {
@@ -1443,17 +1397,7 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
     // function, which will undo the BeginNoTriggerGC() call below.
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-#ifdef _DEBUG
-#ifdef HOST_64BIT
-    // Give 64bit more time because there isn't a remoting fast path now, and we've hit this assert
-    // needlessly in CLRSTRESS.
-    const int spinTimeout = 30000;
-#else
-    const int spinTimeout = 10000;
-#endif
-#endif
-
-    ::EnterSpinLock(std::addressof(m_SyncBlockValue) COMMA_INDEBUG(spinTimeout));
+    ::EnterSpinLock(std::addressof(m_SyncBlockValue) COMMA_INDEBUG(10000));
 
     INCONTRACT(Thread* pThread = GetThreadNULLOk());
     INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
