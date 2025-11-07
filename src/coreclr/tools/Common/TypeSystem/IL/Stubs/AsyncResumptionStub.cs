@@ -48,40 +48,6 @@ namespace ILCompiler
             ILCodeStream ilStream = ilEmitter.NewCodeStream();
 
             // Ported from jitinterface.cpp CEEJitInfo::getAsyncResumptionStub
-            // Emitted IL:
-            // if (!_owningMethod.Signature.IsStatic)
-            // {
-            //     if (_owningMethod.OwningType.IsValueType)
-            //         ldc.i4.0
-            //         conv.u
-            //     else
-            //         ldnull
-            // }
-            // foreach (param in _owningMethod.Signature)
-            // {
-            //     ldloca.s <local>
-            //     initobj <param type>
-            //     ldloc.s <local>
-            // }
-            // ldftn <_owningMethod>
-            // calli <this.Signature>
-            // if (!returnsVoid)
-            //     stloc.s <resultLocal>
-            // call System.StubHelpers.StubHelpers::AsyncCallContinuation()
-            // stloc.s <newContinuationLocal>
-            // if (!returnsVoid)
-            // {
-            //     ldloca.s <newContinuationLocal>
-            //     brtrue.s done_result
-            //     ldarg.1
-            //     ldloc.s <resultLocal>
-            //     stobj <return type>
-            //   done_result:
-            // }
-            // ldloc.s <newContinuationLocal>
-            // ret
-
-            // if it has this pointer
             if (!_owningMethod.Signature.IsStatic)
             {
                 if (_owningMethod.OwningType.IsValueType)
