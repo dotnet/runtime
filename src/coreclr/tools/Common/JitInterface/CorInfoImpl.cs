@@ -834,6 +834,9 @@ namespace Internal.JitInterface
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig, scope);
 
+            if (method.IsAsyncCall())
+                sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
+
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
 
@@ -878,7 +881,6 @@ namespace Internal.JitInterface
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
             if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
-            if (signature.IsAsyncCall) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
 
             TypeDesc returnType = signature.ReturnType;
 
@@ -4360,7 +4362,7 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
 
-            if (this.MethodBeingCompiled.Signature.IsAsyncCall)
+            if (this.MethodBeingCompiled.IsAsyncCall())
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
