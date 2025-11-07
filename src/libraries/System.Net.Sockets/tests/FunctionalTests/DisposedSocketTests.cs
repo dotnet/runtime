@@ -819,7 +819,7 @@ namespace System.Net.Sockets.Tests
             })).WaitAsync(timeout);
         }
 
-        // NoInlining is to strip off any posible state holding to sockets. We only want the List.
+        // NoInlining is to strip off any possible state holding to sockets. We only want the List.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task<List<WeakReference>> CreateHandlesAsyncWithTimeout(bool clientAsync, TimeSpan timeout) =>
             await CreateHandlesAsync(clientAsync).WaitAsync(timeout);
