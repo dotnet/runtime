@@ -22,8 +22,13 @@ class BasicThreading
         if (ThreadStaticAlignmentTest.Run() != Pass)
             return Fail;
 
-        if (ThreadTest.Run() != Pass)
-            return Fail;
+        if (!OperatingSystem.IsAndroid())
+        {
+            // Disabled on Android: https://github.com/dotnet/runtime/issues/121451
+
+            if (ThreadTest.Run() != Pass)
+                return Fail;
+        }
 
         if (TimerTest.Run() != Pass)
             return Fail;
@@ -450,23 +455,18 @@ class ThreadTest
 
     private static void TestIsBackgroundProperty()
     {
-        if (!OperatingSystem.IsAndroid())
-        {
-            // Disabled on Android due to https://github.com/dotnet/runtime/issues/121451
+        // Thread created using Thread.Start
+        var t_event = new AutoResetEvent(false);
+        var t = new Thread(() => t_event.WaitOne());
 
-            // Thread created using Thread.Start
-            var t_event = new AutoResetEvent(false);
-            var t = new Thread(() => t_event.WaitOne());
+        t.Start();
+        s_startedThreads.Add(t);
 
-            t.Start();
-            s_startedThreads.Add(t);
-
-            Expect(!t.IsBackground, "Expected t.IsBackground == false");
-            t_event.Set();
-            t.Join();
-            ExpectException<ThreadStateException>(() => Console.WriteLine(t.IsBackground),
-                "Expected ThreadStateException for t.IsBackground");
-        }
+        Expect(!t.IsBackground, "Expected t.IsBackground == false");
+        t_event.Set();
+        t.Join();
+        ExpectException<ThreadStateException>(() => Console.WriteLine(t.IsBackground),
+            "Expected ThreadStateException for t.IsBackground");
 
         // Thread pool thread
         Task.Factory.StartNew(() => Expect(Thread.CurrentThread.IsBackground, "Expected IsBackground == true")).Wait();
@@ -482,7 +482,7 @@ class ThreadTest
         // Main thread
         Expect(!Thread.CurrentThread.IsBackground, "Expected CurrentThread.IsBackground == false");
 
-        ExpectPassed(nameof(TestIsBackgroundProperty), OperatingSystem.IsAndroid() ? 4 : 6);
+        ExpectPassed(nameof(TestIsBackgroundProperty), 6);
     }
 
     private static void TestIsThreadPoolThreadProperty()
