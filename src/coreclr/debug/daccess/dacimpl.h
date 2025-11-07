@@ -1339,6 +1339,8 @@ public:
     HRESULT EnumMemCLRMainModuleInfo();
     HRESULT EnumMemDataDescriptors(CLRDataEnumMemoryFlags flags);
 
+    void EnumDataDescriptorHelper(TADDR dataDescriptorAddr);
+
     bool ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);
     bool DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer);
 
