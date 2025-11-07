@@ -669,6 +669,7 @@ namespace Internal.IL.Stubs
         private ArrayBuilder<ILCodeStream> _codeStreams;
         private ArrayBuilder<LocalVariableDefinition> _locals;
         private ArrayBuilder<object> _tokens;
+        private ArrayBuilder<ILExceptionRegionBuilder> _catchRegions;
         private ArrayBuilder<ILExceptionRegionBuilder> _finallyRegions;
 
         public ILEmitter()
@@ -727,6 +728,14 @@ namespace Internal.IL.Stubs
             return newLabel;
         }
 
+        // For now, only catches exceptions of type Exception.
+        public ILExceptionRegionBuilder NewCatchRegion()
+        {
+            var region = new ILExceptionRegionBuilder();
+            _catchRegions.Add(region);
+            return region;
+        }
+
         public ILExceptionRegionBuilder NewFinallyRegion()
         {
             var region = new ILExceptionRegionBuilder();
@@ -782,10 +791,25 @@ namespace Internal.IL.Stubs
 
             ILExceptionRegion[] exceptionRegions = null;
 
-            int numberOfExceptionRegions = _finallyRegions.Count;
+            int numberOfExceptionRegions = _catchRegions.Count + _finallyRegions.Count;
             if (numberOfExceptionRegions > 0)
             {
                 exceptionRegions = new ILExceptionRegion[numberOfExceptionRegions];
+
+                TypeDesc exceptionType = owningMethod.Context.SystemModule.GetKnownType("System"u8, "Exception"u8);
+
+                int exceptionTypeToken = (int)NewToken(exceptionType);
+
+                for (int i = 0; i < _catchRegions.Count; i++)
+                {
+                    ILExceptionRegionBuilder region = _catchRegions[i];
+
+                    Debug.Assert(region.IsDefined);
+
+                    exceptionRegions[i] = new ILExceptionRegion(ILExceptionRegionKind.Catch,
+                        region.TryOffset, region.TryLength, region.HandlerOffset, region.HandlerLength,
+                        classToken: exceptionTypeToken, filterOffset: 0);
+                }
 
                 for (int i = 0; i < _finallyRegions.Count; i++)
                 {
@@ -793,7 +817,7 @@ namespace Internal.IL.Stubs
 
                     Debug.Assert(region.IsDefined);
 
-                    exceptionRegions[i] = new ILExceptionRegion(ILExceptionRegionKind.Finally,
+                    exceptionRegions[_catchRegions.Count + i] = new ILExceptionRegion(ILExceptionRegionKind.Finally,
                         region.TryOffset, region.TryLength, region.HandlerOffset, region.HandlerLength,
                         classToken: 0, filterOffset: 0);
                 }

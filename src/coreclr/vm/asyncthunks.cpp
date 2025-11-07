@@ -58,7 +58,8 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
     return true;
 }
 
-// provided an async method, emits a Task-returning wrapper.
+// Provided an async method, emits a Task-returning wrapper.
+// The emitted code matches method EmitTaskReturningThunk in the Managed Type System.
 void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL)
 {
     _ASSERTE(!pAsyncOtherVariant->IsAsyncThunkMethod());
@@ -132,7 +133,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
             }
 
             int token;
-            _ASSERTE(!pAsyncOtherVariant->IsWrapperStub());
+            _ASSERTE(!pAsyncOtherVariant->IsWrapperStub()); // Would it be better to move the assertion to the top of this method?
             if (pAsyncOtherVariant->HasClassOrMethodInstantiation())
             {
                 // For generic code emit generic signatures.
