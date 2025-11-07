@@ -1245,24 +1245,22 @@ MAIN_LOOP:
                 }
 
                 case INTOP_SAFEPOINT:
-                {
-                    Thread *pThread = GetThread();
-                    if (pThread->IsAbortRequested())
-                    {
-                        CallWithSEHWrapper(
-                        [&pThread]() {
-                            pThread->HandleThreadAbort();
-                            return 0;
-                        });
-                    }
                     if (g_TrapReturningThreads)
                     {
+                        Thread *pThread = GetThread();
+                        if (pThread->IsAbortRequested())
+                        {
+                            CallWithSEHWrapper(
+                            [&pThread]() {
+                                pThread->HandleThreadAbort();
+                                return 0;
+                            });
+                        }
                         // Transition into preemptive mode to allow the GC to suspend us
                         GCX_PREEMP();
                     }
                     ip++;
                     break;
-                }
 
                 case INTOP_BR:
                     ip += ip[1];
