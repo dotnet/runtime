@@ -2315,10 +2315,7 @@ void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeH
                                            DebuggerIPCE_ExpandedTypeData * pTypeInfo,
                                            AppDomain *                     pAppDomain)
 {
-    if (typeHandle.AsMethodTable()->IsContinuation())
-    {
-        typeHandle = TypeHandle(g_pContinuationClassIfSubTypeCreated);
-    }
+    typeHandle = typeHandle.UpCastTypeIfNeeded();
     Module * pModule = typeHandle.GetModule();
 
     if (typeHandle.HasInstantiation()) // the type handle represents a generic instantiation
@@ -2406,10 +2403,7 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
         case ELEMENT_TYPE_CLASS:
         case ELEMENT_TYPE_VALUETYPE:
         {
-            if (typeHandle.AsMethodTable()->IsContinuation())
-            {
-                typeHandle = TypeHandle(g_pContinuationClassIfSubTypeCreated);
-            }
+            typeHandle = typeHandle.UpCastTypeIfNeeded();
 
             Module * pModule = typeHandle.GetModule();
             if (typeHandle.HasInstantiation()) // only set if instantiated
