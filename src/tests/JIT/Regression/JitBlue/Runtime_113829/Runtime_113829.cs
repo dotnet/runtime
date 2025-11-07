@@ -14,6 +14,9 @@
 // Reduced from 26.2 KiB to 0.3 KiB in 00:01:05
 // Problem2() Hits JIT assert in Debug:
 // Assertion failed 'op1->TypeIs(TYP_INT) && (genTypeSize(op1->CastToType()) == genTypeSize(simdBaseType))' in 'Program:Main(Fuzzlyn.ExecutionServer.IRuntime)' during 'Lowering nodeinfo' (IL size 31; hash 0xade6b36b; MinOpts)
+
+namespace Runtime_113829;
+
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
@@ -32,13 +35,10 @@ public class Runtime_113829
         Vector128.CreateScalar((short)vr4.F4);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(Sse41.X64), nameof(Sse41.X64.IsSupported))]
     public static void Problem2()
     {
-        if (Sse41.X64.IsSupported)
-        {
-            var vr7 = Vector128.CreateScalar(2263564149047927034UL);
-            Vector256.CreateScalar((short)(sbyte)Sse41.X64.Extract(vr7, 0));
-        }
+        var vr7 = Vector128.CreateScalar(2263564149047927034UL);
+        Vector256.CreateScalar((short)(sbyte)Sse41.X64.Extract(vr7, 0));
     }
 }

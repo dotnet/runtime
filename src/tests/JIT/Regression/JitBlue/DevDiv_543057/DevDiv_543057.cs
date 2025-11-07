@@ -8,6 +8,9 @@
 // This case exposed a bug in the stress-limiting of registers where it
 // wasn't taking these live "specialPutArg" Intervals into account.
 
+
+namespace DevDiv_543057;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

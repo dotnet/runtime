@@ -61,10 +61,10 @@ public:
     NativeCodeVersionId GetVersionId() const;
     BOOL IsDefaultVersion() const;
     PCODE GetNativeCode() const;
+    ReJITID GetILCodeVersionId() const;
 
 #ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion GetILCodeVersion() const;
-    ReJITID GetILCodeVersionId() const;
 #endif // FEATURE_CODE_VERSIONING
 
 #ifndef DACCESS_COMPILE

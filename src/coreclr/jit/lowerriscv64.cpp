@@ -38,8 +38,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 bool Lowering::IsCallTargetInRange(void* addr)
 {
-    // TODO-RISCV64: using B/BL for optimization.
-    return false;
+    return true;
 }
 
 //------------------------------------------------------------------------
