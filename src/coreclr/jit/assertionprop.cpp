@@ -5776,6 +5776,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 
 void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
 {
+    assert(!optLocalAssertionProp);
+
     if (BitVecOps::IsEmpty(apTraits, activeAssertions))
     {
         return;
@@ -5804,31 +5806,25 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
         {
             AssertionDsc* impAssertion = optGetAssertion(impIndex);
 
-            //  The impAssertion must be different from the chkAssertion
+            // The impAssertion must be different from the chkAssertion
             if (impIndex == chkAssertionIndex)
             {
                 continue;
             }
 
-            // impAssertion must be a Non Null assertion on lclNum
-            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || (impAssertion->op1.kind != O1K_LCLVAR) ||
-                (impAssertion->op2.kind != O2K_CONST_INT) || (impAssertion->op1.vn != chkAssertion->op1.vn))
+            // impAssertion must be a Non Null assertion on op1.vn
+            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || !impAssertion->CanPropNonNull() ||
+                (impAssertion->op1.vn != chkAssertion->op1.vn))
             {
                 continue;
             }
 
             // The bit may already be in the result set
-            if (!BitVecOps::IsMember(apTraits, activeAssertions, impIndex - 1))
+            if (BitVecOps::TryAddElemD(apTraits, activeAssertions, impIndex - 1))
             {
-                BitVecOps::AddElemD(apTraits, activeAssertions, impIndex - 1);
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
-                           (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
-                           impIndex);
-                }
-#endif
+                JITDUMP("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
+                        (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
+                        impIndex);
             }
 
             // There is at most one non-null assertion that is implied by the current chkIndex assertion

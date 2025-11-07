@@ -56,6 +56,7 @@ namespace System.Reflection.Emit
         #region Public Abstract\Virtual Members
         public override Type[] GetRequiredCustomModifiers() { return _field.GetRequiredCustomModifiers(); }
         public override Type[] GetOptionalCustomModifiers() { return _field.GetOptionalCustomModifiers(); }
+        public override Type GetModifiedFieldType() => _field.GetModifiedFieldType();
         public override void SetValueDirect(TypedReference obj, object value)
         {
             throw new NotImplementedException();

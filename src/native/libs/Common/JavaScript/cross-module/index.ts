@@ -94,22 +94,22 @@ export function dotnetUpdateInternalsSubscriber() {
     }
 
     // keep in sync with runtimeExportsToTable()
-    function runtimeExportsFromTable(table:RuntimeExportsTable, runtime:RuntimeExports):void {
+    function runtimeExportsFromTable(table: RuntimeExportsTable, runtime: RuntimeExports): void {
         Object.assign(runtime, {
         });
     }
 
     // keep in sync with loaderExportsToTable()
-    function loaderExportsFromTable(table:LoaderExportsTable, logger:LoggerType, assert:AssertType, dotnetLoaderExports:LoaderExports):void {
-        const loggerLocal :LoggerType = {
+    function loaderExportsFromTable(table: LoaderExportsTable, logger: LoggerType, assert: AssertType, dotnetLoaderExports: LoaderExports): void {
+        const loggerLocal: LoggerType = {
             info: table[0],
             warn: table[1],
             error: table[2],
         };
-        const assertLocal :AssertType = {
+        const assertLocal: AssertType = {
             check: table[3],
         };
-        const loaderExportsLocal :LoaderExports = {
+        const loaderExportsLocal: LoaderExports = {
             resolveRunMainPromise: table[4],
             rejectRunMainPromise: table[5],
             getRunMainPromise: table[6],
@@ -120,33 +120,34 @@ export function dotnetUpdateInternalsSubscriber() {
     }
 
     // keep in sync with browserHostExportsToTable()
-    function browserHostExportsFromTable(table:BrowserHostExportsTable, native:BrowserHostExports):void {
-        const nativeLocal :BrowserHostExports = {
+    function browserHostExportsFromTable(table: BrowserHostExportsTable, native: BrowserHostExports): void {
+        const nativeLocal: BrowserHostExports = {
             registerDllBytes: table[0],
         };
         Object.assign(native, nativeLocal);
     }
 
     // keep in sync with interopJavaScriptExportsToTable()
-    function interopJavaScriptExportsFromTable(table:InteropJavaScriptExportsTable, interop:InteropJavaScriptExports):void {
-        const interopLocal :InteropJavaScriptExports = {
+    function interopJavaScriptExportsFromTable(table: InteropJavaScriptExportsTable, interop: InteropJavaScriptExports): void {
+        const interopLocal: InteropJavaScriptExports = {
         };
         Object.assign(interop, interopLocal);
     }
 
     // keep in sync with nativeBrowserExportsToTable()
-    function nativeBrowserExportsFromTable(table:NativeBrowserExportsTable, interop:NativeBrowserExports):void {
-        const interopLocal :NativeBrowserExports = {
+    function nativeBrowserExportsFromTable(table: NativeBrowserExportsTable, interop: NativeBrowserExports): void {
+        const interopLocal: NativeBrowserExports = {
         };
         Object.assign(interop, interopLocal);
     }
 
     // keep in sync with nativeHelperExportsToTable()
-    function nativeHelperExportsFromTable(table:BrowserUtilsExportsTable, interop:BrowserUtilsExports):void {
-        const interopLocal :BrowserUtilsExports = {
+    function nativeHelperExportsFromTable(table: BrowserUtilsExportsTable, interop: BrowserUtilsExports): void {
+        const interopLocal: BrowserUtilsExports = {
             utf16ToString: table[0],
             stringToUTF16: table[1],
             stringToUTF16Ptr: table[2],
+            stringToUTF8Ptr: table[3],
         };
         Object.assign(interop, interopLocal);
     }

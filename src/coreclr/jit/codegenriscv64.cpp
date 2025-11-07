@@ -1001,12 +1001,11 @@ void CodeGen::genCodeForIncSaturate(GenTree* tree)
     // The src must be a register.
     regNumber operandReg = genConsumeReg(operand);
     emitAttr  attr       = emitActualTypeSize(tree);
+    assert(EA_SIZE(attr) == EA_PTRSIZE);
+    noway_assert(targetReg != operandReg); // lifetime of the operand register should have been extended
 
-    BasicBlock* skip = genCreateTempLabel();
-    GetEmitter()->emitIns_R_R_I(INS_addi, attr, targetReg, operandReg, 1);
-    GetEmitter()->emitIns_J_cond_la(INS_bne, skip, targetReg, REG_R0);
-    GetEmitter()->emitIns_R_R(INS_not, attr, targetReg, targetReg);
-    genDefineTempLabel(skip);
+    GetEmitter()->emitIns_R_R_I(INS_sltiu, attr, targetReg, operandReg, SIZE_T_MAX); // temp = (operand < max) ? 1 : 0;
+    GetEmitter()->emitIns_R_R_R(INS_add, attr, targetReg, operandReg, targetReg);    // target = operand + temp;
 
     genProduceReg(tree);
 }
@@ -1361,6 +1360,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     regNumber            targetReg                = tree->GetRegNum();
     regNumber            regCnt                   = REG_NA;
     regNumber            tempReg                  = REG_NA;
+    regNumber            spSourceReg              = REG_SPBASE;
     var_types            type                     = genActualType(size->gtType);
     emitAttr             easz                     = emitTypeSize(type);
     BasicBlock*          endLabel                 = nullptr; // can optimize for riscv64.
@@ -1559,44 +1559,31 @@ void CodeGen::genLclHeap(GenTree* tree)
         // case SP is on the last byte of the guard page.  Thus you must
         // touch SP-0 first not SP-0x1000.
         //
-        //
         // Note that we go through a few hoops so that SP never points to
         // illegal pages at any time during the tickling process.
-        //
-        //       sltu     RA, SP, regCnt
-        //       sub      regCnt, SP, regCnt      // regCnt now holds ultimate SP
-        //       beq      RA, REG_R0, Skip
-        //       addi     regCnt, REG_R0, 0
-        //
-        //  Skip:
-        //       lui      regPageSize, eeGetPageSize()>>12
-        //       addi     regTmp, SP, 0
-        //  Loop:
-        //       lw       r0, 0(regTmp)           // tickle the page - read from the page
-        //       sub      regTmp, regTmp, regPageSize
-        //       bgeu     regTmp, regCnt, Loop
-        //
-        //  Done:
-        //       addi     SP, regCnt, 0
-        //
 
         if (tempReg == REG_NA)
             tempReg = internalRegisters.Extract(tree);
 
         assert(regCnt != tempReg);
-        emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
+        if (compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
+        {
+            emit->emitIns_R_R_R(INS_maxu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt);
+            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, tempReg, regCnt); // regCnt now holds ultimate SP
+        }
+        else
+        {
+            emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, tempReg, REG_SPBASE, regCnt); // temp = overflow ? 1 : 0;
 
-        // sub  regCnt, SP, regCnt      // regCnt now holds ultimate SP
-        emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
+            // sub  regCnt, SP, regCnt      // regCnt now holds ultimate SP
+            emit->emitIns_R_R_R(INS_sub, EA_PTRSIZE, regCnt, REG_SPBASE, regCnt);
 
-        // Overflow, set regCnt to lowest possible value
-        BasicBlock* skip = genCreateTempLabel();
-        emit->emitIns_J_cond_la(INS_beq, skip, tempReg, REG_R0);
-        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, regCnt, REG_R0);
-        genDefineTempLabel(skip);
+            // If overflow, set regCnt to lowest possible value
+            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -1);   // temp = overflow ? 0 : full_mask;
+            emit->emitIns_R_R_R(INS_and, EA_PTRSIZE, regCnt, regCnt, tempReg); // cnt  = overflow ? 0 : cnt;
+        }
 
         regNumber rPageSize = internalRegisters.GetSingle(tree);
-
         noway_assert(rPageSize != tempReg);
 
         emit->emitIns_R_I(INS_lui, EA_PTRSIZE, rPageSize, pageSize >> 12);
@@ -1615,6 +1602,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // we're going to assume the worst and probe.
         // Move the final value to SP
         emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, regCnt);
+        spSourceReg = regCnt; // regCnt may be same as targetReg which gives advantage in returning the address below
     }
 
 ALLOC_DONE:
@@ -1642,7 +1630,7 @@ ALLOC_DONE:
     else // stackAdjustment == 0
     {
         // Move the final value of SP to targetReg
-        emit->emitIns_R_R(INS_mov, EA_PTRSIZE, targetReg, REG_SPBASE);
+        emit->emitIns_Mov(EA_PTRSIZE, targetReg, spSourceReg, true);
     }
 
 BAILOUT:
@@ -2229,6 +2217,19 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    GetEmitter()->emitIns_R_C(INS_addi, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+                              genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1));
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
 // genLockedInstructions: Generate code for a GT_XADD, GT_XAND, GT_XORR or GT_XCHG node.
 //
 // Arguments:
@@ -2346,7 +2347,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* treeNode)
     e->emitIns_R_R_R(is4 ? INS_lr_w : INS_lr_d, size, target, loc, REG_R0); // load original value
     e->emitIns_J_cond_la(INS_bne, fail, target, comparand);                 // fail if doesn’t match
     e->emitIns_R_R_R(is4 ? INS_sc_w : INS_sc_d, size, storeErr, loc, val);  // try to update
-    e->emitIns_J(INS_bnez, retry, storeErr);                                // retry if update failed
+    e->emitIns_J_cond_la(INS_bnez, retry, storeErr);                        // retry if update failed
     genDefineTempLabel(fail);
 
     gcInfo.gcMarkRegSetNpt(locOp->gtGetRegMask());
@@ -3277,8 +3278,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
     }
 
     assert(emitter::isGeneralRegisterOrR0(reg1) && emitter::isGeneralRegisterOrR0(reg2));
-    int regs = (int)reg1 | (((int)reg2) << 5);
-    GetEmitter()->emitIns_J(ins, compiler->compCurBB->GetTrueTarget(), regs);
+    GetEmitter()->emitIns_J_cond_la(ins, compiler->compCurBB->GetTrueTarget(), reg1, reg2);
 
     // If we cannot fall into the false target, emit a jump to it
     BasicBlock* falseTarget = compiler->compCurBB->GetFalseTarget();
@@ -4120,6 +4120,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -4133,7 +4137,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_IL_OFFSET:
-            // Do nothing; these nodes are simply markers for debug info.
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         case GT_SH1ADD:
@@ -5264,7 +5272,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
         // tempReg = tempReg - 8
         GetEmitter()->emitIns_R_R_I(INS_addi, EA_PTRSIZE, tempReg, tempReg, -8);
         // if (tempReg != dstReg) goto loop;
-        GetEmitter()->emitIns_J(INS_bne, loop, (int)tempReg | ((int)dstReg << 5));
+        GetEmitter()->emitIns_J_cond_la(INS_bne, loop, tempReg, dstReg);
         GetEmitter()->emitEnableGC();
 
         gcInfo.gcMarkRegSetNpt(genRegMask(dstReg));
@@ -6211,10 +6219,8 @@ void CodeGen::genJumpToThrowHlpBlk_la(
 #endif // !FEATURE_FIXED_OUT_ARGS
         }
 
-        noway_assert(excpRaisingBlock != nullptr);
-
         // Jump to the exception-throwing block on error.
-        emit->emitIns_J(ins, excpRaisingBlock, (int)reg1 | ((int)reg2 << 5)); // 5-bits;
+        emit->emitIns_J_cond_la(ins, excpRaisingBlock, reg1, reg2);
     }
     else
     {
