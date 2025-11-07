@@ -1645,8 +1645,6 @@ HRESULT ClrDataAccess::EnumMemDataDescriptors(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
 
-    HRESULT status = S_OK;
-
     uint64_t contractDescriptorAddr = 0;
     if (!TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
         return E_FAIL;
@@ -1689,19 +1687,23 @@ HRESULT ClrDataAccess::EnumMemDataDescriptors(CLRDataEnumMemoryFlags flags)
         EnumDataDescriptorHelper(subDescriptorAddr);
     }
 
-    return status;
+    return S_OK;
 }
 
 void ClrDataAccess::EnumDataDescriptorHelper(TADDR dataDescriptorAddr)
 {
     PTR_ContractDescriptor pDataDescriptor = dac_cast<PTR_ContractDescriptor>(dataDescriptorAddr);
 
-    // Enumerate the ContractDescriptor structure
-    ReportMem(dac_cast<TADDR>(pDataDescriptor), sizeof(ContractDescriptor));
-    // Report the pointer data array
-    ReportMem((TADDR)pDataDescriptor->pointer_data, pDataDescriptor->pointer_data_count * sizeof(void*));
-    // Report the JSON blob
-    ReportMem((TADDR)pDataDescriptor->descriptor, pDataDescriptor->descriptor_size);
+    EX_TRY
+    {
+        // Enumerate the ContractDescriptor structure
+        ReportMem(dac_cast<TADDR>(pDataDescriptor), sizeof(ContractDescriptor));
+        // Report the pointer data array
+        ReportMem((TADDR)pDataDescriptor->pointer_data, pDataDescriptor->pointer_data_count * sizeof(void*));
+        // Report the JSON blob
+        ReportMem((TADDR)pDataDescriptor->descriptor, pDataDescriptor->descriptor_size);
+    }
+    EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
 }
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
