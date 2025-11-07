@@ -314,8 +314,25 @@ namespace ILCompiler
                     compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
                 }
 
-                if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                // Get TypeMappingEntryAssembly from runtime knobs if specified
+                string typeMappingEntryAssembly = null;
+                foreach (var runtimeKnob in runtimeKnobs)
                 {
+                    var knobAndValue = runtimeKnob.Split('=', 2);
+                    if (knobAndValue.Length == 2 && knobAndValue[0] == "System.Runtime.InteropServices.TypeMappingEntryAssembly")
+                    {
+                        typeMappingEntryAssembly = knobAndValue[1];
+                        break;
+                    }
+                }
+                if (typeMappingEntryAssembly is not null)
+                {
+                    var typeMapEntryAssembly = (EcmaAssembly)typeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(typeMappingEntryAssembly), throwIfNotFound: true);
+                    typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(typeMapEntryAssembly, typeSystemContext));
+                }
+                else if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+                {
+                    // Fall back to entryassembly if not specified
                     typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
                 }
             }

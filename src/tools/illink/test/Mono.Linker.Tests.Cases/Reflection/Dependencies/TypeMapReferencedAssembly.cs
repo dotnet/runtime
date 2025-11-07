@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.Cases.Reflection.Dependencies
 {
     public class TypeMapReferencedAssembly
     {
-        public static void Main()
+        public static void Run()
         {
             // Mark expected trim targets
             _ = new TrimTarget1();

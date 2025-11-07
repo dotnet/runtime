@@ -179,7 +179,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
             Console.WriteLine(new ConstructedNoTypeCheckNoBoxStruct(42).Value);
 
-            TypeMapReferencedAssembly.Main();
+            TypeMapReferencedAssembly.Run();
 
             // TypeMapUniverses are independent between External and Proxy type maps.
             // That is, if the External type map is used for a given universe, that doesn't keep the Proxy type map, and vice versa.
