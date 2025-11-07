@@ -99,10 +99,10 @@ namespace System.Threading
         {
         }
 
-        internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
+        internal static ThreadInt64PersistentCounter.ThreadLocalNode? GetOrCreateThreadLocalCompletionCountNode() => null;
 
 #pragma warning disable IDE0060
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
+        internal static bool NotifyWorkItemComplete(ThreadInt64PersistentCounter.ThreadLocalNode? threadLocalCompletionCountNode, int currentTimeMs)
         {
             return true;
         }

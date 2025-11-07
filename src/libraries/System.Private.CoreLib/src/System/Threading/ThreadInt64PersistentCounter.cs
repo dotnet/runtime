@@ -26,27 +26,15 @@ namespace System.Threading
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Increment(object threadLocalCountObject)
-        {
-            Debug.Assert(threadLocalCountObject is ThreadLocalNode);
-            Unsafe.As<ThreadLocalNode>(threadLocalCountObject).Increment();
-        }
+        public static void Increment(ThreadLocalNode node) => node.Increment();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Decrement(object threadLocalCountObject)
-        {
-            Debug.Assert(threadLocalCountObject is ThreadLocalNode);
-            Unsafe.As<ThreadLocalNode>(threadLocalCountObject).Decrement();
-        }
+        public static void Decrement(ThreadLocalNode node) => node.Decrement();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Add(object threadLocalCountObject, uint count)
-        {
-            Debug.Assert(threadLocalCountObject is ThreadLocalNode);
-            Unsafe.As<ThreadLocalNode>(threadLocalCountObject).Add(count);
-        }
+        public static void Add(ThreadLocalNode node, uint count) => node.Add(count);
 
-        public object CreateThreadLocalCountObject()
+        public ThreadLocalNode CreateThreadLocalCountObject()
         {
             var node = new ThreadLocalNode(this);
 
@@ -105,7 +93,7 @@ namespace System.Threading
             }
         }
 
-        private sealed class ThreadLocalNode
+        internal sealed class ThreadLocalNode
         {
             private uint _count;
             private readonly ThreadInt64PersistentCounter _counter;
