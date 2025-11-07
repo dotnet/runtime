@@ -31,8 +31,6 @@ namespace ILCompiler
 
         public override TypeSystemContext Context => _owningMethod.Context;
 
-        protected override int ClassCode => unchecked((int)0xa91ac565);
-
         private MethodSignature InitializeSignature()
         {
             TypeDesc objectType = Context.GetWellKnownType(WellKnownType.Object);
@@ -77,7 +75,7 @@ namespace ILCompiler
                 ilStream.EmitStLoc(resultLocal);
             }
 
-            MethodDesc asyncCallContinuation = Context.SystemModule.GetKnownType("System.StubHelpers"u8, "StubHelpers"u8)
+            MethodDesc asyncCallContinuation = Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
                 .GetKnownMethod("AsyncCallContinuation"u8, null);
             TypeDesc continuation = Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
             var newContinuationLocal = ilEmitter.NewLocal(continuation);
@@ -98,12 +96,6 @@ namespace ILCompiler
             ilStream.Emit(ILOpcode.ret);
 
             return ilEmitter.Link(this);
-        }
-
-        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-        {
-            var othr = (AsyncResumptionStub)other;
-            return comparer.Compare(_owningMethod, othr._owningMethod);
         }
     }
 }

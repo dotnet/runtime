@@ -1610,9 +1610,6 @@ namespace System.StubHelpers
 
         [Intrinsic]
         internal static IntPtr NextCallReturnAddress() => throw new UnreachableException(); // Unconditionally expanded intrinsic
-
-        [Intrinsic]
-        internal static Continuation? AsyncCallContinuation() => throw new UnreachableException(); // Unconditionally expanded intrinsic
     }  // class StubHelpers
 
 #if FEATURE_COMINTEROP
