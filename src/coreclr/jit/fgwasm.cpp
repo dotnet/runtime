@@ -134,7 +134,7 @@ public:
 // arrange the block begins so we have proper nesting of Wasm blocks and Wasm loops.
 //
 // Since we have linear order of basic blocks, each non-contiguous forward branch can be characterized
-// by the source and destination basic block indicies in the order. Eg [0, 4]. So an inteval begins at
+// by the source and destination basic block indices in the order. Eg [0, 4]. So an inteval begins at
 // the start of the first block and ends at the start of the second.
 //
 // Each basic block start may be the end of some loops and /or a block. Or both. Note multiple
@@ -151,7 +151,7 @@ public:
 // earlier.
 //
 // We then scan the in non-decreasing start order, finding earlier intervals that contain the start
-// of the current inteval but not the end. When we find one, the start of the current interval will
+// of the current interval but not the end. When we find one, the start of the current interval will
 // need to increase so the earlier interval can nest inside. That is, if have a:[0, 4] and b:[2,6] we
 // will need to emit them as b:[0,6], a[0,4].
 //
@@ -247,7 +247,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // -----------------------------------------------
     // (2) Build the intervals
     //
-    // Allocate inteval and scratch vectors. We'll use the scratch vector to keep track of
+    // Allocate interval and scratch vectors. We'll use the scratch vector to keep track of
     // block intervals that end at a certain point.
     //
     jitstd::vector<WasmInterval*> intervals(getAllocator(CMK_Wasm));
@@ -532,7 +532,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
         JITDUMP("  " FMT_BB "\n", block->bbNum);
 
         // Compute the depth of the block ending at targetNum
-        // or (if isBackedge) ths loop starting at targetNum
+        // or (if isBackedge) the loop starting at targetNum
         //
         auto findDepth = [&activeIntervals](unsigned targetNum, bool isBackedge, unsigned& match) {
             int const h = activeIntervals.Height();
