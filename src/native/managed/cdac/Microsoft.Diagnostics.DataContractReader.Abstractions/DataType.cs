@@ -50,6 +50,7 @@ public enum DataType
     MethodTable,
     DynamicStaticsInfo,
     EEClass,
+    CoreLibBinder,
     ArrayClass,
     MethodTableAuxiliaryData,
     GenericsDictInfo,
@@ -57,6 +58,7 @@ public enum DataType
     ParamTypeDesc,
     TypeVarTypeDesc,
     FnPtrTypeDesc,
+    FieldDesc,
     DynamicMetadata,
     StressLog,
     StressLogModuleDesc,
@@ -66,6 +68,7 @@ public enum DataType
     StressMsg,
     StressMsgHeader,
     Object,
+    NativeObjectWrapperObject,
     String,
     MethodDesc,
     MethodDescChunk,
@@ -112,6 +115,7 @@ public enum DataType
     ArrayListBlock,
     EETypeHashTable,
     InstMethodHashTable,
+    DynamicILBlobTable,
     EEJitManager,
     PatchpointInfo,
 
@@ -138,4 +142,6 @@ public enum DataType
     GCHeap,
     Generation,
     CFinalize,
+    HeapSegment,
+    OomHistory,
 }

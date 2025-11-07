@@ -2029,7 +2029,7 @@ namespace System.Net.Http
                 // our built-in content types do), then we can just proceed to wait for the request body content to
                 // complete before worrying about response headers completing.
                 if (requestBodyTask.IsCompleted ||
-                    duplex == false ||
+                    !duplex ||
                     await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) == requestBodyTask ||
                     requestBodyTask.IsCompleted ||
                     http2Stream.SendRequestFinished)

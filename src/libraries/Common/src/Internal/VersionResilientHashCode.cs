@@ -25,6 +25,7 @@ namespace Internal
                 _hash1 = 0x6DA3B944;
                 _hash2 = 0;
                 _numCharactersHashed = 0;
+                Append(seed);
             }
 
             public void Append(ReadOnlySpan<byte> src)

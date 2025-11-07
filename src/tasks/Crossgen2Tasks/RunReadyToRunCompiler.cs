@@ -1,10 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
+#nullable disable
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -22,6 +19,7 @@ namespace Microsoft.NET.Build.Tasks
         public ITaskItem[] ImplementationAssemblyReferences { get; set; }
         public ITaskItem[] ReadyToRunCompositeBuildReferences { get; set; }
         public ITaskItem[] ReadyToRunCompositeBuildInput { get; set; }
+        public ITaskItem[] ReadyToRunCompositeUnrootedBuildInput { get; set; }
         public bool ShowCompilerWarnings { get; set; }
         public bool UseCrossgen2 { get; set; }
         public string Crossgen2ExtraCommandLineArgs { get; set; }
@@ -220,7 +218,7 @@ namespace Microsoft.NET.Build.Tasks
 
         private string GetAssemblyReferencesCommands()
         {
-            StringBuilder result = new StringBuilder();
+            StringBuilder result = new();
 
             var references = _createCompositeImage ? ReadyToRunCompositeBuildReferences : ImplementationAssemblyReferences;
 
@@ -234,11 +232,11 @@ namespace Microsoft.NET.Build.Tasks
 
                     if (UseCrossgen2 && !IsPdbCompilation)
                     {
-                        result.AppendLine($"-r:\"{reference}\"");
+                        result.AppendLine($"-r:\"{reference.ItemSpec}\"");
                     }
                     else
                     {
-                        result.AppendLine($"-r \"{reference}\"");
+                        result.AppendLine($"-r \"{reference.ItemSpec}\"");
                     }
                 }
             }
@@ -270,7 +268,7 @@ namespace Microsoft.NET.Build.Tasks
 
         private string GenerateCrossgenResponseFile()
         {
-            StringBuilder result = new StringBuilder();
+            StringBuilder result = new();
 
             result.AppendLine("/nologo");
 
@@ -300,7 +298,7 @@ namespace Microsoft.NET.Build.Tasks
 
         private string GenerateCrossgen2ResponseFile()
         {
-            StringBuilder result = new StringBuilder();
+            StringBuilder result = new();
 
             string jitPath = Crossgen2Tool.GetMetadata(MetadataKeys.JitPath);
             if (!string.IsNullOrEmpty(jitPath))
@@ -318,7 +316,7 @@ namespace Microsoft.NET.Build.Tasks
             // 5.0 Crossgen2 doesn't support PDB generation.
             if (!Crossgen2IsVersion5 && _emitSymbols)
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (Crossgen2Tool.GetMetadata(MetadataKeys.TargetOS) == "windows")
                 {
                     result.AppendLine("--pdb");
                     result.AppendLine($"--pdb-path:{Path.GetDirectoryName(_outputPDBImage)}");
@@ -346,7 +344,7 @@ namespace Microsoft.NET.Build.Tasks
 
             if (!string.IsNullOrEmpty(Crossgen2ExtraCommandLineArgs))
             {
-                foreach (string extraArg in Crossgen2ExtraCommandLineArgs.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                foreach (string extraArg in Crossgen2ExtraCommandLineArgs.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
                 {
                     result.AppendLine(extraArg);
                 }
@@ -369,6 +367,14 @@ namespace Microsoft.NET.Build.Tasks
                 foreach (var reference in ReadyToRunCompositeBuildInput)
                 {
                     result.AppendLine(reference.ItemSpec);
+                }
+
+                if (ReadyToRunCompositeUnrootedBuildInput != null)
+                {
+                    foreach (var unrooted in ReadyToRunCompositeUnrootedBuildInput)
+                    {
+                        result.AppendLine($"-u:\"{unrooted.ItemSpec}\"");
+                    }
                 }
             }
             else
@@ -397,7 +403,7 @@ namespace Microsoft.NET.Build.Tasks
 
         protected override void LogEventsFromTextOutput(string singleLine, MessageImportance messageImportance)
         {
-            if (!ShowCompilerWarnings && singleLine.Contains("warning:", StringComparison.OrdinalIgnoreCase))
+            if (!ShowCompilerWarnings && singleLine.IndexOf("warning:", StringComparison.OrdinalIgnoreCase) != -1)
             {
                 Log.LogMessage(MessageImportance.Normal, singleLine);
                 WarningsDetected = true;

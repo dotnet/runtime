@@ -24,6 +24,7 @@ LEAF_ENTRY FixupPrecodeCode
     jirl  $r0,$r21,0
 LEAF_END_MARKED FixupPrecodeCode
 
+#ifdef FEATURE_TIERED_COMPILATION
 // NOTE: For LoongArch64 `CallCountingStubData__RemainingCallCountCell` must be zero !!!
 // Because the stub-identifying token is $t1 within the `OnCallCountThresholdReachedStub`.
 LEAF_ENTRY CallCountingStubCode
@@ -39,3 +40,4 @@ LOCAL_LABEL(CountReachedZero):
     ld.d  $r21, $t2, CallCountingStubData__TargetForThresholdReached
     jirl  $r0,$r21,0
 LEAF_END_MARKED CallCountingStubCode
+#endif // FEATURE_TIERED_COMPILATION

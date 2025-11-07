@@ -27,6 +27,11 @@
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
       )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+          string('https://github.com/dotnet/runtime/issues/118965')
+          type([TestLibrary]TestLibrary.Utilities)
+          string[1] ('IsCoreClrInterpreter')
+      }
       .entrypoint
       .custom instance void [mscorlib]System.Runtime.ExceptionServices.HandleProcessCorruptedStateExceptionsAttribute::.ctor() = ( 01 00 00 00 ) 
       .custom instance void [mscorlib]System.Security.SecurityCriticalAttribute::.ctor() = ( 01 00 00 00 ) 

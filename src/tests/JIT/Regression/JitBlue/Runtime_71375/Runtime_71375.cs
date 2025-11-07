@@ -4,10 +4,12 @@
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsVarArgSupported), nameof(PlatformDetection.IsArm64Process))]
 public class Runtime_71375
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsVarArgSupported))]
     public static void TestEntryPoint()
     {
         // At the time of writing this test, the calling convention for incoming vector parameters on

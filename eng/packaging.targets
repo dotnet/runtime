@@ -37,7 +37,7 @@
     <!-- During NoBuild pack invocations, skip project reference build. Necessary for the IncludeProjectReferencesWithPackAttributeInPackage target. -->
     <BuildProjectReferences Condition="'$(NoBuild)' == 'true'">false</BuildProjectReferences>
   </PropertyGroup>
-  
+
   <!-- Flow these properties to consuming projects. Used by i.e. Microsoft.Internal.Runtime.WindowsDesktop.Transport. -->
   <ItemDefinitionGroup>
     <TargetPathWithTargetPlatformMoniker>
@@ -254,7 +254,7 @@
       <TfmSpecificDebugSymbolsFile Include="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))"
                                    TargetPath="/%(TfmSpecificPackageFile.PackagePath)%(Filename)%(Extension)"
                                    TargetFramework="$(_referringTargetFramework)"
-                                   Condition="'$(IncludeSymbols)' == 'true'" />
+                                   Condition="'$(IncludeSymbols)' == 'true' and '$(IncludeSymbolsInPackage)' != 'true'" />
       <!-- Remove symbol from the non symbol package. -->
       <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" Condition="'$(IncludeSymbolsInPackage)' != 'true'" />
       <!-- If the reference assembly is included, don't put the documentation file next to the lib assembly. -->

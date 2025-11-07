@@ -252,15 +252,16 @@ namespace System.Reflection
             get => GetManifestModule().GetDefinedTypes();
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetIsCollectible")]
-        internal static partial Interop.BOOL GetIsCollectible(QCallAssembly assembly);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool GetIsCollectible(IntPtr assembly);
 
         public override bool IsCollectible
         {
             get
             {
-                RuntimeAssembly runtimeAssembly = this;
-                return GetIsCollectible(new QCallAssembly(ref runtimeAssembly)) != Interop.BOOL.FALSE;
+                bool isCollectible = GetIsCollectible(GetUnderlyingNativeHandle());
+                GC.KeepAlive(this); // We directly pass the native handle above - make sure this object stays alive for the call
+                return isCollectible;
             }
         }
 

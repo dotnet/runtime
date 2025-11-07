@@ -242,7 +242,7 @@ export type RuntimeHelpers = {
     utf8ToString: (ptr: CharPtr) => string,
     mono_background_exec: () => void,
     mono_wasm_ds_exec: () => void,
-    mono_wasm_process_current_pid: () => number,
+    SystemJS_GetCurrentProcessId: () => number,
 }
 
 export type DiagnosticHelpers = {
