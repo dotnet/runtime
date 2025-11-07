@@ -639,7 +639,7 @@ public class InvalidInputTests : ReadTests
         // This test reproduces the InvalidCastException found by the fuzzer
         // where dateData member has BinaryType.SystemClass instead of BinaryType.Primitive
         byte[] input = Convert.FromBase64String("AAGAAAD/////AQAAAAAAAAAEAQAAAA9TeXN0ZW0uRGF0ZVRpbWUCAAAABXRpY2tzCGRhdGVEYXRhAAMJEAAAYF9qYWdnZWQGBQoKCgoHAQD3/wABAAAAAgAtAAAGCgoKCgs=");
-        
+
         using MemoryStream stream = new MemoryStream(input);
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
@@ -650,7 +650,7 @@ public class InvalidInputTests : ReadTests
         // This test reproduces the NullReferenceException found by the fuzzer
         // where BinaryType.String has null AdditionalInfo
         byte[] input = Convert.FromBase64String("AAEAAMz/////AQAAAAAAAAAEAQAAAA9TeXN0ZW0uRGF0ZVRpbWUCAAAABXRpY2tzCGRhdGVEYXRhAAEJEAAAYF+5MtwIAABgX7k2sLCwsLCwsLCwsLCwsLCwsLCwsNHcCAk=");
-        
+
         using MemoryStream stream = new MemoryStream(input);
         Assert.Throws<SerializationException>(() => NrbfDecoder.Decode(stream));
     }
