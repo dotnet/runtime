@@ -468,6 +468,7 @@ export const enum MemoryViewType {
 
 abstract class MemoryView implements IMemoryView {
     protected constructor (public _pointer: VoidPtr, public _length: number, public _viewType: MemoryViewType) {
+        this._pointer = <any>((this._pointer as any) >>> 0);
     }
 
     abstract dispose(): void;
