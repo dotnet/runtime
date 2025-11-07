@@ -77,6 +77,12 @@ namespace System.IO.Compression
                         WriteCore(ReadOnlySpan<byte>.Empty, isFinalBlock: true);
                     }
 
+                    // Auto-rewind the stream if we're in decompression mode and the stream supports seeking
+                    if (_mode == CompressionMode.Decompress && _stream.CanSeek)
+                    {
+                        TryRewindStream(_stream);
+                    }
+
                     if (!_leaveOpen)
                     {
                         _stream.Dispose();
@@ -106,6 +112,12 @@ namespace System.IO.Compression
                         await WriteAsyncMemoryCore(ReadOnlyMemory<byte>.Empty, CancellationToken.None, isFinalBlock: true).ConfigureAwait(false);
                     }
 
+                    // Auto-rewind the stream if we're in decompression mode and the stream supports seeking
+                    if (_mode == CompressionMode.Decompress && _stream.CanSeek)
+                    {
+                        TryRewindStream(_stream);
+                    }
+
                     if (!_leaveOpen)
                     {
                         await _stream.DisposeAsync().ConfigureAwait(false);
@@ -115,6 +127,32 @@ namespace System.IO.Compression
             finally
             {
                 ReleaseStateForDispose();
+            }
+        }
+
+        /// <summary>
+        /// Rewinds the underlying stream to the exact end of the compressed data if there are unconsumed bytes.
+        /// This is called during disposal to reset the stream position.
+        /// </summary>
+        private void TryRewindStream(Stream stream)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(_mode == CompressionMode.Decompress);
+            Debug.Assert(stream.CanSeek);
+
+            // Check if there are unconsumed bytes in the buffer
+            int unconsumedBytes = _bufferCount;
+            if (unconsumedBytes > 0)
+            {
+                try
+                {
+                    // Rewind the stream to the exact end of the compressed data
+                    stream.Seek(-unconsumedBytes, SeekOrigin.Current);
+                }
+                catch
+                {
+                    // If seeking fails, we don't want to throw during disposal
+                }
             }
         }
 
