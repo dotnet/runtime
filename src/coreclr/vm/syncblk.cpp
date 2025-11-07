@@ -1313,22 +1313,14 @@ void DumpSyncBlockCache()
 
 namespace
 {
-    void EnterSpinLock(Volatile<DWORD>* pLock COMMA_INDEBUG(int spinTimeout = INFINITE_TIMEOUT))
+    void EnterSpinLock(Volatile<DWORD>* pLock)
     {
         STATIC_CONTRACT_GC_NOTRIGGER;
-
-#ifdef _DEBUG
-        int i = 0;
-#endif
 
         DWORD dwSwitchCount = 0;
 
         while (TRUE)
         {
-#ifdef _DEBUG
-            if (spinTimeout != INFINITE_TIMEOUT && i++ > spinTimeout)
-                _ASSERTE(!"ObjHeader::EnterLock timed out");
-#endif
             // get the value so that it doesn't get changed under us.
             LONG curValue = pLock->LoadWithoutBarrier();
 
@@ -1341,7 +1333,19 @@ namespace
                 if (result == curValue)
                     break;
             }
-            __SwitchToThread(0, ++dwSwitchCount);
+            if  (g_SystemInfo.dwNumberOfProcessors > 1)
+            {
+                for (int spinCount = 0; spinCount < BIT_SBLK_SPIN_COUNT; spinCount++)
+                {
+                    if  (! (*pLock & BIT_SBLK_SPIN_LOCK))
+                        break;
+                    YieldProcessorNormalized(); // indicate to the processor that we are spinning
+                }
+                if  (*pLock & BIT_SBLK_SPIN_LOCK)
+                    __SwitchToThread(0, ++dwSwitchCount);
+            }
+            else
+                __SwitchToThread(0, ++dwSwitchCount);
         }
     }
 
@@ -1397,7 +1401,7 @@ DEBUG_NOINLINE void ObjHeader::EnterSpinLock()
     // function, which will undo the BeginNoTriggerGC() call below.
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    ::EnterSpinLock(std::addressof(m_SyncBlockValue) COMMA_INDEBUG(10000));
+    ::EnterSpinLock(std::addressof(m_SyncBlockValue));
 
     INCONTRACT(Thread* pThread = GetThreadNULLOk());
     INCONTRACT(if (pThread != NULL) pThread->BeginNoTriggerGC(__FILE__, __LINE__));
@@ -1434,7 +1438,7 @@ DWORD ObjHeader::GetSyncBlockIndex()
             //Try one more time
             if (GetHeaderSyncBlockIndex() == 0)
             {
-                ENTER_SPIN_LOCK(this);
+                EnterSpinLock();
                 // Now the header will be stable - check whether hashcode, appdomain index or lock information is stored in it.
                 DWORD bits = GetBits();
                 if (((bits & (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) == (BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE)) ||
@@ -1447,7 +1451,7 @@ DWORD ObjHeader::GetSyncBlockIndex()
                 {
                     SetIndex(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | SyncBlockCache::GetSyncBlockCache()->NewSyncBlockSlot(GetBaseObject()));
                 }
-                LEAVE_SPIN_LOCK(this);
+                ReleaseSpinLock();
             }
             // SyncBlockCache::LockHolder goes out of scope here
         }
@@ -1613,7 +1617,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
 
             {
                 // after this point, nobody can update the index in the header
-                ENTER_SPIN_LOCK(this);
+                EnterSpinLock();
 
                 {
                     // If the thin lock in the header is in use, transfer the information to the syncblock
@@ -1653,7 +1657,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
                 if (indexHeld)
                     syncBlock->SetPrecious();
 
-                LEAVE_SPIN_LOCK(this);
+                ReleaseSpinLock();
             }
         }
         // SyncBlockCache::LockHolder goes out of scope here

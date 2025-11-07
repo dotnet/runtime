@@ -991,13 +991,6 @@ struct cdac_data<ObjHeader>
 
 typedef DPTR(class ObjHeader) PTR_ObjHeader;
 
-
-#define ENTER_SPIN_LOCK(pOh)        \
-    pOh->EnterSpinLock();
-
-#define LEAVE_SPIN_LOCK(pOh)        \
-    pOh->ReleaseSpinLock();
-
 #ifdef TARGET_X86
 #include <poppack.h>
 #endif // TARGET_X86
