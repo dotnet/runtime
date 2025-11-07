@@ -83,7 +83,7 @@ namespace System.Threading
                 return;
             _callbackQueued = true;
 #if MONO
-            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged<void>)&BackgroundJobHandler);
 #else
             SystemJS_ScheduleBackgroundJob();
 #endif

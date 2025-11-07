@@ -93,7 +93,7 @@ namespace System.Threading
                 int shortestWait = Math.Max((int)(shortestDueTimeMs - currentTimeMs), 0);
                 // this would cancel the previous schedule and create shorter one, it is expensive callback
 #if MONO
-                MainThreadScheduleTimer((void*)(delegate* unmanaged[Cdecl]<void>)&TimerHandler, shortestWait);
+                MainThreadScheduleTimer((void*)(delegate* unmanaged<void>)&TimerHandler, shortestWait);
 #else
                 SystemJS_ScheduleTimer(shortestWait);
 #endif
