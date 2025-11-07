@@ -237,8 +237,5 @@ namespace System.Runtime.CompilerServices
         [RequiresPreviewFeatures]
         public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw new NotImplementedException(); }
 #endif
-        [Intrinsic]
-        [BypassReadyToRun]
-        internal static Continuation? AsyncCallContinuation() => throw new UnreachableException(); // Unconditionally expanded intrinsic
     }
 }

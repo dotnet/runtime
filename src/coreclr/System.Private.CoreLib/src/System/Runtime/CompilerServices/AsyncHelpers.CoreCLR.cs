@@ -150,6 +150,10 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         private static void AsyncSuspend(Continuation continuation) => throw new UnreachableException();
 
+        [Intrinsic]
+        [BypassReadyToRun]
+        internal static Continuation? AsyncCallContinuation() => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
         // Used during suspensions to hold the continuation chain and on what we are waiting.
         // Methods like FinalizeTaskReturningThunk will unlink the state and wrap into a Task.
         private struct RuntimeAsyncAwaitState
