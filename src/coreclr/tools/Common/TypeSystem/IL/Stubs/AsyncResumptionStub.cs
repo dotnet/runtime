@@ -15,11 +15,11 @@ namespace ILCompiler
     {
         private readonly MethodDesc _owningMethod;
         private MethodSignature _signature;
+        private MethodIL _methodIL;
 
         public AsyncResumptionStub(MethodDesc owningMethod)
         {
-            Debug.Assert(owningMethod.IsAsyncVariant()
-                || (owningMethod.IsAsync && !owningMethod.Signature.ReturnsTaskOrValueTask()));
+            Debug.Assert(owningMethod.IsAsyncCall());
             _owningMethod = owningMethod;
         }
 
@@ -32,6 +32,8 @@ namespace ILCompiler
 
         public override TypeSystemContext Context => _owningMethod.Context;
 
+        protected override int ClassCode => unchecked((int)0xa91ac565);
+
         private MethodSignature InitializeSignature()
         {
             TypeDesc objectType = Context.GetWellKnownType(WellKnownType.Object);
@@ -39,15 +41,110 @@ namespace ILCompiler
             return _signature = new MethodSignature(0, 0, objectType, [objectType, byrefByte]);
         }
 
+        private MethodIL InitializeMethodIL()
+        {
+            Debug.Assert(_methodIL == null);
+            ILEmitter ilEmitter = new ILEmitter();
+            ILCodeStream ilStream = ilEmitter.NewCodeStream();
+
+            // Ported from jitinterface.cpp CEEJitInfo::getAsyncResumptionStub
+            // Emitted IL:
+            // if (!_owningMethod.Signature.IsStatic)
+            // {
+            //     if (_owningMethod.OwningType.IsValueType)
+            //         ldc.i4.0
+            //         conv.u
+            //     else
+            //         ldnull
+            // }
+            // foreach (param in _owningMethod.Signature)
+            // {
+            //     ldloca.s <local>
+            //     initobj <param type>
+            //     ldloc.s <local>
+            // }
+            // ldftn <_owningMethod>
+            // calli <this.Signature>
+            // if (!returnsVoid)
+            //     stloc.s <resultLocal>
+            // call System.StubHelpers.StubHelpers::AsyncCallContinuation()
+            // stloc.s <newContinuationLocal>
+            // if (!returnsVoid)
+            // {
+            //     ldloca.s <newContinuationLocal>
+            //     brtrue.s done_result
+            //     ldarg.1
+            //     ldloc.s <resultLocal>
+            //     stobj <return type>
+            //   done_result:
+            // }
+            // ldloc.s <newContinuationLocal>
+            // ret
+
+            // if it has this pointer
+            if (!_owningMethod.Signature.IsStatic)
+            {
+                if (_owningMethod.OwningType.IsValueType)
+                {
+                    ilStream.EmitLdc(0);
+                    ilStream.Emit(ILOpcode.conv_u);
+                }
+                else
+                {
+                    ilStream.Emit(ILOpcode.ldnull);
+                }
+            }
+
+            foreach (var param in _owningMethod.Signature)
+            {
+                var local = ilEmitter.NewLocal(param);
+                ilStream.EmitLdLoca(local);
+                ilStream.Emit(ILOpcode.initobj, ilEmitter.NewToken(param));
+                ilStream.EmitLdLoc(local);
+            }
+            ilStream.Emit(ILOpcode.ldftn, ilEmitter.NewToken(_owningMethod));
+            ilStream.Emit(ILOpcode.calli, ilEmitter.NewToken(this.Signature));
+
+            bool returnsVoid = _owningMethod.Signature.ReturnType != Context.GetWellKnownType(WellKnownType.Void);
+            Internal.IL.Stubs.ILLocalVariable resultLocal = default;
+            if (!returnsVoid)
+            {
+                resultLocal = ilEmitter.NewLocal(_owningMethod.Signature.ReturnType);
+                ilStream.EmitStLoc(resultLocal);
+            }
+
+            MethodDesc asyncCallContinuation = Context.SystemModule.GetKnownType("System.StubHelpers"u8, "StubHelpers"u8)
+                .GetKnownMethod("AsyncCallContinuation"u8, null);
+            TypeDesc continuation = Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
+            var newContinuationLocal = ilEmitter.NewLocal(continuation);
+            ilStream.Emit(ILOpcode.call, ilEmitter.NewToken(asyncCallContinuation));
+            ilStream.EmitStLoc(newContinuationLocal);
+
+            if (!returnsVoid)
+            {
+                var doneResult = ilEmitter.NewCodeLabel();
+                ilStream.EmitLdLoca(newContinuationLocal);
+                ilStream.Emit(ILOpcode.brtrue, doneResult);
+                ilStream.EmitLdArg(1);
+                ilStream.EmitLdLoc(resultLocal);
+                ilStream.Emit(ILOpcode.stobj, ilEmitter.NewToken(_owningMethod.Signature.ReturnType));
+                ilStream.EmitLabel(doneResult);
+            }
+            ilStream.EmitLdLoc(newContinuationLocal);
+            ilStream.Emit(ILOpcode.ret);
+
+            return _methodIL = ilEmitter.Link(this);
+        }
+
         public override MethodIL EmitIL()
         {
-            var emitter = new ILEmitter();
-            ILCodeStream codeStream = emitter.NewCodeStream();
+            return _methodIL ?? InitializeMethodIL();
+        }
 
-            // TODO: match getAsyncResumptionStub from CoreCLR VM
-            codeStream.EmitCallThrowHelper(emitter, Context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNotSupportedException"u8));
-
-            return emitter.Link(this);
+        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        {
+            var othr = (AsyncResumptionStub)other;
+            return comparer.Compare(_owningMethod, othr._owningMethod);
         }
     }
 }
