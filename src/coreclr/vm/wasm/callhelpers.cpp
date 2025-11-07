@@ -484,6 +484,12 @@ namespace
         (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_IND(3), ARG_IND(4), ARG_I32(5));
     }
 
+    void CallFunc_I32_I32_IND_RetVoid (PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_I32(0), ARG_I32(1), ARG_IND(2));
+    }
+
     void CallFunc_I32_I32_IND_IND_I32_RetVoid (PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
@@ -709,6 +715,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "viiinn", (void*)&CallFunc_I32_I32_I32_IND_IND_RetVoid },
     { "viiinni", (void*)&CallFunc_I32_I32_I32_IND_IND_I32_RetVoid },
     { "viinni", (void*)&CallFunc_I32_I32_IND_IND_I32_RetVoid },
+    { "viin", (void*)&CallFunc_I32_I32_IND_RetVoid },
     { "viinnii", (void*)&CallFunc_I32_I32_IND_IND_I32_I32_RetVoid },
     { "vil", (void*)&CallFunc_I32_I64_RetVoid },
     { "vili", (void*)&CallFunc_I32_I64_I32_RetVoid },
