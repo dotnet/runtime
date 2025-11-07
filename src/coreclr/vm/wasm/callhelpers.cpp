@@ -746,29 +746,42 @@ class MethodDesc;
 extern "C" void LookupMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret);
 
-// static MethodDesc* MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32 = nullptr;
-// static int Call_MyAssembly_MyType_MyMethod_I32_I32_RetI32(int a, int b)
-// {
-//     int64_t args[2] =
-//     {
-//         (int64_t)a,
-//         (int64_t)b
-//     };
-//
-//     // Lazy lookup of MethodDesc for the function export scenario.
-//     if (!MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32)
-//     {
-//         LookupMethodByName("MyType, MyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null", "MyMethod", &MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32);
-//     }
-//
-//     int result;
-//     ExecuteInterpretedMethodFromUnmanaged(MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
-//     return result;
-// }
+static MethodDesc* MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler()
+{
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid)
+    {
+        LookupMethodByName("System.Threading.ThreadPool, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nullptr, 0, nullptr);
+}
+
+extern "C" void SystemJS_ExecuteBackgroundJobCallback()
+{
+    Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler();
+}
+
+static MethodDesc* MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid = nullptr;
+static void Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler()
+{
+    // Lazy lookup of MethodDesc for the function export scenario.
+    if (!MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid)
+    {
+        LookupMethodByName("System.Threading.TimerQueue, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
+    }
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nullptr, 0, nullptr);
+}
+
+extern "C" void SystemJS_ExecuteTimerCallback()
+{
+    Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler();
+}
 
 extern const ReverseThunkMapEntry g_ReverseThunks[] =
 {
-//    { 0xee78b850, { &MD_MyAssembly_MyType_MyMethod_I32_I32_RetI32, (void*)&Call_MyAssembly_MyType_MyMethod_I32_I32_RetI32 } },
+    { 100678287, { &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler } },
+    { 100678363, { &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, (void*)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler } },
 };
 
 const size_t g_ReverseThunksCount = sizeof(g_ReverseThunks) / sizeof(g_ReverseThunks[0]);

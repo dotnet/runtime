@@ -40,9 +40,7 @@ namespace System.Threading
         private static unsafe partial void SystemJS_ScheduleTimer(int shortestDueTimeMs);
 #endif
 
-#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
-        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-#pragma warning restore CS3016
+        [UnmanagedCallersOnly(EntryPoint = "SystemJS_ExecuteTimerCallback")]
         // this callback will arrive on the main thread, called from mono_wasm_execute_timer
         private static void TimerHandler()
         {
