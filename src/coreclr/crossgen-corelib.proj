@@ -39,7 +39,11 @@
   <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and $(PublishReadyToRun)">
     <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
     <UseComposite>true</UseComposite>
-    <CrossgenTargetName>$(CrossgenTargetName);LinkCoreLibMachO;CopyR2RComponentCoreLib</CrossgenTargetName>
+    <CrossgenTargetName>$(CrossgenTargetName);LinkCoreLibMachO</CrossgenTargetName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseComposite)' == 'true'">
+    <CrossgenTargetName>$(CrossgenTargetName);CopyR2RComponentCoreLib</CrossgenTargetName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -49,15 +53,23 @@
   <PropertyGroup>
     <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
     <CoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dll'))</CoreLibOutputPath>
-    <CoreLibObjOutputPath Condition="'$(TargetsAppleMobile)' == 'true'">$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', '$(CoreLibAssemblyName).o'))</CoreLibObjOutputPath>
-    <CoreLibDylibOutputPath Condition="'$(TargetsAppleMobile)' == 'true'">$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dylib'))</CoreLibDylibOutputPath>
     <CrossgenCoreLibOutputPath>$(CoreLibOutputPath)</CrossgenCoreLibOutputPath>
-    <CrossgenCoreLibOutputPath Condition="'$(TargetsAppleMobile)' == 'true'">$(CoreLibObjOutputPath)</CrossgenCoreLibOutputPath>
+    <CrossgenCoreLibComponentOutputPath></CrossgenCoreLibComponentOutputPath>
     <CoreLibNiPdbPath></CoreLibNiPdbPath>
     <CoreLibPerfMapPath></CoreLibPerfMapPath>
     <CoreLibNiPdbPath Condition="$(BuildPdb)">$([MSBuild]::NormalizePath('$(BinDir)', 'PDB', '$(CoreLibAssemblyName).ni.pdb'))</CoreLibNiPdbPath>
     <CoreLibPerfMapPath Condition="$(BuildPerfMap)">$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).ni.r2rmap'))</CoreLibPerfMapPath>
     <MergedMibcPath>$([MSBuild]::NormalizePath('$(BinDir)', 'StandardOptimizationData.mibc'))</MergedMibcPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+    <CoreLibObjOutputPath>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', '$(CoreLibAssemblyName).o'))</CoreLibObjOutputPath>
+    <CrossgenCoreLibOutputPath>$(CoreLibObjOutputPath)</CrossgenCoreLibOutputPath>
+    <CoreLibDylibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dylib'))</CoreLibDylibOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseComposite)' == 'true'">
+    <CrossgenCoreLibComponentOutputPath>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', '$(CoreLibAssemblyName).dll'))</CrossgenCoreLibComponentOutputPath>
   </PropertyGroup>
 
   <!-- Creates a hash file that changes whenever the input mibc file modification times change.
@@ -123,7 +135,7 @@
   <Target Name="InvokeCrossgen2"
           DependsOnTargets="PrepareInvokeCrossgen2;CreateMergedMibcFile"
           Inputs="@(Crossgen2Inputs)"
-          Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath);$(CrossgenCoreLibOutputPath)">
+          Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath);$(CrossgenCoreLibOutputPath);$(CrossgenCoreLibComponentOutputPath)">
 
     <MakeDir
       Directories="$(BinDir);$(IntermediatesDir);$(LogsDir)" />
@@ -169,9 +181,9 @@
 
   <Target Name="CopyR2RComponentCoreLib"
           DependsOnTargets="InvokeCrossgen2"
-          Inputs="$(CrossgenCoreLibOutputPath)"
+          Inputs="$(CrossgenCoreLibComponentOutputPath)"
           Outputs="$(CoreLibOutputPath)">
-    <Copy SourceFiles="$(CrossgenCoreLibOutputPath)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
+    <Copy SourceFiles="$(CrossgenCoreLibComponentOutputPath)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
   </Target>
 
   <Target
