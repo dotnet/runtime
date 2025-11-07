@@ -78,7 +78,7 @@ internal static unsafe partial class MonoDroidExports
         // SingleFile unit tests
         return SingleFileTestRunner.Main(args);
 #else
-        string entryPointName = env->GetStringUTFChars(j_entryPointLibName);
+        string entryPointName = env->GetStringUTFChars(j_entryPointLibName)!;
         IntPtr[] managedMainArgs = new IntPtr[argc + 1];
         managedMainArgs[0] = Marshal.StringToCoTaskMemUTF8(entryPointName);
         for (int i = 0; i < argc; i++)

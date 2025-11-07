@@ -1,8 +1,6 @@
 <Project>
   <PropertyGroup>
-    <_OriginalOutputType>$(OutputType)</_OriginalOutputType>
     <OutputType Condition="!('$(TargetOS)' == 'android' and '$(TestNativeAot)' == 'true')">Exe</OutputType>
-    <_NeedsSingleFileTestRunner Condition="'$(OutputType)' == 'Exe' and '$(_OriginalOutputType)' == 'Library'">true</_NeedsSingleFileTestRunner>
 
     <BundleDir Condition="'$(BundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(BundleDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
@@ -34,7 +32,7 @@
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
-  <PropertyGroup Condition="('$(PublishSingleFile)' == 'true' or '$(TestNativeAot)' == 'true') and '$(_NeedsSingleFileTestRunner)' == 'true'">
+  <PropertyGroup Condition="('$(PublishSingleFile)' == 'true' or '$(TestNativeAot)' == 'true') and '$(CLRTestKind)' == '' and '$(IsFunctionalTest)' != 'true'">
     <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
   </PropertyGroup>
 
@@ -52,7 +50,7 @@
   <ItemGroup>
     <Compile Include="$(CommonTestPath)SingleFileTestRunner\SingleFileTestRunner.cs"
              Link="Common\SingleFileTestRunner\SingleFileTestRunner.cs"
-             Condition="'$(_NeedsSingleFileTestRunner)' == 'true'" />
+             Condition="'$(CLRTestKind)' == '' and '$(IsFunctionalTest)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>

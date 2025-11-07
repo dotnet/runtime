@@ -450,18 +450,23 @@ class ThreadTest
 
     private static void TestIsBackgroundProperty()
     {
-        // Thread created using Thread.Start
-        var t_event = new AutoResetEvent(false);
-        var t = new Thread(() => t_event.WaitOne());
+        if (!OperatingSystem.IsAndroid())
+        {
+            // Disabled on Android due to https://github.com/dotnet/runtime/issues/121451
 
-        t.Start();
-        s_startedThreads.Add(t);
+            // Thread created using Thread.Start
+            var t_event = new AutoResetEvent(false);
+            var t = new Thread(() => t_event.WaitOne());
 
-        Expect(!t.IsBackground, "Expected t.IsBackground == false");
-        t_event.Set();
-        t.Join();
-        ExpectException<ThreadStateException>(() => Console.WriteLine(t.IsBackground),
-            "Expected ThreadStateException for t.IsBackground");
+            t.Start();
+            s_startedThreads.Add(t);
+
+            Expect(!t.IsBackground, "Expected t.IsBackground == false");
+            t_event.Set();
+            t.Join();
+            ExpectException<ThreadStateException>(() => Console.WriteLine(t.IsBackground),
+                "Expected ThreadStateException for t.IsBackground");
+        }
 
         // Thread pool thread
         Task.Factory.StartNew(() => Expect(Thread.CurrentThread.IsBackground, "Expected IsBackground == true")).Wait();
@@ -477,7 +482,7 @@ class ThreadTest
         // Main thread
         Expect(!Thread.CurrentThread.IsBackground, "Expected CurrentThread.IsBackground == false");
 
-        ExpectPassed(nameof(TestIsBackgroundProperty), 6);
+        ExpectPassed(nameof(TestIsBackgroundProperty), OperatingSystem.IsAndroid() ? 4 : 6);
     }
 
     private static void TestIsThreadPoolThreadProperty()
