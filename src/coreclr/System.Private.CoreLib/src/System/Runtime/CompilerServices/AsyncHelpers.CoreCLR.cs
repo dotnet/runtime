@@ -13,6 +13,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
+#if NATIVEAOT
+using Internal.Runtime;
+#endif
+
 namespace System.Runtime.CompilerServices
 {
     internal struct ExecutionAndSyncBlockStore
@@ -166,11 +170,16 @@ namespace System.Runtime.CompilerServices
 
         private static unsafe Continuation AllocContinuation(Continuation prevContinuation, MethodTable* contMT)
         {
+#if NATIVEAOT
+            Continuation newContinuation = (Continuation)RuntimeImports.RhNewObject(contMT);
+#else
             Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
+#endif
             prevContinuation.Next = newContinuation;
             return newContinuation;
         }
 
+#if !NATIVEAOT
         private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodDesc* method)
         {
             LoaderAllocator loaderAllocator = RuntimeMethodHandle.GetLoaderAllocator(new RuntimeMethodHandleInternal((IntPtr)method));
@@ -192,6 +201,7 @@ namespace System.Runtime.CompilerServices
             }
             return newContinuation;
         }
+#endif
 
         /// <summary>
         /// Used by internal thunks that implement awaiting on Task or a ValueTask.
