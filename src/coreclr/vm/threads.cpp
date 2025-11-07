@@ -2982,7 +2982,7 @@ DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mo
             return ret;
         }
 
-        _ASSERTE (alertable);
+        _ASSERTE (mode == WaitMode_Alertable);
         if (timeout != INFINITE)
         {
             dwEnd = minipal_lowres_ticks();
@@ -7008,8 +7008,6 @@ namespace
         bool cleanupThreadOk = ((Thread*)lpParameter)->HasStarted();
 
         _ASSERTE(cleanupThreadOk);
-
-        // finalizer should always park in default domain
 
         if (cleanupThreadOk)
         {

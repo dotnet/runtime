@@ -517,8 +517,6 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     _ASSERTE(s_FinalizerThreadOK);
     _ASSERTE(GetThread() == GetFinalizerThread());
 
-    // finalizer should always park in default domain
-
     if (s_FinalizerThreadOK)
     {
         INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
