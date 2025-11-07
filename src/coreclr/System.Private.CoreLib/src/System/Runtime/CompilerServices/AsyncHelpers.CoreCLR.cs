@@ -474,7 +474,7 @@ namespace System.Runtime.CompilerServices
                 sentinelContinuation.Next = null;
 
                 // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
-                // These never have special continuation handling.
+                // These never have special continuation context handling.
                 const ContinuationFlags continueFlags =
                     ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                     ContinuationFlags.ContinueOnThreadPool |
@@ -684,12 +684,13 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static void CaptureContinuationContext(SynchronizationContext syncCtx, ref object context, ref ContinuationFlags flags)
+        private static void CaptureContinuationContext(ref object continuationContext, ref ContinuationFlags flags)
         {
+            SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
             if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
             {
                 flags |= ContinuationFlags.ContinueOnCapturedSynchronizationContext;
-                context = syncCtx;
+                continuationContext = syncCtx;
                 return;
             }
 
@@ -697,7 +698,7 @@ namespace System.Runtime.CompilerServices
             if (sched != null && sched != TaskScheduler.Default)
             {
                 flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
-                context = sched;
+                continuationContext = sched;
                 return;
             }
 

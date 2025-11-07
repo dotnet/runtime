@@ -4675,6 +4675,8 @@ enum class WellKnownArg : unsigned
     X86TailCallSpecialArg,
     StackArrayLocal,
     RuntimeMethodHandle,
+    AsyncExecutionContext,
+    AsyncSynchronizationContext,
 };
 
 #ifdef DEBUG
@@ -4854,10 +4856,10 @@ class CallArgs
     bool m_alignmentDone : 1;
 #endif
 
-    void      AddedWellKnownArg(WellKnownArg arg);
-    void      RemovedWellKnownArg(WellKnownArg arg);
-    regNumber GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg);
-    void      SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
+    void  AddedWellKnownArg(WellKnownArg arg);
+    void  RemovedWellKnownArg(WellKnownArg arg);
+    bool  GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg, regNumber* reg);
+    void  SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs);
 
 public:
     CallArgs();

@@ -678,6 +678,10 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "StackArrayLocal";
         case WellKnownArg::RuntimeMethodHandle:
             return "RuntimeMethodHandle";
+        case WellKnownArg::AsyncExecutionContext:
+            return "AsyncExecutionContext";
+        case WellKnownArg::AsyncSynchronizationContext:
+            return "AsyncSynchronizationContext";
     }
 
     return "N/A";
@@ -1851,16 +1855,22 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // These should not affect the placement of any other args or stack space required.
         // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
         // TODO-Cleanup: Integrate this into the new style ABI classifiers.
-        regNumber nonStdRegNum = GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg());
-
-        if (nonStdRegNum == REG_NA)
+        regNumber nonStdRegNum;
+        if (GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg(), &nonStdRegNum))
         {
-            arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
+            if (nonStdRegNum != REG_NA)
+            {
+                ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
+                arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
+            }
+            else
+            {
+                arg.AbiInfo = ABIPassingInformation(comp, 0);
+            }
         }
         else
         {
-            ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-            arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
+            arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
         }
 
         JITDUMP("Argument %u ABI info: ", GetIndex(&arg));
@@ -1928,16 +1938,22 @@ void CallArgs::DetermineABIInfo(Compiler* comp, GenTreeCall* call)
         // These should not affect the placement of any other args or stack space required.
         // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
         // TODO-Cleanup: Integrate this into the new style ABI classifiers.
-        regNumber nonStdRegNum = GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg());
-
-        if (nonStdRegNum == REG_NA)
+        regNumber nonStdRegNum;
+        if (GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg(), &nonStdRegNum))
         {
-            arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
+            if (nonStdRegNum != REG_NA)
+            {
+                ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
+                arg.AbiInfo = ABIPassingInformation::FromSegmentByValue(comp, segment);
+            }
+            else
+            {
+                arg.AbiInfo = ABIPassingInformation(comp, 0);
+            }
         }
         else
         {
-            ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
-            arg.AbiInfo               = ABIPassingInformation::FromSegmentByValue(comp, segment);
+            arg.AbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
         }
     }
 
@@ -13997,7 +14013,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         // We'll jump to the genReturnBB.
 
 #if !defined(TARGET_X86)
-        if ((info.compFlags & CORINFO_FLG_SYNCH) != 0)
+        if (info.compFlags & CORINFO_FLG_SYNCH)
         {
             fgConvertSyncReturnToLeave(block);
         }

@@ -24,13 +24,13 @@ struct ContinuationLayout
     unsigned                             Size                      = 0;
     unsigned                             OSRILOffset               = UINT_MAX;
     unsigned                             ExceptionOffset           = UINT_MAX;
+    unsigned                             ExecutionContextOffset    = UINT_MAX;
     unsigned                             ContinuationContextOffset = UINT_MAX;
     unsigned                             KeepAliveOffset           = UINT_MAX;
     ClassLayout*                         ReturnStructLayout        = nullptr;
     unsigned                             ReturnAlignment           = 0;
     unsigned                             ReturnSize                = 0;
     unsigned                             ReturnValOffset           = UINT_MAX;
-    unsigned                             ExecContextOffset         = UINT_MAX;
     const jitstd::vector<LiveLocalInfo>& Locals;
     CORINFO_CLASS_HANDLE                 ClassHnd = NO_CLASS_HANDLE;
 
@@ -106,6 +106,7 @@ class AsyncTransformation
                                              GenTree*                  prevContinuation,
                                              const ContinuationLayout& layout);
     void         FillInDataOnSuspension(GenTreeCall* call, const ContinuationLayout& layout, BasicBlock* suspendBB);
+    void         RestoreContexts(GenTreeCall* call, BasicBlock* suspendBB);
     void         CreateCheckAndSuspendAfterCall(BasicBlock*               block,
                                                 GenTreeCall*              call,
                                                 const CallDefinitionInfo& callDefInfo,

@@ -1712,21 +1712,23 @@ enum CorInfoContinuationFlags
     // If this bit is set the continuation resumes inside a try block and
     // thus if an exception is being propagated, needs to be resumed.
     CORINFO_CONTINUATION_HAS_EXCEPTION = 2,
+    // If this bit is set the continuation has a continuation context.
+    CORINFO_CONTINUATION_HAS_EXECUTION_CONTEXT = 4,
     // If this bit is set the continuation has space for a continuation
     // context.
-    CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 4,
+    CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 8,
     // If this bit is set the continuation has space to store a result
     // returned by the callee.
-    CORINFO_CONTINUATION_HAS_RESULT = 8,
+    CORINFO_CONTINUATION_HAS_RESULT = 16,
     // If this bit is set the continuation should continue on the thread
     // pool.
-    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 16,
+    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 32,
     // If this bit is set the continuation context is a
     // SynchronizationContext that we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 32,
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 64,
     // If this bit is set the continuation context is a TaskScheduler that
     // we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 64,
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 128,
 };
 
 struct CORINFO_ASYNC_INFO
