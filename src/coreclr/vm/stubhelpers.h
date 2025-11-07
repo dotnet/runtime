@@ -26,6 +26,7 @@ public:
     //-------------------------------------------------------
 
 #ifdef FEATURE_COMINTEROP
+    static FCDECL1(MethodTable*,    GetComInterfaceFromMethodDesc, MethodDesc* pMD);
     static FCDECL3(IUnknown*,       GetCOMIPFromRCW,    Object* pSrcUNSAFE, MethodDesc* pMD, void **ppTarget);
 #endif // FEATURE_COMINTEROP
 
