@@ -18,9 +18,6 @@ namespace Tracing.Tests.UserEvents
         [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
         private static extern int Kill(int pid, int sig);
 
-        [DllImport("libc", EntryPoint = "geteuid", SetLastError = true)]
-        private static extern uint GetEffectiveUserId();
-
         public static int Main(string[] args)
         {
             if (args.Length > 0 && args[0] == "tracee")
@@ -40,16 +37,27 @@ namespace Tracing.Tests.UserEvents
             string traceFilePath = Path.GetTempFileName();
             const string userEventsDataPath = "/sys/kernel/tracing/user_events_data";
 
-            if (GetEffectiveUserId() != 0)
-            {
-                Console.Error.WriteLine("This test requires elevated permissions.");
-                return -1;
-            }
             if (!File.Exists(userEventsDataPath))
             {
                 Console.Error.WriteLine($"user_events_data not found at `{userEventsDataPath}`. The environment does not support user_events.");
                 return -1;
             }
+
+            try
+            {
+                using FileStream fs = File.Open(userEventsDataPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.Error.WriteLine($"Cannot access `{userEventsDataPath}`. This test requires elevated permissions to access user_events_data.");
+                return -1;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error accessing `{userEventsDataPath}`: {ex.Message}");
+                return -1;
+            }
+
             if (!File.Exists(recordTracePath))
             {
                 Console.Error.WriteLine($"record-trace not found at `{recordTracePath}`. Test cannot run.");
