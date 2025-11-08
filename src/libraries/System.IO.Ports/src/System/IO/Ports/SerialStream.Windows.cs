@@ -634,17 +634,37 @@ namespace System.IO.Ports
                 // set constant properties of the DCB
                 InitializeDCB(baudRate, parity, dataBits, stopBits, discardNull);
 
-                DtrEnable = dtrEnable;
+                try
+                {
+                    DtrEnable = dtrEnable;
+                }
+                catch (IOException) when (dtrEnable == false)
+                {
+                    // An IOException can be thrown when using a port which doesn't implement
+                    // the required termios command for setting DtrEnable, but it still works without setting the value
+                    // so we ignore this error in the constructor only if being set to false (which is the default).
+                    // When the property is set manually the exception is still thrown.
+                }
 
-                // query and cache the initial RtsEnable value
-                // so that set_RtsEnable can do the (value != rtsEnable) optimization
-                _rtsEnable = (GetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL) == Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_ENABLE);
+                try
+                {
+                    // query and cache the initial RtsEnable value
+                    // so that set_RtsEnable can do the (value != rtsEnable) optimization
+                    _rtsEnable = (GetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL) == Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_ENABLE);
 
-                // now set this.RtsEnable to the specified value.
-                // Handshake takes precedence, this will be a nop if
-                // handshake is either RequestToSend or RequestToSendXOnXOff
-                if ((handshake != Handshake.RequestToSend && handshake != Handshake.RequestToSendXOnXOff))
-                    RtsEnable = rtsEnable;
+                    // now set this.RtsEnable to the specified value.
+                    // Handshake takes precedence, this will be a nop if
+                    // handshake is either RequestToSend or RequestToSendXOnXOff
+                    if ((handshake != Handshake.RequestToSend && handshake != Handshake.RequestToSendXOnXOff))
+                        RtsEnable = rtsEnable;
+                }
+                catch (IOException) when (rtsEnable == false)
+                {
+                    // An IOException can be thrown when using a port which doesn't implement
+                    // the required termios command for setting RtsEnable, but it still works without setting the value
+                    // so we ignore this error in the constructor only if being set to false (which is the default).
+                    // When the property is set manually the exception is still thrown.
+                }
 
                 // NOTE: this logic should match what is in the ReadTimeout property
                 if (readTimeout == 0)
