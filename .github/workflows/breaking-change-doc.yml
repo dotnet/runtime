@@ -1,3 +1,11 @@
+# This workflow generates breaking change documentation for merged pull requests.
+# It runs automatically when a PR with the 'needs-breaking-change-doc-created' label is merged,
+# or when that label is added to an already merged PR.
+# It can be manually triggered to generate documentation for any specific PR.
+# 
+# The workflow uses GitHub Models AI to analyze the PR changes and create appropriate
+# breaking change documentation that gets posted as a PR comment as a clickable link
+# to open an issue in the dotnet/docs repository.
 name: Breaking Change Documentation
 
 on:
