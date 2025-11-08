@@ -8289,26 +8289,6 @@ struct GenTreeILOffset : public GenTree
 #endif
 };
 
-// No-op node that records the native offset into async debug info during
-// codegen/emit.
-struct GenTreeRecordAsyncJoin : public GenTree
-{
-    int gtSuspensionPointIndex;
-
-    GenTreeRecordAsyncJoin(int suspensionPointIndex)
-        : GenTree(GT_RECORD_ASYNC_JOIN, TYP_VOID)
-        , gtSuspensionPointIndex(suspensionPointIndex)
-    {
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeRecordAsyncJoin()
-        : GenTree(GT_RECORD_ASYNC_JOIN, TYP_VOID)
-    {
-    }
-#endif
-};
-
 // GenTreeList: adapter class for forward iteration of the execution order GenTree linked list
 // using range-based `for`, normally used via Statement::TreeList(), e.g.:
 //    for (GenTree* const tree : stmt->TreeList()) ...

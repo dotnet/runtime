@@ -3244,14 +3244,6 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void reportAsyncDebugInfo(AsyncInfo* asyncInfo, AsyncSuspensionPoint* suspensionPoints, AsyncContinuationVarInfo* vars, uint numVars)
-#pragma warning restore CA1822 // Mark members as static
-        {
-            Marshal.FreeHGlobal((IntPtr)suspensionPoints);
-            Marshal.FreeHGlobal((IntPtr)vars);
-        }
-
-#pragma warning disable CA1822 // Mark members as static
         private void reportMetadata(byte* key, void* value, nuint length)
 #pragma warning restore CA1822 // Mark members as static
         {
