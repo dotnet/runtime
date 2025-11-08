@@ -874,7 +874,7 @@ mono_debugger_agent_cleanup (void)
 	mono_de_cleanup ();
 
 	if (file_check_valid_memory != -1) {
-		remove (filename_check_valid_memory);
+		while (-1 == remove (filename_check_valid_memory) && errno == EINTR);
 		g_free (filename_check_valid_memory);
 		close (file_check_valid_memory);
 	}
@@ -981,7 +981,7 @@ static SOCKET
 socket_transport_accept (SOCKET socket_fd)
 {
 	MONO_REQ_GC_SAFE_MODE;
-	conn_fd = accept (socket_fd, NULL, NULL);
+	while (-1 == (conn_fd = accept (socket_fd, NULL, NULL)) && errno == EINTR);
 
 	if (conn_fd == INVALID_SOCKET) {
 		PRINT_ERROR_MSG ("debugger-agent: Unable to listen on %d: %s.\n", (int)socket_fd, strerror (get_last_sock_error()));
@@ -1185,7 +1185,7 @@ socket_transport_connect (const char *address)
 					setsockopt(sfd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&timeout, sizeof(timeout));
 				}
 
-				res = connect (sfd, &sockaddr.addr, sock_len);
+				while (-1 == (res = connect (sfd, &sockaddr.addr, sock_len)) && errno == EINTR);
 
 				if (res != SOCKET_ERROR)
 					break;       /* Success */
@@ -7054,7 +7054,7 @@ create_file_to_check_memory_address (void)
 		return;
 	char *file_name = g_strdup_printf ("debugger_check_valid_memory.%d", mono_process_current_pid ());
 	filename_check_valid_memory = g_build_filename (g_get_tmp_dir (), file_name, (const char*)NULL);
-	file_check_valid_memory = open(filename_check_valid_memory, O_CREAT | O_WRONLY | O_APPEND, S_IWUSR);
+	while (-1 == (file_check_valid_memory = open(filename_check_valid_memory, O_CREAT | O_WRONLY | O_APPEND, S_IWUSR)) && errno == EINTR);
 	g_free (file_name);
 }
 
@@ -7067,7 +7067,7 @@ valid_memory_address (gpointer addr, gint size)
 	if(file_check_valid_memory < 0) {
 		return TRUE;
 	}
-	write (file_check_valid_memory,  (gpointer)addr, 1);
+	while (-1 == write (file_check_valid_memory,  (gpointer)addr, 1) && errno == EINTR);
 	if (errno == EFAULT) {
 		ret = FALSE;
 	}

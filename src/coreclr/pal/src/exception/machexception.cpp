@@ -857,7 +857,17 @@ HijackFaultingThread(
         if ((stackOverflowHandlerStack == MAP_FAILED) || mprotect((void*)stackOverflowHandlerStack, GetVirtualPageSize(), PROT_NONE) != 0)
         {
             // We are out of memory or we've failed to protect the guard page, so resort to just printing a stack overflow message and abort
-            write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
+            const char *message = StackOverflowMessage;
+            size_t messageSize = sizeof(StackOverflowMessage) - 1;
+            ssize_t writeResult;
+            while (true)
+            {
+                while (-1 == (writeResult = write(STDERR_FILENO, message, messageSize)) && errno == EINTR);
+                if (writeResult <= 0 || (ssize_t)messageSize < writeResult) break;
+                messageSize -= (size_t)writeResult;
+                message += writeResult;
+                if (messageSize == 0) break;
+            }
             abort();
         }
 

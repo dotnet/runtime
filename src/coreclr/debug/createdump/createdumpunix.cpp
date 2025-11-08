@@ -91,7 +91,7 @@ CreateDump(const CreateDumpOptions& options)
             printf_error("Writing dump FAILED\n");
 
             // Delete the partial dump file on error
-            remove(dumpPath.c_str());
+            while (-1 == remove(dumpPath.c_str()) && errno == EINTR);
             goto exit;
         }
     }

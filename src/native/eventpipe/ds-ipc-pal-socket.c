@@ -345,7 +345,10 @@ ipc_socket_create_uds (DiagnosticsIpc *ipc)
 	new_socket = socket (ipc->server_address_family, socket_type, 0);
 #ifndef SOCK_CLOEXEC
 	if (new_socket != DS_IPC_INVALID_SOCKET)
-		fcntl (new_socket, F_SETFD, FD_CLOEXEC); // ignore any failures; this is best effort
+	{
+		int fcntl_result;
+		while (-1 == (fcntl_result = fcntl (new_socket, F_SETFD, FD_CLOEXEC)) && errno == EINTR) { } // ignore any failures; this is best effort
+	}
 #endif // SOCK_CLOEXEC
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return new_socket;
@@ -375,7 +378,7 @@ ipc_socket_create_tcp (DiagnosticsIpc *ipc)
 	if (new_socket != DS_IPC_INVALID_SOCKET) {
 #ifndef SOCK_CLOEXEC
 #ifndef HOST_WIN32
-		fcntl (new_socket, F_SETFD, FD_CLOEXEC); // ignore any failures; this is best effort
+		while (-1 == fcntl (new_socket, F_SETFD, FD_CLOEXEC) && errno == EINTR) { } // ignore any failures; this is best effort
 #endif // HOST_WIN32
 #endif // SOCK_CLOEXEC
 		int option_value = 1;
@@ -457,9 +460,12 @@ ipc_socket_set_blocking (
 	u_long blocking_mode = blocking ? 0 : 1;
 	result = ioctlsocket (s, FIONBIO, &blocking_mode);
 #else
-	result = fcntl (s, F_GETFL, 0);
+	while (-1 == (result = fcntl (s, F_GETFL, 0)) && errno == EINTR) { }
 	if (result != -1)
-		result = fcntl (s, F_SETFL, blocking ? (result & (~O_NONBLOCK)) : (result | (O_NONBLOCK)));
+	{
+		int value = blocking ? (result & (~O_NONBLOCK)) : (result | (O_NONBLOCK));
+		while (-1 == (result = fcntl (s, F_SETFL, value)) && errno == EINTR) { }
+	}
 #endif
 	DS_EXIT_BLOCKING_PAL_SECTION;
 	return result;
@@ -562,7 +568,7 @@ ipc_socket_accept (
 		if (client_socket != -1)
 		{
 			// ignore any failures; this is best effort
-			fcntl (client_socket, F_SETFD, FD_CLOEXEC);
+			while (-1 == fcntl (client_socket, F_SETFD, FD_CLOEXEC) && errno == EINTR) { }
 		}
 #endif
 #endif
@@ -1201,7 +1207,7 @@ ds_ipc_listen (
 #ifdef DS_IPC_PAL_AF_UNIX
 		int result_unlink;
 		DS_ENTER_BLOCKING_PAL_SECTION;
-		result_unlink = unlink (((struct sockaddr_un *)ipc->server_address)->sun_path);
+		while (-1 == (result_unlink = unlink (((struct sockaddr_un *)ipc->server_address)->sun_path)) && errno == EINTR) { }
 		DS_EXIT_BLOCKING_PAL_SECTION;
 
 		EP_ASSERT (result_unlink != -1);
@@ -1343,7 +1349,7 @@ ds_ipc_close (
 		// reference to it is closed." - unix(7) man page
 		int result_unlink;
 		DS_ENTER_BLOCKING_PAL_SECTION;
-		result_unlink = unlink (((struct sockaddr_un *)ipc->server_address)->sun_path);
+		while (-1 == (result_unlink = unlink (((struct sockaddr_un *)ipc->server_address)->sun_path)) && errno == EINTR) { }
 		DS_EXIT_BLOCKING_PAL_SECTION;
 
 		if (result_unlink == -1) {
@@ -1593,7 +1599,7 @@ ds_ipc_stream_read_fd (
 	msg.msg_controllen = sizeof(control);
 
 	ssize_t res;
-	while ((res = recvmsg(ipc_stream->client_socket, &msg, 0)) < 0 && errno == EINTR);
+	while ((res = recvmsg(ipc_stream->client_socket, &msg, 0)) < 0 && errno == EINTR) { }
 	if (res < 0)
 	   return false;
 

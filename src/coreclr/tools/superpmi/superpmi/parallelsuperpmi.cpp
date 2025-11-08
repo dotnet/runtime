@@ -9,6 +9,7 @@
 #include "commandline.h"
 #include "errorhandling.h"
 #include "fileio.h"
+#include <errno.h>
 #include <minipal/random.h>
 
 // Forward declare the conversion method. Including spmiutil.h pulls in other headers
@@ -763,14 +764,14 @@ int doParallelSuperPMI(CommandLine::Options& o)
             PerWorkerData& wd = perWorkerData[i];
             if (wd.failingMCListPath != nullptr)
             {
-                remove(wd.failingMCListPath);
+                while (-1 == remove(wd.failingMCListPath) && errno == EINTR);
             }
             if (wd.detailsPath != nullptr)
             {
-                remove(wd.detailsPath);
+                while (-1 == remove(wd.detailsPath) && errno == EINTR);
             }
-            remove(wd.stdOutputPath);
-            remove(wd.stdErrorPath);
+            while (-1 == remove(wd.stdOutputPath) && errno == EINTR);
+            while (-1 == remove(wd.stdErrorPath) && errno == EINTR);
         }
     }
 

@@ -91,7 +91,8 @@ private:
         return 0;
 #else
         struct statfs stats;
-        int result = statfs("/sys/fs/cgroup", &stats);
+        int result;
+        while (-1 == (result = statfs("/sys/fs/cgroup", &stats)) && errno == EINTR);
 
         if (result != 0)
             return 0;

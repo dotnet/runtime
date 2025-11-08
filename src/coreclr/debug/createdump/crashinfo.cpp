@@ -814,20 +814,32 @@ CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
         }
 
         uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
-        uint64_t seekResult = lseek(m_fdPagemap, (off_t) pagemapOffset, SEEK_SET);
-        if (seekResult != pagemapOffset)
+        int64_t seekResult;
+        while (-1 == (seekResult = lseek(m_fdPagemap, (off_t) pagemapOffset, SEEK_SET)) && errno == EINTR);
+        if ((uint64_t)seekResult != pagemapOffset)
         {
             int seekErrno = errno;
             TRACE("Seeking in pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", ERRNO %d: %s\n", start, pagemapOffset, seekErrno, strerror(seekErrno));
             return true;
         }
         uint64_t value;
-        size_t readResult = read(m_fdPagemap, (void*)&value, sizeof(value));
-        if (readResult == (size_t) -1)
+        size_t readSoFar = 0;
+        while (readSoFar < sizeof(value))
         {
-            int readErrno = errno;
-            TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
-            return true;
+            ssize_t readResult;
+            while (-1 == (readResult = read(m_fdPagemap, (unsigned char*)&value + readSoFar, sizeof(value) - readSoFar) && errno == EINTR));
+            if (readResult == -1)
+            {
+                int readErrno = errno;
+                TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
+                return true;
+            }
+            if (readResult == 0)
+            {
+                TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx ", pagemap offset: %" PRIA PRIx ", size: %zu, Read Was Incomplete\n", start, pagemapOffset, sizeof(value));
+                return true;
+            }
+            readSoFar += (size_t)readResult;
         }
 
         bool is_page_present = (value & ((uint64_t)1 << 63)) != 0;

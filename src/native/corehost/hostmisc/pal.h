@@ -261,7 +261,9 @@ namespace pal
 
     inline bool mkdir(const char_t* dir, int mode, int& error_code)
     {
-        int ret = ::mkdir(dir, mode);
+        int ret;
+        while (-1 == (ret = ::mkdir(dir, mode)) && errno == EINTR);
+
         if (ret == 0)
             return true;
 
@@ -269,9 +271,27 @@ namespace pal
         return false;
     }
 
-    inline bool rmdir(const char_t* path) { return ::rmdir(path) == 0; }
-    inline int rename(const char_t* old_name, const char_t* new_name) { return ::rename(old_name, new_name); }
-    inline int remove(const char_t* path) { return ::remove(path); }
+    inline bool rmdir(const char_t* path)
+    {
+        int result;
+        while (-1 == (result = ::rmdir(path)) && errno == EINTR);
+        return result == 0;
+    }
+
+    inline int rename(const char_t* old_name, const char_t* new_name)
+    {
+        int result;
+        while (-1 == (result = ::rename(old_name, new_name)) && errno == EINTR);
+        return result;
+    }
+
+    inline int remove(const char_t* path)
+    {
+        int result;
+        while (-1 == (result = ::remove(path)) && errno == EINTR);
+        return result;
+    }
+
     inline bool munmap(void* addr, size_t length) { return ::munmap(addr, length) == 0; }
     inline int get_pid() { return getpid(); }
     inline void sleep(uint32_t milliseconds) { usleep(milliseconds * 1000); }

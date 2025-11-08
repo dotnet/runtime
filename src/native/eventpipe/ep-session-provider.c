@@ -163,7 +163,9 @@ session_provider_tracepoint_register (
 
 	reg.name_args = (uint64_t)tracepoint->tracepoint_format;
 
-	if (ioctl(user_events_data_fd, DIAG_IOCSREG, &reg) == -1)
+	int ioctl_result;
+	while (-1 == (ioctl_result = ioctl(user_events_data_fd, DIAG_IOCSREG, &reg)) && errno == EINTR);
+	if (ioctl_result == -1)
 		return false;
 
 	tracepoint->write_index = reg.write_index;
@@ -185,7 +187,9 @@ session_provider_tracepoint_unregister (
 	unreg.disable_bit = EP_SESSION_PROVIDER_TRACEPOINT_ENABLE_BIT;
 	unreg.disable_addr = (uint64_t)&tracepoint->enabled;
 
-	if (ioctl(user_events_data_fd, DIAG_IOCSUNREG, &unreg) == -1)
+	int ioctl_result;
+	while (-1 == (ioctl_result = ioctl(user_events_data_fd, DIAG_IOCSUNREG, &unreg)) && errno == EINTR);
+	if (ioctl_result == -1)
 		return false;
 
 	return true;

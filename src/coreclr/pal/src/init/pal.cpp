@@ -1130,7 +1130,8 @@ static BOOL INIT_SharedFilesPath(void)
 
         // Check if the path already exists and it's a directory
         struct stat statInfo;
-        int statResult = stat(*gSharedFilesPath, &statInfo);
+        int statResult;
+        while (-1 == (statResult = stat(*gSharedFilesPath, &statInfo)) && errno == EINTR);
 
         // If the path exists, check that it's a directory
         if (statResult != 0 || !(statInfo.st_mode & S_IFDIR))

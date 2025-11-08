@@ -865,7 +865,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 #endif
 
 	if (!mini_debug_options.no_gdb_backtrace && pid == 0) {
-		dup2 (STDERR_FILENO, STDOUT_FILENO);
+		while (-1 == dup2 (STDERR_FILENO, STDOUT_FILENO) && errno == EINTR);
 
 		g_async_safe_printf ("\n=================================================================\n");
 		g_async_safe_printf("\tExternal Debugger Dump:\n");
@@ -874,7 +874,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		_exit (1);
 	} else if (need_to_fork && pid > 0) {
 		int status;
-		waitpid (pid, &status, 0);
+		while (-1 == waitpid (pid, &status, 0) && errno == EINTR);
 	} else {
 		// If we can't fork, do as little as possible before exiting
 	}
@@ -1006,7 +1006,7 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 	g_async_safe_printf ("mono_gdb_render_native_backtraces not supported on this platform, unable to find gdb or lldb\n");
 
 	close (commands_handle);
-	unlink (commands_filename);
+	while (-1 == unlink (commands_filename) && errno == EINTR);
 	return;
 
 exec:
