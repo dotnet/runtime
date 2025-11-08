@@ -27,7 +27,8 @@ jobs:
   generate-breaking-change-doc:
     if: |
       github.repository_owner == 'dotnet' && (
-        (github.event_name == 'pull_request_target' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created')) ||
+        (github.event_name == 'pull_request_target' && github.event.action == 'closed' && github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created')) ||
+        (github.event_name == 'pull_request_target' && github.event.action == 'labeled' && github.event.pull_request.merged == true && github.event.label.name == 'needs-breaking-change-doc-created') ||
         github.event_name == 'workflow_dispatch'
       )
     runs-on: ubuntu-latest
