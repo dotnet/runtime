@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 typedef char16_t WCHAR;
-typedef uint32_t HRESULT;
+typedef int32_t HRESULT;
 
 #include <stdio.h>
 #include <errno.h>
@@ -88,7 +88,7 @@ HRESULT HRESULTFromErrno()
     // maps the common I/O errors
     // based on FILEGetLastErrorFromErrno
     
-    uint32_t win32Err;
+    int32_t win32Err;
 
     switch(errno)
     {
