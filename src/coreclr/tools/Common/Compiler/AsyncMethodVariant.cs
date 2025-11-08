@@ -43,9 +43,6 @@ namespace ILCompiler
 
         public override MethodDesc GetCanonMethodTarget(CanonicalFormKind kind)
         {
-            // We should not be calling GetCanonMethodTarget on generic definitions of anything
-            // and this MethodDesc is a generic definition.
-            Debug.Assert(!HasInstantiation && !OwningType.HasInstantiation);
             return this;
         }
 
