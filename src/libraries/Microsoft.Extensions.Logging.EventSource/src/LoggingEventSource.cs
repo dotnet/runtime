@@ -82,8 +82,10 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// }
     /// </code>
     /// </example>
+#pragma warning disable ESGEN001 // EventSource classes should not declare constructors. See https://github.com/dotnet/runtime/issues/121205.
     [EventSource(Name = "Microsoft-Extensions-Logging")]
     public sealed class LoggingEventSource : System.Diagnostics.Tracing.EventSource
+#pragma warning restore ESGEN001
     {
         /// <summary>
         /// Defines the different ways data can be formatted in an event.
@@ -126,11 +128,9 @@ namespace Microsoft.Extensions.Logging.EventSource
         private static readonly char[] s_semicolon = new[] { ';' };
         private static readonly char[] s_colon = new[] { ':' };
 
-#pragma warning disable ESGEN001 // EventSource classes should not declare constructors.
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
-#pragma warning restore ESGEN001 // EventSource classes should not declare constructors.
 
         /// <summary>
         /// FormattedMessage() is called when ILogger.Log() is called. and the FormattedMessage keyword is active

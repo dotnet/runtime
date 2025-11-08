@@ -159,8 +159,10 @@ namespace System.Diagnostics
     ///
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
+#pragma warning disable ESGEN001 // EventSource classes should not declare constructors. See https://github.com/dotnet/runtime/issues/121205.
     [EventSource(Name = DiagnosticSourceEventSourceName)]
     internal sealed class DiagnosticSourceEventSource : EventSource
+#pragma warning restore ESGEN001
     {
         private const string DiagnosticSourceEventSourceName = "Microsoft-Diagnostics-DiagnosticSource";
 
@@ -404,14 +406,12 @@ namespace System.Diagnostics
         }
 
         #region private
-#pragma warning disable ESGEN001 // EventSource classes should not declare constructors.
         private DiagnosticSourceEventSource()
             // This constructor uses EventSourceSettings which is only available on V4.6 and above
             // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
             : base(DiagnosticSourceEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
-#pragma warning restore ESGEN001 // EventSource classes should not declare constructors.
 
         // trivial helper to allow you to join two strings the first of which can be null.
         private static string NewLineSeparate(string? str1, string str2)

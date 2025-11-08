@@ -42,6 +42,31 @@ namespace Generators
                     continue;
                 }
 
+                bool isPartial = false;
+                foreach (var modifier in classDef.Modifiers)
+                {
+                    if (modifier.IsKind(SyntaxKind.PartialKeyword))
+                    {
+                        isPartial = true;
+                        break;
+                    }
+                }
+
+                if (!isPartial)
+                {
+                    var diagnostic = Diagnostic.Create(
+                        new DiagnosticDescriptor(
+                            "ESGEN001",
+                            "EventSource class is not partial",
+                            "EventSource class '{0}' is not partial. EventSource classes must be declared as partial to take advantage of EventSourceGenerator.",
+                            nameof(EventSourceGenerator),
+                            DiagnosticSeverity.Warning,
+                            isEnabledByDefault: true),
+                        classDef.GetLocation(),
+                        classDef.Identifier.ValueText);
+                    return new EventSourceClass(diagnostic, null, null, null, default, false);
+                }
+
                 foreach (MemberDeclarationSyntax member in classDef.Members)
                 {
                     if (member is ConstructorDeclarationSyntax ctor)
@@ -60,13 +85,13 @@ namespace Generators
                         {
                             var diagnostic = Diagnostic.Create(
                                 new DiagnosticDescriptor(
-                                    "ESGEN001",
+                                    "ESGEN002",
                                     "EventSource class contains explicit constructor",
-                                    "EventSource class '{0}' contains an explicit constructor. EventSource classes must not declare constructors.",
-                                    "EventSourceGenerator",
+                                    "EventSource class '{0}' contains an explicit constructor. EventSource classes must not declare constructors to take advantage of EventSourceGenerator.",
+                                    nameof(EventSourceGenerator),
                                     DiagnosticSeverity.Warning,
                                     isEnabledByDefault: true),
-                                ctor.GetLocation(),
+                                classDef.GetLocation(),
                                 classDef.Identifier.ValueText);
                             return new EventSourceClass(diagnostic, null, null, null, default, false);
                         }

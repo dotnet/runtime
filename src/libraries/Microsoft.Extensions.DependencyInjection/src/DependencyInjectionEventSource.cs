@@ -12,8 +12,10 @@ using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+#pragma warning disable ESGEN001 // EventSource classes should not declare constructors. See https://github.com/dotnet/runtime/issues/121205.
     [EventSource(Name = "Microsoft-Extensions-DependencyInjection")]
     internal sealed class DependencyInjectionEventSource : EventSource
+#pragma warning restore ESGEN001
     {
         public static readonly DependencyInjectionEventSource Log = new DependencyInjectionEventSource();
 
@@ -27,11 +29,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private readonly List<WeakReference<ServiceProvider>> _providers = new();
 
-#pragma warning disable ESGEN001 // EventSource classes should not declare constructors.
         private DependencyInjectionEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
-#pragma warning restore ESGEN001 // EventSource classes should not declare constructors.
 
         // There is a risk that each ServiceProviderBuilt call only finds one entry to remove, and the next call will clean the list again and spend O(n) time on that.
         // So instead of tying the cleaning to the resizing, it might be better to have a separate counter.

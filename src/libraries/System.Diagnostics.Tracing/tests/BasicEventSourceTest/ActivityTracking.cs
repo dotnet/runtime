@@ -164,8 +164,6 @@ namespace BasicEventSourceTests
     [EventSource(Name = "ActivityEventSource")]
     class ActivityEventSource : EventSource
     {
-        public ActivityEventSource() { }
-
         [Event(1)]
         public void ExampleStart() => WriteEvent(1);
 
