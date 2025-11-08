@@ -104,9 +104,10 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.cmd</_CoreClrBuildScript>
+      <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.ps1</_CoreClrBuildScript>
       <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build-runtime.sh</_CoreClrBuildScript>
-      <_CoreClrBuildCommand>&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg, ' ') @(NativeCMakeArg, ' ')</_CoreClrBuildCommand>
+      <_CoreClrBuildCommand Condition="$([MSBuild]::IsOsPlatform(Windows))">powershell -NoProfile -ExecutionPolicy ByPass -File &quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg, ' ') @(NativeCMakeArg, ' ')</_CoreClrBuildCommand>
+      <_CoreClrBuildCommand Condition="!$([MSBuild]::IsOsPlatform(Windows)))">&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg, ' ') @(NativeCMakeArg, ' ')</_CoreClrBuildCommand>
     </PropertyGroup>
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->
