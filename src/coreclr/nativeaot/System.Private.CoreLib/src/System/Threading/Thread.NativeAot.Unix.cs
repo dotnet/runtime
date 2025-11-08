@@ -53,7 +53,7 @@ namespace System.Threading
                 // the thread.
                 currentThread._waitInfo.OnThreadExiting();
                 StopThread(currentThread);
-                SetJoinHandle(currentThread);
+                currentThread.SetJoinHandle();
             }
         }
 
