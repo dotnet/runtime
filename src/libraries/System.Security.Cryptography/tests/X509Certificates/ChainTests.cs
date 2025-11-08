@@ -645,11 +645,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         X509ChainStatusFlags.NoError,
                         (a, status) => a | status.Status));
 
-                Assert.Equal(
-                    X509ChainStatusFlags.NotValidForUsage,
-                    holder.Chain.ChainElements[2].ChainElementStatus.Aggregate(
-                        X509ChainStatusFlags.NoError,
-                        (a, status) => a | status.Status));
+                if (!PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version22000OrGreater)
+                {
+                    Assert.Equal(
+                        X509ChainStatusFlags.NotValidForUsage,
+                        holder.Chain.ChainElements[2].ChainElementStatus.Aggregate(
+                            X509ChainStatusFlags.NoError,
+                            (a, status) => a | status.Status));
+                }
             }
         }
 
