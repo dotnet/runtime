@@ -166,7 +166,7 @@ namespace Internal.IL.Stubs
                         else
                         {
                             fromExceptionMd = context.SystemModule
-                                .GetKnownType("System.Threading.Tasks"u8, "Task`1"u8)
+                                .GetKnownType("System.Threading.Tasks"u8, "Task"u8)
                                 .GetKnownMethod("FromException"u8, null);
                         }
                         fromExceptionMd = fromExceptionMd.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
