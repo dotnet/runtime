@@ -53,7 +53,7 @@ namespace Internal.IL.Stubs
                     codestream.BeginTry(tryCatchRegion);
 
                     int localArg = 0;
-                    if (sig.IsExplicitThis)
+                    if (!sig.IsStatic)
                     {
                         codestream.EmitLdArg(localArg++);
                     }
