@@ -245,6 +245,7 @@ namespace Internal.IL.Stubs
 
                 // codestream.EmitLdLoca(executionAndSyncBlockStoreLocal);
                 // codestream.Emit(ILOpcode.call, emitter.NewToken(executionAndSyncBlockStoreType.GetKnownMethod("Pop"u8, null)));
+                codestream.Emit(ILOpcode.endfinally);
                 codestream.EndHandler(tryFinallyRegion);
             }
 
