@@ -77,71 +77,23 @@ if (Test-Path ".\config.ps1") {
     exit 1
 }
 
-# Simple YAML conversion function for prompt files
-function ConvertTo-Yaml {
-    param([Parameter(ValueFromPipeline)]$Object, [int]$Depth = 0)
-    
-    $indent = "  " * $Depth
-    
-    if ($Object -is [hashtable] -or $Object -is [PSCustomObject]) {
-        $lines = @()
-        $properties = if ($Object -is [hashtable]) { $Object.Keys } else { $Object.PSObject.Properties.Name }
-        
-        foreach ($key in $properties) {
-            $value = if ($Object -is [hashtable]) { $Object[$key] } else { $Object.$key }
-            
-            if ($value -is [array]) {
-                $lines += "${indent}${key}:"
-                foreach ($item in $value) {
-                    if ($item -is [hashtable] -or $item -is [PSCustomObject]) {
-                        $lines += "${indent}- "
-                        $itemProperties = if ($item -is [hashtable]) { $item.Keys } else { $item.PSObject.Properties.Name }
-                        $isFirstProperty = $true
-                        foreach ($itemKey in $itemProperties) {
-                            $itemValue = if ($item -is [hashtable]) { $item[$itemKey] } else { $item.$itemKey }
-                            if ($isFirstProperty) {
-                                if ($itemValue -match '[\r\n]') {
-                                    $lines[-1] += "${itemKey}: |"
-                                    $itemValue -split '[\r\n]' | ForEach-Object { $lines += "${indent}    $_" }
-                                } else {
-                                    $lines[-1] += "${itemKey}: $itemValue"
-                                }
-                                $isFirstProperty = $false
-                            } else {
-                                if ($itemValue -match '[\r\n]') {
-                                    $lines += "${indent}  ${itemKey}: |"
-                                    $itemValue -split '[\r\n]' | ForEach-Object { $lines += "${indent}    $_" }
-                                } else {
-                                    $lines += "${indent}  ${itemKey}: $itemValue"
-                                }
-                            }
-                        }
-                    } else {
-                        if ($item -match '[\r\n]') {
-                            $lines += "${indent}- |"
-                            $item -split '[\r\n]' | ForEach-Object { $lines += "${indent}    $_" }
-                        } else {
-                            $lines += "${indent}- $item"
-                        }
-                    }
-                }
-            } elseif ($value -is [hashtable] -or $value -is [PSCustomObject]) {
-                $lines += "${indent}${key}:"
-                $subYaml = ConvertTo-Yaml -Object $value -Depth ($Depth + 1)
-                $lines += $subYaml
-            } else {
-                if ($value -match '[\r\n]') {
-                    $lines += "${indent}${key}: |"
-                    $value -split '[\r\n]' | ForEach-Object { $lines += "${indent}  $_" }
-                } else {
-                    $lines += "${indent}${key}: $value"
-                }
-            }
+# Ensure powershell-yaml module is available for GitHub Models
+if ($Config.LlmProvider -eq "github-models") {
+    if (-not (Get-Module -ListAvailable -Name "powershell-yaml")) {
+        Write-Host "📦 Installing powershell-yaml module for GitHub Models support..." -ForegroundColor Yellow
+        try {
+            Install-Module -Name "powershell-yaml" -Scope CurrentUser -Force -AllowClobber
+            Write-Host "✅ powershell-yaml module installed successfully" -ForegroundColor Green
         }
-        return $lines -join "`n"
-    } else {
-        return $Object.ToString()
+        catch {
+            Write-Error "❌ Failed to install powershell-yaml module: $($_.Exception.Message)"
+            Write-Error "   Please install manually: Install-Module -Name powershell-yaml -Scope CurrentUser"
+            exit 1
+        }
     }
+    
+    # Import the module
+    Import-Module powershell-yaml -ErrorAction Stop
 }
 
 # Validate prerequisites
