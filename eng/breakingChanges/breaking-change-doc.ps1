@@ -6,7 +6,7 @@ param(
     [switch]$CollectOnly = $false,      # Only collect PR data, don't create issues
     [switch]$CreateIssues = $false,     # Create GitHub issues directly
     [switch]$Comment = $false,          # Add comments with links to create issues
-    [switch]$CleanStart = $false,       # Clean previous data before starting
+    [switch]$Clean = $false,            # Clean previous data before starting
     [string]$PrNumber = $null,          # Process only specific PR number
     [string]$Query = $null,             # GitHub search query for PRs
     [switch]$Help = $false              # Show help
@@ -31,7 +31,7 @@ PARAMETERS:
     -CollectOnly    Only collect PR data, don't create documentation
     -CreateIssues   Create GitHub issues directly
     -Comment        Add comments with links to create issues
-    -CleanStart     Clean previous data before starting
+    -Clean          Clean previous data before starting
     -PrNumber       Process only specific PR number
     -Query          GitHub search query for PRs (required if no -PrNumber)
     -Help           Show this help
@@ -172,23 +172,26 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent (Split-Path -Parent $scriptPath)
 $outputRoot = Join-Path $repoRoot "artifacts\docs\breakingChanges"
 
-# Create output directories
+# Define output directories
 $dataDir = Join-Path $outputRoot "data"
 $issueDraftsDir = Join-Path $outputRoot "issue-drafts"
 $commentDraftsDir = Join-Path $outputRoot "comment-drafts"
 $promptsDir = Join-Path $outputRoot "prompts"
 
+if ($Clean) {
+    Write-Host "`n🧹 Cleaning previous data..." -ForegroundColor Yellow
+    if (Test-Path $outputRoot) { Remove-Item $outputRoot -Recurse -Force }
+    Write-Host "✅ Cleanup completed" -ForegroundColor Green
+    
+    if (-not $PrNumber -and -not $Query) {
+        exit 0
+    }
+}
+
 New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
 New-Item -ItemType Directory -Path $issueDraftsDir -Force | Out-Null
 New-Item -ItemType Directory -Path $commentDraftsDir -Force | Out-Null
 New-Item -ItemType Directory -Path $promptsDir -Force | Out-Null
-
-# Clean start if requested
-if ($CleanStart) {
-    Write-Host "`n🧹 Cleaning previous data..." -ForegroundColor Yellow
-    if (Test-Path $outputRoot) { Remove-Item $outputRoot -Recurse -Force }
-    Write-Host "✅ Cleanup completed" -ForegroundColor Green
-}
 
 # Validate parameters
 if (-not $PrNumber -and -not $Query) {
