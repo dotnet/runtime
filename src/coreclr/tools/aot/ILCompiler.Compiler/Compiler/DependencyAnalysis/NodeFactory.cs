@@ -250,9 +250,17 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeThreadStaticIndexNode(type, null);
             });
 
-            _GCStaticEETypes = new NodeCache<(GCPointerMap, bool), GCStaticEETypeNode>(((GCPointerMap gcMap, bool requiresAlign8) key) =>
+            _GCStaticEETypes = new NodeCache<(GCPointerMap, bool), DataOnlyEETypeNode>(((GCPointerMap gcMap, bool requiresAlign8) key) =>
             {
-                return new GCStaticEETypeNode(Target, key.gcMap, key.requiresAlign8);
+                // Base type: System.Object. This allows storing an instance of this type in an array of objects,
+                // or finding associated module from BulkType event source events.
+                DefType baseType = _context.GetWellKnownType(WellKnownType.Object);
+                return new DataOnlyEETypeNode("GCStaticEEType", key.gcMap, baseType, key.requiresAlign8);
+            });
+
+            _asyncContinuationEETypes = new NodeCache<AsyncContinuationType, AsyncContinuationEETypeNode>((AsyncContinuationType key) =>
+            {
+                return new AsyncContinuationEETypeNode(key);
             });
 
             _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
@@ -713,6 +721,7 @@ namespace ILCompiler.DependencyAnalysis
             protected override IEETypeNode CreateValueFromKey(TypeDesc key) => _factory.CreateNecessaryTypeNode(key);
         }
 
+        private NodeCache<AsyncContinuationType, AsyncContinuationEETypeNode> _asyncContinuationEETypes;
         private NecessaryTypeSymbolHashtable _typeSymbols;
 
         public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
@@ -725,6 +734,11 @@ namespace ILCompiler.DependencyAnalysis
             if (_compilationModuleGroup.ShouldPromoteToFullType(type))
             {
                 return ConstructedTypeSymbol(type);
+            }
+
+            if (type is AsyncContinuationType continuation)
+            {
+                return _asyncContinuationEETypes.GetOrAdd(continuation);
             }
 
             Debug.Assert(!TypeCannotHaveEEType(type));
@@ -752,6 +766,9 @@ namespace ILCompiler.DependencyAnalysis
                 return ConstructedTypeSymbol(type);
             }
 
+            // Generating typeof of a continuation type is not supported; we'd need a full MethodTable.
+            Debug.Assert(type is not AsyncContinuationType);
+
             Debug.Assert(!TypeCannotHaveEEType(type));
 
             return _metadataTypeSymbols.GetOrCreateValue(type);
@@ -770,6 +787,11 @@ namespace ILCompiler.DependencyAnalysis
             if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
             {
                 return ImportedEETypeSymbol(type);
+            }
+
+            if (type is AsyncContinuationType continuation)
+            {
+                return _asyncContinuationEETypes.GetOrAdd(continuation);
             }
 
             Debug.Assert(!TypeCannotHaveEEType(type));
@@ -893,7 +915,7 @@ namespace ILCompiler.DependencyAnalysis
             return _embeddedTrimmingDescriptors.GetOrAdd(module);
         }
 
-        private NodeCache<(GCPointerMap, bool), GCStaticEETypeNode> _GCStaticEETypes;
+        private NodeCache<(GCPointerMap, bool), DataOnlyEETypeNode> _GCStaticEETypes;
 
         public ISymbolNode GCStaticEEType(GCPointerMap gcMap, bool requiredAlign8)
         {
