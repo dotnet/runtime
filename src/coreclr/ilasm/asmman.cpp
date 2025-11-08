@@ -986,6 +986,7 @@ HRESULT AsmMan::EmitManifest()
                         uint64_t fSize = fgetsize(fp);
                         if(fSize >= 0xFFFFFFFF)
                         {
+                            m_dwMResSize[m_dwMResNum] = 0xFFFFFFFF;
                             report->error("Failed to get size of managed resource file '%s'\n",pManRes->szAlias);
                             fOK = FALSE;
                         }
