@@ -144,7 +144,7 @@ namespace Internal.IL.Stubs
                         codestream.Emit(ILOpcode.call, emitter.NewToken(getCompletedTaskMethod));
                     }
 
-                    codestream.EmitLdLoc(returnTaskLocal);
+                    codestream.EmitStLoc(returnTaskLocal);
                     codestream.Emit(ILOpcode.leave, returnTaskLabel);
 
                     codestream.EndTry(tryCatchRegion);
