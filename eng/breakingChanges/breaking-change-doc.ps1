@@ -77,6 +77,73 @@ if (Test-Path ".\config.ps1") {
     exit 1
 }
 
+# Simple YAML conversion function for prompt files
+function ConvertTo-Yaml {
+    param([Parameter(ValueFromPipeline)]$Object, [int]$Depth = 0)
+    
+    $indent = "  " * $Depth
+    
+    if ($Object -is [hashtable] -or $Object -is [PSCustomObject]) {
+        $lines = @()
+        $properties = if ($Object -is [hashtable]) { $Object.Keys } else { $Object.PSObject.Properties.Name }
+        
+        foreach ($key in $properties) {
+            $value = if ($Object -is [hashtable]) { $Object[$key] } else { $Object.$key }
+            
+            if ($value -is [array]) {
+                $lines += "${indent}${key}:"
+                foreach ($item in $value) {
+                    if ($item -is [hashtable] -or $item -is [PSCustomObject]) {
+                        $lines += "${indent}- "
+                        $itemProperties = if ($item -is [hashtable]) { $item.Keys } else { $item.PSObject.Properties.Name }
+                        $isFirstProperty = $true
+                        foreach ($itemKey in $itemProperties) {
+                            $itemValue = if ($item -is [hashtable]) { $item[$itemKey] } else { $item.$itemKey }
+                            if ($isFirstProperty) {
+                                if ($itemValue -match '[\r\n]') {
+                                    $lines[-1] += "${itemKey}: |"
+                                    $itemValue -split '[\r\n]' | ForEach-Object { $lines += "${indent}    $_" }
+                                } else {
+                                    $lines[-1] += "${itemKey}: $itemValue"
+                                }
+                                $isFirstProperty = $false
+                            } else {
+                                if ($itemValue -match '[\r\n]') {
+                                    $lines += "${indent}  ${itemKey}: |"
+                                    $itemValue -split '[\r\n]' | ForEach-Object { $lines += "${indent}    $_" }
+                                } else {
+                                    $lines += "${indent}  ${itemKey}: $itemValue"
+                                }
+                            }
+                        }
+                    } else {
+                        if ($item -match '[\r\n]') {
+                            $lines += "${indent}- |"
+                            $item -split '[\r\n]' | ForEach-Object { $lines += "${indent}    $_" }
+                        } else {
+                            $lines += "${indent}- $item"
+                        }
+                    }
+                }
+            } elseif ($value -is [hashtable] -or $value -is [PSCustomObject]) {
+                $lines += "${indent}${key}:"
+                $subYaml = ConvertTo-Yaml -Object $value -Depth ($Depth + 1)
+                $lines += $subYaml
+            } else {
+                if ($value -match '[\r\n]') {
+                    $lines += "${indent}${key}: |"
+                    $value -split '[\r\n]' | ForEach-Object { $lines += "${indent}  $_" }
+                } else {
+                    $lines += "${indent}${key}: $value"
+                }
+            }
+        }
+        return $lines -join "`n"
+    } else {
+        return $Object.ToString()
+    }
+}
+
 # Validate prerequisites
 Write-Host "`n🔍 Validating prerequisites..." -ForegroundColor Yellow
 
@@ -157,10 +224,12 @@ $outputRoot = Join-Path $repoRoot "artifacts\docs\breakingChanges"
 $dataDir = Join-Path $outputRoot "data"
 $issueDraftsDir = Join-Path $outputRoot "issue-drafts"
 $commentDraftsDir = Join-Path $outputRoot "comment-drafts"
+$promptsDir = Join-Path $outputRoot "prompts"
 
 New-Item -ItemType Directory -Path $dataDir -Force | Out-Null
 New-Item -ItemType Directory -Path $issueDraftsDir -Force | Out-Null
 New-Item -ItemType Directory -Path $commentDraftsDir -Force | Out-Null
+New-Item -ItemType Directory -Path $promptsDir -Force | Out-Null
 
 # Clean start if requested
 if ($CleanStart) {
@@ -231,19 +300,16 @@ function Limit-Text {
 }
 
 # Function to execute a script block with a temporary GITHUB_TOKEN
-function  Enter-GitHubSession {
+function Enter-GitHubSession {
     param([string]$ApiKey)
-
-    if (-not $ApiKey) {
-        # No API key provided, execute without modification
-        return & $ScriptBlock
-    }
 
     # Store original token
     $originalGitHubToken = $env:GH_TOKEN
     
-    # Set temporary token
-    $env:GH_TOKEN = $ApiKey
+    if ($ApiKey) {
+        # Set temporary token
+        $env:GH_TOKEN = $ApiKey
+    }
 
     return $originalGitHubToken
 }
@@ -534,32 +600,58 @@ function Get-VersionInfo {
 
 # Function to call LLM API
 function Invoke-LlmApi {
-    param([string]$Prompt, [string]$SystemPrompt = "", [int]$MaxTokens = 3000)
+    param([string]$Prompt, [string]$SystemPrompt = "", [int]$MaxTokens = 3000, [string]$PrNumber = "unknown")
 
     switch ($Config.LlmProvider) {
         "github-models" {
             # Use GitHub CLI with models extension
             try {
-                $ghArgs = @(
-                    "models", "run",
-                    $Config.LlmModel,
-                    $Prompt,
-                    "--max-tokens", $MaxTokens.ToString(),
-                    "--temperature", "0.1"
-                )
-
+                # Create prompt file in YAML format for GitHub Models
+                $promptFile = Join-Path $promptsDir "pr_${PrNumber}_prompt.yml"
+                
+                # Create YAML structure for GitHub Models
+                $messages = @()
+                
                 if ($SystemPrompt) {
-                    $ghArgs += @("--system-prompt", $SystemPrompt)
+                    $messages += @{
+                        role = "system"
+                        content = $SystemPrompt
+                    }
                 }
+                
+                $messages += @{
+                    role = "user" 
+                    content = $Prompt
+                }
+                
+                $promptYaml = @{
+                    name = "Breaking Change Documentation"
+                    description = "Generate breaking change documentation for .NET runtime PR"
+                    model = $Config.LlmModel
+                    modelParameters = @{
+                        temperature = 0.1
+                        max_tokens = $MaxTokens
+                    }
+                    messages = $messages
+                }
+                
+                # Convert to YAML and save to file
+                $promptYaml | ConvertTo-Yaml | Out-File -FilePath $promptFile -Encoding UTF8
                 
                 try {
                     $gitHubSession = Enter-GitHubSession $apiKey
-                    gh @ghArgs
+                    $output = gh models run --file $promptFile
+                    $exitCode = $LASTEXITCODE
                 } finally {
                     Exit-GitHubSession $gitHubSession
                 }
 
-                return $response -join "`n"
+                if ($exitCode -ne 0) {
+                    throw "gh models run failed with exit code $exitCode"
+                }
+
+                # Join the output lines with newlines to preserve formatting
+                return $output -join "`n"
             }
             catch {
                 Write-Error "GitHub Models API call failed: $($_.Exception.Message)"
@@ -569,16 +661,23 @@ function Invoke-LlmApi {
         "github-copilot" {
             # Use GitHub Copilot CLI in programmatic mode
             try {
+                # Create prompt file for GitHub Copilot CLI
+                $promptFile = Join-Path $promptsDir "pr_${PrNumber}_copilot_prompt.txt"
+                
                 # Combine system prompt and user prompt, emphasizing text-only response
                 $fullPrompt = if ($SystemPrompt) {
                     "$SystemPrompt`n`nIMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
                 } else {
                     "IMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
                 }
+                
+                # Write prompt to file
+                $fullPrompt | Out-File -FilePath $promptFile -Encoding UTF8
 
                 try {
                     $gitHubSession = Enter-GitHubSession $apiKey
-                    copilot -p $fullPrompt --log-level none
+                    # Add --allow-all-tools for non-interactive mode and --allow-all-paths to avoid file access prompts
+                    $rawResponse = copilot -p "@$promptFile" --log-level none --allow-all-tools --allow-all-paths
                 } finally {
                     Exit-GitHubSession $gitHubSession
                 }
@@ -1041,7 +1140,7 @@ Generate the complete issue following the template structure and using the examp
 
     # Call LLM API
     Write-Host "     🤖 Generating content..." -ForegroundColor Gray
-    $llmResponse = Invoke-LlmApi -SystemPrompt $systemPrompt -Prompt $userPrompt
+    $llmResponse = Invoke-LlmApi -SystemPrompt $systemPrompt -Prompt $userPrompt -PrNumber $pr.Number
 
     if (-not $llmResponse) {
         Write-Error "Failed to get LLM response for PR #$($pr.Number)"
