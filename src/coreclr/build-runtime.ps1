@@ -309,7 +309,7 @@ $initVsEnvScript = Join-Path $RepoRootDir "eng\native\init-vs-env.cmd"
     }
 }
 
-if ($env:ERRORLEVEL -ne '0' -and $env:ERRORLEVEL -ne $null) {
+if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) {
     exit 1
 }
 
@@ -664,7 +664,7 @@ if ($BuildNative) {
         $CmakeBuildToolArgs = @()
         if (-not $Ninja) {
             # Pass /m flag for MSBuild parallelism
-            $CmakeBuildToolArgs = @('/nologo', '/m', $Logging -split ' ')
+            $CmakeBuildToolArgs = @('/nologo', '/m') + ($Logging -split ' ')
         }
 
         $cmakeTargetStr = $CMakeTarget -join ' '
