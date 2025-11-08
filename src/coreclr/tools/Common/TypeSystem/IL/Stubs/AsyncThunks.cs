@@ -160,7 +160,7 @@ namespace Internal.IL.Stubs
                         if (isValueTask)
                         {
                             fromExceptionMd = context.SystemModule
-                                .GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8)
+                                .GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
                                 .GetKnownMethod("FromException"u8, null);
                         }
                         else
