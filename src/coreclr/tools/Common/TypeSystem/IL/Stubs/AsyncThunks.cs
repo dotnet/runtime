@@ -16,7 +16,7 @@ namespace Internal.IL.Stubs
             var emitter = new ILEmitter();
             var codestream = emitter.NewCodeStream();
 
-            MethodSignature sig = asyncMethod.Signature;
+            MethodSignature sig = taskReturningMethod.Signature;
             TypeDesc returnType = sig.ReturnType;
 
             bool isValueTask = returnType.IsValueType;
