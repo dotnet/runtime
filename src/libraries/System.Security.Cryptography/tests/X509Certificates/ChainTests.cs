@@ -636,7 +636,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         X509ChainStatusFlags.NoError,
                         (a, status) => a | status.Status));
 
-                if (!PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version22000OrGreater)
+                if (!PlatformDetection.IsWindows)
                 {
                     Assert.Equal(
                         X509ChainStatusFlags.NotValidForUsage,
