@@ -85,7 +85,7 @@ namespace ILCompiler
             if (!returnsVoid)
             {
                 var doneResult = ilEmitter.NewCodeLabel();
-                ilStream.EmitLdLoca(newContinuationLocal);
+                ilStream.EmitLdLoc(newContinuationLocal);
                 ilStream.Emit(ILOpcode.brtrue, doneResult);
                 ilStream.EmitLdArg(1);
                 ilStream.EmitLdLoc(resultLocal);
