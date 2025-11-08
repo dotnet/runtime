@@ -19,9 +19,7 @@ namespace Internal.IL.Stubs
             MethodSignature sig = asyncMethod.Signature;
             TypeDesc returnType = sig.ReturnType;
 
-            MetadataType md = taskReturningMethod.Signature.ReturnType as MetadataType;
-            ReadOnlySpan<byte> name = md.Name;
-            bool isValueTask = name.SequenceEqual("ValueTask"u8) || name.SequenceEqual("ValueTask`1"u8);
+            bool isValueTask = returnType.IsValueType;
 
             TypeDesc logicalReturnType = null;
             ILLocalVariable logicalResultLocal = 0;
