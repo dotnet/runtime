@@ -25,12 +25,6 @@ namespace System.Diagnostics.Tracing
                                     long matchAllKeywords,
                                     Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData)
         {
-            ulong id = 0;
-            if (additionalData != null)
-            {
-                id = BitConverter.ToUInt64(new ReadOnlySpan<byte>(additionalData, sizeof(ulong)));
-            }
-
             // EventPipe issues Interop.Advapi32.EVENT_CONTROL_CODE_ENABLE_PROVIDER if a session
             // is stopping as long as some other session is still enabled. If the session is stopping
             // the session ID will be null, if it is a session starting it will be a non-zero value.
