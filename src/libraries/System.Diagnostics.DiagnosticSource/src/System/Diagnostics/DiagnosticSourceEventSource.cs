@@ -159,8 +159,9 @@ namespace System.Diagnostics
     ///
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
-#pragma warning disable ESGEN001 // EventSource classes should not declare constructors. 
-                                 // This EventSource uses EtwSelfDescribingEventFormat which is not supported by the source generator yet.
+#pragma warning disable ESGEN001 // EventSource class is not partial.
+                                 // This EventSource uses EtwSelfDescribingEventFormat in its
+                                 // constructor which is not supported by the source generator yet.
                                  // See https://github.com/dotnet/runtime/issues/121205.
     [EventSource(Name = DiagnosticSourceEventSourceName)]
     internal sealed class DiagnosticSourceEventSource : EventSource

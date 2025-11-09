@@ -12,7 +12,10 @@ using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-#pragma warning disable ESGEN001 // EventSource classes should not declare constructors. See https://github.com/dotnet/runtime/issues/121205.
+#pragma warning disable ESGEN001 // EventSource class is not partial.
+                                 // This EventSource uses EtwSelfDescribingEventFormat in its
+                                 // constructor which is not supported by the source generator yet.
+                                 // See https://github.com/dotnet/runtime/issues/121205.
     [EventSource(Name = "Microsoft-Extensions-DependencyInjection")]
     internal sealed class DependencyInjectionEventSource : EventSource
 #pragma warning restore ESGEN001
