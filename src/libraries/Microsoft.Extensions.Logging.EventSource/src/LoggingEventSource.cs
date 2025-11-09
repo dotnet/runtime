@@ -82,7 +82,6 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// }
     /// </code>
     /// </example>
-{
 #pragma warning disable ESGEN001 // EventSource class is not partial. It's blocked by https://github.com/dotnet/runtime/issues/121205
     [EventSource(Name = "Microsoft-Extensions-Logging")]
     public sealed class LoggingEventSource : System.Diagnostics.Tracing.EventSource
