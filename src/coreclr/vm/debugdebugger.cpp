@@ -1001,13 +1001,12 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
                 if (cur.flags & STEF_CONTINUATION)
                 {
                     DebugInfoRequest request;
-                    request.InitFromStartingAddr(pMD, ip);
-                    ICorDebugInfo::AsyncInfo asyncInfo = {};
-                    NewArrayHolder<ICorDebugInfo::AsyncSuspensionPoint> asyncSuspensionPoints(NULL);
-                    NewArrayHolder<ICorDebugInfo::AsyncContinuationVarInfo> asyncVars(NULL);
-                    ULONG32 cAsyncVars = 0;
-                    DebugInfoManager::GetAsyncDebugInfo(request, DebugInfoStoreNew2, nullptr, &asyncInfo, &asyncSuspensionPoints, &asyncVars, &cAsyncVars);
-                    dwNativeOffset = asyncSuspensionPoints[cur.sp].DiagnosticNativeOffset;
+                    EECodeInfo codeInfo((PCODE)ip);
+                    if (codeInfo.IsValid())
+                    {
+                        PCODE startAddress = codeInfo.GetStartAddress();
+                        dwNativeOffset = (DWORD)(ip - startAddress);
+                    }
                 }
 
                 else

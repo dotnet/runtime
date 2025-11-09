@@ -430,6 +430,7 @@ namespace System.Runtime.CompilerServices
             [ThreadStatic]
             private static unsafe DispatcherInfo* t_dispatcherInfo;
 
+            [StackTraceHidden]
             public static unsafe void DispatchContinuations<T, TOps>(T task) where T : Task, ITaskCompletionAction where TOps : IRuntimeAsyncTaskOps<T>
             {
                 ExecutionAndSyncBlockStore contexts = default;

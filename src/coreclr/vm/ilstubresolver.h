@@ -108,24 +108,6 @@ protected:
     PTR_LoaderHeap          m_loaderHeap;
 };
 
-class AsyncResumeILStubResolver : public ILStubResolver
-{
-public:
-    PCODE GetFinalResumeMethodStartAddress();
-
-#ifndef DACCESS_COMPILE
-    PCODE* GetAddrOfResumeMethodStartAddress();
-    void SetResumeMethodStartAddress(PCODE ip);
-    void SetFinalResumeMethodStartAddress(PCODE ip);
-#endif
-
-protected:
-    // IP to resume in. Can be tier0 code if we suspended in an OSR method.
-    PCODE m_resumeIP = NULL;
-    // Final IP resumed in. Will be OSR method IP if suspension happened there.
-    PCODE m_finalResumeIP = NULL;
-};
-
 typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
 
 #endif // __ILSTUBRESOLVER_H__

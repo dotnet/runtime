@@ -2397,12 +2397,6 @@ struct RichIPMapping
     DebugInfo    debugInfo;
 };
 
-struct AsyncSuspensionPoint
-{
-    emitLocation nativeLoc;
-    unsigned numContinuationVars = 0;
-};
-
 // Current kind of node threading stored in GenTree::gtPrev and GenTree::gtNext.
 // See fgNodeThreading for more information.
 enum class NodeThreading
