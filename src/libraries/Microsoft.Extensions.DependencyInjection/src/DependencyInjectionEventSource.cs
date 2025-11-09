@@ -12,9 +12,7 @@ using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-#pragma warning disable ESGEN001 // EventSource class is not partial.
-                                 // This event source uses IEnumerable<T> as an event parameter type which is only supported by SelfDescribingFormat
-                                 // See https://github.com/dotnet/runtime/issues/121205.
+#pragma warning disable ESGEN001 // EventSource class is not partial. It's blocked by https://github.com/dotnet/runtime/issues/121205
     [EventSource(Name = "Microsoft-Extensions-DependencyInjection")]
     internal sealed class DependencyInjectionEventSource : EventSource
 #pragma warning restore ESGEN001
@@ -31,6 +29,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private readonly List<WeakReference<ServiceProvider>> _providers = new();
 
+        // This event source uses IEnumerable<T> as an event parameter type which is only supported by SelfDescribingFormat.
         private DependencyInjectionEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }

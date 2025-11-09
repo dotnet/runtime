@@ -159,10 +159,7 @@ namespace System.Diagnostics
     ///
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
-{
-#pragma warning disable ESGEN001 // EventSource class is not partial.
-                                 // This event source uses IEnumerable<T> as an event parameter type which is only supported by SelfDescribingFormat
-                                 // See https://github.com/dotnet/runtime/issues/121205.
+#pragma warning disable ESGEN001 // EventSource class is not partial. It's blocked by https://github.com/dotnet/runtime/issues/121205
     [EventSource(Name = DiagnosticSourceEventSourceName)]
     internal sealed class DiagnosticSourceEventSource : EventSource
 #pragma warning restore ESGEN001
@@ -409,6 +406,7 @@ namespace System.Diagnostics
         }
 
         #region private
+        // This event source uses IEnumerable<T> as an event parameter type which is only supported by SelfDescribingFormat.
         private DiagnosticSourceEventSource()
             // This constructor uses EventSourceSettings which is only available on V4.6 and above
             // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
