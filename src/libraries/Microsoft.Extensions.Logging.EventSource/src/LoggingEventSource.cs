@@ -82,9 +82,9 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// }
     /// </code>
     /// </example>
+{
 #pragma warning disable ESGEN001 // EventSource class is not partial.
-                                 // This EventSource uses EtwSelfDescribingEventFormat in its
-                                 // constructor which is not supported by the source generator yet.
+                                 // This event source uses IEnumerable<T> as an event parameter type which is only supported by SelfDescribingFormat
                                  // See https://github.com/dotnet/runtime/issues/121205.
     [EventSource(Name = "Microsoft-Extensions-Logging")]
     public sealed class LoggingEventSource : System.Diagnostics.Tracing.EventSource
