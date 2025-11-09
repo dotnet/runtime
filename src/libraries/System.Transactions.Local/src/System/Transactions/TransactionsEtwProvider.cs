@@ -78,7 +78,6 @@ namespace System.Transactions
     {
         /// <summary>
         /// Defines the singleton instance for the Transactions ETW provider.
-        /// The Transactions provider GUID is {8ac2d80a-1f1a-431b-ace4-bff8824aef0b}.
         /// </summary>
         internal static readonly TransactionsEtwProvider Log = new TransactionsEtwProvider();
 

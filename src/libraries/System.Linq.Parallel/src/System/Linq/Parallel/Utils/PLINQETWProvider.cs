@@ -26,7 +26,6 @@ namespace System.Linq.Parallel
     {
         /// <summary>
         /// Defines the singleton instance for the PLINQ ETW provider.
-        /// The PLINQ Event provider GUID is {159eeeec-4a14-4418-a8fe-faabcd987887}.
         /// </summary>
         internal static readonly PlinqEtwProvider Log = new PlinqEtwProvider();
 

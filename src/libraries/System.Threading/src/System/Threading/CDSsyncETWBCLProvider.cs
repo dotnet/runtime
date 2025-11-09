@@ -29,7 +29,6 @@ namespace System.Threading
     {
         /// <summary>
         /// Defines the singleton instance for the CDS Sync ETW provider.
-        /// The CDS Sync Event provider GUID is {EC631D38-466B-4290-9306-834971BA0217}.
         /// </summary>
         public static readonly CdsSyncEtwBCLProvider Log = new CdsSyncEtwBCLProvider();
 

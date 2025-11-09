@@ -23,7 +23,6 @@ namespace System.Collections.Concurrent
     {
         /// <summary>
         /// Defines the singleton instance for the collection ETW provider.
-        /// The collection provider GUID is {35167F8E-49B2-4b96-AB86-435B59336B5E}.
         /// </summary>
         public static readonly CDSCollectionETWBCLProvider Log = new CDSCollectionETWBCLProvider();
 

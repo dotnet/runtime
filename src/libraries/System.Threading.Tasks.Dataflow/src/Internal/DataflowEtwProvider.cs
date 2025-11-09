@@ -26,7 +26,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
     {
         /// <summary>
         /// Defines the singleton instance for the dataflow ETW provider.
-        /// The dataflow provider GUID is {16F53577-E41D-43D4-B47E-C17025BF4025}.
         /// </summary>
         internal static readonly DataflowEtwProvider Log = new DataflowEtwProvider();
 
