@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System
@@ -256,7 +257,7 @@ namespace System
             Max = 20,   // marker
         }
 
-        internal enum TM
+        internal enum TM : sbyte
         {
             NotSet = -1,
             AM = 0,
@@ -269,7 +270,7 @@ namespace System
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        internal enum DS
+        internal enum DS : byte
         {
             BEGIN = 0,
             N = 1,        // have one number
@@ -5963,7 +5964,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
         }
     }
 
-    internal enum DTSubStringType
+    internal enum DTSubStringType : byte
     {
         Unknown = 0,
         Invalid = 1,
@@ -5996,6 +5997,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
     //
     // The buffer to store temporary parsing information.
     //
+    [StructLayout(LayoutKind.Auto)]
     internal struct DateTimeRawInfo
     {
         private InlineArray3<int> num;
@@ -6079,6 +6081,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
     // This will store the result of the parsing.  And it will be eventually
     // used to construct a DateTime instance.
     //
+    [StructLayout(LayoutKind.Auto)]
     internal ref struct DateTimeResult
     {
         internal int Year;
