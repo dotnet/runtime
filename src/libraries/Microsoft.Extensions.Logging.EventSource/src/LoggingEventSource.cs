@@ -82,7 +82,9 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// }
     /// </code>
     /// </example>
-#pragma warning disable ESGEN001 // EventSource classes should not declare constructors. See https://github.com/dotnet/runtime/issues/121205.
+#pragma warning disable ESGEN001 // EventSource classes should not declare constructors. 
+                                 // This EventSource needs to set EtwSelfDescribingEventFormat which is not supported by the source generator yet.
+                                 // See https://github.com/dotnet/runtime/issues/121205.
     [EventSource(Name = "Microsoft-Extensions-Logging")]
     public sealed class LoggingEventSource : System.Diagnostics.Tracing.EventSource
 #pragma warning restore ESGEN001
