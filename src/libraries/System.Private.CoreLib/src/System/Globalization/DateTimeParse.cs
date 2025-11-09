@@ -402,10 +402,12 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
         // End        NumEnd      NumAmPm     NumSpace    NumDaySep   NumTimesep  MonthEnd    MonthSpace  MonthDSep   NumDateSuff NumTimeSuff     DayOfWeek     YearSpace   YearDateSep YearEnd     TimeZone    Era        UTCMark
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static DS GetDS(DS dps, DTT dtt)
+        private static DS GetParsingState(DS dps, DTT dtt)
         {
-            Debug.Assert(DateParsingStates.Length == 20 * 18);
-            return DateParsingStates[(int)dps * 18 + (int)dtt];
+            const int width = 18;
+            const int height = 20;
+            Debug.Assert(DateParsingStates.Length == width * height);
+            return DateParsingStates[(int)dps * width + (int)dtt];
         }
 
         internal const string GMTName = "GMT";
@@ -727,7 +729,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                                 case TokenType.SEP_DateOrOffset:
                                     // The separator is either a date separator or the start of a time zone offset. If the token will complete the date then
                                     // process just the number and roll back the index so that the outer loop can attempt to parse the time zone offset.
-                                    if (GetDS(dps, DTT.YearDateSep) == DS.ERROR && GetDS(dps, DTT.YearSpace) > DS.ERROR)
+                                    if (GetParsingState(dps, DTT.YearDateSep) == DS.ERROR && GetParsingState(dps, DTT.YearSpace) > DS.ERROR)
                                     {
                                         str.Index = indexBeforeSeparator;
                                         str.m_current = charBeforeSeparator;
@@ -818,7 +820,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                         case TokenType.SEP_DateOrOffset:
                             // The separator is either a date separator or the start of a time zone offset. If the token will complete the date then
                             // process just the number and roll back the index so that the outer loop can attempt to parse the time zone offset.
-                            if (GetDS(dps, DTT.NumDatesep) == DS.ERROR && GetDS(dps, DTT.NumSpace) > DS.ERROR)
+                            if (GetParsingState(dps, DTT.NumDatesep) == DS.ERROR && GetParsingState(dps, DTT.NumSpace) > DS.ERROR)
                             {
                                 str.Index = indexBeforeSeparator;
                                 str.m_current = charBeforeSeparator;
@@ -901,7 +903,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                                 case TokenType.SEP_DateOrOffset:
                                     // The separator is either a date separator or the start of a time zone offset. If the token will complete the date then
                                     // process just the number and roll back the index so that the outer loop can attempt to parse the time zone offset.
-                                    if (GetDS(dps, DTT.YearSpace) > DS.ERROR)
+                                    if (GetParsingState(dps, DTT.YearSpace) > DS.ERROR)
                                     {
                                         str.Index = indexBeforeSeparator;
                                         str.m_current = charBeforeSeparator;
@@ -946,7 +948,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                             case TokenType.SEP_DateOrOffset:
                                 // The separator is either a date separator or the start of a time zone offset. If the token will complete the date then
                                 // process just the number and roll back the index so that the outer loop can attempt to parse the time zone offset.
-                                if (GetDS(dps, DTT.NumDatesep) == DS.ERROR && GetDS(dps, DTT.NumSpace) > DS.ERROR)
+                                if (GetParsingState(dps, DTT.NumDatesep) == DS.ERROR && GetParsingState(dps, DTT.NumSpace) > DS.ERROR)
                                 {
                                     str.Index = indexBeforeSeparator;
                                     str.m_current = charBeforeSeparator;
@@ -1013,7 +1015,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                             case TokenType.SEP_DateOrOffset:
                                 // The separator is either a date separator or the start of a time zone offset. If the token will complete the date then
                                 // process just the number and roll back the index so that the outer loop can attempt to parse the time zone offset.
-                                if (GetDS(dps, DTT.MonthDatesep) == DS.ERROR && GetDS(dps, DTT.MonthSpace) > DS.ERROR)
+                                if (GetParsingState(dps, DTT.MonthDatesep) == DS.ERROR && GetParsingState(dps, DTT.MonthSpace) > DS.ERROR)
                                 {
                                     str.Index = indexBeforeSeparator;
                                     str.m_current = charBeforeSeparator;
@@ -2600,7 +2602,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                         }
 
                         bool atEnd = str.AtEnd();
-                        if (GetDS(dps, dtok.dtt) == DS.ERROR || atEnd)
+                        if (GetParsingState(dps, dtok.dtt) == DS.ERROR || atEnd)
                         {
                             switch (dtok.dtt)
                             {
@@ -2618,7 +2620,7 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
                     //
                     // Advance to the next state, and continue
                     //
-                    dps = GetDS(dps, dtok.dtt);
+                    dps = GetParsingState(dps, dtok.dtt);
 
                     if (dps == DS.ERROR)
                     {
