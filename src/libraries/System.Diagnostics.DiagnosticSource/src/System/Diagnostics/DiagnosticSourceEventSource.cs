@@ -407,8 +407,7 @@ namespace System.Diagnostics
 
         #region private
         // This event source uses IEnumerable<T> as an event parameter type which is only supported by EtwSelfDescribingEventFormat.
-        private DiagnosticSourceEventSource()
-            : base(DiagnosticSourceEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
+        private DiagnosticSourceEventSource() : base(DiagnosticSourceEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
 
