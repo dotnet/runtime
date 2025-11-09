@@ -406,10 +406,8 @@ namespace System.Diagnostics
         }
 
         #region private
-        // This event source uses IEnumerable<T> as an event parameter type which is only supported by SelfDescribingFormat.
+        // This event source uses IEnumerable<T> as an event parameter type which is only supported by EtwSelfDescribingEventFormat.
         private DiagnosticSourceEventSource()
-            // This constructor uses EventSourceSettings which is only available on V4.6 and above
-            // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
             : base(DiagnosticSourceEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }

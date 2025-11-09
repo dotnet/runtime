@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private readonly List<WeakReference<ServiceProvider>> _providers = new();
 
-        // This event source uses IEnumerable<T> as an event parameter type which is only supported by SelfDescribingFormat.
+        // This event source uses EtwSelfDescribingEventFormat for backward compatibility.
         private DependencyInjectionEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }

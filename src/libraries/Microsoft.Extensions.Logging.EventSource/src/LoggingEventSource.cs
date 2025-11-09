@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         private static readonly char[] s_semicolon = new[] { ';' };
         private static readonly char[] s_colon = new[] { ':' };
 
-        // This event source uses IEnumerable<T> as an event parameter type which is only supported by SelfDescribingFormat.
+        // This event source uses IEnumerable<T> as an event parameter type which is only supported by EtwSelfDescribingEventFormat.
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
