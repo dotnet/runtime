@@ -188,7 +188,7 @@
     <value>An attempt was made to move the position before the beginning of the stream.</value>
   </data>
   <data name="TarInvalidNumber" xml:space="preserve">
-    <value>Unable to parse number.</value>
+    <value>The TAR archive is corrupted or invalid.</value>
   </data>
   <data name="TarInvalidChecksum" xml:space="preserve">
     <value>Checksum validation failed. The archive might be corrupted.</value>
