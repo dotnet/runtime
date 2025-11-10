@@ -218,10 +218,20 @@ DWORD CLREventBase::WaitEx(DWORD dwMilliseconds, WaitMode mode)
     BOOL alertable = (mode & WaitMode_Alertable)!=0;
     CONTRACTL
     {
-        NOTHROW;
+        if (alertable)
+        {
+            THROWS;               // Thread::DoAppropriateWait can throw
+        }
+        else
+        {
+            NOTHROW;
+        }
         if (GetThreadNULLOk())
         {
-            GC_NOTRIGGER;
+            if (alertable)
+                GC_TRIGGERS;
+            else
+                GC_NOTRIGGER;
         }
         else
         {
