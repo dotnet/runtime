@@ -973,24 +973,25 @@ namespace Internal.TypeSystem
         // Enumerate all possible virtual slots of a type
         public static IEnumerable<MethodDesc> EnumAllVirtualSlots(MetadataType type)
         {
+            return type.IsInterface ? type.GetAllVirtualMethods() : EnumAllVirtualSlotsOnClass(type);
+        }
+        private static IEnumerable<MethodDesc> EnumAllVirtualSlotsOnClass(MetadataType type)
+        {
             MethodDescHashtable alreadyEnumerated = new MethodDescHashtable();
-            if (!type.IsInterface)
+            do
             {
-                do
+                foreach (MethodDesc m in type.GetAllVirtualMethods())
                 {
-                    foreach (MethodDesc m in type.GetAllVirtualMethods())
+                    MethodDesc possibleVirtual = FindSlotDefiningMethodForVirtualMethod(m);
+                    if (!alreadyEnumerated.Contains(possibleVirtual))
                     {
-                        MethodDesc possibleVirtual = FindSlotDefiningMethodForVirtualMethod(m);
-                        if (!alreadyEnumerated.Contains(possibleVirtual))
-                        {
-                            alreadyEnumerated.AddOrGetExisting(possibleVirtual);
-                            yield return possibleVirtual;
-                        }
+                        alreadyEnumerated.AddOrGetExisting(possibleVirtual);
+                        yield return possibleVirtual;
                     }
+                }
 
-                    type = type.BaseType;
-                } while (type != null);
-            }
+                type = type.BaseType;
+            } while (type != null);
         }
 
         /// <summary>
