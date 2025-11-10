@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+
+namespace b72218;
+
 using System;
 using System.Threading;
 using Xunit;
@@ -15,6 +18,7 @@ public class My
         Thread.Sleep(5);
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {
