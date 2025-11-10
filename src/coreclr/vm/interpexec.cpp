@@ -3346,7 +3346,7 @@ do {                                                                           \
                 case INTOP_CONV_NI:
                 {
                     int64_t value = LOCAL_VAR(ip[2], int64_t);
-                    if ((value < 0) || (value > INT_MAX))
+                    if ((value < 0) || (value > UINT_MAX))
                     {
                         COMPlusThrow(kIndexOutOfRangeException);
                     }
