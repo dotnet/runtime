@@ -30667,7 +30667,6 @@ var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(
 {
     assert(varTypeIsMask(type) || varTypeIsSIMD(type));
     assert(varTypeIsArithmetic(simdBaseType));
-    assert(genTypeSize(type) == simdSize);
 
     var_types lookupType = type;
 
@@ -30677,6 +30676,7 @@ var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(
         lookupType = TYP_MASK;
     }
 #endif // TARGET_XARCH
+    assert(genTypeSize(lookupType) == simdSize);
 
     return lookupType;
 }
