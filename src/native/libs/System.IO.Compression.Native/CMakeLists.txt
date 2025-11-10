@@ -158,12 +158,6 @@ else ()
 
         target_include_directories(System.IO.Compression.Native PUBLIC ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native PUBLIC ${BROTLI_LIBRARIES})
-
-        # Add SDL required linker switches for Windows builds
-        set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_FLAGS " /DYNAMICBASE /NXCOMPAT")
-        if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
-            set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_FLAGS " /HIGHENTROPYVA")
-        endif()
     endif ()
 
     if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)

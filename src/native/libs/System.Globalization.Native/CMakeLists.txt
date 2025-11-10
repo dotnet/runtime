@@ -165,14 +165,6 @@ if (GEN_SHARED_LIB)
         ${FOUNDATION}
     )
 
-    # Add SDL required linker switches for Windows builds
-    if(CLR_CMAKE_TARGET_WIN32)
-        set_property(TARGET System.Globalization.Native APPEND_STRING PROPERTY LINK_FLAGS " /DYNAMICBASE /NXCOMPAT")
-        if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
-            set_property(TARGET System.Globalization.Native APPEND_STRING PROPERTY LINK_FLAGS " /HIGHENTROPYVA")
-        endif()
-    endif()
-
     if(CLR_CMAKE_TARGET_WIN32)
         include(GenerateExportHeader)
         GENERATE_EXPORT_HEADER( System.Globalization.Native
