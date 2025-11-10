@@ -1000,6 +1000,9 @@ function check_cpu_architecture {
         s390x)
             __arch=s390x
             ;;
+	ppc64le)
+	    __arch=ppc64le
+	    ;;
         *)
             echo "Unknown CPU $CPUName detected, configuring as if for x64"
             __arch=x64

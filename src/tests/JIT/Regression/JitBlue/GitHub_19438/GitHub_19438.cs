@@ -66,6 +66,7 @@ namespace GitHub_19438
 
         [Fact]
         [ActiveIssue("Test runs too long in interpreter-only mode", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsS390xProcess))]
+	[ActiveIssue("Test runs too long in interpreter-only mode", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsPpc64leProcess))]
         public static void TestEntryPoint()
         {
             const int iterationCount = 10;

@@ -161,6 +161,8 @@ inline UINT32 GetStubCodePageSize()
     return max(16*1024u, GetOsPageSize());
 #elif defined(TARGET_ARM)
     return 4096; // ARM is special as the 32bit instruction set does not easily permit a 16KB offset
+#elif defined(TARGET_POWERPC64)
+    return 64*1024;
 #else
     return 16*1024;
 #endif

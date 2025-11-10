@@ -27,6 +27,8 @@
 #define ELF_ARCH  EM_RISCV
 #elif defined(__s390x__)
 #define ELF_ARCH  EM_S390
+#elif defined(__powerpc64__)
+#define ELF_ARCH EM_PPC64
 #endif
 
 #define PH_HDR_CANARY 0xFFFF

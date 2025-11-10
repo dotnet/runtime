@@ -744,6 +744,21 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/virtualcallstubs390x.S
         )
+    elseif(CLR_CMAKE_TARGET_ARCH_POWERPC64)
+        set(VM_SOURCES_WKS_ARCH_ASM
+	    ${ARCH_SOURCES_DIR}/asmhelpers.S
+	    ${ARCH_SOURCES_DIR}/calldescrworkerppc64le.S
+	    ${ARCH_SOURCES_DIR}/crthelpers.S
+	    ${ARCH_SOURCES_DIR}/externalmethodfixupthunk.S
+	    ${ARCH_SOURCES_DIR}/getstate.S
+	    ${ARCH_SOURCES_DIR}/jithelpers.S
+	    ${ARCH_SOURCES_DIR}/pinvokestubs.S
+	    ${ARCH_SOURCES_DIR}/theprestubppc64le.S
+	    ${ARCH_SOURCES_DIR}/thunktemplates.S
+	    ${ARCH_SOURCES_DIR}/unixasmhelpers.S
+	    ${ARCH_SOURCES_DIR}/umthunkstub.S
+	    ${ARCH_SOURCES_DIR}/virtualcallstubppc64le.S
+	)
     endif()
 
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -897,6 +912,32 @@ elseif(CLR_CMAKE_TARGET_ARCH_S390X)
         ${ARCH_SOURCES_DIR}/profiler.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
+    )
+
+    set(VM_HEADERS_WKS_ARCH
+        exceptionhandling.h
+    )
+elseif(CLR_CMAKE_TARGET_ARCH_POWERPC64)
+    set(VM_SOURCES_DAC_AND_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/cgenppc64le.cpp
+	${ARCH_SOURCES_DIR}/excepppc64le.cpp
+	${ARCH_SOURCES_DIR}/gmsppc64le.cpp
+	${ARCH_SOURCES_DIR}/stublinkerppc64le.cpp
+    )
+
+    set(VM_HEADERS_DAC_AND_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/asmconstants.h
+	${ARCH_SOURCES_DIR}/cgencpu.h
+	${ARCH_SOURCES_DIR}/excepcpu.h
+	${ARCH_SOURCES_DIR}/gmscpu.h
+	${ARCH_SOURCES_DIR}/stublinkerppc64le.h
+    )
+
+    set(VM_SOURCES_WKS_ARCH
+        ${ARCH_SOURCES_DIR}/jitinterfaceppc64le.cpp
+	${ARCH_SOURCES_DIR}/profiler.cpp
+	exceptionhandling.cpp
+	gcinfodecoder.cpp
     )
 
     set(VM_HEADERS_WKS_ARCH

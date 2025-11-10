@@ -236,6 +236,8 @@ ShimRemoteDataTarget::GetPlatform(
          *pPlatform = CORDB_PLATFORM_POSIX_RISCV64;
      #elif defined(TARGET_S390X)
          *pPlatform = CORDB_PLATFORM_POSIX_S390X;
+     #elif defined(TARGET_POWERPC64)
+         *pPlatform = CORDB_PLATFORM_POSIX_POWERPC64;
      #else
          #error Unknown Processor.
      #endif

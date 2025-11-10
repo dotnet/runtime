@@ -60,6 +60,8 @@
 #define DTCONTEXT_IS_RISCV64
 #elif defined (TARGET_S390X)
 #define DTCONTEXT_IS_S390X
+#elif defined (TARGET_POWERPC64)
+#define DTCONTEXT_IS_POWERPC64
 #endif
 
 #define CONTEXT_AREA_MASK 0xffff
@@ -702,6 +704,61 @@ typedef DECLSPEC_ALIGN(8) struct {
     DWORD64 PSWAddr;
 
 } DT_CONTEXT;
+
+#elif defined(DTCONTEXT_IS_POWERPC64)
+
+#define DT_CONTEXT_POWERPC64 0x100000
+
+#define DT_CONTEXT_CONTROL        (DT_CONTEXT_POWERPC64 | 0x1L)
+#define DT_CONTEXT_INTEGER        (DT_CONTEXT_POWERPC64 | 0x2L)
+#define DT_CONTEXT_FLOATING_POINT (DT_CONTEXT_POWERPC64 | 0x4L)
+#define DT_CONTEXT_DEBUG_REGISTERS (DT_CONTEXT_POWERPC64 | 0x8L)
+
+#define DT_CONTEXT_FULL (DT_CONTEXT_CONTROL | DT_CONTEXT_INTEGER | DT_CONTEXT_FLOATING_POINT)
+#define DT_CONTEXT_ALL  (DT_CONTEXT_CONTROL | DT_CONTEXT_INTEGER | DT_CONTEXT_FLOATING_POINT | DT_CONTEXT_DEBUG_REGISTERS)
+
+#define DT_POWERPC64_MAX_BREAKPOINTS 8
+#define DT_POWERPC64_MAX_WATCHPOINTS 1
+
+typedef struct DECLSPEC_ALIGN(16) _DT_CONTEXT {
+    DWORD ContextFlags;
+
+    union {
+       DWORD64 Gpr[32];
+        struct {
+            DWORD64 R0, R1, R2, R3, R4, R5, R6, R7;
+            DWORD64 R8, R9, R10, R11, R12, R13, R14, R15;
+            DWORD64 R16, R17, R18, R19, R20, R21, R22, R23;
+            DWORD64 R24, R25, R26, R27, R28, R29, R30, R31;
+        };
+    };
+
+    union {
+        DWORD64 Fpr[32];
+        struct {
+            DWORD64 F0, F1, F2, F3, F4, F5, F6, F7;
+            DWORD64 F8, F9, F10, F11, F12, F13, F14, F15;
+            DWORD64 F16, F17, F18, F19, F20, F21, F22, F23;
+            DWORD64 F24, F25, F26, F27, F28, F29, F30, F31;
+        };
+    };
+
+    DWORD64 Fpscr;
+
+    //
+    // Control Registers
+    //
+
+    DWORD64 Nip; 
+    DWORD64 Msr;
+    DWORD64 Ctr;
+    DWORD64 Link;
+
+    DWORD Xer;
+    DWORD Ccr;
+
+} DT_CONTEXT;
+static_assert(sizeof(DT_CONTEXT) == sizeof(T_CONTEXT), "DT_CONTEXT size must equal the T_CONTEXT size");
 
 #else
 #error Unsupported platform

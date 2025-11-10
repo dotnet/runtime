@@ -54,6 +54,11 @@ EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 #define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
 #define OFFSETOF_PRECODE_TYPE       1
 
+#elif defined(TARGET_POWERPC64)
+
+#define SIZEOF_PRECODE_BASE         CODE_SIZE_ALIGN
+#define OFFSETOF_PRECODE_TYPE       0
+
 #endif // TARGET_AMD64
 
 #ifndef DACCESS_COMPILE
@@ -76,6 +81,8 @@ struct InvalidPrecode
 #elif defined(TARGET_RISCV64)
     static const int Type = 0xff;
 #elif defined(TARGET_S390X)
+    static const int Type = 0;
+#elif defined(TARGET_POWERPC64)
     static const int Type = 0;
 #endif
 };
@@ -118,6 +125,9 @@ struct StubPrecode
 #elif defined(TARGET_S390X)
     static const int Type = 0x08;
     static const SIZE_T CodeSize = 24;
+#elif defined(TARGET_POWERPC64)
+    static const int Type = 0x6C;    //coinciding with P in ascii
+    static const SIZE_T CodeSize = 32;
 #endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
@@ -262,6 +272,10 @@ struct FixupPrecode
     static const int Type = 0x18;
     static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 8;
+#elif defined(TARGET_POWERPC64)
+    static const int Type = 0x8C;	//TODO Vikas
+    static const SIZE_T CodeSize = 48;
+    static const int FixupCodeOffset = 16;
 #endif // TARGET_AMD64
 
     BYTE m_code[CodeSize];
@@ -457,6 +471,9 @@ public:
 #elif defined(TARGET_RISCV64)
         assert(0 == OFFSETOF_PRECODE_TYPE);
         BYTE type = *((BYTE*)m_data + OFFSETOF_PRECODE_TYPE);
+#elif defined(TARGET_POWERPC64)
+        assert(0 == OFFSETOF_PRECODE_TYPE);
+        BYTE type = *((BYTE*)m_data + OFFSETOF_PRECODE_TYPE + 2);
 #else
         BYTE type = m_data[OFFSETOF_PRECODE_TYPE];
 #endif

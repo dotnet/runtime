@@ -56,7 +56,8 @@ enum SPMI_TARGET_ARCHITECTURE
     SPMI_TARGET_ARCHITECTURE_ARM,
     SPMI_TARGET_ARCHITECTURE_LOONGARCH64,
     SPMI_TARGET_ARCHITECTURE_RISCV64,
-    SPMI_TARGET_ARCHITECTURE_S390X
+    SPMI_TARGET_ARCHITECTURE_S390X,
+    SPMI_TARGET_ARCHITECTURE_POWERPC64
 };
 
 SPMI_TARGET_ARCHITECTURE GetSpmiTargetArchitecture();
@@ -69,7 +70,7 @@ inline bool IsSpmiTarget32Bit()
 
 inline bool IsSpmiTarget64Bit()
 {
-    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_LOONGARCH64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_RISCV64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_S390X);
+    return (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_AMD64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_ARM64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_LOONGARCH64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_RISCV64) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_S390X) || (GetSpmiTargetArchitecture() == SPMI_TARGET_ARCHITECTURE_POWERPC64);
 }
 
 inline size_t SpmiTargetPointerSize()

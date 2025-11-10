@@ -54,6 +54,10 @@ class AsmOffsets
     public const int SIZEOF__REGDISPLAY = 0x318;
     public const int OFFSETOF__REGDISPLAY__SP = 0x308;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x310;
+#elif TARGET_POWERPC64
+    public const int SIZEOF__REGDISPLAY = 0x5f0;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x5d8;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x5e0;
 #endif
 
 #if TARGET_64BIT
@@ -110,6 +114,10 @@ class AsmOffsets
     public const int SIZEOF__REGDISPLAY = 0x318;
     public const int OFFSETOF__REGDISPLAY__SP = 0x308;
     public const int OFFSETOF__REGDISPLAY__ControlPC = 0x310;
+#elif TARGET_POWERPC64
+    public const int SIZEOF__REGDISPLAY = 0x5e0;
+    public const int OFFSETOF__REGDISPLAY__SP = 0x5d0;
+    public const int OFFSETOF__REGDISPLAY__ControlPC = 0x5d8;
 #endif
 
 #if TARGET_64BIT
@@ -148,6 +156,8 @@ class AsmOffsets
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x520;
 #elif TARGET_S390X
     public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x118;
+#elif TARGET_POWERPC64
+    public const int SIZEOF__PAL_LIMITED_CONTEXT = 0x240;
 #endif
 
 #if TARGET_AMD64
@@ -171,6 +181,9 @@ class AsmOffsets
 #elif TARGET_S390X
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x110;
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x60;
+#elif TARGET_POWERPC64
+    public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x20c;
+    public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0xfc;
 #endif
 
     // Offsets / sizes that are different in 64 / 32 bit mode
@@ -222,6 +235,9 @@ class AsmOffsets
 #elif TARGET_S390X
     static_assert_no_msg(offsetof(CONTEXT, PSWAddr) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__IP);
     static_assert_no_msg(offsetof(CONTEXT, R11) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__FP);
+#elif TARGET_POWERPC64
+    static_assert_no_msg(offsetof(CONTEXT, Nip) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__IP);
+    static_assert_no_msg(offsetof(CONTEXT, R31) == AsmOffsets::OFFSETOF__PAL_LIMITED_CONTEXT__FP);
 #endif
     static_assert_no_msg(sizeof(REGDISPLAY) == AsmOffsets::SIZEOF__REGDISPLAY);
     static_assert_no_msg(offsetof(REGDISPLAY, SP) == AsmOffsets::OFFSETOF__REGDISPLAY__SP);

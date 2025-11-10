@@ -231,6 +231,43 @@ public:
         REGNUM_R14,
         REGNUM_R15,
         REGNUM_PC,
+#elif TARGET_POWERPC64
+        REGNUM_R0,
+        REGNUM_R1,
+        REGNUM_R2,
+        REGNUM_R3,
+        REGNUM_R4,
+        REGNUM_R5,
+        REGNUM_R6,
+        REGNUM_R7,
+        REGNUM_R8,
+        REGNUM_R9,
+        REGNUM_R10,
+        REGNUM_R11,
+        REGNUM_R12,
+        REGNUM_R13,
+        REGNUM_R14,
+        REGNUM_R15,
+        REGNUM_R16,
+        REGNUM_R17,
+        REGNUM_R18,
+        REGNUM_R19,
+        REGNUM_R20,
+        REGNUM_R21,
+        REGNUM_R22,
+        REGNUM_R23,
+        REGNUM_R24,
+        REGNUM_R25,
+        REGNUM_R26,
+        REGNUM_R27,
+        REGNUM_R28,
+        REGNUM_R29,
+        REGNUM_R30,
+        REGNUM_R31,
+        REGNUM_LR, 
+        REGNUM_CTR,
+        REGNUM_XER,
+        REGNUM_NIP, // TODO TARGET_POWERPC64 = check with mono implementation
 #else
         PORTABILITY_WARNING("Register numbers not defined on this platform")
 #endif
@@ -253,6 +290,9 @@ public:
         //Nothing to do here. FP is already alloted.
 #elif TARGET_S390X
         REGNUM_SP = REGNUM_R15,
+#elif TARGET_POWERPC64
+        REGNUM_FP = REGNUM_R31, // FP is R31 in PPC64, If a function needs a frame pointer, assigning r31 to the role of the frame pointer is recommended according to ABI.
+        REGNUM_SP = REGNUM_R1,  // SP is R1 in PPC64
 #else
         // RegNum values should be properly defined for this platform
         REGNUM_FP = 0,

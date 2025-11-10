@@ -64,6 +64,16 @@ struct user_vfpregs_struct
 #define user_fpregs_struct s390_fp_regs
 #endif
 
+#if defined(__powerpc64__) //Todo (remove ref ): https://patchwork.ozlabs.org/project/linuxppc-dev/patch/20181013105646.5147-1-mpe@ellerman.id.au/#2009820
+#define user_regs_struct pt_regs
+//#define user_fpregs_struct user_fp_state
+struct user_fpregs_struct
+{
+  unsigned long fpr[32];
+  unsigned long fpscr;
+} __attribute__((__packed__));
+#endif
+
 #define STACK_OVERFLOW_EXCEPTION    0x800703e9
 
 class ThreadInfo
@@ -177,6 +187,10 @@ public:
     inline const uint64_t GetInstructionPointer() const { return m_gpRegisters.psw.addr; }
     inline const uint64_t GetStackPointer() const { return m_gpRegisters.gprs[15]; }
     inline const uint64_t GetFramePointer() const { return m_gpRegisters.gprs[11]; }
+#elif defined(__powerpc64__)
+    inline const uint64_t GetInstructionPointer() const { return m_gpRegisters.nip; }
+    inline const uint64_t GetStackPointer() const { return m_gpRegisters.gpr[1]; }
+    inline const uint64_t GetFramePointer() const { return m_gpRegisters.gpr[31]; }
 #endif
 #endif // __APPLE__
     bool IsCrashThread() const;

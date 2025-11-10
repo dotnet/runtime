@@ -30,6 +30,7 @@ while read -r line; do
     line="${line//#/}"
     printf "LEAF_ENTRY %s%s, _TEXT\n" "$prefix1" "$line"
     printf "    %s EXTERNAL_C_FUNC(%s%s)\n" "$jump" "$prefix2" "$line"
+    printf "    nop\n"
     printf "LEAF_END %s%s, _TEXT\n\n" "$prefix1" "$line"
   fi
 done < "$1"

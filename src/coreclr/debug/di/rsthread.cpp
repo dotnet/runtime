@@ -8563,6 +8563,9 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
 #elif defined(TARGET_S390X)
         hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_S390X_V0,
                                                        type, ppValue);
+#elif defined(TARGET_POWERPC64)
+        hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_PPC64LE_F0,
+                                                       type, ppValue);
 #else
 #error Platform not implemented
 #endif  // TARGET_ARM @ARMTODO
@@ -9005,6 +9008,8 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
     const CorDebugRegister floatRegister = REGISTER_RISCV64_F0;
 #elif  defined(TARGET_S390X)
     const CorDebugRegister floatRegister = REGISTER_S390X_V0;
+#elif defined(TARGET_POWERPC64)
+    const CorDebugRegister floatRegister = REGISTER_PPC64LE_F0;
 #endif
 
 #if defined(TARGET_X86)
@@ -9023,6 +9028,8 @@ HRESULT CordbJITILFrame::GetReturnValueForType(CordbType *pType, ICorDebugValue 
     const CorDebugRegister ptrRegister = REGISTER_RISCV64_A0;
 #elif  defined(TARGET_S390X)
     const CorDebugRegister ptrRegister = REGISTER_S390X_R2;
+#elif defined(TARGET_POWERPC64)
+    const CorDebugRegister ptrRegister = REGISTER_PPC64LE_R3;  // Map pointers to a single doubleword (elfv2 ABI,p39, R3-R10 parameters passing)
 #endif
 
     CorElementType corReturnType = pType->GetElementType();

@@ -288,7 +288,8 @@ interface ICorDebugDataTarget : IUnknown
         CORDB_PLATFORM_POSIX_ARM64,       // Posix supporting OS on ARM64
         CORDB_PLATFORM_POSIX_LOONGARCH64, // Posix supporting OS on LoongArch64
         CORDB_PLATFORM_POSIX_RISCV64,     // Posix supporting OS on RISC64
-        CORDB_PLATFORM_POSIX_S390X        // Posix supporting OS on S390X
+        CORDB_PLATFORM_POSIX_S390X,        // Posix supporting OS on S390X
+        CORDB_PLATFORM_POSIX_POWERPC64    // Posix supporting OS on PowerPC64
     } CorDebugPlatform;
 
     HRESULT GetPlatform([out] CorDebugPlatform * pTargetPlatform);
@@ -4105,6 +4106,110 @@ interface ICorDebugRegisterSet : IUnknown
         REGISTER_S390X_V30,
         REGISTER_S390X_V31,
 
+	// ppc64le registers
+        REGISTER_PPC64LE_NIP = 0,     // Next Instruction Pointer (SRR0), equivalent to PC, Matches Linux kernel usage
+        REGISTER_PPC64LE_R0,          // Volatile register
+        REGISTER_PPC64LE_R1,          // Stack Pointer (R1)
+        REGISTER_PPC64LE_R2,          // Table of Contents Pointer (R2)
+        REGISTER_PPC64LE_R3,          // First parameter/return register
+        REGISTER_PPC64LE_R4,          // Second parameter/return register
+        REGISTER_PPC64LE_R5,
+        REGISTER_PPC64LE_R6,
+        REGISTER_PPC64LE_R7,
+        REGISTER_PPC64LE_R8,
+        REGISTER_PPC64LE_R9,
+        REGISTER_PPC64LE_R10,         // Eighth parameter register
+        REGISTER_PPC64LE_R11,
+        REGISTER_PPC64LE_R12,
+        REGISTER_PPC64LE_R13,         // Reserved for system thread ID
+        REGISTER_PPC64LE_R14,         // Nonvolatile register
+        REGISTER_PPC64LE_R15,
+        REGISTER_PPC64LE_R16,
+        REGISTER_PPC64LE_R17,
+        REGISTER_PPC64LE_R18,
+        REGISTER_PPC64LE_R19,
+        REGISTER_PPC64LE_R20,
+        REGISTER_PPC64LE_R21,
+        REGISTER_PPC64LE_R22,
+        REGISTER_PPC64LE_R23,
+        REGISTER_PPC64LE_R24,
+        REGISTER_PPC64LE_R25,
+        REGISTER_PPC64LE_R26,
+        REGISTER_PPC64LE_R27,
+        REGISTER_PPC64LE_R28,
+        REGISTER_PPC64LE_R29,
+        REGISTER_PPC64LE_R30,
+        REGISTER_PPC64LE_R31,
+        REGISTER_PPC64LE_LR,          // Link Register
+        REGISTER_PPC64LE_CTR,         // Count Register
+        REGISTER_PPC64LE_XER,         // Fixed-Point Exception Register
+        REGISTER_PPC64LE_CR,          // Condition Register
+        REGISTER_PPC64LE_F0,          // FP parameter/return register
+        REGISTER_PPC64LE_F1,          // FP parameter/return register
+        REGISTER_PPC64LE_F2,          // FP parameter register
+        REGISTER_PPC64LE_F3,
+        REGISTER_PPC64LE_F4,
+        REGISTER_PPC64LE_F5,
+        REGISTER_PPC64LE_F6,
+        REGISTER_PPC64LE_F7,
+        REGISTER_PPC64LE_F8,
+        REGISTER_PPC64LE_F9,
+        REGISTER_PPC64LE_F10,
+        REGISTER_PPC64LE_F11,
+        REGISTER_PPC64LE_F12,
+        REGISTER_PPC64LE_F13,
+        REGISTER_PPC64LE_F14,         // Nonvolatile FP register
+        REGISTER_PPC64LE_F15,
+        REGISTER_PPC64LE_F16,
+        REGISTER_PPC64LE_F17,
+        REGISTER_PPC64LE_F18,
+        REGISTER_PPC64LE_F19,
+        REGISTER_PPC64LE_F20,
+        REGISTER_PPC64LE_F21,
+        REGISTER_PPC64LE_F22,
+        REGISTER_PPC64LE_F23,
+        REGISTER_PPC64LE_F24,
+        REGISTER_PPC64LE_F25,
+        REGISTER_PPC64LE_F26,
+        REGISTER_PPC64LE_F27,
+        REGISTER_PPC64LE_F28,
+        REGISTER_PPC64LE_F29,
+        REGISTER_PPC64LE_F30,
+        REGISTER_PPC64LE_F31,
+        REGISTER_PPC64LE_FPSCR,       // Floating-Point Status and Control Register
+        REGISTER_PPC64LE_V0,          // Vector register
+        REGISTER_PPC64LE_V1,
+        REGISTER_PPC64LE_V2,
+        REGISTER_PPC64LE_V3,
+        REGISTER_PPC64LE_V4,
+        REGISTER_PPC64LE_V5,
+        REGISTER_PPC64LE_V6,
+        REGISTER_PPC64LE_V7,
+        REGISTER_PPC64LE_V8,
+        REGISTER_PPC64LE_V9,
+        REGISTER_PPC64LE_V10,
+        REGISTER_PPC64LE_V11,
+        REGISTER_PPC64LE_V12,
+        REGISTER_PPC64LE_V13,
+        REGISTER_PPC64LE_V14,
+        REGISTER_PPC64LE_V15,
+        REGISTER_PPC64LE_V16,
+        REGISTER_PPC64LE_V17,
+        REGISTER_PPC64LE_V18,
+        REGISTER_PPC64LE_V19,
+        REGISTER_PPC64LE_V20,
+        REGISTER_PPC64LE_V21,
+        REGISTER_PPC64LE_V22,
+        REGISTER_PPC64LE_V23,
+        REGISTER_PPC64LE_V24,
+        REGISTER_PPC64LE_V25,
+        REGISTER_PPC64LE_V26,
+        REGISTER_PPC64LE_V27,
+        REGISTER_PPC64LE_V28,
+        REGISTER_PPC64LE_V29,
+        REGISTER_PPC64LE_V30,
+        REGISTER_PPC64LE_V31,
+        REGISTER_PPC64LE_VSCR,        // Vector Status and Control Register
         // other architectures here
 
     } CorDebugRegister;

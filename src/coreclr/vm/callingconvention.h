@@ -195,6 +195,18 @@ struct TransitionBlock
     TADDR                   m_ReturnAddress;
     TADDR                   m_StackPointer;
     FloatArgumentRegisters  m_floatArgumentRegisters;
+#elif defined(TARGET_POWERPC64)
+    FloatCalleeSavedRegisters    m_floatCalleeSaveRegisters;		//8*18 = 144
+    CalleeSavedRegisters    m_calleeSavedRegisters; 	// r14-r31 8*18 = 144
+    TADDR		    m_padding;
+    FloatArgumentRegisters  m_floatArgumentRegisters; //f1-f13 8*13 = 104 
+    ArgumentRegisters       m_argumentRegisters;// 8*8 = 64 r3 - r10
+    TADDR		    m_tocPtr;		//8 = r2
+    TADDR		    m_ReturnAddress;	//8
+    DWORD                   m_reserved;		//4
+    DWORD                   m_crSaveWord;	//4
+    TADDR                   m_backchain;	//8
+
 #else
     PORTABILITY_ASSERT("TransitionBlock");
 #endif
@@ -226,7 +238,11 @@ struct TransitionBlock
     }
 #endif
 
+#ifdef TARGET_POWERPC64
+    static short GetOffsetOfArgs()
+#else
     static BYTE GetOffsetOfArgs()
+#endif
     {
         LIMITED_METHOD_CONTRACT;
 
@@ -250,7 +266,7 @@ struct TransitionBlock
     {
         LIMITED_METHOD_CONTRACT;
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_S390X)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_S390X) || defined(TARGET_POWERPC64)
         return offset >= (int)sizeof(TransitionBlock);
 #else
         int ofsArgRegs = GetOffsetOfArgumentRegisters();
@@ -303,6 +319,9 @@ struct TransitionBlock
 #elif defined(TARGET_S390X)
         return offset >= offsetof(TransitionBlock, m_floatArgumentRegisters)
                && offset < sizeof(TransitionBlock);
+#elif defined(TARGET_POWERPC64)
+        return offset >= offsetof(TransitionBlock, m_floatArgumentRegisters)
+               && offset < offsetof(TransitionBlock, m_argumentRegisters);
 #else
         return offset < 0;
 #endif
@@ -328,6 +347,9 @@ struct TransitionBlock
     #if defined(TARGET_S390X)
         return offset >= offsetof(TransitionBlock, m_floatArgumentRegisters)
                && offset < sizeof(TransitionBlock);
+    #elif defined(TARGET_POWERPC64)
+        return offset >= offsetof(TransitionBlock, m_floatArgumentRegisters)
+               && offset < offsetof(TransitionBlock, m_argumentRegisters);
     #endif
         return offset < 0;
     }
@@ -336,6 +358,8 @@ struct TransitionBlock
     {
         LIMITED_METHOD_CONTRACT;
     #if defined(TARGET_S390X)
+        return offsetof(TransitionBlock, m_floatArgumentRegisters);
+    #elif defined(TARGET_POWERPC64)
         return offsetof(TransitionBlock, m_floatArgumentRegisters);
     #endif
         return -GetNegSpaceSize();
@@ -352,7 +376,7 @@ struct TransitionBlock
     {
         LIMITED_METHOD_CONTRACT;
         int negSpaceSize = 0;
-#ifndef TARGET_S390X
+#if !defined(TARGET_S390X) && !defined(TARGET_POWERPC64)
 #ifdef CALLDESCR_FPARGREGS
         negSpaceSize += sizeof(FloatArgumentRegisters);
 #endif
@@ -578,6 +602,8 @@ public:
         // If the size is bigger than 8, or if the size is NOT a power of 2, then
         // the argument is passed by reference.
         return (size > ENREGISTERED_PARAMTYPE_MAXSIZE) || ((size & (size-1)) != 0);
+#elif defined(TARGET_POWERPC64)
+        return (size > ENREGISTERED_PARAMTYPE_MAXSIZE);
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::IsArgPassedByRef");
         return FALSE;
@@ -644,6 +670,13 @@ public:
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
             return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) || ((m_argSize & (m_argSize-1)) != 0);
+        }
+        return FALSE;
+#elif defined(TARGET_POWERPC64)
+        if (m_argType == ELEMENT_TYPE_VALUETYPE)
+        {
+            _ASSERTE(!m_argTypeHandle.IsNull());
+            return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
         }
         return FALSE;
 #else
@@ -989,6 +1022,37 @@ public:
     }
 #endif // TARGET_S390X
 
+#if defined(TARGET_POWERPC64)
+    // Get layout information for the argument that the ArgIterator is currently visiting.
+    void GetArgLoc(int argOffset, ArgLocDesc* pLoc)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        pLoc->Init();
+
+        if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
+        {
+            // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
+            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / 8;
+            pLoc->m_cFloatReg = 1;
+        }
+        else if (!TransitionBlock::IsStackArgumentOffset(argOffset))
+        {
+            pLoc->m_idxGenReg = TransitionBlock::GetArgumentIndexFromOffset(argOffset);
+            pLoc->m_cGenReg = 1;
+        }
+        else
+        {
+            pLoc->m_byteStackIndex = TransitionBlock::GetStackArgumentByteIndexFromOffset(argOffset);
+            int argSizeInBytes;
+            if (IsArgPassedByRef())
+                argSizeInBytes = TARGET_POINTER_SIZE;
+            else
+                argSizeInBytes = GetArgSize();
+            pLoc->m_byteStackSize = StackElemSize(argSizeInBytes);
+        }
+    }
+#endif // TARGET_POWERPC64
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
@@ -1048,6 +1112,11 @@ protected:
 #endif
 
 #ifdef TARGET_S390X
+    int             m_idxGenReg;        // Next general register to be assigned a value
+    int             m_idxFPReg;         // Next FP register to be assigned a value
+#endif
+
+#ifdef TARGET_POWERPC64
     int             m_idxGenReg;        // Next general register to be assigned a value
     int             m_idxFPReg;         // Next FP register to be assigned a value
 #endif
@@ -1300,6 +1369,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         m_ofsStack = 0;
         m_idxFPReg = 0;
 #elif defined(TARGET_S390X)
+        m_idxGenReg = numRegistersUsed;
+        m_ofsStack = 0;
+        m_idxFPReg = 0;
+#elif defined(TARGET_POWERPC64)
         m_idxGenReg = numRegistersUsed;
         m_ofsStack = 0;
         m_idxFPReg = 0;
@@ -1940,6 +2013,63 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
     m_ofsStack += ALIGN_UP(argSize, TARGET_POINTER_SIZE);
     return argOfs;
+#elif defined(TARGET_POWERPC64)
+
+    int cFPRegs = 0;
+
+    switch (argType)
+    {
+	case ELEMENT_TYPE_R4:
+	    // 32-bit floating point argument.
+	    cFPRegs = 1;
+	    break;
+
+	case ELEMENT_TYPE_R8:
+	    // 64-bit floating point argument.
+	    cFPRegs = 1;
+	    break;
+
+	case ELEMENT_TYPE_VALUETYPE:
+	    // If the size is bigger than 8, or if the size is NOT a power of 2, then
+	    // the argument is passed by reference.
+	    if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE || (argSize & (argSize-1)) != 0)
+	    {
+		argSize = sizeof(TADDR);
+	    }
+	    // Single-element aggregates with float/double element are passed in FPRs.
+	    else if ((argSize == 4 && thValueType.GetHFAType() == CORINFO_HFA_ELEM_FLOAT)
+	        || (argSize == 8 && thValueType.GetHFAType() == CORINFO_HFA_ELEM_DOUBLE))
+	    {
+		cFPRegs = 1;
+	    }
+	    break;
+
+	default:
+    	    break;
+    }
+
+    if (cFPRegs)
+    {
+	if (m_idxFPReg < 13)
+	{
+	    int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
+	    m_idxFPReg += 1;
+	    return argOfs;
+	}
+    }
+    else
+    {
+	if (m_idxGenReg < 8)
+	{
+	    int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
+	    m_idxGenReg += 1;
+	    return argOfs;
+	}
+    }
+
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
+    m_ofsStack += ALIGN_UP(argSize, TARGET_POINTER_SIZE);
+    return argOfs;
 #else
     PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
     return TransitionBlock::InvalidOffset;
@@ -2089,6 +2219,10 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                  strcmp(typeName, "NFloat") == 0))
                 break;
         }
+#endif
+#if defined(TARGET_POWERPC64)
+            //_ASSERTE_MSG(false, "Unsupported arch POWERPC64.");
+	    _ASSERTE(!thValueType.IsNull());
 #endif
 
         // Value types are returned using return buffer by default
@@ -2283,7 +2417,7 @@ protected:
     FORCEINLINE CorElementType GetReturnType(TypeHandle * pthValueType)
     {
         WRAPPER_NO_CONTRACT;
-#if defined(ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE) || defined(TARGET_S390X)
+#if defined(ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE) || defined(TARGET_S390X) || defined(TARGET_POWERPC64)
         return m_pSig->GetReturnTypeNormalized(pthValueType);
 #else
         return m_pSig->GetReturnTypeNormalized();

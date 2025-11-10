@@ -729,6 +729,19 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
         W("R8"), W("R9"), W("R10"), W("R11"),
         W("R12"), W("R13"), W("R14"), W("R15")
     };
+#elif defined(TARGET_POWERPC64)
+    static const WCHAR *regs[] =
+    {
+        W("R0"), W("R1"), W("R2"), W("R3"),
+        W("R4"), W("R5"), W("R6"), W("R7"),
+        W("R8"), W("R9"), W("R10"), W("R11"),
+        W("R12"), W("R13"), W("R14"), W("R15"),
+        W("R16"), W("R17"), W("R18"), W("R19"),
+        W("R20"), W("R21"), W("R22"), W("R23"),
+        W("R24"), W("R25"), W("R26"), W("R27"),
+        W("R28"), W("R29"), W("R30"), W("R31")
+    };
+
 #endif
 
     // Caller frame registers are encoded as "-(reg+1)".

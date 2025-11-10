@@ -63,6 +63,8 @@ ThreadInfo::Initialize()
     TRACE("Thread %04x PC %016llx SP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.pc, (unsigned long long)m_gpRegisters.sp);
 #elif defined(__s390x__)
     TRACE("Thread %04x PC %016llx SP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.psw.addr, (unsigned long long)m_gpRegisters.gprs[15]);
+#elif defined(__powerpc64__)
+    TRACE("Thread %04x PC %016llx SP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.nip,  (unsigned long long)m_gpRegisters.gpr[1]);
 #else
 #error "Unsupported architecture"
 #endif
@@ -322,6 +324,33 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
     if ((flags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
         memcpy(context->Fpr, m_fpRegisters.fprs, sizeof(context->Fpr));
+    }
+#elif defined(__powerpc64__)
+    if ((flags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
+    {
+        context->Nip = m_gpRegisters.nip;
+        context->R1 = m_gpRegisters.gpr[1];
+        context->Link = m_gpRegisters.link;  // todo: .lr?
+        context->Ctr = m_gpRegisters.ctr;
+        context->Msr = m_gpRegisters.msr;
+    }
+    if ((flags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
+    {
+        for (int i = 0; i < 32; i++)
+        {
+            *(&context->R0 + i*sizeof(DWORD64)) = m_gpRegisters.gpr[i];
+        }
+    }
+    if ((flags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    {
+        assert((sizeof(context->F0)*32) == sizeof(m_fpRegisters.fpr));
+
+	for (int i = 0; i < 32; i++)
+	{
+	    *(&context->F0 + i*sizeof(DWORD64)) = m_fpRegisters.fpr[i];
+	}
+
+        context->Fpscr = m_fpRegisters.fpscr;
     }
 #else
 #error Platform not supported

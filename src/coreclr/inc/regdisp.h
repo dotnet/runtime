@@ -369,6 +369,8 @@ inline LPVOID GetRegdisplayReturnValue(REGDISPLAY *display)
     return (LPVOID)display->pCurrentContext->A0;
 #elif defined(TARGET_S390X)
     return (LPVOID)display->pCurrentContext->R2;
+#elif defined(TARGET_POWERPC64)
+    return (LPVOID)display->pCurrentContext->R3; // PowerPC64 uses R3 for return values
 #else
     PORTABILITY_ASSERT("GetRegdisplayReturnValue NYI for this platform (Regdisp.h)");
     return NULL;
@@ -464,7 +466,14 @@ inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CO
     *(&pCtxPtrs->Tp) = &pCtx->Tp;
     *(&pCtxPtrs->Fp) = &pCtx->Fp;
     *(&pCtxPtrs->Ra) = &pCtx->Ra;
-#else // TARGET_RISCV64
+#elif defined(TARGET_POWERPC64) //TARGET_RISCV64
+    for (int i = 0; i <= 17; i++) // PowerPC64 nonvolatile registers R14-R31 (18 registers)
+    {
+        *(&pCtxPtrs->R14 + i) = (&pCtx->R14 + i);
+    }
+    // Table of Contents (TOC) pointer - R2 in PowerPC64 ABI
+    //*(&pCtxPtrs->R2) = &pCtx->R2; TODO JAYANTH
+#else // TARGET_POWERPC64
     PORTABILITY_ASSERT("FillContextPointers");
 #endif // _TARGET_???_ (ELSE)
 }
@@ -670,6 +679,9 @@ inline size_t * getRegAddr (unsigned regNum, PTR_CONTEXT regs)
 #elif defined(TARGET_S390X)
     _ASSERTE(regNum < 16);
     return (size_t *)&regs->R0 + regNum;
+#elif defined(TARGET_POWERPC64)
+    _ASSERTE(regNum < 32);
+    return (size_t*)&regs->R0 + regNum;
 #else
     _ASSERTE(!"@TODO Port - getRegAddr (Regdisp.h)");
 #endif

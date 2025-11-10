@@ -62,6 +62,10 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
         {
             SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_S390X);
         }
+	else if (0 == _stricmp(targetArchitecture, "ppc64le"))
+	{
+	    SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_POWERPC64);
+	}
         else
         {
             LogError("Illegal target architecture '%s'", targetArchitecture);

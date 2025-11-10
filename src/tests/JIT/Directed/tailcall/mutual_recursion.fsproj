@@ -7,6 +7,7 @@
     <NativeAotIncompatible>true</NativeAotIncompatible>
     <!-- Interpreter-only stack overflow -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 's390x'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'ppc64le'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <PropertyGroup>
     <Optimize>True</Optimize>

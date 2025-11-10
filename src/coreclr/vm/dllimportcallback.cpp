@@ -207,7 +207,7 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk)
         CREATETHREAD_IF_NULL_FAILFAST(pThread, W("Failed to setup new thread during reverse P/Invoke"));
     }
 
-#ifndef FEATURE_INTERPRETER // FIXME
+#ifndef FEATURE_INTERPRETER // FIXME TARGET_S390X and TARGET_POWERPC64
     // Verify the current thread isn't in COOP mode.
     if (pThread->PreemptiveGCDisabled())
         ReversePInvokeBadTransition();

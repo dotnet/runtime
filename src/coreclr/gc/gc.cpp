@@ -18923,7 +18923,7 @@ enter_msl_status gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
     }
 #endif //MULTIPLE_HEAPS
 
-// FIXME s390x    vm_heap->GarbageCollectGeneration (gen_number, gr);
+// FIXME s390x,TARGET_POWERPC64    vm_heap->GarbageCollectGeneration (gen_number, gr);
 
 #ifdef MULTIPLE_HEAPS
     if (!loh_p)
@@ -49907,7 +49907,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
                 uint8_t* freeObj = ((uint8_t*) str) + sizeToNextObj - sizeOfNewObj;
                 pGenGCHeap->make_unused_array (freeObj, sizeOfNewObj);
 
-#if !defined(TARGET_AMD64) && !defined(TARGET_X86) && !defined(TARGET_S390X)
+#if !defined(TARGET_AMD64) && !defined(TARGET_X86) && !defined(TARGET_S390X) && !defined(TARGET_POWERPC64)
                 // ensure that the write to the new free object is seen by
                 // background GC *before* the write to the string length below
                 MemoryBarrier();
@@ -50231,7 +50231,7 @@ BOOL should_collect_optimized (dynamic_data* dd, BOOL low_memory_p)
 HRESULT
 GCHeap::GarbageCollect (int generation, bool low_memory_p, int mode)
 {
-    return S_OK; // FIXME s390
+    return S_OK; // FIXME s390, TARGET_POWERPC64
 
 #if defined(HOST_64BIT)
     if (low_memory_p)

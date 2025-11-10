@@ -3,7 +3,7 @@
 
 #include "createdump.h"
 
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv) || defined(__powerpc64__)
 long g_pageSize = 0;
 #endif
 

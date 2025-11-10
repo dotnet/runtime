@@ -26,6 +26,7 @@
 
 #define BITS_PER_SIZE_T ((int)sizeof(size_t)*8)
 
+#if !defined(TARGET_POWERPC64)
 inline UINT32 CeilOfLog2(size_t x)
 {
     // it is ok to use bsr or clz unconditionally
@@ -54,6 +55,7 @@ inline UINT32 CeilOfLog2(size_t x)
 #endif // _MSC_VER
 #endif
 }
+#endif
 
 enum GcSlotFlags
 {
@@ -942,6 +944,92 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define POINTER_SIZE_ENCBASE 3
 #define LIVESTATE_RLE_RUN_ENCBASE 2
 #define LIVESTATE_RLE_SKIP_ENCBASE 4
+
+#elif defined(TARGET_POWERPC64)
+
+#ifndef TARGET_POINTER_SIZE
+#define TARGET_POINTER_SIZE 8    // equal to sizeof(void*) and the managed pointer size in bytes for this target
+#endif
+
+#define NUM_NORM_CODE_OFFSETS_PER_CHUNK (64)
+#define NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 (6)
+
+#define NORMALIZE_STACK_SLOT(x) ((x) >> 3)   // GC Pointers are 8-byte aligned
+#define DENORMALIZE_STACK_SLOT(x) ((x) << 3)
+
+#define NORMALIZE_CODE_LENGTH(x) ((x) >> 2)   // All instructions are 4 bytes long
+#define DENORMALIZE_CODE_LENGTH(x) ((x) << 2)
+
+// Encode r31 (Frame Pointer) as 0
+#define NORMALIZE_STACK_BASE_REGISTER(x) ((x) == 31 ? 0 : 1)
+#define DENORMALIZE_STACK_BASE_REGISTER(x) ((x) == 0 ? 31 : 1)
+
+#define NORMALIZE_SIZE_OF_STACK_AREA(x) ((x) >> 3)
+#define DENORMALIZE_SIZE_OF_STACK_AREA(x) ((x) << 3)
+
+#define CODE_OFFSETS_NEED_NORMALIZATION 0
+
+#define NORMALIZE_CODE_OFFSET(x) (x)
+#define DENORMALIZE_CODE_OFFSET(x) (x)
+
+#define NORMALIZE_REGISTER(x) (x)
+#define DENORMALIZE_REGISTER(x) (x)
+
+#define NORMALIZE_NUM_SAFE_POINTS(x) (x)
+#define DENORMALIZE_NUM_SAFE_POINTS(x) (x)
+
+#define NORMALIZE_NUM_INTERRUPTIBLE_RANGES(x) (x)
+#define DENORMALIZE_NUM_INTERRUPTIBLE_RANGES(x) (x)
+
+#define PSP_SYM_STACK_SLOT_ENCBASE 6
+#define GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE 6
+#define SECURITY_OBJECT_STACK_SLOT_ENCBASE 6
+#define GS_COOKIE_STACK_SLOT_ENCBASE 6
+
+#define CODE_LENGTH_ENCBASE 8
+#define SIZE_OF_RETURN_KIND_IN_SLIM_HEADER 2
+#define SIZE_OF_RETURN_KIND_IN_FAT_HEADER  4
+
+// FP encoded as 0, SP as 1
+#define STACK_BASE_REGISTER_ENCBASE 2
+
+#define SIZE_OF_STACK_AREA_ENCBASE 3
+#define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 4
+#define REVERSE_PINVOKE_FRAME_ENCBASE 6
+
+#define NUM_REGISTERS_ENCBASE 3
+#define NUM_STACK_SLOTS_ENCBASE 2
+#define NUM_UNTRACKED_SLOTS_ENCBASE 1
+
+#define NORM_PROLOG_SIZE_ENCBASE 5
+#define NORM_EPILOG_SIZE_ENCBASE 3
+#define NORM_CODE_OFFSET_DELTA_ENCBASE 3
+
+#define INTERRUPTIBLE_RANGE_DELTA1_ENCBASE 6
+#define INTERRUPTIBLE_RANGE_DELTA2_ENCBASE 6
+
+#define REGISTER_ENCBASE 3
+#define REGISTER_DELTA_ENCBASE 2
+#define STACK_SLOT_ENCBASE 6
+#define STACK_SLOT_DELTA_ENCBASE 4
+
+#define NUM_SAFE_POINTS_ENCBASE 3
+#define NUM_INTERRUPTIBLE_RANGES_ENCBASE 1
+#define NUM_EH_CLAUSES_ENCBASE 2
+#define POINTER_SIZE_ENCBASE 3
+#define LIVESTATE_RLE_RUN_ENCBASE 2
+#define LIVESTATE_RLE_SKIP_ENCBASE 4
+
+// Optional: Add CeilOfLog2 implementation optimized for PPC64LE
+#ifdef __GNUC__
+inline UINT32 CeilOfLog2(size_t x)
+{
+    _ASSERTE(x > 0);
+    x = (x << 1) - 1;
+    // Use GCC/Clang builtin for leading zeros count
+    return (UINT32)63 ^ (UINT32)__builtin_clzll((unsigned long long)x);
+}
+#endif
 
 #else
 

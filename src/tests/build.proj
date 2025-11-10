@@ -19,7 +19,7 @@
     <DisabledTestDir Include="Common" />
     <DisabledTestDir Include="Tests" />
     <DisabledTestDir Include="TestWrappers" />
-    <!-- FIXME s390x - tests run too long for interpreter-only mode -->
+    <!-- FIXME s390x and TARGET_POWERPC64 - tests run too long for interpreter-only mode -->
     <DisabledTestDir Include="GC" />
   </ItemGroup>
 

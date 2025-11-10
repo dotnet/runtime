@@ -45,6 +45,7 @@ public class Runtime_95349
 
     [Fact]
     [ActiveIssue("Test runs too long in interpreter-only mode", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsS390xProcess))]
+    [ActiveIssue("Test runs too long in interpreter-only mode", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsPpc64leProcess))]
     public static void Test()
     {
         P p = new P1();

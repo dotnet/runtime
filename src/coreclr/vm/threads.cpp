@@ -4134,7 +4134,7 @@ OBJECTREF Thread::GetExposedObject()
     Thread *pCurThread = GetThreadNULLOk();
     _ASSERTE (!(pCurThread == NULL || IsAtProcessExit()));
 
-//    _ASSERTE(pCurThread->PreemptiveGCDisabled());
+    // FIXME TARGET_S390X and TARGET_POWERPC64  _ASSERTE(pCurThread->PreemptiveGCDisabled());
 
     if (ObjectFromHandle(m_ExposedObject) == NULL)
     {

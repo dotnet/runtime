@@ -860,7 +860,7 @@ def run_tests(args,
         per_test_timeout *= 8
         print("Running GCStress, extending test timeout to cater for slower runtime.")
 
-    # FIXME: s390 fully interpreted for now
+    # FIXME: s390 and TARGET_POWERPC64 fully interpreted for now
     per_test_timeout *= 8
 
     # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.

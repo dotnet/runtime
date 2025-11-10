@@ -11216,7 +11216,7 @@ void CEEJitInfo::allocUnwindInfo (
 
     RUNTIME_FUNCTION__SetBeginAddress(pRuntimeFunction, currentCodeOffset + startOffset);
 
-#if defined(TARGET_AMD64) || defined(TARGET_S390X)
+#if defined(TARGET_AMD64) || defined(TARGET_S390X) || defined(TARGET_POWERPC64)
     pRuntimeFunction->EndAddress        = currentCodeOffset + endOffset;
 #endif
 
@@ -12423,7 +12423,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     bool isInterpreterStub   = false;
     bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
     bool forceInterpreter    = (s_ForceInterpreter.val(CLRConfig::INTERNAL_ForceInterpreter) != 0);
-#ifdef TARGET_S390X
+#if defined(TARGET_S390X) || defined(TARGET_POWERPC64)
     interpreterFallback = false;
     forceInterpreter = true;
 #endif
@@ -12820,7 +12820,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     timer.Start();
 
     EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
-#ifndef TARGET_S390X
+#if !defined(TARGET_S390X) && !defined(TARGET_POWERPC64)
     if (!jitMgr->LoadJIT())
     {
 #ifdef ALLOW_SXS_JIT

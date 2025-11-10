@@ -216,6 +216,47 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
         *(UINT64 *)pArgDst = *(UINT32 *)argRef;
         break;
 
+#elif TARGET_POWERPC64
+// PowerPC64 calling convention requires sign-extension for signed ints and zero-extension for unsigned ints
+case ELEMENT_TYPE_BOOLEAN:
+case ELEMENT_TYPE_U1:
+    _ASSERTE(argRef != NULL);
+    *(UINT64 *)pArgDst = *(UINT8 *)argRef;  // Zero-extend 8-bit unsigned
+    break;
+
+case ELEMENT_TYPE_I1:
+    _ASSERTE(argRef != NULL);
+    *(INT64 *)pArgDst = (INT8)*(INT8 *)argRef;  // Sign-extend 8-bit signed
+    break;
+
+case ELEMENT_TYPE_U2:
+case ELEMENT_TYPE_CHAR:
+    _ASSERTE(argRef != NULL);
+    *(UINT64 *)pArgDst = *(UINT16 *)argRef;  // Zero-extend 16-bit unsigned
+    break;
+
+case ELEMENT_TYPE_I2:
+    _ASSERTE(argRef != NULL);
+    *(INT64 *)pArgDst = (INT16)*(INT16 *)argRef;  // Sign-extend 16-bit signed
+    break;
+
+case ELEMENT_TYPE_R4:
+    _ASSERTE(argRef != NULL);
+    if (argDest->IsIsFloatArgumentRegister())
+        *((UINT32 *)pArgDst) = *(UINT32 *)argRef;  // Store as 32-bit float in FPR
+    else
+        *((UINT64 *)pArgDst) = *(UINT32 *)argRef;  // Zero-extend when passed in GPR
+    break;
+
+case ELEMENT_TYPE_I4:
+    _ASSERTE(argRef != NULL);
+    *(INT64 *)pArgDst = (INT32)*(INT32 *)argRef;  // Sign-extend 32-bit signed
+    break;
+
+case ELEMENT_TYPE_U4:
+    _ASSERTE(argRef != NULL);
+    *(UINT64 *)pArgDst = *(UINT32 *)argRef;  // Zero-extend 32-bit unsigned
+    break;
 #else // !TARGET_RISCV64
     case ELEMENT_TYPE_BOOLEAN:
     case ELEMENT_TYPE_U1:

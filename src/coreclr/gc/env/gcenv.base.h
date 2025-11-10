@@ -222,6 +222,10 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #define YieldProcessor()
 #endif // __s390x__
 
+#ifdef __powerpc64__
+ #define YieldProcessor()
+#endif // __powerpc64__
+
 #endif // _MSC_VER
 
 #ifdef _MSC_VER
