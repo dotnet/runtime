@@ -34,7 +34,6 @@ namespace Tracing.Tests.UserEvents
             string appBaseDir = AppContext.BaseDirectory;
             string recordTracePath = Path.Combine(appBaseDir, "record-trace");
             string scriptFilePath = Path.Combine(appBaseDir, "dotnet-common.script");
-            string traceFilePath = Path.GetTempFileName();
             const string userEventsDataPath = "/sys/kernel/tracing/user_events_data";
 
             if (!File.Exists(recordTracePath))
@@ -47,6 +46,10 @@ namespace Tracing.Tests.UserEvents
                 Console.Error.WriteLine($"dotnet-common.script not found at `{scriptFilePath}`. Test cannot run.");
                 return -1;
             }
+
+            string traceFilePath = Path.GetTempFileName();
+            File.Delete(traceFilePath); // record-trace requires the output file to not exist
+            traceFilePath = Path.ChangeExtension(traceFilePath, ".nettrace");
 
             ProcessStartInfo recordTraceStartInfo = new();
             recordTraceStartInfo.FileName = "sudo";
