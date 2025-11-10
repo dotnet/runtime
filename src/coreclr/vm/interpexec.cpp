@@ -69,9 +69,41 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
 }
 
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
+#ifdef TARGET_ARM
+struct UnmanagedMethodWithTransitionParam
+{
+    MethodDesc *targetMethod;
+    int8_t *stack;
+    InterpMethodContextFrame *pFrame;
+    int8_t *pArgs;
+    int8_t *pRet;
+    PCODE callTarget;
+};
+NOINLINE
+void InvokeUnmanagedMethodWithTransition(UnmanagedMethodWithTransitionParam *pParam)
+#else
 NOINLINE
 void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+#endif
 {
+#ifdef TARGET_ARM
+    InlinedCallFrame inlinedCallFrame;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pParam->pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pParam->pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)pParam->stack;
+    inlinedCallFrame.m_pThread = GetThread();
+    inlinedCallFrame.m_Datum = NULL;
+    inlinedCallFrame.Push();
+
+    struct Param
+    {
+        MethodDesc *targetMethod;
+        int8_t *pArgs;
+        int8_t *pRet;
+        PCODE callTarget;
+    }
+    param = { pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget };
+#else // !TARGET_ARM
     InlinedCallFrame inlinedCallFrame;
     inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
     inlinedCallFrame.m_pCallSiteSP = pFrame;
@@ -88,6 +120,7 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
         PCODE callTarget;
     }
     param = { targetMethod, pArgs, pRet, callTarget };
+#endif // TARGET_ARM
 
     PAL_TRY(Param *, pParam, &param)
     {
@@ -2527,12 +2560,10 @@ MAIN_LOOP:
                     else
                     {
 #ifdef TARGET_ARM
-                        TADDR targetSP = pInterpreterFrame->GetInterpExecMethodSP();
-                        pInterpreterFrame->SetInterpExecMethodSP(targetSP - 8); // Pass two arguments via native stack for InvokeUnmanagedMethodWithTransition
-#endif // TARGET_ARM
+                        UnmanagedMethodWithTransitionParam param = { targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget };
+                        InvokeUnmanagedMethodWithTransition(&param);
+#else // !TARGET_ARM
                         InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget);
-#ifdef TARGET_ARM
-                        pInterpreterFrame->SetInterpExecMethodSP(targetSP); // Restore stack pointer
 #endif // TARGET_ARM
                     }
 
