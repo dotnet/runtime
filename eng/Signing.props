@@ -42,6 +42,8 @@
     <!-- On MacOS, we need to sign a number of our executables with the Mac developer cert with hardening enabled.
          Avoid doing this on Linux, which has the same executable names -->
     <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="dotnet;apphost;createdump;singlefilehost;crossgen2" CertificateName="MacDeveloperHarden" />
+    <!-- Sign these Mac binaries without hardening enabled, making them compatible with hardening needs more work -->
+    <FileSignInfo Condition="'$(TargetsOSX)' == 'true'" Include="corerun;ilc;ilasm;ildasm;mono-aot-cross;Mono;llc;opt" CertificateName="MacDeveloper" />
     <!-- Additionally, we need to notarize any .pkg files -->
     <MacOSPkg Include="$(ArtifactsPackagesDir)**/dotnet-runtime*.pkg" Exclude="$(ArtifactsPackagesDir)**/dotnet-runtime-internal*.pkg" />
     <FileSignInfo Include="@(MacOSPkg->'%(Filename)%(Extension)')" CertificateName="MacDeveloperWithNotarization" />

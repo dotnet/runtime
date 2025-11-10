@@ -831,7 +831,7 @@ DacGetTargetAddrForHostAddr(LPCVOID ptr, bool throwEx)
         {
             status = E_INVALIDARG;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (status != S_OK)
         {
@@ -963,7 +963,7 @@ DacGetTargetAddrForHostInteriorAddr(LPCVOID ptr, bool throwEx)
         {
             status = E_INVALIDARG;
         }
-        EX_END_CATCH(SwallowAllExceptions)
+        EX_END_CATCH
 
         if (status != S_OK)
         {

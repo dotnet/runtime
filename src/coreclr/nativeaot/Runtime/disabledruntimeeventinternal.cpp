@@ -80,7 +80,7 @@ EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogThreadPoolIOPack(void * Nati
 {
 }
 
-EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogExceptionThrown(const WCHAR* exceptionTypeName, const WCHAR* exceptionMessage, void* faultingIP, HRESULT hresult)
+EXTERN_C void QCALLTYPE NativeRuntimeEventSource_LogExceptionThrown(const WCHAR* exceptionTypeName, const WCHAR* exceptionMessage, void* faultingIP, HRESULT hresult, uint16_t flags, uint16_t ClrInstanceID)
 {
 }
 

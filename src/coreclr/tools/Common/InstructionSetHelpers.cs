@@ -17,25 +17,73 @@ namespace System.CommandLine
     internal static partial class Helpers
     {
         public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, int maxVectorTBitWidth, bool isVectorTOptimistic, TargetArchitecture targetArchitecture, TargetOS targetOS,
-            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool optimizingForSize = false)
+            string mustNotBeMessage, string invalidImplicationMessage, Logger logger, bool optimizingForSize, bool isReadyToRun)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
 
-            // Ready to run images are built with certain instruction set baselines
+            // Images are built with certain instruction set baselines
+            //
+            // For NativeAOT, this represents the minimum hardware required to run.
+            // Older hardware will not work
+            //
+            // For ReadyToRun, this represents the presumed majority hardware.
+            // Older hardware (down to the NAOT baseline) will still work, but may have more jitting on startup
+
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
-            }
-            else if (targetArchitecture == TargetArchitecture.ARM64)
-            {
-                if (targetOS == TargetOS.OSX)
+                if (isReadyToRun && (targetOS != TargetOS.OSX))
                 {
-                    // For osx-arm64 we know that apple-m1 is a baseline
-                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                    // ReadyToRun can presume AVX2, BMI1, BMI2, F16C, FMA, LZCNT, and MOVBE
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("x86-64-v3");
                 }
                 else
                 {
-                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
+                    // Otherwise, we require SSE4.2 and POPCNT
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("x86-64-v2");
+                }
+            }
+            else if (targetArchitecture == TargetArchitecture.ARM64)
+            {
+                if ((targetOS == TargetOS.OSX) || (targetOS == TargetOS.MacCatalyst))
+                {
+                    // Apple has six targets today:
+                    // * OSX
+                    // * MacCatalyst
+                    // * iOS
+                    // * iOSSimulator
+                    // * tvOS
+                    // * tvOSSimulator
+                    //
+                    // For osx-arm64 and maccatalyst, we know that the baseline is apple-m1
+                    // For iOS, tvOS, and the simulator variants it can be older
+
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("apple-m1");
+                }
+                else if (isReadyToRun)
+                {
+                    if (targetOS == TargetOS.Windows)
+                    {
+                        // ReadyToRun on Windows can presume armv8.2-a and RCPC
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("armv8.2-a");
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
+                    }
+                    else
+                    {
+                        // While Unix needs a lower baseline due to things like Raspberry PI
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("armv8-a");
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+                    }
+                }
+                else
+                {
+                    // We require armv8-a everywhere
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("armv8-a");
+
+                    if (targetOS == TargetOS.Windows)
+                    {
+                        // However, Windows also requires LSE
+                        instructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+                    }
                 }
             }
 
@@ -57,7 +105,7 @@ namespace System.CommandLine
                 }
 
                 string jitInterfaceLibrary = "jitinterface_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
-                nint libHandle = NativeLibrary.Load(jitInterfaceLibrary, System.Reflection.Assembly.GetExecutingAssembly(), DllImportSearchPath.ApplicationDirectory);
+                nint libHandle = NativeLibrary.Load(jitInterfaceLibrary, System.Reflection.Assembly.GetExecutingAssembly(), DllImportSearchPath.AssemblyDirectory);
                 int cpuFeatures;
                 unsafe
                 {
@@ -135,6 +183,17 @@ namespace System.CommandLine
                         instructionSet = "+" + instructionSet;
                     }
 
+                    if (instructionSet == "+optimistic")
+                    {
+                        allowOptimistic = true;
+                        continue;
+                    }
+                    if (instructionSet == "-optimistic")
+                    {
+                        allowOptimistic = false;
+                        continue;
+                    }
+
                     instructionSetParams.Add(instructionSet);
                 }
 
@@ -187,10 +246,7 @@ namespace System.CommandLine
                 // Note that we do not indicate support for AVX, or any other instruction set which uses the VEX encodings as
                 // the presence of those makes otherwise acceptable code be unusable on hardware which does not support VEX encodings.
                 //
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("waitpkg");
@@ -203,16 +259,11 @@ namespace System.CommandLine
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxifma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v256");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vaes");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul");
 
                     // If AVX2 is not in the supported set, we need to restrict the optimistic Vector<T> size, because
                     // 256-bit Vector<T> cannot be fully accelerated based on AVX2 being in the optimistic set only.
@@ -230,10 +281,10 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512v3");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnniint_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vp2intersect");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vaes_v512");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul_v512");
 
                 }
             }
@@ -241,11 +292,13 @@ namespace System.CommandLine
             {
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("crc");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("dotprod");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rcpc2");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rdma");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha1");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sha2");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lse");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("dotprod");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("rdma");
             }
 
             // Vector<T> can always be part of the optimistic set, we only want to optionally exclude it from the supported set

@@ -89,7 +89,7 @@ namespace System.Collections.Concurrent
             // case we round its length up to a power of 2, as all segments must
             // be a power of 2 in length.
             int length = InitialSegmentLength;
-            if (collection is IReadOnlyCollection<T> c)
+            if (collection is ICollection<T> c)
             {
                 int count = c.Count;
                 if (count > length)

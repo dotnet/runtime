@@ -191,6 +191,8 @@ virtual bool UnwindStackFrame(PREGDISPLAY     pRD,
                               EECodeInfo     *pCodeInfo,
                               unsigned        flags) = 0;
 
+virtual void UnwindStackFrame(T_CONTEXT *pContext) = 0;
+
 #ifdef FEATURE_EH_FUNCLETS
 virtual void EnsureCallerContextIsValid(PREGDISPLAY pRD, EECodeInfo * pCodeInfo = NULL, unsigned flags = 0) = 0;
 #endif // FEATURE_EH_FUNCLETS
@@ -404,6 +406,9 @@ bool UnwindStackFrame(
                 PREGDISPLAY     pRD,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags);
+
+virtual
+void UnwindStackFrame(T_CONTEXT *pContext);
 
 #ifdef HAS_LIGHTUNWIND
 enum LightUnwindFlag
@@ -653,6 +658,9 @@ bool UnwindStackFrame(
                 PREGDISPLAY     pRD,
                 EECodeInfo     *pCodeInfo,
                 unsigned        flags);
+
+virtual
+void UnwindStackFrame(T_CONTEXT *pContext);
 
 #ifdef FEATURE_EH_FUNCLETS
 virtual 

@@ -16,14 +16,14 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IReadOnlyList<TSource> list)
+            if (source is IList<TSource> list)
             {
                 return list[index];
             }
 
             bool found;
             TSource? element =
-                !IsSizeOptimized && source is Iterator<TSource> iterator ? iterator.TryGetElementAt(index, out found) :
+                source is Iterator<TSource> iterator ? iterator.TryGetElementAt(index, out found) :
                 TryGetElementAtNonIterator(source, index, out found);
 
             if (!found)
@@ -113,7 +113,7 @@ namespace System.Linq
 
         private static TSource? TryGetElementAt<TSource>(this IEnumerable<TSource> source, int index, out bool found)
         {
-            if (source is IReadOnlyList<TSource> list)
+            if (source is IList<TSource> list)
             {
                 return (found = (uint)index < (uint)list.Count) ?
                     list[index] :
@@ -121,7 +121,7 @@ namespace System.Linq
             }
 
             return
-                !IsSizeOptimized && source is Iterator<TSource> iterator ? iterator.TryGetElementAt(index, out found) :
+                source is Iterator<TSource> iterator ? iterator.TryGetElementAt(index, out found) :
                 TryGetElementAtNonIterator(source, index, out found);
         }
 

@@ -27,11 +27,11 @@ EXTERN_C UINT32 _tls_index;
 #endif
 
 #ifdef _MSC_VER
-__declspec(selectany) thread_local
+__declspec(selectany)
 #else
-EXTERN_C __thread
+EXTERN_C
 #endif
-ThreadLocalInfo t_CurrentThreadInfo;
+PLATFORM_THREAD_LOCAL ThreadLocalInfo t_CurrentThreadInfo;
 
 inline Thread* GetThreadNULLOk()
 {
@@ -45,7 +45,7 @@ inline Thread* GetThread()
     return pThread;
 }
 
-EXTERN_C inline AppDomain* STDCALL GetAppDomain()
+inline AppDomain* GetAppDomain()
 {
     return AppDomain::GetCurrentDomain();
 }

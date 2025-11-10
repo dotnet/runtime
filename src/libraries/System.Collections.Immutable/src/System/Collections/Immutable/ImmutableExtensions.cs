@@ -50,12 +50,10 @@ namespace System.Collections.Immutable
                 return orderedCollection;
             }
 
-#if !NET10_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 10+
             if (sequence is IList<T> listOfT)
             {
                 return new ListOfTWrapper<T>(listOfT);
             }
-#endif
 
             // It would be great if SortedSet<T> and SortedDictionary<T> provided indexers into their collections,
             // but since they don't we have to clone them to an array.
@@ -103,7 +101,6 @@ namespace System.Collections.Immutable
             }
         }
 
-#if !NET10_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 10+
         /// <summary>
         /// Wraps a <see cref="IList{T}"/> as an ordered collection.
         /// </summary>
@@ -163,7 +160,6 @@ namespace System.Collections.Immutable
                 return this.GetEnumerator();
             }
         }
-#endif
 
         /// <summary>
         /// Wraps any <see cref="IEnumerable{T}"/> as an ordered, indexable list.

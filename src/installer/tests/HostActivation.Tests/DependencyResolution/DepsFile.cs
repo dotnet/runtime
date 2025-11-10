@@ -53,11 +53,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
             // Test that .deps.json files with UTF8 BOM are parsed correctly
             TestApp app = sharedState.FrameworkReferenceApp;
-            
+
             // Create a copy of the existing deps.json with UTF8 BOM
-            string depsJsonWithBom = Path.Combine(Path.GetDirectoryName(sharedState.DepsJsonPath), 
+            string depsJsonWithBom = Path.Combine(Path.GetDirectoryName(sharedState.DepsJsonPath),
                 Path.GetFileNameWithoutExtension(sharedState.DepsJsonPath) + "_bom.deps.json");
-            
+
             try
             {
                 // Read the original deps.json content and write with UTF8 BOM

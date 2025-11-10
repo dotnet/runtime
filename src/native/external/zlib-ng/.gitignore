@@ -103,3 +103,7 @@ gzread.c
 MinSizeRel
 RelWithDebInfo
 /_deps/googletest*
+
+# Test datasets
+test/data/corpora/
+test/data/local/

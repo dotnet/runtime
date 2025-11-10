@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 
 namespace System.Net.Http
 {
@@ -38,12 +39,16 @@ namespace System.Net.Http
                 "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT",
                 true);
 
-            // Default to allowing HTTP/3, but enable that to be overridden by an
+            // Default to allowing HTTP/3 on platforms where we have QUIC, but enable that to be overridden by an
             // AppContext switch, or by an environment variable being set to false/0.
+            [SupportedOSPlatformGuard("linux")]
+            [SupportedOSPlatformGuard("macOS")]
+            [SupportedOSPlatformGuard("windows")]
+            [FeatureSwitchDefinition("System.Net.SocketsHttpHandler.Http3Support")]
             public static bool AllowHttp3 { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
                 "System.Net.SocketsHttpHandler.Http3Support",
                 "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP3SUPPORT",
-                true);
+                (OperatingSystem.IsLinux() && !OperatingSystem.IsAndroid()) || OperatingSystem.IsWindows() || OperatingSystem.IsMacOS());
 
             // Switch to disable the HTTP/2 dynamic window scaling algorithm. Enabled by default.
             public static bool DisableDynamicHttp2WindowSizing { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(

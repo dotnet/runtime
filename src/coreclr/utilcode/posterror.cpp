@@ -89,7 +89,7 @@ HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResour
         // Catch any errors and return E_OUTOFMEMORY;
         retVal = E_OUTOFMEMORY;
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     return retVal;
 }
@@ -191,7 +191,7 @@ HRESULT FillErrorInfo(                  // Return status.
     {
         hr = GET_EXCEPTION()->GetHR();
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     if (FAILED(hr))
         return (hr);

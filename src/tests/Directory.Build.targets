@@ -20,8 +20,6 @@
 
     <!-- Merged test runner assemblies might not have any non-generated sources, and that's okay -->
     <NoWarn Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">$(NoWarn);CS2008</NoWarn>
-
-    <IncludesTestRunner Condition="'$(TargetsAppleMobile)' == 'true'">false</IncludesTestRunner>
   </PropertyGroup>
 
   <!-- All CLRTests need to be of a certain "kind". These kinds are enumerated below.

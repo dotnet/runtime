@@ -28,7 +28,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (!_hashCode.HasValue)
                 {
-                    _hashCode = _declaringTypeHandle.GetHashCode() ^ TypeHashingAlgorithms.ComputeGenericInstanceHashCode(TypeHashingAlgorithms.ComputeNameHashCode(_methodNameAndSignature.GetName()), _genericMethodArgumentHandles);
+                    _hashCode = _declaringTypeHandle.GetHashCode() ^ VersionResilientHashCode.GenericInstanceHashCode(VersionResilientHashCode.NameHashCode(_methodNameAndSignature.Name), _genericMethodArgumentHandles);
                 }
                 return _hashCode.Value;
             }
@@ -146,28 +146,53 @@ namespace Internal.Runtime.TypeLoader
                 TypeSystemContext context = _methodToLookup.Context;
 
                 RuntimeTypeHandle parsedDeclaringTypeHandle = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                TypeDesc parsedDeclaringType = context.ResolveRuntimeTypeHandle(parsedDeclaringTypeHandle);
+                if (_methodToLookup.OwningType != parsedDeclaringType)
+                    return false;
 
                 // Hash table names / sigs are indirected through to the native layout info
                 MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.GetMethodNameAndSignatureFromToken(moduleHandle, entryParser.GetUnsigned());
+                if (!_methodToLookup.NameAndSignature.Equals(nameAndSignature))
+                    return false;
 
                 RuntimeTypeHandle[] parsedArgsHandles = GetTypeSequence(ref externalReferencesLookup, ref entryParser);
+                if (parsedArgsHandles.Length != _methodToLookup.Instantiation.Length)
+                    return false;
 
-                DefType parsedDeclaringType = context.ResolveRuntimeTypeHandle(parsedDeclaringTypeHandle) as DefType;
-                Instantiation parsedArgs = context.ResolveRuntimeTypeHandles(parsedArgsHandles);
-                InstantiatedMethod parsedGenericMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, parsedDeclaringType, nameAndSignature, parsedArgs);
+                for (int i = 0; i < _methodToLookup.Instantiation.Length; i++)
+                {
+                    TypeDesc leftType = context.ResolveRuntimeTypeHandle(parsedArgsHandles[i]);
+                    TypeDesc rightType = _methodToLookup.Instantiation[i];
+                    if (leftType != rightType)
+                        return false;
+                }
 
-                return parsedGenericMethod == _methodToLookup;
+                return true;
             }
 
             internal override bool MatchGenericMethodEntry(GenericMethodEntry entry)
             {
                 TypeSystemContext context = _methodToLookup.Context;
 
-                DefType parsedDeclaringType = context.ResolveRuntimeTypeHandle(entry._declaringTypeHandle) as DefType;
-                Instantiation parsedArgs = context.ResolveRuntimeTypeHandles(entry._genericMethodArgumentHandles);
-                InstantiatedMethod parsedGenericMethod = (InstantiatedMethod)context.ResolveGenericMethodInstantiation(false, parsedDeclaringType, entry._methodNameAndSignature, parsedArgs);
+                TypeDesc parsedDeclaringType = context.ResolveRuntimeTypeHandle(entry._declaringTypeHandle);
+                if (_methodToLookup.OwningType != parsedDeclaringType)
+                    return false;
 
-                return parsedGenericMethod == _methodToLookup;
+                if (!_methodToLookup.NameAndSignature.Equals(entry._methodNameAndSignature))
+                    return false;
+
+                if (entry._genericMethodArgumentHandles.Length != _methodToLookup.Instantiation.Length)
+                    return false;
+
+                for (int i = 0; i < _methodToLookup.Instantiation.Length; i++)
+                {
+                    TypeDesc leftType = context.ResolveRuntimeTypeHandle(entry._genericMethodArgumentHandles[i]);
+                    TypeDesc rightType = _methodToLookup.Instantiation[i];
+                    if (leftType != rightType)
+                        return false;
+                }
+
+                return true;
             }
         }
 

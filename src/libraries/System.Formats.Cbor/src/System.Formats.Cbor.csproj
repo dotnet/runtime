@@ -9,6 +9,7 @@
 Commonly Used Types:
 System.Formats.Cbor.CborReader
 System.Formats.Cbor.CborWriter</PackageDescription>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
 
   <ItemGroup>

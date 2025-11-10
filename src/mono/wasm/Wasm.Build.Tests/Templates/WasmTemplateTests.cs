@@ -72,7 +72,6 @@ namespace Wasm.Build.Tests
 
         [Theory, TestCategory("no-fingerprinting")]
         [MemberData(nameof(TestDataForAppBundleDir))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/108107")]
         public async Task RunWithDifferentAppBundleLocations(bool runOutsideProjectDirectory, string extraProperties)
             => await BrowserRunTwiceWithAndThenWithoutBuildAsync(Configuration.Release, extraProperties, runOutsideProjectDirectory);
 
@@ -83,13 +82,25 @@ namespace Wasm.Build.Tests
             UpdateBrowserMainJs();
 
             string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir;
+            string projectFilePath = info.ProjectFilePath;
+            if (runOutsideProjectDirectory)
+            {
+                // When running outside, the project is in a subdirectory of workingDir
+                string? directoryName = Path.GetDirectoryName(projectFilePath);
+                if (directoryName == null)
+                    throw new InvalidOperationException($"Invalid project file path: {projectFilePath}");
+
+                string projectDirName = Path.GetFileName(directoryName);
+                string projectFileName = Path.GetFileName(projectFilePath);
+                projectFilePath = Path.Combine(projectDirName, projectFileName);
+            }
 
             {
                 using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{info.ProjectName}.csproj\" --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --project \"{projectFilePath}\" --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
@@ -99,7 +110,7 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner(_testOutput);
-                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{info.ProjectName}.csproj\" --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run --no-silent -c {config} --no-build --project \"{projectFilePath}\" --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
@@ -288,7 +299,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async void LibraryModeBuild(bool useWasmSdk)
+        public async Task LibraryModeBuild(bool useWasmSdk)
         {
             var config = Configuration.Release;
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.LibraryModeTestApp, "libraryMode");
@@ -305,6 +316,38 @@ namespace Wasm.Build.Tests
                 Assert.Contains("WASM Library MyExport is called", result.TestOutput);
             }
             
+        }
+
+        [Theory]
+        [InlineData(Configuration.Debug, true)]
+        [InlineData(Configuration.Release, true)]
+        [InlineData(Configuration.Debug, false)]
+        [InlineData(Configuration.Release, false)]
+        public void TypeScriptDefinitionsCopiedToWwwrootOnBuild(Configuration config, bool emitTypeScriptDts)
+        {
+            string shouldEmit = emitTypeScriptDts ? "true" : "false";
+            string emitTypeScriptDtsProp = $"<WasmEmitTypeScriptDefinitions>{shouldEmit}</WasmEmitTypeScriptDefinitions>";
+            ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "tsdefs", extraProperties: emitTypeScriptDtsProp);
+
+            string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
+            string dotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "dotnet.d.ts");
+
+            // Verify dotnet.d.ts is not in wwwroot after creation
+            Assert.False(File.Exists(dotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after creation of the project");
+
+            // Build to trigger the _EnsureDotnetTypeScriptDefinitions target during the build phase
+            BuildProject(info, config, new BuildOptions());
+
+            // Verify dotnet.d.ts presence in the project's wwwroot directory after build
+            bool fileExists = File.Exists(dotnetDtsWwwrootPath);
+            if (emitTypeScriptDts)
+            {
+                Assert.True(fileExists, $"dotnet.d.ts should be created at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+            }
+            else
+            {
+                Assert.False(fileExists, $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+            }
         }
     }
 }

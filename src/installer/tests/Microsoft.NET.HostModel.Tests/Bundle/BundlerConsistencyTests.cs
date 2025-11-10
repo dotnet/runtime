@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -98,6 +99,24 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         [Fact]
+        public void ResolveLinkTargets()
+        {
+            string appPath = Path.Combine(
+                Path.GetDirectoryName(sharedTestState.App.AppDll),
+                Path.GetFileNameWithoutExtension(sharedTestState.App.AppDll)
+                    + ".link" + Path.GetExtension(sharedTestState.App.AppDll));
+            File.CreateSymbolicLink(appPath, sharedTestState.App.AppDll);
+            // File specification with duplicate entries with matching source paths
+            var fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(appPath, "rel/app.repeat.dll")
+            };
+            Bundler bundler = CreateBundlerInstance();
+            bundler.GenerateBundle(fileSpecs);
+        }
+
+        [Fact]
         public void DuplicateBundleRelativePath_Fails()
         {
             // File specification with duplicate entries with different source paths
@@ -113,6 +132,29 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 .Message
                     .Should().Contain("rel/app.repeat")
                     .And.Contain(sharedTestState.App.AppDll);
+        }
+
+        [Fact]
+        public void FilesWithNonAsciiCharsCanBundle()
+        {
+            string appPath = sharedTestState.NonAsciiApp.AppDll;
+            string systemLibPath = sharedTestState.SystemDll;
+
+            // File specification with non-ASCII characters in the relative paths
+            var fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(appPath, "中文/app.dll"),
+                new FileSpec(appPath, "rel/中文.dll"),
+                new FileSpec(systemLibPath, "中文")
+            };
+
+            Bundler bundler = CreateBundlerInstance();
+            var bundlePath = bundler.GenerateBundle(fileSpecs);
+
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文/app.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("rel/中文.dll")).Single().Type.Should().Be(FileType.Assembly);
+            bundler.BundleManifest.Files.Where(entry => entry.RelativePath.Equals("中文")).Single().Type.Should().Be(FileType.Assembly);
         }
 
         [Fact]
@@ -314,6 +356,33 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 Assert.True((file.Type != FileType.Assembly) || (file.Offset % alignment == 0)));
         }
 
+        [Fact]
+        public void LongFileNames()
+        {
+            var app = sharedTestState.App;
+            List<FileSpec> fileSpecs = new List<FileSpec>
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(app.AppDll, Path.Join(
+                    Path.GetDirectoryName(Path.GetRelativePath(app.Location, app.AppDll)),
+                    Path.GetFileNameWithoutExtension(app.AppDll) + new string('a', 260) + Path.GetExtension(app.AppDll))),
+            };
+
+            fileSpecs.AddRange(SingleFileTestApp.GetRuntimeFilesToBundle());
+            Bundler bundler = CreateBundlerInstance();
+            // Debug asserts in the Manifest and Bundler should catch size calculation issues related to long file names
+            var bundledPath = bundler.GenerateBundle(fileSpecs);
+
+            fileSpecs.Add(new FileSpec(app.AppDll, Path.Join(
+                Path.GetDirectoryName(Path.GetRelativePath(app.Location, app.AppDll)),
+                Path.GetFileNameWithoutExtension(app.AppDll) + new string('a', 16385) + Path.GetExtension(app.AppDll))));
+            Assert.Throws<ArgumentException>(() =>
+            {
+                // This should throw an exception due to the long file name exceeding the maximum allowed length
+                bundler.GenerateBundle(fileSpecs);
+            });
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -338,11 +407,13 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         {
             public const string AppName = "HelloWorld";
             public TestApp App { get; }
+            public TestApp NonAsciiApp { get; }
             public string SystemDll { get; }
 
             public SharedTestState()
             {
                 App = TestApp.CreateFromBuiltAssets(AppName);
+                NonAsciiApp = TestApp.CreateFromBuiltAssets("HelloWorld_中文");
 
                 SystemDll = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
             }
@@ -350,6 +421,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             public void Dispose()
             {
                 App.Dispose();
+                NonAsciiApp.Dispose();
             }
         }
     }

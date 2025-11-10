@@ -1897,10 +1897,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 // Floating point conversions
-                case ReadyToRunHelper.Dbl2Int:
-                    builder.Append("DBL2INT");
-                    break;
-
                 case ReadyToRunHelper.Dbl2IntOvf:
                     builder.Append("DBL2INTOVF");
                     break;
@@ -1911,10 +1907,6 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.Dbl2LngOvf:
                     builder.Append("DBL2LNGOVF");
-                    break;
-
-                case ReadyToRunHelper.Dbl2UInt:
-                    builder.Append("DBL2UINT");
                     break;
 
                 case ReadyToRunHelper.Dbl2UIntOvf:

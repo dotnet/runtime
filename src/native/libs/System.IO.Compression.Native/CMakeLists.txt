@@ -6,16 +6,18 @@ if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
     include(${CLR_SRC_NATIVE_DIR}/external/zlib-ng.cmake)
 endif()
 
-if (CLR_CMAKE_USE_SYSTEM_BROTLI)
-    find_library(BROTLIDEC brotlidec REQUIRED)
-    find_library(BROTLIENC brotlienc REQUIRED)
-    list(APPEND ${BROTLI_LIBRARIES} ${BROTLIDEC} ${BROTLIENC})
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    if (CLR_CMAKE_USE_SYSTEM_BROTLI)
+        find_library(BROTLIDEC brotlidec REQUIRED)
+        find_library(BROTLIENC brotlienc REQUIRED)
+        list(APPEND ${BROTLI_LIBRARIES} ${BROTLIDEC} ${BROTLIENC})
 
-    if (CLR_CMAKE_HOST_FREEBSD)
-        set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
+        if (CLR_CMAKE_HOST_FREEBSD)
+            set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
+        endif()
+    else()
+        include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
     endif()
-else()
-    include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
 endif()
 
 if (STATIC_LIBS_ONLY)
@@ -36,7 +38,11 @@ set(NATIVECOMPRESSION_SOURCES
     pal_zlib.c
 )
 
-if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
+if (CLR_CMAKE_TARGET_WIN32 AND NOT CLR_CMAKE_TARGET_ARCH_I386)
+    list(APPEND NATIVECOMPRESSION_SOURCES "zlib_allocator_win.c")
+endif()
+
+if (NOT GEN_PINVOKE)
     set (NATIVECOMPRESSION_SOURCES
         ${NATIVECOMPRESSION_SOURCES}
         entrypoints.c
@@ -69,7 +75,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         target_include_directories(System.IO.Compression.Native PRIVATE ${BROTLI_INCLUDE_DIRS})
         target_link_libraries(System.IO.Compression.Native PRIVATE ${BROTLI_LIBRARIES})
 
-        if (NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
+        if (NOT CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
             set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/System.IO.Compression.Native_unixexports.src)
             set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/System.IO.Compression.Native.exports)
             generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
@@ -109,20 +115,25 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         ${NATIVE_LIBS_EXTRA}
     )
 
-    target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
-    target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
+    if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+        target_include_directories(System.IO.Compression.Native-Static PUBLIC ${BROTLI_INCLUDE_DIRS})
+        target_link_libraries(System.IO.Compression.Native-Static PUBLIC ${BROTLI_LIBRARIES})
 
-    foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
-        # Brotli's build scripts can add some system dependencies like libm
-        # to BROTLI_LIBRARIES. Only install the libraries that are actually
-        # defined as CMake targets.
-        if (TARGET "${BROTLI_LIB}")
-            install (TARGETS ${BROTLI_LIB} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
-        endif()
-    endforeach(BROTLI_LIB ${BROTLI_LIBRARIES})
+        foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
+            # Brotli's build scripts can add some system dependencies like libm
+            # to BROTLI_LIBRARIES. Only install the libraries that are actually
+            # defined as CMake targets.
+            if (TARGET "${BROTLI_LIB}")
+                install (TARGETS ${BROTLI_LIB} DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+            endif()
+        endforeach(BROTLI_LIB ${BROTLI_LIBRARIES})
+    endif()
 
     if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
         install (TARGETS zlib DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+    endif()
+    if (CLR_CMAKE_TARGET_ARCH_WASM)
+        install (TARGETS zlib DESTINATION sharedFramework COMPONENT runtime)
     endif()
 else ()
     set(NATIVE_LIBS_EXTRA)
@@ -149,7 +160,7 @@ else ()
         target_link_libraries(System.IO.Compression.Native PUBLIC ${BROTLI_LIBRARIES})
     endif ()
 
-    if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
+    if (NOT GEN_SHARED_LIB AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
         set(NATIVECOMPRESSION_SOURCES ${NATIVECOMPRESSION_SOURCES} entrypoints.c)
     endif ()
 
@@ -211,6 +222,12 @@ endif ()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(CLR_CMAKE_HOST_ANDROID)
+if(CLR_CMAKE_HOST_ANDROID OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     install (TARGETS System.IO.Compression.Native-Static DESTINATION sharedFramework COMPONENT runtime)
+
+    foreach(BROTLI_LIB ${BROTLI_LIBRARIES})
+        if (TARGET "${BROTLI_LIB}")
+            install (TARGETS ${BROTLI_LIB} DESTINATION sharedFramework COMPONENT runtime)
+        endif()
+    endforeach()
 endif()

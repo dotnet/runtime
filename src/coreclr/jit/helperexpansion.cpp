@@ -18,6 +18,16 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
     return comp->gtNewLclVarNode(tmpNum);
 };
 
+static void InheritFlags(BasicBlock* dst, const BasicBlock* flagSrc)
+{
+    // Currently, all of our "new block" helpers set BBF_INTERNAL flag by default.
+    if (!flagSrc->HasFlag(BBF_INTERNAL))
+    {
+        dst->RemoveFlags(BBF_INTERNAL);
+        dst->SetFlags(BBF_IMPORTED);
+    }
+}
+
 //------------------------------------------------------------------------------
 // SplitAtTreeAndReplaceItWithLocal : Split block at the given tree and replace it with a local
 //    See comments in gtSplitTree and fgSplitBlockBeforeTree
@@ -242,7 +252,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     }
 
     GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
-    GenTree* sigNode = call->gtArgs.GetArgByIndex(1)->GetNode();
 
     // Prepare slotPtr tree (TODO: consider sharing this part with impRuntimeLookup)
     GenTree* slotPtrTree   = gtCloneExpr(ctxTree);
@@ -386,7 +395,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     if (needsSizeCheck)
     {
         // sizeCheckBb is the first block after prevBb
-        fgRedirectTargetEdge(prevBb, sizeCheckBb);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), sizeCheckBb);
 
         // sizeCheckBb flows into nullcheckBb in case if the size check passes
         {
@@ -404,7 +413,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     else
     {
         // nullcheckBb is the first block after prevBb
-        fgRedirectTargetEdge(prevBb, nullcheckBb);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), nullcheckBb);
 
         // No size check, nullcheckBb jumps to fast path
         // fallbackBb is only reachable from nullcheckBb (jump destination)
@@ -440,6 +449,19 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
         // 20% chance we fail nullcheck (TODO: Consider making it cold (0%))
         fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
+    }
+
+    //
+    // Update flags in all new blocks
+    //
+
+    InheritFlags(nullcheckBb, prevBb);
+    InheritFlags(fastPathBb, prevBb);
+    InheritFlags(fallbackBb, prevBb);
+    InheritFlags(block, prevBb);
+    if (needsSizeCheck)
+    {
+        InheritFlags(sizeCheckBb, prevBb);
     }
 
     // All blocks are expected to be in the same EH region
@@ -746,7 +768,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
     // fallback will just execute first time
     fallbackBb->inheritWeightPercentage(tlsRootNullCondBB, 0);
 
-    fgRedirectTargetEdge(prevBb, tlsRootNullCondBB);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), tlsRootNullCondBB);
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1033,7 +1055,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         tlsBaseComputeBB->SetTargetEdge(newEdge);
 
         assert(prevBb->KindIs(BBJ_ALWAYS));
-        fgRedirectTargetEdge(prevBb, tlsBaseComputeBB);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), tlsBaseComputeBB);
 
         // Inherit the weights
         block->inheritWeight(prevBb);
@@ -1142,7 +1164,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         // Update preds in all new blocks
         //
         assert(prevBb->KindIs(BBJ_ALWAYS));
-        fgRedirectTargetEdge(prevBb, maxThreadStaticBlocksCondBB);
+        fgRedirectEdge(prevBb->TargetEdgeRef(), maxThreadStaticBlocksCondBB);
 
         {
             FlowEdge* const trueEdge  = fgAddRefPred(fallbackBb, maxThreadStaticBlocksCondBB);
@@ -1441,7 +1463,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     {
         assert(isInitOffset == 0);
 
-        isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+        isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
         isInitedActualValueNode->gtFlags |= GTF_IND_VOLATILE;
         isInitedActualValueNode->SetHasOrderingSideEffect();
 
@@ -1479,8 +1501,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         else
         {
             assert(staticBaseAddr.accessType == IAT_PVALUE);
-            replacementNode =
-                gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+            replacementNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr, GTF_ICON_GLOBAL_PTR);
         }
     }
 
@@ -1518,7 +1539,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     //
 
     // Redirect prevBb from block to isInitedBb
-    fgRedirectTargetEdge(prevBb, isInitedBb);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), isInitedBb);
     assert(prevBb->JumpsToNext());
 
     {
@@ -1545,6 +1566,14 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     block->inheritWeight(prevBb);
     isInitedBb->inheritWeight(prevBb);
     helperCallBb->inheritWeightPercentage(isInitedBb, 0);
+
+    //
+    // Update flags in all new blocks
+    //
+
+    InheritFlags(block, prevBb);
+    InheritFlags(isInitedBb, prevBb);
+    InheritFlags(helperCallBb, prevBb);
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -1845,7 +1874,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // Update preds in all new blocks
     //
     // Redirect prevBb to lengthCheckBb
-    fgRedirectTargetEdge(prevBb, lengthCheckBb);
+    fgRedirectEdge(prevBb->TargetEdgeRef(), lengthCheckBb);
     lengthCheckBb->inheritWeight(prevBb);
     assert(prevBb->JumpsToNext());
 
@@ -2600,7 +2629,7 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
         }
     }
 
-    fgRedirectTargetEdge(firstBb, nullcheckBb);
+    fgRedirectEdge(firstBb->TargetEdgeRef(), nullcheckBb);
 
     //
     // Re-distribute weights and set edge likelihoods.

@@ -39,9 +39,9 @@ try {
         .withConfig({
             maxParallelDownloads: 1,
             resources: {
-                modulesAfterConfigLoaded: {
-                    "advanced-sample.lib.module.js": ""
-                }
+                modulesAfterConfigLoaded: [{
+                    "name": "advanced-sample.lib.module.js"
+                }]
             }
         })
         .withModuleConfig({

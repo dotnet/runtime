@@ -265,8 +265,6 @@ add_executable_clr(paltests
   file_io/GetFullPathNameW/test4/test4.cpp
   file_io/GetStdHandle/test1/GetStdHandle.cpp
   file_io/GetStdHandle/test2/GetStdHandle.cpp
-  file_io/GetSystemTime/test1/test.cpp
-  file_io/GetSystemTimeAsFileTime/test1/GetSystemTimeAsFileTime.cpp
   file_io/gettemppatha/test1/gettemppatha.cpp
   file_io/GetTempPathW/test1/GetTempPathW.cpp
   file_io/ReadFile/test1/ReadFile.cpp

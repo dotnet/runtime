@@ -315,7 +315,7 @@ CRITSEC_COOKIE ClrCreateCriticalSection(CrstType crstType, CrstFlags flags) {
     EX_CATCH
     {
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    EX_END_CATCH
 
     // Note: we'll return NULL if the create fails. That's a true NULL, not a poisoned NULL.
     return ret;

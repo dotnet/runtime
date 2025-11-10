@@ -183,8 +183,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             var itemHash = Utils.ComputeIntegrity(item.ItemSpec);
 
             Dictionary<string, string>? resourceList = helper.GetNativeResourceTargetInBootConfig(bootConfig, name);
-            if (resourceList != null)
-                resourceList[name] = itemHash;
+            resourceList?[name] = itemHash;
         }
 
         string packageJsonPath = Path.Combine(AppDir, "package.json");
@@ -193,6 +192,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             var json = @"{ ""type"":""module"" }";
             File.WriteAllText(packageJsonPath, json);
         }
+
+        ResourcesData resources = (ResourcesData)bootConfig.resources;
 
         foreach (var assembly in _assemblies)
         {
@@ -215,7 +216,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var assemblyName = Path.GetFileName(assemblyPath);
                 bool isCoreAssembly = IsAot || helper.IsCoreAssembly(assemblyName);
 
-                var assemblyList = isCoreAssembly ? bootConfig.resources.coreAssembly : bootConfig.resources.assembly;
+                var assemblyList = isCoreAssembly ? resources.coreAssembly : resources.assembly;
                 assemblyList[assemblyName] = Utils.ComputeIntegrity(bytes);
 
                 if (baseDebugLevel != 0)
@@ -224,29 +225,22 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                     if (File.Exists(pdb))
                     {
                         if (isCoreAssembly)
-                        {
-                            if (bootConfig.resources.corePdb == null)
-                                bootConfig.resources.corePdb = new();
-                        }
+                            resources.corePdb ??= new();
                         else
-                        {
-                            if (bootConfig.resources.pdb == null)
-                                bootConfig.resources.pdb = new();
-                        }
+                            resources.pdb ??= new();
 
-                        var pdbList = isCoreAssembly ? bootConfig.resources.corePdb : bootConfig.resources.pdb;
+                        var pdbList = isCoreAssembly ? resources.corePdb : resources.pdb;
                         pdbList[Path.GetFileName(pdb)] = Utils.ComputeIntegrity(pdb);
                     }
                 }
             }
         }
 
-        bootConfig.debugLevel = helper.GetDebugLevel(bootConfig.resources.pdb?.Count > 0);
+        bootConfig.debugLevel = helper.GetDebugLevel(resources.pdb?.Count > 0);
 
         ProcessSatelliteAssemblies(args =>
         {
-            if (bootConfig.resources.satelliteResources == null)
-                bootConfig.resources.satelliteResources = new();
+            resources.satelliteResources ??= new();
 
             string name = Path.GetFileName(args.fullPath);
             string cultureDirectory = Path.Combine(runtimeAssetsPath, args.culture);
@@ -263,8 +257,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                     Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
                 _fileWrites.Add(finalWebcil);
 
-                if (!bootConfig.resources.satelliteResources.TryGetValue(args.culture, out var cultureSatelliteResources))
-                    bootConfig.resources.satelliteResources[args.culture] = cultureSatelliteResources = new();
+                if (!resources.satelliteResources.TryGetValue(args.culture, out var cultureSatelliteResources))
+                    resources.satelliteResources[args.culture] = cultureSatelliteResources = new();
 
                 cultureSatelliteResources[Path.GetFileName(finalWebcil)] = Utils.ComputeIntegrity(finalWebcil);
             }
@@ -273,8 +267,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 var satellitePath = Path.Combine(cultureDirectory, name);
                 FileCopyChecked(args.fullPath, satellitePath, "SatelliteAssemblies");
 
-                if (!bootConfig.resources.satelliteResources.TryGetValue(args.culture, out var cultureSatelliteResources))
-                    bootConfig.resources.satelliteResources[args.culture] = cultureSatelliteResources = new();
+                if (!resources.satelliteResources.TryGetValue(args.culture, out var cultureSatelliteResources))
+                    resources.satelliteResources[args.culture] = cultureSatelliteResources = new();
 
                 cultureSatelliteResources[name] = Utils.ComputeIntegrity(satellitePath);
             }
@@ -289,6 +283,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             StringDictionary targetPathTable = new();
             var vfs = new Dictionary<string, Dictionary<string, string>>();
             var coreVfs = new Dictionary<string, Dictionary<string, string>>();
+            var virtualPathPrefix = !string.IsNullOrEmpty(RuntimeAssetsLocation) ? $"{RuntimeAssetsLocation}/supportFiles" : "supportFiles";
             foreach (var item in FilesToIncludeInFileSystem)
             {
                 string? targetPath = item.GetMetadata("TargetPath");
@@ -329,15 +324,15 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 };
                 vfsDict[targetPath] = new()
                 {
-                    [$"supportFiles/{generatedFileName}"] = Utils.ComputeIntegrity(vfsPath)
+                    [$"{virtualPathPrefix}/{generatedFileName}"] = Utils.ComputeIntegrity(vfsPath)
                 };
             }
 
             if (vfs.Count > 0)
-                bootConfig.resources.vfs = vfs;
+                resources.vfs = vfs;
 
             if (coreVfs.Count > 0)
-                bootConfig.resources.coreVfs = coreVfs;
+                resources.coreVfs = coreVfs;
         }
 
         if (!InvariantGlobalization)
@@ -351,18 +346,18 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                     return false;
                 }
 
-                bootConfig.resources.icu ??= new();
-                bootConfig.resources.icu[Path.GetFileName(idfn)] = Utils.ComputeIntegrity(idfn);
+                resources.icu ??= new();
+                resources.icu[Path.GetFileName(idfn)] = Utils.ComputeIntegrity(idfn);
             }
         }
 
 
         if (RemoteSources?.Length > 0)
         {
-            bootConfig.resources.remoteSources = new();
+            resources.remoteSources = new();
             foreach (var source in RemoteSources)
                 if (source != null && source.ItemSpec != null)
-                    bootConfig.resources.remoteSources.Add(source.ItemSpec);
+                    resources.remoteSources.Add(source.ItemSpec);
         }
 
         var extraConfiguration = new Dictionary<string, object?>();
@@ -446,6 +441,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         using TempFileName tmpConfigPath = new();
         {
             helper.ComputeResourcesHash(bootConfig);
+            helper.TransformResourcesToAssets(bootConfig);
             helper.WriteConfigToFile(bootConfig, tmpConfigPath.Path, Path.GetExtension(ConfigFileName));
         }
 

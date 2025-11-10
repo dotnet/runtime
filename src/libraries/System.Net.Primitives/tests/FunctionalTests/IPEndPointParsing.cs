@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net.Sockets;
+using System.Text;
 using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
@@ -301,5 +303,255 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "1::5EFE:192.168.0.1", "1::5efe:192.168.0.1" }, // ISATAP
             new object[] { "::192.168.0.010", "::192.168.0.10" }, // Embedded IPv4 octal, read as decimal
         };
+
+        public static readonly object[][] ValidIpv4Andv6AddressesWithAndWithoutPort =
+        {
+            ["[::1]", "::1", 0],
+            ["[::1]:5040", "::1", 5040],
+            ["10.12.13.14", "10.12.13.14", 0],
+            ["10.12.13.14:5040", "10.12.13.14", 5040],
+            ["0:0:111:234:5:6:789A:0", "::111:234:5:6:789a:0", 0],
+            ["[0:0:111:234:5:6:789A:0]:443", "::111:234:5:6:789a:0", 443],
+            ["E:E:E:E:E:E:0:1", "e:e:e:e:e:e:0:1", 0],
+            ["[E:E:E:E:E:E:0:1]:443", "e:e:e:e:e:e:0:1", 443]
+        };
+
+        public static readonly object[][] InvalidIpv4Andv6AddressesWithAndWithoutPort =
+        {
+            ["10.12.13.-14"],
+            ["10.a12.13.14"],
+            ["10.12.13.14:-135"],
+            ["10.12.13.14:1a35"],
+            ["10.12.13.14:"],
+            ["10.12.13.14:135:135"],
+            ["[E:E:E:E:E:E:0:1]:]443"],
+            ["[[E:E:E:E:E:E:0:1]:443"],
+            ["[E:E:E:E:E:E:0:1]:443:443"]
+        };
+
+        public static readonly object[][] ValidAndInvalidIpv4Andv6AddressesWithAndWithoutPort =
+        {
+            ["[::1]", true, "::1", 0],
+            ["[::1]:5040", true, "::1", 5040],
+            ["10.12.13.14", true, "10.12.13.14", 0],
+            ["10.12.13.14:5040", true, "10.12.13.14", 5040],
+            ["10.12.13.14:65548", false, "", 0],
+            ["10.12.13.14:-135", false, "", 0],
+            ["10.12.13.14:1a35", false, "", 0],
+            ["0:0:111:234:5:6:789A:0", true, "::111:234:5:6:789a:0", 0],
+            ["[0:0:111:234:5:6:789A:0]:443", true, "::111:234:5:6:789a:0", 443],
+            ["[0:0:111:234:5:6:789A:0]:65548", false, "", 0],
+            ["[0:0:111:234:5:6:789A:0]:-135", false, "", 0],
+            ["[0:0:111:234:5:6:789A:0]:1a35", false, "", 0],
+            ["E:E:E:E:E:E:0:1", true, "e:e:e:e:e:e:0:1", 0],
+            ["[E:E:E:E:E:E:0:1]:443", true, "e:e:e:e:e:e:0:1", 443],
+            ["[E:E:E:E:E:E:0:1]:1a35", false, "", 0]
+        };
+
+        public static readonly object[][] FormattedIpv4Andv6AddressesWithAndWithoutPort =
+        {
+            ["[::1]", "[::1]:0"],
+            ["[::1]:5040", "[::1]:5040"],
+            ["10.12.13.14", "10.12.13.14:0"],
+            ["10.12.13.14:5040", "10.12.13.14:5040"],
+            ["0:0:111:234:5:6:789A:0", "[::111:234:5:6:789a:0]:0"],
+            ["[0:0:111:234:5:6:789A:0]:443", "[::111:234:5:6:789a:0]:443"],
+            ["E:E:E:E:E:E:0:1", "[e:e:e:e:e:e:0:1]:0"],
+            ["[E:E:E:E:E:E:0:1]:443", "[e:e:e:e:e:e:0:1]:443"],
+        };
+
+        [Theory]
+        [MemberData(nameof(ValidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void ParseByteSpan(string input, string address, int port)
+        {
+            ReadOnlySpan<byte> bytes = Encoding.UTF8.GetBytes(input);
+
+            IPEndPoint result = IPEndPoint.Parse(bytes);
+
+            Assert.Equal(port, result.Port);
+            Assert.Equal(address, result.Address.ToString());
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void ParseInvalidByteSpan_ThrowsFormatException(string input)
+        {
+            Assert.Throws<FormatException>(() =>
+            {
+                ReadOnlySpan<byte> bytes = Encoding.UTF8.GetBytes(input);
+                IPEndPoint.Parse(bytes);
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidAndInvalidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void TryParseByteSpan(string input, bool parsed, string address, int port)
+        {
+            ReadOnlySpan<byte> bytes = Encoding.UTF8.GetBytes(input);
+
+            Assert.Equal(parsed, IPEndPoint.TryParse(bytes, out IPEndPoint result));
+
+            if (parsed)
+            {
+                Assert.Equal(port, result.Port);
+                Assert.Equal(address, result.Address.ToString());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(FormattedIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void TryFormatCharSpan(string input, string expectedFormattedString)
+        {
+            Span<char> destination = stackalloc char[expectedFormattedString.Length];
+
+            Assert.True(IPEndPoint.Parse(input).TryFormat(destination, out int charsWritten));
+            Assert.Equal(expectedFormattedString.Length, charsWritten);
+            Assert.True(MemoryExtensions.Equals(destination, expectedFormattedString, StringComparison.Ordinal));
+        }
+
+        [Theory]
+        [MemberData(nameof(FormattedIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void TryFormatByteSpan(string input, string expected)
+        {
+            Span<byte> destination = stackalloc byte[expected.Length];
+
+            Assert.True(IPEndPoint.Parse(input).TryFormat(destination, out int charsWritten));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.True(MemoryExtensions.SequenceEqual(destination, Encoding.UTF8.GetBytes(expected)));
+        }
+
+        [Theory]
+        [MemberData(nameof(FormattedIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void ToFormatIFormattable(string input, string expectedFormat)
+        {
+            IPEndPoint ep = IPEndPoint.Parse(input);
+            string result = string.Format("display {0:G}", ep);
+
+            Assert.Equal($"display {expectedFormat}", result);
+        }
+
+        private static class ParsableHelper<TSelf> where TSelf : IParsable<TSelf>
+        {
+            public static TSelf Parse(string s, IFormatProvider provider) => TSelf.Parse(s, provider);
+
+            public static bool TryParse(string? s, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, provider, out result);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void ParseIParsable(string input, string address, int port)
+        {
+            IPEndPoint result = ParsableHelper<IPEndPoint>.Parse(input, CultureInfo.InvariantCulture);
+            Assert.Equal(port, result.Port);
+            Assert.Equal(address, result.Address.ToString());
+        }
+
+        [Fact]
+        public static void ParseNullIParsable_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() => ParsableHelper<IPEndPoint>.Parse(null, CultureInfo.InvariantCulture));
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void ParseInvalidIParsable_ThrowsFormatException(string input)
+        {
+            Assert.Throws<FormatException>(() => ParsableHelper<IPEndPoint>.Parse(input, CultureInfo.InvariantCulture));
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidAndInvalidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void TryParseIParsable(string? input, bool parsed, string address, int port)
+        {
+            Assert.Equal(parsed, ParsableHelper<IPEndPoint>.TryParse(input, CultureInfo.InvariantCulture, out IPEndPoint result));
+
+            if (parsed)
+            {
+                Assert.Equal(port, result.Port);
+                Assert.Equal(address, result.Address.ToString());
+            }
+        }
+
+        private static class SpanParsableHelper<TSelf> where TSelf : ISpanParsable<TSelf>
+        {
+            public static TSelf Parse(ReadOnlySpan<char> s, IFormatProvider provider) => TSelf.Parse(s, provider);
+
+            public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider provider, out TSelf result) => TSelf.TryParse(s, provider, out result);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void ParseISpanParsable(string input, string address, int port)
+        {
+            IPEndPoint result = SpanParsableHelper<IPEndPoint>.Parse(input, CultureInfo.InvariantCulture);
+
+            Assert.Equal(port, result.Port);
+            Assert.Equal(address, result.Address.ToString());
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void ParseInvalidISpanParsable_ThrowsFormatException(string input)
+        {
+            Assert.Throws<FormatException>(() => SpanParsableHelper<IPEndPoint>.Parse(input, CultureInfo.InvariantCulture));
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidAndInvalidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void TryParseISpanParsable(string input, bool parsed, string address, int port)
+        {
+            Assert.Equal(parsed, SpanParsableHelper<IPEndPoint>.TryParse(input, CultureInfo.InvariantCulture, out IPEndPoint result));
+
+            if (parsed )
+            {
+                Assert.Equal(port, result.Port);
+                Assert.Equal(address, result.Address.ToString());
+            }
+        }
+
+        private static class Utf8SpanParsableHelper<TSelf> where TSelf : IUtf8SpanParsable<TSelf>
+        {
+            public static TSelf Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider provider) => TSelf.Parse(utf8Text, provider);
+
+            public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider provider, out TSelf result) => TSelf.TryParse(utf8Text, provider, out result);
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void ParseIUtf8SpanParsable(string input, string address, int port)
+        {
+            ReadOnlySpan<byte> bytes = Encoding.UTF8.GetBytes(input);
+
+            IPEndPoint result = Utf8SpanParsableHelper<IPEndPoint>.Parse(bytes, CultureInfo.InvariantCulture);
+
+            Assert.Equal(port, result.Port);
+            Assert.Equal(address, result.Address.ToString());
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void ParseInvalidIUtf8SpanParsable_ThrowsFormatException(string input)
+        {
+            Assert.Throws<FormatException>(() =>
+            {
+                ReadOnlySpan<byte> bytes = Encoding.UTF8.GetBytes(input);
+                Utf8SpanParsableHelper<IPEndPoint>.Parse(bytes, CultureInfo.InvariantCulture);
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidAndInvalidIpv4Andv6AddressesWithAndWithoutPort))]
+        public static void TryParseIUtf8SpanParsable(string input, bool parsed, string address, int port)
+        {
+            ReadOnlySpan<byte> bytes = Encoding.UTF8.GetBytes(input);
+
+            Assert.Equal(parsed, Utf8SpanParsableHelper<IPEndPoint>.TryParse(bytes, CultureInfo.InvariantCulture, out IPEndPoint result));
+
+            if (parsed)
+            {
+                Assert.Equal(port, result.Port);
+                Assert.Equal(address, result.Address.ToString());
+            }
+        }
     }
 }

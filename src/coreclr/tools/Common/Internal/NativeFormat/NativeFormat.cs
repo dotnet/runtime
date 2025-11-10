@@ -98,9 +98,9 @@ namespace Internal.NativeFormat
         // unused                   = 0x17,
         // unused                   = 0x18,
         // unused                   = 0x19,
-        // unused                   = 0x20,
+        NonGenericInstanceConstrainedMethod = 0x20,
         NonGenericStaticConstrainedMethod = 0x21,
-        GenericStaticConstrainedMethod = 0x22,
+        GenericConstrainedMethod = 0x22,
 
         NotYetSupported             = 0xee,
     }

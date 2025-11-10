@@ -1055,30 +1055,6 @@ namespace ILCompiler.DependencyAnalysis
 
             return SetSavedVertex(layoutInfo);
         }
-
-        private static IEnumerable<MethodDesc> EnumVirtualSlotsDeclaredOnType(TypeDesc declType)
-        {
-            // VirtualMethodUse of Foo<SomeType>.Method will bring in VirtualMethodUse
-            // of Foo<__Canon>.Method. This in turn should bring in Foo<OtherType>.Method.
-            DefType defType = declType.GetClosestDefType();
-
-            Debug.Assert(!declType.IsInterface);
-
-            IEnumerable<MethodDesc> allSlots = defType.EnumAllVirtualSlots();
-
-            foreach (var method in allSlots)
-            {
-                // Generic virtual methods are tracked by an orthogonal mechanism.
-                if (method.HasInstantiation)
-                    continue;
-
-                // Current type doesn't define this slot. Another VTableSlice will take care of this.
-                if (method.OwningType != defType)
-                    continue;
-
-                yield return method;
-            }
-        }
     }
 
     public abstract class NativeLayoutGenericDictionarySlotNode : NativeLayoutVertexNode
@@ -1414,7 +1390,6 @@ namespace ILCompiler.DependencyAnalysis
             _directCall = directCall;
             Debug.Assert(_constrainedMethod.OwningType.IsInterface);
             Debug.Assert(!_constrainedMethod.HasInstantiation || !directCall);
-            Debug.Assert(_constrainedMethod.Signature.IsStatic);
         }
 
         protected sealed override string GetName(NodeFactory factory) =>
@@ -1428,10 +1403,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                if (_constrainedMethod.HasInstantiation)
-                    return FixupSignatureKind.GenericStaticConstrainedMethod;
-                else
-                    return FixupSignatureKind.NonGenericStaticConstrainedMethod;
+                return (_constrainedMethod.HasInstantiation, _constrainedMethod.Signature.IsStatic) switch
+                {
+                    (true, _) => FixupSignatureKind.GenericConstrainedMethod,
+                    (false, true) => FixupSignatureKind.NonGenericStaticConstrainedMethod,
+                    (false, false) => FixupSignatureKind.NonGenericInstanceConstrainedMethod,
+                };
             }
         }
 
@@ -1477,13 +1454,13 @@ namespace ILCompiler.DependencyAnalysis
             Vertex constraintType = factory.NativeLayout.TypeSignatureVertex(_constraintType).WriteVertex(factory);
             if (_constrainedMethod.HasInstantiation)
             {
-                Debug.Assert(SignatureKind is FixupSignatureKind.GenericStaticConstrainedMethod);
+                Debug.Assert(SignatureKind is FixupSignatureKind.GenericConstrainedMethod);
                 Vertex constrainedMethodVertex = factory.NativeLayout.MethodEntry(_constrainedMethod).WriteVertex(factory);
                 return writer.GetTuple(constraintType, constrainedMethodVertex);
             }
             else
             {
-                Debug.Assert(SignatureKind is FixupSignatureKind.NonGenericStaticConstrainedMethod);
+                Debug.Assert(SignatureKind is FixupSignatureKind.NonGenericStaticConstrainedMethod or FixupSignatureKind.NonGenericInstanceConstrainedMethod);
                 Vertex methodType = factory.NativeLayout.TypeSignatureVertex(_constrainedMethod.OwningType).WriteVertex(factory);
                 var canonConstrainedMethod = _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 int interfaceSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, canonConstrainedMethod, canonConstrainedMethod.OwningType);

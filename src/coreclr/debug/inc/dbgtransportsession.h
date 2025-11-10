@@ -341,7 +341,7 @@ public:
 #ifdef RIGHT_SIDE_COMPILE
     HRESULT Init(const ProcessDescriptor& pd, HANDLE hProcessExited);
 #else
-    HRESULT Init(DebuggerIPCControlBlock * pDCB, AppDomainEnumerationIPCBlock * pADB);
+    HRESULT Init(DebuggerIPCControlBlock * pDCB);
 #endif // RIGHT_SIDE_COMPILE
 
     // Drive the session to the SS_Closed state, which will deallocate all remaining transport resources
@@ -426,9 +426,6 @@ public:
     HRESULT GetDCB(DebuggerIPCControlBlock *pDCB);
     HRESULT SetDCB(DebuggerIPCControlBlock *pDCB);
 
-    // Read the AppDomain control block on the LS from the RS.
-    HRESULT GetAppDomainCB(AppDomainEnumerationIPCBlock *pADB);
-
 #endif // RIGHT_SIDE_COMPILE
 
 private:
@@ -469,7 +466,6 @@ private:
         MT_WriteMemory,     // RS <-> LS : RS wants to write LS memory block (or LS is replying to such a request)
         MT_GetDCB,          // RS <-> LS : RS wants to read LS DCB (or LS is replying to such a request)
         MT_SetDCB,          // RS <-> LS : RS wants to write LS DCB (or LS is replying to such a request)
-        MT_GetAppDomainCB,  // RS <-> LS : RS wants to read LS AppDomainCB (or LS is replying to such a request)
     };
 
     // Reasons the LS can give for rejecting a session. These codes should *not* be changed other than by
@@ -589,7 +585,6 @@ private:
         LONG        m_cSentWriteMemory;
         LONG        m_cSentGetDCB;
         LONG        m_cSentSetDCB;
-        LONG        m_cSentGetAppDomainCB;
         LONG        m_cSentDDMessage;
 
         // Message type counts for receives.
@@ -603,7 +598,6 @@ private:
         LONG        m_cReceivedWriteMemory;
         LONG        m_cReceivedGetDCB;
         LONG        m_cReceivedSetDCB;
-        LONG        m_cReceivedGetAppDomainCB;
         LONG        m_cReceivedDDMessage;
 
         // Low level block counts.
@@ -747,7 +741,6 @@ private:
     // The LS requires the addresses of a couple of runtime data structures in order to service MT_GetDCB etc.
     // These are provided by the runtime at initialization time.
     DebuggerIPCControlBlock *m_pDCB;
-    AppDomainEnumerationIPCBlock *m_pADB;
 #endif // !RIGHT_SIDE_COMPILE
 
     HRESULT SendEventWorker(DebuggerIPCEvent * pEvent, IPCEventType type);

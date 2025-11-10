@@ -387,11 +387,11 @@ void Compiler::lvaInitArgs(bool hasRetBuffArg)
     //-------------------------------------------------------------------------
     lvaInitUserArgs(&varNum, numUserArgsToSkip, numUserArgs);
 #if !USER_ARGS_COME_LAST
+    lvaInitAsyncContinuation(&varNum);
+
     //@GENERICS: final instantiation-info argument for shared generic methods
     // and shared generic struct instance methods
     lvaInitGenericsCtxt(&varNum);
-
-    lvaInitAsyncContinuation(&varNum);
 
     /* If the method is varargs, process the varargs cookie */
     lvaInitVarArgsHandle(&varNum);
@@ -1109,14 +1109,14 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 
     // Is this a varargs function?
-    if (info.compIsVarArgs && varNum == lvaVarargsHandleArg)
+    if (info.compIsVarArgs && (varNum == lvaVarargsHandleArg))
     {
         return (unsigned)ICorDebugInfo::VARARGS_HND_ILNUM;
     }
 
     // We create an extra argument for the type context parameter
     // needed for shared generic code.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum == info.compTypeCtxtArg)
+    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) && (varNum == info.compTypeCtxtArg))
     {
         return (unsigned)ICorDebugInfo::TYPECTXT_ILNUM;
     }
@@ -1128,21 +1128,31 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
+    if (varNum == lvaAsyncContinuationArg)
+    {
+        return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
+    }
+
     // Now mutate varNum to remove extra parameters from the count.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum > info.compTypeCtxtArg)
+    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) && (varNum > info.compTypeCtxtArg))
     {
         varNum--;
     }
 
-    if (info.compIsVarArgs && varNum > lvaVarargsHandleArg)
+    if (info.compIsVarArgs && (varNum > lvaVarargsHandleArg))
     {
         varNum--;
     }
 
-    /* Is there a hidden argument for the return buffer.
-       Note that this code works because if the RetBuffArg is not present,
-       compRetBuffArg will be BAD_VAR_NUM */
-    if (info.compRetBuffArg != BAD_VAR_NUM && varNum > info.compRetBuffArg)
+    if ((lvaAsyncContinuationArg != BAD_VAR_NUM) && (varNum > lvaAsyncContinuationArg))
+    {
+        varNum--;
+    }
+
+    // Is there a hidden argument for the return buffer. Note that this code
+    // works because if the RetBuffArg is not present, compRetBuffArg will be
+    // BAD_VAR_NUM
+    if ((info.compRetBuffArg != BAD_VAR_NUM) && (varNum > info.compRetBuffArg))
     {
         varNum--;
     }
@@ -2010,6 +2020,14 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvKeepType = 1;
 #endif
     }
+
+#ifdef TARGET_ARM
+    if (varDsc->lvIsParam)
+    {
+        // TODO-Cleanup: Allow independent promotion for ARM struct parameters
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
+    }
+#endif
 }
 
 //--------------------------------------------------------------------------------------------
@@ -2089,7 +2107,7 @@ void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
     LclVarDsc* varDsc = lvaGetDesc(varNum);
 
 #ifdef DEBUG
-    varDsc->SetHiddenBufferStructArg(true);
+    varDsc->SetDefinedViaAddress(true);
 #endif
 
     if (varDsc->lvPromoted)
@@ -2100,7 +2118,7 @@ void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
         {
             noway_assert(lvaTable[i].lvIsStructField);
 #ifdef DEBUG
-            lvaTable[i].SetHiddenBufferStructArg(true);
+            lvaTable[i].SetDefinedViaAddress(true);
 #endif
 
             lvaSetVarDoNotEnregister(i DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
@@ -3435,7 +3453,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
     if (tree->OperIs(GT_LCL_ADDR))
     {
         LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
-        assert(varDsc->IsAddressExposed() || varDsc->IsHiddenBufferStructArg());
+        assert(varDsc->IsAddressExposed() || varDsc->IsDefinedViaAddress());
         varDsc->incRefCnts(weight, this);
         return;
     }
@@ -6365,9 +6383,9 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
         {
             printf("X");
         }
-        if (varDsc->IsHiddenBufferStructArg())
+        if (varDsc->IsDefinedViaAddress())
         {
-            printf("H");
+            printf("DA");
         }
         if (varTypeIsStruct(varDsc))
         {
@@ -6428,9 +6446,9 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" addr-exposed");
     }
-    if (varDsc->IsHiddenBufferStructArg())
+    if (varDsc->IsDefinedViaAddress())
     {
-        printf(" hidden-struct-arg");
+        printf(" defined-via-address");
     }
     if (varDsc->lvHasLdAddrOp)
     {

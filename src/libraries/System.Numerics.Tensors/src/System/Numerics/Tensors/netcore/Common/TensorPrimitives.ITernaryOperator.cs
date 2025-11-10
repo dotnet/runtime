@@ -13,6 +13,7 @@ namespace System.Numerics.Tensors
         /// <summary>Operator that takes three input values and returns a single value.</summary>
         private interface ITernaryOperator<T>
         {
+            static abstract bool Vectorizable { get; }
             static abstract T Invoke(T x, T y, T z);
             static abstract Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z);
             static abstract Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z);
@@ -22,6 +23,7 @@ namespace System.Numerics.Tensors
         private readonly struct SwappedYZTernaryOperator<TOperator, T> : ITernaryOperator<T>
             where TOperator : struct, ITernaryOperator<T>
         {
+            public static bool Vectorizable => TOperator.Vectorizable;
             public static T Invoke(T x, T y, T z) => TOperator.Invoke(x, z, y);
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z) => TOperator.Invoke(x, z, y);
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y, Vector256<T> z) => TOperator.Invoke(x, z, y);
@@ -67,7 +69,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported)
+            if (TTernaryOperator.Vectorizable && Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector512<T>.Count)
                 {
@@ -85,7 +87,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported)
+            if (TTernaryOperator.Vectorizable && Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector256<T>.Count)
                 {
@@ -103,7 +105,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported)
+            if (TTernaryOperator.Vectorizable && Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector128<T>.Count)
                 {
@@ -1542,7 +1544,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported)
+            if (TTernaryOperator.Vectorizable && Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector512<T>.Count)
                 {
@@ -1560,7 +1562,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported)
+            if (TTernaryOperator.Vectorizable && Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector256<T>.Count)
                 {
@@ -1578,7 +1580,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported)
+            if (TTernaryOperator.Vectorizable && Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector128<T>.Count)
                 {
@@ -3028,7 +3030,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported)
+            if (TTernaryOperator.Vectorizable && Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector512<T>.Count)
                 {
@@ -3046,7 +3048,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported)
+            if (TTernaryOperator.Vectorizable && Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector256<T>.Count)
                 {
@@ -3064,7 +3066,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported)
+            if (TTernaryOperator.Vectorizable && Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported)
             {
                 if (remainder >= (uint)Vector128<T>.Count)
                 {

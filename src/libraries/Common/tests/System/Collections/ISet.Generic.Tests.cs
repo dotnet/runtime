@@ -84,8 +84,8 @@ namespace System.Collections.Tests
                 Assert.True(set.Add(newValue));
                 if (!DuplicateValuesAllowed)
                     Assert.False(set.Add(newValue));
-                CollectionAsserts.HasCount(set, count + 1);
-                CollectionAsserts.Contains(set, newValue);
+                Assert.Equal(count + 1, set.Count);
+                Assert.True(set.Contains(newValue));
             }
         }
 
@@ -104,7 +104,7 @@ namespace System.Collections.Tests
                         duplicateValue = CreateT(seed++);
                     collection.Add(duplicateValue);
                     collection.Add(duplicateValue);
-                    CollectionAsserts.HasCount(collection, count + 1);
+                    Assert.Equal(count + 1, collection.Count);
                 }
             }
         }
@@ -118,7 +118,7 @@ namespace System.Collections.Tests
             if (set.Count == 0 || enumerable == set)
             {
                 set.ExceptWith(enumerable);
-                CollectionAsserts.HasCount(set, 0);
+                Assert.Equal(0, set.Count);
             }
             else
             {
@@ -126,7 +126,7 @@ namespace System.Collections.Tests
                 foreach (T element in enumerable)
                     expected.Remove(element);
                 set.ExceptWith(enumerable);
-                CollectionAsserts.HasCount(set, expected.Count);
+                Assert.Equal(expected.Count, set.Count);
                 Assert.True(expected.SetEquals(set));
             }
         }
@@ -136,7 +136,7 @@ namespace System.Collections.Tests
             if (set.Count == 0 || Enumerable.Count(enumerable) == 0)
             {
                 set.IntersectWith(enumerable);
-                CollectionAsserts.HasCount(set, 0);
+                Assert.Equal(0, set.Count);
             }
             else if (set == enumerable)
             {
@@ -152,7 +152,7 @@ namespace System.Collections.Tests
                     if (enumerable.Contains(value, comparer))
                         expected.Add(value);
                 set.IntersectWith(enumerable);
-                CollectionAsserts.HasCount(set, expected.Count);
+                Assert.Equal(expected.Count, set.Count);
                 Assert.True(expected.SetEquals(set));
             }
         }
@@ -178,7 +178,7 @@ namespace System.Collections.Tests
                     break;
                 }
             }
-            CollectionAsserts.IsProperSubsetOf(set, enumerable, !setContainsValueNotInEnumerable && enumerableContainsValueNotInSet);
+            Assert.Equal(!setContainsValueNotInEnumerable && enumerableContainsValueNotInSet, set.IsProperSubsetOf(enumerable));
         }
 
         private void Validate_IsProperSupersetOf(ISet<T> set, IEnumerable<T> enumerable)
@@ -203,7 +203,7 @@ namespace System.Collections.Tests
                 }
             }
             isProperSuperset = isProperSuperset && setContainsElementsNotInEnumerable;
-            CollectionAsserts.IsProperSupersetOf(set, enumerable, isProperSuperset);
+            Assert.Equal(isProperSuperset, set.IsProperSupersetOf(enumerable));
         }
 
         private void Validate_IsSubsetOf(ISet<T> set, IEnumerable<T> enumerable)
@@ -212,10 +212,10 @@ namespace System.Collections.Tests
             foreach (T value in set)
                 if (!enumerable.Contains(value, comparer))
                 {
-                    CollectionAsserts.IsSubsetOf(set, enumerable, false);
+                    Assert.False(set.IsSubsetOf(enumerable));
                     return;
                 }
-            CollectionAsserts.IsSubsetOf(set, enumerable, true);
+            Assert.True(set.IsSubsetOf(enumerable));
         }
 
         private void Validate_IsSupersetOf(ISet<T> set, IEnumerable<T> enumerable)
@@ -224,10 +224,10 @@ namespace System.Collections.Tests
             foreach (T value in enumerable)
                 if (!set.Contains(value, comparer))
                 {
-                    CollectionAsserts.IsSupersetOf(set, enumerable, false);
+                    Assert.False(set.IsSupersetOf(enumerable));
                     return;
                 }
-            CollectionAsserts.IsSupersetOf(set, enumerable, true);
+            Assert.True(set.IsSupersetOf(enumerable));
         }
 
         private void Validate_Overlaps(ISet<T> set, IEnumerable<T> enumerable)
@@ -237,11 +237,11 @@ namespace System.Collections.Tests
             {
                 if (set.Contains(value, comparer))
                 {
-                    CollectionAsserts.Overlaps(set, enumerable, true);
+                    Assert.True(set.Overlaps(enumerable));
                     return;
                 }
             }
-            CollectionAsserts.Overlaps(set, enumerable, false);
+            Assert.False(set.Overlaps(enumerable));
         }
 
         private void Validate_SetEquals(ISet<T> set, IEnumerable<T> enumerable)
@@ -251,7 +251,7 @@ namespace System.Collections.Tests
             {
                 if (!enumerable.Contains(value, comparer))
                 {
-                    CollectionAsserts.SetEquals(set, enumerable, false);
+                    Assert.False(set.SetEquals(enumerable));
                     return;
                 }
             }
@@ -259,11 +259,11 @@ namespace System.Collections.Tests
             {
                 if (!set.Contains(value, comparer))
                 {
-                    CollectionAsserts.SetEquals(set, enumerable, false);
+                    Assert.False(set.SetEquals(enumerable));
                     return;
                 }
             }
-            CollectionAsserts.SetEquals(set, enumerable, true);
+            Assert.True(set.SetEquals(enumerable));
         }
 
         private void Validate_SymmetricExceptWith(ISet<T> set, IEnumerable<T> enumerable)
@@ -277,7 +277,7 @@ namespace System.Collections.Tests
                 if (!enumerable.Contains(element, comparer))
                     expected.Add(element);
             set.SymmetricExceptWith(enumerable);
-            CollectionAsserts.HasCount(set, expected.Count);
+            Assert.Equal(expected.Count, set.Count);
             Assert.True(expected.SetEquals(set));
         }
 
@@ -289,7 +289,7 @@ namespace System.Collections.Tests
                 if (!set.Contains(element, comparer))
                     expected.Add(element);
             set.UnionWith(enumerable);
-            CollectionAsserts.HasCount(set, expected.Count);
+            Assert.Equal(expected.Count, set.Count);
             Assert.True(expected.SetEquals(set));
         }
 
@@ -308,15 +308,6 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentNullException>(() => set.IsSupersetOf(null));
             Assert.Throws<ArgumentNullException>(() => set.Overlaps(null));
             Assert.Throws<ArgumentNullException>(() => set.SetEquals(null));
-#if !NETFRAMEWORK
-            IReadOnlySet<T> readOnlySet = set;
-            Assert.Throws<ArgumentNullException>(() => readOnlySet.IsProperSubsetOf(null));
-            Assert.Throws<ArgumentNullException>(() => readOnlySet.IsProperSupersetOf(null));
-            Assert.Throws<ArgumentNullException>(() => readOnlySet.IsSubsetOf(null));
-            Assert.Throws<ArgumentNullException>(() => readOnlySet.IsSupersetOf(null));
-            Assert.Throws<ArgumentNullException>(() => readOnlySet.Overlaps(null));
-            Assert.Throws<ArgumentNullException>(() => readOnlySet.SetEquals(null));
-#endif
             if (!IsReadOnly)
             {
                 Assert.Throws<ArgumentNullException>(() => set.ExceptWith(null));
@@ -511,7 +502,7 @@ namespace System.Collections.Tests
         public void ISet_Generic_SetEquals_Itself(int setLength)
         {
             ISet<T> set = GenericISetFactory(setLength);
-            CollectionAsserts.SetEquals(set, set, true);
+            Assert.True(set.SetEquals(set));
         }
 
         [Theory]
@@ -669,7 +660,7 @@ namespace System.Collections.Tests
                     if (!enumerable.Contains(element, comparer))
                         expected.Add(element);
                 set.SymmetricExceptWith(enumerable);
-                CollectionAsserts.HasCount(set, expected.Count);
+                Assert.Equal(expected.Count, set.Count);
                 Assert.True(expected.SetEquals(set));
             }
         }

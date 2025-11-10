@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef NO_CONFIG_H
 #include <dn-config.h>
-#endif
 #include "dn-simdhash.h"
 
 #include "dn-simdhash-utils.h"
@@ -83,8 +81,8 @@ dn_simdhash_string_ptr_try_remove (dn_simdhash_string_ptr_t *hash, const char *k
 void
 dn_simdhash_string_ptr_foreach (dn_simdhash_string_ptr_t *hash, dn_simdhash_string_ptr_foreach_func func, void *user_data)
 {
-	assert(hash);
-	assert(func);
+	dn_simdhash_assert(hash);
+	dn_simdhash_assert(func);
 
 	dn_simdhash_buffers_t buffers = hash->buffers;
 	BEGIN_SCAN_PAIRS(buffers, key_address, value_address)

@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization.Tests
@@ -45,6 +47,28 @@ namespace System.Text.Json.Serialization.Tests
 
         public abstract Task<object> DeserializeWrapper(string json, Type type, JsonSerializerContext context);
 
+
+        public abstract IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(
+            Stream utf8Json,
+            JsonSerializerOptions options = null,
+            CancellationToken cancellationToken = default);
+
+        public abstract IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(
+            Stream utf8Json,
+            JsonTypeInfo<T> jsonTypeInfo,
+            CancellationToken cancellationToken = default);
+
+        public abstract IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(
+            Stream utf8Json,
+            JsonTypeInfo<T> jsonTypeInfo,
+            bool topLevelValues,
+            CancellationToken cancellationToken = default);
+
+        public abstract IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(
+            Stream utf8Json,
+            bool topLevelValues,
+            JsonSerializerOptions? options = null,
+            CancellationToken cancellationToken = default);
 
         public virtual JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions? options = null, bool mutable = false)
         {

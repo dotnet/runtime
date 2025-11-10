@@ -52,7 +52,6 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
     _ASSERTE((GetStubCodePageSize() % GetOsPageSize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
 }
 
-// ~LoaderHeap is not synchronised (obviously)
 UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
 {
     CONTRACTL
@@ -104,6 +103,21 @@ size_t UnlockedInterleavedLoaderHeap::GetBytesAvailReservedRegion()
 BOOL UnlockedInterleavedLoaderHeap::CommitPages(void* pData, size_t dwSizeToCommitPart)
 {
     _ASSERTE(m_pConfig->Template == NULL); // This path should only be used for LoaderHeaps which use the standard ExecutableAllocator functions
+
+    {
+        void *pTemp = ExecutableAllocator::Instance()->Commit((BYTE*)pData + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
+        if (pTemp == NULL)
+        {
+            return FALSE;
+        }
+        // Fill in data pages with the initial state, do this before we map the executable pages in, so that
+        // the executable pages cannot speculate into the data page at any time before they are initialized.
+        if (m_pConfig->DataPageGenerator != NULL)
+        {
+            m_pConfig->DataPageGenerator((uint8_t*)pTemp, dwSizeToCommitPart);
+        }
+    }
+
     // Commit first set of pages, since it will contain the LoaderHeapBlock
     {
         void *pTemp = ExecutableAllocator::Instance()->Commit(pData, dwSizeToCommitPart, IsExecutable());
@@ -114,14 +128,6 @@ BOOL UnlockedInterleavedLoaderHeap::CommitPages(void* pData, size_t dwSizeToComm
     }
 
     _ASSERTE(dwSizeToCommitPart == GetStubCodePageSize());
-
-    {
-        void *pTemp = ExecutableAllocator::Instance()->Commit((BYTE*)pData + dwSizeToCommitPart, dwSizeToCommitPart, FALSE);
-        if (pTemp == NULL)
-        {
-            return FALSE;
-        }
-    }
 
     ExecutableWriterHolder<BYTE> codePageWriterHolder((BYTE*)pData, dwSizeToCommitPart, ExecutableAllocator::DoNotAddToCache);
     m_pConfig->CodePageGenerator(codePageWriterHolder.GetRW(), (BYTE*)pData, dwSizeToCommitPart);
@@ -179,7 +185,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
 
     size_t dwSizeToCommitPart = dwSizeToCommit;
 
-    // For interleaved heaps, we perform two commits, each being half of the requested size
+    // We perform two commits, each being half of the requested size
     dwSizeToCommitPart /= 2;
 
     if (!CommitPages(pData, dwSizeToCommitPart))
@@ -252,7 +258,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
     if (m_pConfig->Template != NULL)
     {
-        ThunkMemoryHolder newAllocatedThunks = (BYTE*)ExecutableAllocator::Instance()->AllocateThunksFromTemplate(m_pConfig->Template, GetStubCodePageSize());
+        ThunkMemoryHolder newAllocatedThunks = (BYTE*)ExecutableAllocator::Instance()->AllocateThunksFromTemplate(m_pConfig->Template, GetStubCodePageSize(), m_pConfig->DataPageGenerator);
         if (newAllocatedThunks == NULL)
         {
             return FALSE;
@@ -307,7 +313,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     // This mode interleaves data and code pages 1:1. So the code size is required to be smaller than
     // or equal to the page size to ensure that the code range is consecutive.
     _ASSERTE(dwMinSize <= GetStubCodePageSize());
-    // For interleaved heap, we always get two memory pages - one for code and one for data
+    // We always get two memory pages - one for code and one for data
     dwMinSize = 2 * GetStubCodePageSize();
 
     // Does this fit in the reserved region?
@@ -315,7 +321,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         SIZE_T dwSizeToCommit;
 
-        // For interleaved heaps, the allocation cannot cross page boundary since there are data and executable
+        // The allocation cannot cross page boundary since there are data and executable
         // pages interleaved in a 1:1 fashion.
         dwSizeToCommit = dwMinSize;
 
@@ -323,12 +329,12 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         PTR_BYTE pCommitBaseAddress = m_pPtrToEndOfCommittedRegion;
 
-        // The end of committed region for interleaved heaps points to the end of the executable
+        // The end of committed region points to the end of the executable
         // page and the data pages goes right after that. So we skip the data page here.
         pCommitBaseAddress += GetStubCodePageSize();
 
         size_t dwSizeToCommitPart = dwSizeToCommit;
-        // For interleaved heaps, we perform two commits, each being half of the requested size
+        // We perform two commits, each being half of the requested size
         dwSizeToCommitPart /= 2;
 
         if (!CommitPages(pCommitBaseAddress, dwSizeToCommitPart))
@@ -338,7 +344,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
         INDEBUG(m_dwDebugWastedBytes += unusedRemainder;)
 
-        // For interleaved heaps, further allocations will start from the newly committed page as they cannot
+        // Further allocations will start from the newly committed page as they cannot
         // cross page boundary.
         m_pAllocPtr = (BYTE*)pCommitBaseAddress;
 
@@ -490,11 +496,14 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
     }
 
 #ifdef _DEBUG
-    // Check to ensure that the RW region of the allocated stub is zeroed out
-    BYTE *pAllocatedRWBytes = (BYTE*)pResult + GetStubCodePageSize();
-    for (size_t i = 0; i < dwRequestedSize; i++)
+    // Check to ensure that the RW region of the allocated stub is zeroed out if there isn't a data page generator
+    if (m_pConfig->DataPageGenerator == NULL)
     {
-        _ASSERTE_MSG(pAllocatedRWBytes[i] == 0, "LoaderHeap must return zero-initialized memory");
+        BYTE *pAllocatedRWBytes = (BYTE*)pResult + GetStubCodePageSize();
+        for (size_t i = 0; i < dwRequestedSize; i++)
+        {
+            _ASSERTE_MSG(pAllocatedRWBytes[i] == 0, "LoaderHeap must return zero-initialized memory");
+        }
     }
 
     if (m_dwDebugFlags & kCallTracing)
@@ -539,11 +548,12 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
     return pResult;
 }
 
-void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
+void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size), void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
     pConfig->StubSize = (uint32_t)stubSize;
     pConfig->Template = ExecutableAllocator::Instance()->CreateTemplate(templateInImage, GetStubCodePageSize(), codePageGenerator);
     pConfig->CodePageGenerator = codePageGenerator;
+    pConfig->DataPageGenerator = dataPageGenerator;
 }
 
 #endif // #ifndef DACCESS_COMPILE

@@ -32,11 +32,7 @@ namespace System.Collections.Frozen
         {
             Debug.Assert(_thisSet.Count != 0, "EmptyFrozenSet should have been used.");
 
-#if NET10_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 10+
-            if (other is IReadOnlyCollection<T> otherAsCollection)
-#else
             if (other is ICollection<T> otherAsCollection)
-#endif
             {
                 int otherCount = otherAsCollection.Count;
 
@@ -63,11 +59,7 @@ namespace System.Collections.Frozen
         {
             Debug.Assert(_thisSet.Count != 0, "EmptyFrozenSet should have been used.");
 
-#if NET10_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 10+
-            if (other is IReadOnlyCollection<T> otherAsCollection)
-#else
             if (other is ICollection<T> otherAsCollection)
-#endif
             {
                 int otherCount = otherAsCollection.Count;
 
@@ -111,11 +103,7 @@ namespace System.Collections.Frozen
             Debug.Assert(_thisSet.Count != 0, "EmptyFrozenSet should have been used.");
 
             // Try to compute the answer based purely on counts.
-#if NET10_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 10+
-            if (other is IReadOnlyCollection<T> otherAsCollection)
-#else
             if (other is ICollection<T> otherAsCollection)
-#endif
             {
                 int otherCount = otherAsCollection.Count;
 

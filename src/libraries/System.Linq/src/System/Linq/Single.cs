@@ -69,7 +69,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (source is IReadOnlyList<TSource> list)
+            if (source is IList<TSource> list)
             {
                 switch (list.Count)
                 {

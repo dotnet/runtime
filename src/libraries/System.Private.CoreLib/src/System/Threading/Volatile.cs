@@ -107,17 +107,17 @@ namespace System.Threading
         #endregion
 
         #region IntPtr
-        private struct VolatileIntPtr { public volatile IntPtr Value; }
+        private struct VolatileIntPtr { public volatile nint Value; }
 
         [Intrinsic]
         [NonVersionable]
-        public static IntPtr Read(ref readonly IntPtr location) =>
-            Unsafe.As<IntPtr, VolatileIntPtr>(ref Unsafe.AsRef(in location)).Value;
+        public static nint Read(ref readonly nint location) =>
+            Unsafe.As<nint, VolatileIntPtr>(ref Unsafe.AsRef(in location)).Value;
 
         [Intrinsic]
         [NonVersionable]
-        public static void Write(ref IntPtr location, IntPtr value) =>
-            Unsafe.As<IntPtr, VolatileIntPtr>(ref location).Value = value;
+        public static void Write(ref nint location, nint value) =>
+            Unsafe.As<nint, VolatileIntPtr>(ref location).Value = value;
         #endregion
 
         #region SByte
@@ -197,19 +197,19 @@ namespace System.Threading
         #endregion
 
         #region UIntPtr
-        private struct VolatileUIntPtr { public volatile UIntPtr Value; }
+        private struct VolatileUIntPtr { public volatile nuint Value; }
 
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static UIntPtr Read(ref readonly UIntPtr location) =>
-            Unsafe.As<UIntPtr, VolatileUIntPtr>(ref Unsafe.AsRef(in location)).Value;
+        public static nuint Read(ref readonly nuint location) =>
+            Unsafe.As<nuint, VolatileUIntPtr>(ref Unsafe.AsRef(in location)).Value;
 
         [CLSCompliant(false)]
         [Intrinsic]
         [NonVersionable]
-        public static void Write(ref UIntPtr location, UIntPtr value) =>
-            Unsafe.As<UIntPtr, VolatileUIntPtr>(ref location).Value = value;
+        public static void Write(ref nuint location, nuint value) =>
+            Unsafe.As<nuint, VolatileUIntPtr>(ref location).Value = value;
         #endregion
 
         #region T
@@ -219,7 +219,7 @@ namespace System.Threading
         [NonVersionable]
         [return: NotNullIfNotNull(nameof(location))]
         public static T Read<T>([NotNullIfNotNull(nameof(location))] ref readonly T location) where T : class? =>
-            Unsafe.As<T>(Unsafe.As<T, VolatileObject>(ref Unsafe.AsRef(in location)).Value);
+            Unsafe.As<T>(Unsafe.As<T, VolatileObject>(ref Unsafe.AsRef(in location)).Value)!;
 
         [Intrinsic]
         [NonVersionable]

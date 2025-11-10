@@ -375,12 +375,14 @@ namespace pal
     const char_t dir_delim = W('/');
     const char_t env_path_delim = W(':');
 
+#ifndef TARGET_WASM
 #if defined(__APPLE__)
     const char_t nativelib_ext[] = W(".dylib");
 #else // Various Linux-related OS-es
     const char_t nativelib_ext[] = W(".so");
 #endif
     const char_t coreclr_lib[] = W("libcoreclr");
+#endif // !TARGET_WASM
 
     inline int strcmp(const char_t* str1, const char_t* str2) { return ::strcmp(str1, str2); }
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
@@ -568,6 +570,7 @@ namespace pal
 
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
     {
+#ifndef TARGET_WASM
         if (!string_ends_with(mock_hostpolicy_value, pal::nativelib_ext))
             mock_hostpolicy_value.append(pal::nativelib_ext);
 
@@ -576,6 +579,9 @@ namespace pal
             pal::fprintf(stderr, W("Failed to load mock hostpolicy at path '%s'. Error: %s\n"), mock_hostpolicy_value.c_str(), dlerror());
 
         return hMod != nullptr;
+#else // !TARGET_WASM
+        return false;
+#endif // !TARGET_WASM
     }
 
     inline bool try_load_library(const pal::string_t& path, pal::mod_t& hMod)
@@ -592,6 +598,7 @@ namespace pal
 
     inline bool try_load_coreclr(const pal::string_t& core_root, pal::mod_t& hMod)
     {
+#ifndef TARGET_WASM
         pal::string_t coreclr_path = core_root;
         pal::ensure_trailing_delimiter(coreclr_path);
         coreclr_path.append(pal::coreclr_lib);
@@ -603,7 +610,7 @@ namespace pal
             pal::fprintf(stderr, W("Failed to load: '%s'. Error: %s\n"), coreclr_path.c_str(), dlerror());
             return false;
         }
-
+#endif // !TARGET_WASM
         return true;
     }
 }

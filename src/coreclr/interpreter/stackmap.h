@@ -21,6 +21,11 @@ public:
     {
         PopulateStackMap(jitInfo, classHandle);
     }
-};
 
-InterpreterStackMap* GetInterpreterStackMap(ICorJitInfo* jitInfo, CORINFO_CLASS_HANDLE classHandle);
+    ~InterpreterStackMap ()
+    {
+        if (m_slots)
+            free(m_slots);
+        m_slots = nullptr;
+    }
+};

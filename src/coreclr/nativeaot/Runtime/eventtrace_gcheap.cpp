@@ -415,7 +415,7 @@ void ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
     if (!GCHeapUtilities::IsGCHeapInitialized())
         return;
 
-    InterlockedExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber);
+    PalInterlockedExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber);
 
     ForceGCForDiagnostics();
 }

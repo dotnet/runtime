@@ -416,5 +416,19 @@ namespace System.Net.Security
 
             return uriString;
         }
+
+        partial void ReleasePlatformSpecificResources()
+        {
+            Debug.Assert(_staplingForbidden, "Shouldn't release resources while OCSP stapling may be happening on the background.");
+
+            CertificateHandle.Dispose();
+            KeyHandle.Dispose();
+            _rootCertificate?.Dispose();
+
+            foreach (X509Certificate2 cert in _privateIntermediateCertificates)
+            {
+                cert.Dispose();
+            }
+        }
     }
 }

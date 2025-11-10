@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.IO;
 
 namespace Microsoft.NET.HostModel.Bundle
@@ -42,6 +43,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public void Write(BinaryWriter writer)
         {
+            var start = writer.BaseStream.Position;
             writer.Write(Offset);
             writer.Write(Size);
             // compression is used only in version 6.0+
@@ -51,6 +53,20 @@ namespace Microsoft.NET.HostModel.Bundle
             }
             writer.Write((byte)Type);
             writer.Write(RelativePath);
+            Debug.Assert(writer.BaseStream.Position - start == GetFileEntryLength(BundleMajorVersion, RelativePath),
+                $"FileEntry size mismatch. Expected: {GetFileEntryLength(BundleMajorVersion, RelativePath)}, Actual: {writer.BaseStream.Position - start}");
+        }
+
+        /// <summary>
+        /// Returns the length of the FileEntry in the manifest in bytes. This is not the size of the file itself.
+        /// </summary>
+        public static uint GetFileEntryLength(uint bundleMajorVersion, string bundleRelativePath)
+        {
+           return sizeof(long) // Offset
+                    + sizeof(long) // Size
+                    + (bundleMajorVersion >= 6 ? sizeof(long) : 0u) // CompressedSize
+                    + sizeof(FileType) // Type (FileType)
+                    + Bundler.GetBinaryWriterStringLength(bundleRelativePath);
         }
 
         public override string ToString() => $"{RelativePath} [{Type}] @{Offset} Sz={Size} CompressedSz={CompressedSize}";

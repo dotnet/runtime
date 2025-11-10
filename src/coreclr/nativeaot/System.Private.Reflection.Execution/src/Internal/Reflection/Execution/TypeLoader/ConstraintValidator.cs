@@ -55,7 +55,7 @@ namespace Internal.Reflection.Execution
                     continue;
 
                 // if a concrete type can be cast to the constraint, then this constraint will be satisfied
-                if (!AreTypesAssignable(typeArg, instantiatedTypeConstraint))
+                if (!AreTypesAssignableInternal(typeArg, instantiatedTypeConstraint, fBoxedSource: true, fAllowSizeEquivalence: false))
                     return false;
             }
 

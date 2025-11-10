@@ -212,9 +212,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
     // Obtain the entrypoints.
     int rc = fxr.status_code();
     if (rc != StatusCode::Success)
-    {
         return rc;
-    }
 
 #if defined(FEATURE_APPHOST)
     if (bundle_marker_t::is_bundle())

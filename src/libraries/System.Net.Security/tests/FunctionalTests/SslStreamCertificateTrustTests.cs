@@ -22,13 +22,13 @@ namespace System.Net.Security.Tests
         [SkipOnPlatform(TestPlatforms.Windows, "CertificateCollection-based SslCertificateTrust is not Supported on Windows")]
         public async Task SslStream_SendCertificateTrust_CertificateCollection()
         {
-            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
+            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
 
-            SslCertificateTrust trust = SslCertificateTrust.CreateForX509Collection(caCerts, sendTrustInHandshake: true);
+            SslCertificateTrust trust = SslCertificateTrust.CreateForX509Collection(pkiHolder.IssuerChain, sendTrustInHandshake: true);
             string[] acceptableIssuers = await ConnectAndGatherAcceptableIssuers(trust);
 
-            Assert.Equal(caCerts.Count, acceptableIssuers.Length);
-            Assert.Equal(caCerts.Select(c => c.Subject), acceptableIssuers);
+            Assert.Equal(pkiHolder.IssuerChain.Count, acceptableIssuers.Length);
+            Assert.Equal(pkiHolder.IssuerChain.Select(c => c.Subject), acceptableIssuers);
         }
 
         [ConditionalFact(nameof(SupportsSendingCustomCANamesInTls))]
@@ -94,20 +94,20 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void SslStream_SendCertificateTrust_CertificateCollection_ThrowsOnWindows()
         {
-            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
+            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
 
-            Assert.Throws<PlatformNotSupportedException>(() => SslCertificateTrust.CreateForX509Collection(caCerts, sendTrustInHandshake: true));
+            Assert.Throws<PlatformNotSupportedException>(() => SslCertificateTrust.CreateForX509Collection(pkiHolder.IssuerChain, sendTrustInHandshake: true));
         }
 
         [ConditionalFact(nameof(DoesNotSupportSendingCustomCANamesInTls))]
         [SkipOnPlatform(TestPlatforms.Windows, "Windows tested separately")]
         public void SslStream_SendCertificateTrust_ThrowsOnUnsupportedPlatform()
         {
-            (X509Certificate2 certificate, X509Certificate2Collection caCerts) = Configuration.Certificates.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
+            using Configuration.Certificates.PkiHolder pkiHolder = Configuration.Certificates.GenerateCertificates(nameof(SslStream_SendCertificateTrust_CertificateCollection));
 
             using X509Store store = new X509Store("Root", StoreLocation.LocalMachine);
 
-            Assert.Throws<PlatformNotSupportedException>(() => SslCertificateTrust.CreateForX509Collection(caCerts, sendTrustInHandshake: true));
+            Assert.Throws<PlatformNotSupportedException>(() => SslCertificateTrust.CreateForX509Collection(pkiHolder.IssuerChain, sendTrustInHandshake: true));
             Assert.Throws<PlatformNotSupportedException>(() => SslCertificateTrust.CreateForX509Store(store, sendTrustInHandshake: true));
         }
     }

@@ -746,7 +746,7 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
     //
     unsigned          arrayElementsCount = simdSize / genTypeSize(simdBaseType);
     GenTree*          checkIndexExpr     = gtNewIconNode(indexVal + arrayElementsCount - 1);
-    GenTreeArrLen*    arrLen = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
+    GenTreeArrLen*    arrLen             = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length);
     GenTreeBoundsChk* arrBndsChk =
         new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(checkIndexExpr, arrLen, SCK_ARG_RNG_EXCPN);
 

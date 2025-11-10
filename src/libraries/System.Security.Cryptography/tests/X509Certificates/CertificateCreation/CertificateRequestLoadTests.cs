@@ -427,8 +427,7 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void VerifySignature_DSA()
         {
             // macOS is limited to FIPS 186-2 DSA, so SHA-1 is the only valid algorithm.

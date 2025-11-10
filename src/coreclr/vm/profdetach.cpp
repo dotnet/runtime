@@ -90,8 +90,9 @@ HRESULT ProfilingAPIDetach::Initialize()
                 // For exceptions that give us useless hr's, just use E_FAIL
                 hr = E_FAIL;
             }
+            RethrowTerminalExceptions();
         }
-        EX_END_CATCH(RethrowTerminalExceptions)
+        EX_END_CATCH
 
         if (FAILED(hr))
         {
@@ -258,12 +259,9 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(ProfilerInfo *pProfilerInfo, D
     {
         ProfilingAPIUtility::LogProfInfo(IDS_PROF_DETACH_INITIATED);
     }
-    EX_CATCH
-    {
-        // Oh well, rest of detach succeeded, so we should still return success to the
-        // profiler.
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    // Oh well, rest of detach succeeded, so we should still return success to the
+    // profiler.
+    EX_SWALLOW_NONTERMINAL
 
     return S_OK;
 }
@@ -569,8 +567,9 @@ DWORD WINAPI ProfilingAPIDetach::ProfilingAPIDetachThreadStart(LPVOID)
     EX_CATCH
     {
         _ASSERTE(!"Unhandled exception on profiling API detach thread");
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    EX_END_CATCH
 
     LOG((
         LF_CORPROF,

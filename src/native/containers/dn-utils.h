@@ -19,6 +19,10 @@
 // included unconditionally for static_assert macro on C11
 #include <assert.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
 #if defined(_DEBUG)
 #define DN_ASSERT(x) assert(x)
 #else
@@ -81,5 +85,9 @@ dn_safe_uint32_t_add (uint32_t lhs, uint32_t rhs, uint32_t *result)
 	*result = lhs + rhs;
 	return true;
 }
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
 
 #endif /* __DN_UTILS_H__ */

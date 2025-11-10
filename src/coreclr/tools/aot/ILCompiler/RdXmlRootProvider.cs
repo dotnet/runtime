@@ -180,7 +180,7 @@ namespace ILCompiler
             foreach (var m in containingType.GetMethods())
             {
                 var method = m;
-                if (method.Name != methodName)
+                if (method.GetName() != methodName)
                     continue;
 
                 if (instArgs.Count != method.Instantiation.Length)

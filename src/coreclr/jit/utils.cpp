@@ -1534,9 +1534,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_LNG2DBL:
             case CORINFO_HELP_ULNG2FLT:
             case CORINFO_HELP_ULNG2DBL:
-            case CORINFO_HELP_DBL2INT:
             case CORINFO_HELP_DBL2LNG:
-            case CORINFO_HELP_DBL2UINT:
             case CORINFO_HELP_DBL2ULNG:
             case CORINFO_HELP_FLTREM:
             case CORINFO_HELP_DBLREM:
@@ -1729,7 +1727,7 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_INITCLASS:
             case CORINFO_HELP_INITINSTCLASS:
-                isPure      = true;
+                mutatesHeap = true;
                 mayRunCctor = true;
                 break;
 
@@ -3171,7 +3169,7 @@ double FloatingPointUtils::normalize(double value)
     }
 
     uint64_t bits;
-    static_assert_no_msg(sizeof(bits) == sizeof(value));
+    static_assert(sizeof(bits) == sizeof(value));
     memcpy(&bits, &value, sizeof(value));
     bits |= 1ull << 51;
     memcpy(&value, &bits, sizeof(bits));

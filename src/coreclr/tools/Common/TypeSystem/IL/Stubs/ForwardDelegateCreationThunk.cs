@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
 
@@ -61,11 +62,11 @@ namespace Internal.IL.Stubs
             }
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "ForwardDelegateCreationStub__" + DelegateType.Name;
+                return "ForwardDelegateCreationStub__"u8.Append(DelegateType.Name);
             }
         }
 
@@ -110,7 +111,7 @@ namespace Internal.IL.Stubs
                 .GetPInvokeDelegateWrapperMethod(PInvokeDelegateWrapperMethodKind.Invoke)));
 
             codeStream.Emit(ILOpcode.newobj, emitter.NewToken(
-                _delegateType.GetMethod(".ctor",
+                _delegateType.GetMethod(".ctor"u8,
                 new MethodSignature(MethodSignatureFlags.None,
                     genericParameterCount: 0,
                     returnType: Context.GetWellKnownType(WellKnownType.Void),

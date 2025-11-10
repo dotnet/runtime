@@ -3,22 +3,16 @@
 #include "common.h"
 #include "threadstatics.h"
 
-struct InFlightTLSData
-{
 #ifndef DACCESS_COMPILE
-    InFlightTLSData(TLSIndex index) : pNext(NULL), tlsIndex(index), hTLSData(0) { }
-    ~InFlightTLSData()
+InFlightTLSData::InFlightTLSData(TLSIndex index) : pNext(NULL), tlsIndex(index), hTLSData(0) { }
+InFlightTLSData::~InFlightTLSData()
     {
         if (!IsHandleNullUnchecked(hTLSData))
         {
             DestroyTypedHandle(hTLSData);
         }
     }
-#endif // !DACCESS_COMPILE
-    PTR_InFlightTLSData pNext; // Points at the next in-flight TLS data
-    TLSIndex tlsIndex; // The TLS index for the static
-    OBJECTHANDLE hTLSData; // The TLS data for the static
-};
+#endif
 
 
 struct ThreadLocalLoaderAllocator
@@ -310,7 +304,7 @@ void InitializeThreadStaticData()
     g_pThreadStaticCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::Collectible);
     g_pThreadStaticNonCollectibleTypeIndices = new TLSIndexToMethodTableMap(TLSIndexType::NonCollectible);
     CoreLibBinder::GetClass(CLASS__DIRECTONTHREADLOCALDATA);
-    CoreLibBinder::GetClass(CLASS__THREAD_BLOCKING_INFO);
+    CoreLibBinder::GetClass(CLASS__THREADID);
     g_TLSCrst.Init(CrstThreadLocalStorageLock, CRST_UNSAFE_ANYMODE);
 }
 
@@ -321,6 +315,7 @@ void InitializeCurrentThreadsStaticData(Thread* pThread)
     t_ThreadStatics.pThread = pThread;
     t_ThreadStatics.pThread->m_ThreadLocalDataPtr = &t_ThreadStatics;
     t_ThreadStatics.pThread->m_TlsSpinLock.Init(LOCK_TLSDATA, FALSE);
+    t_ThreadStatics.managedThreadId = pThread->GetThreadId();
 }
 
 void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
@@ -624,7 +619,7 @@ void* GetThreadLocalStaticBase(TLSIndex index)
         if (gcBaseAddresses.pTLSBaseAddress == (TADDR)NULL)
         {
             // Now we need to actually allocate the TLS data block
-            struct 
+            struct
             {
                 PTRARRAYREF ptrRef;
                 OBJECTREF tlsEntry;
@@ -717,16 +712,16 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
     {
         bool usedDirectOnThreadLocalDataPath = false;
 
-        if (!gcStatic && ((pMT == CoreLibBinder::GetExistingClass(CLASS__THREAD_BLOCKING_INFO)) || (pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA)) || ((g_directThreadLocalTLSBytesAvailable >= bytesNeeded) && (!pMT->HasClassConstructor() || pMT->IsClassInited()))))
+        if (!gcStatic && (pMT == CoreLibBinder::GetExistingClass(CLASS__THREADID) || pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA) || ((g_directThreadLocalTLSBytesAvailable >= bytesNeeded) && (!pMT->HasClassConstructor() || pMT->IsClassInited()))))
         {
-            if (pMT == CoreLibBinder::GetExistingClass(CLASS__THREAD_BLOCKING_INFO))
-            {
-                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, ThreadBlockingInfo_First) - OFFSETOF__CORINFO_Array__data);
-                usedDirectOnThreadLocalDataPath = true;
-            }
-            else if (pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
+            if (pMT == CoreLibBinder::GetExistingClass(CLASS__DIRECTONTHREADLOCALDATA))
             {
                 newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, pThread) - OFFSETOF__CORINFO_Array__data);
+                usedDirectOnThreadLocalDataPath = true;
+            }
+            else if (pMT == CoreLibBinder::GetExistingClass(CLASS__THREADID))
+            {
+                newTLSIndex = TLSIndex(TLSIndexType::DirectOnThreadLocalData, offsetof(ThreadLocalData, managedThreadId) - OFFSETOF__CORINFO_Array__data);
                 usedDirectOnThreadLocalDataPath = true;
             }
             else
@@ -741,9 +736,9 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
                     alignment = 4;
                 else if (bytesNeeded >= 2)
                     alignment = 2;
-                else 
+                else
                     alignment = 1;
-                
+
                 uint32_t actualIndexOffset = AlignDown(indexOffsetWithoutAlignment, alignment);
                 uint32_t alignmentAdjust = indexOffsetWithoutAlignment - actualIndexOffset;
                 if (alignmentAdjust <= newBytesAvailable)
