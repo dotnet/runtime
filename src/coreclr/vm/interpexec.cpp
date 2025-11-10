@@ -68,8 +68,6 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
     return local.result;
 }
 
-// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
-#ifdef TARGET_ARM
 struct UnmanagedMethodWithTransitionParam
 {
     MethodDesc *targetMethod;
@@ -79,14 +77,11 @@ struct UnmanagedMethodWithTransitionParam
     int8_t *pRet;
     PCODE callTarget;
 };
+
+// Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
 NOINLINE
 void InvokeUnmanagedMethodWithTransition(UnmanagedMethodWithTransitionParam *pParam)
-#else
-NOINLINE
-void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
-#endif
 {
-#ifdef TARGET_ARM
     InlinedCallFrame inlinedCallFrame;
     inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pParam->pFrame->ip;
     inlinedCallFrame.m_pCallSiteSP = pParam->pFrame;
@@ -95,34 +90,7 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
     inlinedCallFrame.m_Datum = NULL;
     inlinedCallFrame.Push();
 
-    struct Param
-    {
-        MethodDesc *targetMethod;
-        int8_t *pArgs;
-        int8_t *pRet;
-        PCODE callTarget;
-    }
-    param = { pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget };
-#else // !TARGET_ARM
-    InlinedCallFrame inlinedCallFrame;
-    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
-    inlinedCallFrame.m_pCallSiteSP = pFrame;
-    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
-    inlinedCallFrame.m_pThread = GetThread();
-    inlinedCallFrame.m_Datum = NULL;
-    inlinedCallFrame.Push();
-
-    struct Param
-    {
-        MethodDesc *targetMethod;
-        int8_t *pArgs;
-        int8_t *pRet;
-        PCODE callTarget;
-    }
-    param = { targetMethod, pArgs, pRet, callTarget };
-#endif // TARGET_ARM
-
-    PAL_TRY(Param *, pParam, &param)
+    PAL_TRY(UnmanagedMethodWithTransitionParam*, pParam, pParam)
     {
         GCX_PREEMP_NO_DTOR();
         // WASM-TODO: Handle unmanaged calling conventions
@@ -2563,12 +2531,8 @@ MAIN_LOOP:
                     }
                     else
                     {
-#ifdef TARGET_ARM
                         UnmanagedMethodWithTransitionParam param = { targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget };
                         InvokeUnmanagedMethodWithTransition(&param);
-#else // !TARGET_ARM
-                        InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget);
-#endif // TARGET_ARM
                     }
 
                     break;
