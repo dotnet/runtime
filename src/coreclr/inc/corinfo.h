@@ -673,7 +673,8 @@ enum CorInfoCallConv
     CORINFO_CALLCONV_HASTHIS    = 0x20,
     CORINFO_CALLCONV_EXPLICITTHIS=0x40,
     CORINFO_CALLCONV_PARAMTYPE  = 0x80,     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
-    CORINFO_CALLCONV_ASYNCCALL  = 0x100,    // Is this a call to an async function?
+    CORINFO_CALLCONV_ASYNCCALL  = 0x100,    // Is this a call with async calling convention?
+
 };
 
 // Represents the calling conventions supported with the extensible calling convention syntax
@@ -807,6 +808,7 @@ enum CORINFO_ACCESS_FLAGS
     CORINFO_ACCESS_NONNULL    = 0x0004, // Instance is guaranteed non-null
 
     CORINFO_ACCESS_LDFTN      = 0x0010, // Accessed via ldftn
+    CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE = 0x0020, // Method might be attributed with UnmanagedCallersOnlyAttribute.
 
     // Field access flags
     CORINFO_ACCESS_GET        = 0x0100, // Field get (ldfld)
@@ -1734,8 +1736,8 @@ struct CORINFO_ASYNC_INFO
     CORINFO_CLASS_HANDLE continuationClsHnd;
     // 'Next' field
     CORINFO_FIELD_HANDLE continuationNextFldHnd;
-    // 'Resume' field
-    CORINFO_FIELD_HANDLE continuationResumeFldHnd;
+    // 'ResumeInfo' field
+    CORINFO_FIELD_HANDLE continuationResumeInfoFldHnd;
     // 'State' field
     CORINFO_FIELD_HANDLE continuationStateFldHnd;
     // 'Flags' field
@@ -2912,6 +2914,16 @@ public:
             uint32_t                          numMappings         // [IN] Number of rich mappings
             ) = 0;
 
+    // Report async debug information to EE.
+    // The arrays are expected to be allocated with allocateArray
+    // and ownership is transferred to the EE with this call.
+    virtual void reportAsyncDebugInfo(
+            ICorDebugInfo::AsyncInfo*             asyncInfo,         // [IN] Async method information
+            ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,  // [IN] Array of async suspension points, indexed by state number
+            ICorDebugInfo::AsyncContinuationVarInfo* vars,           // [IN] Array of async continuation variable info
+            uint32_t                              numVars            // [IN] Number of entries in the async vars array
+            ) = 0;
+
     // Report back some metadata about the compilation to the EE -- for
     // example, metrics about the compilation.
     virtual void reportMetadata(
@@ -3340,7 +3352,7 @@ public:
             CORINFO_TAILCALL_HELPERS* pResult
             ) = 0;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() = 0;
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) = 0;
 
     virtual CORINFO_CLASS_HANDLE getContinuationType(
         size_t dataSize,

@@ -528,11 +528,18 @@ public:
             freeArrayInternal(m_inlineTreeNodes);
         if (m_richOffsetMappings != NULL)
             freeArrayInternal(m_richOffsetMappings);
+        if (m_dbgAsyncSuspensionPoints != NULL)
+            freeArrayInternal(m_dbgAsyncSuspensionPoints);
+        if (m_dbgAsyncContinuationVars != NULL)
+            freeArrayInternal(m_dbgAsyncContinuationVars);
 
         m_inlineTreeNodes = NULL;
         m_numInlineTreeNodes = 0;
         m_richOffsetMappings = NULL;
         m_numRichOffsetMappings = 0;
+        m_dbgAsyncSuspensionPoints = NULL;
+        m_dbgAsyncContinuationVars = NULL;
+        m_numAsyncContinuationVars = 0;
     }
 
     // ICorDebugInfo stuff.
@@ -558,6 +565,12 @@ public:
         uint32_t                          numInlineTreeNodes,
         ICorDebugInfo::RichOffsetMapping* mappings,
         uint32_t                          numMappings) override final;
+
+    void reportAsyncDebugInfo(
+        ICorDebugInfo::AsyncInfo*             asyncInfo,
+        ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+        ICorDebugInfo::AsyncContinuationVarInfo* vars,
+        uint32_t                              numVars) override final;
 
     void reportMetadata(const char* key, const void* value, size_t length) override final;
 
@@ -621,6 +634,11 @@ protected:
     ULONG32                           m_numInlineTreeNodes;
     ICorDebugInfo::RichOffsetMapping *m_richOffsetMappings;
     ULONG32                           m_numRichOffsetMappings;
+
+    ICorDebugInfo::AsyncInfo                 m_dbgAsyncInfo;
+    ICorDebugInfo::AsyncSuspensionPoint     *m_dbgAsyncSuspensionPoints;
+    ICorDebugInfo::AsyncContinuationVarInfo *m_dbgAsyncContinuationVars;
+    ULONG32                                  m_numAsyncContinuationVars;
 
     // The first time a call is made to CEEJitInfo::GetProfilingHandle() from this thread
     // for this method, these values are filled in.   Thereafter, these values are used
@@ -882,7 +900,7 @@ public:
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() override final;
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) override final;
 
 protected :
 

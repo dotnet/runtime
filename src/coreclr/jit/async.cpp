@@ -647,11 +647,10 @@ PhaseStatus AsyncTransformation::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Ask the VM to create a resumption stub for this specific version of the
-    // code. It is stored in the continuation as a function pointer, so we need
-    // the fixed entry point here.
-    m_resumeStub = m_comp->info.compCompHnd->getAsyncResumptionStub();
-    m_comp->info.compCompHnd->getFunctionFixedEntryPoint(m_resumeStub, false, &m_resumeStubLookup);
+    m_comp->compSuspensionPoints =
+        new (m_comp, CMK_Async) jitstd::vector<ICorDebugInfo::AsyncSuspensionPoint>(m_comp->getAllocator(CMK_Async));
+    m_comp->compAsyncVars = new (m_comp, CMK_Async)
+        jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>(m_comp->getAllocator(CMK_Async));
 
     m_returnedContinuationVar = m_comp->lvaGrabTemp(false DEBUGARG("returned continuation"));
     m_comp->lvaGetDesc(m_returnedContinuationVar)->lvType = TYP_REF;
@@ -823,6 +822,8 @@ void AsyncTransformation::Transform(
     BasicBlock* resumeBB = CreateResumption(block, *remainder, call, callDefInfo, stateNum, layout);
 
     m_resumptionBBs.push_back(resumeBB);
+
+    CreateDebugInfoForSuspensionPoint(layout);
 }
 
 //------------------------------------------------------------------------
@@ -949,6 +950,12 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
 //
 bool AsyncTransformation::ContinuationNeedsKeepAlive(AsyncLiveness& life)
 {
+    if (m_comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        // Native AOT doesn't have a LoaderAllocator
+        return false;
+    }
+
     const unsigned GENERICS_CTXT_FROM = CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
     if (((m_comp->info.compMethodInfo->options & GENERICS_CTXT_FROM) != 0) && life.IsLive(m_comp->info.compTypeCtxtArg))
     {
@@ -1415,6 +1422,14 @@ BasicBlock* AsyncTransformation::CreateSuspension(
 
     JITDUMP("  Creating suspension " FMT_BB " for state %u\n", suspendBB->bbNum, stateNum);
 
+    GenTreeILOffset* ilOffsetNode =
+        m_comp->gtNewILOffsetNode(call->GetAsyncInfo().CallAsyncDebugInfo DEBUGARG(BAD_IL_OFFSET));
+
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, ilOffsetNode));
+
+    GenTree* recordOffset = new (m_comp, GT_RECORD_ASYNC_RESUME) GenTreeVal(GT_RECORD_ASYNC_RESUME, TYP_VOID, stateNum);
+    LIR::AsRange(suspendBB).InsertAtEnd(recordOffset);
+
     // Allocate continuation
     GenTree* returnedContinuation = m_comp->gtNewLclvNode(m_returnedContinuationVar, TYP_REF);
 
@@ -1428,11 +1443,12 @@ BasicBlock* AsyncTransformation::CreateSuspension(
     GenTree* storeNewContinuation = m_comp->gtNewStoreLclVarNode(m_newContinuationVar, allocContinuation);
     LIR::AsRange(suspendBB).InsertAtEnd(storeNewContinuation);
 
-    // Fill in 'Resume'
-    GenTree* newContinuation = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
-    unsigned resumeOffset    = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeFldHnd);
-    GenTree* resumeStubAddr  = CreateResumptionStubAddrTree();
-    GenTree* storeResume     = StoreAtOffset(newContinuation, resumeOffset, resumeStubAddr, TYP_I_IMPL);
+    // Fill in 'ResumeInfo'
+    GenTree* newContinuation  = m_comp->gtNewLclvNode(m_newContinuationVar, TYP_REF);
+    unsigned resumeInfoOffset = m_comp->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeInfoFldHnd);
+    GenTree* resumeInfoAddr =
+        new (m_comp, GT_ASYNC_RESUME_INFO) GenTreeVal(GT_ASYNC_RESUME_INFO, TYP_I_IMPL, (ssize_t)stateNum);
+    GenTree* storeResume = StoreAtOffset(newContinuation, resumeInfoOffset, resumeInfoAddr, TYP_I_IMPL);
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, storeResume));
 
     // Fill in 'state'
@@ -1494,28 +1510,20 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness&    
                                                               const ContinuationLayout& layout)
 {
     GenTree* contClassHndNode = m_comp->gtNewIconEmbClsHndNode(layout.ClassHnd);
-    // If VM requests that we report the method handle, or if we have a shared generic context method handle
-    // that is live here, then we need to call a different helper to keep the loader alive.
-    if (((m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODDESC) != 0) &&
-        life.IsLive(m_comp->info.compTypeCtxtArg))
+
+    // If we need to keep the loader alive, use a different helper.
+    if (ContinuationNeedsKeepAlive(life))
     {
         assert(layout.KeepAliveOffset != UINT_MAX);
-        GenTree* methodHandleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
+        GenTree* handleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
         // Offset passed to function is relative to instance data.
         int keepAliveOffset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) + layout.KeepAliveOffset;
-        GenTree* keepAliveOffsetNode = m_comp->gtNewIconNode(keepAliveOffset);
-        return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION_METHOD, TYP_REF, prevContinuation,
-                                           contClassHndNode, keepAliveOffsetNode, methodHandleArg);
-    }
-    else if (((m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODTABLE) != 0) &&
-             life.IsLive(m_comp->info.compTypeCtxtArg))
-    {
-        assert(layout.KeepAliveOffset != UINT_MAX);
-        GenTree* classHandleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
-        int keepAliveOffset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) + layout.KeepAliveOffset;
-        GenTree* keepAliveOffsetNode = m_comp->gtNewIconNode(keepAliveOffset);
-        return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION_CLASS, TYP_REF, prevContinuation,
-                                           contClassHndNode, keepAliveOffsetNode, classHandleArg);
+        GenTree*        keepAliveOffsetNode = m_comp->gtNewIconNode(keepAliveOffset);
+        CorInfoHelpFunc helperNum = (m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODTABLE) != 0
+                                        ? CORINFO_HELP_ALLOC_CONTINUATION_CLASS
+                                        : CORINFO_HELP_ALLOC_CONTINUATION_METHOD;
+        return m_comp->gtNewHelperCallNode(helperNum, TYP_REF, prevContinuation, contClassHndNode, keepAliveOffsetNode,
+                                           handleArg);
     }
 
     return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF, prevContinuation, contClassHndNode);
@@ -1703,6 +1711,20 @@ void AsyncTransformation::CreateCheckAndSuspendAfterCall(BasicBlock*            
     *remainder = m_comp->fgSplitBlockAfterNode(block, jtrue);
     JITDUMP("  Remainder is " FMT_BB "\n", (*remainder)->bbNum);
 
+    // For non-inlined calls adjust offset for the split. We have the exact
+    // offset of the await call, so we can do better than
+    // fgSplitBlockAfterNode. The previous block contains the call so add 1 to
+    // include its start offset (the IL offsets are only used for range checks
+    // in the backend, so having the offset be inside an IL instruction is ok.)
+    DebugInfo di = call->GetAsyncInfo().CallAsyncDebugInfo.GetRoot();
+    DebugInfo par;
+    if (!di.GetParent(&par))
+    {
+        IL_OFFSET awaitOffset    = di.GetLocation().GetOffset();
+        block->bbCodeOffsEnd     = awaitOffset + 1;
+        (*remainder)->bbCodeOffs = awaitOffset + 1;
+    }
+
     FlowEdge* retBBEdge = m_comp->fgAddRefPred(suspendBB, block);
     block->SetCond(retBBEdge, block->GetTargetEdge());
 
@@ -1750,6 +1772,11 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
     m_lastResumptionBB = resumeBB;
 
     JITDUMP("  Creating resumption " FMT_BB " for state %u\n", resumeBB->bbNum, stateNum);
+
+    GenTreeILOffset* ilOffsetNode =
+        m_comp->gtNewILOffsetNode(call->GetAsyncInfo().CallAsyncDebugInfo DEBUGARG(BAD_IL_OFFSET));
+
+    LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, ilOffsetNode));
 
     SetSuspendedIndicator(resumeBB, block, call);
 
@@ -1872,6 +1899,14 @@ BasicBlock* AsyncTransformation::RethrowExceptionOnResumption(BasicBlock*       
     BasicBlock* rethrowExceptionBB =
         m_comp->fgNewBBinRegion(BBJ_THROW, block, /* runRarely */ true, /* insertAtEnd */ true);
     JITDUMP("  Created " FMT_BB " to rethrow exception on resumption\n", rethrowExceptionBB->bbNum);
+
+    // If this ends up placed after 'block' then ensure it does not break
+    // debugging. We split 'block' at the call, so a BBF_INTERNAL block after
+    // it would result in broken debug info.
+    if ((rethrowExceptionBB->Prev() == block) && !block->HasFlag(BBF_INTERNAL))
+    {
+        rethrowExceptionBB->RemoveFlags(BBF_INTERNAL);
+    }
 
     BasicBlock* storeResultBB = m_comp->fgNewBBafter(BBJ_ALWAYS, resumeBB, true);
     JITDUMP("  Created " FMT_BB " to store result when resuming with no exception\n", storeResultBB->bbNum);
@@ -2079,6 +2114,36 @@ GenTreeStoreInd* AsyncTransformation::StoreAtOffset(
 }
 
 //------------------------------------------------------------------------
+// AsyncTransformation::CreateDebugInfoForSuspensionPoint:
+//   Create debug info for the specific suspension point we just created.
+//
+// Parameters:
+//   layout         - Layout of continuation
+//
+void AsyncTransformation::CreateDebugInfoForSuspensionPoint(const ContinuationLayout& layout)
+{
+    uint32_t numLocals = 0;
+    for (const LiveLocalInfo& local : layout.Locals)
+    {
+        unsigned ilVarNum = m_comp->compMap2ILvarNum(local.LclNum);
+        if (ilVarNum == (unsigned)ICorDebugInfo::UNKNOWN_ILNUM)
+        {
+            continue;
+        }
+
+        ICorDebugInfo::AsyncContinuationVarInfo varInf;
+        varInf.VarNumber = ilVarNum;
+        varInf.Offset    = OFFSETOF__CORINFO_Continuation__data + local.Offset;
+        m_comp->compAsyncVars->push_back(varInf);
+        numLocals++;
+    }
+
+    ICorDebugInfo::AsyncSuspensionPoint suspensionPoint;
+    suspensionPoint.DiagnosticNativeOffset = 0;
+    suspensionPoint.NumContinuationVars    = numLocals;
+    m_comp->compSuspensionPoints->push_back(suspensionPoint);
+}
+
 // AsyncTransformation::GetResultBaseVar:
 //   Create a new local to hold the base address of the incoming result from
 //   the continuation. This local can be validly used for the entire suspension
@@ -2116,65 +2181,6 @@ unsigned AsyncTransformation::GetExceptionVar()
     }
 
     return m_exceptionVar;
-}
-
-//------------------------------------------------------------------------
-// AsyncTransformation::CreateResumptionStubAddrTree:
-//   Create a tree that represents the address of the resumption stub entry
-//   point.
-//
-// Returns:
-//   IR node.
-//
-GenTree* AsyncTransformation::CreateResumptionStubAddrTree()
-{
-    switch (m_resumeStubLookup.accessType)
-    {
-        case IAT_VALUE:
-        {
-            return CreateFunctionTargetAddr(m_resumeStub, m_resumeStubLookup);
-        }
-        case IAT_PVALUE:
-        {
-            GenTree* tree = CreateFunctionTargetAddr(m_resumeStub, m_resumeStubLookup);
-            tree          = m_comp->gtNewIndir(TYP_I_IMPL, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-            return tree;
-        }
-        case IAT_PPVALUE:
-        {
-            noway_assert(!"Unexpected IAT_PPVALUE");
-            return nullptr;
-        }
-        case IAT_RELPVALUE:
-        {
-            GenTree* addr = CreateFunctionTargetAddr(m_resumeStub, m_resumeStubLookup);
-            GenTree* tree = CreateFunctionTargetAddr(m_resumeStub, m_resumeStubLookup);
-            tree          = m_comp->gtNewIndir(TYP_I_IMPL, tree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-            tree          = m_comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, tree, addr);
-            return tree;
-        }
-        default:
-        {
-            noway_assert(!"Bad accessType");
-            return nullptr;
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// AsyncTransformation::CreateFunctionTargetAddr:
-//   Create a tree that represents the address of the resumption stub entry
-//   point.
-//
-// Returns:
-//   IR node.
-//
-GenTree* AsyncTransformation::CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE       methHnd,
-                                                       const CORINFO_CONST_LOOKUP& lookup)
-{
-    GenTree* con = m_comp->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-    INDEBUG(con->AsIntCon()->gtTargetHandle = (size_t)methHnd);
-    return con;
 }
 
 //------------------------------------------------------------------------

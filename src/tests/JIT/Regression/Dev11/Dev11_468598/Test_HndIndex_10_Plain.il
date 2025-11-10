@@ -39,6 +39,10 @@
             string('Needs triage')
             int32(0x2) // Mono
         }
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
+            string('Test checks for an issue that cannot occur with the interpreter')
+            int32(0x400) // InterpreterActive
+        }
         .entrypoint
         .maxstack 8
         .locals init (class Test.DerivedClass derivedInstance, int32 exitCode)

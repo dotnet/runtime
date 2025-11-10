@@ -49,7 +49,8 @@ struct CallDefinitionInfo
 {
     GenTreeLclVarCommon* DefinitionNode = nullptr;
 
-    // Where to insert new IR for suspension checks.
+    // Where to insert new IR after the call in the original block, for
+    // suspension checks and for the async suspension for diagnostics purposes.
     GenTree* InsertAfter = nullptr;
 };
 
@@ -61,8 +62,6 @@ class AsyncTransformation
     jitstd::vector<LiveLocalInfo> m_liveLocalsScratch;
     CORINFO_ASYNC_INFO*           m_asyncInfo;
     jitstd::vector<BasicBlock*>   m_resumptionBBs;
-    CORINFO_METHOD_HANDLE         m_resumeStub = NO_METHOD_HANDLE;
-    CORINFO_CONST_LOOKUP          m_resumeStubLookup;
     unsigned                      m_returnedContinuationVar = BAD_VAR_NUM;
     unsigned                      m_newContinuationVar      = BAD_VAR_NUM;
     unsigned                      m_dataArrayVar            = BAD_VAR_NUM;
@@ -137,11 +136,9 @@ class AsyncTransformation
                                    var_types    storeType,
                                    GenTreeFlags indirFlags = GTF_IND_NONFAULTING);
 
+    void     CreateDebugInfoForSuspensionPoint(const ContinuationLayout& layout);
     unsigned GetResultBaseVar();
     unsigned GetExceptionVar();
-
-    GenTree* CreateResumptionStubAddrTree();
-    GenTree* CreateFunctionTargetAddr(CORINFO_METHOD_HANDLE methHnd, const CORINFO_CONST_LOOKUP& lookup);
 
     void CreateResumptionSwitch();
 
