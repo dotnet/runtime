@@ -43,9 +43,6 @@ namespace ILCompiler
 
         public override MethodDesc GetCanonMethodTarget(CanonicalFormKind kind)
         {
-            // We should not be calling GetCanonMethodTarget on generic definitions of anything
-            // and this MethodDesc is a generic definition.
-            Debug.Assert(!HasInstantiation && !OwningType.HasInstantiation);
             return this;
         }
 
@@ -77,12 +74,9 @@ namespace ILCompiler
 
     public static class AsyncMethodVariantExtensions
     {
-        /// <summary>
-        /// Returns true if this MethodDesc is an AsyncMethodVariant, which should not escape the jit interface.
-        /// </summary>
         public static bool IsAsyncVariant(this MethodDesc method)
         {
-            return method is AsyncMethodVariant;
+            return method.GetTypicalMethodDefinition() is AsyncMethodVariant;
         }
     }
 }
