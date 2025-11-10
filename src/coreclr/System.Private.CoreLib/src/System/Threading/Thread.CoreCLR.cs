@@ -603,9 +603,9 @@ namespace System.Threading
         private enum NativeThreadState
         {
             None = 0,
-            TS_AbortRequested = 0x00000001,    // Abort the thread
-            TS_DebugSuspendPending = 0x00000008,    // Is the debugger suspending threads?
-            TS_GCOnTransitions = 0x00000010,    // Force a GC on stub transitions (GCStress only)
+            TS_AbortRequested = 0x00000001, // Abort the thread
+            TS_DebugSuspendPending = 0x00000008, // Is the debugger suspending threads?
+            TS_GCOnTransitions = 0x00000010, // Force a GC on stub transitions (GCStress only)
 
             // We require (and assert) that the following bits are less than 0x100.
             TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
