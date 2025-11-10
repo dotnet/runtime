@@ -12,20 +12,23 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Represents a subset of <see cref="EETypeNode"/> that is used to describe GC static field regions for
-    /// types. It only fills out enough pieces of the MethodTable structure so that the GC can operate on it. Runtime should
-    /// never see these.
+    /// MethodTable for a piece of data that can be allocated on the GC heap, with GC-reported references in it.
+    /// The shape of the data is described using a <see cref="GCPointerMap"/>. The generated data structure
+    /// is a MethodTable that is valid for use with GC, however not all data on it is present.
+    /// A lot of the MethodTable API surface on this will not work at runtime .
     /// </summary>
-    public class GCStaticEETypeNode : DehydratableObjectNode, ISymbolDefinitionNode
+    public class DataOnlyEETypeNode : DehydratableObjectNode, ISymbolDefinitionNode
     {
-        private GCPointerMap _gcMap;
-        private TargetDetails _target;
-        private bool _requiresAlign8;
+        private readonly string _prefix;
+        protected readonly GCPointerMap _gcMap;
+        private readonly TypeDesc _baseType;
+        protected readonly bool _requiresAlign8;
 
-        public GCStaticEETypeNode(TargetDetails target, GCPointerMap gcMap, bool requiresAlign8)
+        public DataOnlyEETypeNode(string prefix, GCPointerMap gcMap, TypeDesc baseType, bool requiresAlign8)
         {
+            _prefix = prefix;
             _gcMap = gcMap;
-            _target = target;
+            _baseType = baseType;
             _requiresAlign8 = requiresAlign8;
         }
 
@@ -33,7 +36,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
         {
-            if (_target.IsWindows)
+            if (factory.Target.IsWindows)
                 return ObjectNodeSection.ReadOnlyDataSection;
             else
                 return ObjectNodeSection.DataSection;
@@ -43,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__GCStaticEEType_"u8).Append(_gcMap.ToString());
+            sb.Append($"__{_prefix}_").Append(_gcMap.ToString());
             if (_requiresAlign8)
             {
                 sb.Append("_align8"u8);
@@ -55,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis
             get
             {
                 int numSeries = _gcMap.NumSeries;
-                return numSeries > 0 ? ((numSeries * 2) + 1) * _target.PointerSize : 0;
+                return numSeries > 0 ? ((numSeries * 2) + 1) * _baseType.Context.Target.PointerSize : 0;
             }
         }
 
@@ -69,12 +72,8 @@ namespace ILCompiler.DependencyAnalysis
             dataBuilder.RequireInitialPointerAlignment();
             dataBuilder.AddSymbol(this);
 
-            // +1 for SyncBlock (static size already includes MethodTable)
-            int totalSize = (_gcMap.Size + 1) * _target.PointerSize;
-
-            // We only need to check for containsPointers because ThreadStatics are always allocated
-            // on the GC heap (no matter what "HasGCStaticBase" says).
-            // If that ever changes, we can assume "true" and switch this to an assert.
+            // +1 for SyncBlock (GCMap size already includes MethodTable field)
+            int totalSize = (_gcMap.Size + 1) * factory.Target.PointerSize;
 
             bool containsPointers = _gcMap.NumSeries > 0;
             if (containsPointers)
@@ -98,12 +97,10 @@ namespace ILCompiler.DependencyAnalysis
 
             dataBuilder.EmitUInt(flags);
 
-            totalSize = Math.Max(totalSize, _target.PointerSize * 3); // minimum GC MethodTable size is 3 pointers
+            totalSize = Math.Max(totalSize, factory.Target.PointerSize * 3); // minimum GC MethodTable size is 3 pointers
             dataBuilder.EmitInt(totalSize);
 
-            // Related type: System.Object. This allows storing an instance of this type in an array of objects,
-            // or finding associated module from BulkType event source events.
-            dataBuilder.EmitPointerReloc(factory.NecessaryTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.Object)));
+            dataBuilder.EmitPointerReloc(factory.NecessaryTypeSymbol(_baseType));
 
             return dataBuilder.ToObjectData();
         }
@@ -112,11 +109,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            GCStaticEETypeNode otherGCStaticEETypeNode = (GCStaticEETypeNode)other;
-            int mapCompare = _gcMap.CompareTo(otherGCStaticEETypeNode._gcMap);
+            DataOnlyEETypeNode otherNode = (DataOnlyEETypeNode)other;
+            int mapCompare = _gcMap.CompareTo(otherNode._gcMap);
             if (mapCompare == 0)
             {
-                return _requiresAlign8.CompareTo(otherGCStaticEETypeNode._requiresAlign8);
+                return _requiresAlign8.CompareTo(otherNode._requiresAlign8);
             }
 
             return mapCompare;

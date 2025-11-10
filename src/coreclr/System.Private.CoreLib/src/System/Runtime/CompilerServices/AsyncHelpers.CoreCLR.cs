@@ -13,6 +13,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
+#if NATIVEAOT
+using Internal.Runtime;
+#endif
+
 namespace System.Runtime.CompilerServices
 {
     internal struct ExecutionAndSyncBlockStore
@@ -166,11 +170,16 @@ namespace System.Runtime.CompilerServices
 
         private static unsafe Continuation AllocContinuation(Continuation prevContinuation, MethodTable* contMT)
         {
+#if NATIVEAOT
+            Continuation newContinuation = (Continuation)RuntimeImports.RhNewObject(contMT);
+#else
             Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
+#endif
             prevContinuation.Next = newContinuation;
             return newContinuation;
         }
 
+#if !NATIVEAOT
         private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodDesc* method)
         {
             LoaderAllocator loaderAllocator = RuntimeMethodHandle.GetLoaderAllocator(new RuntimeMethodHandleInternal((IntPtr)method));
@@ -192,6 +201,7 @@ namespace System.Runtime.CompilerServices
             }
             return newContinuation;
         }
+#endif
 
         /// <summary>
         /// Used by internal thunks that implement awaiting on Task or a ValueTask.
@@ -228,7 +238,7 @@ namespace System.Runtime.CompilerServices
         private interface IRuntimeAsyncTaskOps<T>
         {
             static abstract Action GetContinuationAction(T task);
-            static abstract Continuation GetContinuationState(T task);
+            static abstract Continuation MoveContinuationState(T task);
             static abstract void SetContinuationState(T task, Continuation value);
             static abstract bool SetCompleted(T task);
             static abstract void PostToSyncContext(T task, SynchronizationContext syncCtx);
@@ -287,9 +297,16 @@ namespace System.Runtime.CompilerServices
             private struct Ops : IRuntimeAsyncTaskOps<RuntimeAsyncTask<T>>
             {
                 public static Action GetContinuationAction(RuntimeAsyncTask<T> task) => (Action)task.m_action!;
-                public static Continuation GetContinuationState(RuntimeAsyncTask<T> task) => (Continuation)task.m_stateObject!;
+                public static Continuation MoveContinuationState(RuntimeAsyncTask<T> task)
+                {
+                    Continuation continuation = (Continuation)task.m_stateObject!;
+                    task.m_stateObject = null;
+                    return continuation;
+                }
+
                 public static void SetContinuationState(RuntimeAsyncTask<T> task, Continuation value)
                 {
+                    Debug.Assert(task.m_stateObject == null);
                     task.m_stateObject = value;
                 }
 
@@ -363,9 +380,16 @@ namespace System.Runtime.CompilerServices
             private struct Ops : IRuntimeAsyncTaskOps<RuntimeAsyncTask>
             {
                 public static Action GetContinuationAction(RuntimeAsyncTask task) => (Action)task.m_action!;
-                public static Continuation GetContinuationState(RuntimeAsyncTask task) => (Continuation)task.m_stateObject!;
+                public static Continuation MoveContinuationState(RuntimeAsyncTask task)
+                {
+                    Continuation continuation = (Continuation)task.m_stateObject!;
+                    task.m_stateObject = null;
+                    return continuation;
+                }
+
                 public static void SetContinuationState(RuntimeAsyncTask task, Continuation value)
                 {
+                    Debug.Assert(task.m_stateObject == null);
                     task.m_stateObject = value;
                 }
 
@@ -419,7 +443,7 @@ namespace System.Runtime.CompilerServices
 
                 DispatcherInfo dispatcherInfo;
                 dispatcherInfo.Next = t_dispatcherInfo;
-                dispatcherInfo.NextContinuation = TOps.GetContinuationState(task);
+                dispatcherInfo.NextContinuation = TOps.MoveContinuationState(task);
                 t_dispatcherInfo = &dispatcherInfo;
 
                 while (true)
