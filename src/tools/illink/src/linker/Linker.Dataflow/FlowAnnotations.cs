@@ -329,6 +329,13 @@ namespace ILLink.Shared.TrimAnalysis
                     if (annotation == DynamicallyAccessedMemberTypes.None)
                         continue;
 
+                    if (CompilerGeneratedNames.IsExtensionType(type.Name))
+                    {
+                        // Annotations on extension properties are not supported.
+                        _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties, property.GetDisplayName());
+                        continue;
+                    }
+
                     if (!IsTypeInterestingForDataflow(property.PropertyType))
                     {
                         _context.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings, property.GetDisplayName());
