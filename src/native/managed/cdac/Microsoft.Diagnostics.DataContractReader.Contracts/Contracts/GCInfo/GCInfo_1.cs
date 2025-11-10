@@ -20,16 +20,14 @@ internal class GCInfo_1<TTraits> : IGCInfo where TTraits : IGCInfoTraits
 
     uint IGCInfo.GetCodeLength(IGCInfoHandle gcInfoHandle)
     {
-        GcInfoDecoder<TTraits> decoder = AssertCorrectHandle(gcInfoHandle);
-        return decoder.GetCodeLength();
+        IGCInfoDecoder handle = AssertCorrectHandle(gcInfoHandle);
+        return handle.GetCodeLength();
     }
 
-    private static GcInfoDecoder<TTraits> AssertCorrectHandle(IGCInfoHandle gcInfoHandle)
+    private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)
     {
-        if (gcInfoHandle is not GcInfoDecoder<TTraits> handle)
-        {
+        if (gcInfoHandle is not IGCInfoDecoder handle)
             throw new ArgumentException("Invalid GC info handle", nameof(gcInfoHandle));
-        }
 
         return handle;
     }

@@ -8,7 +8,7 @@ using ILCompiler.Reflection.ReadyToRun;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers;
 
-internal class GcInfoDecoder<TTraits> : IGCInfoHandle where TTraits : IGCInfoTraits
+internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTraits
 {
     private enum DecodePoints
     {
