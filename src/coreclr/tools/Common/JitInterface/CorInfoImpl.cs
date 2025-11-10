@@ -3777,24 +3777,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
 #else
-            if (_asyncResumptionStub == null)
-            {
-                MethodDesc typicalMethodBeingCompiled = MethodBeingCompiled.GetTypicalMethodDefinition();
-                _asyncResumptionStub = new AsyncResumptionStub(typicalMethodBeingCompiled);
-                if (MethodBeingCompiled != typicalMethodBeingCompiled)
-                {
-                    TypeDesc owningType = MethodBeingCompiled.OwningType;
-                    if (owningType.HasInstantiation)
-                    {
-                        _asyncResumptionStub = _compilation.TypeSystemContext.GetMethodForInstantiatedType(_asyncResumptionStub, (InstantiatedType)owningType);
-                    }
-
-                    if (MethodBeingCompiled.HasInstantiation)
-                    {
-                        _asyncResumptionStub = _asyncResumptionStub.MakeInstantiatedMethod(MethodBeingCompiled.Instantiation);
-                    }
-                }
-            }
+            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled);
 
             entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
             return ObjectToHandle(_asyncResumptionStub);
