@@ -685,6 +685,7 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
             _debugInfo = null;
+            _asyncResumptionStub = null;
 #endif
 
             _debugLocInfos = null;
@@ -833,6 +834,9 @@ namespace Internal.JitInterface
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig, scope);
 
+            if (method.IsAsyncCall())
+                sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
+
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
 
@@ -877,7 +881,6 @@ namespace Internal.JitInterface
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
             if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
-            if (signature.IsAsyncCall) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
 
             TypeDesc returnType = signature.ReturnType;
 
@@ -3233,6 +3236,14 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
+        private void reportAsyncDebugInfo(AsyncInfo* asyncInfo, AsyncSuspensionPoint* suspensionPoints, AsyncContinuationVarInfo* vars, uint numVars)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            NativeMemory.Free(suspensionPoints);
+            NativeMemory.Free(vars);
+        }
+
+#pragma warning disable CA1822 // Mark members as static
         private void reportMetadata(byte* key, void* value, nuint length)
 #pragma warning restore CA1822 // Mark members as static
         {
@@ -3378,7 +3389,7 @@ namespace Internal.JitInterface
             DefType continuation = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
             pAsyncInfoOut.continuationClsHnd = ObjectToHandle(continuation);
             pAsyncInfoOut.continuationNextFldHnd = ObjectToHandle(continuation.GetKnownField("Next"u8));
-            pAsyncInfoOut.continuationResumeFldHnd = ObjectToHandle(continuation.GetKnownField("Resume"u8));
+            pAsyncInfoOut.continuationResumeInfoFldHnd = ObjectToHandle(continuation.GetKnownField("ResumeInfo"u8));
             pAsyncInfoOut.continuationStateFldHnd = ObjectToHandle(continuation.GetKnownField("State"u8));
             pAsyncInfoOut.continuationFlagsFldHnd = ObjectToHandle(continuation.GetKnownField("Flags"u8));
             DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
@@ -3393,7 +3404,19 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
         {
             Debug.Assert(objRefsSize == (dataSize + (nuint)(PointerSize - 1)) / (nuint)PointerSize);
+#if READYTORUN
             throw new NotImplementedException("getContinuationType");
+#else
+            GCPointerMapBuilder gcMapBuilder = new GCPointerMapBuilder((int)dataSize, PointerSize);
+            ReadOnlySpan<bool> bools = MemoryMarshal.CreateReadOnlySpan(ref objRefs, (int)objRefsSize);
+            for (int i = 0; i < bools.Length; i++)
+            {
+                if (bools[i])
+                    gcMapBuilder.MarkGCPointer(i * PointerSize);
+            }
+
+            return ObjectToHandle(_compilation.TypeSystemContext.GetContinuationType(gcMapBuilder.ToGCMap()));
+#endif
         }
 
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
@@ -3745,10 +3768,17 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
 #pragma warning restore CA1822 // Mark members as static
         {
+#if READYTORUN
             throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
+#else
+            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled);
+
+            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
+            return ObjectToHandle(_asyncResumptionStub);
+#endif
         }
 
         private byte[] _code;
@@ -4332,7 +4362,7 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
 
-            if (this.MethodBeingCompiled.Signature.IsAsyncCall)
+            if (this.MethodBeingCompiled.IsAsyncCall())
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
