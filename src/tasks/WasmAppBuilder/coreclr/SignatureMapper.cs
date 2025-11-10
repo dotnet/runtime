@@ -21,7 +21,8 @@ internal static class SignatureMapper
 
         // See https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
         char? c = null;
-        if (t.Namespace == "System") {
+        if (t.Namespace == "System")
+        {
             c = t.Name switch
             {
                 nameof(String) => 'i',
@@ -60,10 +61,12 @@ internal static class SignatureMapper
             c = 'i';
         else if (t.IsInterface)
             c = 'i';
-        else if (t.IsEnum) {
+        else if (t.IsEnum)
+        {
             Type underlyingType = t.GetEnumUnderlyingType();
             c = TypeToChar(underlyingType, log, out _, ++depth);
-        } else if (t.IsPointer)
+        }
+        else if (t.IsPointer)
             c = 'i';
         else if (PInvokeTableGenerator.IsFunctionPointer(t))
             c = 'i';
@@ -94,7 +97,8 @@ internal static class SignatureMapper
             return null;
         }
 
-        if (resultIsByRef) {
+        if (resultIsByRef)
+        {
             result = "n";
         }
 
