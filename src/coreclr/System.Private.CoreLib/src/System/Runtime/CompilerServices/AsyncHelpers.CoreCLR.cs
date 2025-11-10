@@ -144,7 +144,7 @@ namespace System.Runtime.CompilerServices
 
     public static partial class AsyncHelpers
     {
-        // This is the "magic" method on wich other "Await" methods are built.
+        // This is the "magic" method on which other "Await" methods are built.
         // Calling this from an Async method returns the continuation to the caller thus
         // explicitly initiates suspension.
         [Intrinsic]
