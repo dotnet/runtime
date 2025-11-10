@@ -48,13 +48,6 @@ namespace Tracing.Tests.UserEvents
                 return -1;
             }
 
-            ProcessStartInfo traceeStartInfo = new();
-            traceeStartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
-            traceeStartInfo.Arguments = $"{typeof(UserEventsTest).Assembly.Location} tracee";
-            traceeStartInfo.WorkingDirectory = appBaseDir;
-            traceeStartInfo.RedirectStandardOutput = true;
-            traceeStartInfo.RedirectStandardError = true;
-
             ProcessStartInfo recordTraceStartInfo = new();
             recordTraceStartInfo.FileName = "sudo";
             recordTraceStartInfo.Arguments = $"-n {recordTracePath} --script-file {scriptFilePath} --out {traceFilePath}";
@@ -76,6 +69,13 @@ namespace Tracing.Tests.UserEvents
             }
             Console.WriteLine($"record-trace started with PID: {recordTraceProcess.Id}");
 
+            ProcessStartInfo traceeStartInfo = new();
+            traceeStartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
+            traceeStartInfo.Arguments = $"{typeof(UserEventsTest).Assembly.Location} tracee";
+            traceeStartInfo.WorkingDirectory = appBaseDir;
+            traceeStartInfo.RedirectStandardOutput = true;
+            traceeStartInfo.RedirectStandardError = true;
+
             Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {traceeStartInfo.Arguments}");
             using Process traceeProcess = Process.Start(traceeStartInfo);
             Console.WriteLine($"Tracee process started with PID: {traceeProcess.Id}");
@@ -90,17 +90,26 @@ namespace Tracing.Tests.UserEvents
                 Console.WriteLine($"Tracee process did not exit within the 5s timeout, killing it.");
                 traceeProcess.Kill();
             }
+            traceeProcess.WaitForExit(); // flush async output
 
-            // Until record-trace supports duration, the only way to stop it is to send SIGINT (ctrl+c)
-            Console.WriteLine($"Stopping record-trace with SIGINT.");
-            Kill(recordTraceProcess.Id, SIGINT);
-            Console.WriteLine($"Waiting for record-trace to exit...");
-            if (!recordTraceProcess.HasExited && !recordTraceProcess.WaitForExit(20000))
+            if (!recordTraceProcess.HasExited)
             {
-                // record-trace needs to stop gracefully to generate the trace file
-                Console.WriteLine($"record-trace did not exit within the 20s timeout, killing it.");
-                recordTraceProcess.Kill();
+                // Until record-trace supports duration, the only way to stop it is to send SIGINT (ctrl+c)
+                Console.WriteLine($"Stopping record-trace with SIGINT.");
+                Kill(recordTraceProcess.Id, SIGINT);
+                Console.WriteLine($"Waiting for record-trace to exit...");
+                if (!recordTraceProcess.WaitForExit(20000))
+                {
+                    // record-trace needs to stop gracefully to generate the trace file
+                    Console.WriteLine($"record-trace did not exit within the 20s timeout, killing it.");
+                    recordTraceProcess.Kill();
+                }
             }
+            else
+            {
+                Console.WriteLine($"record-trace unexpectedly exited without SIGINT with code {recordTraceProcess.ExitCode}.");
+            }
+            recordTraceProcess.WaitForExit(); // flush async output
 
             if (!File.Exists(traceFilePath))
             {
