@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using ILCompiler.Reflection.ReadyToRun;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -95,67 +94,9 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
         if (cbBounds > 0)
         {
             NativeReader boundsNativeReader = new(new TargetStream(_target, addrBounds, cbBounds), _target.IsLittleEndian);
-            return DoBounds(boundsNativeReader);
+            return DebugInfoHelpers.DoBounds(boundsNativeReader, IL_OFFSET_BIAS, SOURCE_TYPE_BITS);
         }
 
-        return Enumerable.Empty<OffsetMapping>();
-    }
-
-    private static IEnumerable<OffsetMapping> DoBounds(NativeReader nativeReader)
-    {
-        NibbleReader reader = new(nativeReader, 0);
-
-        uint boundsEntryCount = reader.ReadUInt();
-        Debug.Assert(boundsEntryCount > 0, "Expected at least one entry in bounds.");
-
-        uint bitsForNativeDelta = reader.ReadUInt() + 1; // Number of bits needed for native deltas
-        uint bitsForILOffsets = reader.ReadUInt() + 1; // Number of bits needed for IL offsets
-
-        uint bitsPerEntry = bitsForNativeDelta + bitsForILOffsets + SOURCE_TYPE_BITS; // 2 bits for source type
-        ulong bitsMeaningfulMask = (1UL << ((int)bitsPerEntry)) - 1;
-        int offsetOfActualBoundsData = reader.GetNextByteOffset();
-
-        uint bitsCollected = 0;
-        ulong bitTemp = 0;
-        uint curBoundsProcessed = 0;
-
-        uint previousNativeOffset = 0;
-
-        while (curBoundsProcessed < boundsEntryCount)
-        {
-            bitTemp |= ((uint)nativeReader[offsetOfActualBoundsData++]) << (int)bitsCollected;
-            bitsCollected += 8;
-            while (bitsCollected >= bitsPerEntry)
-            {
-                ulong mappingDataEncoded = bitsMeaningfulMask & bitTemp;
-                bitTemp >>= (int)bitsPerEntry;
-                bitsCollected -= bitsPerEntry;
-
-                SourceTypes sourceType = (mappingDataEncoded & 0x3) switch
-                {
-                    0 => SourceTypes.Default,
-                    1 => SourceTypes.CallInstruction,
-                    2 => SourceTypes.StackEmpty,
-                    3 => SourceTypes.StackEmpty | SourceTypes.CallInstruction,
-                    _ => throw new InvalidOperationException($"Unknown source type encoding: {mappingDataEncoded & 0x3}")
-                };
-
-                mappingDataEncoded >>= (int)SOURCE_TYPE_BITS;
-                uint nativeOffsetDelta = (uint)(mappingDataEncoded & ((1UL << (int)bitsForNativeDelta) - 1));
-                previousNativeOffset += nativeOffsetDelta;
-                uint nativeOffset = previousNativeOffset;
-
-                mappingDataEncoded >>= (int)bitsForNativeDelta;
-                uint ilOffset = (uint)mappingDataEncoded + IL_OFFSET_BIAS;
-
-                yield return new OffsetMapping()
-                {
-                    NativeOffset = nativeOffset,
-                    ILOffset = ilOffset,
-                    SourceType = sourceType
-                };
-                curBoundsProcessed++;
-            }
-        }
+        return [];
     }
 }
