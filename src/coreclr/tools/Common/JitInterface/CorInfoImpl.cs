@@ -1760,6 +1760,9 @@ namespace Internal.JitInterface
             if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
                 result = ((TypeDesc)result).MakeArrayType();
 
+            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await)
+                result = _compilation.TypeSystemContext.GetAsyncVariantMethod((MethodDesc)result);
+
             return result;
         }
 
@@ -3774,7 +3777,24 @@ namespace Internal.JitInterface
 #if READYTORUN
             throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
 #else
-            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled);
+            if (_asyncResumptionStub == null)
+            {
+                MethodDesc typicalMethodBeingCompiled = MethodBeingCompiled.GetTypicalMethodDefinition();
+                _asyncResumptionStub = new AsyncResumptionStub(typicalMethodBeingCompiled);
+                if (MethodBeingCompiled != typicalMethodBeingCompiled)
+                {
+                    TypeDesc owningType = MethodBeingCompiled.OwningType;
+                    if (owningType.HasInstantiation)
+                    {
+                        _asyncResumptionStub = _compilation.TypeSystemContext.GetMethodForInstantiatedType(_asyncResumptionStub, (InstantiatedType)owningType);
+                    }
+
+                    if (MethodBeingCompiled.HasInstantiation)
+                    {
+                        _asyncResumptionStub = _asyncResumptionStub.MakeInstantiatedMethod(MethodBeingCompiled.Instantiation);
+                    }
+                }
+            }
 
             entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
             return ObjectToHandle(_asyncResumptionStub);

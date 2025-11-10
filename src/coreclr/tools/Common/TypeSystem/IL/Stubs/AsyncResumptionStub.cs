@@ -26,6 +26,8 @@ namespace ILCompiler
         public override ReadOnlySpan<byte> Name => _owningMethod.Name;
         public override string DiagnosticName => _owningMethod.DiagnosticName;
 
+        public override Instantiation Instantiation => _owningMethod.Instantiation;
+
         public override TypeDesc OwningType => _owningMethod.OwningType;
 
         public override MethodSignature Signature => _signature ??= InitializeSignature();
