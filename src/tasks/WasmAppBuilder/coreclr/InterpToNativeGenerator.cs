@@ -61,16 +61,6 @@ internal sealed class InterpToNativeGenerator
         var signatures = cookies.OrderBy(c => c).Distinct().ToArray();
         Array.Sort(signatures, StringComparer.Ordinal);
 
-
-        static IEnumerable<char> Args(string signature)
-        {
-            for (int i = 1; i < signature.Length; ++i)
-                yield return signature[i];
-        }
-
-        static (bool isVoid, string nativeType) Result(string signature)
-            => new(SignatureMapper.IsVoidSignature(signature), SignatureMapper.CharToNativeType(signature[0]));
-
         w.Write(
         """
         // Licensed to the .NET Foundation under one or more agreements.
@@ -130,7 +120,16 @@ internal sealed class InterpToNativeGenerator
             };
 
             const size_t g_wasmThunksCount = sizeof(g_wasmThunks) / sizeof(g_wasmThunks[0]);
-            
+
             """);
+
+        static IEnumerable<char> Args(string signature)
+        {
+            for (int i = 1; i < signature.Length; ++i)
+                yield return signature[i];
+        }
+
+        static (bool isVoid, string nativeType) Result(string signature)
+            => new(SignatureMapper.IsVoidSignature(signature), SignatureMapper.CharToNativeType(signature[0]));
     }
 }
