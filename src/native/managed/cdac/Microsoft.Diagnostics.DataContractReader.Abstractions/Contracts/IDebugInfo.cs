@@ -12,7 +12,7 @@ public enum SourceTypes : uint
     /// <summary>
     /// Indicates that no other options apply
     /// </summary>
-    SourceTypeInvalid = 0x00,
+    Default = 0x00,
     /// <summary>
     /// The stack is empty here
     /// </summary>

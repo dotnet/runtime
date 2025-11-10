@@ -133,7 +133,7 @@ internal sealed class DebugInfo_1(Target target) : IDebugInfo
 
                 SourceTypes sourceType = (mappingDataEncoded & 0x3) switch
                 {
-                    0 => SourceTypes.SourceTypeInvalid,
+                    0 => SourceTypes.Default,
                     1 => SourceTypes.CallInstruction,
                     2 => SourceTypes.StackEmpty,
                     3 => SourceTypes.StackEmpty | SourceTypes.CallInstruction,
