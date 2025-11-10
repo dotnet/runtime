@@ -7,7 +7,6 @@
 #include <assert.h>
 #include <malloc.h>
 #include "minipal.h"
-#include "minipal/cpufeatures.h"
 
 void* VMToOSInterface::AlignedAllocate(size_t alignment, size_t size)
 {
@@ -16,5 +15,5 @@ void* VMToOSInterface::AlignedAllocate(size_t alignment, size_t size)
 
 void VMToOSInterface::AlignedFree(void *memblock)
 {
-    free(memblock);
+    _aligned_free(memblock);
 }
