@@ -18,12 +18,7 @@ namespace Tracing.Tests.UserEvents
 
             while (Stopwatch.GetTimestamp() - startTimestamp < targetTicks)
             {
-                for (int i = 0; i < 100; i++)
-                {
-                    s_array = new byte[1024 * 10];
-                }
-
-                GC.Collect();
+                s_array = new byte[1024 * 100];
                 Thread.Sleep(100);
             }
         }

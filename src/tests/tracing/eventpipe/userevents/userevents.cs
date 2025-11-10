@@ -132,26 +132,22 @@ namespace Tracing.Tests.UserEvents
         private static bool ValidateTraceeEvents(string traceFilePath)
         {
             using EventPipeEventSource source = new EventPipeEventSource(traceFilePath);
-            bool startEventFound = false;
-            bool stopEventFound = false;
+            bool allocationSampledEventFound = false;
 
+            // TraceEvent's ClrTraceEventParser does not know about the AllocationSampled Event, so it shows up as "Unknown(303)"
             source.Dynamic.All += (TraceEvent e) =>
             {
                 if (e.ProviderName == "Microsoft-Windows-DotNETRuntime")
                 {
-                    if (e.EventName == "GC/Start" || (e.ID == (TraceEventID)1 && e.EventName.StartsWith("Unknown")))
+                    if (e.EventName == "AllocationSampled" || (e.ID == (TraceEventID)303 && e.EventName.StartsWith("Unknown")))
                     {
-                        startEventFound = true;
-                    }
-                    else if (e.EventName == "GC/Stop" || (e.ID == (TraceEventID)2 && e.EventName.StartsWith("Unknown")))
-                    {
-                        stopEventFound = true;
+                        allocationSampledEventFound = true;
                     }
                 }
             };
 
             source.Process();
-            return startEventFound && stopEventFound;
+            return allocationSampledEventFound;
         }
     }
 }
