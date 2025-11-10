@@ -4727,23 +4727,23 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     m_pStackPointer -= 2;
 }
 
-void InterpCompiler::EmitNintIndexCheck(StackInfo *sp)
+void InterpCompiler::EmitNintIndexCheck(StackInfo *spArray, StackInfo *spIndex)
 {
     // In the rare case when array is indexed by nint instead of int, we emit an extra check
     // to ensure the nint value fits in int32_t
     AddIns(INTOP_CONV_NI);
-    m_pLastNewIns->SetSVar(sp->var);
+    m_pLastNewIns->SetSVars2(spArray->var, spIndex->var);
     int32_t var = CreateVarExplicit(g_interpTypeFromStackType[StackTypeI4], NULL, INTERP_STACK_SLOT_SIZE);
-    new (sp) StackInfo(StackTypeI4, NULL, var);
+    new (spIndex) StackInfo(StackTypeI4, NULL, var);
     m_pLastNewIns->SetDVar(var);
 }
 
 void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 {
     // handle nint index case
-    if (m_pStackPointer[-1].GetStackType() == StackTypeI8)
+    if (m_pStackPointer[1].GetStackType() == StackTypeI8)
     {
-        EmitNintIndexCheck(m_pStackPointer - 1);
+        EmitNintIndexCheck(m_pStackPointer - 2, m_pStackPointer - 1);
     }
     m_pStackPointer -= 2;
     AddIns(opcode);
@@ -4757,7 +4757,7 @@ void InterpCompiler::EmitStelem(InterpType interpType)
     // handle nint index case
     if (m_pStackPointer[-2].GetStackType() == StackTypeI8)
     {
-        EmitNintIndexCheck(m_pStackPointer - 2);
+        EmitNintIndexCheck(m_pStackPointer - 3, m_pStackPointer - 2);
     }
 
     m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
@@ -8389,7 +8389,7 @@ DO_LDFTN:
                 // handle nint index
                 if (m_pStackPointer[1].GetStackType() == StackTypeI8)
                 {
-                    EmitNintIndexCheck(m_pStackPointer + 1);
+                    EmitNintIndexCheck(m_pStackPointer, m_pStackPointer + 1);
                 }
 
                 if ((elemCorType == CORINFO_TYPE_CLASS) && !readonly)

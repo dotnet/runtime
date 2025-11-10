@@ -3345,13 +3345,14 @@ do {                                                                           \
 
                 case INTOP_CONV_NI:
                 {
-                    int64_t value = LOCAL_VAR(ip[2], int64_t);
-                    if ((value < 0) || (value > UINT_MAX))
+                    NULL_CHECK(LOCAL_VAR(ip[2], void*));
+                    int64_t index = LOCAL_VAR(ip[3], int64_t);
+                    if ((index < 0) || (index > UINT_MAX))
                     {
                         COMPlusThrow(kIndexOutOfRangeException);
                     }
-                    LOCAL_VAR(ip[1], int64_t) = value;
-                    ip += 3;
+                    LOCAL_VAR(ip[1], int64_t) = index;
+                    ip += 4;
                     break;
                 }
 
