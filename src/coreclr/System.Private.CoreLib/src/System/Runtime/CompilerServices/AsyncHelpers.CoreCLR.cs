@@ -150,13 +150,14 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         private static void AsyncSuspend(Continuation continuation) => throw new UnreachableException();
 
-        // An intrinsic that provides access to continuations produced by Async calls.
-        // Calling this after an Async method call returns:
-        //   * `null` if the call has completed synchronously, or
-        //   * a continuation object if the call requires suspension.
-        //     In this case the formal result of the call is undefined.
         [Intrinsic]
-        private static Continuation? AsyncCallContinuation() => throw new UnreachableException();
+        internal static Continuation? AsyncCallContinuation() => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
+        // Set call continuation argument for an upcoming call with runtime async calling convention.
+        // Can only be used shortly before the call (with no interfering control flow instructions before the call).
+        // If used anywhere in the method it must be present before _all_ calls with runtime async calling convention.
+        [Intrinsic]
+        internal static void SetAsyncCallContinuationArg(Continuation continuation) => throw new UnreachableException();
 
         // Used during suspensions to hold the continuation chain and on what we are waiting.
         // Methods like FinalizeTaskReturningThunk will unlink the state and wrap into a Task.

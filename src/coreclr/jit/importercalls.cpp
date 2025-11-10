@@ -875,7 +875,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             // stubs and the VM inserts the arg itself.
             if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
             {
-                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                GenTree* arg = lvaNextAsyncCallContArgVar != BAD_VAR_NUM
+                                   ? (GenTree*)gtNewLclVarNode(lvaNextAsyncCallContArgVar)
+                                   : gtNewNull();
+                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(arg, TYP_REF)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
             }
 
@@ -891,7 +894,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             // stubs and the VM inserts the arg itself.
             if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
             {
-                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                GenTree* arg = lvaNextAsyncCallContArgVar != BAD_VAR_NUM
+                                   ? (GenTree*)gtNewLclVarNode(lvaNextAsyncCallContArgVar)
+                                   : gtNewNull();
+                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(arg, TYP_REF)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
             }
 
@@ -3329,6 +3335,18 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         node->SetHasOrderingSideEffect();
         node->gtFlags |= GTF_CALL | GTF_GLOB_REF;
         info.compUsesAsyncContinuation = true;
+        return node;
+    }
+
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_SetAsyncCallContinuationArg)
+    {
+        if (lvaNextAsyncCallContArgVar == BAD_VAR_NUM)
+        {
+            lvaNextAsyncCallContArgVar                     = lvaGrabTemp(false DEBUGARG("Async call continuation arg"));
+            lvaGetDesc(lvaNextAsyncCallContArgVar)->lvType = TYP_REF;
+        }
+
+        GenTree* node = gtNewStoreLclVarNode(lvaNextAsyncCallContArgVar, impPopStack().val);
         return node;
     }
 
@@ -10875,6 +10893,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "AsyncCallContinuation") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
+                            }
+                            else if (strcmp(methodName, "SetAsyncCallContinuationArg") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_SetAsyncCallContinuationArg;
                             }
                         }
                         else if (strcmp(className, "StaticsHelpers") == 0)
