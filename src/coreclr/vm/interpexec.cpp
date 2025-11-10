@@ -441,18 +441,13 @@ typedef void (*HELPER_FTN_V_PP)(void*, void*);
 
 InterpThreadContext::InterpThreadContext()
 {
-    // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
-#if defined(TARGET_UNIX) && !defined(TARGET_APPLE)
-    pStackStart = pStackPointer = (int8_t*)aligned_alloc(INTERP_STACK_ALIGNMENT, INTERP_STACK_SIZE);
-#else
-    pStackStart = pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
-#endif // TARGET_UNIX && !TARGET_APPLE
+    pStackStart = pStackPointer = (int8_t*)VMToOSInterface::AlignedAllocate(INTERP_STACK_SIZE, INTERP_STACK_SIZE);
     pStackEnd = pStackStart + INTERP_STACK_SIZE;
 }
 
 InterpThreadContext::~InterpThreadContext()
 {
-    free(pStackStart);
+    VMToOSInterface::AlignedFree(pStackStart);
 }
 
 DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
