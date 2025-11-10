@@ -190,7 +190,7 @@ void MethodDesc::EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig&
 
             if (logicalResultLocal != UINT_MAX)
                 pCode->EmitSTLOC(logicalResultLocal);
-            pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC_CALL_CONTINUATION, 0, 1);
+            pCode->EmitCALL(METHOD__ASYNC_HELPERS__ASYNC_CALL_CONTINUATION, 0, 1);
             pCode->EmitBRFALSE(finishedLabel);
 
             pCode->EmitLEAVE(suspendedLabel);
