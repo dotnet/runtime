@@ -197,4 +197,128 @@ public:
     }
 };
 
+//------------------------------------------------------------------------
+// WasmRunSubgraphDfs: Run DFS over a subgraph of the flow graph.
+//
+// Type parameters:
+//   VisitPreorder  - Functor type that takes a BasicBlock* and its preorder number
+//   VisitPostorder - Functor type that takes a BasicBlock* and its postorder number
+//   VisitEdge      - Functor type that takes two BasicBlock*.
+//   useProfile     - If true, determines order of successors visited using profile data
+//
+// Parameters:
+//   comp           - Compiler instance
+//   dfsTree        - Wasm DFS instance
+//   visitPreorder  - Functor to visit block in its preorder
+//   visitPostorder - Functor to visit block in its postorder
+//   visitEdge      - Functor to visit an edge. Called after visitPreorder (if
+//                    this is the first time the successor is seen).
+//   subgraphBlocks - bitvector (in postorder num space) identifying the subgraph
+//   subgraphTraits - traits for the subgraphBlocks
+//
+// Returns:
+//   Number of blocks visited.
+//
+// Notes:
+//   Assumes m_dfs is valid (in particular, uses block post order numbers)
+//   So, visitors must not clobber these numbers.
+//
+// TODO:
+//   Encapsulate subgraph as functor...?
+//
+template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile /* = false */>
+unsigned WasmRunSubgraphDfs(Compiler*         comp,
+                            FlowGraphDfsTree* dfsTree,
+                            VisitPreorder     visitPreorder,
+                            VisitPostorder    visitPostorder,
+                            VisitEdge         visitEdge,
+                            BitVec&           subgraph,
+                            BitVecTraits&     subgraphTraits)
+{
+    JITDUMP("Running Wasm subgraph DFS on %u blocks\n", BitVecOps::Count(&subgraphTraits, subgraph));
+    BitVecTraits traits(comp->fgBBNumMax + 1, comp);
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    assert(dfsTree->IsForWasm());
+
+    unsigned preOrderIndex  = 0;
+    unsigned postOrderIndex = 0;
+
+    ArrayStack<WasmSuccessorEnumerator> blocks(comp->getAllocator(CMK_Wasm));
+
+    auto dfsFrom = [&](BasicBlock* firstBB) {
+        BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
+        blocks.Emplace(comp, firstBB, useProfile);
+        JITDUMP(" visiting " FMT_BB "\n", firstBB->bbNum);
+        visitPreorder(firstBB, preOrderIndex++);
+
+        while (!blocks.Empty())
+        {
+            BasicBlock* const block = blocks.TopRef().Block();
+            BasicBlock* const succ  = blocks.TopRef().NextSuccessor();
+
+            if (succ != nullptr)
+            {
+                if (BitVecOps::IsMember(&subgraphTraits, subgraph, succ->bbPostorderNum))
+                {
+                    if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
+                    {
+                        blocks.Emplace(comp, succ, useProfile);
+                        visitPreorder(succ, preOrderIndex++);
+                    }
+
+                    visitEdge(block, succ);
+                }
+
+                continue;
+            }
+
+            blocks.Pop();
+            visitPostorder(block, postOrderIndex++);
+        }
+    };
+
+    // Find the subgraph entry blocks (blocks that have no pred, or a pred not in the subgraph).
+    //
+    ArrayStack<BasicBlock*> entries(comp->getAllocator(CMK_Wasm));
+
+    unsigned        poNum = 0;
+    BitVecOps::Iter iterator(&subgraphTraits, subgraph);
+    while (iterator.NextElem(&poNum))
+    {
+        BasicBlock* const block   = dfsTree->GetPostOrder(poNum);
+        bool              hasPred = false;
+        for (BasicBlock* const pred : block->PredBlocks())
+        {
+            hasPred = true;
+            if (!BitVecOps::IsMember(&subgraphTraits, subgraph, pred->bbPostorderNum))
+            {
+                JITDUMP(FMT_BB " is subgraph entry\n", block->bbNum);
+                entries.Emplace(block);
+            }
+        }
+
+        if (!hasPred)
+        {
+            JITDUMP(FMT_BB " is an isolated subgraph entry\n", block->bbNum);
+            entries.Emplace(block);
+        }
+    }
+
+    // Kick off a DFS from each unvisited entry
+    //
+    while (entries.Height() > 0)
+    {
+        BasicBlock* const block = entries.Pop();
+
+        if (!BitVecOps::IsMember(&traits, visited, block->bbNum))
+        {
+            dfsFrom(block);
+        }
+    }
+
+    assert(preOrderIndex == postOrderIndex);
+    return preOrderIndex;
+}
+
 #endif // FGWASM_H

@@ -9,6 +9,15 @@
 #include "fgwasm.h"
 #include "algorithm.h"
 
+class Scc;
+void WasmFindSccsCore(Compiler*         comp,
+                      FlowGraphDfsTree* dfsTree,
+                      BitVec&           subset,
+                      BitVecTraits&     traits,
+                      ArrayStack<Scc*>& sccs,
+                      BasicBlock**      postorder,
+                      unsigned          postorderCount);
+
 //------------------------------------------------------------------------
 //  WasmSuccessorEnumerator: Construct an instance of the enumerator.
 //
@@ -128,6 +137,643 @@ FlowGraphDfsTree* Compiler::fgWasmDfs()
 
     return new (this, CMK_Wasm)
         FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, /* useProfile */ true, /* forWasm */ true);
+}
+
+//------------------------------------------------------------------------
+//  Scc: Strongly Connected Component (in a flow graph)
+//
+// Notes:
+//   Includes "nested" Sccs that are Sccs fully within the extent of the
+//   current Scc that do not include Scc entry nodes
+//
+class Scc
+{
+private:
+
+    Compiler*            m_comp;
+    FlowGraphDfsTree*    m_dfsTree;
+    BitVecTraits         m_traits;
+    BitVec               m_blocks;
+    BitVec               m_entries;
+    jitstd::vector<Scc*> m_nested;
+    unsigned             m_numIrr;
+
+    // lowest common ancestor try index + 1, or 0 if method region
+    unsigned m_enclosingTryIndex;
+    // lowest common ancestor handler index + 1, or 0 if method region
+    unsigned m_enclosingHndIndex;
+    // total weight of all entry blocks
+    weight_t m_entryWeight;
+    // true if one of the Scc entries is the OSR entry block, and it's within a try region
+    // transforming these is more complex and is only needed when jitting.
+    bool m_hasOSREntryHeaderInTry;
+
+public:
+
+    // Factor out traits? Parent links?
+    //
+    Scc(Compiler* comp, FlowGraphDfsTree* dfsTree, BasicBlock* block)
+        : m_comp(comp)
+        , m_dfsTree(dfsTree)
+        , m_traits(dfsTree->GetPostOrderCount(), comp)
+        , m_blocks(BitVecOps::UninitVal())
+        , m_entries(BitVecOps::UninitVal())
+        , m_nested(comp->getAllocator(CMK_Wasm))
+        , m_numIrr(0)
+        , m_enclosingTryIndex(0)
+        , m_enclosingHndIndex(0)
+        , m_entryWeight(0)
+        , m_hasOSREntryHeaderInTry(false)
+    {
+        m_blocks  = BitVecOps::MakeEmpty(&m_traits);
+        m_entries = BitVecOps::MakeEmpty(&m_traits);
+        Add(block);
+    }
+
+    void Add(BasicBlock* block)
+    {
+        BitVecOps::AddElemD(&m_traits, m_blocks, block->bbPostorderNum);
+    }
+
+    void Finalize()
+    {
+        ComputeEntries();
+        FindNested();
+    }
+
+    void ComputeEntries()
+    {
+        JITDUMP("Scc has %u blocks\n", BitVecOps::Count(&m_traits, m_blocks));
+
+        BitVecOps::Iter iterator(&m_traits, m_blocks);
+        unsigned int    poNum;
+        bool            isFirstEntry = true;
+
+        while (iterator.NextElem(&poNum))
+        {
+            BasicBlock* const block = m_dfsTree->GetPostOrder(poNum);
+
+            // cfpt's cannot be scc entries
+            //
+            if (block->isBBCallFinallyPairTail())
+            {
+                continue;
+            }
+
+            bool isEntry = false;
+
+            for (BasicBlock* pred : block->PredBlocks())
+            {
+                if (pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET))
+                {
+                    // Ignore EHCATCHRET preds (requires exceptional flow)
+                    continue;
+                }
+
+                if (BitVecOps::IsMember(&m_traits, m_blocks, pred->bbPostorderNum))
+                {
+                    // Pred is in the scc, so not an entry edge
+                    continue;
+                }
+
+                if (BitVecOps::TryAddElemD(&m_traits, m_entries, block->bbPostorderNum))
+                {
+                    JITDUMP(FMT_BB " is scc entry\n", block->bbNum);
+                    isEntry = true;
+
+                    m_entryWeight += block->bbWeight;
+
+                    if (isFirstEntry)
+                    {
+                        m_enclosingTryIndex = block->bbTryIndex;
+                        m_enclosingHndIndex = block->bbHndIndex;
+                        isFirstEntry        = false;
+                    }
+                    else
+                    {
+                        // We expect all Scc headers to be in the same handler region
+                        assert(m_enclosingHndIndex == block->bbHndIndex);
+
+                        // But possibly different try regions
+                        m_enclosingTryIndex = m_comp->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
+                    }
+
+                    if ((block == m_comp->fgOSREntryBB) && block->hasTryIndex())
+                    {
+                        m_hasOSREntryHeaderInTry = true;
+                    }
+                }
+            }
+        }
+    }
+
+    unsigned NumEntries()
+    {
+        return BitVecOps::Count(&m_traits, m_entries);
+    }
+
+    unsigned NumBlocks()
+    {
+        return BitVecOps::Count(&m_traits, m_blocks);
+    }
+
+    BitVec InternalBlocks()
+    {
+        return BitVecOps::Diff(&m_traits, m_blocks, m_entries);
+    }
+
+    bool IsIrr()
+    {
+        return NumEntries() > 1;
+    }
+
+    bool HasOSREntryHeaderInTry()
+    {
+        return m_hasOSREntryHeaderInTry;
+    }
+
+    unsigned NumIrr()
+    {
+        m_numIrr = IsIrr();
+
+        for (Scc* nested : m_nested)
+        {
+            m_numIrr += nested->NumIrr();
+        }
+
+        return m_numIrr;
+    }
+
+    // Weight of all the flow into entry blocks
+    //
+    weight_t TotalEntryWeight()
+    {
+        return m_entryWeight;
+    }
+
+    void Dump(int indent = 0)
+    {
+        BitVecOps::Iter iterator(&m_traits, m_blocks);
+        unsigned int    poNum;
+        bool            first = true;
+        while (iterator.NextElem(&poNum))
+        {
+            if (first)
+            {
+                JITDUMP("%*c", indent, ' ');
+
+                if (NumEntries() > 1)
+                {
+                    JITDUMP("[irrd (%u)] ", NumBlocks());
+                }
+                else
+                {
+                    JITDUMP("[loop (%u)] ", NumBlocks());
+                }
+            }
+            else
+            {
+                JITDUMP(", ");
+            }
+            first = false;
+
+            BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
+            bool              isEntry = BitVecOps::IsMember(&m_traits, m_entries, poNum);
+            JITDUMP(FMT_BB "%s", block->bbNum, isEntry ? "e" : "");
+        }
+        JITDUMP("\n");
+    }
+
+    void DumpAll(int indent = 0)
+    {
+        Dump(indent);
+
+        for (Scc* child : m_nested)
+        {
+            child->DumpAll(indent + 3);
+        }
+    }
+
+    void FindNested()
+    {
+        unsigned entryCount = BitVecOps::Count(&m_traits, m_entries);
+        assert(entryCount > 0);
+
+        BitVec   nestedBlocks = InternalBlocks();
+        unsigned nestedCount  = BitVecOps::Count(&m_traits, nestedBlocks);
+
+        // Only entries
+        if (nestedCount == 0) // < 2...?
+        {
+            return;
+        }
+
+        JITDUMP("\n --> nested %u blocks... \n", BitVecOps::Count(&m_traits, nestedBlocks));
+
+        ArrayStack<Scc*> nestedSccs(m_comp->getAllocator(CMK_DepthFirstSearch));
+
+        // Build a new postorder for the nested blocks
+        //
+        BasicBlock** postOrder = new (m_comp, CMK_DepthFirstSearch) BasicBlock*[nestedCount];
+
+        auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {};
+
+        auto visitPostorder = [&postOrder](BasicBlock* block, unsigned postorderNum) {
+            postOrder[postorderNum] = block;
+        };
+
+        auto visitEdge = [](BasicBlock* block, BasicBlock* succ) {};
+
+        unsigned numBlocks = WasmRunSubgraphDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                                                /* useProfile */ true>(m_comp, m_dfsTree, visitPreorder, visitPostorder,
+                                                                       visitEdge, nestedBlocks, m_traits);
+
+        if (numBlocks != nestedCount)
+        {
+            JITDUMP("Eh? numBlocks %u nestedCount %u\n", numBlocks, nestedCount);
+        }
+        assert(numBlocks == nestedCount);
+
+        // Use that to find the nested Sccs
+        //
+        WasmFindSccsCore(m_comp, m_dfsTree, nestedBlocks, m_traits, nestedSccs, postOrder, nestedCount);
+
+        const int nNested = nestedSccs.Height();
+
+        if (nNested == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < nNested; i++)
+        {
+            Scc* const nestedScc = nestedSccs.Bottom(i);
+            m_nested.push_back(nestedScc);
+        }
+
+        JITDUMP("\n <-- nested ... \n");
+    }
+
+    unsigned EnclosingTryIndex()
+    {
+        return m_enclosingTryIndex;
+    }
+
+    unsigned EnclosingHndIndex()
+    {
+        return m_enclosingHndIndex;
+    }
+
+    //-----------------------------------------------------------------------------
+    // TransformViaSwichDispatch: modify Scc into a reducible loop
+    //
+    // Returns:
+    //   true if any flow graph modifcations were done
+    //
+    // Notes:
+    //
+    //   A multi-entry Scc is modified as follows:
+    //   * each Scc header H is given an integer index H_i
+    //   * a new BBJ_SWITCH header block J is created
+    //   * a new control local K is allocated.
+    //   * each flow edge that targets one of the H is split
+    //   * In the split block K is assigned the value i
+    //   * Flow from the split block is modified to flow to J
+    //   * The switch in J transfers control to the headers H based on K
+    //
+    //   Optionally: if the source of an edge to a header is dominated by that header,
+    //   the edge can be left as is. (requires dominators)
+    //
+    bool TransformViaSwitchDispatch()
+    {
+        bool           modified   = false;
+        const unsigned numHeaders = NumEntries();
+
+        if (numHeaders > 1)
+        {
+            JITDUMP("Transforming Scc via switch dispatch: ");
+            JITDUMPEXEC(Dump());
+
+            // We're making changes
+            //
+            modified = true;
+
+            // Split edges, rewire flow, and add control var assignments
+            //
+            const unsigned   controlVarNum = m_comp->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
+            LclVarDsc* const controlVarDsc = m_comp->lvaGetDesc(controlVarNum);
+            controlVarDsc->lvType          = TYP_INT;
+            BasicBlock*      dispatcher    = nullptr;
+            FlowEdge** const succs         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
+            FlowEdge** const cases         = new (m_comp, CMK_FlowEdge) FlowEdge*[numHeaders];
+            unsigned         headerNumber  = 0;
+            BitVecOps::Iter  iterator(&m_traits, m_entries);
+            unsigned int     poHeaderNumber = 0;
+            weight_t         netLikelihood  = 0.0;
+
+            while (iterator.NextElem(&poHeaderNumber))
+            {
+                BasicBlock* const header = m_dfsTree->GetPostOrder(poHeaderNumber);
+                if (dispatcher == nullptr)
+                {
+                    if ((EnclosingTryIndex() > 0) || (EnclosingHndIndex() > 0))
+                    {
+                        const bool inTry = ((EnclosingTryIndex() != 0) && (EnclosingHndIndex() == 0)) ||
+                                           (EnclosingTryIndex() < EnclosingHndIndex());
+                        if (inTry)
+                        {
+                            JITDUMP("Dispatch header needs to go in try of EH#%02u ...\n", EnclosingTryIndex() - 1);
+                        }
+                        else
+                        {
+                            JITDUMP("Dispatch header needs to go in handler of EH#%02u ...\n", EnclosingHndIndex() - 1);
+                        }
+                    }
+                    else
+                    {
+                        JITDUMP("Dispatch header needs to go in method region\n");
+                    }
+                    dispatcher = m_comp->fgNewBBinRegion(BBJ_SWITCH, EnclosingTryIndex(), EnclosingHndIndex(),
+                                                         /* nearBlk */ nullptr);
+                    dispatcher->setBBProfileWeight(TotalEntryWeight());
+                }
+
+                weight_t headerWeight = header->bbWeight;
+
+                for (FlowEdge* const f : header->PredEdgesEditing())
+                {
+                    assert(f->getDestinationBlock() == header);
+                    BasicBlock* const pred            = f->getSourceBlock();
+                    BasicBlock* const transferBlock   = m_comp->fgSplitEdge(pred, header);
+                    GenTree* const    targetIndex     = m_comp->gtNewIconNode(headerNumber);
+                    GenTree* const    storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
+
+                    m_comp->fgNewStmtAtBeg(transferBlock, storeControlVar);
+                    m_comp->fgReplaceJumpTarget(transferBlock, header, dispatcher);
+                }
+
+                FlowEdge* const dispatchToHeaderEdge = m_comp->fgAddRefPred(header, dispatcher);
+
+                // Since all flow to header now goes through dispatch, we know the likelihood
+                // of the dispatch targets. If all profile data is zero just divide evenly.
+                //
+                if ((headerNumber + 1) == numHeaders)
+                {
+                    dispatchToHeaderEdge->setLikelihood(max(0.0, (1.0 - netLikelihood)));
+                }
+                else if (TotalEntryWeight() > 0)
+                {
+                    dispatchToHeaderEdge->setLikelihood(headerWeight / TotalEntryWeight());
+                }
+                else
+                {
+                    dispatchToHeaderEdge->setLikelihood(1.0 / numHeaders);
+                }
+
+                netLikelihood += dispatchToHeaderEdge->getLikelihood();
+
+                succs[headerNumber] = dispatchToHeaderEdge;
+                cases[headerNumber] = dispatchToHeaderEdge;
+
+                headerNumber++;
+            }
+
+            // Create the dispatch switch... all cases unique.
+            //
+            JITDUMP("Dispatch header is " FMT_BB "; %u cases\n", dispatcher->bbNum, numHeaders);
+            BBswtDesc* const swtDesc =
+                new (m_comp, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, /* hasDefault */ true);
+            dispatcher->SetSwitch(swtDesc);
+
+            GenTree* const controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
+            GenTree* const switchNode = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
+
+            m_comp->fgNewStmtAtEnd(dispatcher, switchNode);
+        }
+
+        // Handle nested Sccs
+        //
+        for (Scc* const nested : m_nested)
+        {
+            modified |= nested->TransformViaSwitchDispatch();
+        }
+
+        return modified;
+    }
+};
+
+//-----------------------------------------------------------------------------
+// WasmFindSccs: find strongly connected components in the flow graph
+//
+// Arguments:
+//   comp       -- Compiler instance
+//   dfsTree    -- Wasm dfsTree
+//   sccs [out] -- top level Sccs in the flow graph
+//
+// Returns:
+//   true if the flow graph was modified
+//
+void WasmFindSccs(Compiler* comp, FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& sccs)
+{
+    assert(dfsTree->IsForWasm());
+
+    BitVecTraits traits(dfsTree->GetPostOrderCount(), comp);
+    BitVec       allBlocks = BitVecOps::MakeFull(&traits);
+
+    WasmFindSccsCore(comp, dfsTree, allBlocks, traits, sccs, dfsTree->GetPostOrder(), dfsTree->GetPostOrderCount());
+
+    unsigned numIrreducible       = 0;
+    unsigned numNestedIrreducible = 0;
+
+    if (sccs.Height() > 0)
+    {
+        JITDUMP("\n*** Sccs\n");
+
+        for (int i = 0; i < sccs.Height(); i++)
+        {
+            Scc* const scc = sccs.Bottom(i);
+            scc->DumpAll();
+
+            numIrreducible += scc->NumIrr();
+        }
+    }
+    else
+    {
+        JITDUMP("\n*** No Sccs\n");
+    }
+
+    if (numIrreducible > 0)
+    {
+        JITDUMP("\n*** %u total Irreducible!\n", numIrreducible);
+    }
+
+    // comp->Metrics.IrreducibleLoopsFoundDuringOpts = (int)numIrreducible;
+}
+
+//-----------------------------------------------------------------------------
+// WasmTransformSccs: transform SCCs into reducible flow
+//
+// Arguments:
+//   sccs - SCCs to transform
+//
+// Returns:
+//   true if flow was modified (sccs was not empty)
+//
+// Notes:
+//   Currently recurses to handle "nested" sccs before. Might be more sensible
+//   to have a flat list of SCCs. If so we should transform these as outer to
+//   inner.
+//
+bool WasmTransformSccs(ArrayStack<Scc*>& sccs)
+{
+    bool modified = false;
+
+    for (int i = 0; i < sccs.Height(); i++)
+    {
+        Scc* const scc = sccs.Bottom(i);
+        modified |= scc->TransformViaSwitchDispatch();
+    }
+
+    return modified;
+}
+
+//-----------------------------------------------------------------------------
+// WasmFindSccsCore: find strongly connected components in a subgraph
+//
+// Arguments:
+//   comp    - compiler instance
+//   dfsTree - wasm dfs tree (entire method)
+//   subset  - bv describing the subgraph
+//   traits  - bv traits
+//   sccs    - [out] collection of Sccs found in this subgraph
+//   postorder - array of BasicBlock* in postorder
+//   postorderCount - size of hte array
+//
+void WasmFindSccsCore(Compiler*         comp,
+                      FlowGraphDfsTree* dfsTree,
+                      BitVec&           subset,
+                      BitVecTraits&     traits,
+                      ArrayStack<Scc*>& sccs,
+                      BasicBlock**      postorder,
+                      unsigned          postorderCount)
+{
+    // Initially we map a block to a null entry in the map.
+    // If we then get a second block in that Scc, we allocate an Scc instance.
+    //
+    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, Scc*> SccMap;
+    SccMap                                                              map(comp->getAllocator(CMK_Wasm));
+
+    auto assign = [=, &map, &sccs, &traits](auto self, BasicBlock* u, BasicBlock* root, BitVec& subset) -> void {
+        // Ignore blocks not in the subset
+        //
+        // This might be too restrictive. Consider
+        //
+        // X -> A; X -> B;
+        // A -> B; A -> C;
+        // B -> A; B -> B;
+        //
+        // We find the A,B Scc. Its non-header subset is empty.
+        //
+        // Thus we fail to find the B self loop "nested" inside.
+        //
+        // Might need to be: "ignore in-edges from outside the set, or from
+        // non-dominated edges in the set...?" So we'd ignore A->B and B->A,
+        // but not B->B.
+        //
+        // However I think we still find all nested Sccs, since those cannot
+        // share a header with the outer Scc?
+        //
+        if (!BitVecOps::IsMember(&traits, subset, u->bbPostorderNum))
+        {
+            return;
+        }
+
+        // If we've assigned u an scc, no more work needed.
+        //
+        if (map.Lookup(u))
+        {
+            return;
+        }
+
+        // Else see if there's an Scc for root
+        //
+        Scc* scc   = nullptr;
+        bool found = map.Lookup(root, &scc);
+
+        if (found)
+        {
+            assert(u != root);
+
+            if (scc == nullptr)
+            {
+                scc = new (comp, CMK_DepthFirstSearch) Scc(comp, dfsTree, root);
+                map.Set(root, scc, SccMap::SetKind::Overwrite);
+                sccs.Push(scc);
+            }
+
+            scc->Add(u);
+        }
+
+        // Indicate we've visited u
+        //
+        map.Set(u, scc);
+
+        // Walk u's preds looking for more Scc members
+        //
+        // Do not walk back out of a handler
+        //
+        if (comp->bbIsHandlerBeg(u))
+        {
+            return;
+        }
+
+        // Do not walk back into a finally,
+        // instead skip to the call finally.
+        //
+        if (u->isBBCallFinallyPairTail())
+        {
+            self(self, u->Prev(), root, subset);
+            return;
+        }
+
+        // Else walk preds...
+        //
+        for (BasicBlock* p : u->PredBlocks())
+        {
+            // Do not walk back into a catch or filter.
+            //
+            if (p->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET))
+            {
+                continue;
+            }
+
+            self(self, p, root, subset);
+        }
+    };
+
+    // proper rdfs? bv iter...?
+    //
+    for (unsigned i = 0; i < postorderCount; i++)
+    {
+        unsigned const    rpoNum = postorderCount - i - 1;
+        BasicBlock* const block  = postorder[rpoNum];
+
+        if (!BitVecOps::IsMember(&traits, subset, block->bbPostorderNum))
+        {
+            continue;
+        }
+
+        assign(assign, block, block, subset);
+    }
+
+    if (sccs.Height() > 0)
+    {
+        for (int i = 0; i < sccs.Height(); i++)
+        {
+            Scc* const scc = sccs.Bottom(i);
+            scc->Finalize();
+        }
+    }
 }
 
 //------------------------------------------------------------------------
@@ -308,17 +954,29 @@ PhaseStatus Compiler::fgWasmControlFlow()
     //
     // We don't install our DFS tree as "the" DFS tree as it is non-standard.
     //
-    FlowGraphDfsTree* const dfsTree = fgWasmDfs();
+    FlowGraphDfsTree* dfsTree = fgWasmDfs();
     assert(dfsTree->IsForWasm());
-    FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
+    FlowGraphNaturalLoops* loops = FlowGraphNaturalLoops::Find(dfsTree);
 
-    // Bail out for now if there is any irreducible flow.
-    // TODO: run the irreducible flow fixing before this.
+    // If there are irreducible loops, transforrm them.
     //
     if (loops->ImproperLoopHeaders() > 0)
     {
-        JITDUMP("\nThere are irreducible loops here, bailing\n");
-        return PhaseStatus::MODIFIED_NOTHING;
+        JITDUMP("\nThere are irreducible loops..\n");
+
+        ArrayStack<Scc*> sccs(getAllocator(CMK_Wasm));
+        WasmFindSccs(this, dfsTree, sccs);
+        assert(!sccs.Empty());
+
+        bool transformed = WasmTransformSccs(sccs);
+        assert(transformed);
+
+        // Now rebuild DFS and loops; verify no improper headers remain
+        //
+        dfsTree = fgWasmDfs();
+        loops   = FlowGraphNaturalLoops::Find(dfsTree);
+
+        assert(loops->ImproperLoopHeaders() == 0);
     }
 
     // Our interval ends are at the starts of blocks, so we need a block that
