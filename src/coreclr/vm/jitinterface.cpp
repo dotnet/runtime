@@ -14666,6 +14666,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 
     ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
+    pCode->EmitLDARG(0);
+    pCode->EmitCALL(METHOD__ASYNC_HELPERS__SET_ASYNC_CALL_CONTINUATION_ARG, 1, 0);
+
     int numArgs = 0;
 
     if (msig.HasThis())
@@ -14683,18 +14686,6 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         numArgs++;
     }
 
-#ifndef TARGET_X86
-    if (msig.HasGenericContextArg())
-    {
-        pCode->EmitLDC(0);
-        numArgs++;
-    }
-
-    // Continuation
-    pCode->EmitLDARG(0);
-    numArgs++;
-#endif
-
     msig.Reset();
     CorElementType ty;
     while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
@@ -14707,50 +14698,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         numArgs++;
     }
 
-#ifdef TARGET_X86
-    // Continuation
-    pCode->EmitLDARG(0);
-
-    if (msig.HasGenericContextArg())
-    {
-        pCode->EmitLDC(0);
-        numArgs++;
-    }
-
-    numArgs++;
-#endif
-
-#ifdef FEATURE_TIERED_COMPILATION
-    // Resumption stubs are uniquely coupled to the code version (since the
-    // continuation is), so we need to make sure we always keep calling the
-    // same version here.
-    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
-    NativeCodeVersion ncv = config->GetCodeVersion();
-    if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
-    {
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-        // The OSR version needs to resume in the tier0 version. The tier0
-        // version will handle setting up the frame that the OSR version
-        // expects and then delegating back into the OSR version (knowing to do
-        // so through information stored in the continuation).
-        _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
-        pCode->EmitLDC((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
-#else // !FEATURE_ON_STACK_REPLACEMENT
-        _ASSERTE(!"Unexpected optimization tier with OSR disabled");
-#endif // FEATURE_ON_STACK_REPLACEMENT
-    }
-    else
-#endif // FEATURE_TIERED_COMPILATION
-    {
-        {
-            m_finalCodeAddressSlot = (PCODE*)amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
-        }
-
-        pCode->EmitLDC((DWORD_PTR)m_finalCodeAddressSlot);
-        pCode->EmitLDIND_I();
-    }
-
-    pCode->EmitCALLI(pCode->GetSigToken(calliSig.GetRawSig(), calliSig.GetRawSigLen()), numArgs, msig.IsReturnTypeVoid() ? 0 : 1);
+    pCode->EmitCALL(pCode->GetToken(md), numArgs, msig.IsReturnTypeVoid() ? 0 : 1);
 
     DWORD resultLoc = UINT_MAX;
     TypeHandle resultTypeHnd;
@@ -14799,6 +14747,8 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 
     const char* optimizationTierName = "UnknownTier";
 #ifdef FEATURE_TIERED_COMPILATION
+    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
+    NativeCodeVersion ncv = config->GetCodeVersion();
     switch (ncv.GetOptimizationTier())
     {
     case NativeCodeVersion::OptimizationTier0: optimizationTierName = "Tier0"; break;
