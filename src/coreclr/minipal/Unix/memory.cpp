@@ -6,7 +6,6 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include "minipal.h"
-#include "minipal/cpufeatures.h"
 
 void* VMToOSInterface::AlignedAllocate(size_t alignment, size_t size)
 {
