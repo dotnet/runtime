@@ -18,7 +18,7 @@ namespace System.PrivateUri.Tests
         private const string AlphaNumeric = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         private const string RFC2396Unreserved = AlphaNumeric + "-_.!~*'()";
         private const string RFC2396Reserved = @";/:@&=+$,?";
-        private const string RFC3986Unreserved = AlphaNumeric + "-._~";
+        public const string RFC3986Unreserved = AlphaNumeric + "-._~";
         private const string RFC3986Reserved = @":/[]@!$&'()*+,;=?#";
         private const string GB18030CertificationString1 =
             "\u6570\u636E eq '\uD840\uDC00\uD840\uDC01\uD840\uDC02\uD840\uDC03\uD869\uDED1\uD869\uDED2\uD869\uDED3"
