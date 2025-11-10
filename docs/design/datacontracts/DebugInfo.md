@@ -8,7 +8,7 @@ This contract is for fetching information related to DebugInfo associated with n
 [Flags]
 public enum SourceTypes : uint
 {
-    SourceTypeInvalid = 0x00, // To indicate that nothing else applies
+    Default = 0x00, // To indicate that nothing else applies
     StackEmpty = 0x01, // The stack is empty here
     CallInstruction = 0x02  // The actual instruction of a call
     Async = 0x04 // (Version 2+) Indicates suspension/resumption for an async call
