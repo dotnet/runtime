@@ -37,27 +37,6 @@ namespace Tracing.Tests.UserEvents
             string traceFilePath = Path.GetTempFileName();
             const string userEventsDataPath = "/sys/kernel/tracing/user_events_data";
 
-            if (!File.Exists(userEventsDataPath))
-            {
-                Console.Error.WriteLine($"user_events_data not found at `{userEventsDataPath}`. The environment does not support user_events.");
-                return -1;
-            }
-
-            try
-            {
-                using FileStream fs = File.Open(userEventsDataPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                Console.Error.WriteLine($"Cannot access `{userEventsDataPath}`. This test requires elevated permissions to access user_events_data.");
-                return -1;
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error accessing `{userEventsDataPath}`: {ex.Message}");
-                return -1;
-            }
-
             if (!File.Exists(recordTracePath))
             {
                 Console.Error.WriteLine($"record-trace not found at `{recordTracePath}`. Test cannot run.");
@@ -77,20 +56,25 @@ namespace Tracing.Tests.UserEvents
             traceeStartInfo.RedirectStandardError = true;
 
             ProcessStartInfo recordTraceStartInfo = new();
-            recordTraceStartInfo.FileName = recordTracePath;
-            recordTraceStartInfo.Arguments = $"--script-file {scriptFilePath} --out {traceFilePath}";
+            recordTraceStartInfo.FileName = "sudo";
+            recordTraceStartInfo.Arguments = $"-n {recordTracePath} --script-file {scriptFilePath} --out {traceFilePath}";
             recordTraceStartInfo.WorkingDirectory = appBaseDir;
+            recordTraceStartInfo.UseShellExecute = false;
             recordTraceStartInfo.RedirectStandardOutput = true;
             recordTraceStartInfo.RedirectStandardError = true;
 
-
             Console.WriteLine($"Starting record-trace: {recordTraceStartInfo.FileName} {recordTraceStartInfo.Arguments}");
             using Process recordTraceProcess = Process.Start(recordTraceStartInfo);
-            Console.WriteLine($"record-trace started with PID: {recordTraceProcess.Id}");
             recordTraceProcess.OutputDataReceived += (_, args) => Console.WriteLine($"[record-trace] {args.Data}");
             recordTraceProcess.BeginOutputReadLine();
             recordTraceProcess.ErrorDataReceived += (_, args) => Console.Error.WriteLine($"[record-trace] {args.Data}");
             recordTraceProcess.BeginErrorReadLine();
+            if (recordTraceProcess.HasExited && recordTraceProcess.ExitCode != 0)
+            {
+                Console.Error.WriteLine($"record-trace exited prematurely with code {recordTraceProcess.ExitCode}");
+                return -1;
+            }
+            Console.WriteLine($"record-trace started with PID: {recordTraceProcess.Id}");
 
             Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {traceeStartInfo.Arguments}");
             using Process traceeProcess = Process.Start(traceeStartInfo);
