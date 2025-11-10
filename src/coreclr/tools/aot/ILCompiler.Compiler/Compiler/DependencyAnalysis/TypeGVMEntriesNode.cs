@@ -46,6 +46,7 @@ namespace ILCompiler.DependencyAnalysis
         public TypeGVMEntriesNode(TypeDesc associatedType)
         {
             Debug.Assert(associatedType.IsTypeDefinition);
+            Debug.Assert(!associatedType.IsInterface);
             _associatedType = associatedType;
         }
 

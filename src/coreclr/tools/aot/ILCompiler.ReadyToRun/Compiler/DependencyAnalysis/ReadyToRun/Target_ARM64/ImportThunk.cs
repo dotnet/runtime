@@ -21,13 +21,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return;
             }
 
-            instructionEncoder.Builder.RequireInitialPointerAlignment();
-            Debug.Assert(instructionEncoder.Builder.CountBytes == 0);
-
-            instructionEncoder.Builder.EmitReloc(factory.ModuleImport, RelocType.IMAGE_REL_BASED_DIR64);
-
-            Debug.Assert(instructionEncoder.Builder.CountBytes == ((ISymbolNode)this).Offset);
-
             if (relocsOnly)
             {
                 // When doing relocs only, we don't need to generate the actual instructions
@@ -50,21 +43,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     instructionEncoder.EmitMOV(Register.X9, checked((ushort)index));
 
                     // Move Module* -> x10
-                    // ldr x10, [PC-0xc]
-                    instructionEncoder.EmitLDR(Register.X10, -0xc);
+                    // adrp x10, ModuleImport
+                    instructionEncoder.EmitADRP(Register.X10, factory.ModuleImport);
 
-                    // ldr x10, [x10]
-                    instructionEncoder.EmitLDR(Register.X10, Register.X10);
+                    // ldr x10, [x10, ModuleImport page offset]
+                    instructionEncoder.EmitLDR(Register.X10, Register.X10, factory.ModuleImport);
                     break;
 
                 case Kind.Lazy:
 
                     // Move Module* -> x1
-                    // ldr x1, [PC-0x8]
-                    instructionEncoder.EmitLDR(Register.X1, -0x8);
+                    // adrp x1, ModuleImport
+                    instructionEncoder.EmitADRP(Register.X1, factory.ModuleImport);
 
-                    // ldr x1, [x1]
-                    instructionEncoder.EmitLDR(Register.X1, Register.X1);
+                    // ldr x1, [x1, ModuleImport page offset]
+                    instructionEncoder.EmitLDR(Register.X1, Register.X1, factory.ModuleImport);
                     break;
 
                 default:

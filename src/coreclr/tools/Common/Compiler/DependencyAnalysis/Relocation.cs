@@ -323,6 +323,49 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GetArm64Rel12(pCode) == imm12);
         }
 
+        //*****************************************************************************
+        //  Extract the 12-bit page offset from an LDR instruction (unsigned immediate)
+        //  For 64-bit LDR, the immediate is scaled by 8 bytes
+        //*****************************************************************************
+        private static unsafe int GetArm64Rel12Ldr(uint* pCode)
+        {
+            uint ldrInstr = *pCode;
+
+            // 0x003FFC00: Mask for bits 21-10 of the 32-bit ARM64 LDR instruction
+            // which contain the scaled immediate value
+            int scaledImm12 = (int)(ldrInstr & 0x003FFC00) >> 10;
+
+            // Scale back to byte offset (multiply by 8)
+            return scaledImm12 << 3;
+        }
+
+        //*****************************************************************************
+        //  Deposit the 12-bit page offset 'imm12' into an LDR instruction (unsigned immediate)
+        //  For 64-bit LDR, the immediate represents offset/8 (scaled by 8 bytes)
+        //*****************************************************************************
+        private static unsafe void PutArm64Rel12Ldr(uint* pCode, int imm12)
+        {
+            // Verify that we got a valid offset and that it's aligned to 8 bytes
+            Debug.Assert(FitsInRel12(imm12));
+            Debug.Assert((imm12 & 7) == 0, "LDR offset must be 8-byte aligned");
+
+            uint ldrInstr = *pCode;
+            // Check ldr opcode: 0b11111001010000000000000000000000 (LDR 64-bit register, unsigned immediate)
+            Debug.Assert((ldrInstr & 0xFFC00000) == 0xF9400000);
+
+            // Scale the offset by dividing by 8 for the instruction encoding
+            int scaledImm12 = imm12 >> 3;
+
+            // 0xFFC003FF: Mask to preserve bits 31-22 (opcode) and bits 9-0 (registers)
+            // Clear bits 21-10 which will hold the scaled immediate value
+            ldrInstr &= 0xFFC003FF;
+            ldrInstr |= (uint)(scaledImm12 << 10);     // Set bits 21-10 with scaled offset
+
+            *pCode = ldrInstr;                         // write the assembled instruction
+
+            Debug.Assert(GetArm64Rel12Ldr(pCode) == imm12);
+        }
+
         private static unsafe int GetArm64Rel28(uint* pCode)
         {
             uint branchInstr = *pCode;
@@ -548,6 +591,9 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A:
                     PutArm64Rel12((uint*)location, (int)value);
                     break;
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
+                    PutArm64Rel12Ldr((uint*)location, (int)value);
+                    break;
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                     PutLoongArch64PC12((uint*)location, value);
                     break;
@@ -578,6 +624,7 @@ namespace ILCompiler.DependencyAnalysis
                 // a span of this many bytes.
                 RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => 4,
                 RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => 4,
+                RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L => 4,
                 RelocType.IMAGE_REL_BASED_THUMB_MOV32 => 8,
                 RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL => 8,
                 RelocType.IMAGE_REL_BASED_LOONGARCH64_PC => 16,
@@ -617,6 +664,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A:
                 case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A:
                     return GetArm64Rel12((uint*)location);
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
+                    return GetArm64Rel12Ldr((uint*)location);
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
                 case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12:
