@@ -13,7 +13,7 @@
         extends [System.Runtime]System.Object
 {
     // Valid async method returning Task<int> with int on stack
-    .method public hidebysig instance valuetype [System.Runtime]System.Threading.Tasks.Task`1<int32> AsyncTaskInt_Valid() cil managed async
+    .method public hidebysig instance class [System.Runtime]System.Threading.Tasks.Task`1<int32> AsyncTaskInt_Valid() cil managed async
     {
         ldc.i4.0
         ret
@@ -82,7 +82,7 @@
     }
     
     // Valid: async method returning ValueTask with nothing on stack
-    .method public hidebysig instance class [System.Runtime]System.Threading.Tasks.ValueTask AsyncValueTask_Valid() cil managed async
+    .method public hidebysig instance valuetype [System.Runtime]System.Threading.Tasks.ValueTask AsyncValueTask_Valid() cil managed async
     {
         ret
     }
