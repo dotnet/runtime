@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -14,8 +14,8 @@ using WasmAppBuilder;
 
 using JoinedString;
 //
-// This class generates the icall_trampoline_dispatch () function used by the interpreter to call native code on WASM.
-// It should be kept in sync with mono_wasm_interp_to_native_trampoline () in the runtime.
+// This class generates the g_wasmThunks array and CallFunc_* functions used by the CoreCLR interpreter to call native code on WASM.
+// The generated code should be kept in sync with the corresponding CoreCLR runtime code that consumes these thunks and call functions.
 //
 
 #nullable enable

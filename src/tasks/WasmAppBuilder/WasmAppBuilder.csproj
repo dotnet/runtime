@@ -61,10 +61,6 @@
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(OutputPath)$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" />
 
   <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
-      <PropertyGroup>
-        <GenTestOutput>$(OutputPath)generator-test-output</GenTestOutput>
-      </PropertyGroup>
-
       <ItemGroup>
         <WasmPInvokeAssembly Include="$(AssembliesScanPath)**/*.dll" />
         <WasmPInvokeModule Include="libSystem.Native" />
