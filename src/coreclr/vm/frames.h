@@ -591,9 +591,9 @@ protected:
 #endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+#if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
     static void UpdateFloatingPointRegisters(const PREGDISPLAY pRD, TADDR targetSP);
-#endif // !TARGET_X86 || TARGET_UNIX
+#endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 #endif // DACCESS_COMPILE
 
 #if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
@@ -2232,9 +2232,9 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-#if !defined(TARGET_X86) || defined(TARGET_UNIX)
+#if (!defined(TARGET_X86) || defined(TARGET_UNIX)) && !defined(TARGET_WASM)
     void UpdateFloatingPointRegisters(const PREGDISPLAY pRD);
-#endif // !TARGET_X86 || TARGET_UNIX
+#endif // (!TARGET_X86 || TARGET_UNIX) && !TARGET_WASM
 #endif // DACCESS_COMPILE
 
 #ifdef FEATURE_INTERPRETER
@@ -2528,6 +2528,7 @@ public:
     }
 #endif // HOST_AMD64 && HOST_WINDOWS
 
+#ifndef TARGET_WASM
     void SetInterpExecMethodSP(TADDR sp)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2539,6 +2540,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_SP;
     }
+#endif // TARGET_WASM
 
     void SetIsFaulting(bool isFaulting)
     {
@@ -2556,7 +2558,9 @@ private:
     // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
     TADDR m_SSP;
 #endif // HOST_AMD64 && HOST_WINDOWS
+#ifndef TARGET_WASM
     TADDR m_SP;
+#endif // TARGET_WASM
 };
 
 #endif // FEATURE_INTERPRETER

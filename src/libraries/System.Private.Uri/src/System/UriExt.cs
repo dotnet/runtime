@@ -601,11 +601,7 @@ namespace System
             // We may throw for very large inputs (when growing the ValueStringBuilder).
             vsb.EnsureCapacity(charsToUnescape.Length - indexOfFirstToUnescape);
 
-            UriHelper.UnescapeString(
-                charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb,
-                c_DummyChar, c_DummyChar, c_DummyChar,
-                UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
-                syntax: null, isQuery: false);
+            UriHelper.Unescape(charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb);
 
             string result = string.Concat(charsToUnescape.Slice(0, indexOfFirstToUnescape), vsb.AsSpan());
             vsb.Dispose();
@@ -651,11 +647,7 @@ namespace System
                 vsb = new ValueStringBuilder(destination.Slice(indexOfFirstToUnescape));
             }
 
-            UriHelper.UnescapeString(
-                charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb,
-                c_DummyChar, c_DummyChar, c_DummyChar,
-                UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
-                syntax: null, isQuery: false);
+            UriHelper.Unescape(charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb);
 
             int newLength = indexOfFirstToUnescape + vsb.Length;
             Debug.Assert(newLength <= charsToUnescape.Length);
