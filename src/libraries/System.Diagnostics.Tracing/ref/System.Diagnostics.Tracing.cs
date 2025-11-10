@@ -155,9 +155,8 @@ namespace System.Diagnostics.Tracing
         public EventSource(string eventSourceName) { }
         public EventSource(string eventSourceName, System.Diagnostics.Tracing.EventSourceSettings config) { }
         public EventSource(string eventSourceName, System.Diagnostics.Tracing.EventSourceSettings config, params string[]? traits) { }
-        public EventSource(string eventSourceName, Guid eventSourceGuid) { }
-        public EventSource(string eventSourceName, Guid eventSourceGuid, System.Diagnostics.Tracing.EventSourceSettings settings, params string[]? traits) { }
-
+        public EventSource(string eventSourceName, System.Guid eventSourceGuid) { }
+        public EventSource(string eventSourceName, System.Guid eventSourceGuid, System.Diagnostics.Tracing.EventSourceSettings settings, params string[]? traits) { }
         public System.Exception? ConstructionException { get { throw null; } }
         public static System.Guid CurrentThreadActivityId { get { throw null; } }
         public System.Guid Guid { get { throw null; } }
