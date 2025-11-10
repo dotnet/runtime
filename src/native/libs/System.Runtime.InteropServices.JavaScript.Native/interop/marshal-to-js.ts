@@ -325,49 +325,6 @@ function createTaskHolder(resConverter?: MarshalerToJs) {
     return holder;
 }
 
-export function SystemInteropJS_ResolveOrRejectPromise(args: JSMarshalerArguments): void {
-    // rejection/resolution should not arrive earlier than the promise created by marshaling in SystemInteropJS_InvokeJSImportSync
-    Module.safeSetTimeout(() => SystemInteropJS_ResolveOrRejectPromiseImpl(args), 0);
-}
-
-export function SystemInteropJS_ResolveOrRejectPromiseImpl(args: JSMarshalerArguments): void {
-    if (!isRuntimeRunning()) {
-        dotnetLogger.debug("This promise resolution/rejection can't be propagated to managed code, runtime already exited.");
-        return;
-    }
-    args = fixupPointer(args, 0);
-    const exc = getArg(args, 0);
-    // TODO-WASM const receiverShouldFree = WasmEnableThreads && isReceiverShouldFree(args);
-    try {
-        assertRuntimeRunning();
-
-        const res = getArg(args, 1);
-        const argHandle = getArg(args, 2);
-        const argValue = getArg(args, 3);
-
-        const type = getArgType(argHandle);
-        const jsHandle = getArgJsHandle(argHandle);
-
-        const holder = getJSObjectFromJSHandle(jsHandle) as TaskHolder;
-        dotnetAssert.check(holder, () => `Cannot find Promise for JSHandle ${jsHandle}`);
-
-        holder.resolveOrReject(type, jsHandle, argValue);
-        /*TODO-WASM if (receiverShouldFree) {
-            // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
-            free(args as any);
-        } else {*/
-        setArgType(res, MarshalerType.Void);
-        setArgType(exc, MarshalerType.None);
-        //}
-
-    } catch (ex: any) {
-        /*TODO-WASM if (receiverShouldFree) {
-            dotnetAssert.check(false, () => `Failed to resolve or reject promise ${ex}`);
-        }*/
-        marshalExceptionToCs(exc, ex);
-    }
-}
-
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function marshalStringToJs(arg: JSMarshalerArgument): string | null {
     const type = getArgType(arg);
