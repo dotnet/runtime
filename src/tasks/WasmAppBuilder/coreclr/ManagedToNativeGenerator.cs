@@ -108,7 +108,6 @@ public class ManagedToNativeGenerator : Task
                 icall.ScanAssembly(asm);
             }
 
-
             IEnumerable<string> cookies = Enumerable.Concat(
                 pinvoke.Generate(PInvokeModules, PInvokeOutputPath),
                 Enumerable.Concat(icall.Generate(IcallOutputPath),
@@ -122,7 +121,7 @@ public class ManagedToNativeGenerator : Task
         }
 
         List<string> fileWritesList = new() { PInvokeOutputPath, InterpToNativeOutputPath };
-        if (IcallOutputPath != null)
+        if (!string.IsNullOrEmpty(IcallOutputPath))
             fileWritesList.Add(IcallOutputPath);
         if (!string.IsNullOrEmpty(CacheFilePath))
             fileWritesList.Add(CacheFilePath);
@@ -138,7 +137,6 @@ public class ManagedToNativeGenerator : Task
             _symbolNameFixups[name] = fixedName;
             return fixedName;
         }
-
     }
 
     private bool ShouldRun(IList<string> managedAssemblies)

@@ -106,7 +106,7 @@ internal sealed class InterpToNativeGenerator
                 w.Write(
                     $$"""
 
-                        void {{CallFuncName(args, SignatureMapper.CharToNameType(signature[0]))}} (PCODE pcode, int8_t *pArgs, int8_t *pRet)
+                        static void {{CallFuncName(args, SignatureMapper.CharToNameType(signature[0]))}}(PCODE pcode, int8_t* pArgs, int8_t* pRet)
                         {
                             {{result.nativeType}} (*fptr)({{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}) = ({{result.nativeType}} (*)({{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}))pcode;
                             {{portabilityAssert}}{{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{args.Join(", ", (p, i) => $"ARG_{SignatureMapper.CharToNameType(p)}({i})")}});
