@@ -378,10 +378,10 @@ namespace System.Formats.Tar
             }
             catch (InvalidDataException)
             {
-                // This is likely not a TAR file
-                // Check for compression magic numbers to provide better error message
-                ThrowInvalidFormatWithBetterMessage(buffer);
-                throw; // Ensure control flow never reaches code using 'checksum'
+                // Check if this might be a compressed file by looking at the buffer for compression magic numbers
+                ThrowIfCompressedArchive(buffer);
+                // If not a compressed file, re-throw the original parsing exception
+                throw;
             }
 
             // Zero checksum means the whole header is empty
@@ -804,16 +804,15 @@ namespace System.Formats.Tar
         }
 
 
-        /// Analyzes the buffer for known file format magic numbers and throws an InvalidDataException
-        /// with a specific error message. This provides better user experience by identifying the
-        /// actual file type when users pass non-TAR files to the TAR reader.
-        /// <exception cref="InvalidDataException">Always thrown with either a format-specific or generic message</exception>
-        [DoesNotReturn]
-        private static void ThrowInvalidFormatWithBetterMessage(ReadOnlySpan<byte> buffer)
+        /// Analyzes the buffer for known compression format magic numbers and throws an InvalidDataException
+        /// with a specific error message if a compression format is detected. 
+        /// If no compression format is detected, the method returns without throwing.
+        /// <exception cref="InvalidDataException">Thrown if a compression format is detected</exception>
+        private static void ThrowIfCompressedArchive(ReadOnlySpan<byte> buffer)
         {
             if (buffer.Length < 2)
             {
-                throw new InvalidDataException(SR.TarInvalidArchiveFormat);
+                return;
             }
 
             byte firstByte = buffer[0];
@@ -879,9 +878,6 @@ namespace System.Formats.Tar
                     }
                     break;
             }
-
-            // If we can't identify the specific format, provide a generic message
-            throw new InvalidDataException(SR.TarInvalidArchiveFormat);
         }
     }
 }
