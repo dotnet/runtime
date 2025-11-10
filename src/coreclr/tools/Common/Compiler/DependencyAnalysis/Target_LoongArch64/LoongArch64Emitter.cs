@@ -121,8 +121,6 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
 
                 // jirl R0,R21,0
                 EmitJMP(Register.R21);
-
-                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64);
             }
             else
             {
