@@ -154,6 +154,12 @@ namespace System.Runtime.CompilerServices
         [BypassReadyToRun]
         internal static Continuation? AsyncCallContinuation() => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
+        // Set call continuation argument for an upcoming call with runtime async calling convention.
+        // Can only be used shortly before the call (with no interfering control flow instructions before the call).
+        // If used anywhere in the method it must be present before _all_ calls with runtime async calling convention.
+        [Intrinsic]
+        internal static void SetAsyncCallContinuationArg(Continuation continuation) => throw new UnreachableException();
+
         // Used during suspensions to hold the continuation chain and on what we are waiting.
         // Methods like FinalizeTaskReturningThunk will unlink the state and wrap into a Task.
         private struct RuntimeAsyncAwaitState
