@@ -300,6 +300,7 @@ static const Entry s_QCall[] =
 #ifdef TARGET_WINDOWS
     DllImportEntry(ThreadNative_CheckForPendingInterrupt)
     DllImportEntry(ThreadNative_Interrupt)
+    DllImportEntry(ThreadNative_GetOSHandle)
 #endif // TARGET_WINDOWS
     DllImportEntry(ThreadNative_PollGC)
 #ifdef FEATURE_COMINTEROP
