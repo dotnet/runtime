@@ -620,7 +620,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_MachLinkerArg Include="-Wl,-dead_strip" />
     </ItemGroup>
 
-    <Exec Command="&quot;$(_AppleClang)&quot; --version" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+    <Exec Command="&quot;$(_AppleClang)&quot; --version" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
       <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
     </Exec>

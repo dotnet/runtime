@@ -430,6 +430,13 @@ namespace ILCompiler
                     // the composite executable.
                     string outputDirectory = Path.GetDirectoryName(outputFile);
                     string ownerExecutableName = Path.GetFileName(outputFile);
+
+                    if (_format == ReadyToRunContainerFormat.MachO)
+                    {
+                        // MachO composite images have the owner executable name stored with the dylib extension
+                        ownerExecutableName = Path.ChangeExtension(ownerExecutableName, ".dylib");
+                    }
+
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);

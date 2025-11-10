@@ -62,7 +62,7 @@
     <MergedMibcPath>$([MSBuild]::NormalizePath('$(BinDir)', 'StandardOptimizationData.mibc'))</MergedMibcPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+  <PropertyGroup Condition="'$(PublishReadyToRunContainerFormat)' == 'macho'">
     <CoreLibObjOutputPath>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', '$(CoreLibAssemblyName).o'))</CoreLibObjOutputPath>
     <CrossgenCoreLibOutputPath>$(CoreLibObjOutputPath)</CrossgenCoreLibOutputPath>
     <CoreLibDylibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dylib'))</CoreLibDylibOutputPath>
@@ -148,8 +148,8 @@
       <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CrossgenCoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
-      <CrossGenDllCmd  Condition="'$(PublishReadyToRunContainerFormat)' != ''">$(CrossGenDllCmd) --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
-      <CrossGenDllCmd  Condition="'$(UseComposite)' == 'true'">$(CrossGenDllCmd) --composite</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' != ''">$(CrossGenDllCmd) --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(UseComposite)' == 'true'">$(CrossGenDllCmd) --composite</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(TargetsAndroid)' != 'true'">$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
       <!-- Unless and until Android requires R2R specific customizations, we're just dealing with another linux -->
       <CrossGenDllCmd Condition="'$(TargetsAndroid)' == 'true'">$(CrossGenDllCmd) --targetos:linux</CrossGenDllCmd>
@@ -252,7 +252,7 @@
       <_MachLinkerArg Include="-Wl,-dead_strip" />
     </ItemGroup>
 
-    <Exec Command="&quot;$(_AppleClang)&quot; --version" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+    <Exec Command="&quot;$(_AppleClang)&quot; --version" IgnoreExitCode="true" StandardOutputImportance="Low" IgnoreStandardErrorWarningFormat="true" ConsoleToMSBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
       <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
     </Exec>
