@@ -109,7 +109,7 @@ internal sealed class InterpToNativeGenerator
                         static void {{CallFuncName(args, SignatureMapper.CharToNameType(signature[0]))}}(PCODE pcode, int8_t* pArgs, int8_t* pRet)
                         {
                             {{result.nativeType}} (*fptr)({{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}) = ({{result.nativeType}} (*)({{args.Join(", ", (p, i) => SignatureMapper.CharToNativeType(p))}}))pcode;
-                            {{portabilityAssert}}{{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{args.Join(", ", (p, i) => $"ARG_{SignatureMapper.CharToNameType(p)}({i})")}});
+                            {{portabilityAssert}}{{(result.isVoid ? "" : "*" + "((" + result.nativeType + "*)pRet) = ")}}(*fptr)({{args.Join(", ", (p, i) => $"{SignatureMapper.CharToArgType(p)}({i})")}});
                         }
 
                     """);
@@ -130,6 +130,7 @@ internal sealed class InterpToNativeGenerator
             };
 
             const size_t g_wasmThunksCount = sizeof(g_wasmThunks) / sizeof(g_wasmThunks[0]);
+            
             """);
     }
 }

@@ -19,6 +19,7 @@ internal static class SignatureMapper
             return null;
         }
 
+        // See https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
         char? c = null;
         if (t.Namespace == "System") {
             c = t.Name switch
@@ -130,6 +131,16 @@ internal static class SignatureMapper
         'f' => "F32",
         'd' => "F64",
         'n' => "IND",
+        _ => throw new InvalidSignatureCharException(c)
+    };
+
+    public static string CharToArgType(char c) => c switch
+    {
+        'i' => "ARG_I32",
+        'l' => "ARG_I64",
+        'f' => "ARG_F32",
+        'd' => "ARG_F64",
+        'n' => "ARG_IND",
         _ => throw new InvalidSignatureCharException(c)
     };
 
