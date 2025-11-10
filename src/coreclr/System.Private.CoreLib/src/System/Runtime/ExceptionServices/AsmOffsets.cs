@@ -59,8 +59,13 @@ class AsmOffsets
 #if TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x8;
 #if FEATURE_INTERPRETER
+#if TARGET_AMD64 && !TARGET_UNIX
+    public const int SIZEOF__StackFrameIterator = 0x178;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x170;
+#else
     public const int SIZEOF__StackFrameIterator = 0x170;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x168;
+#endif    
 #else
     public const int SIZEOF__StackFrameIterator = 0x150;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x148;
@@ -225,9 +230,14 @@ class AsmOffsets
 #endif
 
 #if TARGET_UNIX
-    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationCallback = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x30;
-    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationContext = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x38;
-#endif
+#if TARGET_ARM64
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationCallback = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x68;
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationContext = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x70;
+#else // TARGET_ARM64
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationCallback = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x60;
+    public const int OFFSETOF__ExInfo__m_pReversePInvokePropagationContext = OFFSETOF__ExInfo__m_frameIter + SIZEOF__StackFrameIterator + 0x68;
+#endif // TARGET_ARM64
+#endif // TARGET_UNIX
 
 #else // TARGET_64BIT
     public const int SIZEOF__EHEnum = 0x10;
@@ -292,6 +302,11 @@ class AsmOffsets
     static_assert(offsetof(ExInfo, m_handlingFrameSP) == OFFSETOF__ExInfo__m_handlingFrameSP);
 #if TARGET_ARM64
     static_assert(offsetof(ExInfo, m_handlingFramePC) == OFFSETOF__ExInfo__m_handlingFramePC);
+#endif
+
+#if TARGET_UNIX
+    static_assert(offsetof(ExInfo, m_propagateExceptionCallback) == OFFSETOF__ExInfo__m_pReversePInvokePropagationCallback);
+    static_assert(offsetof(ExInfo, m_propagateExceptionContext) == OFFSETOF__ExInfo__m_pReversePInvokePropagationContext);
 #endif
 
 #endif

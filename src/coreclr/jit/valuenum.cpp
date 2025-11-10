@@ -9385,8 +9385,6 @@ ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, NamedIntrinsic gtMathFN
 
     if (IsVNConstant(arg0VN) && (!m_pComp->IsAot() || m_pComp->IsTargetIntrinsic(gtMathFN)))
     {
-        assert(varTypeIsFloating(TypeOfVN(arg0VN)));
-
         if (typ == TYP_DOUBLE)
         {
             // Both operand and its result must be of the same floating point type.
@@ -9861,7 +9859,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 }
 
 #ifdef TARGET_RISCV64
-                case NI_System_Math_MaxNumber:
+                case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
@@ -9869,7 +9867,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_MinNumber:
+                case NI_System_Math_MinNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     double arg1Val = GetConstantDouble(arg1VN);
@@ -9903,7 +9901,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                 }
 
 #ifdef TARGET_RISCV64
-                case NI_System_Math_MaxNumber:
+                case NI_System_Math_MaxNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
@@ -9911,7 +9909,7 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
                     break;
                 }
 
-                case NI_System_Math_MinNumber:
+                case NI_System_Math_MinNative:
                 {
                     assert(typ == TypeOfVN(arg1VN));
                     float arg1Val = GetConstantSingle(arg1VN);
@@ -9987,27 +9985,27 @@ ValueNum ValueNumStore::EvalMathFuncBinary(var_types typ, NamedIntrinsic gtMathF
 
 #ifdef TARGET_RISCV64
             case NI_System_Math_Max:
-                vnf = VNF_Max;
-                break;
-
-            case NI_System_Math_MaxNumber:
-                vnf = VNF_MaxNumber;
+                vnf = VNF_MaxInt;
                 break;
 
             case NI_System_Math_MaxUnsigned:
-                vnf = VNF_Max_UN;
+                vnf = VNF_MaxInt_UN;
+                break;
+
+            case NI_System_Math_MaxNative:
+                vnf = VNF_MaxNumber;
                 break;
 
             case NI_System_Math_Min:
-                vnf = VNF_Min;
-                break;
-
-            case NI_System_Math_MinNumber:
-                vnf = VNF_MinNumber;
+                vnf = VNF_MinInt;
                 break;
 
             case NI_System_Math_MinUnsigned:
-                vnf = VNF_Min_UN;
+                vnf = VNF_MinInt_UN;
+                break;
+
+            case NI_System_Math_MinNative:
+                vnf = VNF_MinNumber;
                 break;
 #endif // TARGET_RISCV64
 

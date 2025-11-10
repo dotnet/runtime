@@ -63,7 +63,7 @@ ReadyToRunCoreInfo::ReadyToRunCoreInfo()
 {
 }
 
-ReadyToRunCoreInfo::ReadyToRunCoreInfo(PEImageLayout* pLayout, READYTORUN_CORE_HEADER *pCoreHeader)
+ReadyToRunCoreInfo::ReadyToRunCoreInfo(ReadyToRunLoadedImage* pLayout, READYTORUN_CORE_HEADER *pCoreHeader)
     : m_pLayout(pLayout), m_pCoreHeader(pCoreHeader), m_fForbidLoadILBodyFixups(false)
 {
 }
@@ -625,7 +625,10 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
+    LoaderHeap *pHeap = pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
+
     NativeImage *nativeImage = NULL;
+    ReadyToRunLoadedImage* loadedImage = nullptr;
     if (isComponentAssembly)
     {
         nativeImage = AcquireCompositeImage(pModule, pLayout, pHeader);
@@ -642,14 +645,14 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
             DoLog("Ready to Run disabled - module already loaded in another assembly load context");
             return NULL;
         }
+        void* pLoadedImageMemory = pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(ReadyToRunLoadedImage)));
+        loadedImage = new (pLoadedImageMemory) ReadyToRunLoadedImage((TADDR)pLayout->GetBase(), pLayout->GetVirtualSize());
     }
 
-    LoaderHeap *pHeap = pModule->GetLoaderAllocator()->GetHighFrequencyHeap();
     void * pMemory = pamTracker->Track(pHeap->AllocMem((S_SIZE_T)sizeof(ReadyToRunInfo)));
-
     DoLog("Ready to Run initialized successfully");
 
-    return new (pMemory) ReadyToRunInfo(pModule, pModule->GetLoaderAllocator(), pLayout, pHeader, nativeImage, pamTracker);
+    return new (pMemory) ReadyToRunInfo(pModule, pModule->GetLoaderAllocator(), pHeader, nativeImage, loadedImage, pamTracker);
 }
 
 bool ReadyToRunInfo::IsNativeImageSharedBy(PTR_Module pModule1, PTR_Module pModule2)
@@ -762,7 +765,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::ComputeAlternateGenericLocationForR2RCode(Met
     }
 }
 
-ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, AllocMemTracker *pamTracker)
+ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocator, READYTORUN_HEADER * pHeader, NativeImage *pNativeImage, ReadyToRunLoadedImage * pLayout, AllocMemTracker *pamTracker)
     : m_pModule(pModule),
     m_pHeader(pHeader),
     m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself
@@ -775,6 +778,9 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
 
     if ((pNativeImage != NULL) && (pModule != NULL))
     {
+        // We are intializing ReadyToRunInfo for a specific component assembly inside a composite R2R image.
+        // In this case, we don't use the R2R info in the PE image directly, so we don't need the native layout.
+        _ASSERT(pLayout == NULL);
         // In multi-assembly composite images, per assembly sections are stored next to their core headers.
         m_pCompositeInfo = pNativeImage->GetReadyToRunInfo();
         m_pComposite = m_pCompositeInfo->GetComponentInfo();
@@ -784,6 +790,11 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     }
     else
     {
+        // We are in one of the two following cases:
+        // 1. Initializing ReadyToRunInfo for a single-assembly R2R image.
+        // 2. Initializing ReadyToRunInfo for the composite R2R image itself.
+        // In this case, we'll pull the ready to run image layout from pLayout.
+        _ASSERT(pLayout != NULL);
         m_pCompositeInfo = this;
         m_component = ReadyToRunCoreInfo(pLayout, &pHeader->CoreHeader);
         m_pComposite = &m_component;

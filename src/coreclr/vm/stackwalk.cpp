@@ -45,6 +45,44 @@ Assembly* CrawlFrame::GetAssembly()
     return pAssembly;
 }
 
+PTR_VOID ConvertStackMarkToPointerOnOSStack(PTR_Thread pThread, PTR_VOID stackMark)
+{
+#ifdef FEATURE_INTERPRETER
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (stackMark == NULL)
+        return NULL;
+
+    if ((stackMark < pThread->GetCachedStackLimit()) || stackMark > pThread->GetCachedStackBase())
+    {
+        PTR_Frame pFrame = pThread->GetFrame();
+        while (pFrame != FRAME_TOP)
+        {
+            if (pFrame->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame)
+            {
+                PTR_InterpreterFrame pInterpFrame = dac_cast<PTR_InterpreterFrame>(pFrame);
+                PTR_InterpMethodContextFrame pTopInterpMethodContextFrame = pInterpFrame->GetTopInterpMethodContextFrame();
+                PTR_InterpMethodContextFrame pCurrent = pTopInterpMethodContextFrame;
+                do
+                {
+                    if (dac_cast<PTR_VOID>(pCurrent->pStack) <= stackMark)
+                    {
+                        return dac_cast<PTR_VOID>(dac_cast<TADDR>(pCurrent) + 1);
+                    }
+                    pCurrent = pCurrent->pParent;
+                } while (pCurrent != NULL);
+                
+            }
+
+            pFrame = pFrame->PtrNextFrame();
+        }
+
+        _ASSERTE(!"Unable to find InterpMethodContextFrame for stackMark that appears to be on the interpreter stack");
+    }
+#endif
+    return stackMark;
+}
+
 BOOL CrawlFrame::IsInCalleesFrames(LPVOID stackPointer)
 {
     LIMITED_METHOD_CONTRACT;
@@ -2027,14 +2065,14 @@ ProcessFuncletsForGCReporting:
                         // and its parent, eventually making a callback for the parent as well.
                         if (m_flags & (FUNCTIONSONLY | SKIPFUNCLETS))
                         {
-                            if (!m_sfParent.IsNull() || m_crawl.pFunc->IsILStub())
+                            if (!m_sfParent.IsNull() || m_crawl.pFunc->IsDiagnosticsHidden())
                             {
                                 STRESS_LOG4(LF_GCROOTS, LL_INFO100,
                                     "STACKWALK: %s: not making callback for this frame, SPOfParent = %p, \
-                                    isILStub = %d, m_crawl.pFunc = %pM\n",
-                                    (!m_sfParent.IsNull() ? "SKIPPING_TO_FUNCLET_PARENT" : "IS_IL_STUB"),
+                                    isDiagnosticsHidden = %d, m_crawl.pFunc = %pM\n",
+                                    (!m_sfParent.IsNull() ? "SKIPPING_TO_FUNCLET_PARENT" : "IS_DIAGNOSTICS_HIDDEN"),
                                     m_sfParent.SP,
-                                    (m_crawl.pFunc->IsILStub() ? 1 : 0),
+                                    (m_crawl.pFunc->IsDiagnosticsHidden() ? 1 : 0),
                                     m_crawl.pFunc);
 
                                 // don't stop here
@@ -2047,10 +2085,10 @@ ProcessFuncletsForGCReporting:
                             {
                                 STRESS_LOG4(LF_GCROOTS, LL_INFO100,
                                      "STACKWALK: %s: not making callback for this frame, SPOfParent = %p, \
-                                     isILStub = %d, m_crawl.pFunc = %pM\n",
-                                     (!m_sfParent.IsNull() ? "SKIPPING_TO_FUNCLET_PARENT" : "IS_IL_STUB"),
+                                     isDiagnosticsHidden = %d, m_crawl.pFunc = %pM\n",
+                                     (!m_sfParent.IsNull() ? "SKIPPING_TO_FUNCLET_PARENT" : "IS_DIAGNOSTICS_HIDDEN"),
                                      m_sfParent.SP,
-                                     (m_crawl.pFunc->IsILStub() ? 1 : 0),
+                                     (m_crawl.pFunc->IsDiagnosticsHidden() ? 1 : 0),
                                      m_crawl.pFunc);
 
                                 // don't stop here
@@ -2076,10 +2114,10 @@ ProcessFuncletsForGCReporting:
                 // Skip IL stubs
                 if (m_flags & FUNCTIONSONLY)
                 {
-                    if (m_crawl.pFunc->IsILStub())
+                    if (m_crawl.pFunc->IsDiagnosticsHidden())
                     {
                         LOG((LF_GCROOTS, LL_INFO100000,
-                             "STACKWALK: IS_IL_STUB: not making callback for this frame, m_crawl.pFunc = %s\n",
+                             "STACKWALK: IS_DIAGNOSTICS_HIDDEN: not making callback for this frame, m_crawl.pFunc = %s\n",
                              m_crawl.pFunc->m_pszDebugMethodName));
 
                         // don't stop here
@@ -2337,7 +2375,10 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
                     if (orUnwind != NULL)
                     {
-                        orUnwind->LeaveObjMonitorAtException();
+                        PREPARE_NONVIRTUAL_CALLSITE(METHOD__MONITOR__EXIT);
+                        DECLARE_ARGHOLDER_ARRAY(args, 1);
+                        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(orUnwind);
+                        CALL_MANAGED_METHOD_NORET(args);
                     }
                 }
             }
@@ -2774,7 +2815,9 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
                     m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
                     m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
-
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+                    m_interpExecMethodSSP = pRD->SSP;
+#endif
                     ((PTR_InterpreterFrame)m_crawl.pFrame)->SetContextToInterpMethodContextFrame(pRD->pCurrentContext);
                     if (pRD->pCurrentContext->ContextFlags & CONTEXT_EXCEPTION_ACTIVE)
                     {
@@ -2795,6 +2838,9 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                     SetSP(pRD->pCurrentContext, m_interpExecMethodSP);
                     SetFP(pRD->pCurrentContext, m_interpExecMethodFP);
                     SetFirstArgReg(pRD->pCurrentContext, m_interpExecMethodFirstArgReg);
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+                    pRD->SSP = m_interpExecMethodSSP;
+#endif
                     SyncRegDisplayToCurrentContext(pRD);
                 }
             }
@@ -2806,6 +2852,9 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 m_interpExecMethodSP = GetSP(pRD->pCurrentContext);
                 m_interpExecMethodFP = GetFP(pRD->pCurrentContext);
                 m_interpExecMethodFirstArgReg = GetFirstArgReg(pRD->pCurrentContext);
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
+                m_interpExecMethodSSP = pRD->SSP;
+#endif
             }
         }
 #endif // FEATURE_INTERPRETER
@@ -3019,10 +3068,14 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
         _ASSERTE(obj != NULL);
         VALIDATEOBJECTREF(obj);
 
-        DWORD threadId = 0;
-        DWORD acquisitionCount = 0;
-        _ASSERTE(obj->GetThreadOwningMonitorLock(&threadId, &acquisitionCount) &&
-                 (threadId == m_crawl.pThread->GetThreadId()));
+        GCPROTECT_BEGIN(obj);
+
+        DWORD owningThreadId = 0;
+        DWORD recursionLevel;
+        obj->GetSyncBlock()->TryGetLockInfo(&owningThreadId, &recursionLevel);
+        _ASSERTE(owningThreadId == m_crawl.pThread->GetThreadId());
+
+        GCPROTECT_END();
 
         END_GCX_ASSERT_COOP;
     }

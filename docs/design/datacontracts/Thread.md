@@ -233,7 +233,7 @@ TargetPointer IThread.GetThreadLocalStaticBase(TargetPointer threadPointer, Targ
             }
             break;
         case TLSIndexType.DirectOnThreadLocalData:
-            threadLocalStaticBase = threadLocalDataPtr;
+            threadLocalStaticBase = threadLocalDataPtr + indexOffset;
             break;
     }
     if (threadLocalStaticBase == TargetPointer.Null)

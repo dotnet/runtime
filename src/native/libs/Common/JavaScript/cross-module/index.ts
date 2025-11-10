@@ -22,17 +22,17 @@
 import type { DotnetModuleInternal, InternalExchange, RuntimeExports, LoaderExports, RuntimeAPI, LoggerType, AssertType, BrowserHostExports, InteropJavaScriptExports, LoaderExportsTable, RuntimeExportsTable, BrowserHostExportsTable, InteropJavaScriptExportsTable, NativeBrowserExports, NativeBrowserExportsTable, InternalExchangeSubscriber, BrowserUtilsExports, BrowserUtilsExportsTable, VoidPtr, CharPtr, NativePointer } from "../types";
 import { InternalExchangeIndex } from "../types";
 
+let dotnetInternals: InternalExchange;
 export let Module: DotnetModuleInternal;
 export let dotnetApi: RuntimeAPI;
-export let dotnetLogger: LoggerType = {} as any;
-export let dotnetAssert: AssertType = {} as any;
-export let dotnetLoaderExports: LoaderExports = {} as any;
-export let dotnetRuntimeExports: RuntimeExports = {} as any;
-export let dotnetBrowserHostExports: BrowserHostExports = {} as any;
-export let dotnetInteropJSExports: InteropJavaScriptExports = {} as any;
-export let dotnetNativeBrowserExports: NativeBrowserExports = {} as any;
-export let dotnetBrowserUtilsExports: BrowserUtilsExports = {} as any;
-export let dotnetInternals: InternalExchange = {} as any;
+export const dotnetLogger: LoggerType = {} as LoggerType;
+export const dotnetAssert: AssertType = {} as AssertType;
+export const dotnetLoaderExports: LoaderExports = {} as any;
+export const dotnetRuntimeExports: RuntimeExports = {} as any;
+export const dotnetBrowserHostExports: BrowserHostExports = {} as any;
+export const dotnetInteropJSExports: InteropJavaScriptExports = {} as any;
+export const dotnetNativeBrowserExports: NativeBrowserExports = {} as any;
+export const dotnetBrowserUtilsExports: BrowserUtilsExports = {} as any;
 
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
@@ -44,18 +44,20 @@ export function dotnetGetInternals(): InternalExchange {
 
 // this should be called when we want to dispatch new internal functions to other JS modules
 // subscriber parameter is the callback function with visibility to the current module's internal closure
-export function dotnetUpdateInternals(internals?: InternalExchange, subscriber?: InternalExchangeSubscriber) {
+export function dotnetUpdateInternals(internals: InternalExchange, subscriber?: InternalExchangeSubscriber) {
+    if (!Array.isArray(internals)) throw new Error("Expected internals to be an array");
+    if (!Array.isArray(internals[InternalExchangeIndex.InternalUpdatesCallbacks])) throw new Error("Expected internal updates to be an array");
     if (dotnetInternals === undefined) {
-        dotnetInternals = internals!;
+        dotnetInternals = internals;
+    } else if (dotnetInternals !== internals) {
+        throw new Error("Cannot replace internals");
     }
     if (dotnetApi === undefined) {
         dotnetApi = dotnetInternals[InternalExchangeIndex.RuntimeAPI];
     }
-    if (Module === undefined && dotnetApi) {
+    if (typeof dotnetApi !== "object") throw new Error("Expected internals to have RuntimeAPI");
+    if (Module === undefined) {
         Module = dotnetApi.Module as any;
-    }
-    if (dotnetInternals[InternalExchangeIndex.InternalUpdatesCallbacks] === undefined) {
-        dotnetInternals[InternalExchangeIndex.InternalUpdatesCallbacks] = [];
     }
     const updates = dotnetInternals[InternalExchangeIndex.InternalUpdatesCallbacks];
     if (subscriber && !updates.includes(subscriber)) {
@@ -73,49 +75,41 @@ export function dotnetUpdateInternalsSubscriber() {
      */
 
     if (Object.keys(dotnetLoaderExports).length === 0 && dotnetInternals[InternalExchangeIndex.LoaderExportsTable]) {
-        dotnetLoaderExports = {} as LoaderExports;
-        dotnetLogger = {} as LoggerType;
-        dotnetAssert = {} as AssertType;
         loaderExportsFromTable(dotnetInternals[InternalExchangeIndex.LoaderExportsTable], dotnetLogger, dotnetAssert, dotnetLoaderExports);
     }
     if (Object.keys(dotnetRuntimeExports).length === 0 && dotnetInternals[InternalExchangeIndex.RuntimeExportsTable]) {
-        dotnetRuntimeExports = {} as RuntimeExports;
         runtimeExportsFromTable(dotnetInternals[InternalExchangeIndex.RuntimeExportsTable], dotnetRuntimeExports);
     }
     if (Object.keys(dotnetBrowserHostExports).length === 0 && dotnetInternals[InternalExchangeIndex.BrowserHostExportsTable]) {
-        dotnetBrowserHostExports = {} as BrowserHostExports;
         browserHostExportsFromTable(dotnetInternals[InternalExchangeIndex.BrowserHostExportsTable], dotnetBrowserHostExports);
     }
     if (Object.keys(dotnetBrowserUtilsExports).length === 0 && dotnetInternals[InternalExchangeIndex.BrowserUtilsExportsTable]) {
-        dotnetBrowserUtilsExports = {} as BrowserUtilsExports;
         nativeHelperExportsFromTable(dotnetInternals[InternalExchangeIndex.BrowserUtilsExportsTable], dotnetBrowserUtilsExports);
     }
     if (Object.keys(dotnetInteropJSExports).length === 0 && dotnetInternals[InternalExchangeIndex.InteropJavaScriptExportsTable]) {
-        dotnetInteropJSExports = {} as InteropJavaScriptExports;
         interopJavaScriptExportsFromTable(dotnetInternals[InternalExchangeIndex.InteropJavaScriptExportsTable], dotnetInteropJSExports);
     }
     if (Object.keys(dotnetNativeBrowserExports).length === 0 && dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable]) {
-        dotnetNativeBrowserExports = {} as NativeBrowserExports;
         nativeBrowserExportsFromTable(dotnetInternals[InternalExchangeIndex.NativeBrowserExportsTable], dotnetNativeBrowserExports);
     }
 
     // keep in sync with runtimeExportsToTable()
-    function runtimeExportsFromTable(table:RuntimeExportsTable, runtime:RuntimeExports):void {
+    function runtimeExportsFromTable(table: RuntimeExportsTable, runtime: RuntimeExports): void {
         Object.assign(runtime, {
         });
     }
 
     // keep in sync with loaderExportsToTable()
-    function loaderExportsFromTable(table:LoaderExportsTable, logger:LoggerType, assert:AssertType, dotnetLoaderExports:LoaderExports):void {
-        const loggerLocal :LoggerType = {
+    function loaderExportsFromTable(table: LoaderExportsTable, logger: LoggerType, assert: AssertType, dotnetLoaderExports: LoaderExports): void {
+        const loggerLocal: LoggerType = {
             info: table[0],
             warn: table[1],
             error: table[2],
         };
-        const assertLocal :AssertType = {
+        const assertLocal: AssertType = {
             check: table[3],
         };
-        const loaderExportsLocal :LoaderExports = {
+        const loaderExportsLocal: LoaderExports = {
             resolveRunMainPromise: table[4],
             rejectRunMainPromise: table[5],
             getRunMainPromise: table[6],
@@ -126,33 +120,34 @@ export function dotnetUpdateInternalsSubscriber() {
     }
 
     // keep in sync with browserHostExportsToTable()
-    function browserHostExportsFromTable(table:BrowserHostExportsTable, native:BrowserHostExports):void {
-        const nativeLocal :BrowserHostExports = {
+    function browserHostExportsFromTable(table: BrowserHostExportsTable, native: BrowserHostExports): void {
+        const nativeLocal: BrowserHostExports = {
             registerDllBytes: table[0],
         };
         Object.assign(native, nativeLocal);
     }
 
     // keep in sync with interopJavaScriptExportsToTable()
-    function interopJavaScriptExportsFromTable(table:InteropJavaScriptExportsTable, interop:InteropJavaScriptExports):void {
-        const interopLocal :InteropJavaScriptExports = {
+    function interopJavaScriptExportsFromTable(table: InteropJavaScriptExportsTable, interop: InteropJavaScriptExports): void {
+        const interopLocal: InteropJavaScriptExports = {
         };
         Object.assign(interop, interopLocal);
     }
 
     // keep in sync with nativeBrowserExportsToTable()
-    function nativeBrowserExportsFromTable(table:NativeBrowserExportsTable, interop:NativeBrowserExports):void {
-        const interopLocal :NativeBrowserExports = {
+    function nativeBrowserExportsFromTable(table: NativeBrowserExportsTable, interop: NativeBrowserExports): void {
+        const interopLocal: NativeBrowserExports = {
         };
         Object.assign(interop, interopLocal);
     }
 
     // keep in sync with nativeHelperExportsToTable()
-    function nativeHelperExportsFromTable(table:BrowserUtilsExportsTable, interop:BrowserUtilsExports):void {
-        const interopLocal :BrowserUtilsExports = {
+    function nativeHelperExportsFromTable(table: BrowserUtilsExportsTable, interop: BrowserUtilsExports): void {
+        const interopLocal: BrowserUtilsExports = {
             utf16ToString: table[0],
             stringToUTF16: table[1],
             stringToUTF16Ptr: table[2],
+            stringToUTF8Ptr: table[3],
         };
         Object.assign(interop, interopLocal);
     }

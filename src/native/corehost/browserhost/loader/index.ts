@@ -16,7 +16,7 @@ import { exit } from "./exit";
 import { invokeLibraryInitializers } from "./lib-initializers";
 import { check, error, info, warn } from "./logging";
 
-import { dotnetAssert, dotnetInternals, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
+import { dotnetAssert, dotnetLoaderExports, dotnetLogger, dotnetUpdateInternals, dotnetUpdateInternalsSubscriber } from "./cross-module";
 import { rejectRunMainPromise, resolveRunMainPromise, getRunMainPromise } from "./run";
 
 export function dotnetInitializeModule(): RuntimeAPI {
@@ -42,14 +42,13 @@ export function dotnetInitializeModule(): RuntimeAPI {
         dotnetApi as RuntimeAPI, //0
         [], //1
         netLoaderConfig, //2
-        null as any as LoaderExportsTable, //3
-        null as any as RuntimeExportsTable, //4
-        null as any as BrowserHostExportsTable, //5
-        null as any as InteropJavaScriptExportsTable, //6
-        null as any as NativeBrowserExportsTable, //7
-        null as any as BrowserUtilsExportsTable, //8
+        undefined as any as LoaderExportsTable, //3
+        undefined as any as RuntimeExportsTable, //4
+        undefined as any as BrowserHostExportsTable, //5
+        undefined as any as InteropJavaScriptExportsTable, //6
+        undefined as any as NativeBrowserExportsTable, //7
+        undefined as any as BrowserUtilsExportsTable, //8
     ];
-    Object.assign(dotnetInternals, internals);
     const loaderFunctions: LoaderExports = {
         getRunMainPromise,
         rejectRunMainPromise,
@@ -67,7 +66,7 @@ export function dotnetInitializeModule(): RuntimeAPI {
     };
     Object.assign(dotnetAssert, assert);
 
-    dotnetInternals[InternalExchangeIndex.LoaderExportsTable] = loaderExportsToTable(dotnetLogger, dotnetAssert, dotnetLoaderExports);
+    internals[InternalExchangeIndex.LoaderExportsTable] = loaderExportsToTable(dotnetLogger, dotnetAssert, dotnetLoaderExports);
     dotnetUpdateInternals(internals, dotnetUpdateInternalsSubscriber);
     return dotnetApi as RuntimeAPI;
 

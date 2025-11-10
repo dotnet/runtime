@@ -42,7 +42,10 @@ namespace System.IO.Pipes
     }
     public sealed partial class NamedPipeClientStream : System.IO.Pipes.PipeStream
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This constructor has been deprecated and argument bool isConnected does not have any effect. Use NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle) instead.", DiagnosticId = "SYSLIB0063", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public NamedPipeClientStream(System.IO.Pipes.PipeDirection direction, bool isAsync, bool isConnected, Microsoft.Win32.SafeHandles.SafePipeHandle safePipeHandle) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
+        public NamedPipeClientStream(System.IO.Pipes.PipeDirection direction, bool isAsync, Microsoft.Win32.SafeHandles.SafePipeHandle safePipeHandle) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeClientStream(string pipeName) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         public NamedPipeClientStream(string serverName, string pipeName) : base (default(System.IO.Pipes.PipeDirection), default(int)) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]

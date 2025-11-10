@@ -1177,7 +1177,7 @@ static CorInfoHelpFunc getGenericStaticsHelper(FieldDesc * pField)
     return (CorInfoHelpFunc)helper;
 }
 
-size_t CEEInfo::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* CEEInfo::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         NOTHROW;
@@ -1185,20 +1185,20 @@ size_t CEEInfo::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    size_t result;
+    void* result;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
     TypeHandle clsTypeHandle(cls);
     PTR_MethodTable pMT = clsTypeHandle.AsMethodTable();
-    result = (size_t)pMT->GetThreadStaticsInfo();
+    result = pMT->GetThreadStaticsInfo();
 
     EE_TO_JIT_TRANSITION_LEAF();
 
     return result;
 }
 
-size_t CEEInfo::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* CEEInfo::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         NOTHROW;
@@ -1206,13 +1206,13 @@ size_t CEEInfo::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    size_t result;
+    void* result;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
     TypeHandle clsTypeHandle(cls);
     PTR_MethodTable pMT = clsTypeHandle.AsMethodTable();
-    result = (size_t)pMT->GetDynamicStaticsInfo();
+    result = pMT->GetDynamicStaticsInfo();
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -1624,7 +1624,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldTypeForSecurity.GetAssembly(),
                 fieldAttribs,
                 NULL,
-                (flags & CORINFO_ACCESS_INIT_ARRAY) ? NULL : pField, // For InitializeArray, we don't need tocheck the type of the field.
                 accessCheckOptions);
 
             if (!canAccess)
@@ -3417,7 +3416,6 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
     size_t requiredBufferSize = 0;
 
     TypeHandle th(cls);
-    IMDInternalImport* pImport = th.GetMethodTable()->GetMDImport();
 
     auto append = [buffer, bufferSize, &bytesWritten, &requiredBufferSize](const char* str)
     {
@@ -3440,6 +3438,13 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
         requiredBufferSize += strLen;
     };
 
+    auto appendNum = [&](unsigned num)
+    {
+        char str[16];
+        sprintf_s(str, ARRAY_SIZE(str), "%u", num);
+        append(str);
+    };
+
     // Subset of TypeString that does just what we need while staying in UTF8
     // and avoiding expensive copies. This function is called a lot in checked
     // builds.
@@ -3451,10 +3456,22 @@ size_t CEEInfo::printClassName(CORINFO_CLASS_HANDLE cls, char* buffer, size_t bu
     mdTypeDef td = th.GetCl();
     if (IsNilToken(td))
     {
-        append("(dynamicClass)");
+        if (th.IsContinuation())
+        {
+            AsyncContinuationsManager::PrintContinuationName(
+                th.AsMethodTable(),
+                [&](LPCSTR str, LPCWSTR wstr) { append(str); },
+                appendNum);
+        }
+        else
+        {
+            append("(dynamicClass)");
+        }
     }
     else
     {
+        IMDInternalImport* pImport = th.GetMethodTable()->GetMDImport();
+
         DWORD attr;
         IfFailThrow(pImport->GetTypeDefProps(td, &attr, NULL));
 
@@ -5450,7 +5467,6 @@ void CEEInfo::getCallInfo(
                                                      calleeTypeForSecurity.GetAssembly(),
                                                      pCalleeForSecurity->GetAttrs(),
                                                      pCalleeForSecurity,
-                                                     NULL,
                                                      accessCheckOptions
                                                     );
 
@@ -7922,7 +7938,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         // chance to prevent it.
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackJITInfo());
-            if (pCaller->IsILStub() || pCallee->IsILStub())
+            if (pCaller->IsDiagnosticsHidden() || pCallee->IsDiagnosticsHidden())
             {
                 // do nothing
             }
@@ -8604,18 +8620,18 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
 
         if (pObjMT->IsArray())
         {
+            if (pBaseMT->IsSharedByGenericInstantiations())
+            {
+                info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+
             // Does the array implicitly implement this interface?
             //
             isArrayImplicitInterface = pBaseMT->HasInstantiation() && IsImplicitInterfaceOfSZArray(pBaseMT);
 
             if (!isArrayImplicitInterface)
             {
-                if (pBaseMT->IsSharedByGenericInstantiations())
-                {
-                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_CANON;
-                    return false;
-                }
-
                 // Ensure we can cast the array to the interface type
                 //
                 if (!TypeHandle(pObjMT).CanCastTo(TypeHandle(pBaseMT)))
@@ -8641,15 +8657,12 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
             {
                 _ASSERTE(pObjMT->IsArray());
 
-                // We cannot devirtualize unless we know the exact array element type
-                //
-                TypeHandle elemType = pObjMT->GetArrayElementTypeHandle();
-                if (elemType.IsCanonicalSubtype())
-                {
-                    info->detail = CORINFO_DEVIRTUALIZATION_FAILED_LOOKUP;
-                    return false;
-                }
-                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, elemType);
+                // The instantiation we want is based on the interface element type, not the
+                // array element type.
+                TypeHandle resultElemType = pBaseMT->GetInstantiation()[0];
+                // We should have ruled this out above.
+                _ASSERTE(!resultElemType.IsCanonicalSubtype());
+                pDevirtMD = GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(pBaseMD, resultElemType);
             }
             else if (pObjMT->IsSharedByGenericInstantiations() || pBaseMT->IsSharedByGenericInstantiations())
             {
@@ -9115,6 +9128,11 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
 
     JIT_TO_EE_TRANSITION();
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    PORTABILITY_ASSERT("NYI: getFunctionEntryPoint for FEATURE_PORTABLE_ENTRYPOINTS");
+
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+
     MethodDesc * ftn = GetMethod(ftnHnd);
 #if defined(FEATURE_GDBJIT)
     MethodDesc * orig_ftn = ftn;
@@ -9158,6 +9176,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     CalledMethod * pCM = new CalledMethod(orig_ftn, ret, m_pCalledMethods);
     m_pCalledMethods = pCM;
 #endif
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     EE_TO_JIT_TRANSITION();
 
@@ -10242,12 +10261,9 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
 
     pAsyncInfoOut->continuationClsHnd = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__CONTINUATION));
     pAsyncInfoOut->continuationNextFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__NEXT));
-    pAsyncInfoOut->continuationResumeFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__RESUME));
+    pAsyncInfoOut->continuationResumeInfoFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__RESUME_INFO));
     pAsyncInfoOut->continuationStateFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__STATE));
     pAsyncInfoOut->continuationFlagsFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__FLAGS));
-    pAsyncInfoOut->continuationDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__DATA));
-    pAsyncInfoOut->continuationGCDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__GCDATA));
-    pAsyncInfoOut->continuationsNeedMethodHandle = m_pMethodBeingCompiled->GetLoaderAllocator()->CanUnload();
     pAsyncInfoOut->captureExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_EXECUTION_CONTEXT));
     pAsyncInfoOut->restoreExecutionContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_EXECUTION_CONTEXT));
     pAsyncInfoOut->captureContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_CONTINUATION_CONTEXT));
@@ -10255,6 +10271,36 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->restoreContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS));
 
     EE_TO_JIT_TRANSITION();
+}
+
+CORINFO_CLASS_HANDLE CEEInfo::getContinuationType(
+    size_t dataSize,
+    bool* objRefs,
+    size_t objRefsSize)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    _ASSERTE(objRefsSize == (dataSize + (TARGET_POINTER_SIZE - 1)) / TARGET_POINTER_SIZE);
+    LoaderAllocator* allocator = m_pMethodBeingCompiled->GetLoaderAllocator();
+    AsyncContinuationsManager* asyncConts = allocator->GetAsyncContinuationsManager();
+    result = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, m_pMethodBeingCompiled);
+
+#ifdef DEBUG
+    CORINFO_CLASS_HANDLE result2 = (CORINFO_CLASS_HANDLE)asyncConts->LookupOrCreateContinuationMethodTable((unsigned)dataSize, objRefs, m_pMethodBeingCompiled);
+    _ASSERTE(result2 == result);
+#endif
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 // Return details about EE internal data structures
@@ -10726,6 +10772,9 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
     , m_numInlineTreeNodes(0)
     , m_richOffsetMappings(NULL)
     , m_numRichOffsetMappings(0)
+    , m_dbgAsyncSuspensionPoints(NULL)
+    , m_dbgAsyncContinuationVars(NULL)
+    , m_numAsyncContinuationVars(0)
     , m_gphCache()
 {
     STANDARD_VM_CONTRACT;
@@ -10738,6 +10787,7 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
     m_ILHeader = ilHeader;
 
     m_jitFlags = GetCompileFlags(config, m_pMethodBeingCompiled, &m_MethodInfo);
+    m_dbgAsyncInfo.NumSuspensionPoints = 0;
 }
 
 void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN  */
@@ -10835,6 +10885,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
             if (!GetAppDomain()->GetTieredCompilationManager()->IsTieringDelayActive()
                 && g_pConfig->JitEnableOptionalRelocs())
             {
+#ifdef FEATURE_CODE_VERSIONING
                 CodeVersionManager* manager = helperMD->GetCodeVersionManager();
 
                 NativeCodeVersion activeCodeVersion;
@@ -10858,6 +10909,7 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
                         goto exit;
                     }
                 }
+#endif // FEATURE_CODE_VERSIONING
             }
 
             if (IndirectionAllowedForJitHelper(ftnNum))
@@ -11169,6 +11221,28 @@ void CEECodeGenInfo::reportRichMappings(
     EE_TO_JIT_TRANSITION();
 }
 
+void CEECodeGenInfo::reportAsyncDebugInfo(
+        ICorDebugInfo::AsyncInfo*             asyncInfo,
+        ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+        ICorDebugInfo::AsyncContinuationVarInfo* vars,
+        uint32_t                              numVars)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    m_dbgAsyncInfo = *asyncInfo;
+    m_dbgAsyncSuspensionPoints = suspensionPoints;
+    m_dbgAsyncContinuationVars = vars;
+    m_numAsyncContinuationVars = numVars;
+
+    EE_TO_JIT_TRANSITION_LEAF();
+}
+
 void CEECodeGenInfo::reportMetadata(
         const char* key,
         const void* value,
@@ -11431,7 +11505,7 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
         return;
     }
 
-    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL) && (m_numInlineTreeNodes == 0) && (m_numRichOffsetMappings == 0))
+    if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL) && (m_numInlineTreeNodes == 0) && (m_numRichOffsetMappings == 0) && (m_dbgAsyncInfo.NumSuspensionPoints == 0))
         return;
 
     if (patchpointInfo != NULL)
@@ -11441,14 +11515,6 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
 
     EX_TRY
     {
-        BOOL writeFlagByte = FALSE;
-#ifdef FEATURE_ON_STACK_REPLACEMENT
-        writeFlagByte = TRUE;
-#endif
-        if (m_jitManager->IsStoringRichDebugInfo())
-            writeFlagByte = TRUE;
-
-
     const InstrumentedILOffsetMapping *pILOffsetMapping = NULL;
     InstrumentedILOffsetMapping loadTimeMapping;
 #ifdef FEATURE_REJIT
@@ -11476,13 +11542,13 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry, NativeCodeVersion nati
     }
 #endif
 
-        PTR_BYTE pDebugInfo = CompressDebugInfo::CompressBoundariesAndVars(
+        PTR_BYTE pDebugInfo = CompressDebugInfo::Compress(
             m_pOffsetMapping, m_iOffsetMapping, pILOffsetMapping,
             m_pNativeVarInfo, m_iNativeVarInfo,
             patchpointInfo,
             m_inlineTreeNodes, m_numInlineTreeNodes,
             m_richOffsetMappings, m_numRichOffsetMappings,
-            writeFlagByte,
+            &m_dbgAsyncInfo, m_dbgAsyncSuspensionPoints, m_dbgAsyncContinuationVars, m_numAsyncContinuationVars,
             m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap());
 
         SetDebugInfo(pDebugInfo);
@@ -11761,10 +11827,17 @@ void CEEJitInfo::recordRelocation(void * location,
 
     switch (fRelocType)
     {
+#ifdef TARGET_64BIT
     case IMAGE_REL_BASED_DIR64:
         // Write 64-bits into location
         *((UINT64 *) locationRW) = (UINT64) target;
         break;
+#else
+    case IMAGE_REL_BASED_HIGHLOW:
+        // Write 32-bits into location
+        *((UINT32 *) locationRW) = (UINT32) target;
+        break;
+#endif
 
 #ifdef TARGET_AMD64
     case IMAGE_REL_BASED_REL32:
@@ -13110,7 +13183,6 @@ static TADDR UnsafeJitFunctionWorker(
                                     ownerTypeForSecurity.GetAssembly(),
                                     pMethodForSecurity->GetAttrs(),
                                     pMethodForSecurity,
-                                    NULL,
                                     accessCheckOptions))
         {
             EX_THROW(EEMethodException, (pMethodForSecurity));
@@ -13378,15 +13450,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
 #ifdef FEATURE_INTERPRETER
     InterpreterJitManager* interpreterMgr = ExecutionManager::GetInterpreterJitManager();
-    if (!interpreterMgr->IsInterpreterLoaded())
+    if (!interpreterMgr->IsInterpreterLoaded() && g_pConfig->EnableInterpreter())
     {
-        LPWSTR interpreterConfig;
-        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
         if (
-#ifdef FEATURE_JIT
-            // If both JIT and interpret are available, load the interpreter for testing purposes only if the config switch is set
-            (interpreterConfig != NULL) &&
-#endif
             !interpreterMgr->LoadInterpreter())
         {
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load interpreter"));
@@ -14498,9 +14564,11 @@ static Signature BuildResumptionStubSignature(LoaderAllocator* alloc, AllocMemTr
 {
     SigBuilder sigBuilder;
     sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
-    sigBuilder.AppendData(1); // 1 argument
+    sigBuilder.AppendData(2); // 2 arguments
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // return type
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
+    sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF); // result location
+    sigBuilder.AppendElementType(ELEMENT_TYPE_U1);
 
     return AllocateSignature(alloc, sigBuilder, pamTracker);
 }
@@ -14575,7 +14643,7 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     return AllocateSignature(alloc, sigBuilder, pamTracker);
 }
 
-CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 {
     CONTRACTL{
         THROWS;
@@ -14704,93 +14772,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
         pCode->EmitLDLOC(newContinuationLoc);
         pCode->EmitBRTRUE(doneResult);
 
-        // Load 'next' of current continuation
-        pCode->EmitLDARG(0);
-        pCode->EmitLDFLD(FIELD__CONTINUATION__NEXT);
-
-        // Result is placed in GCData[0] if it has GC references (potentially boxing it).
-        bool isOrContainsGCPointers = false;
-        if (CorTypeInfo::IsObjRef(resultTypeHnd.GetInternalCorElementType()) || (resultTypeHnd.IsValueType() && resultTypeHnd.AsMethodTable()->ContainsGCPointers()))
-        {
-            // Load 'gcdata' of next continuation
-            pCode->EmitLDFLD(FIELD__CONTINUATION__GCDATA);
-
-            // Now we have the GC array. At the first index is the result.
-            pCode->EmitLDC(0);
-
-            // NOTE: that we are not using regular boxing (in EmitBOX sense) and allocate our own box instances via a helper.
-            // There are two reasons:
-            // - resultTypeHnd may be a nullable type and have different layout in boxed/unboxed forms.
-            //   We do not want to deal with that.
-            // - resultTypeHnd may contain __Canon fields. Regular boxing would not allow that, but this box is used for a very
-            //   specific internal purpose where we only require that the GC layout of the box matches the data
-            //   that we store in it, thus we want to allow __Canon.
-            if (resultTypeHnd.IsValueType())
-            {
-                // make a box and dup the ref
-                MethodDesc* md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__ALLOC_CONTINUATION_RESULT_BOX);
-                pCode->EmitLDC((DWORD_PTR)resultTypeHnd.AsMethodTable());
-                pCode->EmitCALL(pCode->GetToken(md), 1, 1);
-                pCode->EmitDUP();
-                // dst is the offset of the first field in the box
-                pCode->EmitLDFLDA(FIELD__RAW_DATA__DATA);
-                // load the result
-                pCode->EmitLDLOC(resultLoc);
-                // store into the box
-                pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
-            }
-            else
-            {
-                // load the result
-                pCode->EmitLDLOC(resultLoc);
-            }
-
-            // Store the result.
-            pCode->EmitSTELEM_REF();
-        }
-        else
-        {
-            // Otherwise it goes into Data, either at offset 0 or 4 depending
-            // on CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA.
-            ILCodeLabel* hasOsrILOffset = pCode->NewCodeLabel();
-
-            unsigned nextContinuationLcl = pCode->NewLocal(LocalDesc(continuationTypeHnd));
-            pCode->EmitSTLOC(nextContinuationLcl);
-
-            // Load 'flags' of next continuation
-            pCode->EmitLDLOC(nextContinuationLcl);
-            pCode->EmitLDFLD(FIELD__CONTINUATION__FLAGS);
-            pCode->EmitLDC(CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA);
-            pCode->EmitAND();
-            pCode->EmitBRTRUE(hasOsrILOffset);
-
-            // Load 'data' of next continuation
-            pCode->EmitLDLOC(nextContinuationLcl);
-            pCode->EmitLDFLD(FIELD__CONTINUATION__DATA);
-            // Load address of array at index 0
-            pCode->EmitLDC(0);
-            pCode->EmitLDELEMA(pCode->GetToken(CoreLibBinder::GetClass(CLASS__BYTE)));
-
-            // Store at index 0.
-            pCode->EmitLDLOC(resultLoc);
-            pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
-
-            pCode->EmitBR(doneResult);
-
-            pCode->EmitLabel(hasOsrILOffset);
-
-            // Load 'data' of next continuation
-            pCode->EmitLDLOC(nextContinuationLcl);
-            pCode->EmitLDFLD(FIELD__CONTINUATION__DATA);
-            // Load address of array at index 4
-            pCode->EmitLDC(4);
-            pCode->EmitLDELEMA(pCode->GetToken(CoreLibBinder::GetClass(CLASS__BYTE)));
-
-            // Store at index 4.
-            pCode->EmitLDLOC(resultLoc);
-            pCode->EmitUNALIGNED(1);
-            pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
-        }
+        pCode->EmitLDARG(1); // resultLoc
+        pCode->EmitLDLOC(resultLoc);
+        pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
 
         pCode->EmitLabel(doneResult);
     }
@@ -14810,6 +14794,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
 
     amTracker.SuppressRelease();
 
+    ILStubResolver *pResolver = result->AsDynamicMethodDesc()->GetILStubResolver();
+    pResolver->SetStubTargetMethodDesc(m_pMethodBeingCompiled);
+
     const char* optimizationTierName = "UnknownTier";
 #ifdef FEATURE_TIERED_COMPILATION
     switch (ncv.GetOptimizationTier())
@@ -14824,22 +14811,24 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
     }
 #endif // FEATURE_TIERED_COMPILATION
 
-    char name[256];
-    int numWritten = sprintf_s(name, ARRAY_SIZE(name), "IL_STUB_AsyncResume_%s_%s", m_pMethodBeingCompiled->GetName(), optimizationTierName);
-    if (numWritten != -1)
-    {
-        AllocMemTracker amTracker;
-        void* allocedMem = amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numWritten + 1)));
-        memcpy(allocedMem, name, (size_t)(numWritten + 1));
-        result->AsDynamicMethodDesc()->SetMethodName((LPCUTF8)allocedMem);
-        amTracker.SuppressRelease();
-    }
-
 #ifdef _DEBUG
-    LOG((LF_STUBS, LL_INFO1000, "ASYNC: Resumption stub %s created\n", name));
+    LPCUTF8 methodName = m_pMethodBeingCompiled->GetName();
+    size_t stubNameLen = STRING_LENGTH("IL_STUB_AsyncResume__");
+    stubNameLen += strlen(methodName);
+    stubNameLen += strlen(optimizationTierName);
+    stubNameLen++; // "\n"
+
+    AllocMemTracker amTrackerName;
+    char* allocedMem = (char*)amTrackerName.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(stubNameLen)));
+    sprintf_s(allocedMem, stubNameLen, "IL_STUB_AsyncResume_%s_%s", m_pMethodBeingCompiled->GetName(), optimizationTierName);
+    result->AsDynamicMethodDesc()->SetMethodName((LPCUTF8)allocedMem);
+    amTrackerName.SuppressRelease();
+
+    LOG((LF_STUBS, LL_INFO1000, "ASYNC: Resumption stub %s created\n", allocedMem));
     sl.LogILStub(CORJIT_FLAGS());
 #endif
 
+    *entryPoint = (void*)result->GetMultiCallableAddrOfCode();
     return CORINFO_METHOD_HANDLE(result);
 }
 
@@ -15011,6 +15000,16 @@ void CEEInfo::reportRichMappings(
     UNREACHABLE();      // only called on derived class.
 }
 
+void CEEInfo::reportAsyncDebugInfo(
+        ICorDebugInfo::AsyncInfo*             asyncInfo,
+        ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+        ICorDebugInfo::AsyncContinuationVarInfo* vars,
+        uint32_t                              numVars)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
 void CEEInfo::reportMetadata(const char* key, const void* value, size_t length)
 {
     LIMITED_METHOD_CONTRACT;
@@ -15029,7 +15028,7 @@ PatchpointInfo* CEEInfo::getOSRInfo(unsigned* ilOffset)
     UNREACHABLE();      // only called on derived class.
 }
 
-CORINFO_METHOD_HANDLE CEEInfo::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE CEEInfo::getAsyncResumptionStub(void** entryPoint)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

@@ -514,6 +514,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForAsyncContinuation(treeNode);
             break;
 
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
         case GT_PINVOKE_PROLOG:
             noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
                           ~fullIntArgRegMask(compiler->info.compCallConv)) == 0);
@@ -553,7 +557,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // TARGET_ARM
 
         case GT_IL_OFFSET:
-            // Do nothing; these nodes are simply markers for debug info.
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         default:
@@ -613,7 +621,10 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 // genEmitGSCookieCheck: Generate code to check that the GS cookie
 // wasn't thrashed by a buffer overrun.
 //
-void CodeGen::genEmitGSCookieCheck(bool pushReg)
+// Parameters:
+//   tailCall - Whether or not this is being emitted for a tail call
+//
+void CodeGen::genEmitGSCookieCheck(bool tailCall)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
@@ -623,8 +634,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     // We don't have any IR node representing this check, so LSRA can't communicate registers
     // for us to use.
 
-    regNumber regGSConst = REG_GSCOOKIE_TMP_0;
-    regNumber regGSValue = REG_GSCOOKIE_TMP_1;
+    regMaskTP tmpRegs    = genGetGSCookieTempRegs(tailCall);
+    regNumber regGSConst = genFirstRegNumFromMaskAndToggle(tmpRegs);
+    regNumber regGSValue = genFirstRegNumFromMaskAndToggle(tmpRegs);
 
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
@@ -3266,12 +3278,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
 
-        // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
-        // non-standard args that may be trash if this is a tailcall.
+        // The epilog may use and trash some registers for the GS cookie check.
+        // Make sure we have no non-standard args that may be trash if this is
+        // a tailcall.
         if (compiler->getNeedsGSSecurityCookie())
         {
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
+            trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
         }
 
         for (CallArg& arg : call->gtArgs.Args())
@@ -5122,4 +5134,5 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     compiler->unwindEndEpilog();
 }
+
 #endif // TARGET_ARMARCH
