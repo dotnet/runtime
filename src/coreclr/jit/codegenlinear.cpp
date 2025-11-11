@@ -368,8 +368,6 @@ void CodeGen::genCodeForBBlist()
             genIPmappingAdd(IPmappingDscKind::NoMapping, DebugInfo(), true);
         }
 
-        bool firstMapping = true;
-
         if (compiler->bbIsFuncletBeg(block))
         {
             genUpdateCurrentFunclet(block);
@@ -422,7 +420,8 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // DEBUG
 
-        bool addRichMappings = JitConfig.RichDebugInfo() != 0;
+        bool producedLabelMapping = false;
+        bool addRichMappings      = JitConfig.RichDebugInfo() != 0;
 
         INDEBUG(addRichMappings |= JitConfig.JitDisasmWithDebugInfo() != 0);
         INDEBUG(addRichMappings |= JitConfig.WriteRichDebugInfoFile() != nullptr);
@@ -439,8 +438,15 @@ void CodeGen::genCodeForBBlist()
                 {
                     genEnsureCodeEmitted(currentDI);
                     currentDI = rootDI;
-                    genIPmappingAdd(IPmappingDscKind::Normal, currentDI, firstMapping);
-                    firstMapping = false;
+
+                    // We need a tie breaker when we have multiple IL offsets that map to the same native offset.
+                    // Normally we pick the latest, but for block joins we pick the earliest to ensure end up with
+                    // a mapping to that IL offset. Async mappings should not participate in this -- they are
+                    // internally produced and never fall on the join point in the IL.
+                    // See genIPmappingGen for the tiebreaker.
+                    bool isLabel = !producedLabelMapping && !currentDI.GetLocation().IsAsync();
+                    genIPmappingAdd(IPmappingDscKind::Normal, currentDI, isLabel);
+                    producedLabelMapping |= isLabel;
                 }
 
                 if (addRichMappings && ilOffset->gtStmtDI.IsValid())
@@ -882,11 +888,11 @@ void CodeGen::genCodeForBBlist()
     // This call is for cleaning the GC refs
     genUpdateLife(VarSetOps::MakeEmpty(compiler));
 
-    /* Finalize the spill  tracking logic */
+    // Finalize the spill  tracking logic
 
     regSet.rsSpillEnd();
 
-    /* Finalize the temp   tracking logic */
+    // Finalize the temp   tracking logic
 
     regSet.tmpEnd();
 
@@ -899,6 +905,25 @@ void CodeGen::genCodeForBBlist()
         printf("%s\n", compiler->info.compFullName);
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// genRecordAsyncResume:
+//   Record information about an async resume point in the async resume info tabl.e
+//
+// Arguments:
+//    asyncResume - GT_RECORD_ASYNC_RESUME node
+//
+void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
+{
+    size_t index = asyncResume->gtVal1;
+    assert(compiler->compSuspensionPoints != nullptr);
+    assert(index < compiler->compSuspensionPoints->size());
+
+    emitter::dataSection* asyncResumeInfo;
+    genEmitAsyncResumeInfoTable(&asyncResumeInfo);
+
+    ((emitLocation*)asyncResumeInfo->dsCont)[index] = emitLocation(GetEmitter());
 }
 
 /*

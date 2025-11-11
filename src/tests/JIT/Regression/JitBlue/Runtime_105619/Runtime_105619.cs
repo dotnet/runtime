@@ -10,6 +10,9 @@
 // 
 //     File: /__w/1/s/src/coreclr/jit/codegencommon.cpp Line: 664
 // 
+
+namespace Runtime_105619;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
