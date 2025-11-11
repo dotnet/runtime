@@ -5,12 +5,14 @@
 # WASM-TODO: implement proper in-tree project via MSBuild and WASM SDK
 
 set(SAMPLE_ASSETS
-    index.html
-    main.mjs
-    dotnet.boot.js
+    # index.html
+    # main.mjs
+    # dotnet.boot.js
     ${SHARED_LIB_DESTINATION}/dotnet.js
     ${SHARED_LIB_DESTINATION}/dotnet.js.map
     ${SHARED_LIB_DESTINATION}/dotnet.d.ts
+    ${SHARED_LIB_DESTINATION}/dotnet.diagnostics.js
+    ${SHARED_LIB_DESTINATION}/dotnet.diagnostics.js.map
     ${SHARED_LIB_DESTINATION}/dotnet.runtime.js
     ${SHARED_LIB_DESTINATION}/dotnet.runtime.js.map
 

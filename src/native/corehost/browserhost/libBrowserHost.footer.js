@@ -19,7 +19,7 @@
         const exports = {};
         libBrowserHost(exports);
 
-        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV"];
+        let commonDeps = ["$libBrowserHostFn", "$DOTNET", "$DOTNET_INTEROP", "$ENV", "$FS", "$NODEFS"];
         const lib = {
             $BROWSER_HOST: {
                 selfInitialize: () => {
@@ -54,6 +54,14 @@
 
                         // WASM-TODO: remove once globalization is loaded via ICU
                         ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
+
+                        if (ENVIRONMENT_IS_NODE) {
+                            Module.preInit = [() => {
+                                FS.mkdir("/managed");
+                                FS.mount(NODEFS, { root: "." }, "/managed");
+                                FS.chdir("/managed");
+                            }];
+                        }
                     }
                 },
             },

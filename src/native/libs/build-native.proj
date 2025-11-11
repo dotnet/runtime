@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <Import Project="$(RepositoryEngineeringDir)native.props" />
+  <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" />
 
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
@@ -26,7 +26,7 @@
   <Import Project="$(RepositoryEngineeringDir)AcquireWasiSdk.targets" />
 
   <Target Name="BuildNativeCommon"
-          DependsOnTargets="AcquireWasiSdk;GenerateNativeVersionFile">
+          DependsOnTargets="AcquireWasiSdk;GenerateNativeVersionFile;GenerateEmccExports">
     <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
       <_BuildNativeEnvironmentVariables>WASI_SDK_PATH=$(RuntimeBuildWasiSdkPath)</_BuildNativeEnvironmentVariables>
     </PropertyGroup>

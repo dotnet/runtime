@@ -12,13 +12,16 @@ import type { DotnetHostBuilder } from "./types";
 
 import { HostBuilder } from "./host-builder";
 import { initPolyfills, initPolyfillsAsync } from "./polyfills";
-import { registerRuntime } from "./runtime-list";
 import { exit } from "./exit";
 import { dotnetInitializeModule } from ".";
+import { selfHostNodeJS } from "./run";
 
 initPolyfills();
-registerRuntime(dotnetInitializeModule());
+dotnetInitializeModule();
 await initPolyfillsAsync();
 
 export const dotnet: DotnetHostBuilder | undefined = new HostBuilder() as DotnetHostBuilder;
 export { exit };
+
+// Auto-start when in Node.js or Shell environment
+selfHostNodeJS(dotnet!).catch();

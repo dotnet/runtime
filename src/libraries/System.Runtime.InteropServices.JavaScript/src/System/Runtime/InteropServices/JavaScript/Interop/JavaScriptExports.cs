@@ -229,6 +229,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "SystemInteropJS_GetManagedStackTrace")]
         // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
         public static void GetManagedStackTrace(JSMarshalerArgument* arguments_buffer)
         {

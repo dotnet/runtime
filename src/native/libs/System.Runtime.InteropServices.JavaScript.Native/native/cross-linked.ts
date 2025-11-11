@@ -2,4 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { } from "../../Common/JavaScript/cross-linked";
+import type { JSMarshalerArguments } from "../interop/types";
 
+declare global {
+    export function _SystemInteropJS_GetManagedStackTrace(args: JSMarshalerArguments): void;
+}

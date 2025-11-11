@@ -8,7 +8,7 @@
 
   <Target Name="_GetWorkloadsToInstall" DependsOnTargets="_SetPackageVersionForWorkloadsTesting" Returns="@(WorkloadIdForTesting);@(WorkloadCombinationsToInstall)">
     <Error Condition="'$(RIDForWorkload)' == ''" Text="$(RIDForWorkload) is unset" />
-    <ItemGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
                             ManifestName="Microsoft.NET.Workload.Mono.ToolChain.Current"
                             Variant="latest"
@@ -67,9 +67,13 @@
       </_DefaultRuntimePackNuGetPath>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.$(RIDForWorkload).*$(PackageVersionForWorkloadManifests).nupkg" />
       <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.*.$(RIDForWorkload).*$(PackageVersionForWorkloadManifests).nupkg" />
+      <_RuntimePackNugetAvailable Remove="@(_RuntimePackNugetAvailable)" Condition="$([System.String]::new('%(_RuntimePackNugetAvailable.FileName)').EndsWith('.symbols'))" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+      <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.$(RIDForWorkload).*$(PackageVersionForWorkloadManifests).nupkg" />
       <_RuntimePackNugetAvailable Remove="@(_RuntimePackNugetAvailable)" Condition="$([System.String]::new('%(_RuntimePackNugetAvailable.FileName)').EndsWith('.symbols'))" />
     </ItemGroup>
 
@@ -87,7 +91,7 @@
     </ItemGroup>
 
     <Message
-        Condition="@(_RuntimePackNugetAvailable -> Count()) == 1"
+        Condition="'$(RuntimeFlavor)' == 'Mono' and @(_RuntimePackNugetAvailable -> Count()) == 1"
         Importance="High"
         Text="
       ********************

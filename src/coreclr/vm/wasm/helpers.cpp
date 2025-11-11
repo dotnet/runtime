@@ -618,6 +618,10 @@ namespace
         if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
             return NULL;
 
+        void* thunk = LookupThunk(keyBuffer);
+        if (thunk == NULL)
+            printf("WASM Calli missing for Key: %s\n", keyBuffer);
+
         return LookupThunk(keyBuffer);
     }
 
