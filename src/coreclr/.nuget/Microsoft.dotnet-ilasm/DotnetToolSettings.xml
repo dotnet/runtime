@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DotNetCliToolManifest Version="2">
+  <Commands>
+    <Command Name="dotnet-ilasm" EntryPoint="ilasm" Runner="executable" />
+  </Commands>
+</DotNetCliToolManifest>
