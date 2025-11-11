@@ -3323,7 +3323,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    if (ni == NI_System_StubHelpers_AsyncCallContinuation)
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation)
     {
         GenTree* node = new (this, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
         node->SetHasOrderingSideEffect();
@@ -10872,6 +10872,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
                             }
+                            else if (strcmp(methodName, "AsyncCallContinuation") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
+                            }
                         }
                         else if (strcmp(className, "StaticsHelpers") == 0)
                         {
@@ -11128,10 +11132,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "NextCallReturnAddress") == 0)
                         {
                             result = NI_System_StubHelpers_NextCallReturnAddress;
-                        }
-                        else if (strcmp(methodName, "AsyncCallContinuation") == 0)
-                        {
-                            result = NI_System_StubHelpers_AsyncCallContinuation;
                         }
                     }
                 }

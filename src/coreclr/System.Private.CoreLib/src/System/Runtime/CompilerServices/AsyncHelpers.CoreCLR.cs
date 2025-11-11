@@ -144,11 +144,19 @@ namespace System.Runtime.CompilerServices
 
     public static partial class AsyncHelpers
     {
-        // This is the "magic" method on wich other "Await" methods are built.
+        // This is the "magic" method on which other "Await" methods are built.
         // Calling this from an Async method returns the continuation to the caller thus
         // explicitly initiates suspension.
         [Intrinsic]
         private static void AsyncSuspend(Continuation continuation) => throw new UnreachableException();
+
+        // An intrinsic that provides access to continuations produced by Async calls.
+        // Calling this after an Async method call returns:
+        //   * `null` if the call has completed synchronously, or
+        //   * a continuation object if the call requires suspension.
+        //     In this case the formal result of the call is undefined.
+        [Intrinsic]
+        private static Continuation? AsyncCallContinuation() => throw new UnreachableException();
 
         // Used during suspensions to hold the continuation chain and on what we are waiting.
         // Methods like FinalizeTaskReturningThunk will unlink the state and wrap into a Task.
