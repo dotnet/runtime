@@ -807,8 +807,8 @@ namespace System.Formats.Tar
         /// Analyzes the buffer for known compression format magic numbers and throws an InvalidDataException
         /// with a specific error message if a compression format is detected.
         /// If no compression format is detected, the method returns without throwing.
-        /// <exception cref="InvalidDataException">Thrown if a compression format is detected</exception>
         /// </summary>
+        /// <exception cref="InvalidDataException">Thrown if a compression format is detected.</exception>
         private static void ThrowIfCompressedArchive(ReadOnlySpan<byte> buffer)
         {
             if (buffer.Length < 2)
