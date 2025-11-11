@@ -6244,6 +6244,7 @@ public:
 
     FlowGraphDfsTree* fgWasmDfs();
     PhaseStatus fgWasmControlFlow();
+    PhaseStatus fgWasmTransformSccs();
 
     // method that returns if you should split here
     typedef bool(fgSplitPredicate)(GenTree* tree, GenTree* parent, fgWalkData* data);

@@ -507,8 +507,11 @@ public:
                     BasicBlock* const transferBlock   = m_comp->fgSplitEdge(pred, header);
                     GenTree* const    targetIndex     = m_comp->gtNewIconNode(headerNumber);
                     GenTree* const    storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
+                    Statement* const  assignStmt      = m_comp->fgNewStmtAtBeg(transferBlock, storeControlVar);
 
-                    m_comp->fgNewStmtAtBeg(transferBlock, storeControlVar);
+                    m_comp->gtSetStmtInfo(assignStmt);
+                    m_comp->fgSetStmtSeq(assignStmt);
+
                     m_comp->fgReplaceJumpTarget(transferBlock, header, dispatcher);
                 }
 
@@ -538,17 +541,19 @@ public:
                 headerNumber++;
             }
 
-            // Create the dispatch switch... all cases unique.
+            // Create the dispatch switch... really there should be no default but for now we'll have one.
             //
             JITDUMP("Dispatch header is " FMT_BB "; %u cases\n", dispatcher->bbNum, numHeaders);
             BBswtDesc* const swtDesc =
-                new (m_comp, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, /* hasDefault */ true);
+                new (m_comp, CMK_BasicBlock) BBswtDesc(succs, numHeaders, cases, numHeaders, true);
             dispatcher->SetSwitch(swtDesc);
 
-            GenTree* const controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
-            GenTree* const switchNode = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
+            GenTree* const   controlVar = m_comp->gtNewLclvNode(controlVarNum, TYP_INT);
+            GenTree* const   switchNode = m_comp->gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
+            Statement* const switchStmt = m_comp->fgNewStmtAtEnd(dispatcher, switchNode);
 
-            m_comp->fgNewStmtAtEnd(dispatcher, switchNode);
+            m_comp->gtSetStmtInfo(switchStmt);
+            m_comp->fgSetStmtSeq(switchStmt);
         }
 
         // Handle nested Sccs
@@ -608,33 +613,6 @@ void WasmFindSccs(Compiler* comp, FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& s
     }
 
     // comp->Metrics.IrreducibleLoopsFoundDuringOpts = (int)numIrreducible;
-}
-
-//-----------------------------------------------------------------------------
-// WasmTransformSccs: transform SCCs into reducible flow
-//
-// Arguments:
-//   sccs - SCCs to transform
-//
-// Returns:
-//   true if flow was modified (sccs was not empty)
-//
-// Notes:
-//   Currently recurses to handle "nested" sccs before. Might be more sensible
-//   to have a flat list of SCCs. If so we should transform these as outer to
-//   inner.
-//
-bool WasmTransformSccs(ArrayStack<Scc*>& sccs)
-{
-    bool modified = false;
-
-    for (int i = 0; i < sccs.Height(); i++)
-    {
-        Scc* const scc = sccs.Bottom(i);
-        modified |= scc->TransformViaSwitchDispatch();
-    }
-
-    return modified;
 }
 
 //-----------------------------------------------------------------------------
@@ -774,6 +752,72 @@ void WasmFindSccsCore(Compiler*         comp,
             scc->Finalize();
         }
     }
+}
+
+//-----------------------------------------------------------------------------
+// WasmTransformSccs: transform SCCs into reducible flow
+//
+// Arguments:
+//   sccs - SCCs to transform
+//
+// Returns:
+//   true if flow was modified (sccs was not empty)
+//
+// Notes:
+//   Currently recurses to handle "nested" sccs before. Might be more sensible
+//   to have a flat list of SCCs. If so we should transform these as outer to
+//   inner.
+//
+bool WasmTransformSccs(ArrayStack<Scc*>& sccs)
+{
+    bool modified = false;
+
+    for (int i = 0; i < sccs.Height(); i++)
+    {
+        Scc* const scc = sccs.Bottom(i);
+        modified |= scc->TransformViaSwitchDispatch();
+    }
+
+    return modified;
+}
+
+//-----------------------------------------------------------------------------
+// fgWasmTransformSccs: transform SCCs into reducible flow
+//
+// Returns:
+//   suitable phase status
+//
+PhaseStatus Compiler::fgWasmTransformSccs()
+{
+    bool              transformed = false;
+    FlowGraphDfsTree* dfsTree     = fgWasmDfs();
+    assert(dfsTree->IsForWasm());
+    FlowGraphNaturalLoops* loops = FlowGraphNaturalLoops::Find(dfsTree);
+
+    // If there are irreducible loops, transforrm them.
+    //
+    if (loops->ImproperLoopHeaders() > 0)
+    {
+        JITDUMP("\nThere are irreducible loops..\n");
+        printf("** Fixing improper headers in %u (%s)\n", info.compMethodSuperPMIIndex, info.compFullName);
+
+        ArrayStack<Scc*> sccs(getAllocator(CMK_Wasm));
+        WasmFindSccs(this, dfsTree, sccs);
+        assert(!sccs.Empty());
+
+        transformed = WasmTransformSccs(sccs);
+        assert(transformed);
+
+#ifdef DEBUG
+        // Rebuild DFS and loops; verify no improper headers remain
+        //
+        dfsTree = fgWasmDfs();
+        loops   = FlowGraphNaturalLoops::Find(dfsTree);
+        assert(loops->ImproperLoopHeaders() == 0);
+#endif
+    }
+
+    return transformed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -936,7 +980,6 @@ public:
 //
 // Still TODO
 //
-// * handling irreducible loops
 // * proper handling of BR_TABLE defaults
 // * branch inversion
 // * actual block reordering
@@ -946,6 +989,7 @@ public:
 // * Rethink need for BB0 (have m_end refer to end of last block in range, not start of first block after)
 // * We do not branch with operands on the wasm stack, so we need to add suitable (void?) types to branches
 // * During LaRPO formation, remember the position of the last block in the loop
+// * Reconcile ordering of SCC/LSRA/WasmControlFlow (LSRA can introduce blocks)
 //
 PhaseStatus Compiler::fgWasmControlFlow()
 {
@@ -958,26 +1002,9 @@ PhaseStatus Compiler::fgWasmControlFlow()
     assert(dfsTree->IsForWasm());
     FlowGraphNaturalLoops* loops = FlowGraphNaturalLoops::Find(dfsTree);
 
-    // If there are irreducible loops, transforrm them.
+    // We should have transformed these away earlier
     //
-    if (loops->ImproperLoopHeaders() > 0)
-    {
-        JITDUMP("\nThere are irreducible loops..\n");
-
-        ArrayStack<Scc*> sccs(getAllocator(CMK_Wasm));
-        WasmFindSccs(this, dfsTree, sccs);
-        assert(!sccs.Empty());
-
-        bool transformed = WasmTransformSccs(sccs);
-        assert(transformed);
-
-        // Now rebuild DFS and loops; verify no improper headers remain
-        //
-        dfsTree = fgWasmDfs();
-        loops   = FlowGraphNaturalLoops::Find(dfsTree);
-
-        assert(loops->ImproperLoopHeaders() == 0);
-    }
+    assert(loops->ImproperLoopHeaders() == 0);
 
     // Our interval ends are at the starts of blocks, so we need a block that
     // comes after all existing blocks. So allocate one extra slot.
