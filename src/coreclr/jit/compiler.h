@@ -5558,7 +5558,8 @@ public:
 
     PhaseStatus SaveAsyncContexts();
     void AddContextArgsToAsyncCalls(BasicBlock* block);
-    BasicBlock* CreateReturnBB(unsigned* mergedReturnLcl);
+    void MergeReturnsForAsyncSave();
+    BasicBlock* CreateAsyncReturnBB(unsigned* mergedReturnLcl);
     PhaseStatus TransformAsync();
 
     // This field keep the R2R helper call that would be inserted to trigger the constructor
@@ -10432,6 +10433,7 @@ public:
         STRESS_MODE(DOWNWARDS_COUNTED_LOOPS) /* Make more loops downwards counted         */    \
         STRESS_MODE(STRENGTH_REDUCTION) /* Enable strength reduction */                         \
         STRESS_MODE(STRENGTH_REDUCTION_PROFITABILITY) /* Do more strength reduction */          \
+        STRESS_MODE(ASYNC_RETURN_MERGE) /* Do runtime async's return merging */                 \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -10843,6 +10845,8 @@ public:
     Phases      mostRecentlyActivePhase = PHASE_PRE_IMPORT;        // the most recently active phase
     PhaseChecks activePhaseChecks       = PhaseChecks::CHECK_NONE; // the currently active phase checks
     PhaseDumps  activePhaseDumps        = PhaseDumps::DUMP_ALL;    // the currently active phase dumps
+
+    bool compAnyTailCallCandidates = false;
 
     //-------------------------------------------------------------------------
     //  The following keeps track of how many bytes of local frame space we've
