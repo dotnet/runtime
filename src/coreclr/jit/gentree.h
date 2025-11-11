@@ -4341,14 +4341,6 @@ inline GenTreeCallDebugFlags& operator &=(GenTreeCallDebugFlags& a, GenTreeCallD
 
 // clang-format on
 
-enum class ExecutionContextHandling
-{
-    // No special handling of execution context is required.
-    None,
-    // Save and restore execution context on suspension/resumption.
-    AsyncSaveAndRestore,
-};
-
 enum class ContinuationContextHandling
 {
     // No special handling of SynchronizationContext/TaskScheduler is required.

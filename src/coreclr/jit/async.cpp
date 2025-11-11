@@ -73,7 +73,9 @@ PhaseStatus Compiler::SaveAsyncContexts()
     lvaAsyncSynchronizationContextVar                     = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
 
-    // Create try-fault structure
+    // Create try-fault structure. This is actually a try-finally, but we
+    // manually insert the restore code in a (merged) return block, so EH wise
+    // we only need to restore on fault.
     BasicBlock* const tryBegBB  = fgSplitBlockAtBeginning(fgFirstBB);
     BasicBlock* const tryLastBB = fgLastBB;
 
@@ -82,10 +84,10 @@ PhaseStatus Compiler::SaveAsyncContexts()
     faultBB->bbRefs     = 1; // Artificial ref count
     faultBB->inheritWeightPercentage(tryBegBB, 0);
 
-    EHblkDsc* newEntry = nullptr;
+    // Add a new EH table entry. It encloses all others, so placing it at the
+    // end is the right thing to do.
     unsigned  XTnew    = compHndBBtabCount;
-
-    newEntry = fgTryAddEHTableEntries(XTnew);
+    EHblkDsc* newEntry = fgTryAddEHTableEntries(XTnew);
 
     if (newEntry == nullptr)
     {
@@ -173,13 +175,13 @@ PhaseStatus Compiler::SaveAsyncContexts()
     // First argument: started = (continuation == null)
     GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
     GenTree* null         = gtNewNull();
-    GenTree* started      = gtNewOperNode(GT_EQ, TYP_INT, continuation, null);
+    GenTree* resumed      = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
 
     GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
-    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(started));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
 
     Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
     fgInsertStmtAtEnd(faultBB, restoreStmt);
@@ -234,6 +236,10 @@ PhaseStatus Compiler::SaveAsyncContexts()
     {
         newReturnBB->bbWeight = newReturnBB->computeIncomingWeight();
     }
+
+    // After merging of returns we have at most 1 return (and we may have 0, if
+    // there were no returns before due to infinite loops or exceptions).
+    assert(fgReturnCount <= 1);
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -319,13 +325,13 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
 
     GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
     GenTree* null         = gtNewNull();
-    GenTree* started      = gtNewOperNode(GT_EQ, TYP_INT, continuation, null);
+    GenTree* resumed      = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
 
     GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
-    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(started));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
 
     // This restore is an inline candidate (unlike the fault one)
     CORINFO_CALL_INFO callInfo = {};
@@ -1612,7 +1618,7 @@ void AsyncTransformation::FillInDataOnSuspension(GenTreeCall*              call,
 //   Create IR to restore contexts on suspension.
 //
 // Parameters:
-//   block     - Block that contains the async calll
+//   block     - Block that contains the async call
 //   call      - The async call
 //   suspendBB - The basic block to add IR to.
 //
@@ -1631,34 +1637,34 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
     JITDUMP("    Call [%06u] has async contexts; will restore on suspension\n", Compiler::dspTreeID(call));
 
     // Insert call
-    //   AsyncHelpers.RestoreContexts(started, execContext, syncContext);
+    //   AsyncHelpers.RestoreContexts(resumed, execContext, syncContext);
 
-    GenTree*     startedPlaceholder     = m_comp->gtNewIconNode(0);
+    GenTree*     resumedPlaceholder     = m_comp->gtNewIconNode(0);
     GenTree*     execContextPlaceholder = m_comp->gtNewNull();
     GenTree*     syncContextPlaceholder = m_comp->gtNewNull();
     GenTreeCall* restoreCall = m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreContextsMethHnd, TYP_VOID);
 
     restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(syncContextPlaceholder));
     restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(execContextPlaceholder));
-    restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(startedPlaceholder));
+    restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(resumedPlaceholder));
 
     m_comp->compCurBB = suspendBB;
     m_comp->fgMorphTree(restoreCall);
 
     LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_comp, restoreCall));
 
-    // Replace startedPlaceholder with actual "continuationParameter == null" arg
+    // Replace resumedPlaceholder with actual "continuationParameter != null" arg
     LIR::Use use;
-    bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(startedPlaceholder, &use);
+    bool     gotUse = LIR::AsRange(suspendBB).TryGetUse(resumedPlaceholder, &use);
     assert(gotUse);
 
     GenTree* continuation = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
     GenTree* null         = m_comp->gtNewNull();
-    GenTree* started      = m_comp->gtNewOperNode(GT_EQ, TYP_INT, continuation, null);
+    GenTree* started      = m_comp->gtNewOperNode(GT_NE, TYP_INT, continuation, null);
 
-    LIR::AsRange(suspendBB).InsertBefore(startedPlaceholder, LIR::SeqTree(m_comp, started));
+    LIR::AsRange(suspendBB).InsertBefore(resumedPlaceholder, LIR::SeqTree(m_comp, started));
     use.ReplaceWith(started);
-    LIR::AsRange(suspendBB).Remove(startedPlaceholder);
+    LIR::AsRange(suspendBB).Remove(resumedPlaceholder);
 
     // Replace execContextPlaceholder with actual value
     GenTree* execContext = execContextArg->GetNode();
