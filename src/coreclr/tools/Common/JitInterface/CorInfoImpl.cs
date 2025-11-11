@@ -3777,7 +3777,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
 #else
-            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled);
+            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
 
             entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
             return ObjectToHandle(_asyncResumptionStub);
