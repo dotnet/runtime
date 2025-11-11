@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <BuildAsStandalone>true</BuildAsStandalone>
     <TypeMapEntryAssembly>TypeMapLib5</TypeMapEntryAssembly>
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
