@@ -20,9 +20,71 @@ namespace Internal.Runtime
         private FrozenObjectSegment m_CurrentSegment;
 
         // Default size to reserve for a frozen segment
-        private const nuint FOH_SEGMENT_DEFAULT_SIZE = 4 * 1024 * 1024;
+        private static readonly nuint FOH_SEGMENT_DEFAULT_SIZE = GetDefaultSegmentSize();
         // Size to commit on demand in that reserved space
         private const nuint FOH_COMMIT_SIZE = 64 * 1024;
+
+        private static bool TryParsePositiveULong(string s, out ulong value)
+        {
+            value = 0;
+            if (string.IsNullOrEmpty(s))
+                return false;
+
+            int i = 0;
+            
+            while (i < s.Length && char.IsWhiteSpace(s[i]))
+                i++;
+
+            
+            if (i < s.Length && s[i] == '+')
+                i++;
+
+            if (i >= s.Length)
+                return false;
+
+            ulong result = 0;
+            for (; i < s.Length; i++)
+            {
+                char c = s[i];
+                if (c < '0' || c > '9')
+                    return false;
+                ulong digit = (ulong)(c - '0');
+                
+                if (result > (ulong.MaxValue - digit) / 10)
+                    return false;
+                result = result * 10 + digit;
+            }
+
+            value = result;
+            return true;
+        }
+
+        private static nuint GetDefaultSegmentSize()
+        {
+            const nuint defaultSize = 4 * 1024 * 1024;
+            nuint finalSize = defaultSize;
+
+            try
+            {
+                string? env = Environment.GetEnvironmentVariable("DOTNET_FOH_SEGMENT_DEFAULT_SIZE");
+                if (!string.IsNullOrEmpty(env))
+                {
+                    if (TryParsePositiveULong(env, out ulong parsed) && parsed > 0)
+                    {
+                        finalSize = (nuint)parsed;
+                        if (finalSize < FOH_COMMIT_SIZE)
+                        {
+                            finalSize = FOH_COMMIT_SIZE;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // ignore and use default
+            }
+            return finalSize;
+        }
 
         public T? TryAllocateObject<T>() where T : class
         {
