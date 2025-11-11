@@ -266,6 +266,14 @@ FORCEINLINE static IUnknown* GetCOMIPFromRCW_GetTargetFromRCWCache(SOleTlsData* 
     return NULL;
 }
 
+FCIMPL1(MethodTable*, StubHelpers::GetComInterfaceFromMethodDesc, MethodDesc* pMD)
+{
+    FCALL_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    return CLRToCOMCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
+}
+FCIMPLEND
+
 //==================================================================================================================
 // The GetCOMIPFromRCW helper exists in four specialized versions to optimize CLR->COM perf. Please be careful when
 // changing this code as one of these methods is executed as part of every CLR->COM call so every instruction counts.
