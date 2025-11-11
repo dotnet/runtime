@@ -404,10 +404,10 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static DS GetParsingState(DS dps, DTT dtt)
         {
-            const int width = 18;
-            const int height = 20;
-            Debug.Assert(DateParsingStates.Length == width * height);
-            return DateParsingStates[(int)dps * width + (int)dtt];
+            const int Width = 18;
+            const int Height = 20;
+            Debug.Assert(DateParsingStates.Length == Width * Height);
+            return DateParsingStates[(int)dps * Width + (int)dtt];
         }
 
         internal const string GMTName = "GMT";
