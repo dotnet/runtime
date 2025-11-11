@@ -73,7 +73,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [KeptAssembly("library.dll")]
     [KeptAssembly("library2.dll")]
     [KeptTypeInAssembly("library.dll", typeof(TypeMapReferencedAssembly))]
-    [KeptMemberInAssembly("library.dll", typeof(TypeMapReferencedAssembly), "Main()")]
+    [KeptMemberInAssembly("library.dll", typeof(TypeMapReferencedAssembly), "Run()")]
     [KeptTypeInAssembly("library.dll", typeof(TargetTypeUnconditional1), Tool = Tool.Trimmer)]
     [KeptTypeInAssembly("library.dll", typeof(TrimTarget1))]
     [KeptMemberInAssembly("library.dll", typeof(TrimTarget1), ".ctor()")]
