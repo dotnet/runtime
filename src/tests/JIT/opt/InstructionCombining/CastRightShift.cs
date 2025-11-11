@@ -15,157 +15,125 @@ namespace TestCastRightShift
         {
             bool fail = false;
 
+
+            if (CastASR7_byte_int(255) == 0)
             {
-                var r = CastASR7_byte_int(255);
-                if (r == 0) { Console.WriteLine($"CastASR7_byte_int(255) = {r} should be non-zero"); fail = true; }
+                fail = true;
             }
 
+            if (CastASR8_byte_int(255) != 0)
             {
-                var r = CastASR8_byte_int(255);
-                if (r != 0) { Console.WriteLine($"CastASR8_byte_int(255) = {r} should be 0"); fail = true; }
+                fail = true;
             }
 
+            if (CastLSR7_byte_uint(255) != 1)
             {
-                var r = CastLSR7_byte_uint(255);
-                if (r != 1U) { Console.WriteLine($"CastLSR7_byte_uint(255) = {r} should be 1"); fail = true; }
+                fail = true;
             }
 
+            if (CastLSR8_byte_uint(255) != 0)
             {
-                var r = CastLSR8_byte_uint(255);
-                if (r != 0U) { Console.WriteLine($"CastLSR8_byte_uint(255) = {r} should be 0"); fail = true; }
+                fail = true;
             }
 
+            if (CastASR7_byte_long(255) == 0)
             {
-                var r = CastASR7_byte_long(255);
-                if (r == 0L) { Console.WriteLine($"CastASR7_byte_long(255) = {r} should be non-zero"); fail = true; }
+                fail = true;
             }
 
+            if (CastASR8_byte_long(255) != 0)
             {
-                var r = CastASR8_byte_long(255);
-                if (r != 0L) { Console.WriteLine($"CastASR8_byte_long(255) = {r} should be 0"); fail = true; }
+                fail = true;
             }
 
+            if (CastLSR7_byte_ulong(255) == 0)
             {
-                var r = CastLSR7_byte_ulong(255);
-                if (r == 0UL) { Console.WriteLine($"CastLSR7_byte_ulong(255) = {r} should be non-zero"); fail = true; }
+                fail = true;
             }
 
+            if (CastLSR8_byte_ulong(255) != 0)
             {
-                var r = CastLSR8_byte_ulong(255);
-                if (r != 0UL) { Console.WriteLine($"CastLSR8_byte_ulong(255) = {r} should be 0"); fail = true; }
+                fail = true;
             }
 
+            if (CastASR7_sbyte_int(-127) != -1)
             {
-                var r = CastASR7_sbyte_int(-127);
-                if (r == 0) { Console.WriteLine($"CastASR7_sbyte_int(-127) = {r} should be non-zero"); fail = true; }
+                fail = true;
             }
 
-            // Console.WriteLine($"{-127 >> 6}");
-            // Console.WriteLine($"{-127 >> 7}");
-
+            if (CastASR8_sbyte_int(-127) != -1)
             {
-                var x = foo6(-127);
-                Console.WriteLine($"foo6(-127) = {x}");
+                fail = true;
             }
 
+            if (CastASR7_sbyte_long(-127) != -1)
             {
-                var x = foo7(-127);
-                Console.WriteLine($"foo7(-127) = {x}");
+                fail = true;
             }
 
+            if (CastASR8_sbyte_long(-127) != -1)
             {
-                var x = foo8(-127);
-                Console.WriteLine($"foo8(-127) = {x}");
+                fail = true;
             }
 
+            if (CastASR15_ushort_int(65535) == 0)
             {
-                var x = CastASR6_sbyte_int(-127);
-                Console.WriteLine($"CastASR6_sbyte_int(-127) = {x}");
+                fail = true;
             }
 
+            if (CastASR16_ushort_int(65535) != 0)
             {
-                var x = CastASR7_sbyte_int(-127);
-                Console.WriteLine($"CastASR7_sbyte_int(-127) = {x}");
+                fail = true;
             }
 
+            if (CastLSR15_ushort_uint(65535) == 0)
             {
-                var x = CastASR8_sbyte_int(-127);
-                Console.WriteLine($"CastASR8_sbyte_int(-127) = {x}");
+                fail = true;
             }
 
+            if (CastLSR16_ushort_uint(65535) != 0)
             {
-                var r = CastASR8_sbyte_int(-127);
-                if (r != 0) { Console.WriteLine($"CastASR8_sbyte_int(-127) = {r} should be 0"); fail = true; }
+                fail = true;
             }
 
+            if (CastASR15_ushort_long(65535) == 0)
             {
-                var r = CastASR7_sbyte_long(-127);
-                if (r == 0L) { Console.WriteLine($"CastASR7_sbyte_long(-127) = {r} should be non-zero"); fail = true; }
+                fail = true;
             }
 
+            if (CastASR16_ushort_long(65535) != 0)
             {
-                var r = CastASR8_sbyte_long(-127);
-                if (r != 0L) { Console.WriteLine($"CastASR8_sbyte_long(-127) = {r} should be 0"); fail = true; }
+                fail = true;
             }
 
+            if (CastLSR15_ushort_ulong(65535) == 0)
             {
-                var r = CastASR15_ushort_int(65535);
-                if (r == 0) { Console.WriteLine($"CastASR15_ushort_int(65535) = {r} should be non-zero"); fail = true; }
+                fail = true;
             }
 
+            if (CastLSR16_ushort_ulong(65535) != 0)
             {
-                var r = CastASR16_ushort_int(65535);
-                if (r != 0) { Console.WriteLine($"CastASR16_ushort_int(65535) = {r} should be 0"); fail = true; }
+                fail = true;
             }
 
+            if (CastASR15_short_int(-1) != -1)
             {
-                var r = CastLSR15_ushort_uint(65535);
-                if (r == 0U) { Console.WriteLine($"CastLSR15_ushort_uint(65535) = {r} should be non-zero"); fail = true; }
+                fail = true;
             }
 
+            if (CastASR16_short_int(-1) != -1)
             {
-                var r = CastLSR16_ushort_uint(65535);
-                if (r != 0U) { Console.WriteLine($"CastLSR16_ushort_uint(65535) = {r} should be 0"); fail = true; }
+                fail = true;
             }
 
+            if (CastASR15_short_long(-1) != -1)
             {
-                var r = CastASR15_ushort_long(65535);
-                if (r == 0L) { Console.WriteLine($"CastASR15_ushort_long(65535) = {r} should be non-zero"); fail = true; }
+                fail = true;
             }
 
+            if (CastASR16_short_long(-1) != -1)
             {
-                var r = CastASR16_ushort_long(65535);
-                if (r != 0L) { Console.WriteLine($"CastASR16_ushort_long(65535) = {r} should be 0"); fail = true; }
-            }
-
-            {
-                var r = CastLSR15_ushort_ulong(65535);
-                if (r == 0UL) { Console.WriteLine($"CastLSR15_ushort_ulong(65535) = {r} should be non-zero"); fail = true; }
-            }
-
-            {
-                var r = CastLSR16_ushort_ulong(65535);
-                if (r != 0UL) { Console.WriteLine($"CastLSR16_ushort_ulong(65535) = {r} should be 0"); fail = true; }
-            }
-
-            {
-                var r = CastASR15_short_int(-1);
-                if (r == 0) { Console.WriteLine($"CastASR15_short_int(-1) = {r} should be non-zero"); fail = true; }
-            }
-
-            {
-                var r = CastASR16_short_int(-1);
-                if (r != 0) { Console.WriteLine($"CastASR16_short_int(-1) = {r} should be 0"); fail = true; }
-            }
-
-            {
-                var r = CastASR15_short_long(-1);
-                if (r == 0L) { Console.WriteLine($"CastASR15_short_long(-1) = {r} should be non-zero"); fail = true; }
-            }
-
-            {
-                var r = CastASR16_short_long(-1);
-                if (r != 0L) { Console.WriteLine($"CastASR16_short_long(-1) = {r} should be 0"); fail = true; }
+                fail = true;
             }
 
             if (fail)
@@ -249,12 +217,6 @@ namespace TestCastRightShift
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastASR6_sbyte_int(int x)
-        {
-            return (sbyte)x >> 6;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         static int CastASR7_sbyte_int(int x)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
@@ -263,27 +225,10 @@ namespace TestCastRightShift
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int foo6(int x)
-        {
-            return x >> 6;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static int foo7(int x)
-        {
-            return x >> 7;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static int foo8(int x)
-        {
-            return x >> 8;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         static int CastASR8_sbyte_int(int x)
         {
-            //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
+            //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #8
             return (sbyte)x >> 8;
         }
 
@@ -299,7 +244,8 @@ namespace TestCastRightShift
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long CastASR8_sbyte_long(int x)
         {
-            //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
+            //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #8
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
             return (sbyte)x >> 8;
         }
@@ -380,7 +326,8 @@ namespace TestCastRightShift
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int CastASR16_short_int(int x)
         {
-            //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
+            //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #16
             return (short)x >> 16;
         }
 
@@ -396,7 +343,8 @@ namespace TestCastRightShift
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long CastASR16_short_long(int x)
         {
-            //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
+            //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #16
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
             return (short)x >> 16;
         }
