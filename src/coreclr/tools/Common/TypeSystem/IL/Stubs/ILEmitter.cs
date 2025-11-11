@@ -734,7 +734,6 @@ namespace Internal.IL.Stubs
             return newLabel;
         }
 
-        // For now, only catches exceptions of type Exception.
         public ILExceptionRegionBuilder NewCatchRegion(TypeDesc exceptionType)
         {
             var region = new ILExceptionRegionBuilder(ILExceptionRegionKind.Catch, exceptionType);
