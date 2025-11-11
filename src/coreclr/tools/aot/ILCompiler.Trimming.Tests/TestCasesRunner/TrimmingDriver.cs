@@ -150,7 +150,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
             if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
             {
                 // Pass null for typeMappingEntryAssembly to use default entry assembly behavior in tests
-                typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext, typeMappingEntryAssemblyName: null));
+                typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
             }
 
             CompilationBuilder builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup)
