@@ -2,92 +2,82 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <PropertyGroup>
-    <PackageDescription>The .NET IL Assembler command-line tool. Install with 'dotnet tool install -g Microsoft.dotnet-ilasm' and invoke with 'dotnet-ilasm'.</PackageDescription>
+    <PackageDescription>The .NET IL Assembler.
+
+Usage:
+  Install as a global tool:
+    dotnet tool install -g Microsoft.dotnet-ilasm
+
+  Invoke the tool:
+    ilasm [options] &lt;sourcefile&gt;
+
+  For help on ilasm command-line options:
+    ilasm -?
+</PackageDescription>
+    <!-- Configure as a dotnet tool -->
     <PackageType>DotnetTool</PackageType>
   </PropertyGroup>
 
-  <!-- For RID-specific packages -->
-  <PropertyGroup Condition="'$(PackageTargetRuntime)' != ''">
-    <PackageId>runtime.$(PackageTargetRuntime).Microsoft.dotnet-ilasm</PackageId>
+  <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
+    <PackageTargetRuntime Condition="'$(_packageTargetOSGroup)' == 'windows'">$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
   </PropertyGroup>
 
+  <!-- For RID-specific tool packages, include the native binary in tools folder -->
   <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-    <NativeBinary Condition="'$(PackCrossComponent)' != 'true'" Include="$(RuntimeBinDir)ilasm$(ExeSuffix)" />
-    <NativeBinary Condition="'$(PackCrossComponent)' == 'true'" Include="$(RuntimeBinDir)$(BuildArchitecture)/ilasm$(ExeSuffix)" />
+    <File Include="$(RuntimeBinDir)ilasm$(ExeSuffix)" Condition="'$(PackCrossComponent)' != 'true'">
+      <TargetPath>tools/$(NetCoreAppToolCurrent)/$(PackageTargetRuntime)/</TargetPath>
+    </File>
+    <File Include="$(RuntimeBinDir)$(BuildArchitecture)/ilasm$(ExeSuffix)" Condition="'$(PackCrossComponent)' == 'true'">
+      <TargetPath>tools/$(NetCoreAppToolCurrent)/$(PackageTargetRuntime)/</TargetPath>
+    </File>
+    <!-- Include tool settings manifest for RID-specific packages -->
+    <File Include="$(MSBuildThisFileDirectory)DotnetToolSettings.xml">
+      <TargetPath>tools/$(NetCoreAppToolCurrent)/$(PackageTargetRuntime)/</TargetPath>
+    </File>
   </ItemGroup>
 
-  <!-- For RID-specific packages, add the tool manifest -->
-  <Target Name="AddRidSpecificToolManifest" BeforeTargets="GenerateNuspec" Condition="'$(PackageTargetRuntime)' != ''">
-    <PropertyGroup>
-      <_RidManifestDir>$(IntermediateOutputPath)tools/$(TargetFramework)/$(PackageTargetRuntime)/</_RidManifestDir>
-    </PropertyGroup>
-
-    <MakeDir Directories="$(_RidManifestDir)" />
-    <Copy SourceFiles="$(MSBuildProjectDirectory)/DotnetToolSettings.xml" DestinationFolder="$(_RidManifestDir)" />
-
+  <!-- For primary (non-RID-specific) package, generate and include manifest that references RID-specific packages -->
+  <Target Name="GeneratePrimaryToolManifest" BeforeTargets="GetPackageFiles" Condition="'$(PackageTargetRuntime)' == ''">
+    <!-- Define official RID list -->
     <ItemGroup>
-      <TfmSpecificPackageFile Include="$(_RidManifestDir)DotnetToolSettings.xml" PackagePath="tools/$(TargetFramework)/$(PackageTargetRuntime)/" />
-      <File Include="@(NativeBinary)">
-        <TargetPath>tools/$(TargetFramework)/$(PackageTargetRuntime)/</TargetPath>
-      </File>
+      <_OfficialRID Include="win-x64" />
+      <_OfficialRID Include="win-x86" />
+      <_OfficialRID Include="win-arm64" />
+      <_OfficialRID Include="linux-x64" />
+      <_OfficialRID Include="linux-arm" />
+      <_OfficialRID Include="linux-arm64" />
+      <_OfficialRID Include="linux-musl-x64" />
+      <_OfficialRID Include="linux-musl-arm64" />
+      <_OfficialRID Include="osx-x64" />
+      <_OfficialRID Include="osx-arm64" />
+      <!-- Add TargetRid if not already in the official list -->
+      <_OfficialRID Include="$(TargetRid)" Exclude="@(_OfficialRID)" />
     </ItemGroup>
-  </Target>
-
-  <!-- For primary package (no PackageTargetRuntime) -->
-
-  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
-    <_OfficialRID Include="win-x64" />
-    <_OfficialRID Include="win-x86" />
-    <_OfficialRID Include="win-arm64" />
-    <_OfficialRID Include="linux-x64" />
-    <_OfficialRID Include="linux-arm" />
-    <_OfficialRID Include="linux-arm64" />
-    <_OfficialRID Include="linux-musl-x64" />
-    <_OfficialRID Include="linux-musl-arm64" />
-    <_OfficialRID Include="osx-x64" />
-    <_OfficialRID Include="osx-arm64" />
-    <_OfficialRID Include="freebsd-x64" />
-    <_OfficialRID Include="freebsd-arm64" />
-    <!-- Add TargetRid if it's not in the official list -->
-    <_OfficialRID Include="$(TargetRid)" Exclude="@(_OfficialRID)" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
-    <RuntimeIdentifierPackage Include="@(_OfficialRID)">
-      <Id>runtime.%(_OfficialRID.Identity).Microsoft.dotnet-ilasm</Id>
-      <Version>$(PackageVersion)</Version>
-    </RuntimeIdentifierPackage>
-  </ItemGroup>
-
-  <!-- Generate primary tool manifest dynamically -->
-  <Target Name="GeneratePrimaryToolManifest" BeforeTargets="GenerateNuspec" Condition="'$(PackageTargetRuntime)' == ''">
+    
     <PropertyGroup>
-      <_PrimaryManifestContent>
+      <_GeneratedManifestPath>$(IntermediateOutputPath)DotnetToolSettings.xml</_GeneratedManifestPath>
+      <_RidPackagesXml>@(_OfficialRID->'    &lt;RuntimeIdentifierPackage RuntimeIdentifier=&quot;%(Identity)&quot; Id=&quot;runtime.%(Identity).Microsoft.dotnet-ilasm&quot; Version=&quot;$(PackageVersion)&quot; /&gt;', '%0a')</_RidPackagesXml>
+      <_ManifestContent>
 <![CDATA[<?xml version="1.0" encoding="utf-8"?>
-<DotNetCl iToolManifest Version="2">
+<DotNetCliTool Version="2">
+  <Commands>
+    <Command Name="ilasm" />
+  </Commands>
   <RuntimeIdentifierPackages>
-]]>
-      </_PrimaryManifestContent>
+]]>$(_RidPackagesXml)<![CDATA[
+  </RuntimeIdentifierPackages>
+</DotNetCliTool>]]>
+      </_ManifestContent>
     </PropertyGroup>
-
-    <PropertyGroup>
-      <_PrimaryManifestContent>$(_PrimaryManifestContent)%0A<![CDATA[    <RuntimeIdentifierPackage RuntimeIdentifier="%(RuntimeIdentifierPackage.Identity)" Id="%(RuntimeIdentifierPackage.Id)" Version="%(RuntimeIdentifierPackage.Version)" />]]></_PrimaryManifestContent>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <_PrimaryManifestContent>$(_PrimaryManifestContent)%0A<![CDATA[  </RuntimeIdentifierPackages>
-</DotNetCliToolManifest>]]></_PrimaryManifestContent>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <_PrimaryManifestDir>$(IntermediateOutputPath)tools/$(TargetFramework)/any/</_PrimaryManifestDir>
-    </PropertyGroup>
-
-    <MakeDir Directories="$(_PrimaryManifestDir)" />
-    <WriteLinesToFile File="$(_PrimaryManifestDir)DotnetToolSettings.xml" Lines="$(_PrimaryManifestContent)" Overwrite="true" />
-
+    
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile File="$(_GeneratedManifestPath)" Lines="$(_ManifestContent)" Overwrite="true" />
+    
     <ItemGroup>
-      <TfmSpecificPackageFile Include="$(_PrimaryManifestDir)DotnetToolSettings.xml" PackagePath="tools/$(TargetFramework)/any/" />
+      <File Include="$(_GeneratedManifestPath)">
+        <TargetPath>tools/$(NetCoreAppToolCurrent)/any/DotnetToolSettings.xml</TargetPath>
+      </File>
     </ItemGroup>
   </Target>
 
