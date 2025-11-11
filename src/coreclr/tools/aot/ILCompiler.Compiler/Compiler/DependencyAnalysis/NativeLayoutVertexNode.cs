@@ -191,6 +191,13 @@ namespace ILCompiler.DependencyAnalysis
             if (IsUnboxingStub)
                 flags |= MethodFlags.IsUnboxingStub;
 
+            MethodDesc methodForToken = _method;
+            if (_method.IsAsyncVariant())
+            {
+                flags |= MethodFlags.IsAsyncVariant;
+                methodForToken = factory.TypeSystemContext.GetTargetOfAsyncVariantMethod(_method);
+            }
+
             uint fptrReferenceId = 0;
             if ((_flags & MethodEntryFlags.SaveEntryPoint) != 0)
             {
@@ -200,7 +207,7 @@ namespace ILCompiler.DependencyAnalysis
                 fptrReferenceId = factory.MetadataManager.NativeLayoutInfo.ExternalReferences.GetIndex(methodEntryPointNode);
             }
 
-            int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, _method.GetTypicalMethodDefinition());
+            int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, methodForToken.GetTypicalMethodDefinition());
             return GetNativeWriter(factory).GetMethodSignature((uint)flags, fptrReferenceId, containingType, token, args);
         }
 

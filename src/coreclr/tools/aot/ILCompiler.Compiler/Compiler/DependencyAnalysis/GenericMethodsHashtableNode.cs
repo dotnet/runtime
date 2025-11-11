@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
+using Internal.Runtime;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -67,9 +68,14 @@ namespace ILCompiler.DependencyAnalysis
                         arguments.Append(nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(argNode)));
                     }
 
+                    int flags = 0;
+                    if (method.IsAsyncVariant())
+                        flags |= GenericMethodsHashtableConstants.IsAsyncVariant;
+
                     int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, method.GetTypicalMethodDefinition());
 
-                    fullMethodSignature = nativeWriter.GetTuple(containingType, nativeWriter.GetUnsignedConstant((uint)token), arguments);
+                    int flagsAndToken = (token & MetadataManager.MetadataOffsetMask) | flags;
+                    fullMethodSignature = nativeWriter.GetTuple(containingType, nativeWriter.GetUnsignedConstant((uint)flagsAndToken), arguments);
                 }
 
                 // Method's dictionary pointer
