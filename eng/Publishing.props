@@ -22,6 +22,12 @@
     <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.NETCore.ILDAsm.*.nupkg"
                     Exclude="$(ArtifactsPackagesDir)**\runtime.$(TargetRid).Microsoft.NETCore.ILDAsm.*.nupkg" />
 
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.dotnet-ilasm.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(TargetRid).Microsoft.dotnet-ilasm.*.nupkg" />
+
+    <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.dotnet-ildasm.*.nupkg"
+                    Exclude="$(ArtifactsPackagesDir)**\runtime.$(TargetRid).Microsoft.dotnet-ildasm.*.nupkg" />
+
     <_HostArtifact Include="$(ArtifactsPackagesDir)**\runtime.*.Microsoft.DotNet.ILCompiler.*.nupkg"
                     Exclude="$(ArtifactsPackagesDir)**\runtime.$(TargetRid).Microsoft.DotNet.ILCompiler.*.nupkg" />
 

@@ -10,6 +10,8 @@
   <ItemGroup Condition=" '$(TargetsMobile)' != 'true' ">
     <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.proj" />
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.proj" />
+    <ProjectReference Include="Microsoft.dotnet-ilasm\Microsoft.dotnet-ilasm.proj" />
+    <ProjectReference Include="Microsoft.dotnet-ildasm\Microsoft.dotnet-ildasm.proj" />
   </ItemGroup>
 
   <Import Project="versioning.targets" />

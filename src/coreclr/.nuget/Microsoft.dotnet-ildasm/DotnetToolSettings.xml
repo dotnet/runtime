@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<DotNetCliToolManifest Version="2">
+<DotNetCliTool Version="2">
   <Commands>
-    <Command Name="dotnet-ildasm" EntryPoint="ildasm" Runner="executable" />
+    <Command Name="ildasm" EntryPoint="ildasm" Runner="executable" />
   </Commands>
-</DotNetCliToolManifest>
+</DotNetCliTool>
