@@ -8,6 +8,11 @@ namespace Internal.IL.Stubs
 {
     public static class AsyncThunkILEmitter
     {
+        // Emits a thunk that wraps an async method to return a Task or ValueTask.
+        // The thunk calls the async method, and if it completes synchronously,
+        // it returns a completed Task/ValueTask. If the async method suspends,
+        // it calls FinalizeTaskReturningThunk/FinalizeValueTaskReturningThunk method to get the Task/ValueTask.
+
         // The emitted code matches method EmitTaskReturningThunk in CoreCLR VM.
         public static MethodIL EmitTaskReturningThunk(MethodDesc taskReturningMethod, MethodDesc asyncMethod)
         {
@@ -32,23 +37,24 @@ namespace Internal.IL.Stubs
 
             ILLocalVariable returnTaskLocal = emitter.NewLocal(returnType);
 
-            // TODO: Fix this (ExecutionAndSyncBlockStore is not available in Native AOT).
+            // TODO: Check if store/restore is responsibility of the async callee
+            // after https://github.com/dotnet/runtime/pull/121448 gets merged.
 
-            // TypeDesc executionAndSyncBlockStoreType = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "ExecutionAndSyncBlockStore"u8);
-            // ILLocalVariable executionAndSyncBlockStoreLocal = emitter.NewLocal(executionAndSyncBlockStoreType);
+            TypeDesc executionAndSyncBlockStoreType = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "ExecutionAndSyncBlockStore"u8);
+            ILLocalVariable executionAndSyncBlockStoreLocal = emitter.NewLocal(executionAndSyncBlockStoreType);
 
             ILCodeLabel returnTaskLabel = emitter.NewCodeLabel();
             ILCodeLabel suspendedLabel = emitter.NewCodeLabel();
             ILCodeLabel finishedLabel = emitter.NewCodeLabel();
 
-            // codestream.EmitLdLoca(executionAndSyncBlockStoreLocal);
-            // codestream.Emit(ILOpcode.call, emitter.NewToken(executionAndSyncBlockStoreType.GetKnownMethod("Push"u8, null)));
+            codestream.EmitLdLoca(executionAndSyncBlockStoreLocal);
+            codestream.Emit(ILOpcode.call, emitter.NewToken(executionAndSyncBlockStoreType.GetKnownMethod("Push"u8, null)));
 
             ILExceptionRegionBuilder tryFinallyRegion = emitter.NewFinallyRegion();
             {
                 codestream.BeginTry(tryFinallyRegion);
                 codestream.Emit(ILOpcode.nop);
-                ILExceptionRegionBuilder tryCatchRegion = emitter.NewCatchRegion();
+                ILExceptionRegionBuilder tryCatchRegion = emitter.NewCatchRegion(context.GetWellKnownType(WellKnownType.Object));
                 {
                     codestream.BeginTry(tryCatchRegion);
 
@@ -92,13 +98,12 @@ namespace Internal.IL.Stubs
                         codestream.EmitStLoc(logicalResultLocal);
                     }
 
-                    // TODO: Fix this (AsyncCallContinuation is not available in Native AOT).
+                    MethodDesc asyncCallContinuationMd = context.SystemModule
+                                                .GetKnownType("System.StubHelpers"u8, "StubHelpers"u8)
+                                                .GetKnownMethod("AsyncCallContinuation"u8, null);
 
-                    //MethodDesc asyncCallContinuationMd = context.SystemModule
-                    //                            .GetKnownType("System.StubHelpers"u8, "StubHelpers"u8)
-                    //                            .GetKnownMethod("AsyncCallContinuation"u8, null);
+                    codestream.Emit(ILOpcode.call, emitter.NewToken(asyncCallContinuationMd));
 
-                    //codestream.Emit(ILOpcode.call, emitter.NewToken(asyncCallContinuationMd));
 
                     codestream.Emit(ILOpcode.brfalse, finishedLabel);
                     codestream.Emit(ILOpcode.leave, suspendedLabel);
@@ -154,38 +159,22 @@ namespace Internal.IL.Stubs
                     codestream.BeginHandler(tryCatchRegion);
 
                     MethodDesc fromExceptionMd;
-                    if (logicalReturnType != null)
+                    if (isValueTask)
                     {
-                        // Generate: returnType.FromException<T>(Exception)
-                        if (isValueTask)
-                        {
-                            fromExceptionMd = context.SystemModule
-                                .GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
-                                .GetKnownMethod("FromException"u8, null);
-                        }
-                        else
-                        {
-                            fromExceptionMd = context.SystemModule
-                                .GetKnownType("System.Threading.Tasks"u8, "Task"u8)
-                                .GetKnownMethod("FromException"u8, null);
-                        }
-                        fromExceptionMd = fromExceptionMd.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
+                        fromExceptionMd = context.SystemModule
+                            .GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
+                            .GetKnownMethod("FromException"u8, null);
                     }
                     else
                     {
-                        // Generate: returnType.FromException(Exception)
-                        if (isValueTask)
-                        {
-                            fromExceptionMd = context.SystemModule
-                                .GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
-                                .GetKnownMethod("FromException"u8, null);
-                        }
-                        else
-                        {
-                            fromExceptionMd = context.SystemModule
-                                .GetKnownType("System.Threading.Tasks"u8, "Task"u8)
-                                .GetKnownMethod("FromException"u8, null);
-                        }
+                        fromExceptionMd = context.SystemModule
+                            .GetKnownType("System.Threading.Tasks"u8, "Task"u8)
+                            .GetKnownMethod("FromException"u8, null);
+                    }
+
+                    if (logicalReturnType != null)
+                    {
+                        fromExceptionMd = fromExceptionMd.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                     }
 
                     codestream.Emit(ILOpcode.call, emitter.NewToken(fromExceptionMd));
@@ -196,55 +185,38 @@ namespace Internal.IL.Stubs
 
                 codestream.EmitLabel(suspendedLabel);
 
-                // TODO: Fix this (Finalize returning thunks are not available in Native AOT).
+                MethodDesc finalizeTaskReturningThunkMd;
 
-                //MethodDesc finalizeTaskReturningThunkMd;
+                if (isValueTask)
+                {
+                    finalizeTaskReturningThunkMd = context.SystemModule
+                        .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                        .GetKnownMethod("FinalizeValueTaskReturningThunk"u8, null);
+                }
+                else
+                {
+                    finalizeTaskReturningThunkMd = context.SystemModule
+                        .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                        .GetKnownMethod("FinalizeTaskReturningThunk"u8, null);
+                }
 
-                //if (logicalReturnType != null)
-                //{
-                //    if (isValueTask)
-                //    {
-                //        finalizeTaskReturningThunkMd = context.SystemModule
-                //            .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                //            .GetKnownMethod("FinalizeValueTaskReturningThunk`1"u8, null);
-                //    }
-                //    else
-                //    {
-                //        finalizeTaskReturningThunkMd = context.SystemModule
-                //            .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                //            .GetKnownMethod("FinalizeTaskReturningThunk`1"u8, null);
-                //    }
-                //    finalizeTaskReturningThunkMd = finalizeTaskReturningThunkMd.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
-                //}
-                //else
-                //{
-                //    if (isValueTask)
-                //    {
-                //        finalizeTaskReturningThunkMd = context.SystemModule
-                //            .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                //            .GetKnownMethod("FinalizeValueTaskReturningThunk"u8, null);
-                //    }
-                //    else
-                //    {
-                //        finalizeTaskReturningThunkMd = context.SystemModule
-                //            .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                //            .GetKnownMethod("FinalizeTaskReturningThunk"u8, null);
-                //    }
-                //}
-                //codestream.Emit(ILOpcode.call, emitter.NewToken(finalizeTaskReturningThunkMd));
+                if (logicalReturnType != null)
+                {
+                    finalizeTaskReturningThunkMd = finalizeTaskReturningThunkMd.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
+                }
+
+                codestream.Emit(ILOpcode.call, emitter.NewToken(finalizeTaskReturningThunkMd));
                 codestream.EmitStLoc(returnTaskLocal);
                 codestream.Emit(ILOpcode.leave, returnTaskLabel);
 
                 codestream.EndTry(tryFinallyRegion);
             }
-            //
+
             {
                 codestream.BeginHandler(tryFinallyRegion);
 
-                // TODO: Fix this (ExecutionAndSyncBlockStore is not available in Native AOT).
-
-                // codestream.EmitLdLoca(executionAndSyncBlockStoreLocal);
-                // codestream.Emit(ILOpcode.call, emitter.NewToken(executionAndSyncBlockStoreType.GetKnownMethod("Pop"u8, null)));
+                codestream.EmitLdLoca(executionAndSyncBlockStoreLocal);
+                codestream.Emit(ILOpcode.call, emitter.NewToken(executionAndSyncBlockStoreType.GetKnownMethod("Pop"u8, null)));
                 codestream.Emit(ILOpcode.endfinally);
                 codestream.EndHandler(tryFinallyRegion);
             }

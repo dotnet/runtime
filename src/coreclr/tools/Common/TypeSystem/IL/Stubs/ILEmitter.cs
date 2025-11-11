@@ -517,8 +517,15 @@ namespace Internal.IL.Stubs
         internal ILCodeStream _endHandlerStream;
         internal int _endHandlerOffset;
 
-        internal ILExceptionRegionBuilder()
+        internal ILExceptionRegionKind _exceptionRegionKind;
+        internal TypeDesc _catchExceptionType;
+
+        internal ILExceptionRegionBuilder(ILExceptionRegionKind exceptionRegionKind, TypeDesc catchExceptionType = null)
         {
+            _exceptionRegionKind = exceptionRegionKind;
+            _catchExceptionType = catchExceptionType;
+            Debug.Assert((exceptionRegionKind == ILExceptionRegionKind.Catch && catchExceptionType != null)
+                || (exceptionRegionKind != ILExceptionRegionKind.Catch && catchExceptionType == null));
         }
 
         internal int TryOffset => _beginTryStream.RelativeToAbsoluteOffset(_beginTryOffset);
@@ -669,8 +676,7 @@ namespace Internal.IL.Stubs
         private ArrayBuilder<ILCodeStream> _codeStreams;
         private ArrayBuilder<LocalVariableDefinition> _locals;
         private ArrayBuilder<object> _tokens;
-        private ArrayBuilder<ILExceptionRegionBuilder> _catchRegions;
-        private ArrayBuilder<ILExceptionRegionBuilder> _finallyRegions;
+        private ArrayBuilder<ILExceptionRegionBuilder> _exceptionRegions;
 
         public ILEmitter()
         {
@@ -729,17 +735,17 @@ namespace Internal.IL.Stubs
         }
 
         // For now, only catches exceptions of type Exception.
-        public ILExceptionRegionBuilder NewCatchRegion()
+        public ILExceptionRegionBuilder NewCatchRegion(TypeDesc exceptionType)
         {
-            var region = new ILExceptionRegionBuilder();
-            _catchRegions.Add(region);
+            var region = new ILExceptionRegionBuilder(ILExceptionRegionKind.Catch, exceptionType);
+            _exceptionRegions.Add(region);
             return region;
         }
 
         public ILExceptionRegionBuilder NewFinallyRegion()
         {
-            var region = new ILExceptionRegionBuilder();
-            _finallyRegions.Add(region);
+            var region = new ILExceptionRegionBuilder(ILExceptionRegionKind.Finally);
+            _exceptionRegions.Add(region);
             return region;
         }
 
@@ -791,36 +797,34 @@ namespace Internal.IL.Stubs
 
             ILExceptionRegion[] exceptionRegions = null;
 
-            int numberOfExceptionRegions = _catchRegions.Count + _finallyRegions.Count;
+            int numberOfExceptionRegions = _exceptionRegions.Count;
             if (numberOfExceptionRegions > 0)
             {
                 exceptionRegions = new ILExceptionRegion[numberOfExceptionRegions];
-
-                TypeDesc exceptionType = owningMethod.Context.SystemModule.GetKnownType("System"u8, "Exception"u8);
-
-                int exceptionTypeToken = (int)NewToken(exceptionType);
-
-                for (int i = 0; i < _catchRegions.Count; i++)
+                for (int i = 0; i < _exceptionRegions.Count; i++)
                 {
-                    ILExceptionRegionBuilder region = _catchRegions[i];
+                    ILExceptionRegionBuilder region = _exceptionRegions[i];
 
                     Debug.Assert(region.IsDefined);
 
-                    exceptionRegions[i] = new ILExceptionRegion(ILExceptionRegionKind.Catch,
+                    int exceptionTypeToken = (region._catchExceptionType != null) ? (int)NewToken(region._catchExceptionType) : 0;
+
+                    exceptionRegions[i] = new ILExceptionRegion(region._exceptionRegionKind,
                         region.TryOffset, region.TryLength, region.HandlerOffset, region.HandlerLength,
                         classToken: exceptionTypeToken, filterOffset: 0);
                 }
 
-                for (int i = 0; i < _finallyRegions.Count; i++)
+                // Sort exception regions so that innermost (most nested) regions come first
+                // as this is required by the spec.
+                // Innermost regions have higher TryOffset and smaller TryLength.
+                Array.Sort(exceptionRegions, (a, b) =>
                 {
-                    ILExceptionRegionBuilder region = _finallyRegions[i];
+                    int offsetComparison = b.TryOffset.CompareTo(a.TryOffset);
+                    if (offsetComparison != 0)
+                        return offsetComparison;
 
-                    Debug.Assert(region.IsDefined);
-
-                    exceptionRegions[_catchRegions.Count + i] = new ILExceptionRegion(ILExceptionRegionKind.Finally,
-                        region.TryOffset, region.TryLength, region.HandlerOffset, region.HandlerLength,
-                        classToken: 0, filterOffset: 0);
-                }
+                    return a.TryLength.CompareTo(b.TryLength);
+                });
             }
 
             var result = new ILStubMethodIL(owningMethod, ilInstructions, _locals.ToArray(), _tokens.ToArray(), exceptionRegions, debugInfo);
