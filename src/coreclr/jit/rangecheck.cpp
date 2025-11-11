@@ -1149,6 +1149,74 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     else if (op->IsLocal())
     {
         assertions = block->bbAssertionIn;
+
+        // bbAssertionIn is a bit conservative and will not include inter-block assertions.
+        // e.g. created by GT_BOUNDS_CHECK nodes prior the 'op' in the current block.
+        // For that, we walk the trees in the block until we find "op" and collect assertions
+        // along the way. It doesn't seem to be profitable for anything other than bounds checks
+        // (ArrBnds assertions), so we limit the search to only those blocks that may have bounds
+        // checks. It also helps reduce the cost of this search as it's not cheap.
+        //
+        // TODO-Review: EH successor/predecessor iteration seems broken.
+        if ((block->bbCatchTyp != BBCT_FAULT) && block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
+        {
+            bool treeFound = false;
+            for (Statement* stmt : block->Statements())
+            {
+                if (stmt->GetRootNode() == nullptr)
+                {
+                    continue;
+                }
+
+                class TreeAssertionVisitor final : public GenTreeVisitor<TreeAssertionVisitor>
+                {
+                    GenTree*   m_op;
+                    ASSERT_TP* m_assertions;
+
+                public:
+                    enum
+                    {
+                        DoPostOrder       = true,
+                        UseExecutionOrder = true
+                    };
+
+                    TreeAssertionVisitor(Compiler* compiler, GenTree* op, ASSERT_TP* m_assertions)
+                        : GenTreeVisitor(compiler)
+                        , m_op(op)
+                        , m_assertions(m_assertions)
+                    {
+                    }
+
+                    fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+                    {
+                        GenTree* current = *use;
+                        if (current == m_op)
+                        {
+                            // We've found the op - stop the search.
+                            return fgWalkResult::WALK_ABORT;
+                        }
+
+                        if (current->GeneratesAssertion())
+                        {
+                            AssertionInfo info = current->GetAssertionInfo();
+                            // Normally, we extend the assertions by calling optImpliedAssertions, but that
+                            // doesn't seem to improve anything here, so we just add the assertion directly.
+                            BitVecOps::AddElemD(m_compiler->apTraits, *m_assertions, info.GetAssertionIndex() - 1);
+                        }
+                        return fgWalkResult::WALK_CONTINUE;
+                    }
+                };
+
+                TreeAssertionVisitor   visitor(m_pCompiler, op, &assertions);
+                Compiler::fgWalkResult result = visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+                if (result != Compiler::fgWalkResult::WALK_CONTINUE)
+                {
+                    treeFound = true;
+                    break;
+                }
+            }
+            assert(treeFound);
+        }
     }
 
     if (!BitVecOps::MayBeUninit(assertions) && (m_pCompiler->GetAssertionCount() > 0))
