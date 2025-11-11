@@ -354,6 +354,12 @@ namespace System.IO.Compression
                 }
             }
 
+            // Rewind the stream if decompression has finished and the stream supports seeking
+            if (bytesRead == 0 && InflatorIsFinished && _stream.CanSeek)
+            {
+                TryRewindStream(_stream);
+            }
+
             return bytesRead;
         }
 
@@ -496,6 +502,12 @@ namespace System.IO.Compression
                             // subsequent call may end up getting one earlier than otherwise preferred.
                             break;
                         }
+                    }
+
+                    // Rewind the stream if decompression has finished and the stream supports seeking
+                    if (bytesRead == 0 && InflatorIsFinished && _stream.CanSeek)
+                    {
+                        TryRewindStream(_stream);
                     }
 
                     return bytesRead;
@@ -699,12 +711,6 @@ namespace System.IO.Compression
                 // In this case, we still need to clean up internal resources, hence the inner finally blocks.
                 try
                 {
-                    // Auto-rewind the stream if we're in decompression mode and the stream supports seeking
-                    if (disposing && _mode == CompressionMode.Decompress && _stream?.CanSeek == true && _inflater != null)
-                    {
-                        TryRewindStream(_stream);
-                    }
-
                     if (disposing && !_leaveOpen)
                     {
                         _stream?.Dispose();
@@ -762,12 +768,6 @@ namespace System.IO.Compression
                     _stream = null!;
                     try
                     {
-                        // Auto-rewind the stream if we're in decompression mode and the stream supports seeking
-                        if (stream != null && _mode == CompressionMode.Decompress && stream.CanSeek && _inflater != null)
-                        {
-                            TryRewindStream(stream);
-                        }
-
                         if (!_leaveOpen && stream != null)
                         {
                             await stream.DisposeAsync().ConfigureAwait(false);
@@ -956,6 +956,12 @@ namespace System.IO.Compression
                     {
                         ThrowTruncatedInvalidData();
                     }
+
+                    // Rewind the stream if decompression has finished and the stream supports seeking
+                    if (_deflateStream._inflater.Finished() && _deflateStream._stream.CanSeek)
+                    {
+                        _deflateStream.TryRewindStream(_deflateStream._stream);
+                    }
                 }
                 finally
                 {
@@ -991,6 +997,12 @@ namespace System.IO.Compression
                     if (s_useStrictValidation && !_deflateStream._inflater.Finished())
                     {
                         ThrowTruncatedInvalidData();
+                    }
+
+                    // Rewind the stream if decompression has finished and the stream supports seeking
+                    if (_deflateStream._inflater.Finished() && _deflateStream._stream.CanSeek)
+                    {
+                        _deflateStream.TryRewindStream(_deflateStream._stream);
                     }
                 }
                 finally

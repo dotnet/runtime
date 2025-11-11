@@ -77,12 +77,6 @@ namespace System.IO.Compression
                         WriteCore(ReadOnlySpan<byte>.Empty, isFinalBlock: true);
                     }
 
-                    // Auto-rewind the stream if we're in decompression mode and the stream supports seeking
-                    if (_mode == CompressionMode.Decompress && _stream.CanSeek)
-                    {
-                        TryRewindStream(_stream);
-                    }
-
                     if (!_leaveOpen)
                     {
                         _stream.Dispose();
@@ -110,12 +104,6 @@ namespace System.IO.Compression
                     if (_mode == CompressionMode.Compress)
                     {
                         await WriteAsyncMemoryCore(ReadOnlyMemory<byte>.Empty, CancellationToken.None, isFinalBlock: true).ConfigureAwait(false);
-                    }
-
-                    // Auto-rewind the stream if we're in decompression mode and the stream supports seeking
-                    if (_mode == CompressionMode.Decompress && _stream.CanSeek)
-                    {
-                        TryRewindStream(_stream);
                     }
 
                     if (!_leaveOpen)
