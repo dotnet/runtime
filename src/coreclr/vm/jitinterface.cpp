@@ -9151,6 +9151,37 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
             accessType = IAT_PVALUE;
         }
     }
+#ifdef FEATURE_TIERED_COMPILATION
+    else if (ftn->IsAsyncMethod() && m_pMethodBeingCompiled->IsILStub()
+        && m_pMethodBeingCompiled->AsDynamicMethodDesc()->IsAsyncResumptionStub())
+    {
+        // We are looking at a call to an async method from within an async method's
+        // resumption stub. We need to make sure we call the right version of the
+        // async method here.
+
+        // Resumption stubs are uniquely coupled to the code version (since the
+        // continuation is), so we need to make sure we always keep calling the
+        // same version here.
+        PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
+        NativeCodeVersion ncv = config->GetCodeVersion();
+        if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
+        {
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+            // The OSR version needs to resume in the tier0 version. The tier0
+            // version will handle setting up the frame that the OSR version
+            // expects and then delegating back into the OSR version (knowing to do
+            // so through information stored in the continuation).
+            unsigned osrIlOffset = 0;
+            PatchpointInfo* patchpointInfo = getOSRInfo(&osrIlOffset);
+            _ASSERTE(patchpointInfo != NULL);
+            ret = (void*)(patchpointInfo->GetTier0EntryPoint());
+            accessType = IAT_VALUE;
+#else // !FEATURE_ON_STACK_REPLACEMENT
+            _ASSERTE(!"Unexpected optimization tier with OSR disabled");
+#endif // FEATURE_ON_STACK_REPLACEMENT
+        }
+    }
+#endif // FEATURE_TIERED_COMPILATION
     else if (ftn->IsVersionableWithPrecode() && (ftn->GetPrecodeType() == PRECODE_FIXUP) && !ftn->IsPointingToStableNativeCode())
     {
         ret = ((FixupPrecode*)ftn->GetOrCreatePrecode())->GetTargetSlot();
@@ -14659,7 +14690,6 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     Signature stubSig = BuildResumptionStubSignature(md->GetLoaderAllocator(), &amTracker);
 
     MetaSig msig(md);
-    Signature calliSig = BuildResumptionStubCalliSignature(msig, md->GetMethodTable(), md->GetLoaderAllocator(), &amTracker);
 
     SigTypeContext emptyCtx;
     ILStubLinker sl(md->GetModule(), stubSig, &emptyCtx, NULL, ILSTUB_LINKER_FLAG_NONE);
