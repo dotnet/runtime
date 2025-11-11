@@ -71,13 +71,7 @@ namespace Internal.IL.Stubs
 
                     if (asyncMethod.OwningType.HasInstantiation)
                     {
-                        var inst = new TypeDesc[asyncMethod.OwningType.Instantiation.Length];
-                        for (int i = 0; i < inst.Length; i++)
-                        {
-                            inst[i] = context.GetSignatureVariable(i, false);
-                        }
-
-                        var instantiatedType = context.GetInstantiatedType((MetadataType)asyncMethod.OwningType, new Instantiation(inst));
+                        var instantiatedType = (InstantiatedType)TypeSystemHelpers.InstantiateAsOpen(asyncMethod.OwningType);
                         asyncMethod = context.GetMethodForInstantiatedType(asyncMethod, instantiatedType);
                     }
 
@@ -159,26 +153,31 @@ namespace Internal.IL.Stubs
 
                     TypeDesc exceptionType = context.GetWellKnownType(WellKnownType.Exception);
 
-                    // For generic methods (Task<T>/ValueTask<T>), the signature uses a method type parameter (!!0)
-                    // For non-generic methods (Task/ValueTask), the signature uses the concrete return type
-                    TypeDesc fromExceptionSignatureReturnType = logicalReturnType != null
-                        ? ((MetadataType)returnType.GetTypeDefinition()).MakeInstantiatedType(context.GetSignatureVariable(0, true))
-                        : returnType;
-
-                    MethodSignature fromExceptionSignature = new MethodSignature(
-                        MethodSignatureFlags.Static,
-                        genericParameterCount: logicalReturnType != null ? 1 : 0,
-                        returnType: fromExceptionSignatureReturnType,
-                        parameters: new[] { exceptionType });
-
-                    MethodDesc fromExceptionMd = context.SystemModule
-                        .GetKnownType("System.Threading.Tasks"u8, isValueTask ? "ValueTask"u8 : "Task"u8)
-                        .GetKnownMethod("FromException"u8, fromExceptionSignature);
-
-                    // Instantiate the generic method if we have a generic return type (Task<T> or ValueTask<T>)
+                    MethodDesc fromExceptionMd;
                     if (logicalReturnType != null)
                     {
-                        fromExceptionMd = fromExceptionMd.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
+                        MethodSignature fromExceptionSignature = new MethodSignature(
+                            MethodSignatureFlags.Static,
+                            genericParameterCount: 1,
+                            returnType: ((MetadataType)returnType.GetTypeDefinition()).MakeInstantiatedType(context.GetSignatureVariable(0, true)),
+                            parameters: new[] { exceptionType });
+
+                        fromExceptionMd = context.SystemModule
+                            .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                            .GetKnownMethod(isValueTask ? "ValueTaskFromException"u8 : "TaskFromException"u8, fromExceptionSignature)
+                            .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
+                    }
+                    else
+                    {
+                        MethodSignature fromExceptionSignature = new MethodSignature(
+                            MethodSignatureFlags.Static,
+                            genericParameterCount: 0,
+                            returnType: returnType,
+                            parameters: new[] { exceptionType });
+
+                        fromExceptionMd = context.SystemModule
+                            .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
+                            .GetKnownMethod(isValueTask ? "ValueTaskFromException"u8 : "TaskFromException"u8, fromExceptionSignature);
                     }
 
                     codestream.Emit(ILOpcode.call, emitter.NewToken(fromExceptionMd));
