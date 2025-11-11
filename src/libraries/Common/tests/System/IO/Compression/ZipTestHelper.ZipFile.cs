@@ -48,7 +48,7 @@ public partial class ZipFileTestBase : FileCleanupTestBase
     {
         if (async)
         {
-            return entry.ExtractToFileAsync(destinationFileName, overwrite: false, cancellationToken: default);
+            return entry.ExtractToFileAsync(destinationFileName, overwrite: false);
         }
         else
         {
@@ -61,7 +61,7 @@ public partial class ZipFileTestBase : FileCleanupTestBase
     {
         if (async)
         {
-            return entry.ExtractToFileAsync(destinationFileName, overwrite, cancellationToken: default);
+            return entry.ExtractToFileAsync(destinationFileName, overwrite);
         }
         else
         {

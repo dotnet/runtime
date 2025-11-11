@@ -949,20 +949,20 @@ namespace System.IO.Compression
                     throw new InvalidDataException("Password required for AES-encrypted ZIP entry.");
 
                 // Determine key size based on encryption method
-                int keySizeBits = _encryptionMethod switch
-                {
-                    EncryptionMethod.Aes128 => 128,
-                    EncryptionMethod.Aes192 => 192,
-                    EncryptionMethod.Aes256 => 256,
-                    _ => throw new InvalidDataException($"Invalid AES encryption method: {_encryptionMethod}")
-                };
+                //int keySizeBits = _encryptionMethod switch
+                //{
+                //    EncryptionMethod.Aes128 => 128,
+                //    EncryptionMethod.Aes192 => 192,
+                //    EncryptionMethod.Aes256 => 256,
+                //    _ => throw new InvalidDataException($"Invalid AES encryption method: {_encryptionMethod}")
+                //};
 
-                // For AES in ZIP, AE-2 format includes CRC-32 in the AES extra field
-                // The _crc32 field should contain the CRC value for AE-2
-                bool isAe2 = (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0;
+                //// For AES in ZIP, AE-2 format includes CRC-32 in the AES extra field
+                //// The _crc32 field should contain the CRC value for AE-2
+                //bool isAe2 = (_generalPurposeBitFlag & BitFlagValues.DataDescriptor) == 0;
 
                 // Read and parse the AES extra field to get necessary parameters
-                toDecompress = new AesStream(toDecompress, password, false, keySizeBits, isAe2, isAe2 ? _crc32 : null);
+                // toDecompress = new WinZipAesStream(toDecompress, password, false, keySizeBits, isAe2, isAe2 ? _crc32 : null);
             }
 
 

@@ -180,62 +180,16 @@ namespace System.IO.Compression
             }
         }
 
-
         public ZipArchive(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding, string? defaultPassword, ZipArchiveEntry.EncryptionMethod defaultEncryption)
-            : this(mode, leaveOpen, entryNameEncoding, backingStream: null, archiveStream: DecideArchiveStream(mode, stream), defaultPassword: defaultPassword, defaultEncryption: defaultEncryption)
+            : this(stream, mode, leaveOpen, entryNameEncoding)
         {
-            ArgumentNullException.ThrowIfNull(stream);
+            _defaultPassword = string.IsNullOrEmpty(defaultPassword) ? null : defaultPassword;
+            _defaultEncryption = defaultEncryption;
 
-            Stream? extraTempStream = null;
-
-            try
+            // Validate that if encryption is specified, a password is provided, what to do otherwise?
+            if (_defaultEncryption != ZipArchiveEntry.EncryptionMethod.None && _defaultPassword is null)
             {
-                _backingStream = null;
-
-                if (ValidateMode(mode, stream))
-                {
-                    _backingStream = stream;
-                    extraTempStream = stream = new MemoryStream();
-                    _backingStream.CopyTo(stream);
-                    stream.Seek(0, SeekOrigin.Begin);
-                }
-
-                _archiveStream = DecideArchiveStream(mode, stream);
-
-                switch (mode)
-                {
-                    case ZipArchiveMode.Create:
-                        _readEntries = true;
-                        break;
-
-                    case ZipArchiveMode.Read:
-                        ReadEndOfCentralDirectory();
-                        break;
-
-                    case ZipArchiveMode.Update:
-                    default:
-                        Debug.Assert(mode == ZipArchiveMode.Update);
-                        if (_archiveStream.Length == 0)
-                        {
-                            _readEntries = true;
-                        }
-                        else
-                        {
-                            ReadEndOfCentralDirectory();
-                            EnsureCentralDirectoryRead();
-
-                            foreach (ZipArchiveEntry entry in _entries)
-                            {
-                                entry.ThrowIfNotOpenable(needToUncompress: false, needToLoadIntoMemory: true);
-                            }
-                        }
-                        break;
-                }
-            }
-            catch
-            {
-                extraTempStream?.Dispose();
-                throw;
+                throw new ArgumentException("A password must be provided when encryption is specified.", nameof(defaultPassword));
             }
         }
 
@@ -262,22 +216,6 @@ namespace System.IO.Compression
             _archiveComment = Array.Empty<byte>();
             _firstDeletedEntryOffset = long.MaxValue;
         }
-
-
-        private ZipArchive(ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding, Stream? backingStream, Stream archiveStream, string? defaultPassword, ZipArchiveEntry.EncryptionMethod defaultEncryption)
-            : this(mode, leaveOpen, entryNameEncoding, backingStream, archiveStream)
-        {
-            _defaultPassword = string.IsNullOrEmpty(defaultPassword) ? null : defaultPassword;
-            _defaultEncryption = defaultEncryption;
-
-            // Optional guardrails: if user gives a default password but sets encryption None, allow it (password is simply unused) ??
-            // if encryption is ZipCrypto but password is null/empty, you can either throw here or defer to CreateEntry validation.
-            if (_defaultEncryption == ZipArchiveEntry.EncryptionMethod.ZipCrypto && _defaultPassword is null)
-            {
-                throw new ArgumentException("A default password must be provided when defaultEncryption is ZipCrypto.", nameof(defaultPassword));
-            }
-        }
-
 
         /// <summary>
         /// Gets or sets the optional archive comment.
