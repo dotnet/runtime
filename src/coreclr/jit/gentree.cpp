@@ -2265,7 +2265,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
 //   those cases the JIT does not know (and does not need to know) which arg is
 //   the async continuation.
 //
-//   The VM also uses the StubHelpers.AsyncCallContinuation() intrinsic in the
+//   The VM also uses the AsyncHelpers.AsyncCallContinuation() intrinsic in the
 //   stubs discussed above. The JIT must take care in those cases to still mark
 //   the preceding call as an async call; this is required for correct LSRA
 //   behavior and GC reporting around the returned async continuation. This is

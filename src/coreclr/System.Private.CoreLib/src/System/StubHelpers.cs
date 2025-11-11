@@ -1390,14 +1390,18 @@ namespace System.StubHelpers
         }
 
 #if FEATURE_COMINTEROP
-        internal static Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, IntPtr pUnk)
+        internal static unsafe Exception GetCOMHRExceptionObject(int hr, IntPtr pCPCMD, IntPtr pUnk)
         {
-            RuntimeMethodHandle handle = RuntimeMethodHandle.FromIntPtr(pCPCMD);
-            RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(handle.GetMethodInfo());
+            Debug.Assert(pCPCMD != IntPtr.Zero);
+            MethodTable* interfaceType = GetComInterfaceFromMethodDesc(pCPCMD);
+            RuntimeType declaringType = RuntimeTypeHandle.GetRuntimeType(interfaceType);
             Exception ex = Marshal.GetExceptionForHR(hr, declaringType.GUID, pUnk)!;
             ex.InternalPreserveStackTrace();
             return ex;
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe MethodTable* GetComInterfaceFromMethodDesc(IntPtr pCPCMD);
 #endif // FEATURE_COMINTEROP
 
         [ThreadStatic]
@@ -1610,9 +1614,6 @@ namespace System.StubHelpers
 
         [Intrinsic]
         internal static IntPtr NextCallReturnAddress() => throw new UnreachableException(); // Unconditionally expanded intrinsic
-
-        [Intrinsic]
-        internal static Continuation? AsyncCallContinuation() => throw new UnreachableException(); // Unconditionally expanded intrinsic
     }  // class StubHelpers
 
 #if FEATURE_COMINTEROP

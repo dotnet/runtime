@@ -6774,7 +6774,7 @@ void CodeGen::genReportAsyncDebugInfo()
     for (size_t i = 0; i < suspPoints->size(); i++)
     {
         emitLocation& emitLoc                   = ((emitLocation*)genAsyncResumeInfoTable->dsCont)[i];
-        (*suspPoints)[i].DiagnosticNativeOffset = emitLoc.CodeOffset(GetEmitter());
+        (*suspPoints)[i].DiagnosticNativeOffset = emitLoc.Valid() ? emitLoc.CodeOffset(GetEmitter()) : 0;
     }
 
     ICorDebugInfo::AsyncInfo asyncInfo;

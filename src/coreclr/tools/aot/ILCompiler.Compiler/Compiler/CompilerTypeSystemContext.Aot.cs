@@ -39,6 +39,8 @@ namespace ILCompiler
         private readonly Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
         private readonly TypeWithRepeatedFieldsFieldLayoutAlgorithm _typeWithRepeatedFieldsFieldLayoutAlgorithm;
 
+        private readonly AsyncAwareVirtualMethodResolutionAlgorithm _virtualMethodAlgorithm;
+
         private TypeDesc[] _arrayOfTInterfaces;
         private TypeDesc[] _arrayEnumeratorOfTInterfaces;
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
@@ -52,6 +54,8 @@ namespace ILCompiler
             : base(details)
         {
             _genericsMode = genericsMode;
+
+            _virtualMethodAlgorithm = new AsyncAwareVirtualMethodResolutionAlgorithm(this);
 
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
