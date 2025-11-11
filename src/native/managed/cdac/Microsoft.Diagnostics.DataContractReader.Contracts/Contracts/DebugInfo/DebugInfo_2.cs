@@ -10,8 +10,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal sealed class DebugInfo_2(Target target) : IDebugInfo
 {
     private const uint DEBUG_INFO_FAT = 0;
-    private const uint SOURCE_TYPE_BITS = 3;
-    private const uint IL_OFFSET_BIAS = unchecked((uint)-3);
 
     private record struct DebugInfoChunks
     {
@@ -102,7 +100,7 @@ internal sealed class DebugInfo_2(Target target) : IDebugInfo
         if (cbBounds > 0)
         {
             NativeReader boundsNativeReader = new(new TargetStream(_target, addrBounds, cbBounds), _target.IsLittleEndian);
-            return DebugInfoHelpers.DoBounds(boundsNativeReader, IL_OFFSET_BIAS, SOURCE_TYPE_BITS);
+            return DebugInfoHelpers.DoBounds(boundsNativeReader, 2);
         }
 
         return [];
