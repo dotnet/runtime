@@ -8,6 +8,7 @@
     <OtherFlags>--tailcalls+</OtherFlags>
     <!-- Interpreter-only stack overflow -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 's390x'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'ppc64le'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).fs" />

@@ -574,7 +574,7 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
         }
     }
 
-#if defined(HOST_ARM64) || defined(HOST_S390X)
+#if defined(HOST_ARM64) || defined(HOST_S390X) || defined(HOST_POWERPC64)
     // On ARM64 we're not going to place an argument 'partially' on the stack
     // if all slots fits into registers, they go into registers, otherwise they go into stack.
     if (!noReg && numRegArgs+numSlots <= NumberOfIntegerRegArgs())

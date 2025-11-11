@@ -182,8 +182,8 @@ class AsmOffsets
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x110;
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x60;
 #elif TARGET_POWERPC64
-    public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x20c;
-    public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0xfc;
+    public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x210;
+    public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x100;
 #endif
 
     // Offsets / sizes that are different in 64 / 32 bit mode
