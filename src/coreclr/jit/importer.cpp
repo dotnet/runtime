@@ -9396,7 +9396,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                                        // have created a new BB after the "call"
                 // instruction in fgMakeBasicBlocks(). So we need to jump to RET regardless.
                 {
-                    compTailPrefixSeen = true;
                     assert(!compIsForInlining());
                     goto RET;
                 }

@@ -63,12 +63,6 @@ PhaseStatus Compiler::SaveAsyncContexts()
 {
     if ((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0)
     {
-        if (!compIsForInlining() && !compJmpOpUsed && !compTailPrefixSeen && compStressCompile(STRESS_ASYNC_RETURN_MERGE, 50))
-        {
-            MergeReturnsForAsyncSave();
-            return PhaseStatus::MODIFIED_EVERYTHING;
-        }
-
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -193,14 +187,59 @@ PhaseStatus Compiler::SaveAsyncContexts()
     fgInsertStmtAtEnd(faultBB, restoreStmt);
 
     // Now insert uses of the new contexts to all async calls (modelling the
-    // fact that on suspension, we restore the context from those values).
+    // fact that on suspension, we restore the context from those values). Also
+    // convert BBJ_RETURNs into an exit to a block outside the region.
+    BasicBlock* newReturnBB     = nullptr;
+    unsigned    mergedReturnLcl = BAD_VAR_NUM;
+
     for (BasicBlock* block : Blocks())
     {
         AddContextArgsToAsyncCalls(block);
+
+        if (!block->KindIs(BBJ_RETURN) || (block == newReturnBB))
+        {
+            continue;
+        }
+
+        JITDUMP("Merging BBJ_RETURN block " FMT_BB "\n", block->bbNum);
+
+        if (newReturnBB == nullptr)
+        {
+            newReturnBB = CreateReturnBB(&mergedReturnLcl);
+            newReturnBB->inheritWeightPercentage(block, 0);
+        }
+
+        // Store return value to common local
+        Statement* retStmt = block->lastStmt();
+        assert((retStmt != nullptr) && retStmt->GetRootNode()->OperIs(GT_RETURN));
+
+        if (mergedReturnLcl != BAD_VAR_NUM)
+        {
+            GenTree*   retVal      = retStmt->GetRootNode()->AsOp()->GetReturnValue();
+            Statement* insertAfter = retStmt;
+            GenTree*   storeRetVal =
+                gtNewTempStore(mergedReturnLcl, retVal, CHECK_SPILL_NONE, &insertAfter, retStmt->GetDebugInfo(), block);
+            Statement* storeStmt = fgNewStmtFromTree(storeRetVal);
+            fgInsertStmtAtEnd(block, storeStmt);
+            JITDUMP("Inserted store to common return local\n");
+            DISPSTMT(storeStmt);
+        }
+
+        retStmt->GetRootNode()->gtBashToNOP();
+
+        // Jump to new shared restore + return block
+        block->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(newReturnBB, block));
+        fgReturnCount--;
     }
 
-    // Then merge all returns to a final one that also does the restore
-    MergeReturnsForAsyncSave();
+    if (newReturnBB != nullptr)
+    {
+        newReturnBB->bbWeight = newReturnBB->computeIncomingWeight();
+    }
+
+    // After merging of returns we have at most 1 return (and we may have 0, if
+    // there were no returns before due to infinite loops or exceptions).
+    assert(fgReturnCount <= 1);
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -263,64 +302,6 @@ void Compiler::AddContextArgsToAsyncCalls(BasicBlock* block)
 }
 
 //------------------------------------------------------------------------
-// Compiler::MergeReturnsForAsyncSave:
-//   Merge all BBJ_RETURN blocks to flow to a new common return block that also
-//   restores async contexts.
-//
-void Compiler::MergeReturnsForAsyncSave()
-{
-    BasicBlock* newReturnBB     = nullptr;
-    unsigned    mergedReturnLcl = BAD_VAR_NUM;
-
-    for (BasicBlock* block : Blocks())
-    {
-        if (!block->KindIs(BBJ_RETURN) || (block == newReturnBB))
-        {
-            continue;
-        }
-
-        JITDUMP("Merging BBJ_RETURN block " FMT_BB "\n", block->bbNum);
-
-        if (newReturnBB == nullptr)
-        {
-            newReturnBB = CreateAsyncReturnBB(&mergedReturnLcl);
-            newReturnBB->inheritWeightPercentage(block, 0);
-        }
-
-        // Store return value to common local
-        Statement* retStmt = block->lastStmt();
-        assert((retStmt != nullptr) && retStmt->GetRootNode()->OperIs(GT_RETURN));
-
-        if (mergedReturnLcl != BAD_VAR_NUM)
-        {
-            GenTree*   retVal      = retStmt->GetRootNode()->AsOp()->GetReturnValue();
-            Statement* insertAfter = retStmt;
-            GenTree*   storeRetVal =
-                gtNewTempStore(mergedReturnLcl, retVal, CHECK_SPILL_NONE, &insertAfter, retStmt->GetDebugInfo(), block);
-            Statement* storeStmt = fgNewStmtFromTree(storeRetVal);
-            fgInsertStmtAtEnd(block, storeStmt);
-            JITDUMP("Inserted store to common return local\n");
-            DISPSTMT(storeStmt);
-        }
-
-        retStmt->GetRootNode()->gtBashToNOP();
-
-        // Jump to new shared restore + return block
-        block->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(newReturnBB, block));
-        fgReturnCount--;
-    }
-
-    if (newReturnBB != nullptr)
-    {
-        newReturnBB->bbWeight = newReturnBB->computeIncomingWeight();
-    }
-
-    // After merging of returns we have at most 1 return (and we may have 0, if
-    // there were no returns before due to infinite loops or exceptions).
-    assert(fgReturnCount <= 1);
-}
-
-//------------------------------------------------------------------------
 // Compiler::CreateReturnBB:
 //   Create a new return block to exit the async method.
 //
@@ -331,7 +312,7 @@ void Compiler::MergeReturnsForAsyncSave()
 // Returns:
 //   A new basic block that restores contexts and returns a merged result.
 //
-BasicBlock* Compiler::CreateAsyncReturnBB(unsigned* mergedReturnLcl)
+BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
 {
     BasicBlock* newReturnBB = fgNewBBafter(BBJ_RETURN, fgLastBB, /* extendRegion */ false);
     newReturnBB->bbTryIndex = 0; // EH region
@@ -339,33 +320,29 @@ BasicBlock* Compiler::CreateAsyncReturnBB(unsigned* mergedReturnLcl)
     fgReturnCount++;
     JITDUMP("Created new BBJ_RETURN block " FMT_BB "\n", newReturnBB->bbNum);
 
-    // Insert "restore" call if we have contexts to restore.
-    // We may not have contexts to restore if we are stressing the return merging.
-    if (lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
-    {
-        CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
+    // Insert "restore" call
+    CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
 
-        GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
-        GenTree* null         = gtNewNull();
-        GenTree* resumed      = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
+    GenTree* continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
+    GenTree* null         = gtNewNull();
+    GenTree* resumed      = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
 
-        GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
-        restoreCall->gtArgs.PushFront(this,
-                                      NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
-        restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
-        restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
+    GenTreeCall* restoreCall = gtNewCallNode(CT_USER_FUNC, asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    restoreCall->gtArgs.PushFront(this,
+                                  NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
 
-        // This restore is an inline candidate (unlike the fault one)
-        CORINFO_CALL_INFO callInfo = {};
-        callInfo.hMethod           = restoreCall->gtCallMethHnd;
-        callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
-        impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
+    // This restore is an inline candidate (unlike the fault one)
+    CORINFO_CALL_INFO callInfo = {};
+    callInfo.hMethod           = restoreCall->gtCallMethHnd;
+    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+    impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), false, &callInfo, compInlineContext);
 
-        Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
-        fgInsertStmtAtEnd(newReturnBB, restoreStmt);
-        JITDUMP("Inserted restore statement in return block\n");
-        DISPSTMT(restoreStmt);
-    }
+    Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
+    fgInsertStmtAtEnd(newReturnBB, restoreStmt);
+    JITDUMP("Inserted restore statement in return block\n");
+    DISPSTMT(restoreStmt);
 
     *mergedReturnLcl = BAD_VAR_NUM;
 
