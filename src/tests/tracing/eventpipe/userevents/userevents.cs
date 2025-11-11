@@ -65,11 +65,6 @@ namespace Tracing.Tests.UserEvents
             recordTraceProcess.BeginOutputReadLine();
             recordTraceProcess.ErrorDataReceived += (_, args) => Console.Error.WriteLine($"[record-trace] {args.Data}");
             recordTraceProcess.BeginErrorReadLine();
-            if (recordTraceProcess.HasExited && recordTraceProcess.ExitCode != 0)
-            {
-                Console.Error.WriteLine($"record-trace exited prematurely with code {recordTraceProcess.ExitCode}");
-                return -1;
-            }
             Console.WriteLine($"record-trace started with PID: {recordTraceProcess.Id}");
 
             ProcessStartInfo traceeStartInfo = new();

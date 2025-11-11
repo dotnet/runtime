@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.OneCollect.RecordTrace" Version="$(MicrosoftOneCollectRecordTraceVersion)" PrivateAssets="All" Condition="'$(TargetOS)' == 'linux'" />
+    <PackageReference Include="Microsoft.OneCollect.RecordTrace" Version="$(MicrosoftOneCollectRecordTraceVersion)" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -16,14 +16,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="dotnet-common.script" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="dotnet-common.script">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <TargetPath>dotnet-common.script</TargetPath>
+    </Content>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'linux'">
-    <None Include="$(NuGetPackageRoot)microsoft.onecollect.recordtrace/$(MicrosoftOneCollectRecordTraceVersion)/runtimes/$(TargetOS)-$(TargetArchitecture)/native/record-trace">
-      <Link>record-trace</Link>
-      <Visible>false</Visible>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+  <Target Name="CopyRecordTrace" BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries" Condition="'$(TargetOS)' == 'linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">
+    <PropertyGroup>
+      <_DestDir>$(TargetDir)</_DestDir>
+      <_DestDir Condition="'$(_DestDir)' == ''">$(OutputPath)</_DestDir>
+      <_RecordTraceSource>$(NuGetPackageRoot)microsoft.onecollect.recordtrace/$(MicrosoftOneCollectRecordTraceVersion)/runtimes/linux-$(TargetArchitecture)/native/record-trace</_RecordTraceSource>
+    </PropertyGroup>
+
+    <Copy SourceFiles="$(_RecordTraceSource)" DestinationFiles="$(_DestDir)record-trace" SkipUnchangedFiles="true" />
+    <Exec Command="chmod +x '$(_DestDir)record-trace'" Condition="Exists('$(_DestDir)record-trace')" />
+  </Target>
 </Project>

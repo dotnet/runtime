@@ -39,8 +39,7 @@
     <RestoreProjects Include="Common\XHarnessRunnerLibrary\XHarnessRunnerLibrary.csproj" />
     <RestoreProjects Include="Common\external\external.csproj" />
     <RestoreProjects Include="Common\ilasm\ilasm.ilproj" />
-    <RestoreProjects Include="tracing\eventpipe\userevents\userevents.csproj"
-                     Condition="'$(TargetOS)' == 'linux'"/>
+    <RestoreProjects Include="tracing\eventpipe\userevents\userevents.csproj" />
   </ItemGroup>
 
   <ItemGroup>
