@@ -62,11 +62,17 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
         if (((ch >= 'A') && (ch <= 'Z')) || ((ch >= 'a') && (ch <= 'z')))
         {
             input[i] |= 0x20;
-            mask[i] = 0x20;
+            if (mask != nullptr)
+            {
+                mask[i] = 0x20;
+            }
         }
         else
         {
-            mask[i] = 0;
+            if (mask != nullptr)
+            {
+                mask[i] = 0;
+            }
         }
     }
     return true;
@@ -368,6 +374,134 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
 }
 
 //------------------------------------------------------------------------
+// GetStringLength: Get the length of a string literal and optionally its content
+//
+// Arguments:
+//    comp          - Compiler instance
+//    cnsStr        - GT_CNS_STR node
+//    pContent      - Optional buffer to receive string content
+//    maxBufferSize - Size of the pContent buffer
+//
+// Returns:
+//    Length of the string literal
+//
+static int GetStringLength(Compiler* comp, GenTreeStrCon* cnsStr, char16_t* pContent = nullptr, int maxBufferSize = 0)
+{
+    if (cnsStr->IsStringEmptyField())
+    {
+        // check for fake "" first
+        return 0;
+    }
+    return comp->info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, pContent, maxBufferSize);
+}
+
+//------------------------------------------------------------------------
+// impTryFoldConstantStrings: Try to fold string comparison when both
+//   operands are constant strings
+//
+// Arguments:
+//    op1     - First operand
+//    op2     - Second operand
+//    cmpMode - Ordinal or OrdinalIgnoreCase mode (works only for ASCII cns)
+//    kind    - Is it StartsWith, EndsWith or Equals?
+//
+// Returns:
+//    GenTree representing folded result or nullptr
+//
+GenTree* Compiler::impTryFoldConstantStrings(GenTree*             op1,
+                                             GenTree*             op2,
+                                             StringComparison     cmpMode,
+                                             StringComparisonKind kind)
+{
+    // Both are string literals - we can evaluate the result right away.
+    if (!op1->OperIs(GT_CNS_STR) || !op2->OperIs(GT_CNS_STR))
+    {
+        return nullptr;
+    }
+
+    // First, get their lengths (without content)
+    int str1len = GetStringLength(this, op1->AsStrCon());
+    int str2len = GetStringLength(this, op2->AsStrCon());
+
+    if ((str1len < 0) || (str2len < 0))
+    {
+        JITDUMP("Failed to get string length\n");
+        return nullptr;
+    }
+
+    GenTree* retValue;
+    if ((str1len == str2len) && (str1len == 0))
+    {
+        JITDUMP("Both sides are empty string - returning 'true'\n");
+        retValue = gtNewTrue();
+    }
+    else if ((str1len != str2len) && (kind == StringComparisonKind::Equals))
+    {
+        JITDUMP("Both sides are constant strings with different lengths - returning 'false'\n");
+        // Even in ordinal-ignore-case for non-ASCII content different lengths mean 'not equal'
+        retValue = gtNewFalse();
+    }
+    else if ((str1len < str2len) && (kind != StringComparisonKind::Equals))
+    {
+        assert(kind == StringComparisonKind::StartsWith || kind == StringComparisonKind::EndsWith);
+        JITDUMP("StartsWith or EndsWith: str1 is smaller than str2 - returning 'false'\n");
+        // Same here, even for non-ASCII content in ordinal-ignore-case mode
+        retValue = gtNewFalse();
+    }
+    else
+    {
+        // Now we need to get their content and compare.
+        //
+        char16_t* str1 = new (getAllocator()) char16_t[str1len];
+        char16_t* str2 = new (getAllocator()) char16_t[str2len];
+        if ((GetStringLength(this, op1->AsStrCon(), str1, str1len) != str1len) ||
+            (GetStringLength(this, op2->AsStrCon(), str2, str2len) != str2len))
+        {
+            JITDUMP("Failed to get string content\n");
+            return nullptr;
+        }
+
+        if (cmpMode == StringComparison::OrdinalIgnoreCase)
+        {
+            // Convert both strings to lower case.
+            if (!ConvertToLowerCase(reinterpret_cast<WCHAR*>(str1), nullptr, str1len) ||
+                !ConvertToLowerCase(reinterpret_cast<WCHAR*>(str2), nullptr, str2len))
+            {
+                JITDUMP("Constant data contains non-ASCII char(s), give up.\n");
+                return nullptr;
+            }
+        }
+        else
+        {
+            assert(cmpMode == StringComparison::Ordinal);
+        }
+
+        int length = min(str1len, str2len);
+        if (kind == StringComparisonKind::EndsWith)
+        {
+            // Adjust str1 to point to the end of the string minus length for EndsWith
+            str1 += (str1len - length);
+        }
+        else
+        {
+            assert(kind == StringComparisonKind::StartsWith || kind == StringComparisonKind::Equals);
+        }
+
+        if (memcmp(str1, str2, length * sizeof(char16_t)) == 0)
+        {
+            JITDUMP("Both sides are constant strings with identical content - returning 'true'\n");
+            retValue = gtNewTrue();
+        }
+        else
+        {
+            JITDUMP("Both sides are constant strings with different content - returning 'false'\n");
+            retValue = gtNewFalse();
+        }
+    }
+    return retValue;
+}
+
+//------------------------------------------------------------------------
 // impUtf16StringComparison: The main entry-point for String methods
 //   We're going to unroll & vectorize the following cases:
 //    1) String.Equals(obj, "cns")
@@ -436,6 +570,16 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
         return nullptr;
     }
 
+    GenTree* folded = impTryFoldConstantStrings(op1, op2, cmpMode, kind);
+    if (folded != nullptr)
+    {
+        for (int i = 0; i < argsCount; i++)
+        {
+            impPopStack();
+        }
+        return folded;
+    }
+
     GenTree*       varStr;
     GenTreeStrCon* cnsStr;
     if (op2->OperIs(GT_CNS_STR))
@@ -468,29 +612,20 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
         needsNullcheck = false;
     }
 
-    int      cnsLength;
     char16_t str[MaxPossibleUnrollSize];
-    if (cnsStr->IsStringEmptyField())
+    int      cnsLength = GetStringLength(this, cnsStr, str, MaxPossibleUnrollSize);
+    if (cnsLength < 0)
     {
-        // check for fake "" first
-        cnsLength = 0;
-        JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"\")...\n", str)
+        // We were unable to get the literal (e.g. dynamic context)
+        return nullptr;
     }
-    else
+    if (cnsLength > ((int)getUnrollThreshold(MemcmpU16) / 2))
     {
-        cnsLength = info.compCompHnd->getStringLiteral(cnsStr->gtScpHnd, cnsStr->gtSconCPX, str, MaxPossibleUnrollSize);
-        if (cnsLength < 0)
-        {
-            // We were unable to get the literal (e.g. dynamic context)
-            return nullptr;
-        }
-        if (cnsLength > ((int)getUnrollThreshold(MemcmpU16) / 2))
-        {
-            JITDUMP("UTF16 data is too long to unroll - bail out.\n");
-            return nullptr;
-        }
-        JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"cns\")...\n")
+        JITDUMP("UTF16 data is too long to unroll - bail out.\n");
+        return nullptr;
     }
+
+    JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"cns\")...\n")
 
     // Create a temp which is safe to gtClone for varStr
     // We're not appending it as a statement until we figure out unrolling is profitable (and possible)

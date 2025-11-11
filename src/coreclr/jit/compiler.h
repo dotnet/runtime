@@ -4659,6 +4659,7 @@ protected:
         StartsWith,
         EndsWith
     };
+    GenTree* impTryFoldConstantStrings(GenTree* op1, GenTree* op2, StringComparison cmpMode, StringComparisonKind kind);
     GenTree* impUtf16StringComparison(StringComparisonKind kind, CORINFO_SIG_INFO* sig, unsigned methodFlags);
     GenTree* impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG_INFO* sig, unsigned methodFlags);
     GenTree* impExpandHalfConstEquals(GenTreeLclVarCommon*   data,
