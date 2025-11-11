@@ -73,7 +73,6 @@ namespace Internal.TypeSystem
             }
         }
 
-
 #if DEBUG
         public override string ToString()
         {
