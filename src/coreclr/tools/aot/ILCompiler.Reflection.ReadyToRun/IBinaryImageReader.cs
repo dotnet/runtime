@@ -14,6 +14,21 @@ namespace ILCompiler.Reflection.ReadyToRun
     public interface IBinaryImageReader
     {
         /// <summary>
+        /// Gets the machine type of the binary image
+        /// </summary>
+        Machine Machine { get; }
+
+        /// <summary>
+        /// Gets the operating system of the binary image
+        /// </summary>
+        OperatingSystem OperatingSystem { get; }
+
+        /// <summary>
+        /// Gets the image base address
+        /// </summary>
+        ulong ImageBase { get; }
+
+        /// <summary>
         /// Get the entire image content
         /// </summary>
         ImmutableArray<byte> GetEntireImage();
@@ -33,32 +48,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         bool TryGetReadyToRunHeader(out int rva, out bool isComposite);
 
         /// <summary>
-        /// Write out image information using the specified writer
-        /// </summary>
-        /// <param name="writer">The writer to use</param>
-        void DumpImageInformation(TextWriter writer);
-
-        /// <summary>
-        /// Gets the sections (name and size) of the binary image
-        /// </summary>
-        Dictionary<string, int> GetSections();
-
-        /// <summary>
-        /// Gets the machine type of the binary image
-        /// </summary>
-        Machine Machine { get; }
-
-        /// <summary>
-        /// Gets the operating system of the binary image
-        /// </summary>
-        OperatingSystem OperatingSystem { get; }
-
-        /// <summary>
-        /// Gets the image base address
-        /// </summary>
-        ulong ImageBase { get; }
-
-        /// <summary>
         /// Creates standalone assembly metadata from the image's embedded metadata.
         /// </summary>
         /// <returns>Assembly metadata, or null if the image has no embedded metadata</returns>
@@ -70,5 +59,17 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="manifestReader">Manifest metadata reader</param>
         /// <returns>Manifest assembly metadata</returns>
         IAssemblyMetadata GetManifestAssemblyMetadata(System.Reflection.Metadata.MetadataReader manifestReader);
+
+        /// <summary>
+        /// Write out image information using the specified writer
+        /// </summary>
+        /// <param name="writer">The writer to use</param>
+        void DumpImageInformation(TextWriter writer);
+
+        /// <summary>
+        /// Gets the sections (name and size) of the binary image
+        /// </summary>
+        Dictionary<string, int> GetSections();
+
     }
 }

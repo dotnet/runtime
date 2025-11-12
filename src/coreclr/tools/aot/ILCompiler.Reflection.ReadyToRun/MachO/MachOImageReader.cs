@@ -79,21 +79,65 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
             return 0;
         }
 
-        public void DumpImageInformation(TextWriter writer)
-        {
-            // TODO: Print information from the Mach-O header
-        }
-
-        public Dictionary<string, int> GetSections()
-        {
-            // TODO: Get all the sections
-            return [];
-        }
-
         public IAssemblyMetadata GetStandaloneAssemblyMetadata() => null;
 
         public IAssemblyMetadata GetManifestAssemblyMetadata(System.Reflection.Metadata.MetadataReader manifestReader)
             => new ManifestAssemblyMetadata(manifestReader);
+
+        public void DumpImageInformation(TextWriter writer)
+        {
+            writer.WriteLine($"FileType: {_header.FileType}");
+            writer.WriteLine($"CpuType: 0x{_header.CpuType:X}");
+            writer.WriteLine($"NumberOfCommands: {_header.NumberOfCommands}");
+            writer.WriteLine($"SizeOfCommands: {_header.SizeOfCommands} byte(s)");
+
+            writer.WriteLine("Sections:");
+            EnumerateSections((segmentName, section) =>
+            {
+                string sectionName = section.SectionName.GetString();
+                ulong vmAddr = section.GetVMAddress(_header);
+                ulong size = section.GetSize(_header);
+                writer.WriteLine($"  {segmentName},{sectionName,-16} 0x{vmAddr:X8} - 0x{vmAddr + size:X8}");
+            });
+        }
+
+        public Dictionary<string, int> GetSections()
+        {
+            Dictionary<string, int> sectionMap = [];
+            EnumerateSections((segmentName, section) =>
+            {
+                string sectionName = section.SectionName.GetString();
+                sectionMap[$"{segmentName},{sectionName}"] = (int)section.GetSize(_header);
+            });
+            return sectionMap;
+        }
+
+        private unsafe void EnumerateSections(Action<string, Section64LoadCommand> callback)
+        {
+            long commandsPtr = sizeof(MachHeader);
+            for (int i = 0; i < _header.NumberOfCommands; i++)
+            {
+                Read(commandsPtr, out LoadCommand loadCommand);
+
+                if (loadCommand.GetCommandType(_header) == MachLoadCommandType.Segment64)
+                {
+                    Read(commandsPtr, out Segment64LoadCommand segment);
+                    uint sectionsCount = segment.GetSectionsCount(_header);
+                    string segmentName = segment.Name.GetString();
+
+                    // Sections come immediately after the segment load command
+                    long sectionPtr = commandsPtr + sizeof(Segment64LoadCommand);
+                    for (uint j = 0; j < sectionsCount; j++)
+                    {
+                        Read(sectionPtr, out Section64LoadCommand section);
+                        callback(segmentName, section);
+                        sectionPtr += sizeof(Section64LoadCommand);
+                    }
+                }
+
+                commandsPtr += loadCommand.GetCommandSize(_header);
+            }
+        }
 
         private static Machine GetMachineType(uint cpuType)
         {

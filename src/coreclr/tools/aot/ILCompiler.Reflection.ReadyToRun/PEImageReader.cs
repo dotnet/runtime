@@ -77,6 +77,12 @@ namespace ILCompiler.Reflection.ReadyToRun
             return false;
         }
 
+        public IAssemblyMetadata GetStandaloneAssemblyMetadata()
+            => _peReader.HasMetadata ? new StandaloneAssemblyMetadata(_peReader) : null;
+
+        public IAssemblyMetadata GetManifestAssemblyMetadata(System.Reflection.Metadata.MetadataReader manifestReader)
+            => new ManifestAssemblyMetadata(_peReader, manifestReader);
+
         public void DumpImageInformation(TextWriter writer)
         {
             writer.WriteLine($"MetadataSize: {_peReader.PEHeaders.MetadataSize} byte(s)");
@@ -113,11 +119,5 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             return sectionMap;
         }
-
-        public IAssemblyMetadata GetStandaloneAssemblyMetadata()
-            => _peReader.HasMetadata ? new StandaloneAssemblyMetadata(_peReader) : null;
-
-        public IAssemblyMetadata GetManifestAssemblyMetadata(System.Reflection.Metadata.MetadataReader manifestReader)
-            => new ManifestAssemblyMetadata(_peReader, manifestReader);
     }
 }
