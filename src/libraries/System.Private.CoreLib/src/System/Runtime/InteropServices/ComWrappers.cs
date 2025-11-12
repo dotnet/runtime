@@ -444,12 +444,18 @@ namespace System.Runtime.InteropServices
 
             private void SetFlag(CreateComInterfaceFlagsEx flag)
             {
-                Interlocked.Or(ref Flags, flag);
+                // Using Interlocked.Or<T> will trigger type checks
+                // that can cause deadlocks when running during a GC.
+                int setMask = (int)flag;
+                Interlocked.Or(ref Unsafe.As<CreateComInterfaceFlagsEx, int>(ref Flags), setMask);
             }
 
             private void ResetFlag(CreateComInterfaceFlagsEx flag)
             {
-                Interlocked.And(ref Flags, ~flag);
+                // Using Interlocked.And<T> will trigger type checks
+                // that can cause deadlocks when running during a GC.
+                int resetMask = ~(int)flag;
+                Interlocked.And(ref Unsafe.As<CreateComInterfaceFlagsEx, int>(ref Flags), resetMask);
             }
 
             private static uint GetTrackerCount(ulong c)
