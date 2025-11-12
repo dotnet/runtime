@@ -409,7 +409,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     // Do we have a matched VM? Or are we "abusing" the VM to help us do JIT work (such as using an x86 native VM
     // with an ARM-targeting "altjit").
     // Match CPU/ABI for compMatchedVM
-    info.compMatchedVM = IMAGE_FILE_MACHINE_TARGET == info.compCompHnd->getExpectedTargetArchitecture();
+    info.compMatchedVM = info.compCompHnd->getExpectedTargetArchitecture() == CORINFO_ARCH_TARGET;
 
     // Match OS for compMatchedVM
     CORINFO_EE_INFO* eeInfo = eeGetEEInfo();

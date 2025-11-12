@@ -10,9 +10,38 @@
 
 LinearScanInterface* getLinearScanAllocator(Compiler* compiler)
 {
-    NYI_WASM("getLinearScanAllocator");
-    return nullptr;
+    return new (compiler->getAllocator(CMK_LSRA)) LinearScan(compiler);
 }
+
+LinearScan::LinearScan(Compiler* compiler)
+    : m_compiler(compiler)
+{
+}
+
+PhaseStatus LinearScan::doLinearScan()
+{
+    m_compiler->codeGen->setFramePointerUsed(false);
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
+{
+}
+
+bool LinearScan::willEnregisterLocalVars() const
+{
+    return m_compiler->compEnregLocals();
+}
+
+#if TRACK_LSRA_STATS
+void LinearScan::dumpLsraStatsCsv(FILE* file)
+{
+}
+
+void LinearScan::dumpLsraStatsSummary(FILE* file)
+{
+}
+#endif // TRACK_LSRA_STATS
 
 bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 {

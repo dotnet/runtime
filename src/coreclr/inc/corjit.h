@@ -432,9 +432,9 @@ public:
     virtual uint16_t getRelocTypeHint(void * target) = 0;
 
     // For what machine does the VM expect the JIT to generate code? The VM
-    // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
-    // is cross-compiling (such as the case for crossgen), it will return a
-    // different value than if it was compiling for the host architecture.
+    // returns one of the CorInfoArch values. Note that if the VM is cross
+    // compiling (such as the case for crossgen), it will return a different
+    // value than if it was compiling for the host architecture.
     //
     virtual uint32_t getExpectedTargetArchitecture() = 0;
 
