@@ -3,7 +3,8 @@
 
 // WASM-TODO: this is dummy configuration until we have MSBuild WASM SDK for corehost, which will generate this file
 
-export const config = /*json-start*/{
+/* eslint-disable indent */
+export const config = {
   "mainAssemblyName": "HelloWorld.dll",
   "virtualWorkingDirectory": "/",
   "resources": {
@@ -51,4 +52,4 @@ export const config = /*json-start*/{
       }
     ]
   }
-}/*json-end*/;
+};

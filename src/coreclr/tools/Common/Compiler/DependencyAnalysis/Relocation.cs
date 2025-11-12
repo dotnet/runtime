@@ -8,11 +8,16 @@ namespace ILCompiler.DependencyAnalysis
 {
     public enum RelocType
     {
+        // PE base relocation types.
         IMAGE_REL_BASED_ABSOLUTE             = 0x00,   // No relocation required
-        IMAGE_REL_BASED_ADDR32NB             = 0x02,   // The 32-bit address without an image base (RVA)
         IMAGE_REL_BASED_HIGHLOW              = 0x03,   // 32 bit address base
         IMAGE_REL_BASED_THUMB_MOV32          = 0x07,   // Thumb2: based MOVW/MOVT
         IMAGE_REL_BASED_DIR64                = 0x0A,   // 64 bit address base
+
+        // COFF relocation types
+        IMAGE_REL_BASED_ADDR32NB             = 0x0B,   // The 32-bit address without an image base (RVA)
+
+        // General relocation types
         IMAGE_REL_BASED_REL32                = 0x10,   // 32-bit relative address from byte following reloc
         IMAGE_REL_BASED_THUMB_BRANCH24       = 0x13,   // Thumb2: based B, BL
         IMAGE_REL_BASED_THUMB_MOV32_PCREL    = 0x14,   // Thumb2: based MOVW/MOVT
@@ -24,6 +29,7 @@ namespace ILCompiler.DependencyAnalysis
                                                        // This is a special NGEN-specific relocation type
                                                        // for relative pointer (used to make NGen relocation
                                                        // section smaller)
+
         IMAGE_REL_SECTION                    = 0x79,   // 16 bit section index containing target
 
         IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x81,   // ADRP
@@ -63,9 +69,12 @@ namespace ILCompiler.DependencyAnalysis
 
         //
         // Relocations for R2R image production
+        // None of these are "real" relocations that map to an object file's relocation.
+        // All must be emulated by the object writer.
         //
         IMAGE_REL_SYMBOL_SIZE                = 0x1000, // The size of data in the image represented by the target symbol node
         IMAGE_REL_FILE_ABSOLUTE              = 0x1001, // 32 bit offset from beginning of image
+        IMAGE_REL_FILE_CHECKSUM_CALLBACK     = 0x1002, // After the image has been emitted, call the IChecksumNode.EmitChecksum method on the target symbol to emit the checksum data.
     }
 
     public struct Relocation
@@ -314,6 +323,49 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GetArm64Rel12(pCode) == imm12);
         }
 
+        //*****************************************************************************
+        //  Extract the 12-bit page offset from an LDR instruction (unsigned immediate)
+        //  For 64-bit LDR, the immediate is scaled by 8 bytes
+        //*****************************************************************************
+        private static unsafe int GetArm64Rel12Ldr(uint* pCode)
+        {
+            uint ldrInstr = *pCode;
+
+            // 0x003FFC00: Mask for bits 21-10 of the 32-bit ARM64 LDR instruction
+            // which contain the scaled immediate value
+            int scaledImm12 = (int)(ldrInstr & 0x003FFC00) >> 10;
+
+            // Scale back to byte offset (multiply by 8)
+            return scaledImm12 << 3;
+        }
+
+        //*****************************************************************************
+        //  Deposit the 12-bit page offset 'imm12' into an LDR instruction (unsigned immediate)
+        //  For 64-bit LDR, the immediate represents offset/8 (scaled by 8 bytes)
+        //*****************************************************************************
+        private static unsafe void PutArm64Rel12Ldr(uint* pCode, int imm12)
+        {
+            // Verify that we got a valid offset and that it's aligned to 8 bytes
+            Debug.Assert(FitsInRel12(imm12));
+            Debug.Assert((imm12 & 7) == 0, "LDR offset must be 8-byte aligned");
+
+            uint ldrInstr = *pCode;
+            // Check ldr opcode: 0b11111001010000000000000000000000 (LDR 64-bit register, unsigned immediate)
+            Debug.Assert((ldrInstr & 0xFFC00000) == 0xF9400000);
+
+            // Scale the offset by dividing by 8 for the instruction encoding
+            int scaledImm12 = imm12 >> 3;
+
+            // 0xFFC003FF: Mask to preserve bits 31-22 (opcode) and bits 9-0 (registers)
+            // Clear bits 21-10 which will hold the scaled immediate value
+            ldrInstr &= 0xFFC003FF;
+            ldrInstr |= (uint)(scaledImm12 << 10);     // Set bits 21-10 with scaled offset
+
+            *pCode = ldrInstr;                         // write the assembled instruction
+
+            Debug.Assert(GetArm64Rel12Ldr(pCode) == imm12);
+        }
+
         private static unsafe int GetArm64Rel28(uint* pCode)
         {
             uint branchInstr = *pCode;
@@ -539,6 +591,9 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A:
                     PutArm64Rel12((uint*)location, (int)value);
                     break;
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
+                    PutArm64Rel12Ldr((uint*)location, (int)value);
+                    break;
                 case RelocType.IMAGE_REL_BASED_LOONGARCH64_PC:
                     PutLoongArch64PC12((uint*)location, value);
                     break;
@@ -560,7 +615,21 @@ namespace ILCompiler.DependencyAnalysis
             {
                 RelocType.IMAGE_REL_BASED_DIR64 => 8,
                 RelocType.IMAGE_REL_BASED_HIGHLOW => 4,
+                RelocType.IMAGE_REL_BASED_ADDR32NB => 4,
+                RelocType.IMAGE_REL_BASED_REL32 => 4,
                 RelocType.IMAGE_REL_BASED_RELPTR32 => 4,
+                RelocType.IMAGE_REL_FILE_ABSOLUTE => 4,
+                // The relocation itself aren't these sizes, but their values
+                // are immediates in instructions within
+                // a span of this many bytes.
+                RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => 4,
+                RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => 4,
+                RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L => 4,
+                RelocType.IMAGE_REL_BASED_THUMB_MOV32 => 8,
+                RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL => 8,
+                RelocType.IMAGE_REL_BASED_LOONGARCH64_PC => 8,
+                RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR => 8,
+                RelocType.IMAGE_REL_BASED_RISCV64_PC => 8,
                 _ => throw new NotSupportedException(),
             };
         }
@@ -595,6 +664,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A:
                 case RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A:
                     return GetArm64Rel12((uint*)location);
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
+                    return GetArm64Rel12Ldr((uint*)location);
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
                 case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
                 case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12:

@@ -2265,7 +2265,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
 //   those cases the JIT does not know (and does not need to know) which arg is
 //   the async continuation.
 //
-//   The VM also uses the StubHelpers.AsyncCallContinuation() intrinsic in the
+//   The VM also uses the AsyncHelpers.AsyncCallContinuation() intrinsic in the
 //   stubs discussed above. The JIT must take care in those cases to still mark
 //   the preceding call as an async call; this is required for correct LSRA
 //   behavior and GC reporting around the returned async continuation. This is
@@ -2734,6 +2734,7 @@ AGAIN:
 
             case GT_NOP:
             case GT_LABEL:
+            case GT_ASYNC_RESUME_INFO:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
                 return true;
@@ -3696,9 +3697,14 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
         GenTreeOpCC* opCC = tree->AsOpCC();
         opCC->gtCondition = GenCondition::Reverse(opCC->gtCondition);
     }
+    else if (tree->IsIntegralConst())
+    {
+        GenTreeIntConCommon* con = tree->AsIntConCommon();
+        con->SetIntegralValue(con->IsIntegralConst(0) ? 1 : 0);
+    }
     else
     {
-        tree = gtNewOperNode(GT_NOT, TYP_INT, tree);
+        tree = gtNewOperNode(GT_EQ, TYP_INT, tree, gtNewZeroConNode(TYP_INT));
     }
 
     return tree;
@@ -5462,11 +5468,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         case NI_System_Math_Log10:
 #if defined(TARGET_RISCV64)
                         case NI_System_Math_Max:
-                        case NI_System_Math_MaxNumber:
                         case NI_System_Math_MaxUnsigned:
+                        case NI_System_Math_MaxNative:
                         case NI_System_Math_Min:
-                        case NI_System_Math_MinNumber:
                         case NI_System_Math_MinUnsigned:
+                        case NI_System_Math_MinNative:
 #endif // TARGET_RISCV64
                         case NI_System_Math_Pow:
                         case NI_System_Math_Round:
@@ -5817,11 +5823,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
 #if defined(TARGET_RISCV64)
                     case NI_System_Math_Max:
-                    case NI_System_Math_MaxNumber:
                     case NI_System_Math_MaxUnsigned:
+                    case NI_System_Math_MaxNative:
                     case NI_System_Math_Min:
-                    case NI_System_Math_MinNumber:
                     case NI_System_Math_MinUnsigned:
+                    case NI_System_Math_MinNative:
                     {
                         level++;
                         break;
@@ -6688,6 +6694,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -6719,6 +6726,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -7739,6 +7747,22 @@ GenTreeIntCon* Compiler::gtNewTrue()
 GenTreeIntCon* Compiler::gtNewFalse()
 {
     return gtNewIconNode(0, TYP_INT);
+}
+
+//-----------------------------------------------------------------------------------------
+// gtNewILOffsetNode:
+//   Create a GT_IL_OFFSET node with the specified debug information.
+//
+// Arguments:
+//    di         - The debug information
+//    lastOffset - Offset corresponding to the IL instruction after this one
+//
+// Return Value:
+//    New node.
+//
+GenTreeILOffset* Compiler::gtNewILOffsetNode(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset))
+{
+    return new (this, GT_IL_OFFSET) GenTreeILOffset(di DEBUGARG(lastOffset));
 }
 
 // return a new node representing the value in a physical register
@@ -9575,6 +9599,8 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_END_LFIN:
 #endif // FEATURE_EH_WINDOWS_X86
             case GT_JMP:
+            case GT_RECORD_ASYNC_RESUME:
+            case GT_ASYNC_RESUME_INFO:
                 copy = new (this, oper) GenTreeVal(oper, tree->gtType, tree->AsVal()->gtVal1);
                 goto DONE;
 
@@ -10321,6 +10347,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -10352,6 +10379,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -12438,6 +12466,11 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             tree->AsILOffset()->gtStmtDI.Dump(true);
             break;
 
+        case GT_RECORD_ASYNC_RESUME:
+        case GT_ASYNC_RESUME_INFO:
+            printf(" state=%zu", tree->AsVal()->gtVal1);
+            break;
+
         case GT_JCC:
         case GT_SETCC:
             printf(" cond=%s", tree->AsCC()->gtCondition.Name());
@@ -12817,8 +12850,8 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 case NI_System_Math_Max:
                     printf(" max");
                     break;
-                case NI_System_Math_MaxNumber:
-                    printf(" maxNumber");
+                case NI_System_Math_MaxNative:
+                    printf(" maxNative");
                     break;
                 case NI_System_Math_MaxUnsigned:
                     printf(" maxUnsigned");
@@ -12826,11 +12859,20 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 case NI_System_Math_Min:
                     printf(" min");
                     break;
-                case NI_System_Math_MinNumber:
-                    printf(" minNumber");
+                case NI_System_Math_MinNative:
+                    printf(" minNative");
                     break;
                 case NI_System_Math_MinUnsigned:
                     printf(" minUnsigned");
+                    break;
+                case NI_PRIMITIVE_LeadingZeroCount:
+                    printf(" leadingZeroCount");
+                    break;
+                case NI_PRIMITIVE_TrailingZeroCount:
+                    printf(" trailingZeroCount");
+                    break;
+                case NI_PRIMITIVE_PopCount:
+                    printf(" popCount");
                     break;
 #endif // TARGET_RISCV64
                 case NI_System_Math_Pow:
@@ -19873,6 +19915,11 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 //
 bool GenTree::SupportsSettingZeroFlag()
 {
+    if (SupportsSettingResultFlags())
+    {
+        return true;
+    }
+
 #if defined(TARGET_XARCH)
     if (OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
     {
@@ -19891,18 +19938,42 @@ bool GenTree::SupportsSettingZeroFlag()
         return true;
     }
 #endif
-#elif defined(TARGET_ARM64)
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// SupportsSettingResultFlags: Returns true if this is an arithmetic operation
+// whose codegen supports setting the carry, overflow, zero and sign flags based
+// on the result of the operation.
+//
+// Return Value:
+//    True if so. A false return does not imply that codegen for the node will
+//    not trash the result flags.
+//
+// Remarks:
+//    For example, for GT (AND x y) 0, arm64 can emit instructions that
+//    directly set the flags after the 'AND' and thus no comparison is needed.
+//
+//    The backend expects any node for which the flags will be consumed to be
+//    marked with GTF_SET_FLAGS.
+//
+bool GenTree::SupportsSettingResultFlags()
+{
+#if defined(TARGET_ARM64)
     if (OperIs(GT_AND, GT_AND_NOT))
     {
         return true;
     }
 
-    // We do not support setting zero flag for madd/msub.
+    // We do not support setting result flags if neg has a contained mul
     if (OperIs(GT_NEG) && (!gtGetOp1()->OperIs(GT_MUL) || !gtGetOp1()->isContained()))
     {
         return true;
     }
 
+    // We do not support setting result flags for madd/msub.
     if (OperIs(GT_ADD, GT_SUB) && (!gtGetOp2()->OperIs(GT_MUL) || !gtGetOp2()->isContained()))
     {
         return true;

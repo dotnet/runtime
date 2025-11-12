@@ -13,7 +13,7 @@
 //    newObjThis                - tree for this pointer or uninitialized newobj temp (or nullptr)
 //    prefixFlags               - IL prefix flags for the call
 //    callInfo                  - EE supplied info for the call
-//    rawILOffset               - IL offset of the opcode, used for guarded devirtualization.
+//    rawILOffset               - IL offset of the opcode
 //
 // Returns:
 //    Type of the call's return value.
@@ -386,7 +386,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags);
+                    impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags, di);
                 }
 
                 impPopCallArgs(sig, call->AsCall());
@@ -691,7 +691,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags);
+        impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags, di);
     }
 
     // Now create the argument list.
@@ -3323,7 +3323,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    if (ni == NI_System_StubHelpers_AsyncCallContinuation)
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation)
     {
         GenTree* node = new (this, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
         node->SetHasOrderingSideEffect();
@@ -4165,16 +4165,23 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
+#if defined(TARGET_X86)
+                // On x86, TYP_LONG is not supported as an intrinsic
+                if (genActualType(callType) == TYP_LONG)
+                {
+                    break;
+                }
+#endif
+                // TODO: Implement support for XAND/XORR with small integer types (byte/short)
+                if ((callType != TYP_INT) && (callType != TYP_LONG))
+                {
+                    break;
+                }
+
 #if defined(TARGET_ARM64)
                 if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
 #endif
                 {
-#if defined(TARGET_X86)
-                    if (genActualType(callType) == TYP_LONG)
-                    {
-                        break;
-                    }
-#endif
                     assert(sig->numArgs == 2);
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
@@ -4970,60 +4977,74 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif // FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_RISCV64
-                GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
-                GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
-
-                if (isNative)
+                if (!isMagnitude)
                 {
-                    assert(!isMagnitude && !isNumber);
-                    isNumber = true;
+                    GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                    GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+
+                    GenTree *op1Clone = nullptr, *op2Clone = nullptr;
+                    if (isNative)
+                    {
+                        assert(!isMagnitude && !isNumber);
+                    }
+                    else
+                    {
+                        if (!isNumber)
+                        {
+                            op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
+                                               nullptr DEBUGARG("Clone op2 for Math.Min/Max non-Number"));
+                        }
+                        op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone op1 for Math.Min/Max"));
+                    }
+
+                    static const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
+
+                    // Native RISC-V fmin/fmax instructions implement IEEE 754-2019 Minimum/MaximumNumber functions
+                    // which don't specify what kind of NaN is returned if both arguments are NaN. RISC-V returns quiet
+                    // canonical NaN in this case.
+                    ni = isMax ? NI_System_Math_MaxNative : NI_System_Math_MinNative;
+                    GenTree* minMax =
+                        new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op1, op2, ni, nullptr R2RARG(nullEntry));
+
+                    if (!isNative)
+                    {
+                        // Make sure we return the NaN argument verbatim (if both are NaN, the first one), which is an
+                        // additional requirement for .NET Min/Max APIs on top of IEEE 754.
+
+                        if (isNumber)
+                        {
+                            // Build expression:  isNumber(minMax) ? minMax : op1
+                            GenTree* minMaxClone;
+                            minMax = impCloneExpr(minMax, &minMaxClone, CHECK_SPILL_NONE,
+                                                  nullptr DEBUGARG("Clone min/max result in Math.Min/MaxNumber"));
+
+                            GenTreeOp* isNumber = gtNewOperNode(GT_EQ, TYP_INT, minMax, minMaxClone);
+
+                            minMax = gtNewQmarkNode(callType, isNumber,
+                                                    gtNewColonNode(callType, gtCloneExpr(minMaxClone), op1Clone));
+                        }
+                        else
+                        {
+                            // Build expression:  isNumber(op1) ? (isNumber(op2) ? minMax : op2) : op1
+                            GenTreeOp* isOp1Number = gtNewOperNode(GT_EQ, TYP_INT, op1Clone, gtCloneExpr(op1Clone));
+                            GenTreeOp* isOp2Number = gtNewOperNode(GT_EQ, TYP_INT, op2Clone, gtCloneExpr(op2Clone));
+
+                            minMax = gtNewQmarkNode(callType, isOp2Number,
+                                                    gtNewColonNode(callType, minMax, gtCloneExpr(op2Clone)));
+                            minMax = gtNewQmarkNode(callType, isOp1Number,
+                                                    gtNewColonNode(callType, minMax, gtCloneExpr(op1Clone)));
+                        }
+
+                        // Top-level QMARK needs to be in a variable
+                        assert(minMax->OperIs(GT_QMARK));
+                        unsigned tmpTop = lvaGrabTemp(true DEBUGARG("Temp for top qmark in Math.Min/Max"));
+                        impStoreToTemp(tmpTop, minMax, CHECK_SPILL_NONE);
+                        minMax = gtNewLclvNode(tmpTop, callType);
+                    }
+
+                    retNode = minMax;
                 }
-
-                GenTree *op1Clone = nullptr, *op2Clone = nullptr;
-
-                if (!isNumber)
-                {
-                    op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("Clone op2 for Math.Min/Max non-Number"));
-                }
-
-                if (!isNumber)
-                {
-                    op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("Clone op1 for Math.Min/Max non-Number"));
-                }
-
-                static const CORINFO_CONST_LOOKUP nullEntry = {IAT_VALUE};
-                if (isMagnitude)
-                {
-                    op1 = new (this, GT_INTRINSIC)
-                        GenTreeIntrinsic(callType, op1, NI_System_Math_Abs, nullptr R2RARG(nullEntry));
-                    op2 = new (this, GT_INTRINSIC)
-                        GenTreeIntrinsic(callType, op2, NI_System_Math_Abs, nullptr R2RARG(nullEntry));
-                }
-
-                ni = isMax ? NI_System_Math_MaxNumber : NI_System_Math_MinNumber;
-                GenTree* minMax =
-                    new (this, GT_INTRINSIC) GenTreeIntrinsic(callType, op1, op2, ni, nullptr R2RARG(nullEntry));
-
-                if (!isNumber)
-                {
-                    GenTreeOp* isOp1Number   = gtNewOperNode(GT_EQ, TYP_INT, op1Clone, gtCloneExpr(op1Clone));
-                    GenTreeOp* isOp2Number   = gtNewOperNode(GT_EQ, TYP_INT, op2Clone, gtCloneExpr(op2Clone));
-                    GenTreeOp* isOkForMinMax = gtNewOperNode(GT_EQ, TYP_INT, isOp1Number, isOp2Number);
-
-                    GenTreeOp* nanPropagator =
-                        gtNewOperNode(GT_ADD, callType, gtCloneExpr(op1Clone), gtCloneExpr(op2Clone));
-
-                    GenTreeQmark* qmark =
-                        gtNewQmarkNode(callType, isOkForMinMax, gtNewColonNode(callType, minMax, nanPropagator));
-                    // QMARK has to be a root node
-                    unsigned tmp = lvaGrabTemp(true DEBUGARG("Temp for Qmark in Math.Min/Max non-Number"));
-                    impStoreToTemp(tmp, qmark, CHECK_SPILL_NONE);
-                    minMax = gtNewLclvNode(tmp, callType);
-                }
-
-                retNode = minMax;
 #endif // TARGET_RISCV64
             }
 
@@ -6800,10 +6821,19 @@ void Compiler::impCheckForPInvokeCall(
 //    call        - The call
 //    opcode      - The IL opcode for the call
 //    prefixFlags - Flags containing context handling information from IL
+//    callDI      - Debug info for the async call
 //
-void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags)
+void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall*     call,
+                                            OPCODE           opcode,
+                                            unsigned         prefixFlags,
+                                            const DebugInfo& callDI)
 {
     AsyncCallInfo asyncInfo;
+
+    unsigned newSourceTypes = ICorDebugInfo::ASYNC;
+    newSourceTypes |= (unsigned)callDI.GetLocation().GetSourceTypes() & ~ICorDebugInfo::CALL_INSTRUCTION;
+    ILLocation newILLocation(callDI.GetLocation().GetOffset(), (ICorDebugInfo::SourceTypes)newSourceTypes);
+    asyncInfo.CallAsyncDebugInfo = DebugInfo(callDI.GetInlineContext(), newILLocation);
 
     if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
     {
@@ -6952,6 +6982,10 @@ private:
             if (retClsHnd != nullptr)
             {
                 comp->lvaSetClass(tmp, retClsHnd, isExact);
+            }
+            else
+            {
+                JITDUMP("Could not deduce class from [%06u]", comp->dspTreeID(retExpr));
             }
         }
     }
@@ -8374,13 +8408,11 @@ bool Compiler::IsTargetIntrinsic(NamedIntrinsic intrinsicName)
         case NI_System_Math_Abs:
         case NI_System_Math_Sqrt:
         case NI_System_Math_Max:
-        case NI_System_Math_MaxMagnitude:
-        case NI_System_Math_MaxMagnitudeNumber:
         case NI_System_Math_MaxNumber:
+        case NI_System_Math_MaxNative:
         case NI_System_Math_Min:
-        case NI_System_Math_MinMagnitude:
-        case NI_System_Math_MinMagnitudeNumber:
         case NI_System_Math_MinNumber:
+        case NI_System_Math_MinNative:
         case NI_System_Math_MultiplyAddEstimate:
         case NI_System_Math_ReciprocalEstimate:
         case NI_System_Math_ReciprocalSqrtEstimate:
@@ -10840,6 +10872,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
                             }
+                            else if (strcmp(methodName, "AsyncCallContinuation") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
+                            }
                         }
                         else if (strcmp(className, "StaticsHelpers") == 0)
                         {
@@ -11096,10 +11132,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "NextCallReturnAddress") == 0)
                         {
                             result = NI_System_StubHelpers_NextCallReturnAddress;
-                        }
-                        else if (strcmp(methodName, "AsyncCallContinuation") == 0)
-                        {
-                            result = NI_System_StubHelpers_AsyncCallContinuation;
                         }
                     }
                 }

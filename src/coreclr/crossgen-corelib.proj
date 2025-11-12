@@ -96,10 +96,21 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="InvokeCrossgenBrowser"
+          DependsOnTargets="PrepareInvokeCrossgen"
+          Inputs="@(Crossgen2Inputs)"
+          Outputs="$(CoreLibOutputPath)"
+          Condition="'$(TargetOS)' == 'browser'"
+          AfterTargets="Build">
+    <!-- TODO-WASM: we will have WASM R2R later, for now we just need to copy the file into expected location -->
+    <Copy SourceFiles="@(CoreLib)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
+  </Target>
+
   <Target Name="InvokeCrossgen"
           DependsOnTargets="PrepareInvokeCrossgen;CreateMergedMibcFile"
           Inputs="@(Crossgen2Inputs)"
           Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath)"
+          Condition="'$(TargetOS)' != 'browser'"
           AfterTargets="Build">
 
     <MakeDir

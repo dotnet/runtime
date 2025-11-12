@@ -1372,14 +1372,13 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
     return hr;
 }
 
-VOID EnsureComStarted(BOOL fCoInitCurrentThread)
+VOID EnsureComStarted()
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(GetThreadNULLOk() || !fCoInitCurrentThread);
         PRECONDITION(g_fEEStarted);
     }
     CONTRACTL_END;
@@ -1388,7 +1387,7 @@ VOID EnsureComStarted(BOOL fCoInitCurrentThread)
     _ASSERTE(g_fComStarted);
 }
 
-HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
+HRESULT EnsureComStartedNoThrow()
 {
     CONTRACTL
     {
@@ -1396,7 +1395,6 @@ HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread)
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(g_fEEStarted);
-        PRECONDITION(GetThreadNULLOk() != NULL);      // Should always be inside BEGIN_EXTERNAL_ENTRYPOINT
     }
     CONTRACTL_END;
 

@@ -156,6 +156,27 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_GT:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
+        case GT_AND:
+        {
+            IntegralRange leftRange  = IntegralRange::ForNode(node->gtGetOp1(), compiler);
+            IntegralRange rightRange = IntegralRange::ForNode(node->gtGetOp2(), compiler);
+            if (leftRange.IsNonNegative() && rightRange.IsNonNegative())
+            {
+                // If both sides are known to be non-negative, the result is non-negative.
+                // Further, the top end of the range cannot exceed the min of the two upper bounds.
+                return {SymbolicIntegerValue::Zero, min(leftRange.GetUpperBound(), rightRange.GetUpperBound())};
+            }
+
+            if (leftRange.IsNonNegative() || rightRange.IsNonNegative())
+            {
+                // If only one side is known to be non-negative, however it is harder to
+                // reason about the upper bound.
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
+            break;
+        }
+
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
@@ -215,11 +236,20 @@ bool IntegralRange::Contains(int64_t value) const
         }
 
         case GT_CNS_INT:
+        {
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
             }
+
+            int64_t constValue = node->AsIntCon()->IntegralValue();
+            if (constValue >= 0)
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
             break;
+        }
 
         case GT_QMARK:
             return Union(ForNode(node->AsQmark()->ThenNode(), compiler),
@@ -3951,7 +3981,6 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
             }
 
             int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-            rng.LowerLimit().AddConstant(cns);
 
             if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
                 (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
@@ -5777,6 +5806,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 
 void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
 {
+    assert(!optLocalAssertionProp);
+
     if (BitVecOps::IsEmpty(apTraits, activeAssertions))
     {
         return;
@@ -5805,31 +5836,25 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
         {
             AssertionDsc* impAssertion = optGetAssertion(impIndex);
 
-            //  The impAssertion must be different from the chkAssertion
+            // The impAssertion must be different from the chkAssertion
             if (impIndex == chkAssertionIndex)
             {
                 continue;
             }
 
-            // impAssertion must be a Non Null assertion on lclNum
-            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || (impAssertion->op1.kind != O1K_LCLVAR) ||
-                (impAssertion->op2.kind != O2K_CONST_INT) || (impAssertion->op1.vn != chkAssertion->op1.vn))
+            // impAssertion must be a Non Null assertion on op1.vn
+            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || !impAssertion->CanPropNonNull() ||
+                (impAssertion->op1.vn != chkAssertion->op1.vn))
             {
                 continue;
             }
 
             // The bit may already be in the result set
-            if (!BitVecOps::IsMember(apTraits, activeAssertions, impIndex - 1))
+            if (BitVecOps::TryAddElemD(apTraits, activeAssertions, impIndex - 1))
             {
-                BitVecOps::AddElemD(apTraits, activeAssertions, impIndex - 1);
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
-                           (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
-                           impIndex);
-                }
-#endif
+                JITDUMP("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
+                        (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
+                        impIndex);
             }
 
             // There is at most one non-null assertion that is implied by the current chkIndex assertion

@@ -12,7 +12,8 @@ schedules:
   branches:
     include:
     - main
-    - release/*-staging
+    - release/*-staging  # .NET 8 and .NET 9
+    - release/*.0        # .NET 10+
 
 variables:
   - template: ../variables.yml

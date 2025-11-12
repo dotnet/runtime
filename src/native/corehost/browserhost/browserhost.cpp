@@ -50,9 +50,7 @@ extern "C"
     const void* GlobalizationResolveDllImport(const char* name);
     const void* CompressionResolveDllImport(const char* name);
 
-    bool browserHostExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
-    void browserHostResolveMain(int exitCode);
-    void browserHostRejectMain(const char *reason);
+    bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);
 }
 
 // The current CoreCLR instance details.
@@ -64,24 +62,17 @@ static void log_error_info(const char* line)
     std::fprintf(stderr, "log error: %s\n", line);
 }
 
-static bool external_assembly_probe(const char* path, /*out*/ void **data_start, /*out*/ int64_t* size)
-{
-    *size = 0;
-    *data_start = nullptr;
-    return browserHostExternalAssemblyProbe(path, data_start, size);;
-}
-
 static const void* pinvoke_override(const char* library_name, const char* entry_point_name)
 {
     if (strcmp(library_name, "libSystem.Native") == 0)
     {
         return SystemResolveDllImport(entry_point_name);
     }
-    if (strcmp(library_name, "libSystem.JavaScript") == 0)
+    if (strcmp(library_name, "libSystem.JavaScript.Native") == 0)
     {
         return SystemJSResolveDllImport(entry_point_name);
     }
-    if (strcmp(library_name, "libSystem.Runtime.InteropServices.JavaScript") == 0)
+    if (strcmp(library_name, "libSystem.Runtime.InteropServices.JavaScript.Native") == 0)
     {
         return SystemJSInteropResolveDllImport(entry_point_name);
     }
@@ -107,9 +98,11 @@ static std::vector<const char*> propertyKeys;
 static std::vector<const char*> propertyValues;
 static pal::char_t ptr_to_string_buffer[STRING_LENGTH("0xffffffffffffffff") + 1];
 
-extern "C" int browserHostInitializeCoreCLR(void)
+// WASM-TODO: pass TPA via argument, not env
+// WASM-TODO: pass app_path via argument, not env
+// WASM-TODO: pass search_paths via argument, not env
+extern "C" int BrowserHost_InitializeCoreCLR(void)
 {
-    //WASM-TODO: does getenv return UTF8 ?
     pal::getenv(HOST_PROPERTY_APP_PATHS, &app_path);
     pal::getenv(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, &search_paths);
     pal::getenv(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, &tpa);
@@ -124,7 +117,7 @@ extern "C" int browserHostInitializeCoreCLR(void)
 
     host_runtime_contract host_contract = { sizeof(host_runtime_contract), nullptr };
     host_contract.pinvoke_override = &pinvoke_override;
-    host_contract.external_assembly_probe = &external_assembly_probe;
+    host_contract.external_assembly_probe = &BrowserHost_ExternalAssemblyProbe;
 
     pal::snwprintf(ptr_to_string_buffer, ARRAY_SIZE(ptr_to_string_buffer), _X("0x%zx"), (size_t)(&host_contract));
 
@@ -143,32 +136,15 @@ extern "C" int browserHostInitializeCoreCLR(void)
     return 0;
 }
 
-// WASM-TODO: browser needs async entrypoint
-extern "C" int browserHostExecuteAssembly(const char* assemblyPath)
+extern "C" int BrowserHost_ExecuteAssembly(const char* assemblyPath, int argc, const char** argv)
 {
-    int exit_code;
-    int retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, 0, nullptr, assemblyPath, (uint32_t*)&exit_code);
+    int ignore_exit_code = 0;
+    int retval = coreclr_execute_assembly(CurrentClrInstance, CurrentAppDomainId, argc, argv, assemblyPath, (uint32_t*)&ignore_exit_code);
 
     if (retval < 0)
     {
         std::fprintf(stderr, "coreclr_execute_assembly failed - Error: 0x%08x\n", retval);
         return -1;
     }
-
-    int latched_exit_code = 0;
-
-    retval = coreclr_shutdown_2(CurrentClrInstance, CurrentAppDomainId, &latched_exit_code);
-
-    if (retval < 0)
-    {
-        std::fprintf(stderr, "coreclr_shutdown_2 failed - Error: 0x%08x\n", retval);
-        exit_code = -1;
-        // WASM-TODO: this is too trivial
-        browserHostRejectMain("coreclr_shutdown_2 failed");
-    }
-
-    // WASM-TODO: this is too trivial
-    // because nothing runs continuations yet and also coreclr_execute_assembly is sync looping
-    browserHostResolveMain(exit_code);
-    return retval;
+    return 0;
 }

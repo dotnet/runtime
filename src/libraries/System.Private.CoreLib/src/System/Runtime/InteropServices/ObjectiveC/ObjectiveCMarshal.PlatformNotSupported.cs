@@ -70,9 +70,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
         /// <returns>Reference tracking GC handle.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the ObjectiveCMarshal API has not been initialized.</exception>
         /// <remarks>
-        /// The Initialize() must be called prior to calling this function.
+        /// The <see cref="Initialize" /> function must be called prior to calling this function.
         ///
-        /// The <paramref name="obj"/> must have a type in its hierarchy marked with
+        /// The <paramref name="obj"/> parameter must have a type in its hierarchy marked with
         /// <see cref="ObjectiveCTrackedTypeAttribute"/>.
         ///
         /// The "Is Referenced" callback passed to Initialize()

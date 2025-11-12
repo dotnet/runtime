@@ -356,7 +356,7 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
                 shouldCheckForRounding = (regAvailableStartIndex >= 61);
                 break;
             default:
-                assert("Unsupported registersNeeded\n");
+                assert(!"Unsupported registersNeeded\n");
                 break;
         }
 

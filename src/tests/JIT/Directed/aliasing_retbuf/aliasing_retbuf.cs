@@ -56,12 +56,16 @@ public unsafe class AliasingRetBuf
             failures |= 16;
         }
 
-        f = new Foo { A = 3, B = 2, C = 1 };
-        CallRefFPtr(ref f, (delegate* unmanaged[Cdecl, SuppressGCTransition]<ref Foo, Foo>)export);
-        if (f.A != 2 || f.B != 1 || f.C != 3)
+        // This requires pinvoke marshalling which is not currently supported by the interpreter. See https://github.com/dotnet/runtime/issues/118965
+        if (!TestLibrary.Utilities.IsCoreClrInterpreter)
         {
-            Console.WriteLine("FAIL: After CallRefFPtr: {0}", f);
-            failures |= 32;
+            f = new Foo { A = 3, B = 2, C = 1 };
+            CallRefFPtr(ref f, (delegate* unmanaged[Cdecl, SuppressGCTransition]<ref Foo, Foo>)export);
+            if (f.A != 2 || f.B != 1 || f.C != 3)
+            {
+                Console.WriteLine("FAIL: After CallRefFPtr: {0}", f);
+                failures |= 32;
+            }
         }
 
         if (failures == 0)

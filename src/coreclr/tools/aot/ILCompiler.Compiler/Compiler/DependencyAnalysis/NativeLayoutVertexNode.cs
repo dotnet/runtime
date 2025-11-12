@@ -1055,30 +1055,6 @@ namespace ILCompiler.DependencyAnalysis
 
             return SetSavedVertex(layoutInfo);
         }
-
-        private static IEnumerable<MethodDesc> EnumVirtualSlotsDeclaredOnType(TypeDesc declType)
-        {
-            // VirtualMethodUse of Foo<SomeType>.Method will bring in VirtualMethodUse
-            // of Foo<__Canon>.Method. This in turn should bring in Foo<OtherType>.Method.
-            DefType defType = declType.GetClosestDefType();
-
-            Debug.Assert(!declType.IsInterface);
-
-            IEnumerable<MethodDesc> allSlots = defType.EnumAllVirtualSlots();
-
-            foreach (var method in allSlots)
-            {
-                // Generic virtual methods are tracked by an orthogonal mechanism.
-                if (method.HasInstantiation)
-                    continue;
-
-                // Current type doesn't define this slot. Another VTableSlice will take care of this.
-                if (method.OwningType != defType)
-                    continue;
-
-                yield return method;
-            }
-        }
     }
 
     public abstract class NativeLayoutGenericDictionarySlotNode : NativeLayoutVertexNode
