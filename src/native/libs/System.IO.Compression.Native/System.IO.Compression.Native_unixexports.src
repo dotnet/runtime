@@ -38,8 +38,7 @@ ZSTD_DCtx_reset
 ZSTD_DCtx_refDDict
 ZSTD_CCtx_refCDict
 ZSTD_compressBound
-ZSTD_compress
-ZSTD_compressCCtx
+ZSTD_compress2
 ZSTD_compress_usingCDict
 ZSTD_compressStream2
 ZSTD_CCtx_setParameter

@@ -45,10 +45,7 @@ internal static partial class Interop
         internal static partial nuint ZSTD_compressBound(nuint srcSize);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_compress(IntPtr dst, nuint dstCapacity, IntPtr src, nuint srcSize, int compressionLevel);
-
-        [LibraryImport(Libraries.CompressionNative)]
-        internal static partial nuint ZSTD_compressCCtx(SafeZstdCompressHandle cctx, IntPtr dst, nuint dstCapacity, IntPtr src, nuint srcSize, int compressionLevel);
+        internal static partial nuint ZSTD_compress2(SafeZstdCompressHandle cctx, IntPtr dst, nuint dstCapacity, IntPtr src, nuint srcSize, int compressionLevel);
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial nuint ZSTD_compress_usingCDict(SafeZstdCompressHandle cctx, IntPtr dst, nuint dstCapacity, IntPtr src, nuint srcSize, SafeZstdCDictHandle cdict);

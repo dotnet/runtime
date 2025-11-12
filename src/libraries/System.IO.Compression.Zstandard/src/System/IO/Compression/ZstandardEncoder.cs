@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.IO.Compression
 {
@@ -33,7 +34,7 @@ namespace System.IO.Compression
 
             try
             {
-                SetQuality(quality);
+                SetQuality(_context, quality);
             }
             catch
             {
@@ -74,8 +75,8 @@ namespace System.IO.Compression
 
             try
             {
-                SetQuality(quality);
-                SetWindow(window);
+                SetQuality(_context, quality);
+                SetWindow(_context, window);
             }
             catch
             {
@@ -99,7 +100,7 @@ namespace System.IO.Compression
             try
             {
                 SetDictionary(dictionary);
-                SetWindow(window);
+                SetWindow(_context, window);
             }
             catch
             {
@@ -128,27 +129,27 @@ namespace System.IO.Compression
                 }
                 else
                 {
-                    SetQuality(compressionOptions.Quality);
+                    SetQuality(_context, compressionOptions.Quality);
                 }
 
                 if (compressionOptions.Window != 0)
                 {
-                    SetWindow(compressionOptions.Window);
+                    SetWindow(_context, compressionOptions.Window);
                 }
 
                 if (compressionOptions.AppendChecksum)
                 {
-                    SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_checksumFlag, 1);
+                    SetParameter(_context, Interop.Zstd.ZstdCParameter.ZSTD_c_checksumFlag, 1);
                 }
 
                 if (compressionOptions.EnableLongDistanceMatching)
                 {
-                    SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_enableLongDistanceMatching, 1);
+                    SetParameter(_context, Interop.Zstd.ZstdCParameter.ZSTD_c_enableLongDistanceMatching, 1);
                 }
 
                 if (compressionOptions.TargetBlockSize != 0)
                 {
-                    SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_targetCBlockSize, compressionOptions.TargetBlockSize);
+                    SetParameter(_context, Interop.Zstd.ZstdCParameter.ZSTD_c_targetCBlockSize, compressionOptions.TargetBlockSize);
                 }
             }
             catch
@@ -161,6 +162,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Performs a lazy initialization of the native encoder using the default Quality and Window values.
         /// </summary>
+        [MemberNotNull(nameof(_context))]
         internal void InitializeEncoder()
         {
             _context = Interop.Zstd.ZSTD_createCCtx();
@@ -275,7 +277,7 @@ namespace System.IO.Compression
         /// <returns>True if compression was successful; otherwise, false.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            return TryCompress(source, destination, out bytesWritten, ZstandardUtils.Quality_Default, ZstandardUtils.WindowBits_Default);
+            return TryCompress(source, destination, out bytesWritten, ZstandardUtils.Quality_Default, 0);
         }
 
         /// <summary>Attempts to compress the specified data with the specified quality and window size.</summary>
@@ -288,16 +290,6 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> or <paramref name="window"/> is out of the valid range.</exception>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int window)
         {
-            if (quality < ZstandardUtils.Quality_Min || quality > ZstandardUtils.Quality_Max)
-            {
-                throw new ArgumentOutOfRangeException(nameof(quality), string.Format(SR.ZstandardEncoder_InvalidQuality, ZstandardUtils.Quality_Min, ZstandardUtils.Quality_Max));
-            }
-
-            if (window < ZstandardUtils.WindowBits_Min || window > ZstandardUtils.WindowBits_Max)
-            {
-                throw new ArgumentOutOfRangeException(nameof(window), string.Format(SR.ZstandardEncoder_InvalidWindow, ZstandardUtils.WindowBits_Min, ZstandardUtils.WindowBits_Max));
-            }
-
             bytesWritten = 0;
 
             if (source.IsEmpty)
@@ -305,10 +297,22 @@ namespace System.IO.Compression
 
             unsafe
             {
+                using SafeZstdCompressHandle ctx = Interop.Zstd.ZSTD_createCCtx();
+                if (ctx.IsInvalid)
+                {
+                    return false;
+                }
+
+                SetQuality(ctx, quality);
+                if (window != 0)
+                {
+                    SetWindow(ctx, window);
+                }
+
                 fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
                 fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                 {
-                    nuint result = Interop.Zstd.ZSTD_compress((IntPtr)outBytes, (nuint)destination.Length, (IntPtr)inBytes, (nuint)source.Length, quality);
+                    nuint result = Interop.Zstd.ZSTD_compress2(ctx, (IntPtr)outBytes, (nuint)destination.Length, (IntPtr)inBytes, (nuint)source.Length, quality);
 
                     if (ZstandardUtils.IsError(result))
                     {
@@ -385,24 +389,24 @@ namespace System.IO.Compression
             ObjectDisposedException.ThrowIf(_disposed, nameof(ZstandardEncoder));
         }
 
-        internal void SetQuality(int quality)
+        internal static void SetQuality(SafeZstdCompressHandle handle, int quality)
         {
             if (quality < ZstandardUtils.Quality_Min || quality > ZstandardUtils.Quality_Max)
             {
                 throw new ArgumentOutOfRangeException(nameof(quality), string.Format(SR.ZstandardEncoder_InvalidQuality, ZstandardUtils.Quality_Min, ZstandardUtils.Quality_Max));
             }
 
-            SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_compressionLevel, quality);
+            SetParameter(handle, Interop.Zstd.ZstdCParameter.ZSTD_c_compressionLevel, quality);
         }
 
-        internal void SetWindow(int window)
+        internal static void SetWindow(SafeZstdCompressHandle handle, int window)
         {
             if (window < ZstandardUtils.WindowBits_Min || window > ZstandardUtils.WindowBits_Max)
             {
                 throw new ArgumentOutOfRangeException(nameof(window), string.Format(SR.ZstandardEncoder_InvalidWindow, ZstandardUtils.WindowBits_Min, ZstandardUtils.WindowBits_Max));
             }
 
-            SetParameter(Interop.Zstd.ZstdCParameter.ZSTD_c_windowLog, window);
+            SetParameter(handle, Interop.Zstd.ZstdCParameter.ZSTD_c_windowLog, window);
         }
 
         internal void SetDictionary(ZstandardDictionary dictionary)
@@ -413,11 +417,11 @@ namespace System.IO.Compression
             _context!.SetDictionary(dictionary.CompressionDictionary);
         }
 
-        internal void SetParameter(Interop.Zstd.ZstdCParameter parameter, int value)
+        internal static void SetParameter(SafeZstdCompressHandle handle, Interop.Zstd.ZstdCParameter parameter, int value)
         {
-            Debug.Assert(_context != null);
+            Debug.Assert(handle != null);
 
-            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(_context!, parameter, value);
+            nuint result = Interop.Zstd.ZSTD_CCtx_setParameter(handle, parameter, value);
             ZstandardUtils.ThrowIfError(result);
         }
     }
