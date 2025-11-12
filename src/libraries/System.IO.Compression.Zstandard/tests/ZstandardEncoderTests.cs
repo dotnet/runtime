@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Compression
@@ -51,11 +52,13 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentNullException>(() => new ZstandardEncoder(null!, ValidWindow));
         }
 
-        [Fact]
-        public void GetMaxCompressedLength_WithValidInput_ReturnsPositiveValue()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1000)]
+        [InlineData(int.MaxValue)]
+        [InlineData(long.MaxValue / 2)]
+        public void GetMaxCompressedLength_WithValidInput_ReturnsPositiveValue(long inputSize)
         {
-            int inputSize = 1000;
-
             long maxLength = ZstandardEncoder.GetMaxCompressedLength(inputSize);
 
             Assert.True(maxLength > 0);
