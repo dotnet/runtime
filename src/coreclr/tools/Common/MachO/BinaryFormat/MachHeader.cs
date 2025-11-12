@@ -29,6 +29,7 @@ internal struct MachHeader
     public uint SizeOfCommands { get => _magic.ConvertValue(_sizeOfCommands); set => _sizeOfCommands = _magic.ConvertValue(value); }
     public bool Is64Bit => _magic is MachMagic.MachHeader64CurrentEndian or MachMagic.MachHeader64OppositeEndian;
     public MachFileType FileType => (MachFileType)_magic.ConvertValue((uint)_fileType);
+    public uint CpuType => _magic.ConvertValue(_cpuType);
 
     public uint ConvertValue(uint value) => _magic.ConvertValue(value);
     public ulong ConvertValue(ulong value) => _magic.ConvertValue(value);

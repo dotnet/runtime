@@ -17,51 +17,29 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
     public class MachOImageReader : IBinaryImageReader
     {
         private readonly byte[] _image;
+        private readonly MachHeader _header;
         private readonly Machine _machine;
-        private readonly ulong _imageBase;
         private int? _rtrHeaderRva;
+
+        public Machine Machine => _machine;
+
+        public OperatingSystem OperatingSystem => OperatingSystem.Apple;
+
+        public bool HasMetadata => false;
+
+        public ulong ImageBase => 0;
 
         public MachOImageReader(byte[] image)
         {
             _image = image;
 
-            // Determine machine type from MachO CPU type
-            _machine = DetermineMachineType();
-            _imageBase = 0; // MachO typically uses 0 as base for .dylib files
-        }
-
-        private Machine DetermineMachineType()
-        {
-            // For now, we'll need to read the MachO header directly from the image
-            // to determine the CPU type since MachObjectFile doesn't expose this
-            unsafe
-            {
-                fixed (byte* imagePtr = _image)
-                {
-                    uint magic = BinaryPrimitives.ReadUInt32LittleEndian(new ReadOnlySpan<byte>(_image, 0, 4));
-
-                    // Check if this is a 64-bit Mach-O
-                    bool is64Bit = (MachMagic)magic is MachMagic.MachHeader64CurrentEndian or MachMagic.MachHeader64OppositeEndian;
-
-                    if (!is64Bit)
-                    {
+            // Read the MachO header
+            Read(0, out _header);
+            if (!_header.Is64Bit)
                         throw new BadImageFormatException("Only 64-bit Mach-O files are supported");
-                    }
 
-                    // Read CPU type at offset 4
-                    uint cpuType = BinaryPrimitives.ReadUInt32LittleEndian(new ReadOnlySpan<byte>(_image, 4, 4));
-
-                    // https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/osfmk/mach/machine.h
-                    const uint CPU_TYPE_ARM64 = 0x0100000C;
-                    const uint CPU_TYPE_X86_64 = 0x01000007;
-                    return cpuType switch
-                    {
-                        CPU_TYPE_ARM64 => Machine.Arm64,
-                        CPU_TYPE_X86_64 => Machine.Amd64,
-                        _ => throw new NotSupportedException($"Unsupported MachO CPU type: {cpuType:X8}")
-                    };
-                }
-            }
+            // Determine machine type from CPU type
+            _machine = GetMachineType(_header.CpuType);
         }
 
         public ImmutableArray<byte> GetEntireImage()
@@ -71,11 +49,11 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
 
         public int GetOffset(int rva)
         {
-            if (TryGetContainingSegment((ulong)rva, out Segment64LoadCommand segment, out MachHeader header))
+            if (TryGetContainingSegment((ulong)rva, out Segment64LoadCommand segment))
             {
                 // Calculate file offset from segment base and RVA
-                ulong offsetWithinSegment = (ulong)rva - segment.GetVMAddress(header);
-                ulong fileOffset = segment.GetFileOffset(header) + offsetWithinSegment;
+                ulong offsetWithinSegment = (ulong)rva - segment.GetVMAddress(_header);
+                ulong fileOffset = segment.GetFileOffset(_header) + offsetWithinSegment;
                 return (int)fileOffset;
             }
             else
@@ -106,16 +84,6 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
             return 0;
         }
 
-        public Machine Machine => _machine;
-
-        public OperatingSystem OperatingSystem => OperatingSystem.Apple;
-
-        public bool HasMetadata => false; // Mach-O composite R2R images don't have embedded ECMA metadata
-
-        public ulong ImageBase => _imageBase;
-
-        public bool IsILLibrary => false;
-
         public void DumpImageInformation(TextWriter writer)
         {
             // TODO: Print information from the Mach-O header
@@ -125,6 +93,19 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
         {
             // TODO: Get all the sections
             return [];
+        }
+
+        private static Machine GetMachineType(uint cpuType)
+        {
+            // https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/osfmk/mach/machine.h
+            const uint CPU_TYPE_ARM64 = 0x0100000C;
+            const uint CPU_TYPE_X86_64 = 0x01000007;
+            return cpuType switch
+            {
+                CPU_TYPE_ARM64 => Machine.Arm64,
+                CPU_TYPE_X86_64 => Machine.Amd64,
+                _ => throw new NotSupportedException($"Unsupported MachO CPU type: {cpuType:X8}")
+            };
         }
 
         /// <summary>
@@ -137,26 +118,23 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
         {
             symbolValue = 0;
 
-            // Read the header
-            Read(0, out MachHeader header);
-
             // Find the symbol table load command
             long commandsPtr = sizeof(MachHeader);
             SymbolTableLoadCommand symtabCommand = default;
             bool foundSymtab = false;
 
-            for (int i = 0; i < header.NumberOfCommands; i++)
+            for (int i = 0; i < _header.NumberOfCommands; i++)
             {
                 Read(commandsPtr, out LoadCommand loadCommand);
 
-                if (loadCommand.GetCommandType(header) == MachLoadCommandType.SymbolTable)
+                if (loadCommand.GetCommandType(_header) == MachLoadCommandType.SymbolTable)
                 {
                     Read(commandsPtr, out symtabCommand);
                     foundSymtab = true;
                     break;
                 }
 
-                commandsPtr += loadCommand.GetCommandSize(header);
+                commandsPtr += loadCommand.GetCommandSize(_header);
             }
 
             if (!foundSymtab || symtabCommand.IsDefault)
@@ -164,10 +142,10 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
                 return false;
             }
 
-            uint symbolTableOffset = symtabCommand.GetSymbolTableOffset(header);
-            uint symbolsCount = symtabCommand.GetSymbolsCount(header);
-            uint stringTableOffset = symtabCommand.GetStringTableOffset(header);
-            uint stringTableSize = symtabCommand.GetStringTableSize(header);
+            uint symbolTableOffset = symtabCommand.GetSymbolTableOffset(_header);
+            uint symbolsCount = symtabCommand.GetSymbolsCount(_header);
+            uint stringTableOffset = symtabCommand.GetStringTableOffset(_header);
+            uint stringTableSize = symtabCommand.GetStringTableSize(_header);
 
             for (uint i = 0; i < symbolsCount; i++)
             {
@@ -176,19 +154,18 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
                 // Read the symbol table entry
                 Read(symOffset, out NList64 symbol);
 
-                uint strIndex = symbol.GetStringTableIndex(header);
+                uint strIndex = symbol.GetStringTableIndex(_header);
                 if (strIndex >= stringTableSize)
                 {
                     continue;
                 }
-
                 // Read symbol name from string table
                 string name = ReadCString(stringTableOffset + strIndex, stringTableSize - strIndex);
 
                 // Symbol names in Mach-O can have a leading underscore
                 if (name == symbolName || (name.Length > 0 && name[0] == '_' && name.Substring(1) == symbolName))
                 {
-                    symbolValue = symbol.GetValue(header);
+                    symbolValue = symbol.GetValue(_header);
                     return true;
                 }
             }
@@ -201,29 +178,25 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
         /// </summary>
         /// <param name="vmAddress">The virtual memory address to find.</param>
         /// <param name="segment">The segment containing the VM address if found.</param>
-        /// <param name="header">The Mach-O header (output parameter).</param>
         /// <returns>True if a containing segment was found, false otherwise.</returns>
-        private unsafe bool TryGetContainingSegment(ulong vmAddress, out Segment64LoadCommand segment, out MachHeader header)
+        private unsafe bool TryGetContainingSegment(ulong vmAddress, out Segment64LoadCommand segment)
         {
             segment = default;
-
-            // Read the header
-            Read(0, out header);
 
             // Iterate through all load commands to find segments
             long commandsPtr = sizeof(MachHeader);
 
-            for (int i = 0; i < header.NumberOfCommands; i++)
+            for (int i = 0; i < _header.NumberOfCommands; i++)
             {
                 Read(commandsPtr, out LoadCommand loadCommand);
 
-                if (loadCommand.GetCommandType(header) == MachLoadCommandType.Segment64)
+                if (loadCommand.GetCommandType(_header) == MachLoadCommandType.Segment64)
                 {
                     Read(commandsPtr, out Segment64LoadCommand seg);
 
                     // Check if the VM address falls within this segment
-                    ulong segmentVMAddr = seg.GetVMAddress(header);
-                    ulong segmentVMSize = seg.GetVMSize(header);
+                    ulong segmentVMAddr = seg.GetVMAddress(_header);
+                    ulong segmentVMSize = seg.GetVMSize(_header);
                     if (vmAddress >= segmentVMAddr && vmAddress < segmentVMAddr + segmentVMSize)
                     {
                         segment = seg;
@@ -231,7 +204,7 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
                     }
                 }
 
-                commandsPtr += loadCommand.GetCommandSize(header);
+                commandsPtr += loadCommand.GetCommandSize(_header);
             }
 
             return false;
