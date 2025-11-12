@@ -290,6 +290,25 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> or <paramref name="window"/> is out of the valid range.</exception>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int window)
         {
+            return TryCompressCore(source, destination, out bytesWritten, quality, window, null);
+        }
+
+        /// <summary>Attempts to compress the specified data with the specified dictionary and window size.</summary>
+        /// <param name="source">The data to compress.</param>
+        /// <param name="destination">The buffer to write the compressed data to.</param>
+        /// <param name="bytesWritten">The number of bytes written to the destination.</param>
+        /// <param name="dictionary">The compression dictionary to use.</param>
+        /// <param name="window">The window size for compression.</param>
+        /// <returns>True if compression was successful; otherwise, false.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="window"/> is out of the valid range.</exception>
+        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary, int window)
+        {
+            return TryCompressCore(source, destination, out bytesWritten, 0, window, dictionary);
+        }
+
+        internal static bool TryCompressCore(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int window, ZstandardDictionary? dictionary)
+        {
             bytesWritten = 0;
 
             if (source.IsEmpty)
@@ -303,7 +322,15 @@ namespace System.IO.Compression
                     return false;
                 }
 
-                SetQuality(ctx, quality);
+                if (dictionary != null)
+                {
+                    ctx.SetDictionary(dictionary.CompressionDictionary);
+                }
+                else
+                {
+                    SetQuality(ctx, quality);
+                }
+
                 if (window != 0)
                 {
                     SetWindow(ctx, window);
@@ -323,21 +350,6 @@ namespace System.IO.Compression
                     return true;
                 }
             }
-        }
-
-        /// <summary>Attempts to compress the specified data with the specified dictionary and window size.</summary>
-        /// <param name="source">The data to compress.</param>
-        /// <param name="destination">The buffer to write the compressed data to.</param>
-        /// <param name="bytesWritten">The number of bytes written to the destination.</param>
-        /// <param name="dictionary">The compression dictionary to use.</param>
-        /// <param name="window">The window size for compression.</param>
-        /// <returns>True if compression was successful; otherwise, false.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="window"/> is out of the valid range.</exception>
-        public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary, int window)
-        {
-            using ZstandardEncoder encoder = new ZstandardEncoder(dictionary, window);
-            return encoder.Compress(source, destination, out _, out bytesWritten, isFinalBlock: true) == OperationStatus.Done;
         }
 
         /// <summary>Resets the encoder session, allowing reuse for the next compression operation.</summary>
