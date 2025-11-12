@@ -105,6 +105,8 @@ namespace System.Runtime.InteropServices
 
         private static void RegisterGCCallbacks()
         {
+            FindReferenceTargetsCallback.EnsureInitialized();
+
             unsafe
             {
                 delegate* unmanaged<int, void> gcStartCallback = &GCStartCollection;
@@ -275,6 +277,8 @@ namespace System.Runtime.InteropServices
             Vftbl.QueryInterface = &IFindReferenceTargetsCallback_QueryInterface;
             Vftbl.FoundTrackerTarget = &IFindReferenceTargetsCallback_FoundTrackerTarget;
         }
+
+        internal static void EnsureInitialized() { /* empty method to trigger static constructor */ }
     }
 
     // This is used during a GC callback so it needs to be free of any managed allocations.
