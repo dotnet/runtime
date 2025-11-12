@@ -12,7 +12,7 @@
     <DisableBuildCompression>true</DisableBuildCompression>
     <PublishTrimmed>false</PublishTrimmed>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
-    <BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' == 'false'">true</BlazorWebAssemblyLoadAllGlobalizationData>
+    <BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' == 'false' and '$(WasmIncludeFullIcuData)' == 'true'">true</BlazorWebAssemblyLoadAllGlobalizationData>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
 
     <!-- set this when provisioning emsdk on CI -->
