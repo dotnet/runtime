@@ -1371,6 +1371,7 @@ void EEJitManager::SetCpuInfo()
     }
 #elif defined(TARGET_ARM64)
     CPUCompileFlags.Set(InstructionSet_VectorT128);
+    CPUCompileFlags.Set(InstructionSet_VectorT);
 
     if (g_pConfig->EnableHWIntrinsic())
     {
