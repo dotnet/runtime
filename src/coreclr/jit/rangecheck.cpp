@@ -1155,8 +1155,8 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     {
         assertions = BitVecOps::MakeCopy(m_pCompiler->apTraits, block->bbAssertionIn);
 
-        // bbAssertionIn is a bit conservative and will not include inter-block assertions.
-        // e.g. created by GT_BOUNDS_CHECK nodes prior the 'op' in the current block.
+        // bbAssertionIn is a bit conservative and will not include intra-block assertions.
+        // e.g. created by GT_BOUNDS_CHECK nodes prior to the 'op' in the current block.
         // For that, we walk the trees in the block until we find "op" and collect assertions
         // along the way. It doesn't seem to be profitable for anything other than bounds checks
         // (ArrBnds assertions), so we limit the search to only those blocks that may have bounds
@@ -1220,7 +1220,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
                     break;
                 }
             }
-            assert(treeFound);
+            assert(treeFound && "Failed to find op in block statements");
         }
     }
 
