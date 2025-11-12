@@ -413,10 +413,25 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <_ExtraExecutableListFiles Include="@(_MergedPayloadFiles)"
+            Condition="$([System.String]::Copy('%(Identity)').ToLower().EndsWith('helix-extra-executables.list'))" />
+      <_ExtraExecutables Remove="@(_ExtraExecutables)" />
+    </ItemGroup>
+    <ReadLinesFromFile File="%(_ExtraExecutableListFiles.Identity)" Condition="'@(_ExtraExecutableListFiles)' != ''">
+      <Output TaskParameter="Lines" ItemName="_ExtraExecutables" />
+    </ReadLinesFromFile>
+    <ItemGroup>
+      <_ExtraExecutables Remove="@(_ExtraExecutables)" Condition="'%(Identity)' == ''" />
+    </ItemGroup>
+
+    <ItemGroup>
       <!-- We need to ensure that the test run script is marked as executable. -->
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
+
+      <!-- Make extra executables (from helix-extra-executables.list files) executable -->
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true' and Exists('$(TestBinDir)%(Identity)')" Include="@(_ExtraExecutables->'chmod +x %(Identity)')" />
 
       <HelixCommandLines Include="$(_WorkaroundForNuGetMigrations)" />
 
@@ -458,6 +473,7 @@
     </ItemGroup>
 
     <Copy UseHardlinksIfPossible="true"  SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
+
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
   </Target>
 

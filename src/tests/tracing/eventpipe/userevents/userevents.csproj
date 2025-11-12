@@ -27,9 +27,16 @@
       <_DestDir>$(TargetDir)</_DestDir>
       <_DestDir Condition="'$(_DestDir)' == ''">$(OutputPath)</_DestDir>
       <_RecordTraceSource>$(NuGetPackageRoot)microsoft.onecollect.recordtrace/$(MicrosoftOneCollectRecordTraceVersion)/runtimes/linux-$(TargetArchitecture)/native/record-trace</_RecordTraceSource>
+      <_RecordTraceRelative Condition="$(BuildProjectRelativeDir) != ''">$(BuildProjectRelativeDir)record-trace</_RecordTraceRelative>
+      <_RecordTraceRelative Condition="'$(_RecordTraceRelative)' == ''">$([System.IO.Path]::GetRelativePath('$(TestBinDir)', '$(_DestDir)record-trace'))</_RecordTraceRelative>
     </PropertyGroup>
 
     <Copy SourceFiles="$(_RecordTraceSource)" DestinationFiles="$(_DestDir)record-trace" SkipUnchangedFiles="true" />
+
+    <!-- For local testing, ensure it has execute permissions -->
     <Exec Command="chmod +x '$(_DestDir)record-trace'" Condition="Exists('$(_DestDir)record-trace')" />
+
+    <!-- For Helix builds, artifacts copied over have their permissions reset. Add the executable to a list for helix to reapply execute permissions -->
+    <WriteLinesToFile File="$(_DestDir)helix-extra-executables.list" Lines="$(_RecordTraceRelative)" Overwrite="true" />
   </Target>
 </Project>
