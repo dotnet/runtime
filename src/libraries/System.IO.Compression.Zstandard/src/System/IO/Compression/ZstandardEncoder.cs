@@ -304,6 +304,7 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="window"/> is out of the valid range.</exception>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary, int window)
         {
+            ArgumentNullException.ThrowIfNull(dictionary);
             return TryCompressCore(source, destination, out bytesWritten, 0, window, dictionary);
         }
 
