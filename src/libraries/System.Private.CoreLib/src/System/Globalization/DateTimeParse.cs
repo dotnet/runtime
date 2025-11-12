@@ -6083,7 +6083,6 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
     // This will store the result of the parsing.  And it will be eventually
     // used to construct a DateTime instance.
     //
-    [StructLayout(LayoutKind.Auto)]
     internal ref struct DateTimeResult
     {
         internal int Year;
