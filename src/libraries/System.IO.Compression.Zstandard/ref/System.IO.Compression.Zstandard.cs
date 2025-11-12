@@ -50,7 +50,7 @@ namespace System.IO.Compression
         public ZstandardEncoder() { }
         public ZstandardEncoder(int quality) { }
         public ZstandardEncoder(int quality, int window) { }
-        public ZstandardEncoder(System.IO.Compression.ZstandardCompressionOptions options) { }
+        public ZstandardEncoder(System.IO.Compression.ZstandardCompressionOptions compressionOptions) { }
         public ZstandardEncoder(System.IO.Compression.ZstandardDictionary dictionary) { }
         public ZstandardEncoder(System.IO.Compression.ZstandardDictionary dictionary, int window) { }
         public System.Buffers.OperationStatus Compress(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) { throw null; }
