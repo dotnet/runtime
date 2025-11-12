@@ -29,6 +29,7 @@ internal struct Segment64LoadCommand
     public ulong GetFileOffset(MachHeader header) => header.ConvertValue(_fileOffset);
     public ulong GetFileSize(MachHeader header) => header.ConvertValue(_fileSize);
     public void SetFileSize(ulong value, MachHeader header) => _fileSize = header.ConvertValue(value);
+    public ulong GetVMAddress(MachHeader header) => header.ConvertValue(_address);
     public void SetVMSize(ulong value, MachHeader header) => _size = header.ConvertValue(value);
     public ulong GetVMSize(MachHeader header) => header.ConvertValue(_size);
     public uint GetSectionsCount(MachHeader header) => header.ConvertValue(_numberOfSections);
