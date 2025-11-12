@@ -55,22 +55,22 @@ namespace TestCastRightShift
                 fail = true;
             }
 
-            if (CastASR7_sbyte_int(-127) == 0)
+            if (CastASR7_sbyte_int(-127) != -1)
             {
                 fail = true;
             }
 
-            if (CastASR8_sbyte_int(-127) != 0)
+            if (CastASR8_sbyte_int(-127) != -1)
             {
                 fail = true;
             }
 
-            if (CastASR7_sbyte_long(-127) == 0)
+            if (CastASR7_sbyte_long(-127) != -1)
             {
                 fail = true;
             }
 
-            if (CastASR8_sbyte_long(-127) != 0)
+            if (CastASR8_sbyte_long(-127) != -1)
             {
                 fail = true;
             }
@@ -115,22 +115,22 @@ namespace TestCastRightShift
                 fail = true;
             }
 
-            if (CastASR15_short_int(-1) == 0)
+            if (CastASR15_short_int(-1) != -1)
             {
                 fail = true;
             }
 
-            if (CastASR16_short_int(-1) != 0)
+            if (CastASR16_short_int(-1) != -1)
             {
                 fail = true;
             }
 
-            if (CastASR15_short_long(-1) == 0)
+            if (CastASR15_short_long(-1) != -1)
             {
                 fail = true;
             }
 
-            if (CastASR16_short_long(-1) != 0)
+            if (CastASR16_short_long(-1) != -1)
             {
                 fail = true;
             }
@@ -216,22 +216,23 @@ namespace TestCastRightShift
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastASR7_sbyte_int(sbyte x)
+        static int CastASR7_sbyte_int(int x)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #7
-            return x >> 7;
+            return (sbyte)x >> 7;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastASR8_sbyte_int(sbyte x)
+        static int CastASR8_sbyte_int(int x)
         {
-            //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
-            return x >> 8;
+            //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #8
+            return (sbyte)x >> 8;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastASR7_sbyte_long(sbyte x)
+        static long CastASR7_sbyte_long(int x)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #7
@@ -242,7 +243,8 @@ namespace TestCastRightShift
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long CastASR8_sbyte_long(sbyte x)
         {
-            //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
+            //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #8
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
             return x >> 8;
         }
@@ -323,8 +325,9 @@ namespace TestCastRightShift
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int CastASR16_short_int(short x)
         {
-            //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
-            return x >> 16;
+            //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #16
+            return (short)x >> 16;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -339,7 +342,8 @@ namespace TestCastRightShift
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long CastASR16_short_long(short x)
         {
-            //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
+            //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
+            //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #16
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
             return x >> 16;
         }

@@ -8445,7 +8445,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
             GenTreeIntCon* cns  = op2->AsIntCon();
 
             if (!cast->isContained() && !cast->IsRegOptional() && !cast->gtOverflow() &&
-                cast->CastOp()->TypeIs(TYP_INT))
+                cast->CastOp()->TypeIs(TYP_INT) && varTypeIsUnsigned(cast->CastToType()))
             {
                 unsigned srcBits = genTypeSize(cast->CastToType()) * BITS_PER_BYTE;
                 if (cns->IconValue() >= srcBits)
