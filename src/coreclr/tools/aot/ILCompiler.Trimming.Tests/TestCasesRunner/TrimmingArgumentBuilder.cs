@@ -163,6 +163,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
             {
                 Options.FeatureSwitches.Add(values[0], bool.Parse(values[1]));
             }
+            if (flag == "--runtimeknob")
+            {
+                Options.RuntimeKnobs.Add(values[0], values[1]);
+            }
             else if (flag == "--singlewarn")
             {
                 Options.SingleWarn = true;

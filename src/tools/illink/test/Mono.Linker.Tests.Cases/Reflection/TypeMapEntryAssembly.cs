@@ -20,6 +20,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	[KeptTypeInAssembly("TypeMapEntryAssemblyLib.dll", typeof(TypeMapEntryAssemblyGroup))]
 	[KeptTypeInAssembly("TypeMapEntryAssemblyLib.dll", typeof(EntryType1))]
 	[KeptTypeInAssembly("TypeMapEntryAssemblyLib.dll", typeof(EntryType2))]
+	[KeptTypeInAssembly("TypeMapEntryAssemblyLib.dll", typeof(EntrySource1))]
+	[KeptTypeInAssembly("TypeMapEntryAssemblyLib.dll", typeof(EntrySource2))]
 	[KeptTypeInAssembly("TypeMapEntryAssemblyLib.dll", typeof(EntryProxy1))]
 	[KeptTypeInAssembly("TypeMapEntryAssemblyLib.dll", typeof(EntryProxy2))]
 
@@ -36,6 +38,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			Console.WriteLine(externalMap);
 			Console.WriteLine(proxyMap);
+			_ = new EntrySource1();
+			_ = new EntrySource2();
 		}
 	}
 }

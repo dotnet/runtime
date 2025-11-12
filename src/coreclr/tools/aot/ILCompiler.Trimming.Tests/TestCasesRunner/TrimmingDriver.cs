@@ -147,7 +147,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
             InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy, logger);
 
             TypeMapManager typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.Empty);
-            if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+            if (options.RuntimeKnobs.TryGetValue("System.Runtime.InteropServices.TypeMappingEntryAssembly", out string? typeMappingEntryAssemblyName)
+                && typeSystemContext.ResolveAssembly(AssemblyNameInfo.Parse(typeMappingEntryAssemblyName), throwIfNotFound: true) is EcmaAssembly typeMapEntryAssembly)
+            {
+                typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(typeMapEntryAssembly, typeSystemContext));
+            }
+            else if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
             {
                 // Pass null for typeMappingEntryAssembly to use default entry assembly behavior in tests
                 typeMapManager = new UsageBasedTypeMapManager(TypeMapMetadata.CreateFromAssembly(entryAssembly, typeSystemContext));
