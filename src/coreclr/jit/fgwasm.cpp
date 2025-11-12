@@ -131,7 +131,7 @@ FlowGraphDfsTree* Compiler::fgWasmDfs()
     for (BasicBlock* const block : Blocks())
     {
         bool onlyHasEHPreds = true;
-        bool hasPreds = false;
+        bool hasPreds       = false;
         for (BasicBlock* const pred : block->PredBlocks())
         {
             hasPreds = true;
@@ -436,7 +436,7 @@ public:
         WasmFindSccsCore(m_comp, m_dfsTree, nestedBlocks, m_traits, nestedSccs, postOrder, nestedCount);
 
         const unsigned nNested = nestedSccs.Height();
-        
+
         if (nNested == 0)
         {
             return;
