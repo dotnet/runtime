@@ -5999,7 +5999,6 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
     //
     // The buffer to store temporary parsing information.
     //
-    [StructLayout(LayoutKind.Auto)]
     internal struct DateTimeRawInfo
     {
         private InlineArray3<int> num;
@@ -6008,8 +6007,8 @@ DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,   DS.ERROR,
         internal int year;
         internal int dayOfWeek;
         internal int era;
-        internal DateTimeParse.TM timeMark;
         internal double fraction;
+        internal DateTimeParse.TM timeMark;
         internal bool hasSameDateAndTimeSeparators;
 
         internal void Init()
