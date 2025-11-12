@@ -1408,54 +1408,20 @@ DONE_CALL:
                 assert(opts.OptEnabled(CLFLG_INLINING));
                 assert(!isFatPointerCandidate); // We should not try to inline calli.
 
-                // Make the call its own tree (spill the stack if needed).
-                // Do not consume the debug info here. This is particularly
-                // important if we give up on the inline, in which case the
-                // call will typically end up in the statement that contains
-                // the GT_RET_EXPR that we leave on the stack.
-                impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI, false);
-
-                // TODO: Still using the widened type.
-                GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(call->AsCall(), genActualType(callRetTyp));
-
-                // Link the retExpr to the call so if necessary we can manipulate it later.
-                if (origCall->IsGuardedDevirtualizationCandidate())
+                if (isGuardedDevirtualizationCandidate)
                 {
-                    for (uint8_t i = 0; i < origCall->GetInlineCandidatesCount(); i++)
-                    {
-                        origCall->GetGDVCandidateInfo(i)->retExpr = retExpr;
-                    }
-                }
-                else
-                {
-                    origCall->GetSingleInlineCandidateInfo()->retExpr = retExpr;
-                }
-
-                // Propagate retExpr as the placeholder for the call.
-                call = retExpr;
-
-                if (origCall->IsAsyncAndAlwaysSavesAndRestoresExecutionContext())
-                {
-                    // Async calls that require save/restore of
-                    // ExecutionContext need to be top most so that we can
-                    // insert try-finally around them. We can inline these, so
-                    // we need to ensure that the RET_EXPR is findable when we
-                    // later expand this.
-
-                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG("async"));
-                    LclVarDsc* varDsc    = lvaGetDesc(resultLcl);
+                    unsigned   lclNum = lvaGrabTemp(false DEBUGARG("GDV candidate result"));
+                    LclVarDsc* varDsc = lvaGetDesc(lclNum);
                     // Keep the information about small typedness to avoid
                     // inserting unnecessary casts around normalization.
-                    if (varTypeIsSmall(origCall->gtReturnType))
+                    if (call->IsCall() && varTypeIsSmall(call->AsCall()->gtReturnType))
                     {
-                        assert(origCall->NormalizesSmallTypesOnReturn());
-                        varDsc->lvType = origCall->gtReturnType;
+                        assert(call->AsCall()->NormalizesSmallTypesOnReturn());
+                        varDsc->lvType = call->AsCall()->gtReturnType;
                     }
 
-                    impStoreToTemp(resultLcl, call, CHECK_SPILL_ALL);
-                    // impStoreToTemp can change src arg list and return type for call that returns struct.
-                    var_types type = genActualType(lvaGetDesc(resultLcl)->TypeGet());
-                    call           = gtNewLclvNode(resultLcl, type);
+                    impStoreToTemp(lclNum, call, CHECK_SPILL_ALL, nullptr, impCurStmtDI);
+                    call = gtNewLclvNode(lclNum, genActualType(callRetTyp));
                 }
             }
             else
@@ -3876,11 +3842,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     op1     = op1->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
                     retNode = op1;
                 }
-                else if (op1->OperIs(GT_CALL, GT_RET_EXPR))
+                else if (op1->OperIs(GT_CALL))
                 {
                     // Skip roundtrip "handle -> RuntimeType -> handle" for
                     // RuntimeTypeHandle.ToIntPtr(typeof(T).TypeHandle)
-                    GenTreeCall* call = op1->IsCall() ? op1->AsCall() : op1->AsRetExpr()->gtInlineCandidate;
+                    GenTreeCall* call = op1->AsCall();
                     if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_RuntimeType_get_TypeHandle)
                     {
                         // Check that the arg is CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE helper call
@@ -3888,11 +3854,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         if (arg->IsHelperCall() && gtIsTypeHandleToRuntimeTypeHelper(arg->AsCall()))
                         {
                             impPopStack();
-                            if (op1->OperIs(GT_RET_EXPR))
-                            {
-                                // Bash the RET_EXPR's call to no-op since it's unused now
-                                op1->AsRetExpr()->gtInlineCandidate->gtBashToNOP();
-                            }
                             // Skip roundtrip and return the type handle directly
                             retNode = arg->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
                         }
@@ -4128,9 +4089,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
             case NI_System_Threading_Thread_get_ManagedThreadId:
             {
-                if (impStackTop().val->OperIs(GT_RET_EXPR))
+                if (impStackTop().val->IsCall())
                 {
-                    GenTreeCall* call = impStackTop().val->AsRetExpr()->gtInlineCandidate->AsCall();
+                    GenTreeCall* call = impStackTop().val->AsCall();
                     if (call->IsSpecialIntrinsic())
                     {
                         if (lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Threading_Thread_get_CurrentThread)
@@ -6174,7 +6135,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 else
                 {
                     uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                    result        = gtNewIconNode(BitOperations::RotateLeft(cns1, cns2), baseType);
+                    result        = gtNewIconNode((int32_t)BitOperations::RotateLeft(cns1, cns2), baseType);
                 }
                 break;
             }
@@ -6223,7 +6184,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
                 else
                 {
                     uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                    result        = gtNewIconNode(BitOperations::RotateRight(cns1, cns2), baseType);
+                    result        = gtNewIconNode((int32_t)BitOperations::RotateRight(cns1, cns2), baseType);
                 }
                 break;
             }
@@ -6926,77 +6887,8 @@ void Compiler::impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// SpillRetExprHelper: iterate through arguments tree and spill ret_expr to local variables.
-//
-class SpillRetExprHelper
-{
-public:
-    SpillRetExprHelper(Compiler* comp)
-        : comp(comp)
-    {
-    }
-
-    void StoreRetExprResultsInArgs(GenTreeCall* call)
-    {
-        for (CallArg& arg : call->gtArgs.Args())
-        {
-            comp->fgWalkTreePre(&arg.EarlyNodeRef(), SpillRetExprVisitor, this);
-        }
-    }
-
-private:
-    static Compiler::fgWalkResult SpillRetExprVisitor(GenTree** pTree, Compiler::fgWalkData* fgWalkPre)
-    {
-        assert((pTree != nullptr) && (*pTree != nullptr));
-        GenTree* tree = *pTree;
-        if ((tree->gtFlags & GTF_CALL) == 0)
-        {
-            // Trees with ret_expr are marked as GTF_CALL.
-            return Compiler::WALK_SKIP_SUBTREES;
-        }
-        if (tree->OperIs(GT_RET_EXPR))
-        {
-            SpillRetExprHelper* walker = static_cast<SpillRetExprHelper*>(fgWalkPre->pCallbackData);
-            walker->StoreRetExprAsLocalVar(pTree);
-        }
-        return Compiler::WALK_CONTINUE;
-    }
-
-    void StoreRetExprAsLocalVar(GenTree** pRetExpr)
-    {
-        GenTree* retExpr = *pRetExpr;
-        assert(retExpr->OperIs(GT_RET_EXPR));
-        const unsigned tmp = comp->lvaGrabTemp(true DEBUGARG("spilling ret_expr"));
-        JITDUMP("Storing return expression [%06u] to a local var V%02u.\n", comp->dspTreeID(retExpr), tmp);
-        comp->impStoreToTemp(tmp, retExpr, Compiler::CHECK_SPILL_NONE);
-        *pRetExpr = comp->gtNewLclvNode(tmp, retExpr->TypeGet());
-
-        assert(comp->lvaTable[tmp].lvSingleDef == 0);
-        comp->lvaTable[tmp].lvSingleDef = 1;
-        JITDUMP("Marked V%02u as a single def temp\n", tmp);
-        if (retExpr->TypeIs(TYP_REF))
-        {
-            bool                 isExact   = false;
-            bool                 isNonNull = false;
-            CORINFO_CLASS_HANDLE retClsHnd = comp->gtGetClassHandle(retExpr, &isExact, &isNonNull);
-            if (retClsHnd != nullptr)
-            {
-                comp->lvaSetClass(tmp, retClsHnd, isExact);
-            }
-            else
-            {
-                JITDUMP("Could not deduce class from [%06u]", comp->dspTreeID(retExpr));
-            }
-        }
-    }
-
-private:
-    Compiler* comp;
-};
-
-//------------------------------------------------------------------------
 // addFatPointerCandidate: mark the call and the method, that they have a fat pointer candidate.
-//                         Spill ret_expr in the call node, because they can't be cloned.
+//                         Spill inline candidates in the call node, because they shouldn't be cloned.
 //
 // Arguments:
 //    call - fat calli candidate
@@ -7006,8 +6898,6 @@ void Compiler::addFatPointerCandidate(GenTreeCall* call)
     JITDUMP("Marking call [%06u] as fat pointer candidate\n", dspTreeID(call));
     setMethodHasFatPointer();
     call->SetFatPointerCandidate();
-    SpillRetExprHelper helper(this);
-    helper.StoreRetExprResultsInArgs(call);
 }
 
 //------------------------------------------------------------------------
@@ -7866,11 +7756,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*           call,
             classHandle != NO_CLASS_HANDLE ? "class" : "method",
             classHandle != NO_CLASS_HANDLE ? eeGetClassName(classHandle) : eeGetMethodFullName(methodHandle));
     setMethodHasGuardedDevirtualization();
-
-    // Spill off any GT_RET_EXPR subtrees so we can clone the call.
-    //
-    SpillRetExprHelper helper(this);
-    helper.StoreRetExprResultsInArgs(call);
 
     // Gather some information for later. Note we actually allocate InlineCandidateInfo
     // here, as the devirtualized half of this call will likely become an inline candidate.
@@ -9821,7 +9706,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         pInfo->ilCallerHandle                 = pParam->pThis->info.compMethodHnd;
         pInfo->clsHandle                      = clsHandle;
         pInfo->exactContextHandle             = pParam->exactContextHnd;
-        pInfo->retExpr                        = nullptr;
+        pInfo->result.substExpr               = nullptr;
+        pInfo->result.substBB                 = nullptr;
         pInfo->preexistingSpillTemp           = BAD_VAR_NUM;
         pInfo->clsAttr                        = clsAttr;
         pInfo->methAttr                       = pParam->methAttr;

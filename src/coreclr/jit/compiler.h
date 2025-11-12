@@ -2542,6 +2542,7 @@ class Compiler
     friend class MorphCopyBlockHelper;
     friend class SharedTempsScope;
     friend class CallArgs;
+    friend class InlineAndDevirtualizeWalker;
     friend class IndirectCallTransformer;
     friend class ProfileSynthesis;
     friend class LocalsUseVisitor;
@@ -3457,7 +3458,6 @@ public:
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout = nullptr);
-    GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
     GenTreeFieldAddr* gtNewFieldAddrNode(var_types            type,
                                          CORINFO_FIELD_HANDLE fldHnd,
@@ -3669,7 +3669,7 @@ public:
                                    bool         ignoreRoot       = false);
 
     bool gtSplitTree(
-        BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse, bool early = false);
+        BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse, bool includeOperands = true, bool early = false);
 
     bool gtStoreDefinesField(
         LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFieldStoreSize);
@@ -5138,7 +5138,7 @@ private:
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
-    void impInlineRecordArgInfo(InlineInfo* pInlineInfo, CallArg* arg, InlArgInfo* argInfo, InlineResult* inlineResult);
+    void impInlineRecordArgInfo(InlineInfo* pInlineInfo, InlArgInfo* argInfo, CallArg* arg, InlineResult* inlineResult);
 
     void impInlineInitVars(InlineInfo* pInlineInfo);
 
@@ -5531,6 +5531,7 @@ public:
     BasicBlock* fgSplitBlockAtBeginning(BasicBlock* curr);
     BasicBlock* fgSplitBlockAtEnd(BasicBlock* curr);
     BasicBlock* fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt);
+    BasicBlock* fgSplitBlockBeforeStatement(BasicBlock* curr, Statement* stmt);
     BasicBlock* fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node); // for LIR
     BasicBlock* fgSplitEdge(BasicBlock* curr, BasicBlock* succ);
     BasicBlock* fgSplitBlockBeforeTree(BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse);
@@ -6496,6 +6497,9 @@ public:
 #endif
 
 public:
+    //                  Create a new temporary variable to hold the result of *ppTree,
+    //                  and transform the graph accordingly.
+    GenTree* fgInsertCommaFormTemp(GenTree** ppTree);
     Statement* fgNewStmtAtBeg(BasicBlock* block, GenTree* tree, const DebugInfo& di = DebugInfo());
     void fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt);
     Statement* fgNewStmtAtEnd(BasicBlock* block, GenTree* tree, const DebugInfo& di = DebugInfo());
@@ -6507,9 +6511,9 @@ public:
     void fgInsertStmtAfter(BasicBlock* block, Statement* insertionPoint, Statement* stmt);
     void fgInsertStmtBefore(BasicBlock* block, Statement* insertionPoint, Statement* stmt);
 
-    //                  Create a new temporary variable to hold the result of *ppTree,
-    //                  and transform the graph accordingly.
-    GenTree* fgInsertCommaFormTemp(GenTree** ppTree);
+private:
+    void fgInsertStmtListAtEnd(BasicBlock* block, Statement* stmtList);
+    void fgInsertStmtListBefore(BasicBlock* block, Statement* stmtBefore, Statement* stmtList);
 
 private:
     Statement* fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAfter, Statement* stmtList);
@@ -6650,8 +6654,8 @@ private:
     GenTree* fgMorphCall(GenTreeCall* call);
     GenTree* fgExpandVirtualVtableCallTarget(GenTreeCall* call);
 
-    void fgMorphCallInline(GenTreeCall* call, InlineResult* result);
-    void fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
+    void fgMorphCallInline(InlineInfo& inlineInfo, GenTreeCall* call, InlineResult* result);
+    void fgMorphCallInlineHelper(InlineInfo& inlineInfo, GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
 #if DEBUG
     void fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call);
     static fgWalkPreFn fgFindNonInlineCandidate;
@@ -6831,11 +6835,11 @@ private:
     bool MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE handle, int& cur, int max);
     bool TypeInstantiationComplexityExceeds(CORINFO_CLASS_HANDLE handle, int& cur, int max);
 
-    void fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
-    void fgInsertInlineeBlocks(InlineInfo* pInlineInfo);
-    void fgInsertInlineeArgument(const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI);
-    Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
-    void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);
+    void fgInvokeInlineeCompiler(InlineInfo& inlineInfo, GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
+    void fgFinalizeInlineeStatements(InlineInfo* pInlineInfo);
+    void fgInsertInlineeArgument(class StatementListBuilder& statements, const InlArgInfo& argInfo, const DebugInfo& callDI);
+    void fgInlinePrependStatements(InlineInfo* inlineInfo);
+    void fgInlineAppendStatements(class StatementListBuilder& statements, InlineInfo* inlineInfo);
 
 #ifdef DEBUG
     static fgWalkPreFn fgDebugCheckInlineCandidates;
@@ -11704,7 +11708,6 @@ public:
             case GT_ASYNC_RESUME_INFO:
             case GT_LABEL:
             case GT_FTN_ADDR:
-            case GT_RET_EXPR:
             case GT_CNS_INT:
             case GT_CNS_LNG:
             case GT_CNS_DBL:

@@ -156,9 +156,6 @@ PhaseStatus Compiler::SaveAsyncContexts()
             if (call->IsInlineCandidate() && (call->gtReturnType != TYP_VOID))
             {
                 restoreAfterStmt = stmt->GetNextStmt();
-                assert(restoreAfterStmt->GetRootNode()->OperIs(GT_RET_EXPR) ||
-                       (restoreAfterStmt->GetRootNode()->OperIs(GT_STORE_LCL_VAR) &&
-                        restoreAfterStmt->GetRootNode()->AsLclVarCommon()->Data()->OperIs(GT_RET_EXPR)));
             }
 
             if (curBB->hasTryIndex())
