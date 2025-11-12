@@ -632,6 +632,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false'">
       <_MachLinkerArg Condition="'$(UseLdClassicXCodeLinker)' == 'true' or '$(_XcodeVersion)' == '15' or '$(_XcodeVersion)' == '16'" Include="-ld_classic" />
     </ItemGroup>
+
+    <PropertyGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false'">
+      <!-- Xcode 16 warns on -ld_classic -->
+      <_IgnoreLinkerWarnings Condition="'$(_XcodeVersion)' == '16'">true</_IgnoreLinkerWarnings>
+    </PropertyGroup>
   </Target>
 
   <!-- Crossgen2 will produce a Mach-O object file. This target will link it into a dylib that can be consumed by the runtime. -->
@@ -653,7 +658,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName(%(_ReadyToRunNativeObjectOutputs.Identity)))" />
 
-    <Exec Command="&quot;$(_AppleClang)&quot; @(_MachLinkerArg, ' ')" />
+    <Exec Command="&quot;$(_AppleClang)&quot; @(_MachLinkerArg, ' ')"
+          IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)"/>
 
     <!-- remove executable flag -->
     <Exec Command="chmod 644 &quot;%(_ReadyToRunNativeObjectOutputs.Identity)&quot;" />
