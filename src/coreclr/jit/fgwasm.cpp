@@ -108,19 +108,55 @@ FlowGraphDfsTree* Compiler::fgWasmDfs()
     assert(fgEntryBB == nullptr);
     assert(fgGlobalMorphDone);
 
+    JITDUMP("Determining Wasm DFS entry points\n");
+
     // All funclets are entries. For now we assume finallys are funclets.
     //
     for (EHblkDsc* const ehDsc : EHClauses(this))
     {
+        JITDUMP(FMT_BB " is handler entry\n", ehDsc->ebdHndBeg->bbNum);
         entryBlocks.push_back(ehDsc->ebdHndBeg);
         if (ehDsc->HasFilter())
         {
+            JITDUMP(FMT_BB " is filter entry\n", ehDsc->ebdFilter->bbNum);
             entryBlocks.push_back(ehDsc->ebdFilter);
         }
     }
 
-    // Main entry is an entry. We add it last so it ends up first in the RPO.
+    // Also consider any non-funclet entry block that is only reachable by
+    // EH as an entry. Eventually we'll have to introduce some Wasm-appropriate
+    // way for control to reach these blocks, at which point we should make this
+    // manifest (either as Wasm EH, or via explicit control flow).
     //
+    for (BasicBlock* const block : Blocks())
+    {
+        bool onlyHasEHPreds = true;
+        bool hasPreds = false;
+        for (BasicBlock* const pred : block->PredBlocks())
+        {
+            hasPreds = true;
+
+            if (pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_EHFAULTRET))
+            {
+                continue;
+            }
+
+            onlyHasEHPreds = false;
+            break;
+        }
+
+        // Blocks with no preds...?
+        //
+        if (hasPreds && onlyHasEHPreds)
+        {
+            JITDUMP(FMT_BB " is only reachable via EH\n", block->bbNum);
+            entryBlocks.push_back(block);
+        }
+    }
+
+    // Main entry is an entry. Add it last so it ends up first in the RPO.
+    //
+    JITDUMP(FMT_BB " is method entry\n", fgFirstBB->bbNum);
     entryBlocks.push_back(fgFirstBB);
 
     JITDUMP("Running Wasm DFS\n");
@@ -238,7 +274,7 @@ public:
 
                 if (BitVecOps::TryAddElemD(&m_traits, m_entries, block->bbPostorderNum))
                 {
-                    JITDUMP(FMT_BB " is scc entry\n", block->bbNum);
+                    JITDUMP(FMT_BB " is scc entry via " FMT_BB "\n", block->bbNum, pred->bbNum);
                     isEntry = true;
 
                     m_entryWeight += block->bbWeight;
@@ -265,6 +301,8 @@ public:
                 }
             }
         }
+
+        JITDUMPEXEC(Dump());
     }
 
     unsigned NumEntries()
@@ -368,9 +406,7 @@ public:
             return;
         }
 
-        JITDUMP("\n --> nested %u blocks... \n", BitVecOps::Count(&m_traits, nestedBlocks));
-
-        ArrayStack<Scc*> nestedSccs(m_comp->getAllocator(CMK_DepthFirstSearch));
+        JITDUMP("Scc has %u non-entry blocks, finding nested sccs\n", nestedCount);
 
         // Build a new postorder for the nested blocks
         //
@@ -396,16 +432,17 @@ public:
 
         // Use that to find the nested Sccs
         //
+        ArrayStack<Scc*> nestedSccs(m_comp->getAllocator(CMK_DepthFirstSearch));
         WasmFindSccsCore(m_comp, m_dfsTree, nestedBlocks, m_traits, nestedSccs, postOrder, nestedCount);
 
-        const int nNested = nestedSccs.Height();
-
+        const unsigned nNested = nestedSccs.Height();
+        
         if (nNested == 0)
         {
             return;
         }
 
-        for (int i = 0; i < nNested; i++)
+        for (unsigned i = 0; i < nNested; i++)
         {
             Scc* const nestedScc = nestedSccs.Bottom(i);
             m_nested.push_back(nestedScc);
@@ -720,7 +757,7 @@ void WasmFindSccsCore(Compiler*         comp,
         {
             // Do not walk back into a catch or filter.
             //
-            if (p->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET))
+            if (p->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_EHFAULTRET))
             {
                 continue;
             }
@@ -979,7 +1016,7 @@ public:
 // traverse the blocks in loop-aware RPO order, and emit the proper Wasm control flow.
 //
 // Still TODO
-//
+// * Blocks only reachable via EH
 // * proper handling of BR_TABLE defaults
 // * branch inversion
 // * actual block reordering
@@ -989,7 +1026,7 @@ public:
 // * Rethink need for BB0 (have m_end refer to end of last block in range, not start of first block after)
 // * We do not branch with operands on the wasm stack, so we need to add suitable (void?) types to branches
 // * During LaRPO formation, remember the position of the last block in the loop
-// * Reconcile ordering of SCC/LSRA/WasmControlFlow (LSRA can introduce blocks)
+// * Settle on ordering of WasmSccTransform / Lower / LSRA / WasmControlFlow (LSRA can introduce blocks)
 //
 PhaseStatus Compiler::fgWasmControlFlow()
 {
