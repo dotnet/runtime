@@ -6308,6 +6308,9 @@ void CodeGen::genJumpToThrowHlpBlk_la(
             ins = ins == INS_beq ? INS_bne : INS_beq;
         }
 
+        BasicBlock* skipLabel = genCreateTempLabel();
+        emit->emitIns_J_cond_la(ins, skipLabel, reg1, reg2);
+
         CORINFO_CONST_LOOKUP helperFunction =
             compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
         assert(emit->IsAddressInRange(helperFunction.addr)); // TODO: remove
@@ -6315,29 +6318,34 @@ void CodeGen::genJumpToThrowHlpBlk_la(
         {
             // INS_OPTS_C
             // If the helper is a value, we need to use the address of the helper.
-            params.addr     = helperFunction.addr;
-            params.callType = EC_FUNC_TOKEN;
-
-            // TODO-RISCV64-RVC: Remove hardcoded branch offset here
-            ssize_t imm = 3 * sizeof(emitter::code_t);
-            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
+            params.addr = helperFunction.addr;
+            if (GetEmitter()->IsAddressInRange(params.addr))
+            {
+                params.callType = EC_FUNC_TOKEN;
+            }
+            else
+            {
+                // li   rd, addr_upper_bits
+                // jalr rd, addr_lower_12bits
+                ssize_t imm  = (ssize_t)params.addr;
+                ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
+                imm -= lo12;
+                regNumber tempReg = params.isJump ? rsGetRsvdReg() : REG_RA;
+                GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, imm);
+                params.callType = EC_INDIR_R;
+                params.ireg     = tempReg;
+                params.addr     = (void*)lo12;
+            }
         }
         else
         {
             params.addr = nullptr;
             assert(helperFunction.accessType == IAT_PVALUE);
-            void* pAddr = helperFunction.addr;
-
             params.callType = EC_INDIR_R;
             params.ireg     = REG_DEFAULT_HELPER_CALL_TARGET;
-            // TODO-RISCV64-RVC: Remove hardcoded branch offset here
-            ssize_t imm = (3 + 1) << 2;
-            emit->emitIns_R_R_I(ins, EA_PTRSIZE, reg1, reg2, imm);
-            emit->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, params.ireg, params.ireg, (ssize_t)pAddr);
+            emit->emitIns_R_AI(INS_ld, EA_PTR_DSP_RELOC, params.ireg, params.ireg, (ssize_t)helperFunction.addr);
             regSet.verifyRegUsed(params.ireg);
         }
-
-        BasicBlock* skipLabel = genCreateTempLabel();
 
         params.methHnd = compiler->eeFindHelper(compiler->acdHelper(codeKind));
 
