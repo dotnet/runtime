@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <BuildAsStandalone>true</BuildAsStandalone>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <TypeMapEntryAssembly>TypeMapLib5</TypeMapEntryAssembly>
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
