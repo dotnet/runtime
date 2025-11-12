@@ -1739,7 +1739,7 @@ namespace Internal.JitInterface
                     helperId = ReadyToRunHelperId.MethodHandle;
                 else
                 {
-                    Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method);
+                    Debug.Assert((pResolvedToken.tokenType & CorInfoTokenKind.CORINFO_TOKENKIND_Method) != 0);
                     helperId = ReadyToRunHelperId.MethodDictionary;
                 }
 

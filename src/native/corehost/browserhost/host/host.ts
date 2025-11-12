@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { CharPtr, VoidPtr, VoidPtrPtr } from "./types";
+import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
 
-export function registerDllBytes(bytes: Uint8Array, asset: { name: string }) {
+export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtualPath: string }) {
     const sp = Module.stackSave();
     try {
         const sizeOfPtr = 4;
@@ -16,11 +16,50 @@ export function registerDllBytes(bytes: Uint8Array, asset: { name: string }) {
         }
 
         const ptr = Module.HEAPU32[ptrPtr as any >>> 2];
-        Module.HEAPU8.set(bytes, ptr);
+        Module.HEAPU8.set(bytes, ptr >>> 0);
         loadedAssemblies.set(asset.name, { ptr, length: bytes.length });
+        loadedAssemblies.set(asset.virtualPath, { ptr, length: bytes.length });
     } finally {
         Module.stackRestore(sp);
     }
+}
+
+export function installVfsFile(bytes: Uint8Array, asset: VfsAsset) {
+    const virtualName: string = typeof (asset.virtualPath) === "string"
+        ? asset.virtualPath
+        : asset.name;
+    const lastSlash = virtualName.lastIndexOf("/");
+    let parentDirectory = (lastSlash > 0)
+        ? virtualName.substring(0, lastSlash)
+        : null;
+    let fileName = (lastSlash > 0)
+        ? virtualName.substring(lastSlash + 1)
+        : virtualName;
+    if (fileName.startsWith("/"))
+        fileName = fileName.substring(1);
+    if (parentDirectory) {
+        if (!parentDirectory.startsWith("/"))
+            parentDirectory = "/" + parentDirectory;
+
+        if (parentDirectory.startsWith("/managed")) {
+            throw new Error("Cannot create files under /managed virtual directory as it is reserved for NodeFS mounting");
+        }
+
+        dotnetLogger.debug(`Creating directory '${parentDirectory}'`);
+
+        Module.FS_createPath(
+            "/", parentDirectory, true, true // fixme: should canWrite be false?
+        );
+    } else {
+        parentDirectory = "/";
+    }
+
+    dotnetLogger.debug(`Creating file '${fileName}' in directory '${parentDirectory}'`);
+
+    Module.FS_createDataFile(
+        parentDirectory, fileName,
+        bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
+    );
 }
 
 // bool BrowserHost_ExternalAssemblyProbe(const char* pathPtr, /*out*/ void **outDataStartPtr, /*out*/ int64_t* outSize);

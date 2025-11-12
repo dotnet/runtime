@@ -36,5 +36,19 @@ namespace Internal.IL.Stubs
 
             return emitter.Link(taskReturningMethod);
         }
+
+        public static MethodIL EmitAsyncMethodThunk(MethodDesc asyncMethod, MethodDesc taskReturningMethod)
+        {
+            TypeSystemContext context = asyncMethod.Context;
+
+            var emitter = new ILEmitter();
+            var codestream = emitter.NewCodeStream();
+
+            // TODO: match EmitAsyncMethodThunk in CoreCLR VM
+
+            codestream.EmitCallThrowHelper(emitter, context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNotSupportedException"u8));
+
+            return emitter.Link(asyncMethod);
+        }
     }
 }
