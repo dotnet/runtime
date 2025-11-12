@@ -1363,10 +1363,10 @@ enum class PhaseStatus : unsigned
 };
 
 // interface to hide linearscan implementation from rest of compiler
-class LinearScanInterface
+class RegAllocInterface
 {
 public:
-    virtual PhaseStatus doLinearScan()                                = 0;
+    virtual PhaseStatus doRegisterAllocation()                        = 0;
     virtual void        recordVarLocationsAtStartOfBB(BasicBlock* bb) = 0;
     virtual bool        willEnregisterLocalVars() const               = 0;
 #if TRACK_LSRA_STATS
@@ -1375,7 +1375,7 @@ public:
 #endif // TRACK_LSRA_STATS
 };
 
-LinearScanInterface* getLinearScanAllocator(Compiler* comp);
+RegAllocInterface* GetRegisterAllocator(Compiler* comp);
 
 // This enumeration names the phases into which we divide compilation.  The phases should completely
 // partition a compilation.
@@ -5577,7 +5577,7 @@ public:
 
     bool backendRequiresLocalVarLifetimes()
     {
-        return !opts.MinOpts() || m_pLinearScan->willEnregisterLocalVars();
+        return !opts.MinOpts() || m_regAlloc->willEnregisterLocalVars();
     }
 
     void fgLocalVarLiveness();
@@ -8237,8 +8237,8 @@ protected:
     bool rpMustCreateEBPFrame(INDEBUG(const char** wbReason));
 
 private:
-    Lowering*            m_pLowering = nullptr; // Lowering; needed to Lower IR that's added or modified after Lowering.
-    LinearScanInterface* m_pLinearScan = nullptr; // Linear Scan allocator
+    Lowering*          m_pLowering = nullptr; // Lowering; needed to Lower IR that's added or modified after Lowering.
+    RegAllocInterface* m_regAlloc  = nullptr; // Register allocator
 
 public:
     ArrayStack<ParameterRegisterLocalMapping>* m_paramRegLocalMappings = nullptr;

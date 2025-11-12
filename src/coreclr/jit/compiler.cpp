@@ -4965,14 +4965,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Assign registers to variables, etc.
 
-    // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
-    // for determining whether locals are register candidates and (for xarch) whether
+    // Create the RA before Lowering, so that Lowering can call RA methods for
+    // determining whether locals are register candidates and (for xarch) whether
     // a node is a containable memory op.
-    m_pLinearScan = getLinearScanAllocator(this);
+    m_regAlloc = GetRegisterAllocator(this);
 
     // Lower
     //
-    m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
+    m_pLowering = new (this, CMK_LSRA) Lowering(this, m_regAlloc); // PHASE_LOWERING
     m_pLowering->Run();
 
     // Set stack levels and analyze throw helper usage.
@@ -4988,7 +4988,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Now that lowering is completed we can proceed to perform register allocation
     //
     auto linearScanPhase = [this] {
-        m_pLinearScan->doLinearScan();
+        m_regAlloc->doRegisterAllocation();
     };
     DoPhase(this, PHASE_LINEAR_SCAN, linearScanPhase);
 
@@ -5037,7 +5037,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if TRACK_LSRA_STATS
     if (JitConfig.DisplayLsraStats() == 2)
     {
-        m_pLinearScan->dumpLsraStatsCsv(jitstdout());
+        m_regAlloc->dumpLsraStatsCsv(jitstdout());
     }
 #endif // TRACK_LSRA_STATS
 
