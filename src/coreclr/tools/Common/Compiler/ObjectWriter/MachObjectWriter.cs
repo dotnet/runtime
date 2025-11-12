@@ -607,7 +607,7 @@ namespace ILCompiler.ObjectWriter
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = endSymbolIndex,
+                            SymbolOrSectionIndex = startSymbolIndex,
                             Length = 4,
                             RelocationType = X86_64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -617,7 +617,7 @@ namespace ILCompiler.ObjectWriter
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = startSymbolIndex,
+                            SymbolOrSectionIndex = endSymbolIndex,
                             Length = 4,
                             RelocationType = X86_64_RELOC_UNSIGNED,
                             IsExternal = true,
@@ -692,7 +692,7 @@ namespace ILCompiler.ObjectWriter
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = (uint)symbolIndex,
+                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName],
                             Length = 4,
                             RelocationType = X86_64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -702,7 +702,7 @@ namespace ILCompiler.ObjectWriter
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName],
+                            SymbolOrSectionIndex = (uint)symbolIndex,
                             Length = 4,
                             RelocationType = X86_64_RELOC_UNSIGNED,
                             IsExternal = true,
@@ -734,7 +734,7 @@ namespace ILCompiler.ObjectWriter
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = endSymbolIndex,
+                            SymbolOrSectionIndex = startSymbolIndex,
                             Length = 4,
                             RelocationType = ARM64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -744,7 +744,7 @@ namespace ILCompiler.ObjectWriter
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = startSymbolIndex,
+                            SymbolOrSectionIndex = endSymbolIndex,
                             Length = 4,
                             RelocationType = ARM64_RELOC_UNSIGNED,
                             IsExternal = true,
@@ -855,7 +855,7 @@ namespace ILCompiler.ObjectWriter
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = (uint)symbolIndex,
+                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName],
                             Length = 4,
                             RelocationType = ARM64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -865,7 +865,7 @@ namespace ILCompiler.ObjectWriter
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName],
+                            SymbolOrSectionIndex = (uint)symbolIndex,
                             Length = 4,
                             RelocationType = ARM64_RELOC_UNSIGNED,
                             IsExternal = true,
