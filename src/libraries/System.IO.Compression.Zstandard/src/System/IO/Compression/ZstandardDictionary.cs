@@ -39,28 +39,31 @@ namespace System.IO.Compression
 
             // TODO: make this data being referenced by the native dict structures
             // and avoid them having their own copies
-            byte[] dictionaryData = buffer.ToArray();
+            byte[] data = GC.AllocateArray<byte>(buffer.Length, pinned: true);
+            buffer.CopyTo(data);
 
             unsafe
             {
-                fixed (byte* dictPtr = dictionaryData)
+                fixed (byte* dictPtr = data)
                 {
                     IntPtr dictData = (IntPtr)dictPtr;
 
-                    // Create both compression and decompression dictionaries
-                    SafeZstdCDictHandle compressionDict = Interop.Zstd.ZSTD_createCDict(dictData, (nuint)dictionaryData.Length, quality);
+                    SafeZstdCDictHandle compressionDict = Interop.Zstd.ZSTD_createCDict_byReference(dictData, (nuint)data.Length, quality);
+
                     if (compressionDict.IsInvalid)
                         throw new IOException(SR.ZstandardDictionary_CreateCompressionFailed);
-                    compressionDict.Quality = quality;
+                    compressionDict._pinnedData = GCHandle.Alloc(data, GCHandleType.Pinned);
 
-                    SafeZstdDDictHandle decompressionDict = Interop.Zstd.ZSTD_createDDict(dictData, (nuint)dictionaryData.Length);
+                    SafeZstdDDictHandle decompressionDict = Interop.Zstd.ZSTD_createDDict_byReference(dictData, (nuint)data.Length);
+
                     if (decompressionDict.IsInvalid)
                     {
                         compressionDict.Dispose();
                         throw new IOException(SR.ZstandardDictionary_CreateDecompressionFailed);
                     }
+                    decompressionDict._pinnedData = GCHandle.Alloc(data, GCHandleType.Pinned);
 
-                    return new ZstandardDictionary(compressionDict, decompressionDict, dictionaryData);
+                    return new ZstandardDictionary(compressionDict, decompressionDict, data);
                 }
             }
         }

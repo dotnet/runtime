@@ -25,13 +25,13 @@ internal static partial class Interop
 
         // Dictionary management
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial SafeZstdCDictHandle ZSTD_createCDict(IntPtr dictBuffer, nuint dictSize, int compressionLevel);
+        internal static partial SafeZstdCDictHandle ZSTD_createCDict_byReference(IntPtr dictBuffer, nuint dictSize, int compressionLevel);
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial nuint ZSTD_freeCDict(IntPtr cdict);
 
         [LibraryImport(Libraries.CompressionNative)]
-        internal static partial SafeZstdDDictHandle ZSTD_createDDict(IntPtr dictBuffer, nuint dictSize);
+        internal static partial SafeZstdDDictHandle ZSTD_createDDict_byReference(IntPtr dictBuffer, nuint dictSize);
 
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial nuint ZSTD_freeDDict(IntPtr ddict);

@@ -187,13 +187,14 @@ namespace Microsoft.Win32.SafeHandles
     {
         public SafeZstdCDictHandle() : base(IntPtr.Zero, true) { }
 
+        internal GCHandle _pinnedData;
+
         protected override bool ReleaseHandle()
         {
             Interop.Zstd.ZSTD_freeCDict(handle);
+            _pinnedData.Free();
             return true;
         }
-
-        public int Quality { get; set; }
 
         public override bool IsInvalid => handle == IntPtr.Zero;
     }
@@ -202,9 +203,12 @@ namespace Microsoft.Win32.SafeHandles
     {
         public SafeZstdDDictHandle() : base(IntPtr.Zero, true) { }
 
+        internal GCHandle _pinnedData;
+
         protected override bool ReleaseHandle()
         {
             Interop.Zstd.ZSTD_freeDDict(handle);
+            _pinnedData.Free();
             return true;
         }
 

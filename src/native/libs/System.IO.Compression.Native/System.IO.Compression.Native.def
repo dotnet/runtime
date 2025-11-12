@@ -25,9 +25,9 @@ EXPORTS
     ZSTD_createDCtx
     ZSTD_freeCCtx
     ZSTD_freeDCtx
-    ZSTD_createCDict
+    ZSTD_createCDict_byReference
     ZSTD_freeCDict
-    ZSTD_createDDict
+    ZSTD_createDDict_byReference
     ZSTD_freeDDict
     ZSTD_decompress
     ZSTD_decompressDCtx
