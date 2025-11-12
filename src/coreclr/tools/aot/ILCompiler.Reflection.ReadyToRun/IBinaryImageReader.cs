@@ -38,6 +38,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="writer">The writer to use</param>
         void DumpImageInformation(TextWriter writer);
 
+        /// <summary>
+        /// Gets the sections (name and size) of the binary image
+        /// </summary>
         Dictionary<string, int> GetSections();
 
         /// <summary>
@@ -51,13 +54,21 @@ namespace ILCompiler.Reflection.ReadyToRun
         OperatingSystem OperatingSystem { get; }
 
         /// <summary>
-        /// Gets whether the image has metadata
-        /// </summary>
-        bool HasMetadata { get; }
-
-        /// <summary>
         /// Gets the image base address
         /// </summary>
         ulong ImageBase { get; }
+
+        /// <summary>
+        /// Creates standalone assembly metadata from the image's embedded metadata.
+        /// </summary>
+        /// <returns>Assembly metadata, or null if the image has no embedded metadata</returns>
+        IAssemblyMetadata GetStandaloneAssemblyMetadata();
+
+        /// <summary>
+        /// Creates manifest assembly metadata the R2R manifest
+        /// </summary>
+        /// <param name="manifestReader">Manifest metadata reader</param>
+        /// <returns>Manifest assembly metadata</returns>
+        IAssemblyMetadata GetManifestAssemblyMetadata(System.Reflection.Metadata.MetadataReader manifestReader);
     }
 }

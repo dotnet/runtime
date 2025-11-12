@@ -18,15 +18,10 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
     {
         private readonly byte[] _image;
         private readonly MachHeader _header;
-        private readonly Machine _machine;
         private int? _rtrHeaderRva;
 
-        public Machine Machine => _machine;
-
+        public Machine Machine { get; }
         public OperatingSystem OperatingSystem => OperatingSystem.Apple;
-
-        public bool HasMetadata => false;
-
         public ulong ImageBase => 0;
 
         public MachOImageReader(byte[] image)
@@ -39,13 +34,11 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
                 throw new BadImageFormatException("Only 64-bit Mach-O files are supported");
 
             // Determine machine type from CPU type
-            _machine = GetMachineType(_header.CpuType);
+            Machine = GetMachineType(_header.CpuType);
         }
 
         public ImmutableArray<byte> GetEntireImage()
-        {
-            return Unsafe.As<byte[], ImmutableArray<byte>>(ref Unsafe.AsRef(in _image));
-        }
+            => Unsafe.As<byte[], ImmutableArray<byte>>(ref Unsafe.AsRef(in _image));
 
         public int GetOffset(int rva)
         {
@@ -96,6 +89,11 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
             // TODO: Get all the sections
             return [];
         }
+
+        public IAssemblyMetadata GetStandaloneAssemblyMetadata() => null;
+
+        public IAssemblyMetadata GetManifestAssemblyMetadata(System.Reflection.Metadata.MetadataReader manifestReader)
+            => new ManifestAssemblyMetadata(manifestReader);
 
         private static Machine GetMachineType(uint cpuType)
         {

@@ -514,10 +514,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                     ImagePin = new PinningReference(Image);
                 }
 
-                if (metadata == null && ContainerFormat == ReadyToRunContainerFormat.PE && CompositeReader.HasMetadata)
+                if (metadata == null)
                 {
-                    Debug.Assert(CompositeReader is PEImageReader);
-                    metadata = new StandaloneAssemblyMetadata(((PEImageReader)CompositeReader).PEReader);
+                    metadata = CompositeReader.GetStandaloneAssemblyMetadata();
                 }
 
                 if (!CompositeReader.TryGetReadyToRunHeader(out _readyToRunHeaderRVA, out _composite))
@@ -752,9 +751,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 fixed (byte* image = Image)
                 {
                     _manifestReader = new MetadataReader(image + GetOffset(manifestMetadata.RelativeVirtualAddress), manifestMetadata.Size);
-                    _manifestAssemblyMetadata = ContainerFormat == ReadyToRunContainerFormat.PE
-                        ? new ManifestAssemblyMetadata(((PEImageReader)CompositeReader).PEReader, _manifestReader)
-                        : new ManifestAssemblyMetadata(_manifestReader);
+                    _manifestAssemblyMetadata = CompositeReader.GetManifestAssemblyMetadata(_manifestReader);
 
                     int assemblyRefCount = _manifestReader.GetTableRowCount(TableIndex.AssemblyRef);
                     for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
