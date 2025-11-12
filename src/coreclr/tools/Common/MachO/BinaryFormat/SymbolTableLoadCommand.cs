@@ -3,7 +3,11 @@
 
 using System.Runtime.InteropServices;
 
+#if HOST_MODEL
 namespace Microsoft.NET.HostModel.MachO;
+#else
+namespace ILCompiler.Reflection.ReadyToRun.MachO;
+#endif
 
 /// <summary>
 /// A load command with info about the location of the symbol table and string table.

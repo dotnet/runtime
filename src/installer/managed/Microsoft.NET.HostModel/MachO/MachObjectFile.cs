@@ -193,19 +193,6 @@ internal unsafe partial class MachObjectFile
             or MachMagic.FatMagicCurrentEndian or MachMagic.FatMagicOppositeEndian;
     }
 
-    public static bool IsMachOImage(string filePath)
-    {
-        using (BinaryReader reader = new BinaryReader(File.OpenRead(filePath)))
-        {
-            if (reader.BaseStream.Length < 256) // Header size
-            {
-                return false;
-            }
-            uint magic = reader.ReadUInt32();
-            return Enum.IsDefined(typeof(MachMagic), magic);
-        }
-    }
-
     /// <summary>
     /// Removes the code signature load command and signature blob from the file if present.
     /// Returns true and sets <paramref name="newLength"/> to a non-null value if the file is a MachO file and the signature was removed.

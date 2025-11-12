@@ -3,7 +3,11 @@
 
 using System.Runtime.InteropServices;
 
+#if HOST_MODEL
 namespace Microsoft.NET.HostModel.MachO;
+#else
+namespace ILCompiler.Reflection.ReadyToRun.MachO;
+#endif
 
 /// <summary>
 /// The structure for the 64-bit segment load command in a Mach-O binary.

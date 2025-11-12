@@ -4,7 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 
+#if HOST_MODEL
 namespace Microsoft.NET.HostModel.MachO;
+#else
+namespace ILCompiler.Reflection.ReadyToRun.MachO;
+#endif
 
 /// <summary>
 /// A 16 byte buffer used to store names in Mach-O load commands.

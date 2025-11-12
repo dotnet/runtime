@@ -15,7 +15,6 @@ using System.Text;
 
 using Internal.ReadyToRunConstants;
 using Internal.Runtime;
-using Microsoft.NET.HostModel.MachO;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -498,9 +497,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                     ImageReader = new NativeReader(new MemoryStream(Image));
                     byte[] image = Image;
                     ImagePin = new PinningReference(image);
-                    if (MachObjectFile.IsMachOImage(Filename))
+                    if (MachO.MachObjectFile.IsMachOImage(Filename))
                     {
-                        CompositeReader = new MachOImageReader(image);
+                        CompositeReader = new MachO.MachOImageReader(image);
                     }
                     else
                     {

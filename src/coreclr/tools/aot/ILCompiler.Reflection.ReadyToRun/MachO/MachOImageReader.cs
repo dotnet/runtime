@@ -8,9 +8,8 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
-using Microsoft.NET.HostModel.MachO;
 
-namespace ILCompiler.Reflection.ReadyToRun
+namespace ILCompiler.Reflection.ReadyToRun.MachO
 {
     /// <summary>
     /// Wrapper around Mach-O file that implements IBinaryImageReader
@@ -27,7 +26,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             _image = image;
 
             // Determine machine type from MachO CPU type
-            // Note: MachO files use their own CPU type encoding
             _machine = DetermineMachineType();
             _imageBase = 0; // MachO typically uses 0 as base for .dylib files
         }
@@ -53,14 +51,13 @@ namespace ILCompiler.Reflection.ReadyToRun
                     // Read CPU type at offset 4
                     uint cpuType = BinaryPrimitives.ReadUInt32LittleEndian(new ReadOnlySpan<byte>(_image, 4, 4));
 
-                    // CPU_TYPE constants from mach/machine.h
-                    // const uint CPU_TYPE_ARM64 = 0x0100000C;
-                    // const uint CPU_TYPE_X86_64 = 0x01000007;
-
-                    return (cpuType & 0x00FFFFFF) switch
+                    // https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/osfmk/mach/machine.h
+                    const uint CPU_TYPE_ARM64 = 0x0100000C;
+                    const uint CPU_TYPE_X86_64 = 0x01000007;
+                    return cpuType switch
                     {
-                        0x0C => Machine.Arm64,      // ARM64
-                        0x07 => Machine.Amd64,      // X86_64
+                        CPU_TYPE_ARM64 => Machine.Arm64,
+                        CPU_TYPE_X86_64 => Machine.Amd64,
                         _ => throw new NotSupportedException($"Unsupported MachO CPU type: {cpuType:X8}")
                     };
                 }

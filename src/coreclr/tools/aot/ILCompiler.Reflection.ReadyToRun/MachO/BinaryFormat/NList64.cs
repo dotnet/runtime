@@ -3,7 +3,7 @@
 
 using System.Runtime.InteropServices;
 
-namespace Microsoft.NET.HostModel.MachO;
+namespace ILCompiler.Reflection.ReadyToRun.MachO;
 
 /// <summary>
 /// Represents a 64-bit symbol table entry.
