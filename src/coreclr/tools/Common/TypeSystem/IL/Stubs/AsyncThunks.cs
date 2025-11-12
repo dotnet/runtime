@@ -37,9 +37,6 @@ namespace Internal.IL.Stubs
 
             ILLocalVariable returnTaskLocal = emitter.NewLocal(returnType);
 
-            // TODO: Check if store/restore is responsibility of the async callee
-            // after https://github.com/dotnet/runtime/pull/121448 gets merged.
-
             TypeDesc executionAndSyncBlockStoreType = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "ExecutionAndSyncBlockStore"u8);
             ILLocalVariable executionAndSyncBlockStoreLocal = emitter.NewLocal(executionAndSyncBlockStoreType);
 
@@ -110,7 +107,7 @@ namespace Internal.IL.Stubs
                         if (isValueTask)
                         {
                             fromResultMethod = context.SystemModule
-                                .GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8)
+                                .GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
                                 .GetKnownMethod("FromResult"u8, null)
                                 .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                         }
@@ -160,7 +157,8 @@ namespace Internal.IL.Stubs
                             MethodSignatureFlags.Static,
                             genericParameterCount: 1,
                             returnType: ((MetadataType)returnType.GetTypeDefinition()).MakeInstantiatedType(context.GetSignatureVariable(0, true)),
-                            parameters: new[] { exceptionType });
+                            parameters: new[] { exceptionType }
+                        );
 
                         fromExceptionMd = context.SystemModule
                             .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
@@ -173,7 +171,8 @@ namespace Internal.IL.Stubs
                             MethodSignatureFlags.Static,
                             genericParameterCount: 0,
                             returnType: returnType,
-                            parameters: new[] { exceptionType });
+                            parameters: new[] { exceptionType }
+                        );
 
                         fromExceptionMd = context.SystemModule
                             .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
@@ -189,23 +188,32 @@ namespace Internal.IL.Stubs
                 codestream.EmitLabel(suspendedLabel);
 
                 MethodDesc finalizeTaskReturningThunkMd;
-
-                if (isValueTask)
+                if (logicalReturnType != null)
                 {
+                    MethodSignature finalizeReturningThunkSignature = new MethodSignature(
+                        MethodSignatureFlags.Static,
+                        genericParameterCount: 1,
+                        returnType: ((MetadataType)returnType.GetTypeDefinition()).MakeInstantiatedType(context.GetSignatureVariable(0, true)),
+                        parameters: Array.Empty<TypeDesc>()
+                    );
+
                     finalizeTaskReturningThunkMd = context.SystemModule
                         .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                        .GetKnownMethod("FinalizeValueTaskReturningThunk"u8, null);
+                        .GetKnownMethod(isValueTask ? "FinalizeValueTaskReturningThunk"u8 : "FinalizeTaskReturningThunk"u8, finalizeReturningThunkSignature)
+                        .MakeInstantiatedMethod(new Instantiation(logicalReturnType));
                 }
                 else
                 {
+                    MethodSignature finalizeReturningThunkSignature = new MethodSignature(
+                        MethodSignatureFlags.Static,
+                        genericParameterCount: 0,
+                        returnType: returnType,
+                        parameters: Array.Empty<TypeDesc>()
+                    );
+
                     finalizeTaskReturningThunkMd = context.SystemModule
                         .GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8)
-                        .GetKnownMethod("FinalizeTaskReturningThunk"u8, null);
-                }
-
-                if (logicalReturnType != null)
-                {
-                    finalizeTaskReturningThunkMd = finalizeTaskReturningThunkMd.MakeInstantiatedMethod(new Instantiation(logicalReturnType));
+                        .GetKnownMethod(isValueTask ? "FinalizeValueTaskReturningThunk"u8 : "FinalizeTaskReturningThunk"u8, finalizeReturningThunkSignature);
                 }
 
                 codestream.Emit(ILOpcode.call, emitter.NewToken(finalizeTaskReturningThunkMd));
