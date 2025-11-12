@@ -9583,7 +9583,11 @@ public:
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
-        if (compExactlyDependsOn(InstructionSet_VectorT128))
+        if (JitConfig.JitUseScalableVectorT() && compOpportunisticallyDependsOn(InstructionSet_Sve))
+        {
+            return SIZE_UNKNOWN;
+        }
+        else if (compExactlyDependsOn(InstructionSet_VectorT128))
         {
             return FP_REGSIZE_BYTES;
         }
