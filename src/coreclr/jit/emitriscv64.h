@@ -354,6 +354,8 @@ unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id);
 
 unsigned get_curTotalCodeSize(); // bytes of code
 
+bool IsAddressInRange(void* addr);
+
 //------------------------------------------------------------------------
 // emitIsCmpJump: checks if it's a compare and jump (branch)
 //

@@ -1358,8 +1358,7 @@ void emitter::emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regData
     assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
     assert(!EA_IS_RELOC(attr) && EA_SIZE(attr) == EA_PTRSIZE);
 
-    if (emitComp->opts.compReloc ||
-        (INDEBUG(emitComp->opts.compEnablePCRelAddr&&)(IMAGE_REL_BASED_REL32 == emitComp->eeGetRelocTypeHint(addr))))
+    if (IsAddressInRange(addr))
     {
         attr = EA_SET_FLG(attr, EA_PTR_DSP_RELOC);
         emitIns_R_AI(ins, attr, regData, regAddr, (ssize_t)addr);
@@ -5130,6 +5129,21 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 unsigned emitter::get_curTotalCodeSize()
 {
     return emitTotalCodeSize;
+}
+
+//----------------------------------------------------------------------------------------
+// IsAddressInRange: Returns whether an address should be attempted to be reached with an auipc + load/store/jalr/addi
+// instruction combo.
+//
+// Arguments:
+//    addr - The address to check
+//
+// Return Value:
+//    A struct containing the current instruction execution characteristics
+bool emitter::IsAddressInRange(void* addr)
+{
+    return emitComp->opts.compReloc ||
+           (INDEBUG(emitComp->opts.compEnablePCRelAddr&&)(IMAGE_REL_BASED_REL32 == emitComp->eeGetRelocTypeHint(addr)));
 }
 
 #if defined(DEBUG) || defined(LATE_DISASM)

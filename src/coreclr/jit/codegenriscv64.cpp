@@ -2731,8 +2731,24 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
     if (helperFunction.accessType == IAT_VALUE)
     {
         // If the helper is a value, we need to use the address of the helper.
-        params.addr     = helperFunction.addr;
-        params.callType = EC_FUNC_TOKEN;
+        params.addr = helperFunction.addr;
+        if (GetEmitter()->IsAddressInRange(params.addr))
+        {
+            params.callType = EC_FUNC_TOKEN;
+        }
+        else
+        {
+            // li   rd, addr_upper_bits
+            // jalr rd, addr_lower_12bits
+            ssize_t imm  = (ssize_t)params.addr;
+            ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
+            imm -= lo12;
+            regNumber tempReg = params.isJump ? rsGetRsvdReg() : REG_RA;
+            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, imm);
+            params.callType = EC_INDIR_R;
+            params.ireg     = tempReg;
+            params.addr     = (void*)lo12;
+        }
     }
     else
     {
@@ -3376,7 +3392,29 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     if (helperFunction.accessType == IAT_VALUE)
     {
-        params.addr = helperFunction.addr;
+        if (GetEmitter()->IsAddressInRange(helperFunction.addr))
+        {
+            params.addr = helperFunction.addr;
+
+            assert(params.addr != (void*)0x2aaaabdc5f48);
+        }
+        else
+        {
+            // li   rd, addr_upper_bits
+            // jalr rd, addr_lower_12bits
+            ssize_t imm  = (ssize_t)helperFunction.addr;
+            ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
+            imm -= lo12;
+            if (callTargetReg == REG_NA)
+            {
+                callTargetReg = rsGetRsvdReg();
+            }
+            assert(callTargetReg != REG_ZERO);
+            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, callTargetReg, imm);
+            params.callType = EC_INDIR_R;
+            params.ireg     = callTargetReg;
+            params.addr     = (void*)lo12;
+        }
     }
     else
     {
@@ -5601,6 +5639,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             }
             else
 #endif // FEATURE_READYTORUN
+            {
                 if (call->IsHelperCall())
                 {
                     CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(params.methHnd);
@@ -5615,10 +5654,27 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     // Direct call to a non-virtual user function.
                     params.addr = call->gtDirectCallAddress;
                 }
+            }
 
             assert(params.addr != nullptr);
+            if (GetEmitter()->IsAddressInRange(params.addr))
+            {
+                params.callType = EC_FUNC_TOKEN;
+            }
+            else
+            {
+                // li   rd, addr_upper_bits
+                // jalr rd, addr_lower_12bits
+                ssize_t imm  = (ssize_t)params.addr;
+                ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
+                imm -= lo12;
+                regNumber tempReg = params.isJump ? rsGetRsvdReg() : REG_RA;
+                GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, imm);
+                params.callType = EC_INDIR_R;
+                params.ireg     = tempReg;
+                params.addr     = (void*)lo12;
+            }
 
-            params.callType = EC_FUNC_TOKEN;
             genEmitCallWithCurrentGC(params);
         }
     }
@@ -6254,6 +6310,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
 
         CORINFO_CONST_LOOKUP helperFunction =
             compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
+        assert(emit->IsAddressInRange(helperFunction.addr)); // TODO: remove
         if (helperFunction.accessType == IAT_VALUE)
         {
             // INS_OPTS_C
