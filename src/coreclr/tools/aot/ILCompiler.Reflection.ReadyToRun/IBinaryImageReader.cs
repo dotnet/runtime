@@ -25,11 +25,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         int GetOffset(int rva);
 
         /// <summary>
-        /// Check whether the file is a composite ReadyToRun image and returns the RVA of its ReadyToRun header if so.
+        /// Try to get the ReadyToRun header RVA for this image.
         /// </summary>
         /// <param name="rva">RVA of the ReadyToRun header if available, 0 when not</param>
-        /// <returns>true when the reader represents a composite ReadyToRun image, false otherwise</returns>
-        bool TryGetCompositeReadyToRunHeader(out int rva);
+        /// <param name="isComposite">true when the reader represents a composite ReadyToRun image, false for regular R2R</param>
+        /// <returns>true when the reader represents a ReadyToRun image (composite or regular), false otherwise</returns>
+        bool TryGetReadyToRunHeader(out int rva, out bool isComposite);
 
         /// <summary>
         /// Write out image information using the specified writer
@@ -58,10 +59,5 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Gets the image base address
         /// </summary>
         ulong ImageBase { get; }
-
-        /// <summary>
-        /// Get whether the image is marked as an IL-only library
-        /// </summary>
-        bool IsILLibrary { get; }
     }
 }

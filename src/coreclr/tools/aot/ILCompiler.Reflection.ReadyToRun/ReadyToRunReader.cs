@@ -520,35 +520,15 @@ namespace ILCompiler.Reflection.ReadyToRun
                     metadata = new StandaloneAssemblyMetadata(((PEImageReader)CompositeReader).PEReader);
                 }
 
-                if (metadata != null)
+                if (!CompositeReader.TryGetReadyToRunHeader(out _readyToRunHeaderRVA, out _composite))
                 {
-                    if (!CompositeReader.IsILLibrary)
-                    {
-                        // Composite image
-                        if (!TryLocateNativeReadyToRunHeader())
-                        {
-                            DumpImageInformation();
-
-                            throw new BadImageFormatException("The file is not a ReadyToRun image");
-                        }
-
-                        Debug.Assert(Composite);
-                    }
-                    else
-                    {
-                        // Regular PE R2R assembly
-                        _assemblyCache.Add(metadata);
-
-                        Debug.Assert(CompositeReader is PEImageReader);
-                        DirectoryEntry r2rHeaderDirectory = ((PEImageReader)CompositeReader).PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
-                        _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
-                        Debug.Assert(!Composite);
-                    }
-
+                    throw new BadImageFormatException("The file is not a ReadyToRun image");
                 }
-                else if (!TryLocateNativeReadyToRunHeader())
+
+                Debug.Assert(metadata != null || _composite);
+                if (metadata != null && !_composite)
                 {
-                    throw new BadImageFormatException($"ECMA metadata / RTR_HEADER not found in file '{Filename}'");
+                    _assemblyCache.Add(metadata);
                 }
             }
             catch (BadImageFormatException)
@@ -657,12 +637,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             return customMethods;
         }
 
-        private bool TryLocateNativeReadyToRunHeader()
-        {
-            _composite = CompositeReader.TryGetCompositeReadyToRunHeader(out _readyToRunHeaderRVA);
 
-            return _composite;
-        }
 
         private IAssemblyMetadata GetSystemModuleMetadataReader()
         {

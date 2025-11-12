@@ -18,6 +18,16 @@ namespace ILCompiler.Reflection.ReadyToRun
         private readonly Machine _machine;
         private readonly OperatingSystem _operatingSystem;
 
+        public Machine Machine => _machine;
+
+        public OperatingSystem OperatingSystem => _operatingSystem;
+
+        public bool HasMetadata => _peReader.HasMetadata;
+
+        public ulong ImageBase => _peReader.PEHeaders.PEHeader.ImageBase;
+
+        public PEReader PEReader => _peReader;
+
         public PEImageReader(PEReader peReader)
         {
             _peReader = peReader;
@@ -54,22 +64,32 @@ namespace ILCompiler.Reflection.ReadyToRun
             return _peReader.GetOffset(rva);
         }
 
-        public bool TryGetCompositeReadyToRunHeader(out int rva)
+        public bool TryGetReadyToRunHeader(out int rva, out bool isComposite)
         {
-            return _peReader.TryGetCompositeReadyToRunHeader(out rva);
+            if ((_peReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
+            {
+                // Composite R2R - check for RTR_HEADER export
+                if (_peReader.TryGetCompositeReadyToRunHeader(out rva))
+                {
+                    isComposite = true;
+                    return true;
+                }
+            }
+            else
+            {
+                var r2rHeaderDirectory = _peReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
+                if (r2rHeaderDirectory.Size != 0)
+                {
+                    rva = r2rHeaderDirectory.RelativeVirtualAddress;
+                    isComposite = false;
+                    return true;
+                }
+            }
+
+            rva = 0;
+            isComposite = false;
+            return false;
         }
-
-        public Machine Machine => _machine;
-
-        public OperatingSystem OperatingSystem => _operatingSystem;
-
-        public bool HasMetadata => _peReader.HasMetadata;
-
-        public ulong ImageBase => _peReader.PEHeaders.PEHeader.ImageBase;
-
-        public PEReader PEReader => _peReader;
-
-        public bool IsILLibrary => _peReader.PEHeaders.CorHeader?.Flags.HasFlag(CorFlags.ILLibrary) ?? false;
 
         public void DumpImageInformation(TextWriter writer)
         {

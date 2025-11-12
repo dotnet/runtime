@@ -36,7 +36,7 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
             // Read the MachO header
             Read(0, out _header);
             if (!_header.Is64Bit)
-                        throw new BadImageFormatException("Only 64-bit Mach-O files are supported");
+                throw new BadImageFormatException("Only 64-bit Mach-O files are supported");
 
             // Determine machine type from CPU type
             _machine = GetMachineType(_header.CpuType);
@@ -62,15 +62,17 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
             }
         }
 
-        public bool TryGetCompositeReadyToRunHeader(out int rva)
+        public bool TryGetReadyToRunHeader(out int rva, out bool isComposite)
         {
             if (!_rtrHeaderRva.HasValue)
             {
                 // Look for RTR_HEADER symbol in the Mach-O symbol table
+                // Mach-O R2R images are always composite (no regular R2R format)
                 _rtrHeaderRva = FindRTRHeaderSymbol();
             }
 
             rva = _rtrHeaderRva.Value;
+            isComposite = rva != 0; // Mach-O R2R images are always composite
             return rva != 0;
         }
 
