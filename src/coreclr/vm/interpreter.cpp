@@ -4860,7 +4860,7 @@ void Interpreter::BinaryArithOp()
     case CORINFO_TYPE_SHIFTED_LONG:
         {
             bool looseLong = false;
-#if defined(HOST_AMD64) || defined(HOST_S390X) || defined(HOST_POWEPC64)
+#if defined(HOST_AMD64) || defined(HOST_S390X) || defined(HOST_POWERPC64)
             looseLong = (s_InterpreterLooseRules && (t2.ToCorInfoType() == CORINFO_TYPE_NATIVEINT ||
                     t2.ToCorInfoType() == CORINFO_TYPE_BYREF));
 #endif
