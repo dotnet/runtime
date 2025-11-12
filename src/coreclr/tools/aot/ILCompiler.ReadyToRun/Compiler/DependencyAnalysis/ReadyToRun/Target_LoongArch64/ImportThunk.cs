@@ -21,18 +21,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 instructionEncoder.EmitJMP(_helperCell);
                 return;
             }
-
-            instructionEncoder.Builder.RequireInitialPointerAlignment();
-            Debug.Assert(instructionEncoder.Builder.CountBytes == 0);
-
-            instructionEncoder.Builder.EmitReloc(factory.ModuleImport, RelocType.IMAGE_REL_BASED_DIR64);
-
-            Debug.Assert(instructionEncoder.Builder.CountBytes == ((ISymbolNode)this).Offset);
-
             if (relocsOnly)
             {
                 // When doing relocs only, we don't need to generate the actual instructions
-                // as they will be ignored. Just emit the jump so we record the dependency.
+                // as they will be ignored. Just emit the module import load and jump so we record the dependencies.
+                instructionEncoder.EmitLD(Register.R5, factory.ModuleImport);
                 instructionEncoder.EmitJMP(_helperCell);
                 return;
             }
@@ -50,32 +43,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     int index = _containingImportSection.IndexFromBeginningOfArray;
                     instructionEncoder.EmitMOV(Register.R12, checked((ushort)index));
 
-                    int offset = -instructionEncoder.Builder.CountBytes;
-
-                    // get pc
-                    // pcaddi T1=R13, 0
-                    instructionEncoder.EmitPCADDI(Register.R13);
-
-                    // load Module* -> T1
-                    instructionEncoder.EmitLD(Register.R13, Register.R13, offset);
-
-                    // ld_d R13, R13, 0
-                    instructionEncoder.EmitLD(Register.R13, Register.R13, 0);
+                    instructionEncoder.EmitLD(Register.R13, factory.ModuleImport);
                     break;
                 }
 
                 case Kind.Lazy:
                 {
-                    int offset = -instructionEncoder.Builder.CountBytes;
-                    // get pc
-                    // pcaddi R5, 0
-                    instructionEncoder.EmitPCADDI(Register.R5);
-
-                    // load Module* -> R5=A1
-                    instructionEncoder.EmitLD(Register.R5, Register.R5, offset);
-
-                    // ld_d R5, R5, 0
-                    instructionEncoder.EmitLD(Register.R5, Register.R5, 0);
+                    instructionEncoder.EmitLD(Register.R5, factory.ModuleImport);
                     break;
                 }
 

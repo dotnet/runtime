@@ -151,16 +151,16 @@ namespace ILCompiler
         public MethodDesc GetAsyncVariantMethod(MethodDesc taskReturningMethod)
         {
             Debug.Assert(taskReturningMethod.Signature.ReturnsTaskOrValueTask());
-            MethodDesc asyncMetadataMethodDef = taskReturningMethod.GetTypicalMethodDefinition();
-            MethodDesc result = _asyncVariantHashtable.GetOrCreateValue((EcmaMethod)asyncMetadataMethodDef);
+            MethodDesc taskReturningMethodDefinition = taskReturningMethod.GetTypicalMethodDefinition();
+            MethodDesc result = _asyncVariantHashtable.GetOrCreateValue((EcmaMethod)taskReturningMethodDefinition);
 
-            if (asyncMetadataMethodDef != taskReturningMethod)
+            if (taskReturningMethodDefinition != taskReturningMethod)
             {
                 TypeDesc owningType = taskReturningMethod.OwningType;
-                if (owningType.HasInstantiation)
+                if (owningType != taskReturningMethodDefinition.OwningType)
                     result = GetMethodForInstantiatedType(result, (InstantiatedType)owningType);
 
-                if (taskReturningMethod.HasInstantiation)
+                if (taskReturningMethod.HasInstantiation && !taskReturningMethod.IsMethodDefinition)
                     result = GetInstantiatedMethod(result, taskReturningMethod.Instantiation);
             }
 
