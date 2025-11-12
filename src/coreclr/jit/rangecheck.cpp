@@ -1134,6 +1134,11 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
             Compiler::dspTreeID(op), m_pCompiler->vnStore->VNConservativeNormalValue(op->gtVNPair));
     ASSERT_TP assertions = BitVecOps::UninitVal();
 
+    if (m_pCompiler->GetAssertionCount() < 1)
+    {
+        return;
+    }
+
     // If we have a phi arg, we can get to the block from it and use its assertion out.
     if (op->OperIs(GT_PHI_ARG))
     {
@@ -1148,7 +1153,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     // Get assertions from bbAssertionIn.
     else if (op->IsLocal())
     {
-        assertions = block->bbAssertionIn;
+        assertions = BitVecOps::MakeCopy(m_pCompiler->apTraits, block->bbAssertionIn);
 
         // bbAssertionIn is a bit conservative and will not include inter-block assertions.
         // e.g. created by GT_BOUNDS_CHECK nodes prior the 'op' in the current block.
@@ -1219,7 +1224,7 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
         }
     }
 
-    if (!BitVecOps::MayBeUninit(assertions) && (m_pCompiler->GetAssertionCount() > 0))
+    if (!BitVecOps::MayBeUninit(assertions))
     {
         // Perform the merge step to fine tune the range value.
         MergeEdgeAssertions(op->AsLclVarCommon(), assertions, pRange);
