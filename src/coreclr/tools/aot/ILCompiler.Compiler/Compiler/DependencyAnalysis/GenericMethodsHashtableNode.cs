@@ -69,10 +69,11 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     int flags = 0;
-                    if (method.IsAsyncVariant())
+                    MethodDesc methodForMetadata = GetMethodForMetadata(method, out bool isAsyncVariant);
+                    if (isAsyncVariant)
                         flags |= GenericMethodsHashtableConstants.IsAsyncVariant;
 
-                    int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, method.GetTypicalMethodDefinition());
+                    int token = factory.MetadataManager.GetMetadataHandleForMethod(factory, methodForMetadata);
 
                     int flagsAndToken = (token & MetadataManager.MetadataOffsetMask) | flags;
                     fullMethodSignature = nativeWriter.GetTuple(containingType, nativeWriter.GetUnsignedConstant((uint)flagsAndToken), arguments);
@@ -111,7 +112,19 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies.Add(new DependencyListEntry(argNode, "GenericMethodsHashtable entry instantiation argument"));
             }
 
-            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, method.GetTypicalMethodDefinition());
+            factory.MetadataManager.GetNativeLayoutMetadataDependencies(ref dependencies, factory, GetMethodForMetadata(method, out _));
+        }
+
+        private static MethodDesc GetMethodForMetadata(MethodDesc method, out bool isAsyncVariant)
+        {
+            MethodDesc result = method.GetTypicalMethodDefinition();
+            if (result is AsyncMethodVariant asyncVariant)
+            {
+                isAsyncVariant = true;
+                return asyncVariant.Target;
+            }
+            isAsyncVariant = false;
+            return result;
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
