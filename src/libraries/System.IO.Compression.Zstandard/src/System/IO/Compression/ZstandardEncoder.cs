@@ -262,7 +262,7 @@ namespace System.IO.Compression
                 throw new ArgumentOutOfRangeException(nameof(inputSize));
             }
 
-            if (result > int.MaxValue)
+            if (result > long.MaxValue)
             {
                 throw new ArgumentOutOfRangeException(nameof(inputSize));
             }
