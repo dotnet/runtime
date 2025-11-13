@@ -688,10 +688,7 @@ namespace System.Numerics
                 right = right.Slice(0, ActualLength(right));
                 bits = bits.Slice(0, left.Length + right.Length);
 
-                if (left.Length < right.Length)
-                    Multiply(right, left, bits);
-                else
-                    Multiply(left, right, bits);
+                Multiply(left, right, bits);
             }
         }
     }

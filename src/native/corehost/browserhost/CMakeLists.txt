@@ -113,10 +113,12 @@ target_link_options(browserhost PRIVATE
     -sMODULARIZE=1
     -sEXPORT_ES6=1
     -sEXIT_RUNTIME=0
-    -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,cwrap,ccall,HEAP8,HEAPU8,HEAP16,HEAPU16,HEAP32,HEAPU32,HEAP64,HEAPU64,HEAPF32,HEAPF64,safeSetTimeout,maybeExit,exitJS,abort,lengthBytesUTF8,UTF8ToString,stringToUTF8Array
-    -sEXPORTED_FUNCTIONS=_posix_memalign,_malloc,_free,stackAlloc,stackRestore,stackSave,___cpp_exception,_GetDotNetRuntimeContractDescriptor,_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly
+    -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+    -sEXPORTED_FUNCTIONS=_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
-    -lnodefs.js)
+    -sENVIRONMENT=web,webview,worker,node,shell
+    -lnodefs.js
+    -Wl,-error-limit=0)
 
 target_link_libraries(browserhost PUBLIC
     BrowserHost-Static
