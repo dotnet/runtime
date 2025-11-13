@@ -457,5 +457,43 @@ namespace System.IO.Compression
             var result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: true);
             Assert.True(result == OperationStatus.Done || result == OperationStatus.DestinationTooSmall);
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Compress_AppendChecksum_RoundTrip(bool corrupt)
+        {
+            using ZstandardEncoder encoder = new(new ZstandardCompressionOptions
+            {
+                AppendChecksum = true
+            });
+            byte[] input = ZstandardTestUtils.CreateTestData(100);
+            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
+
+            OperationStatus result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, result);
+
+            if (corrupt)
+            {
+                // Corrupt the data
+                output[10] ^= 0xFF;
+            }
+
+            // Try to decompress
+            using ZstandardDecoder decoder = new();
+            byte[] decompressed = new byte[input.Length];
+            var decompressResult = decoder.Decompress(output.AsSpan(0, bytesWritten), decompressed, out int bytesConsumedDec, out int bytesWrittenDec);
+
+            if (corrupt)
+            {
+                Assert.Equal(OperationStatus.InvalidData, decompressResult);
+            }
+            else
+            {
+                Assert.Equal(OperationStatus.Done, decompressResult);
+                Assert.Equal(input.Length, bytesWrittenDec);
+                Assert.Equal(input, decompressed);
+            }
+        }
     }
 }

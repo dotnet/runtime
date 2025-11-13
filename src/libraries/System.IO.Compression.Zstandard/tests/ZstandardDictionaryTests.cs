@@ -81,7 +81,7 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new long[] { 2, 2, 3, 4, 5 }, 50));
 
             // too few samples
-            Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardDictionary.Train("AbbCCCdddd"u8.ToArray(), new long[] { 1, 2, 3, 4 }, 0));
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train("AbbCCCdddd"u8.ToArray(), new long[] { 1, 2, 3, 4 }, 0));
 
             // Invalid max dictionary size
             Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new long[] { 1, 2, 3, 4, 5 }, -50));
@@ -101,7 +101,7 @@ namespace System.IO.Compression
         [Fact]
         public void Train_ValidSamples_Succeeds()
         {
-            int sampleCount = 19;
+            int sampleCount = 200;
             int sampleSize = 100;
 
             byte[] samples = new byte[sampleCount * sampleSize];
@@ -111,7 +111,7 @@ namespace System.IO.Compression
             }
 
             long[] sampleLengths = Enumerable.Repeat((long)sampleSize, sampleCount).ToArray();
-            int maxDictionarySize = 512;
+            int maxDictionarySize = 256;
 
             // Act
             using ZstandardDictionary dictionary = ZstandardDictionary.Train(samples, sampleLengths, maxDictionarySize);
