@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Converters
             scoped ref ReadStack state,
             out Memory<T> value)
         {
-            if (reader.TokenType is JsonTokenType.Null)
+            if (reader.TokenType is JsonTokenType.Null && state.Current.ReturnValue is null)
             {
                 value = default;
                 return true;

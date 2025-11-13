@@ -87,7 +87,7 @@ namespace NetClient
         {
             Console.WriteLine($"Running {nameof(ValidationTests)} ...");
 
-            var miscTypeTesting = (Server.Contract.Servers.MiscTypesTesting)new Server.Contract.Servers.MiscTypesTestingClass();
+            var miscTypeTesting = new Server.Contract.Servers.MiscTypesTesting();
 
             Console.WriteLine("-- Primitives <=> VARIANT...");
             {
@@ -226,7 +226,7 @@ namespace NetClient
         {
             Console.WriteLine($"Running {nameof(ValidateNegativeTests)} ...");
 
-            var miscTypeTesting = (Server.Contract.Servers.MiscTypesTesting)new Server.Contract.Servers.MiscTypesTestingClass();
+            var miscTypeTesting = new Server.Contract.Servers.MiscTypesTesting();
 
             Console.WriteLine("-- DispatchWrapper with non-IDispatch object <=> VARIANT...");
             {
