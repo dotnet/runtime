@@ -88,7 +88,11 @@ namespace System.IO.Compression
 
             try
             {
-                SetWindow(maxWindow);
+                if (maxWindow != 0)
+                {
+                    SetWindow(maxWindow);
+                }
+
                 SetDictionary(dictionary);
             }
             catch
