@@ -846,7 +846,7 @@ CONFIG_STRING(JitRawHexCodeFile, "JitRawHexCodeFile")
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, "JitSaveFpLrWithCalleeSavedRegisters", 0)
 
 // Experimental support for vector length agnostic implementation of Vector<T>
-RELEASE_CONFIG_INTEGER(JitUseScalableVectorT, "JitUseScalableVectorT", 0)
+CONFIG_INTEGER(JitUseScalableVectorT, "JitUseScalableVectorT", 0)
 #endif // defined(TARGET_ARM64)
 
 #if defined(TARGET_LOONGARCH64)

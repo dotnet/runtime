@@ -629,7 +629,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
 
                         JITDUMP(" Found Vector<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
 
-#ifdef TARGET_ARM64
+#if defined(DEBUG) && defined(TARGET_ARM64)
                         if (JitConfig.JitUseScalableVectorT() &&
                             compOpportunisticallyDependsOn(InstructionSet_Sve_Arm64))
                         {
