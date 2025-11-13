@@ -10,7 +10,7 @@ namespace System.IO.Compression
         [Fact]
         public void Parameters_SetToZero_Succeeds()
         {
-            var options = new ZstandardCompressionOptions();
+            ZstandardCompressionOptions options = new();
             options.Quality = 0;
             options.Window = 0;
             options.TargetBlockSize = 0;
@@ -22,7 +22,7 @@ namespace System.IO.Compression
         [InlineData(22)]
         public void Quality_SetToValidRange_Succeeds(int quality)
         {
-            var options = new ZstandardCompressionOptions();
+            ZstandardCompressionOptions options = new();
             options.Quality = quality; // Should not throw
             Assert.Equal(quality, options.Quality);
         }
@@ -32,7 +32,7 @@ namespace System.IO.Compression
         [InlineData(1000)]
         public void Quality_SetOutOfRange_ThrowsArgumentOutOfRangeException(int quality)
         {
-            var options = new ZstandardCompressionOptions();
+            ZstandardCompressionOptions options = new();
             Assert.Throws<ArgumentOutOfRangeException>(() => options.Quality = quality);
         }
 
@@ -42,7 +42,7 @@ namespace System.IO.Compression
         [InlineData(31)]
         public void Window_SetToValidRange_Succeeds(int window)
         {
-            var options = new ZstandardCompressionOptions();
+            ZstandardCompressionOptions options = new();
             options.Window = window; // Should not throw
             Assert.Equal(window, options.Window);
         }
@@ -52,7 +52,7 @@ namespace System.IO.Compression
         [InlineData(32)]
         public void Window_SetOutOfRange_ThrowsArgumentOutOfRangeException(int window)
         {
-            var options = new ZstandardCompressionOptions();
+            ZstandardCompressionOptions options = new();
             Assert.Throws<ArgumentOutOfRangeException>(() => options.Window = window);
         }
 
@@ -62,7 +62,7 @@ namespace System.IO.Compression
         [InlineData(131072)]
         public void TargetBlockSize_SetToValidRange_Succeeds(int targetBlockSize)
         {
-            var options = new ZstandardCompressionOptions();
+            ZstandardCompressionOptions options = new();
             options.TargetBlockSize = targetBlockSize; // Should not throw
             Assert.Equal(targetBlockSize, options.TargetBlockSize);
         }
@@ -72,7 +72,7 @@ namespace System.IO.Compression
         [InlineData(131073)]
         public void TargetBlockSize_SetOutOfRange_ThrowsArgumentOutOfRangeException(int targetBlockSize)
         {
-            var options = new ZstandardCompressionOptions();
+            ZstandardCompressionOptions options = new();
             Assert.Throws<ArgumentOutOfRangeException>(() => options.TargetBlockSize = targetBlockSize);
         }
     }

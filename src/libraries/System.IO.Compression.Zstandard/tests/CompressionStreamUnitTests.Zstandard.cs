@@ -29,12 +29,12 @@ namespace System.IO.Compression
         [Fact]
         public void ZstandardStream_WithEncoder_CompressesData()
         {
-            var encoder = new ZstandardEncoder(5, 10);
-            byte[] testData = CreateTestData();
-            using var input = new MemoryStream(testData);
-            using var output = new MemoryStream();
+            ZstandardEncoder encoder = new(5, 10);
+            byte[] testData = ZstandardTestUtils.CreateTestData();
+            using MemoryStream input = new(testData);
+            using MemoryStream output = new();
 
-            using (var compressionStream = new ZstandardStream(output, encoder, leaveOpen: true))
+            using (ZstandardStream compressionStream = new(output, encoder, leaveOpen: true))
             {
                 input.CopyTo(compressionStream);
             }
@@ -44,8 +44,8 @@ namespace System.IO.Compression
             Assert.True(output.Length < testData.Length);
 
             // Verify the encoder was reset, not disposed (should be reusable)
-            using var output2 = new MemoryStream();
-            using (var compressionStream2 = new ZstandardStream(output2, encoder, leaveOpen: true))
+            using MemoryStream output2 = new();
+            using (ZstandardStream compressionStream2 = new(output2, encoder, leaveOpen: true))
             {
                 input.Position = 0;
                 input.CopyTo(compressionStream2);
@@ -59,18 +59,18 @@ namespace System.IO.Compression
         public void ZstandardStream_WithDecoder_DecompressesData()
         {
             // First, create some compressed data
-            byte[] testData = CreateTestData();
+            byte[] testData = ZstandardTestUtils.CreateTestData();
             byte[] compressedData = new byte[ZstandardEncoder.GetMaxCompressedLength(testData.Length)];
             bool compressResult = ZstandardEncoder.TryCompress(testData, compressedData, out int compressedLength);
             Assert.True(compressResult);
 
             Array.Resize(ref compressedData, compressedLength);
 
-            var decoder = new ZstandardDecoder();
-            using var input = new MemoryStream(compressedData);
-            using var output = new MemoryStream();
+            ZstandardDecoder decoder = new();
+            using MemoryStream input = new(compressedData);
+            using MemoryStream output = new();
 
-            using (var decompressionStream = new ZstandardStream(input, decoder, leaveOpen: true))
+            using (ZstandardStream decompressionStream = new(input, decoder, leaveOpen: true))
             {
                 decompressionStream.CopyTo(output);
             }
@@ -79,8 +79,8 @@ namespace System.IO.Compression
             Assert.Equal(testData, output.ToArray());
 
             // Verify the decoder was reset, not disposed (should be reusable)
-            using var output2 = new MemoryStream();
-            using (var decompressionStream2 = new ZstandardStream(input, decoder, leaveOpen: true))
+            using MemoryStream output2 = new();
+            using (ZstandardStream decompressionStream2 = new(input, decoder, leaveOpen: true))
             {
                 input.Position = 0;
                 decompressionStream2.CopyTo(output2);
@@ -90,15 +90,21 @@ namespace System.IO.Compression
             decoder.Dispose(); // Clean up
         }
 
-        private static byte[] CreateTestData()
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(2)]
+        public void ZstandardStream_SetSourceSize_SizeDiffers_InvalidOperationException(long delta)
         {
-            // Create some test data that compresses well
-            byte[] data = new byte[1000];
-            for (int i = 0; i < data.Length; i++)
+            byte[] testData = ZstandardTestUtils.CreateTestData();
+            using MemoryStream output = new();
+            ZstandardStream compressionStream = new(output, CompressionLevel.Optimal);
+
+            compressionStream.SetSourceSize(testData.Length + delta);
+            Assert.Throws<InvalidOperationException>(() =>
             {
-                data[i] = (byte)(i % 10); // Repeating pattern
-            }
-            return data;
+                compressionStream.Write(testData, 0, testData.Length);
+                compressionStream.Dispose();
+            });
         }
     }
 }

@@ -12,7 +12,7 @@ namespace System.IO.Compression
         public void Create_WithValidBuffer_Succeeds()
         {
             // Arrange
-            byte[] dictionaryData = CreateSampleDictionary();
+            byte[] dictionaryData = ZstandardTestUtils.CreateSampleDictionary();
 
             // Act
             using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData);
@@ -25,7 +25,7 @@ namespace System.IO.Compression
         public void Create_WithValidBufferAndQuality_Succeeds()
         {
             // Arrange
-            byte[] dictionaryData = CreateSampleDictionary();
+            byte[] dictionaryData = ZstandardTestUtils.CreateSampleDictionary();
             int quality = 5;
 
             // Act
@@ -60,14 +60,12 @@ namespace System.IO.Compression
         public void Dispose_CanBeCalledMultipleTimes()
         {
             // Arrange
-            byte[] dictionaryData = CreateSampleDictionary();
+            byte[] dictionaryData = ZstandardTestUtils.CreateSampleDictionary();
             ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData);
 
             // Act & Assert - Should not throw
             dictionary.Dispose();
             dictionary.Dispose();
         }
-
-        private static byte[] CreateSampleDictionary() => ZstandardTestUtils.CreateSampleDictionary();
     }
 }

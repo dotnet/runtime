@@ -18,7 +18,7 @@ namespace System.IO.Compression
         [Fact]
         public void Dispose_CanBeCalledMultipleTimes()
         {
-            byte[] dictionaryData = CreateSampleDictionary();
+            byte[] dictionaryData = ZstandardTestUtils.CreateSampleDictionary();
             using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData);
             ZstandardDecoder decoder = new ZstandardDecoder(dictionary);
 
@@ -29,7 +29,7 @@ namespace System.IO.Compression
         [Fact]
         public void Reset_AfterDispose_ThrowsObjectDisposedException()
         {
-            var decoder = new ZstandardDecoder();
+            ZstandardDecoder decoder = new();
             decoder.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => decoder.Reset());
@@ -40,11 +40,11 @@ namespace System.IO.Compression
         [InlineData(false)]
         public void Reset_AllowsReuseForMultipleDecompressions(bool useDictionary)
         {
-            byte[] dictionaryData = CreateSampleDictionary();
+            byte[] dictionaryData = ZstandardTestUtils.CreateSampleDictionary();
             using ZstandardDictionary dictionary = ZstandardDictionary.Create(dictionaryData, ZstandardCompressionOptions.DefaultQuality);
 
             // First compress some data to have something to decompress
-            byte[] input = CreateTestData();
+            byte[] input = ZstandardTestUtils.CreateTestData();
             byte[] compressed = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
             bool compressResult = useDictionary
                 ? ZstandardEncoder.TryCompress(input, compressed, out int compressedLength, dictionary, ZstandardCompressionOptions.DefaultWindow)
@@ -94,7 +94,7 @@ namespace System.IO.Compression
             ReadOnlySpan<byte> emptySource = ReadOnlySpan<byte>.Empty;
             Span<byte> destination = new byte[100];
 
-            using ZstandardDictionary dictionary = ZstandardDictionary.Create(CreateSampleDictionary());
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(ZstandardTestUtils.CreateSampleDictionary());
 
             bool result = useDictionary
                 ? ZstandardDecoder.TryDecompress(emptySource, dictionary, destination, out int bytesWritten)
@@ -117,7 +117,7 @@ namespace System.IO.Compression
         [Fact]
         public void Decompress_AfterDispose_ThrowsObjectDisposedException()
         {
-            byte[] dictionaryData = CreateSampleDictionary();
+            byte[] dictionaryData = ZstandardTestUtils.CreateSampleDictionary();
             ZstandardDecoder decoder = new ZstandardDecoder();
             decoder.Dispose();
 
@@ -188,7 +188,7 @@ namespace System.IO.Compression
             byte[] compressedBuffer = new byte[ZstandardEncoder.GetMaxCompressedLength(originalData.Length)];
             byte[] decompressedBuffer = new byte[originalData.Length * 2];
 
-            using ZstandardDictionary dictionary = ZstandardDictionary.Create(CreateSampleDictionary(), quality);
+            using ZstandardDictionary dictionary = ZstandardDictionary.Create(ZstandardTestUtils.CreateSampleDictionary(), quality);
 
             int window = 10;
 
@@ -239,19 +239,6 @@ namespace System.IO.Compression
             Assert.Equal(compressedLength, bytesConsumed);
             Assert.Equal(originalData.Length, bytesWritten);
             Assert.Equal(originalData, decompressedBuffer.AsSpan(0, bytesWritten));
-        }
-
-        private static byte[] CreateSampleDictionary() => ZstandardTestUtils.CreateSampleDictionary();
-
-        private static byte[] CreateTestData()
-        {
-            // Create some test data that compresses well
-            byte[] data = new byte[1000];
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (byte)(i % 10); // Repeating pattern
-            }
-            return data;
         }
     }
 }
