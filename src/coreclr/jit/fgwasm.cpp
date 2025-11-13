@@ -274,7 +274,7 @@ public:
 
                 if (BitVecOps::TryAddElemD(&m_traits, m_entries, block->bbPostorderNum))
                 {
-                    JITDUMP(FMT_BB " is scc %u entry via " FMT_BB "\n", m_num, block->bbNum, pred->bbNum);
+                    JITDUMP(FMT_BB " is scc %u entry via " FMT_BB "\n",block->bbNum,  m_num, pred->bbNum);
                     isEntry = true;
 
                     m_entryWeight += block->bbWeight;
