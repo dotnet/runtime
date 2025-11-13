@@ -950,6 +950,12 @@ void AsyncTransformation::LiftLIREdges(BasicBlock*                     block,
 //
 bool AsyncTransformation::ContinuationNeedsKeepAlive(AsyncLiveness& life)
 {
+    if (m_comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        // Native AOT doesn't have a LoaderAllocator
+        return false;
+    }
+
     const unsigned GENERICS_CTXT_FROM = CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
     if (((m_comp->info.compMethodInfo->options & GENERICS_CTXT_FROM) != 0) && life.IsLive(m_comp->info.compTypeCtxtArg))
     {
@@ -1504,28 +1510,20 @@ GenTreeCall* AsyncTransformation::CreateAllocContinuationCall(AsyncLiveness&    
                                                               const ContinuationLayout& layout)
 {
     GenTree* contClassHndNode = m_comp->gtNewIconEmbClsHndNode(layout.ClassHnd);
-    // If VM requests that we report the method handle, or if we have a shared generic context method handle
-    // that is live here, then we need to call a different helper to keep the loader alive.
-    if (((m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODDESC) != 0) &&
-        life.IsLive(m_comp->info.compTypeCtxtArg))
+
+    // If we need to keep the loader alive, use a different helper.
+    if (ContinuationNeedsKeepAlive(life))
     {
         assert(layout.KeepAliveOffset != UINT_MAX);
-        GenTree* methodHandleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
+        GenTree* handleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
         // Offset passed to function is relative to instance data.
         int keepAliveOffset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) + layout.KeepAliveOffset;
-        GenTree* keepAliveOffsetNode = m_comp->gtNewIconNode(keepAliveOffset);
-        return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION_METHOD, TYP_REF, prevContinuation,
-                                           contClassHndNode, keepAliveOffsetNode, methodHandleArg);
-    }
-    else if (((m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODTABLE) != 0) &&
-             life.IsLive(m_comp->info.compTypeCtxtArg))
-    {
-        assert(layout.KeepAliveOffset != UINT_MAX);
-        GenTree* classHandleArg = m_comp->gtNewLclvNode(m_comp->info.compTypeCtxtArg, TYP_I_IMPL);
-        int keepAliveOffset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) + layout.KeepAliveOffset;
-        GenTree* keepAliveOffsetNode = m_comp->gtNewIconNode(keepAliveOffset);
-        return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION_CLASS, TYP_REF, prevContinuation,
-                                           contClassHndNode, keepAliveOffsetNode, classHandleArg);
+        GenTree*        keepAliveOffsetNode = m_comp->gtNewIconNode(keepAliveOffset);
+        CorInfoHelpFunc helperNum = (m_comp->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_METHODTABLE) != 0
+                                        ? CORINFO_HELP_ALLOC_CONTINUATION_CLASS
+                                        : CORINFO_HELP_ALLOC_CONTINUATION_METHOD;
+        return m_comp->gtNewHelperCallNode(helperNum, TYP_REF, prevContinuation, contClassHndNode, keepAliveOffsetNode,
+                                           handleArg);
     }
 
     return m_comp->gtNewHelperCallNode(CORINFO_HELP_ALLOC_CONTINUATION, TYP_REF, prevContinuation, contClassHndNode);

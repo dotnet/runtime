@@ -4379,41 +4379,53 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float AbsoluteDifference(float op1, float op2) => MathF.Abs(op1 - op2);
 
+        private static float ConvertToSingleRoundToOdd(double val)
+        {
+            float f = (float)val;
+
+            // If val is NaN or Inf there’s nothing else to do
+            if (double.IsNaN(val) || double.IsInfinity(val))
+                return f;
+
+            // Detect the cases where the default cast rounded away from zero
+            if ((val > 0 && (double)f > val) ||
+                (val < 0 && (double)f < val))
+            {
+                // Move toward zero to get truncate() behaviour.
+                int bits = BitConverter.SingleToInt32Bits(f);
+                bits += (val > 0) ? -1 : +1;
+                f = BitConverter.Int32BitsToSingle(bits);
+            }
+
+            // Round to odd, force the last bit of the mantissa to 1 if the conversion was inexact
+            if (val != (double)f)
+            {
+                int bits = BitConverter.SingleToInt32Bits(f);
+                bits |= 0x1;
+                f = BitConverter.Int32BitsToSingle(bits);
+            }
+
+            return f;
+        }
+
         public static float ConvertToSingleEvenRoundToOdd(double[] value, int i)
         {
             if (i % 2 == 0)
             {
-                double val = value[i / 2];
-                float floatVal = (float)val;
-
-                float f = (float)val;
-
-                // If val is NaN or Inf there’s nothing else to do
-                if (double.IsNaN(val) || double.IsInfinity(val))
-                    return f;
-
-                // Detect the cases where the default cast rounded away from zero
-                if ((val > 0 && (double)f > val) ||
-                    (val < 0 && (double)f < val))
-                {
-                    // Move toward zero to get truncate() behaviour.
-                    int bits = BitConverter.SingleToInt32Bits(f);
-                    bits += (val > 0) ? -1 : +1;
-                    f = BitConverter.Int32BitsToSingle(bits);
-                }
-
-                // Round to odd, force the last bit of the mantissa to 1 if the conversion was inexact
-                if (val != (double)f)
-                {
-                    int bits = BitConverter.SingleToInt32Bits(f);
-                    bits |= 0x1;
-                    f = BitConverter.Int32BitsToSingle(bits);
-                }
-
-                return f;
+                return ConvertToSingleRoundToOdd(value[i / 2]);
             }
 
             return 0f;
+        }
+
+        public static float ConvertToSingleOddRoundToOdd(float[] even, double[] op, int i)
+        {
+            if (i % 2 != 0)
+            {
+                return ConvertToSingleRoundToOdd(op[(i - 1) / 2]);
+            }
+
+            return even[i];
         }
 
         public static float FusedMultiplyAdd(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(op2, op3, op1);
@@ -5923,6 +5935,16 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return result;
+        }
+
+        public static float ConvertToSingleOdd(float[] even, double[] op, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return even[i];
+            }
+
+            return (float)op[(i - 1) / 2];
         }
 
         public static float ConvertToSingleUpper(float[] op1, double[] op2, int i) => i < op1.Length ? op1[i] : ConvertToSingle(op2[i - op1.Length]);

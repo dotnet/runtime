@@ -374,7 +374,7 @@ namespace Internal.IL
             {
                 if (asyncVariantImpl.IsAsync)
                 {
-                    return EcmaMethodIL.Create(asyncVariantImpl.Target);
+                    return new AsyncEcmaMethodIL(asyncVariantImpl, EcmaMethodIL.Create(asyncVariantImpl.Target));
                 }
                 else
                 {
@@ -386,6 +386,27 @@ namespace Internal.IL
                 Debug.Assert(!(method is PInvokeTargetNativeMethod), "Who is asking for IL of PInvokeTargetNativeMethod?");
                 return null;
             }
+        }
+
+        private sealed class AsyncEcmaMethodIL : MethodIL
+        {
+            private readonly AsyncMethodVariant _variant;
+            private readonly EcmaMethodIL _ecmaIL;
+
+            public AsyncEcmaMethodIL(AsyncMethodVariant variant, EcmaMethodIL ecmaIL)
+                => (_variant, _ecmaIL) = (variant, ecmaIL);
+
+            // This is the reason we need this class - the method that owns the IL is the variant.
+            public override MethodDesc OwningMethod => _variant;
+
+            // Everything else dispatches to EcmaMethodIL
+            public override MethodDebugInformation GetDebugInfo() => _ecmaIL.GetDebugInfo();
+            public override ILExceptionRegion[] GetExceptionRegions() => _ecmaIL.GetExceptionRegions();
+            public override byte[] GetILBytes() => _ecmaIL.GetILBytes();
+            public override LocalVariableDefinition[] GetLocals() => _ecmaIL.GetLocals();
+            public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _ecmaIL.GetObject(token, notFoundBehavior);
+            public override bool IsInitLocals => _ecmaIL.IsInitLocals;
+            public override int MaxStack => _ecmaIL.MaxStack;
         }
     }
 }

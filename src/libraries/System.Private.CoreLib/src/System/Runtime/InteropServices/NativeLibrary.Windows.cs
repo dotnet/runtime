@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.IO;
 
 namespace System.Runtime.InteropServices
 {
@@ -13,35 +14,30 @@ namespace System.Runtime.InteropServices
         {
             IntPtr hmod;
 
-            // Disable the OS dialogs when failing to load. This matches CoreCLR.
-            uint prev;
-            bool set = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS | Interop.Kernel32.SEM_NOOPENFILEERRORBOX, out prev);
-            if (((uint)flags & 0xFFFFFF00) != 0)
+            // Disable the OS dialogs when failing to load.
+            using (DisableMediaInsertionPrompt.Create())
             {
-                hmod = Interop.Kernel32.LoadLibraryEx(libraryName, IntPtr.Zero, (int)((uint)flags & 0xFFFFFF00));
-                if (hmod != IntPtr.Zero)
+                if (((uint)flags & 0xFFFFFF00) != 0)
                 {
-                    goto exit;
+                    hmod = Interop.Kernel32.LoadLibraryEx(libraryName, IntPtr.Zero, (int)((uint)flags & 0xFFFFFF00));
+                    if (hmod != IntPtr.Zero)
+                    {
+                        return hmod;
+                    }
+
+                    int lastError = Marshal.GetLastPInvokeError();
+                    if (lastError != Interop.Errors.ERROR_INVALID_PARAMETER)
+                    {
+                        errorTracker.TrackErrorCode(lastError);
+                        return hmod;
+                    }
                 }
 
-                int lastError = Marshal.GetLastPInvokeError();
-                if (lastError != Interop.Errors.ERROR_INVALID_PARAMETER)
+                hmod = Interop.Kernel32.LoadLibraryEx(libraryName, IntPtr.Zero, flags & 0xFF);
+                if (hmod == IntPtr.Zero)
                 {
-                    errorTracker.TrackErrorCode(lastError);
-                    goto exit;
+                    errorTracker.TrackErrorCode(Marshal.GetLastPInvokeError());
                 }
-            }
-
-            hmod = Interop.Kernel32.LoadLibraryEx(libraryName, IntPtr.Zero, flags & 0xFF);
-            if (hmod == IntPtr.Zero)
-            {
-                errorTracker.TrackErrorCode(Marshal.GetLastPInvokeError());
-            }
-
-        exit:
-            if (set)
-            {
-                Interop.Kernel32.SetThreadErrorMode(prev, out _);
             }
 
             return hmod;
