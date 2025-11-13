@@ -2636,9 +2636,9 @@ public:
 #endif // defined(TARGET_X86)
 #endif // !defined(HOST_64BIT)
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64)
     unsigned int emitCounts_INS_OPTS_J;
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_LOONGARCH64
 
     instrDesc* emitFirstInstrDesc(BYTE* idData) const;
     void       emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
@@ -3304,6 +3304,9 @@ private:
 
     int emitSyncThisObjOffs; // what is the offset of "this" for synchronized methods?
 
+    CORINFO_METHOD_HANDLE emitAsyncResumeStub           = NO_METHOD_HANDLE;
+    void*                 emitAsyncResumeStubEntryPoint = nullptr;
+
 public:
     void emitSetFrameRangeGCRs(int offsLo, int offsHi);
     void emitSetFrameRangeLcls(int offsLo, int offsHi);
@@ -3465,6 +3468,17 @@ public:
     /*      The following logic keeps track of initialized data sections    */
     /************************************************************************/
 
+    // Note: Keep synchronized with AsyncHelpers.ResumeInfo
+    struct dataAsyncResumeInfo
+    {
+        // delegate*<Continuation, ref byte, Continuation>
+        target_size_t Resume;
+        // Pointer in main code for diagnostics. See comments on
+        // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
+        // ResumeInfo.DiagnosticIP in SPC.
+        target_size_t DiagnosticIP;
+    };
+
     /* One of these is allocated for every blob of initialized data */
 
     struct dataSection
@@ -3479,7 +3493,8 @@ public:
         {
             data,
             blockAbsoluteAddr,
-            blockRelative32
+            blockRelative32,
+            asyncResumeInfo,
         };
 
         dataSection*   dsNext;
@@ -3487,8 +3502,9 @@ public:
         sectionType    dsType;
         var_types      dsDataType;
 
-        // variable-sized array used to store the constant data
-        // or BasicBlock* array in the block cases.
+        // variable-sized array used to store the constant data, BasicBlock*
+        // array in the block cases, or emitLocation for the asyncResumeInfo
+        // case.
         BYTE dsCont[0];
     };
 
@@ -3516,6 +3532,7 @@ public:
 
     void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
     void emitDispDataSec(dataSecDsc* section, BYTE* dst);
+    void emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataOffset, dataSection** dataSection);
 
     /************************************************************************/
     /*              Handles to the current class and method.                */

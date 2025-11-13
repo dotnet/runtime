@@ -210,7 +210,7 @@ inline TADDR GetSP(const CONTEXT * context) {
     return (TADDR)(context->Esp);
 }
 
-EXTERN_C LPVOID STDCALL GetCurrentSP();
+EXTERN_C void* GetCurrentSP();
 
 inline void SetSP(CONTEXT *context, TADDR esp) {
     LIMITED_METHOD_DAC_CONTRACT;

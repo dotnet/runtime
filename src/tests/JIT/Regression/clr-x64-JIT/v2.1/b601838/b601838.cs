@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace b601838;
+
 using System;
 using System.Security;
 // using System.Security.Permissions;
@@ -25,6 +28,7 @@ public static class GenericSecurity
         }
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

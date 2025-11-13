@@ -231,7 +231,7 @@ void  Thread::SetFrame(Frame *pFrame)
     if (g_pConfig->fAssertOnFailFast() == false)
         return;
 
-    Frame* espVal = (Frame*)GetCurrentSP();
+    void* espVal = GetCurrentSP();
 
     while (pFrame != (Frame*) -1)
     {
@@ -6812,7 +6812,7 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     while (pFrame < pvLimitSP)
     {
         CONSISTENCY_CHECK(pFrame != PTR_NULL);
-        CONSISTENCY_CHECK((pFrame) > static_cast<Frame *>((LPVOID)GetCurrentSP()));
+        CONSISTENCY_CHECK((pFrame) > static_cast<Frame *>(GetCurrentSP()));
         pFrame->ExceptionUnwind();
         pFrame = pFrame->Next();
     }
