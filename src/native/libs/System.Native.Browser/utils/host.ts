@@ -11,13 +11,13 @@ import { ENVIRONMENT_IS_NODE } from "./per-module";
 // - install global handler for unhandled exceptions and promise rejections
 // - raise ExceptionHandling.RaiseAppDomainUnhandledExceptionEvent()
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function exit(exit_code: number, reason: any): void {
+export function exit(exitCode: number, reason: any): void {
     if (reason) {
         const reasonStr = (typeof reason === "object") ? `${reason.message || ""}\n${reason.stack || ""}` : reason.toString();
         dotnetLogger.error(reasonStr);
     }
     if (ENVIRONMENT_IS_NODE) {
-        (globalThis as any).process.exit(exit_code);
+        (globalThis as any).process.exit(exitCode);
     }
 }
 
