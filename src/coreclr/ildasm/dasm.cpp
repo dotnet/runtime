@@ -7165,16 +7165,14 @@ void CloseNamespace(__inout __nullterminated char* szString)
 
 FILE* OpenOutput(_In_ __nullterminated const WCHAR* wzFileName)
 {
+    FILE*   pfile = NULL;
 #ifdef HOST_WINDOWS
-    FILE*   pfile = NULL;
-        if(g_uCodePage == 0xFFFFFFFF) u16_fopen_s(&pfile,wzFileName,W("wb"));
-        else u16_fopen_s(&pfile,wzFileName,W("wt"));
+    int err = fopen_lp(&pfile,wzFileName, (g_uCodePage == 0xFFFFFFFF) ? W("wb") : W("wt"));
 #else
-    FILE*   pfile = NULL;
-    u16_fopen_s(&pfile,wzFileName,W("w"));
+    int err = fopen_lp(&pfile,wzFileName,W("w"));
 #endif
 
-    if(pfile)
+    if(err == 0)
     {
         if(g_uCodePage == CP_UTF8) fwrite("\357\273\277",3,1,pfile);
         else if(g_uCodePage == 0xFFFFFFFF) fwrite("\377\376",2,1,pfile);

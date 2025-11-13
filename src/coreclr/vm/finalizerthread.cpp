@@ -450,7 +450,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             WCHAR outputPath[MAX_PATH];
             ReplacePid(GENAWARE_COMPLETION_FILE_NAME, outputPath, MAX_PATH);
             FILE* fp = NULL;
-            if (u16_fopen_s(&fp, outputPath, W("w+")) == 0)
+            if (fopen_lp(&fp, outputPath, W("w+")) == 0)
             {
                 fclose(fp);
             }
