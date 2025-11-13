@@ -154,10 +154,11 @@ enum StackType {
     StackTypeVT,
     StackTypeByRef,
     StackTypeF,
+    StackTypeLocalVariableAddress, // LocalVariableAddress, The result of ldloca or ldarga is a byref per spec, but is also permitted to be treated as a nint in some cases. Keep track of that here.
 #ifdef TARGET_64BIT
-    StackTypeI = StackTypeI8
+    StackTypeI = StackTypeI8,
 #else
-    StackTypeI = StackTypeI4
+    StackTypeI = StackTypeI4,
 #endif
 };
 
@@ -413,8 +414,54 @@ struct InterpVar
 
 struct StackInfo
 {
+private:
     StackType type;
+public:
+
     CORINFO_CLASS_HANDLE clsHnd;
+
+    StackType GetStackType()
+    {
+        if (type == StackTypeLocalVariableAddress)
+        {
+            // Transient pointers are treated as byrefs for stack type purposes
+            return StackTypeByRef;
+        }
+        return type;
+    }
+
+    void SetAsLocalVariableAddress()
+    {
+        assert(type == StackTypeByRef);
+        type = StackTypeLocalVariableAddress;
+    }
+
+    bool IsLocalVariableAddress()
+    {
+        return type == StackTypeLocalVariableAddress;
+    }
+
+    // Used before a use of a value where the value on the stack would be correctly handled if the type on the stack
+    // was of type I. This is done to allow the use of the address of a local variable as a pointer which is common
+    // in older IL testing.
+    void BashStackTypeToI_ForLocalVariableAddress()
+    {
+        if (type == StackTypeLocalVariableAddress)
+        {
+            type = StackTypeI;
+        }
+    }
+
+    // Used before a conversion operation to ensure that transient pointers, byrefs, and object references are
+    // treated as integers for the purpose of the conversion. The Byref/O behavior here does not seem to have
+    // justification in the ECMA-335 spec, but it is needed to match the behavior of the JIT.
+    void BashStackTypeToI_ForConvert()
+    {
+        if ((type == StackTypeLocalVariableAddress) || (type == StackTypeByRef) || (type == StackTypeO))
+        {
+            type = StackTypeI;
+        }
+    }
 
     // The var associated with the value of this stack entry. Every time we push on
     // the stack a new var is created.
@@ -709,7 +756,7 @@ private:
     int32_t m_varsSize = 0;
     int32_t m_varsCapacity = 0;
     int32_t m_numILVars = 0;
-    int32_t m_paramArgIndex = 0; // Index of the type parameter argument in the m_pVars array.
+    int32_t m_paramArgIndex = -1; // Index of the type parameter argument in the m_pVars array.
     // For each catch or filter clause, we create a variable that holds the exception object.
     // This is the index of the first such variable.
     int32_t m_clauseVarsIndex = 0;

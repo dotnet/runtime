@@ -547,7 +547,7 @@
       <CrossgenCmd>$(CrossgenCmd) -m "$(CORE_ROOT)\StandardOptimizationData.mibc"</CrossgenCmd>
 
       <CrossgenCmd Condition="'$(__CreatePdb)' != ''">$(CrossgenCmd) --pdb</CrossgenCmd>
-      <CrossgenCmd Condition="'$(__CreatePerfmap)' != ''">$(CrossgenCmd) --perfmap --perfmap-format-version 1</CrossgenCmd>
+      <CrossgenCmd Condition="'$(__CreatePerfmap)' != '' and '$(TargetsAppleMobile)' != 'true'">$(CrossgenCmd) --perfmap --perfmap-format-version 1</CrossgenCmd>
       <CrossgenCmd Condition="'$(__CompositeBuildMode)' != ''">$(CrossgenCmd) --composite</CrossgenCmd>
       <CrossgenCmd Condition="'$(__CompositeBuildMode)' == ''">$(CrossgenCmd) --crossgen2-parallelism 1</CrossgenCmd>
 
