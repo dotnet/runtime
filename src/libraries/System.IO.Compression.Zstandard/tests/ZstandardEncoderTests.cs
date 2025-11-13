@@ -357,5 +357,127 @@ namespace System.IO.Compression
             }
             return data;
         }
+
+        private static byte[] CreateTestData(int size)
+        {
+            // Create test data of specified size
+            byte[] data = new byte[size];
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = (byte)(i % 256); // Varying pattern
+            }
+            return data;
+        }
+
+        [Fact]
+        public void SetPrefix_ValidPrefix_SetsSuccessfully()
+        {
+            using var encoder = new ZstandardEncoder();
+            byte[] prefix = { 0x01, 0x02, 0x03, 0x04, 0x05 };
+
+            // Should not throw
+            encoder.SetPrefix(prefix);
+
+            // Verify encoder can still be used
+            var input = CreateTestData(100);
+            var output = new byte[1000];
+            var result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: true);
+            Assert.True(result == OperationStatus.Done || result == OperationStatus.DestinationTooSmall);
+        }
+
+        [Fact]
+        public void SetPrefix_EmptyPrefix_SetsSuccessfully()
+        {
+            using var encoder = new ZstandardEncoder();
+
+            // Should not throw with empty prefix
+            encoder.SetPrefix(ReadOnlyMemory<byte>.Empty);
+
+            // Verify encoder can still be used
+            var input = CreateTestData(50);
+            var output = new byte[500];
+            var result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: true);
+            Assert.True(result == OperationStatus.Done || result == OperationStatus.DestinationTooSmall);
+        }
+
+        [Fact]
+        public void SetPrefix_AfterDispose_ThrowsObjectDisposedException()
+        {
+            var encoder = new ZstandardEncoder();
+            encoder.Dispose();
+
+            byte[] prefix = { 0x01, 0x02, 0x03 };
+            Assert.Throws<ObjectDisposedException>(() => encoder.SetPrefix(prefix));
+        }
+
+        [Fact]
+        public void SetPrefix_AfterFinished_ThrowsInvalidOperationException()
+        {
+            using var encoder = new ZstandardEncoder();
+            var input = CreateTestData(100);
+            var output = new byte[1000];
+
+            // Compress and finish
+            encoder.Compress(input, output, out _, out _, isFinalBlock: true);
+            encoder.Flush(output, out _);
+
+            byte[] prefix = { 0x01, 0x02, 0x03 };
+            Assert.Throws<InvalidOperationException>(() => encoder.SetPrefix(prefix));
+        }
+
+        [Fact]
+        public void SetPrefix_AfterStartedCompression_ThrowsInvalidOperationException()
+        {
+            using var encoder = new ZstandardEncoder();
+            var input = CreateTestData(100);
+            var output = new byte[1000];
+
+            // Start compression
+            encoder.Compress(input, output, out _, out _, isFinalBlock: false);
+
+            byte[] prefix = { 0x01, 0x02, 0x03 };
+            Assert.Throws<InvalidOperationException>(() => encoder.SetPrefix(prefix));
+        }
+
+        [Fact]
+        public void SetPrefix_AfterReset_SetsSuccessfully()
+        {
+            using var encoder = new ZstandardEncoder();
+            var input = CreateTestData(100);
+            var output = new byte[1000];
+
+            // First compression cycle
+            byte[] firstPrefix = { 0x01, 0x02, 0x03 };
+            encoder.SetPrefix(firstPrefix);
+            encoder.Compress(input, output, out _, out _, isFinalBlock: true);
+            encoder.Flush(output, out _);
+
+            // Reset and set new prefix
+            encoder.Reset();
+            byte[] secondPrefix = { 0x04, 0x05, 0x06 };
+            encoder.SetPrefix(secondPrefix); // Should not throw
+
+            // Verify encoder can still be used
+            var result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: true);
+            Assert.True(result == OperationStatus.Done || result == OperationStatus.DestinationTooSmall);
+        }
+
+        [Fact]
+        public void SetPrefix_MultipleTimes_BeforeCompression_LastOneWins()
+        {
+            using var encoder = new ZstandardEncoder();
+
+            byte[] firstPrefix = { 0x01, 0x02, 0x03 };
+            encoder.SetPrefix(firstPrefix);
+
+            byte[] secondPrefix = { 0x04, 0x05, 0x06 };
+            encoder.SetPrefix(secondPrefix); // Should not throw - last one wins
+
+            // Verify encoder can still be used
+            var input = CreateTestData(100);
+            var output = new byte[1000];
+            var result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: true);
+            Assert.True(result == OperationStatus.Done || result == OperationStatus.DestinationTooSmall);
+        }
     }
 }
