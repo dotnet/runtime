@@ -103,6 +103,15 @@ public static class Program
             throw new Exception($"Dictionary '{unusedDictionary}' is not referenced by any fuzzer.");
         }
 
+        string[] corpora = Directory.GetDirectories(Path.Combine(publishDirectory, "Corpora"))
+            .Select(Path.GetFileName)
+            .ToArray()!;
+
+        if (corpora.FirstOrDefault(corpus => !fuzzers.Any(f => f.Corpus == corpus)) is { } unusedCorpus)
+        {
+            throw new Exception($"Corpus '{unusedCorpus}' is not referenced by any fuzzer.");
+        }
+
         Directory.CreateDirectory(outputDirectory);
 
         await DownloadArtifactAsync(
@@ -152,6 +161,20 @@ public static class Program
                 }
 
                 File.Copy(Path.Combine(publishDirectory, "Dictionaries", dict), Path.Combine(fuzzerDirectory, "dictionary"), overwrite: true);
+            }
+
+            if (fuzzer.Corpus is string corpus)
+            {
+                if (!corpora.Contains(corpus, StringComparer.Ordinal))
+                {
+                    throw new Exception($"Fuzzer '{fuzzer.Name}' is referencing a corpus '{fuzzer.Corpus}' that does not exist in the publish directory.");
+                }
+
+                Directory.CreateDirectory(Path.Combine(fuzzerDirectory, "corpus"));
+                foreach (string file in Directory.EnumerateFiles(Path.Combine(publishDirectory, "Corpora", corpus), "*", SearchOption.TopDirectoryOnly))
+                {
+                    File.Copy(file, Path.Combine(fuzzerDirectory, "corpus", Path.GetFileName(file)), overwrite: true);
+                }
             }
 
             InstrumentAssemblies(fuzzer, fuzzerDirectory);
@@ -368,6 +391,15 @@ public static class Program
 
         // Pass any additional arguments to the fuzzer.
         script += " %*";
+
+        // multiple corpus directories can be passed to the fuzzer, new test
+        // inputs are then added to the first one. We put the seed corpus after
+        // additional args so that if user specifies additional corpus dirs, the
+        // new inputs get added there instead.
+        if (fuzzer.Corpus is not null)
+        {
+            script += " %~dp0/corpus";
+        }
 
         return script;
     }

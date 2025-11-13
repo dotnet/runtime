@@ -6770,11 +6770,19 @@ void CodeGen::genReportAsyncDebugInfo()
         return;
     }
 
-    assert(genAsyncResumeInfoTable != nullptr);
     for (size_t i = 0; i < suspPoints->size(); i++)
     {
-        emitLocation& emitLoc                   = ((emitLocation*)genAsyncResumeInfoTable->dsCont)[i];
-        (*suspPoints)[i].DiagnosticNativeOffset = emitLoc.Valid() ? emitLoc.CodeOffset(GetEmitter()) : 0;
+        uint32_t diagNativeOffset = 0;
+        if (genAsyncResumeInfoTable != nullptr)
+        {
+            emitLocation& emitLoc = ((emitLocation*)genAsyncResumeInfoTable->dsCont)[i];
+            if (emitLoc.Valid())
+            {
+                diagNativeOffset = emitLoc.CodeOffset(GetEmitter());
+            }
+        }
+
+        (*suspPoints)[i].DiagnosticNativeOffset = diagNativeOffset;
     }
 
     ICorDebugInfo::AsyncInfo asyncInfo;

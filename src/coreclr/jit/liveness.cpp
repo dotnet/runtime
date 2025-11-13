@@ -944,6 +944,8 @@ bool Compiler::fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
     if (VarSetOps::IsMember(this, life, varIndex))
     {
         // The variable is live
+        node->gtFlags &= ~GTF_VAR_DEATH;
+
         if ((node->gtFlags & GTF_VAR_USEASG) == 0)
         {
             // Remove the variable from the live set if it is not in the keepalive set.
