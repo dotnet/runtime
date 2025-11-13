@@ -50,9 +50,7 @@ internal static class SignatureMapper
             return c;
 
         // FIXME: Most of these need to be L for wasm64
-        if (t.IsArray)
-            c = 'i';
-        else if (t.IsByRef)
+        if (t.IsByRef)
             c = 'i';
         else if (t.IsClass)
             c = 'i';
@@ -81,7 +79,7 @@ internal static class SignatureMapper
             isByRefStruct = true;
         }
         else
-            log.Warning("WASM0064", $"Unsupported parameter type '{t.Name}'");
+            log.Warning("WASM0065", $"Unsupported parameter type '{t.Name}'");
 
         return c;
     }
