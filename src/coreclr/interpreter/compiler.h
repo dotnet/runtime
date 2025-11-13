@@ -342,6 +342,9 @@ struct InterpBasicBlock
     // Number of catch, filter or finally clauses that overlap with this basic block.
     int32_t overlappingEHClauseCount;
 
+    // Number of try blocks that enclose this basic block.
+    int32_t enclosingTryBlockCount;
+
     InterpBasicBlock(int32_t index) : InterpBasicBlock(index, 0) { }
 
     InterpBasicBlock(int32_t index, int32_t ilOffset)
@@ -759,13 +762,22 @@ private:
     int32_t m_paramArgIndex = -1; // Index of the type parameter argument in the m_pVars array.
     // For each catch or filter clause, we create a variable that holds the exception object.
     // This is the index of the first such variable.
+    int32_t m_continuationArgIndex = -1; // Index of the continuation argument in the m_pVars array for async methods.
     int32_t m_clauseVarsIndex = 0;
+    
+    int32_t m_synchronizedOrAsyncPostFinallyOffset = -1; // If the method is synchronized/async, this is the offset of the instruction after the finally which does the actual return
 
     bool m_isSynchronized = false;
     int32_t m_synchronizedFlagVarIndex = -1; // If the method is synchronized, this is the index of the argument that flag indicating if the lock was taken
-    int32_t m_synchronizedRetValVarIndex = -1; // If the method is synchronized, ret instructions are replaced with a store to this var and a leave to an epilog instruction.
+    int32_t m_synchronizedOrAsyncRetValVarIndex = -1; // If the method is synchronized, ret instructions are replaced with a store to this var and a leave to an epilog instruction.
     int32_t m_synchronizedFinallyStartOffset = -1; // If the method is synchronized, this is the offset of the start of the finally epilog
-    int32_t m_synchronizedPostFinallyOffset = -1; // If the method is synchronized, this is the offset of the instruction after the finally which does the actual return
+
+    int32_t m_execContextVarIndex = -1; // If the method is async, this is the var index of the ExecutionContext local
+    int32_t m_syncContextVarIndex = -1; // If the method is async, this is the var index of the SynchronizationContext local
+
+    void *m_asyncResumeFuncPtr = NULL;
+    bool m_isAsyncMethodWithContextSaveRestore = false;
+    int32_t m_asyncFinallyStartOffset = -1; // If the method is async, this is the offset of the start of the fault handler
 
     bool m_shadowCopyOfThisPointerActuallyNeeded = false;
     bool m_shadowCopyOfThisPointerHasVar = false;
@@ -823,6 +835,7 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
+    void    EmitSuspend(const CORINFO_CALL_INFO &callInfo);
     void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
@@ -851,6 +864,15 @@ private:
     void    InitializeGlobalVars();
     void    EndActiveCall(InterpInst *call);
     void    CompactActiveVars(int32_t *current_offset);
+
+    TArray<InterpIntervalMapEntry**, MemPoolAllocator> m_varIntervalMaps;
+    InterpIntervalMapEntry ComputeNextIntervalMapEntry_ForVars(const TArray<int32_t, MemPoolAllocator> &vars, int32_t *pNextIndex);
+    void AllocateIntervalMapData_ForVars(InterpIntervalMapEntry** ppIntervalMap, const TArray<int32_t, MemPoolAllocator> &vars);
+
+    void GetVarSizeAndOffset(const InterpIntervalMapEntry* pVarIntervalMap, int32_t entryIndex, int32_t internalIndex, uint32_t* pVarSize, uint32_t* pVarOffset);
+    InterpIntervalMapEntry ComputeNextIntervalMapEntry_ForOffsets(const InterpIntervalMapEntry* pVarIntervalMap, int32_t *pNextIndex, int32_t *pInternalIndex);
+    void ConvertToIntervalMapData_ForOffsets(InterpIntervalMapEntry** ppIntervalMap);
+    void UpdateLocalIntervalMaps();
 
     // Passes
     int32_t* m_pMethodCode;
@@ -884,6 +906,7 @@ private:
     void PrintInsData(InterpInst *ins, int32_t offset, const int32_t *pData, int32_t opcode);
     void PrintCompiledCode();
     void PrintCompiledIns(const int32_t *ip, const int32_t *start);
+    void PrintInterpAsyncSuspendData(InterpAsyncSuspendData* pSuspendInfo);
 #ifdef DEBUG
     InterpDumpScope m_dumpScope;
     TArray<char, MallocAllocator> m_methodName;

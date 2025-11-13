@@ -24,6 +24,7 @@ struct InterpHelperData {
 
 #ifndef INTERPRETER_COMPILER_INTERNAL
 class MethodDesc;
+class MethodTable;
 #endif
 
 struct CallStubHeader;
@@ -186,6 +187,52 @@ enum class CalliFlags : int32_t
     None = 0,
     SuppressGCTransition = 1 << 1, // The call is marked by the SuppressGCTransition attribute
     PInvoke = 1 << 2, // The call is a PInvoke call
+};
+
+struct InterpIntervalMapEntry
+{
+    uint32_t startOffset;
+    uint32_t countBytes; // If count is 0 then this is the end marker.
+};
+
+struct InterpAsyncSuspendData
+{
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_CLASS_HANDLE ContinuationTypeHnd;
+#else
+    DPTR(MethodTable) ContinuationTypeHnd;
+#endif
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_METHOD_HANDLE pCaptureSyncContextMethod;
+#else
+    DPTR(MethodDesc) pCaptureSyncContextMethod;
+#endif
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_METHOD_HANDLE pMDRestoreExecutionContext;
+#else
+    DPTR(MethodDesc) pMDRestoreExecutionContext;
+#endif
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_METHOD_HANDLE pRestoreContextsMethod;
+#else
+    DPTR(MethodDesc) pRestoreContextsMethod;
+#endif
+    // ResumeInfo . Keep in sync with dataAsyncResumeInfo in the JIT and System.Runtime.CompilerServices.ResumeInfo
+    void* resumeFuncPtr; // Pointer to the resume function
+    void* DiagnosticIP; // IP to report in diagnostic scenarios
+
+    InterpIntervalMapEntry* zeroedLocalsIntervals; // This will be used for the locals we need to keep live.
+    InterpIntervalMapEntry* liveLocalsIntervals; // Following the end of this struct is the array of InterpIntervalMapEntry for live locals
+    CorInfoContinuationFlags flags;
+    int32_t offsetIntoContinuationTypeForExecutionContext;
+    int32_t keepAliveOffset; // Only needed if we have a generic context to keep alive
+    int32_t returnSize; // Size of return value stored in the continuation
+    InterpByteCodeStart* methodStartIP;
+    int32_t continuationArgOffset;
+    // The continuation argument is implicit and stored in an OBJECTREF in the interpreter frame.
+    // svar 0 for this the suspend opcode will be the return value from the call opcode
+    // svar 1 for this the suspend opcode will pass the generic context if needed.
+    // dvar will be the actual return
 };
 
 #endif

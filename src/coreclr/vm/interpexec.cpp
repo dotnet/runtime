@@ -9,6 +9,8 @@
 #include "frames.h"
 #include "virtualcallstub.h"
 #include "comdelegate.h"
+#include "gchelpers.inl"
+#include "arraynative.inl"
 
 // for numeric_limits
 #include <limits>
@@ -728,6 +730,63 @@ void* DoGenericLookup(void* genericVarAsPtr, InterpGenericLookup* pLookup)
         return GenericHandleCommon(pMD, pMT, pLookup->signature);
     }
     return result;
+}
+
+void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont, uint8_t* resultStorage)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    Thread *pThread = GetThread();
+    InterpThreadContext *threadContext = pThread->GetInterpThreadContext();
+    if (threadContext == nullptr || threadContext->pStackStart == nullptr)
+    {
+        COMPlusThrow(kOutOfMemoryException);
+    }
+    int8_t *sp = threadContext->pStackPointer;
+
+    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
+    // InterpMethodContextFrame. This is important for the stack walking code.
+    struct Frames
+    {
+        InterpMethodContextFrame interpMethodContextFrame = {0};
+        InterpreterFrame interpreterFrame;
+
+        Frames(TransitionBlock* pTransitionBlock)
+        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
+        {
+        }
+    }
+    frames(NULL);
+
+    StackVal retVal;
+
+    CONTINUATIONREF contRef = (CONTINUATIONREF)ObjectToOBJECTREF(cont.Get());
+    NULL_CHECK(contRef);
+
+    // We are working with an interpreter async continuation, move things around to get the InterpAsyncSuspendData
+    size_t resumeDataOffset = offsetof(InterpAsyncSuspendData, resumeFuncPtr);
+    InterpAsyncSuspendData* pSuspendData = (InterpAsyncSuspendData*)(void*)(((uint8_t*)contRef->GetResumeInfo()) - resumeDataOffset);
+    assert(&pSuspendData->resumeFuncPtr == contRef->GetResumeInfo());
+
+    // All the incoming args and locals should be zeroed out, except for the continuation argument
+    InterpMethod *pMethod = pSuspendData->methodStartIP->Method;
+    memset(sp, 0, pMethod->allocaSize);
+    *(CONTINUATIONREF*)(sp + pSuspendData->continuationArgOffset) = contRef;
+
+    frames.interpMethodContextFrame.startIp = pSuspendData->methodStartIP;
+    frames.interpMethodContextFrame.pStack = sp;
+    frames.interpMethodContextFrame.pRetVal = (int8_t*)&retVal;
+
+    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
+
+    cont.Set(frames.interpreterFrame.GetContinuation());
+    frames.interpreterFrame.Pop();
+
+    END_QCALL;
 }
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
@@ -1879,6 +1938,10 @@ MAIN_LOOP:
         ip += 4;                                    \
     } while (0)
 
+                case INTOP_CZERO_I:
+                    LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], intptr_t) != 0;
+                    ip += 4;
+                    break;
                 case INTOP_CEQ_I4:
                     LOCAL_VAR(ip[1], int32_t) = LOCAL_VAR(ip[2], int32_t) == LOCAL_VAR(ip[3], int32_t);
                     ip += 4;
@@ -3577,6 +3640,279 @@ do                                                                      \
                 case INTOP_THROW_PNSE:
                     COMPlusThrow(kPlatformNotSupportedException);
                     break;
+
+                case INTOP_HANDLE_CONTINUATION:
+                {
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[2]];
+
+                    // Zero out locals that need zeroing
+                    InterpIntervalMapEntry *pZeroLocalsEntry = pAsyncSuspendData->zeroedLocalsIntervals;
+                    while (pZeroLocalsEntry->countBytes != 0)
+                    {
+                        memset(LOCAL_VAR_ADDR(pZeroLocalsEntry->startOffset, uint8_t), 0, pZeroLocalsEntry->countBytes);
+                        pZeroLocalsEntry++;
+                    }
+
+                    if (pInterpreterFrame->GetContinuation() == NULL)
+                    {
+                        // No continuation to handle.
+                        LOCAL_VAR(ip[1], void*) = NULL; // We don't allocate a continuation here
+                        ip += 4; // (4 for this opcode)
+                        break;
+                    }
+                    MethodTable *pContinuationType = pAsyncSuspendData->ContinuationTypeHnd;
+
+                    MethodDesc *pILTargetMethod = NULL;
+                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3], &pILTargetMethod);
+                    if (pILTargetMethod != NULL)
+                    {
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass argument to the target method
+                        LOCAL_VAR(callArgsOffset, OBJECTREF) = pInterpreterFrame->GetContinuation();
+                        LOCAL_VAR(callArgsOffset + 8, MethodTable*) = pContinuationType;
+
+                        pInterpreterFrame->SetContinuation(NULL);
+                        targetMethod = pILTargetMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
+                    }
+
+                    _ASSERTE(helperFtn != NULL);
+                    OBJECTREF chainedContinuation = pInterpreterFrame->GetContinuation();
+                    pInterpreterFrame->SetContinuation(NULL);
+                    ip += 4;
+                    LOCAL_VAR(ip[1], void*) = helperFtn(OBJECTREFToObject(chainedContinuation), pContinuationType);
+                    break;
+                }
+
+                case INTOP_CAPTURE_SYNC_CONTEXT_ON_SUSPEND:
+                {
+                    CONTINUATIONREF continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
+
+                    if (continuation == NULL)
+                    {
+                        LOCAL_VAR(ip[1], CONTINUATIONREF) = continuation;
+                        // No continuation to handle.
+                        ip += 4;
+                        break;
+                    }
+
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[3]];
+                    MethodDesc *pCaptureSyncContextMethod = pAsyncSuspendData->pCaptureSyncContextMethod;
+                    int32_t *flagsAddress = continuation->GetFlagsAddress();
+                    size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
+                    uint8_t *pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
+                    if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_EXCEPTION)
+                    {
+                        pContinuationData += sizeof(OBJECTREF);
+                    }
+
+                    returnOffset = ip[1];
+                    callArgsOffset = pMethod->allocaSize;
+
+                    // Pass argument to the target method
+                    LOCAL_VAR(callArgsOffset, void*) = pContinuationData;
+                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int32_t*) = flagsAddress;
+                    targetMethod = pCaptureSyncContextMethod;
+                    ip += 4;
+                    goto CALL_INTERP_METHOD;
+                }
+
+                case INTOP_RESTORE_CONTEXTS_ON_SUSPEND:
+                {
+                    CONTINUATIONREF newContinuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
+                    CONTINUATIONREF continuationArg = LOCAL_VAR(ip[3], CONTINUATIONREF);
+
+                    int32_t resumed = continuationArg != NULL;
+                    if ((newContinuation == NULL) || resumed)
+                    {
+                        LOCAL_VAR(ip[1], CONTINUATIONREF) = newContinuation;
+                        // No continuation to handle.
+                        ip += 6;
+                        break;
+                    }
+
+                    OBJECTREF executionContext = LOCAL_VAR(ip[4], OBJECTREF);
+                    OBJECTREF syncContext = LOCAL_VAR(ip[4] + INTERP_STACK_SLOT_SIZE, OBJECTREF);
+
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[5]];
+                    MethodDesc *pRestoreContextsMethod = pAsyncSuspendData->pRestoreContextsMethod;
+
+                    returnOffset = ip[1];
+                    callArgsOffset = pMethod->allocaSize;
+                    // Pass argument to the target method
+                    LOCAL_VAR(callArgsOffset, int32_t) = resumed;
+                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF) = executionContext;
+                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE * 2, OBJECTREF) = syncContext;
+                    targetMethod = pRestoreContextsMethod;
+                    ip += 6;
+                    goto CALL_INTERP_METHOD;
+                }
+
+                case INTOP_GET_CONTINUATION:
+                {
+                    LOCAL_VAR(ip[1], CONTINUATIONREF) = pInterpreterFrame->GetContinuation();
+                    pInterpreterFrame->SetContinuation(NULL);
+                    ip += 2;
+                    break;
+                }
+
+                case INTOP_SET_CONTINUATION:
+                {
+                    pInterpreterFrame->SetContinuation(LOCAL_VAR(ip[1], CONTINUATIONREF));
+                    ip += 2;
+                    break;
+                }
+
+                case INTOP_SET_CONTINUATION_NULL:
+                {
+                    pInterpreterFrame->SetContinuation(NULL);
+                    ip += 1;
+                    break;
+                }
+
+                case INTOP_HANDLE_CONTINUATION_SUSPEND:
+                {
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[2]];
+                    CONTINUATIONREF continuation = LOCAL_VAR(ip[1], CONTINUATIONREF);
+
+                    if (continuation == NULL)
+                    {
+                        // No continuation to handle.
+                        ip += 3 + 4; // (3 for this opcode + 4 for the continuation resume which follows)
+                        break;
+                    }
+                    ip += 3;
+                    
+                    THREADBASEREF threadBase = ((THREADBASEREF)GetThread()->GetExposedObject());
+                    continuation = LOCAL_VAR(ip[1], CONTINUATIONREF);
+                    SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), threadBase->GetExecutionContext());
+                    
+                    // copy locals that need to move to the continuation object
+                    size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
+                    continuation->SetFlags(pAsyncSuspendData->flags);
+                    uint8_t *pContinuationDataStart = continuation->GetResultStorage();
+                    uint8_t *pContinuationData = pContinuationDataStart;
+                    size_t bytesTotal = 0;
+                    InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
+                    GCHeapMemoryBarrier();
+                    while (pCopyEntry->countBytes != 0)
+                    {
+                        InlinedForwardGCSafeCopyHelper(pContinuationData, LOCAL_VAR_ADDR(pCopyEntry->startOffset, uint8_t), pCopyEntry->countBytes);
+                        bytesTotal += pCopyEntry->countBytes;
+                        pContinuationData += pCopyEntry->countBytes;
+                        pCopyEntry++;
+                    }
+                    InlinedSetCardsAfterBulkCopyHelper((Object**)pContinuationDataStart, bytesTotal);
+                    
+                    if (pAsyncSuspendData->returnSize > 0)
+                    {
+                        if (pAsyncSuspendData->returnSize > INTERP_STACK_SLOT_SIZE)
+                        {
+                            memset(pFrame->pRetVal, 0, pAsyncSuspendData->returnSize);
+                        }
+                        else
+                        {
+                            *(int64_t*)pFrame->pRetVal = 0;
+                        }
+                    }
+
+                    continuation->SetState((int32_t)((uint8_t*)ip - (uint8_t*)pFrame->startIp));
+                    if (pAsyncSuspendData->methodStartIP == 0)
+                    {
+                        // TODO! Do this at compile time instead of here
+                        VolatileStore(&pAsyncSuspendData->methodStartIP, pFrame->startIp);
+                    }
+                    continuation->SetResumeInfo(&pAsyncSuspendData->resumeFuncPtr);
+                    pInterpreterFrame->SetContinuation(continuation);
+                    goto EXIT_FRAME;
+                }
+
+                case INTOP_HANDLE_CONTINUATION_RESUME:
+                {
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[2]];
+                    CONTINUATIONREF continuation = (CONTINUATIONREF)ObjectToOBJECTREF(*(Object**)(stack + pAsyncSuspendData->continuationArgOffset));
+                    _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
+
+                    // The INTOP_CHECK_FOR_CONTINUATION opcode will have called to restore the execution context already
+                    // Now copy the locals
+
+                    // copy locals that need to move from the continuation object
+                    size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
+                    uint8_t *pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
+                    InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
+                    while (pCopyEntry->countBytes != 0)
+                    {
+                        memcpy(LOCAL_VAR_ADDR(pCopyEntry->startOffset, uint8_t), pContinuationData, pCopyEntry->countBytes);
+                        pCopyEntry++;
+                        pContinuationData += pCopyEntry->countBytes;
+                    }
+
+                    if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_EXCEPTION)
+                    {
+                        // Throw exception if needed
+                        pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
+                        OBJECTREF exception = *(OBJECTREF*)pContinuationData;
+
+                        if (exception != NULL)
+                        {
+                            MethodDesc *pILTargetMethod = NULL;
+                            HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[3], &pILTargetMethod);
+                            if (pILTargetMethod != NULL)
+                            {
+                                returnOffset = ip[1];
+                                callArgsOffset = pMethod->allocaSize;
+
+                                // Pass argument to the target method
+                                LOCAL_VAR(callArgsOffset, OBJECTREF) = pInterpreterFrame->GetContinuation();
+
+                                targetMethod = pILTargetMethod;
+                                ip += 4;
+                                goto CALL_INTERP_METHOD;
+                            }
+                            ip += 4;
+                            LOCAL_VAR(ip[1], void*) = helperFtn(OBJECTREFToObject(exception));
+                        }
+                    }
+
+                    // No exception needed. Do nothing.
+                    ip += 4;
+                    LOCAL_VAR(ip[1], void*) = NULL;
+                    break;
+                }
+
+                case INTOP_CHECK_FOR_CONTINUATION:
+                {
+                    CONTINUATIONREF continuation = LOCAL_VAR(ip[1], CONTINUATIONREF);
+                    _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
+                    if (continuation != NULL)
+                    {
+                        // A continuation is present, begin the restoration process
+                        int32_t state = continuation->GetState();
+                        ip = (int32_t*)((uint8_t*)pFrame->startIp + state);
+                        
+                        // Now we have an IP to where we should resume execution. This should be an INTOP_HANDLE_CONTINUATION_RESUME opcode
+                        // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
+                        assert(*ip == INTOP_HANDLE_CONTINUATION_RESUME);
+                        assert(*(ip-3) == INTOP_HANDLE_CONTINUATION_SUSPEND);
+                        InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[2]];
+
+                        returnOffset = pMethod->allocaSize - INTERP_STACK_SLOT_SIZE;
+                        callArgsOffset = pMethod->allocaSize;
+
+                        OBJECTREF execContext = ObjectToOBJECTREF(*(Object**)(((uint8_t*)OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext));
+
+                        // We need to call the RestoreExecutionContext helper method
+                        LOCAL_VAR(callArgsOffset, OBJECTREF) = execContext;
+
+                        targetMethod = pAsyncSuspendData->pMDRestoreExecutionContext;
+                        goto CALL_INTERP_METHOD;
+                    }
+                    ip += 3;
+                    break;
+                }
                 default:
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unimplemented or invalid interpreter opcode\n"));
                     break;

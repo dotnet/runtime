@@ -453,4 +453,6 @@ void InterpCompiler::AllocOffsets()
 
     m_globalVarsWithRefsStackTop = globalVarsWithRefsStackTop;
     m_totalVarsStackSize = ALIGN_UP_TO(finalVarsStackSize, INTERP_STACK_ALIGNMENT);
+
+    UpdateLocalIntervalMaps();
 }
