@@ -96,7 +96,6 @@ namespace System.IO.Compression
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode) { }
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen) { }
         public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, System.Text.Encoding? entryNameEncoding) { }
-        public ZipArchive(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, System.Text.Encoding? entryNameEncoding, string? defaultPassword, System.IO.Compression.ZipArchiveEntry.EncryptionMethod defaultEncryption) { }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Comment { get { throw null; } set { } }
         public System.Collections.ObjectModel.ReadOnlyCollection<System.IO.Compression.ZipArchiveEntry> Entries { get { throw null; } }
@@ -104,8 +103,6 @@ namespace System.IO.Compression
         public static System.Threading.Tasks.Task<System.IO.Compression.ZipArchive> CreateAsync(System.IO.Stream stream, System.IO.Compression.ZipArchiveMode mode, bool leaveOpen, System.Text.Encoding? entryNameEncoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName) { throw null; }
         public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, System.IO.Compression.CompressionLevel compressionLevel) { throw null; }
-        public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, System.IO.Compression.CompressionLevel compressionLevel, string password, System.IO.Compression.ZipArchiveEntry.EncryptionMethod encryption) { throw null; }
-        public System.IO.Compression.ZipArchiveEntry CreateEntry(string entryName, string password, System.IO.Compression.ZipArchiveEntry.EncryptionMethod encryption) { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
@@ -129,7 +126,7 @@ namespace System.IO.Compression
         public string Name { get { throw null; } }
         public void Delete() { }
         public System.IO.Stream Open() { throw null; }
-        public System.IO.Stream Open(string password) { throw null; }
+        public System.IO.Stream Open(string? password = null, System.IO.Compression.ZipArchiveEntry.EncryptionMethod encryptionMethod = System.IO.Compression.ZipArchiveEntry.EncryptionMethod.ZipCrypto) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(string password, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public System.Threading.Tasks.Task<System.IO.Stream> OpenAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string ToString() { throw null; }

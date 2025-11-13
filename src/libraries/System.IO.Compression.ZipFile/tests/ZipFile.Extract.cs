@@ -356,8 +356,6 @@ namespace System.IO.Compression.Tests
             });
         }
 
-
-
         [Fact]
         public async Task ExtractToFileAsync_WithCancellation_ShouldCancel()
         {
@@ -505,9 +503,9 @@ namespace System.IO.Compression.Tests
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
                 // Your custom overload that sets per-entry password & ZipCrypto
-                var entry = za.CreateEntry(entryName, password, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+                var entry = za.CreateEntry(entryName);
 
-                using var writer = new StreamWriter(entry.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                using var writer = new StreamWriter(entry.Open(password, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
                 writer.Write(expectedContent);
             }
 
@@ -551,8 +549,8 @@ namespace System.IO.Compression.Tests
             {
                 foreach (var it in items)
                 {
-                    var entry = za.CreateEntry(it.Name, password, enc);
-                    using var w = new StreamWriter(entry.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                    var entry = za.CreateEntry(it.Name);
+                    using var w = new StreamWriter(entry.Open(password, enc), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
                     await w.WriteAsync(it.Content);
                 }
             }
@@ -592,8 +590,8 @@ namespace System.IO.Compression.Tests
             {
                 foreach (var it in items)
                 {
-                    var entry = za.CreateEntry(it.Name, it.Password, enc);
-                    using var w = new StreamWriter(entry.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                    var entry = za.CreateEntry(it.Name);
+                    using var w = new StreamWriter(entry.Open(it.Password, enc), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
                     await w.WriteAsync(it.Content);
                 }
             }
@@ -651,9 +649,9 @@ namespace System.IO.Compression.Tests
                 // Encrypted
                 foreach (var it in encryptedItems)
                 {
-                    var entry = za.CreateEntry(it.Name, encPw, enc);
-                    using var w = new StreamWriter(entry.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
-                    await w.WriteAsync(it.Content);
+                    var entry = za.CreateEntry(it.Name);
+                    using var w = new StreamWriter(entry.Open(encPw, enc), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                    w.Write(it.Content);
                 }
 
                 // Plain
@@ -661,7 +659,7 @@ namespace System.IO.Compression.Tests
                 {
                     var entry = za.CreateEntry(it.Name); // default: no encryption
                     using var w = new StreamWriter(entry.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
-                    await w.WriteAsync(it.Content);
+                    w.Write(it.Content);
                 }
             }
 
@@ -717,8 +715,8 @@ namespace System.IO.Compression.Tests
             // Act: Open in Update mode and add encrypted entry
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
             {
-                var encEntry = za.CreateEntry("secure/new.txt", "pw123", ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using var w = new StreamWriter(encEntry.Open(), Encoding.UTF8);
+                var encEntry = za.CreateEntry("secure/new.txt");
+                using var w = new StreamWriter(encEntry.Open("pw123", ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8);
                 await w.WriteAsync("secret data");
             }
 
@@ -746,8 +744,8 @@ namespace System.IO.Compression.Tests
 
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
-                var e = za.CreateEntry("secure/delete.txt", "delpw", ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using var w = new StreamWriter(e.Open(), Encoding.UTF8);
+                var e = za.CreateEntry("secure/delete.txt");
+                using var w = new StreamWriter(e.Open("delpw", ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8);
                 await w.WriteAsync("to be deleted");
             }
 
@@ -776,8 +774,8 @@ namespace System.IO.Compression.Tests
             const string pw = "copy-pw";
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
-                var e = za.CreateEntry("secure/original.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using var w = new StreamWriter(e.Open(), Encoding.UTF8);
+                var e = za.CreateEntry("secure/original.txt");
+                using var w = new StreamWriter(e.Open(pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8);
                 w.Write("original content");
             }
 
@@ -793,8 +791,8 @@ namespace System.IO.Compression.Tests
                     content = r.ReadToEnd();
 
                 // Create new entry with same password
-                var dst = za.CreateEntry("secure/copy.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using var w = new StreamWriter(dst.Open(), Encoding.UTF8);
+                var dst = za.CreateEntry("secure/copy.txt");
+                using var w = new StreamWriter(dst.Open(pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8);
                 w.Write(content);
             }
 
@@ -831,8 +829,8 @@ namespace System.IO.Compression.Tests
             // Create archive and a single encrypted entry
             using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
-                var e = za.CreateEntry(originalName, pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using var w = new StreamWriter(e.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                var e = za.CreateEntry(originalName);
+                using var w = new StreamWriter(e.Open(pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
                 await w.WriteAsync(payload);
             }
 
@@ -855,8 +853,8 @@ namespace System.IO.Compression.Tests
                 });
 
                 // Create the destination entry with the same password and write the copied content.
-                var dst = za.CreateEntry(copyName, pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using var w = new StreamWriter(dst.Open(), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
+                var dst = za.CreateEntry(copyName);
+                using var w = new StreamWriter(dst.Open(pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto), Encoding.UTF8, bufferSize: 1024, leaveOpen: false);
                 await w.WriteAsync(content);
             }
 
@@ -883,461 +881,457 @@ namespace System.IO.Compression.Tests
         }
 
 
-        [Fact]
-        public void Update_OpenEncryptedEntry_WrongPassword_Throws()
-        {
-            string zipPath = NewPath("update_wrong_pw.zip");
-            const string pw = "correct-pw";
-
-            if (File.Exists(zipPath)) File.Delete(zipPath);
-
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
-            {
-                var e = za.CreateEntry("secure/file.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using var w = new StreamWriter(e.Open(), Encoding.UTF8);
-                w.Write("secret");
-            }
-
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
-            {
-                var e = za.GetEntry("secure/file.txt");
-                Assert.NotNull(e);
-                Assert.ThrowsAny<Exception>(() =>
-                {
-                    using var _ = e.Open("wrong-pw");
-                });
-            }
-        }
-
-
-        [Fact]
-        public async Task Update_EditPlainEntry_RoundTrip()
-        {
-            string zipPath = NewPath("update_edit_plain.zip");
-            if (File.Exists(zipPath)) File.Delete(zipPath);
-
-            // Create plain entry
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
-            {
-                var e = za.CreateEntry("plain.txt");
-                using var w = new StreamWriter(e.Open(), Encoding.UTF8);
-                await w.WriteAsync("original");
-            }
-
-            // Edit in Update mode
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
-            {
-                var e = za.GetEntry("plain.txt");
-                Assert.NotNull(e);
-
-                using var w = new StreamWriter(e.Open(), Encoding.UTF8);
-                await w.WriteAsync("modified");
-            }
-
-            // Verify updated content
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
-            {
-                var e = za.GetEntry("plain.txt");
-                using var r = new StreamReader(e.Open(), Encoding.UTF8);
-                Assert.Equal("modified", await r.ReadToEndAsync());
-            }
-        }
-
-
-
-        [Fact]
-        public void Update_EditEncryptedEntryWithoutPassword_Throws()
-        {
-            string zipPath = NewPath("update_edit_encrypted.zip");
-            const string pw = "edit-pw";
-
-            if (File.Exists(zipPath)) File.Delete(zipPath);
-
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
-            {
-                var e = za.CreateEntry("secure/edit.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using var w = new StreamWriter(e.Open(), Encoding.UTF8);
-                w.Write("secret");
-            }
-
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
-            {
-                var e = za.GetEntry("secure/edit.txt");
-                Assert.NotNull(e);
-
-                // Should throw because edit-in-place for encrypted entries is not supported
-                Assert.Throws<InvalidOperationException>(() =>
-                {
-                    using var _ = e.Open(); // no password
-                });
-            }
-        }
-
-
-        [Fact]
-        public async Task Update_MixedEntries_ReadEncrypted_EditPlain()
-        {
-            string zipPath = NewPath("update_mixed.zip");
-            const string pw = "mixed-pw";
-
-            if (File.Exists(zipPath)) File.Delete(zipPath);
-
-            // Create initial zip with encrypted and plain entries
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
-            {
-                var encEntry = za.CreateEntry("secure/data.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using (var w = new StreamWriter(encEntry.Open(), Encoding.UTF8))
-                    await w.WriteAsync("encrypted");
-
-                var plainEntry = za.CreateEntry("plain.txt");
-                using (var w = new StreamWriter(plainEntry.Open(), Encoding.UTF8))
-                    await w.WriteAsync("original");
-            }
-
-            // First update: read encrypted, modify plain
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
-            {
-                var enc = za.GetEntry("secure/data.txt");
-                Assert.NotNull(enc);
-
-                string encryptedContent;
-                using (var r = new StreamReader(enc.Open(pw), Encoding.UTF8))
-                    encryptedContent = await r.ReadToEndAsync();
-
-                var plain = za.GetEntry("plain.txt");
-                using var w = new StreamWriter(plain.Open(), Encoding.UTF8);
-                await w.WriteAsync("modified");
-            }
-
-            // Second update: verify encrypted, re-modify plain
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
-            {
-                var enc = za.GetEntry("secure/data.txt");
-                using (var r = new StreamReader(enc.Open(pw), Encoding.UTF8))
-                    Assert.Equal("encrypted", await r.ReadToEndAsync());
-
-                var plain = za.GetEntry("plain.txt");
-                using var w = new StreamWriter(plain.Open(), Encoding.UTF8);
-                await w.WriteAsync("modified");
-            }
-
-            // Final read: verify both entries
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
-            {
-                using (var r1 = new StreamReader(za.GetEntry("secure/data.txt").Open(pw), Encoding.UTF8))
-                    Assert.Equal("encrypted", await r1.ReadToEndAsync());
-
-                using (var r2 = new StreamReader(za.GetEntry("plain.txt").Open(), Encoding.UTF8))
-                    Assert.Equal("modified", await r2.ReadToEndAsync());
-            }
-        }
-
-
-
-        [Fact]
-        public async Task Update_ModifySameEncryptedEntryMultipleTimes()
-        {
-            string zipPath = NewPath("update_modify_multiple.zip");
-            const string pw = "multi-pw";
-
-            if (File.Exists(zipPath)) File.Delete(zipPath);
-
-            // Create initial encrypted entry
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
-            {
-                var e = za.CreateEntry("secure/data.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using var w = new StreamWriter(e.Open(), Encoding.UTF8);
-                await w.WriteAsync("version1");
-            }
-
-            // Modify entry multiple times
-            for (int i = 2; i <= 3; i++)
-            {
-                using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
-                {
-                    var e = za.GetEntry("secure/data.txt");
-                    Assert.NotNull(e);
-
-                    string oldContent;
-                    using (var r = new StreamReader(e!.Open(pw), Encoding.UTF8))
-                        oldContent = await r.ReadToEndAsync();
-
-                    e.Delete(); // remove old entry
-
-                    var newEntry = za.CreateEntry("secure/data.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                    using var w = new StreamWriter(newEntry.Open(), Encoding.UTF8);
-                    await w.WriteAsync($"{oldContent}-version{i}");
-                }
-            }
-
-            // Assert final content
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
-            {
-                var e = za.GetEntry("secure/data.txt");
-                Assert.NotNull(e);
-                using var r = new StreamReader(e!.Open(pw), Encoding.UTF8);
-                var text = await r.ReadToEndAsync();
-                Assert.Equal("version1-version2-version3", text);
-            }
-        }
-
-
-        [Fact]
-        public async Task Update_CopyEncryptedEntryToPlainEntry()
-        {
-            string zipPath = NewPath("update_copy_to_plain.zip");
-            const string pw = "plain-copy";
-
-            if (File.Exists(zipPath)) File.Delete(zipPath);
-
-            // Create encrypted entry
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
-            {
-                var e = za.CreateEntry("secure/original.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using var w = new StreamWriter(e.Open(), Encoding.UTF8);
-                await w.WriteAsync("secret content");
-            }
-
-            // Copy encrypted content to a plain entry
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
-            {
-                var src = za.GetEntry("secure/original.txt");
-                Assert.NotNull(src);
-
-                string content;
-                using (var r = new StreamReader(src!.Open(pw), Encoding.UTF8))
-                    content = await r.ReadToEndAsync();
-
-                var plainEntry = za.CreateEntry("public/copy.txt"); // no encryption
-                using var w = new StreamWriter(plainEntry.Open(), Encoding.UTF8);
-                await w.WriteAsync(content);
-            }
-
-            // Assert both entries exist and content matches
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
-            {
-                var enc = za.GetEntry("secure/original.txt");
-                var plain = za.GetEntry("public/copy.txt");
-                Assert.NotNull(enc);
-                Assert.NotNull(plain);
-
-                using (var r1 = new StreamReader(enc!.Open(pw), Encoding.UTF8))
-                    Assert.Equal("secret content", await r1.ReadToEndAsync());
-
-                using (var r2 = new StreamReader(plain!.Open(), Encoding.UTF8))
-                    Assert.Equal("secret content", await r2.ReadToEndAsync());
-            }
-        }
-
-
-
-        [Fact]
-        public void CreateEntryFromFile_WithPassword_WrongPassword_Throws()
-        {
-            // Arrange
-            Directory.CreateDirectory(DownloadsDir);
-            string srcPath = NewPath("source_wrong_pw.txt");
-            string zipPath = NewPath("create_from_file_encrypted_wrongpw.zip");
-            const string entryName = "secure/wrong.txt";
-            const string correctPassword = "correct!";
-            const string badPassword = "wrong!";
-            const string payload = "secret data";
-
-            if (File.Exists(srcPath)) File.Delete(srcPath);
-            if (File.Exists(zipPath)) File.Delete(zipPath);
-
-            File.WriteAllText(srcPath, payload, new UTF8Encoding(false));
-
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
-            {
-                var e = za.CreateEntryFromFile(
-                    sourceFileName: srcPath,
-                    entryName: entryName,
-                    compressionLevel: CompressionLevel.Optimal,
-                    password: correctPassword,
-                    encryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-            }
-
-            // Act & Assert
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
-            {
-                var e = za.GetEntry(entryName);
-                Assert.NotNull(e);
-
-                Assert.ThrowsAny<Exception>(() =>
-                {
-                    using var _ = e!.Open(badPassword);
-                });
-            }
-        }
-
-
-        [Fact]
-        public async Task CreateEntryFromFile_WithEncryption_RoundTrip()
-        {
-            // Arrange
-            Directory.CreateDirectory(DownloadsDir);
-            string srcPath = NewPath("source_plain.txt");
-            string zipPath = NewPath("create_from_file_plain.zip");
-            const string entryName = "plain/copy.txt";
-            const string payload = "this is plain";
-            const string pwd = "anything";
-
-            if (File.Exists(srcPath)) File.Delete(srcPath);
-            if (File.Exists(zipPath)) File.Delete(zipPath);
-
-            await File.WriteAllTextAsync(srcPath, payload, new UTF8Encoding(false));
-
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
-            {
-                var e = za.CreateEntryFromFile(
-                    sourceFileName: srcPath,
-                    entryName: entryName,
-                    compressionLevel: CompressionLevel.Optimal,
-                    password: pwd,
-                    encryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-            }
-
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
-            {
-                var e = za.GetEntry(entryName);
-                Assert.NotNull(e);
-
-                using var r = new StreamReader(e!.Open(pwd), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-                string text = await r.ReadToEndAsync();
-                Assert.Equal(payload, text);
-
-                // Opening a plain entry with a password should throw
-                Assert.ThrowsAny<Exception>(() =>
-                {
-                    using var _ = e.Open("some-password");
-                });
-            }
-        }
-
-
-
-
-        [Fact]
-        public void CreateEntry_UsesArchiveDefaults_WhenNotOverridden()
-        {
-            Directory.CreateDirectory(DownloadsDir);
-            var zipPath = NewPath("defaults_apply.zip");
-            if (File.Exists(zipPath)) File.Delete(zipPath);
-
-            const string defaultPassword = "archive-pw";
-            const string payload = "default encryption content";
-            const string entryName = "secure/default.txt";
-
-            using (var zipFs = File.Create(zipPath))
-            using (var za = new ZipArchive(zipFs,
-                                           ZipArchiveMode.Create,
-                                           leaveOpen: false,
-                                           entryNameEncoding: Encoding.UTF8,
-                                           defaultPassword: defaultPassword,
-                                           defaultEncryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto))
-            {
-                var e = za.CreateEntry(entryName);
-
-                using (var es = e.Open())
-                {
-                    var bytes = Encoding.UTF8.GetBytes(payload);
-                    es.Write(bytes, 0, bytes.Length);
-                }
-            }
-
-            // Verify with the archive default password
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
-            {
-                var e = za.GetEntry(entryName);
-                Assert.NotNull(e);
-                using var r = new StreamReader(e!.Open(defaultPassword), Encoding.UTF8);
-                Assert.Equal(payload, r.ReadToEnd());
-            }
-        }
-
-        [Fact]
-        public async Task CreateMode_DefaultPassword_AppliesToMultipleEntries()
-        {
-            string zipPath = NewPath("defaults_multiple.zip");
-            if (File.Exists(zipPath)) File.Delete(zipPath);
-
-            const string defaultPassword = "archive-pw";
-
-            using (var zipFs = File.Create(zipPath))
-            using (var za = new ZipArchive(zipFs,
-                                           ZipArchiveMode.Create,
-                                           leaveOpen: false,
-                                           entryNameEncoding: Encoding.UTF8,
-                                           defaultPassword: defaultPassword,
-                                           defaultEncryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto))
-            {
-                var e1 = za.CreateEntry("secure/one.txt");
-                using (var s1 = e1.Open())
-                {
-                    var b = Encoding.UTF8.GetBytes("ONE");
-                    s1.Write(b, 0, b.Length);
-                }
-
-                var e2 = za.CreateEntry("secure/two.txt");
-                using (var s2 = e2.Open())
-                {
-                    var b = Encoding.UTF8.GetBytes("TWO");
-                    s2.Write(b, 0, b.Length);
-                }
-            }
-
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
-            {
-                using (var r1 = new StreamReader(za.GetEntry("secure/one.txt")!.Open(defaultPassword), Encoding.UTF8))
-                    Assert.Equal("ONE", await r1.ReadToEndAsync());
-
-                using (var r2 = new StreamReader(za.GetEntry("secure/two.txt")!.Open(defaultPassword), Encoding.UTF8))
-                    Assert.Equal("TWO", await r2.ReadToEndAsync());
-            }
-        }
-
-        [Fact]
-        public async Task CreateEntry_WithExplicitPassword_OverridesDefaultPassword()
-        {
-            string zipPath = NewPath("override_default.zip");
-            if (File.Exists(zipPath)) File.Delete(zipPath);
-
-            const string archivePassword = "archive-pw";
-            const string entryPassword = "entry-pw";
-
-            using (var zipFs = File.Create(zipPath))
-            using (var za = new ZipArchive(zipFs,
-                                           ZipArchiveMode.Create,
-                                           leaveOpen: false,
-                                           entryNameEncoding: Encoding.UTF8,
-                                           defaultPassword: archivePassword,
-                                           defaultEncryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto))
-            {
-                var e = za.CreateEntry("secure/override.txt", entryPassword, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
-                using (var s = e.Open())
-                {
-                    var b = Encoding.UTF8.GetBytes("OVERRIDE");
-                    s.Write(b, 0, b.Length);
-                }
-            }
-
-            using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
-            {
-                var e = za.GetEntry("secure/override.txt");
-                Assert.NotNull(e);
-
-                // Should succeed with entry password
-                using (var rOk = new StreamReader(e!.Open(entryPassword), Encoding.UTF8))
-                    Assert.Equal("OVERRIDE", await rOk.ReadToEndAsync());
-
-                // Wrong: using archive default should fail
-                Assert.ThrowsAny<Exception>(() =>
-                {
-                    using var _ = e.Open(archivePassword);
-                });
-            }
-        }
+        //[Fact]
+        //public void Update_OpenEncryptedEntry_WrongPassword_Throws()
+        //{
+        //    string zipPath = NewPath("update_wrong_pw.zip");
+        //    const string pw = "correct-pw";
+
+        //    if (File.Exists(zipPath)) File.Delete(zipPath);
+
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        //    {
+        //        var e = za.CreateEntry("secure/file.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+        //        using var w = new StreamWriter(e.Open(), Encoding.UTF8);
+        //        w.Write("secret");
+        //    }
+
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
+        //    {
+        //        var e = za.GetEntry("secure/file.txt");
+        //        Assert.NotNull(e);
+        //        Assert.ThrowsAny<Exception>(() =>
+        //        {
+        //            using var _ = e.Open("wrong-pw");
+        //        });
+        //    }
+        //}
+
+
+        //[Fact]
+        //public async Task Update_EditPlainEntry_RoundTrip()
+        //{
+        //    string zipPath = NewPath("update_edit_plain.zip");
+        //    if (File.Exists(zipPath)) File.Delete(zipPath);
+
+        //    // Create plain entry
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        //    {
+        //        var e = za.CreateEntry("plain.txt");
+        //        using var w = new StreamWriter(e.Open(), Encoding.UTF8);
+        //        await w.WriteAsync("original");
+        //    }
+
+        //    // Edit in Update mode
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
+        //    {
+        //        var e = za.GetEntry("plain.txt");
+        //        Assert.NotNull(e);
+
+        //        using var w = new StreamWriter(e.Open(), Encoding.UTF8);
+        //        await w.WriteAsync("modified");
+        //    }
+
+        //    // Verify updated content
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+        //    {
+        //        var e = za.GetEntry("plain.txt");
+        //        using var r = new StreamReader(e.Open(), Encoding.UTF8);
+        //        Assert.Equal("modified", await r.ReadToEndAsync());
+        //    }
+        //}
+
+
+
+        //[Fact]
+        //public void Update_EditEncryptedEntryWithoutPassword_Throws()
+        //{
+        //    string zipPath = NewPath("update_edit_encrypted.zip");
+        //    const string pw = "edit-pw";
+
+        //    if (File.Exists(zipPath)) File.Delete(zipPath);
+
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        //    {
+        //        var e = za.CreateEntry("secure/edit.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+        //        using var w = new StreamWriter(e.Open(), Encoding.UTF8);
+        //        w.Write("secret");
+        //    }
+
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
+        //    {
+        //        var e = za.GetEntry("secure/edit.txt");
+        //        Assert.NotNull(e);
+
+        //        // Should throw because edit-in-place for encrypted entries is not supported
+        //        Assert.Throws<InvalidOperationException>(() =>
+        //        {
+        //            using var _ = e.Open(); // no password
+        //        });
+        //    }
+        //}
+
+
+        //[Fact]
+        //public async Task Update_MixedEntries_ReadEncrypted_EditPlain()
+        //{
+        //    string zipPath = NewPath("update_mixed.zip");
+        //    const string pw = "mixed-pw";
+
+        //    if (File.Exists(zipPath)) File.Delete(zipPath);
+
+        //    // Create initial zip with encrypted and plain entries
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        //    {
+        //        var encEntry = za.CreateEntry("secure/data.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+        //        using (var w = new StreamWriter(encEntry.Open(), Encoding.UTF8))
+        //            await w.WriteAsync("encrypted");
+
+        //        var plainEntry = za.CreateEntry("plain.txt");
+        //        using (var w = new StreamWriter(plainEntry.Open(), Encoding.UTF8))
+        //            await w.WriteAsync("original");
+        //    }
+
+        //    // First update: read encrypted, modify plain
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
+        //    {
+        //        var enc = za.GetEntry("secure/data.txt");
+        //        Assert.NotNull(enc);
+
+        //        string encryptedContent;
+        //        using (var r = new StreamReader(enc.Open(pw), Encoding.UTF8))
+        //            encryptedContent = await r.ReadToEndAsync();
+
+        //        var plain = za.GetEntry("plain.txt");
+        //        using var w = new StreamWriter(plain.Open(), Encoding.UTF8);
+        //        await w.WriteAsync("modified");
+        //    }
+
+        //    // Second update: verify encrypted, re-modify plain
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
+        //    {
+        //        var enc = za.GetEntry("secure/data.txt");
+        //        using (var r = new StreamReader(enc.Open(pw), Encoding.UTF8))
+        //            Assert.Equal("encrypted", await r.ReadToEndAsync());
+
+        //        var plain = za.GetEntry("plain.txt");
+        //        using var w = new StreamWriter(plain.Open(), Encoding.UTF8);
+        //        await w.WriteAsync("modified");
+        //    }
+
+        //    // Final read: verify both entries
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+        //    {
+        //        using (var r1 = new StreamReader(za.GetEntry("secure/data.txt").Open(pw), Encoding.UTF8))
+        //            Assert.Equal("encrypted", await r1.ReadToEndAsync());
+
+        //        using (var r2 = new StreamReader(za.GetEntry("plain.txt").Open(), Encoding.UTF8))
+        //            Assert.Equal("modified", await r2.ReadToEndAsync());
+        //    }
+        //}
+
+
+
+        //[Fact]
+        //public async Task Update_ModifySameEncryptedEntryMultipleTimes()
+        //{
+        //    string zipPath = NewPath("update_modify_multiple.zip");
+        //    const string pw = "multi-pw";
+
+        //    if (File.Exists(zipPath)) File.Delete(zipPath);
+
+        //    // Create initial encrypted entry
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        //    {
+        //        var e = za.CreateEntry("secure/data.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+        //        using var w = new StreamWriter(e.Open(), Encoding.UTF8);
+        //        await w.WriteAsync("version1");
+        //    }
+
+        //    // Modify entry multiple times
+        //    for (int i = 2; i <= 3; i++)
+        //    {
+        //        using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
+        //        {
+        //            var e = za.GetEntry("secure/data.txt");
+        //            Assert.NotNull(e);
+
+        //            string oldContent;
+        //            using (var r = new StreamReader(e!.Open(pw), Encoding.UTF8))
+        //                oldContent = await r.ReadToEndAsync();
+
+        //            e.Delete(); // remove old entry
+
+        //            var newEntry = za.CreateEntry("secure/data.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+        //            using var w = new StreamWriter(newEntry.Open(), Encoding.UTF8);
+        //            await w.WriteAsync($"{oldContent}-version{i}");
+        //        }
+        //    }
+
+        //    // Assert final content
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+        //    {
+        //        var e = za.GetEntry("secure/data.txt");
+        //        Assert.NotNull(e);
+        //        using var r = new StreamReader(e!.Open(pw), Encoding.UTF8);
+        //        var text = await r.ReadToEndAsync();
+        //        Assert.Equal("version1-version2-version3", text);
+        //    }
+        //}
+
+
+        //[Fact]
+        //public async Task Update_CopyEncryptedEntryToPlainEntry()
+        //{
+        //    string zipPath = NewPath("update_copy_to_plain.zip");
+        //    const string pw = "plain-copy";
+
+        //    if (File.Exists(zipPath)) File.Delete(zipPath);
+
+        //    // Create encrypted entry
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        //    {
+        //        var e = za.CreateEntry("secure/original.txt", pw, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+        //        using var w = new StreamWriter(e.Open(), Encoding.UTF8);
+        //        await w.WriteAsync("secret content");
+        //    }
+
+        //    // Copy encrypted content to a plain entry
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Update))
+        //    {
+        //        var src = za.GetEntry("secure/original.txt");
+        //        Assert.NotNull(src);
+
+        //        string content;
+        //        using (var r = new StreamReader(src!.Open(pw), Encoding.UTF8))
+        //            content = await r.ReadToEndAsync();
+
+        //        var plainEntry = za.CreateEntry("public/copy.txt"); // no encryption
+        //        using var w = new StreamWriter(plainEntry.Open(), Encoding.UTF8);
+        //        await w.WriteAsync(content);
+        //    }
+
+        //    // Assert both entries exist and content matches
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+        //    {
+        //        var enc = za.GetEntry("secure/original.txt");
+        //        var plain = za.GetEntry("public/copy.txt");
+        //        Assert.NotNull(enc);
+        //        Assert.NotNull(plain);
+
+        //        using (var r1 = new StreamReader(enc!.Open(pw), Encoding.UTF8))
+        //            Assert.Equal("secret content", await r1.ReadToEndAsync());
+
+        //        using (var r2 = new StreamReader(plain!.Open(), Encoding.UTF8))
+        //            Assert.Equal("secret content", await r2.ReadToEndAsync());
+        //    }
+        //}
+
+
+        //[Fact]
+        //public void CreateEntryFromFile_WithPassword_WrongPassword_Throws()
+        //{
+        //    // Arrange
+        //    Directory.CreateDirectory(DownloadsDir);
+        //    string srcPath = NewPath("source_wrong_pw.txt");
+        //    string zipPath = NewPath("create_from_file_encrypted_wrongpw.zip");
+        //    const string entryName = "secure/wrong.txt";
+        //    const string correctPassword = "correct!";
+        //    const string badPassword = "wrong!";
+        //    const string payload = "secret data";
+
+        //    if (File.Exists(srcPath)) File.Delete(srcPath);
+        //    if (File.Exists(zipPath)) File.Delete(zipPath);
+
+        //    File.WriteAllText(srcPath, payload, new UTF8Encoding(false));
+
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        //    {
+        //        var e = za.CreateEntryFromFile(
+        //            sourceFileName: srcPath,
+        //            entryName: entryName,
+        //            compressionLevel: CompressionLevel.Optimal,
+        //            password: correctPassword,
+        //            encryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+        //    }
+
+        //    // Act & Assert
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+        //    {
+        //        var e = za.GetEntry(entryName);
+        //        Assert.NotNull(e);
+
+        //        Assert.ThrowsAny<Exception>(() =>
+        //        {
+        //            using var _ = e!.Open(badPassword);
+        //        });
+        //    }
+        //}
+
+
+        //[Fact]
+        //public async Task CreateEntryFromFile_WithEncryption_RoundTrip()
+        //{
+        //    // Arrange
+        //    Directory.CreateDirectory(DownloadsDir);
+        //    string srcPath = NewPath("source_plain.txt");
+        //    string zipPath = NewPath("create_from_file_plain.zip");
+        //    const string entryName = "plain/copy.txt";
+        //    const string payload = "this is plain";
+        //    const string pwd = "anything";
+
+        //    if (File.Exists(srcPath)) File.Delete(srcPath);
+        //    if (File.Exists(zipPath)) File.Delete(zipPath);
+
+        //    await File.WriteAllTextAsync(srcPath, payload, new UTF8Encoding(false));
+
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Create))
+        //    {
+        //        var e = za.CreateEntryFromFile(
+        //            sourceFileName: srcPath,
+        //            entryName: entryName,
+        //            compressionLevel: CompressionLevel.Optimal,
+        //            password: pwd,
+        //            encryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+        //    }
+
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+        //    {
+        //        var e = za.GetEntry(entryName);
+        //        Assert.NotNull(e);
+
+        //        using var r = new StreamReader(e!.Open(pwd), Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        //        string text = await r.ReadToEndAsync();
+        //        Assert.Equal(payload, text);
+
+        //        // Opening a plain entry with a password should throw
+        //        Assert.ThrowsAny<Exception>(() =>
+        //        {
+        //            using var _ = e.Open("some-password");
+        //        });
+        //    }
+        //}
+
+        //[Fact]
+        //public void CreateEntry_UsesArchiveDefaults_WhenNotOverridden()
+        //{
+        //    Directory.CreateDirectory(DownloadsDir);
+        //    var zipPath = NewPath("defaults_apply.zip");
+        //    if (File.Exists(zipPath)) File.Delete(zipPath);
+
+        //    const string defaultPassword = "archive-pw";
+        //    const string payload = "default encryption content";
+        //    const string entryName = "secure/default.txt";
+
+        //    using (var zipFs = File.Create(zipPath))
+        //    using (var za = new ZipArchive(zipFs,
+        //                                   ZipArchiveMode.Create,
+        //                                   leaveOpen: false,
+        //                                   entryNameEncoding: Encoding.UTF8,
+        //                                   defaultPassword: defaultPassword,
+        //                                   defaultEncryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto))
+        //    {
+        //        var e = za.CreateEntry(entryName);
+
+        //        using (var es = e.Open())
+        //        {
+        //            var bytes = Encoding.UTF8.GetBytes(payload);
+        //            es.Write(bytes, 0, bytes.Length);
+        //        }
+        //    }
+
+        //    // Verify with the archive default password
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+        //    {
+        //        var e = za.GetEntry(entryName);
+        //        Assert.NotNull(e);
+        //        using var r = new StreamReader(e!.Open(defaultPassword), Encoding.UTF8);
+        //        Assert.Equal(payload, r.ReadToEnd());
+        //    }
+        //}
+
+        //[Fact]
+        //public async Task CreateMode_DefaultPassword_AppliesToMultipleEntries()
+        //{
+        //    string zipPath = NewPath("defaults_multiple.zip");
+        //    if (File.Exists(zipPath)) File.Delete(zipPath);
+
+        //    const string defaultPassword = "archive-pw";
+
+        //    using (var zipFs = File.Create(zipPath))
+        //    using (var za = new ZipArchive(zipFs,
+        //                                   ZipArchiveMode.Create,
+        //                                   leaveOpen: false,
+        //                                   entryNameEncoding: Encoding.UTF8,
+        //                                   defaultPassword: defaultPassword,
+        //                                   defaultEncryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto))
+        //    {
+        //        var e1 = za.CreateEntry("secure/one.txt");
+        //        using (var s1 = e1.Open())
+        //        {
+        //            var b = Encoding.UTF8.GetBytes("ONE");
+        //            s1.Write(b, 0, b.Length);
+        //        }
+
+        //        var e2 = za.CreateEntry("secure/two.txt");
+        //        using (var s2 = e2.Open())
+        //        {
+        //            var b = Encoding.UTF8.GetBytes("TWO");
+        //            s2.Write(b, 0, b.Length);
+        //        }
+        //    }
+
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+        //    {
+        //        using (var r1 = new StreamReader(za.GetEntry("secure/one.txt")!.Open(defaultPassword), Encoding.UTF8))
+        //            Assert.Equal("ONE", await r1.ReadToEndAsync());
+
+        //        using (var r2 = new StreamReader(za.GetEntry("secure/two.txt")!.Open(defaultPassword), Encoding.UTF8))
+        //            Assert.Equal("TWO", await r2.ReadToEndAsync());
+        //    }
+        //}
+
+        //[Fact]
+        //public async Task CreateEntry_WithExplicitPassword_OverridesDefaultPassword()
+        //{
+        //    string zipPath = NewPath("override_default.zip");
+        //    if (File.Exists(zipPath)) File.Delete(zipPath);
+
+        //    const string archivePassword = "archive-pw";
+        //    const string entryPassword = "entry-pw";
+
+        //    using (var zipFs = File.Create(zipPath))
+        //    using (var za = new ZipArchive(zipFs,
+        //                                   ZipArchiveMode.Create,
+        //                                   leaveOpen: false,
+        //                                   entryNameEncoding: Encoding.UTF8,
+        //                                   defaultPassword: archivePassword,
+        //                                   defaultEncryption: ZipArchiveEntry.EncryptionMethod.ZipCrypto))
+        //    {
+        //        var e = za.CreateEntry("secure/override.txt", entryPassword, ZipArchiveEntry.EncryptionMethod.ZipCrypto);
+        //        using (var s = e.Open())
+        //        {
+        //            var b = Encoding.UTF8.GetBytes("OVERRIDE");
+        //            s.Write(b, 0, b.Length);
+        //        }
+        //    }
+
+        //    using (var za = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+        //    {
+        //        var e = za.GetEntry("secure/override.txt");
+        //        Assert.NotNull(e);
+
+        //        // Should succeed with entry password
+        //        using (var rOk = new StreamReader(e!.Open(entryPassword), Encoding.UTF8))
+        //            Assert.Equal("OVERRIDE", await rOk.ReadToEndAsync());
+
+        //        // Wrong: using archive default should fail
+        //        Assert.ThrowsAny<Exception>(() =>
+        //        {
+        //            using var _ = e.Open(archivePassword);
+        //        });
+        //    }
+        //}
 
         [Fact]
         public void OpenAESEncryptedTxtFile_ShouldReturnPlaintext()

@@ -9,9 +9,9 @@ namespace System.IO.Compression
         private readonly Stream _base;
         private readonly bool _leaveOpen;
         private bool _headerWritten;
-        private bool _everWrotePayload;
         private readonly ushort _verifierLow2Bytes;       // (DOS time low word when streaming)
         private readonly uint? _crc32ForHeader;           // (CRC-based header when not streaming)
+        private int _position;
 
         private uint _key0;
         private uint _key1;
@@ -38,6 +38,7 @@ namespace System.IO.Compression
             InitKeysFromBytes(password.Span);
             _encrypting = false;
             ValidateHeader(expectedCheckByte); // reads & consumes 12 bytes
+            _position = 0;
         }
 
         // Encryption constructor
@@ -52,7 +53,7 @@ namespace System.IO.Compression
             _leaveOpen = leaveOpen;
             _verifierLow2Bytes = passwordVerifierLow2Bytes;
             _crc32ForHeader = crc32;
-
+            _position = 0;
             InitKeysFromBytes(password.Span);
         }
 
@@ -92,6 +93,7 @@ namespace System.IO.Compression
 
             _base.Write(hdrCiph, 0, 12);
             _headerWritten = true;
+            _position += 12;
         }
 
         private void InitKeysFromBytes(ReadOnlySpan<char> password)
@@ -152,7 +154,11 @@ namespace System.IO.Compression
         public override bool CanSeek => false;
         public override bool CanWrite => _encrypting;
         public override long Length => throw new NotSupportedException();
-        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override long Position
+        {
+            get => _position;
+            set => throw new NotSupportedException("ZipCryptoStream does not support seeking.");
+        }
         public override void Flush() => _base.Flush();
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -166,6 +172,7 @@ namespace System.IO.Compression
                 int n = _base.Read(buffer, offset, count);
                 for (int i = 0; i < n; i++)
                     buffer[offset + i] = DecryptByte(buffer[offset + i]);
+                _position += n;
                 return n;
             }
             throw new NotSupportedException("Stream is in encryption (write-only) mode.");
@@ -178,6 +185,7 @@ namespace System.IO.Compression
                 int n = _base.Read(destination);
                 for (int i = 0; i < n; i++)
                     destination[i] = DecryptByte(destination[i]);
+                _position += n;
                 return n;
             }
             throw new NotSupportedException("Stream is in encryption (write-only) mode.");
@@ -194,7 +202,6 @@ namespace System.IO.Compression
                 throw new ArgumentOutOfRangeException();
 
             EnsureHeader();
-            _everWrotePayload = _everWrotePayload || (count > 0);
 
             // Simple buffer; optimize with ArrayPool if needed later
             byte[] tmp = new byte[count];
@@ -206,6 +213,7 @@ namespace System.IO.Compression
                 UpdateKeys(p);
             }
             _base.Write(tmp, 0, count);
+            _position += count;
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
@@ -213,7 +221,6 @@ namespace System.IO.Compression
             if (!_encrypting) throw new NotSupportedException("Stream is in decryption (read-only) mode.");
 
             EnsureHeader();
-            _everWrotePayload = _everWrotePayload || (buffer.Length > 0);
 
             byte[] tmp = new byte[buffer.Length];
             for (int i = 0; i < buffer.Length; i++)
@@ -224,6 +231,7 @@ namespace System.IO.Compression
                 UpdateKeys(p);
             }
             _base.Write(tmp, 0, tmp.Length);
+            _position += tmp.Length;
         }
 
         protected override void Dispose(bool disposing)
