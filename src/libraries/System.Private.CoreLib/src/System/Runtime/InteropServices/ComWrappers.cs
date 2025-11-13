@@ -444,16 +444,16 @@ namespace System.Runtime.InteropServices
 
             private void SetFlag(CreateComInterfaceFlagsEx flag)
             {
-                // Using Interlocked.Or<T> will trigger type checks
-                // that can cause deadlocks when running during a GC.
+                // Interlocked.Or<T>cannot be used here. It would trigger type checks that can cause
+                // deadlocks when called during a GC by NativeAOT TrackerObjectManager.
                 int setMask = (int)flag;
                 Interlocked.Or(ref Unsafe.As<CreateComInterfaceFlagsEx, int>(ref Flags), setMask);
             }
 
             private void ResetFlag(CreateComInterfaceFlagsEx flag)
             {
-                // Using Interlocked.And<T> will trigger type checks
-                // that can cause deadlocks when running during a GC.
+                // Interlocked.And<T>cannot be used here. It would trigger type checks that can cause
+                // deadlocks when called during a GC by NativeAOT TrackerObjectManager.
                 int resetMask = ~(int)flag;
                 Interlocked.And(ref Unsafe.As<CreateComInterfaceFlagsEx, int>(ref Flags), resetMask);
             }
