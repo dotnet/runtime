@@ -11,6 +11,14 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
+    internal static class CompilerTypeSystemContextAsyncExtensions
+    {
+        public static IEnumerable<MethodDesc> GetAllMethodsAndAsyncVariants(this TypeDesc type)
+        {
+            return CompilerTypeSystemContext.WithAsyncVariants((CompilerTypeSystemContext)type.Context, type.GetAllMethods());
+        }
+    }
+
     public partial class CompilerTypeSystemContext
     {
         private sealed class AsyncAwareVirtualMethodResolutionAlgorithm : MetadataVirtualMethodAlgorithm
@@ -94,37 +102,45 @@ namespace ILCompiler
 
             public override IEnumerable<MethodDesc> ComputeAllVirtualSlots(TypeDesc type)
             {
-                foreach (MethodDesc method in base.ComputeAllVirtualSlots(type))
-                {
-                    yield return method;
+                return WithAsyncVariants(_context, base.ComputeAllVirtualSlots(type));
+            }
+        }
 
-                    // We create an async variant slot for any Task-returning method, not just runtime-async.
-                    // This is not a problem in practice because the slot is still subject to dependency
-                    // analysis and if not used, will not be generated.
-                    //
-                    // The reason why we need it is this:
-                    //
-                    // interface IFoo
-                    // {
-                    //     [RuntimeAsyncMethodGeneration(true)]
-                    //     Task Method();
-                    // }
-                    //
-                    // class Base
-                    // {
-                    //     [RuntimeAsyncMethodGeneration(false)]
-                    //     public virtual Task Method();
-                    // }
-                    //
-                    // class Derived : Base, IFoo
-                    // {
-                    //     // Q: The runtime-async implementation for IFoo.Method
-                    //     //    comes from Base. However Base was not runtime-async and we
-                    //     //    didn't know about IFoo in Base either. Who has the slot?
-                    //     // A: Base has the runtime-async slot, despite the method not being runtime-async.
-                    // }
-                    if (method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
-                        yield return _context.GetAsyncVariantMethod(method);
+        internal static IEnumerable<MethodDesc> WithAsyncVariants(CompilerTypeSystemContext context, IEnumerable<MethodDesc> methods)
+        {
+            foreach (MethodDesc method in methods)
+            {
+                yield return method;
+
+                // We create an async variant slot for any virtual Task-returning method, not just runtime-async.
+                // This is not a problem in practice because the slot is still subject to dependency
+                // analysis and if not used, will not be generated.
+                //
+                // The reason why we need it is this:
+                //
+                // interface IFoo
+                // {
+                //     [RuntimeAsyncMethodGeneration(true)]
+                //     Task Method();
+                // }
+                //
+                // class Base
+                // {
+                //     [RuntimeAsyncMethodGeneration(false)]
+                //     public virtual Task Method();
+                // }
+                //
+                // class Derived : Base, IFoo
+                // {
+                //     // Q: The runtime-async implementation for IFoo.Method
+                //     //    comes from Base. However Base was not runtime-async and we
+                //     //    didn't know about IFoo in Base either. Who has the slot?
+                //     // A: Base has the runtime-async slot, despite the method not being runtime-async.
+                // }
+                if ((method.IsAsync || method.IsVirtual)
+                    && method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
+                {
+                    yield return context.GetAsyncVariantMethod(method);
                 }
             }
         }
