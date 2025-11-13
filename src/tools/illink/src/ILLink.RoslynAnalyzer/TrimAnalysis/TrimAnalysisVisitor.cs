@@ -258,7 +258,29 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
         {
-            return new MethodParameterValue(new ParameterProxy(parameter, parameter.ContainingSymbol as IMethodSymbol ?? (IMethodSymbol)OwningSymbol));
+            IMethodSymbol? method = parameter.ContainingSymbol as IMethodSymbol;
+
+            // If the parameter's containing symbol is a property (e.g., for indexer parameters),
+            // we need to get the appropriate accessor method
+            if (method == null && parameter.ContainingSymbol is IPropertySymbol property)
+            {
+                // Try to use the owning symbol if it's an accessor of this property
+                if (OwningSymbol is IMethodSymbol owningMethod &&
+                    SymbolEqualityComparer.Default.Equals(owningMethod.AssociatedSymbol, property))
+                {
+                    method = owningMethod;
+                }
+                else
+                {
+                    // Default to the getter if available, otherwise the setter
+                    method = property.GetMethod ?? property.SetMethod;
+                }
+            }
+
+            // Fallback to casting OwningSymbol if we still don't have a method
+            method ??= (OwningSymbol as IMethodSymbol) ?? throw new InvalidOperationException($"Unable to find method for parameter {parameter.Name}");
+
+            return new MethodParameterValue(new ParameterProxy(parameter, method));
         }
 
         public override void HandleAssignment(MultiValue source, MultiValue target, IOperation operation, in FeatureContext featureContext)
