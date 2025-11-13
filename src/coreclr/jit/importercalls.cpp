@@ -392,7 +392,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+                    impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
                 }
 
                 impPopCallArgs(sig, call->AsCall());
@@ -697,7 +697,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+        impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
     }
 
     // Now create the argument list.
@@ -6794,9 +6794,8 @@ void Compiler::impCheckForPInvokeCall(
 }
 
 //------------------------------------------------------------------------
-// impSetupAndSpillForAsyncCall:
+// impSetupAsyncCall:
 //   Register a call as being async and set up context handling information depending on the IL.
-//   Also spill IL arguments if necessary.
 //
 // Arguments:
 //    call        - The call
@@ -6804,10 +6803,7 @@ void Compiler::impCheckForPInvokeCall(
 //    prefixFlags - Flags containing context handling information from IL
 //    callDI      - Debug info for the async call
 //
-void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall*     call,
-                                            OPCODE           opcode,
-                                            unsigned         prefixFlags,
-                                            const DebugInfo& callDI)
+void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
     AsyncCallInfo asyncInfo;
 
