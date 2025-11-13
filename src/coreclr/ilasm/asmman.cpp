@@ -968,7 +968,7 @@ HRESULT AsmMan::EmitManifest()
                     else pwz++;
                     wcscpy_s(pwz,2048-(pwz-wzFileName),wzUniBuf);
                     if (fopen_lp(&fp, wzFileName, W("rb")) != 0)
-                        fp == NULL;
+                        fp = NULL;
                 }
                 if (fp == NULL)
                 {
