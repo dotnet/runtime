@@ -3409,8 +3409,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         if (GetEmitter()->IsAddressInRange(helperFunction.addr))
         {
             params.addr = helperFunction.addr;
-
-            assert(params.addr != (void*)0x2aaaabdc5f48);
         }
         else
         {
