@@ -17,7 +17,7 @@
 
   <PropertyGroup>
     <OutputPath>bin</OutputPath>
-    <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\wwwroot\</WasmAppDir>
+    <WasmAppDir>$(MSBuildProjectDirectory)\bin\wwwroot\</WasmAppDir>
     <CompressionEnabled>false</CompressionEnabled>
     <DisableBuildCompression>true</DisableBuildCompression>
   </PropertyGroup>
