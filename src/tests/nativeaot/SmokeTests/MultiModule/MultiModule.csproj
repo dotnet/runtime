@@ -6,7 +6,6 @@
 
     <!-- This test always runs as multimodule. It's not supported if we don't have framework object files. -->
     <CLRTestTargetUnsupported Condition="'$(BuildNativeAotFrameworkObjects)' != 'true'">true</CLRTestTargetUnsupported>
-    <ClrTestTargetUnsupported Condition="'$(TargetsAndroid)' == 'true'">true</ClrTestTargetUnsupported>
     <IlcMultiModule>true</IlcMultiModule>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>

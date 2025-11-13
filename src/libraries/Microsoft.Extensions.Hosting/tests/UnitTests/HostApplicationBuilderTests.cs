@@ -400,7 +400,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 return path + Path.DirectorySeparatorChar;
             }
-
+ 
             return path;
         }
 
