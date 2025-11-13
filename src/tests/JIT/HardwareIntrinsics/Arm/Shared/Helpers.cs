@@ -7927,25 +7927,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte SveShiftArithmeticRounded(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static sbyte SveShiftArithmeticSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static sbyte SveShiftArithmeticSaturate(sbyte op1, sbyte op2) => ArithmeticShift<sbyte, sbyte>(op1, (int)ShiftSat(-op2, 8), saturate: true);
 
         public static sbyte SveShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
         public static short SveShiftArithmeticRounded(short op1, short op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static short SveShiftArithmeticSaturate(short op1, short op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static short SveShiftArithmeticSaturate(short op1, short op2) => ArithmeticShift<short, short>(op1, (int)ShiftSat(-op2, 16), saturate: true);
 
         public static short SveShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
         public static int SveShiftArithmeticRounded(int op1, int op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static int SveShiftArithmeticSaturate(int op1, int op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static int SveShiftArithmeticSaturate(int op1, int op2) => ArithmeticShift<int, int>(op1, (int)ShiftSat(-op2, 32), saturate: true);
 
         public static int SveShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
         public static long SveShiftArithmeticRounded(long op1, long op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static long SveShiftArithmeticSaturate(long op1, long op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static long SveShiftArithmeticSaturate(long op1, long op2) => ArithmeticShift<long, long>(op1, (int)ShiftSat(-op2, 64), saturate: true);
 
         public static long SveShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
