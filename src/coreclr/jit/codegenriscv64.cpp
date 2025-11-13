@@ -6709,17 +6709,9 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 
-    ssize_t methHnd = (ssize_t)compiler->compProfilerMethHnd;
-    if (compiler->compProfilerMethHndIndirected)
-    {
-        instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, REG_PROFILER_ENTER_ARG_FUNC_ID, methHnd);
-        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID, REG_PROFILER_ENTER_ARG_FUNC_ID,
-                                    0);
-    }
-    else
-    {
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID, methHnd);
-    }
+    instruction ins = compiler->compProfilerMethHndIndirected ? INS_ld : INS_addi;
+    GetEmitter()->emitIns_R_R_Addr(ins, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID, REG_PROFILER_ENTER_ARG_FUNC_ID,
+                                   compiler->compProfilerMethHnd);
 
     ssize_t callerSPOffset = -compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
     genInstrWithConstant(INS_addi, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_CALLER_SP, genFramePointerReg(), callerSPOffset,
@@ -6755,17 +6747,9 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
 
     compiler->info.compProfilerCallback = true;
 
-    ssize_t methHnd = (ssize_t)compiler->compProfilerMethHnd;
-    if (compiler->compProfilerMethHndIndirected)
-    {
-        instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, REG_PROFILER_LEAVE_ARG_FUNC_ID, methHnd);
-        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID, REG_PROFILER_LEAVE_ARG_FUNC_ID,
-                                    0);
-    }
-    else
-    {
-        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID, methHnd);
-    }
+    instruction ins = compiler->compProfilerMethHndIndirected ? INS_ld : INS_addi;
+    GetEmitter()->emitIns_R_R_Addr(ins, EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID, REG_PROFILER_LEAVE_ARG_FUNC_ID,
+                                   compiler->compProfilerMethHnd);
 
     gcInfo.gcMarkRegSetNpt(RBM_PROFILER_LEAVE_ARG_FUNC_ID);
 
