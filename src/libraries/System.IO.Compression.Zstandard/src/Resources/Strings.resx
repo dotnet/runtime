@@ -66,6 +66,9 @@
   <data name="ZstandardEncoder_InvalidState" xml:space="preserve">
     <value>The requested operation is not valid after compression has begun.</value>
   </data>
+  <data name="ZstandardDecoder_InvalidState" xml:space="preserve">
+    <value>The requested operation is not valid after decompression has begun.</value>
+  </data>
   <data name="ZstandardDecoder_Create" xml:space="preserve">
     <value>Failed to create the Zstandard decoder instance.</value>
   </data>

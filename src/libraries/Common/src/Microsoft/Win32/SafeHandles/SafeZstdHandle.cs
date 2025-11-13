@@ -143,24 +143,23 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        public unsafe void SetPrefix(ReadOnlyMemory<byte> prefix)
+        public unsafe nuint SetPrefix(ReadOnlyMemory<byte> prefix)
         {
-            if (_prefixHandle != null)
-            {
-                _prefixHandle.Value.Dispose();
-                _prefixHandle = null;
-            }
-
             MemoryHandle handle = prefix.Pin();
 
             nuint result = Interop.Zstd.ZSTD_DCtx_refPrefix(this, (IntPtr)handle.Pointer, (nuint)prefix.Length);
+
             if (Interop.Zstd.ZSTD_isError(result) != 0)
             {
                 handle.Dispose();
-                throw new Interop.Zstd.ZstdNativeException(SR.Format(SR.Zstd_NativeError, ZstandardUtils.GetErrorMessage(result)));
+            }
+            else
+            {
+                _prefixHandle?.Dispose();
+                _prefixHandle = handle;
             }
 
-            _prefixHandle = handle;
+            return result;
         }
 
         public unsafe void Reset()

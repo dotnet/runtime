@@ -281,13 +281,28 @@ namespace System.IO.Compression
             _finished = false;
         }
 
-        /// <summary>References a prefix for the next compression operation.</summary>
-        /// <remarks>The prefix will be used only for the next compression frame and will be removed when <see cref="Reset"/> is called.</remarks>
+        /// <summary>References a prefix for the next decompression operation.</summary>
+        /// <remarks>The prefix will be used only for the next decompression frame and will be removed when <see cref="Reset"/> is called.</remarks>
         public void SetPrefix(ReadOnlyMemory<byte> prefix)
         {
             EnsureNotDisposed();
 
-            _context!.SetPrefix(prefix);
+            if (_finished)
+            {
+                throw new InvalidOperationException(SR.ZstandardDecoder_InvalidState);
+            }
+
+            nuint result = _context!.SetPrefix(prefix);
+
+            if (ZstandardUtils.IsError(result))
+            {
+                if ((Interop.Zstd.ZSTD_error)result == Interop.Zstd.ZSTD_error.stage_wrong)
+                {
+                    throw new InvalidOperationException(SR.ZstandardDecoder_InvalidState);
+                }
+
+                ZstandardUtils.Throw(result);
+            }
         }
 
         /// <summary>Releases all resources used by the <see cref="ZstandardDecoder"/>.</summary>
