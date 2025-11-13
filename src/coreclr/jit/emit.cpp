@@ -8553,14 +8553,19 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
             {
                 emitLocation* emitLoc = &((emitLocation*)dsc->dsCont)[i];
 
-                BYTE* target           = emitOffsetToPtr(emitLoc->CodeOffset(this));
+                // Async call may have been removed very late, after we have introduced suspension/resumption.
+                // In those cases just encode null.
+                BYTE* target           = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
                 aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
                 if (emitComp->opts.compReloc)
                 {
                     uint16_t relocType = TARGET_POINTER_SIZE == 8 ? IMAGE_REL_BASED_DIR64 : IMAGE_REL_BASED_HIGHLOW;
                     emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, relocType);
-                    emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, relocType);
+                    if (target != nullptr)
+                    {
+                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, relocType);
+                    }
                 }
 
                 JITDUMP("  Resume=%p, FinalResumeIP=%p\n", emitAsyncResumeStubEntryPoint, (void*)target);
