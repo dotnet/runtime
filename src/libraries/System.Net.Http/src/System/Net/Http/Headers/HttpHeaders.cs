@@ -1205,8 +1205,8 @@ namespace System.Net.Http.Headers
                 }
 
                 int currentIndex = 0;
-                ReadStoreValues<object?>(values, info.ParsedAndInvalidValues, descriptor.Parser, ref currentIndex);
-                ReadStoreValues<string?>(values, info.RawValue, null, ref currentIndex);
+                ReadStoreValues<object?>(values.AsSpan(), info.ParsedAndInvalidValues, descriptor.Parser, ref currentIndex);
+                ReadStoreValues<string?>(values.AsSpan(), info.RawValue, null, ref currentIndex);
                 Debug.Assert(currentIndex == length);
 
                 return length;
