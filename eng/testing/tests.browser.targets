@@ -169,6 +169,15 @@
     <ItemGroup>
       <!-- LinkContentToWwwroot will Link it to wwwroot -->
       <Content Include="$(OutDir)$(AssemblyName).dll" Link="$(AssemblyName).dll" CopyToOutputDirectory="PreserveNewest" />
+
+      <Content Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
+        TargetPath="%(WasmFilesToIncludeFromPublishDir.TargetDir)/%(WasmFilesToIncludeFromPublishDir.Identity)"
+        CopyToOutputDirectory="PreserveNewest"
+        Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != '' and '%(WasmFilesToIncludeFromPublishDir.TargetDir)' != ''" />
+      <Content Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
+        TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
+        CopyToOutputDirectory="PreserveNewest"
+        Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != '' and '%(WasmFilesToIncludeFromPublishDir.TargetDir)' == ''" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
