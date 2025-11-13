@@ -4709,20 +4709,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeCall* call = AsCall();
-        if (call->IsAsync())
-        {
-            GenTreeLclVarCommon* suspendedArg = comp->gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(call);
-            if (suspendedArg != nullptr)
-            {
-                bool isEntire = comp->lvaLclExactSize(suspendedArg->GetLclNum()) == 1;
-                if (visitor(LocalDef(suspendedArg, isEntire, suspendedArg->GetLclOffs(), 1)) == VisitResult::Abort)
-                {
-                    return VisitResult::Abort;
-                }
-            }
-        }
-
+        GenTreeCall*         call    = AsCall();
         GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
         if (lclAddr != nullptr)
         {
@@ -4765,16 +4752,7 @@ GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visito
     }
     if (OperIs(GT_CALL))
     {
-        GenTreeCall* call = AsCall();
-        if (call->IsAsync())
-        {
-            GenTreeLclVarCommon* suspendedArg = comp->gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(call);
-            if ((suspendedArg != nullptr) && (visitor(suspendedArg) == VisitResult::Abort))
-            {
-                return VisitResult::Abort;
-            }
-        }
-
+        GenTreeCall*         call    = AsCall();
         GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
         if (lclAddr != nullptr)
         {
