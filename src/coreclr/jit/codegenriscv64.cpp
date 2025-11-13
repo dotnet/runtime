@@ -655,23 +655,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             switch (addrInfo.accessType)
             {
                 case IAT_VALUE:
-                    params.ireg = REG_INDIRECT_CALL_TARGET_REG;
-                    if (GetEmitter()->IsAddressInRange(addrInfo.addr))
-                    {
-                        params.callType = EC_FUNC_TOKEN;
-                        params.addr     = addrInfo.addr;
-                    }
-                    else
-                    {
-                        // li   rd, addr_upper_bits
-                        // jalr rd, addr_lower_12bits
-                        ssize_t imm  = (ssize_t)addrInfo.addr;
-                        ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
-                        imm -= lo12;
-                        GetEmitter()->emitLoadImmediate(EA_PTRSIZE, params.ireg, imm);
-                        params.callType = EC_INDIR_R;
-                        params.addr     = (void*)lo12;
-                    }
+                    params.ireg     = REG_INDIRECT_CALL_TARGET_REG;
+                    params.callType = EC_FUNC_TOKEN;
+                    params.addr     = addrInfo.addr;
                     break;
 
                 case IAT_PVALUE:
@@ -2745,24 +2731,9 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
     if (helperFunction.accessType == IAT_VALUE)
     {
         // If the helper is a value, we need to use the address of the helper.
-        params.addr = helperFunction.addr;
-        if (GetEmitter()->IsAddressInRange(params.addr))
-        {
-            params.callType = EC_FUNC_TOKEN;
-        }
-        else
-        {
-            // li   rd, addr_upper_bits
-            // jalr rd, addr_lower_12bits
-            ssize_t imm  = (ssize_t)params.addr;
-            ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
-            imm -= lo12;
-            regNumber tempReg = params.isJump ? rsGetRsvdReg() : REG_RA;
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, imm);
-            params.callType = EC_INDIR_R;
-            params.ireg     = tempReg;
-            params.addr     = (void*)lo12;
-        }
+        params.addr     = helperFunction.addr;
+        params.callType = EC_FUNC_TOKEN;
+        params.ireg     = params.isJump ? rsGetRsvdReg() : REG_RA;
     }
     else
     {
@@ -3402,31 +3373,18 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     CORINFO_CONST_LOOKUP helperFunction = compiler->compGetHelperFtn((CorInfoHelpFunc)helper);
     regMaskTP            killSet        = compiler->compHelperCallKillSet((CorInfoHelpFunc)helper);
 
-    params.callType = EC_FUNC_TOKEN;
+    if (callTargetReg == REG_NA)
+    {
+        // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
+        // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
+        callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
+    }
+    params.ireg = callTargetReg;
 
     if (helperFunction.accessType == IAT_VALUE)
     {
-        if (GetEmitter()->IsAddressInRange(helperFunction.addr))
-        {
-            params.addr = helperFunction.addr;
-        }
-        else
-        {
-            // li   rd, addr_upper_bits
-            // jalr rd, addr_lower_12bits
-            ssize_t imm  = (ssize_t)helperFunction.addr;
-            ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
-            imm -= lo12;
-            if (callTargetReg == REG_NA)
-            {
-                callTargetReg = rsGetRsvdReg();
-            }
-            assert(callTargetReg != REG_ZERO);
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, callTargetReg, imm);
-            params.callType = EC_INDIR_R;
-            params.ireg     = callTargetReg;
-            params.addr     = (void*)lo12;
-        }
+        params.callType = EC_FUNC_TOKEN;
+        params.addr     = helperFunction.addr;
     }
     else
     {
@@ -3439,13 +3397,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // ld reg, reg
         // jalr reg
 
-        if (callTargetReg == REG_NA)
-        {
-            // If a callTargetReg has not been explicitly provided, we will use REG_DEFAULT_HELPER_CALL_TARGET, but
-            // this is only a valid assumption if the helper call is known to kill REG_DEFAULT_HELPER_CALL_TARGET.
-            callTargetReg = REG_DEFAULT_HELPER_CALL_TARGET;
-        }
-
         regMaskTP callTargetMask = genRegMask(callTargetReg);
 
         // assert that all registers in callTargetMask are in the callKillSet
@@ -3455,7 +3406,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         regSet.verifyRegUsed(callTargetReg);
 
         params.callType = EC_INDIR_R;
-        params.ireg     = callTargetReg;
     }
 
     params.methHnd = compiler->eeFindHelper(helper);
@@ -5569,32 +5519,22 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             genConsumeReg(target);
         }
 
-        regNumber targetReg;
-        ssize_t   jalrOffset = 0;
-
         if (target->isContainedIntOrIImmed())
         {
-            // Load upper (64-12) bits to a temporary register. Lower 12 bits will be put inside JALR's instruction as
-            // offset.
-            targetReg   = internalRegisters.GetSingle(call);
-            ssize_t imm = target->AsIntCon()->IconValue();
-            jalrOffset  = (imm << (64 - 12)) >> (64 - 12);
-            imm -= jalrOffset;
-            GetEmitter()->emitLoadImmediate(EA_PTRSIZE, targetReg, imm);
+            params.callType = EC_FUNC_TOKEN;
+            params.ireg     = internalRegisters.GetSingle(call);
+            params.addr     = (void*)target->AsIntCon()->IconValue();
         }
         else
         {
-            targetReg = target->GetRegNum();
+            params.callType = EC_INDIR_R;
+            params.ireg     = target->GetRegNum();
         }
 
         // We have already generated code for gtControlExpr evaluating it into a register.
         // We just need to emit "call reg" in this case.
         //
-        assert(genIsValidIntReg(targetReg));
-
-        params.callType = EC_INDIR_R;
-        params.ireg     = targetReg;
-        params.addr     = (jalrOffset == 0) ? nullptr : (void*)jalrOffset; // We use addr to pass offset value
+        assert(genIsValidIntReg(params.ireg));
 
         genEmitCallWithCurrentGC(params);
     }
@@ -5668,24 +5608,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 }
             }
 
-            assert(params.addr != nullptr);
-            if (GetEmitter()->IsAddressInRange(params.addr))
-            {
-                params.callType = EC_FUNC_TOKEN;
-            }
-            else
-            {
-                // li   rd, addr_upper_bits
-                // jalr rd, addr_lower_12bits
-                ssize_t imm  = (ssize_t)params.addr;
-                ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
-                imm -= lo12;
-                regNumber tempReg = params.isJump ? rsGetRsvdReg() : REG_RA;
-                GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, imm);
-                params.callType = EC_INDIR_R;
-                params.ireg     = tempReg;
-                params.addr     = (void*)lo12;
-            }
+            params.callType = EC_FUNC_TOKEN;
+            params.ireg     = params.isJump ? rsGetRsvdReg() : REG_RA;
 
             genEmitCallWithCurrentGC(params);
         }
@@ -6329,24 +6253,9 @@ void CodeGen::genJumpToThrowHlpBlk_la(
         {
             // INS_OPTS_C
             // If the helper is a value, we need to use the address of the helper.
-            params.addr = helperFunction.addr;
-            if (GetEmitter()->IsAddressInRange(params.addr))
-            {
-                params.callType = EC_FUNC_TOKEN;
-            }
-            else
-            {
-                // li   rd, addr_upper_bits
-                // jalr rd, addr_lower_12bits
-                ssize_t imm  = (ssize_t)params.addr;
-                ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
-                imm -= lo12;
-                regNumber tempReg = params.isJump ? rsGetRsvdReg() : REG_RA;
-                GetEmitter()->emitLoadImmediate(EA_PTRSIZE, tempReg, imm);
-                params.callType = EC_INDIR_R;
-                params.ireg     = tempReg;
-                params.addr     = (void*)lo12;
-            }
+            params.addr     = helperFunction.addr;
+            params.callType = EC_FUNC_TOKEN;
+            params.ireg     = params.isJump ? rsGetRsvdReg() : REG_RA;
         }
         else
         {

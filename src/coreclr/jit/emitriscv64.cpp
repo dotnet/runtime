@@ -1779,11 +1779,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     /* Sanity check the arguments depending on callType */
 
     assert(params.callType < EC_COUNT);
-    assert((params.callType != EC_FUNC_TOKEN) ||
-           (params.ireg == REG_NA && params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
-    assert(params.callType < EC_INDIR_R || params.addr == nullptr || isValidSimm12((ssize_t)params.addr));
-    assert(params.callType != EC_INDIR_R ||
-           (params.ireg < REG_COUNT && params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
+    assert(isGeneralRegister(params.ireg));
+    assert(params.callType < EC_INDIR_R || params.addr == nullptr);
 
     // RISCV64 never uses these
     assert(params.xreg == REG_NA && params.xmul == 0 && params.disp == 0);
@@ -1811,6 +1808,19 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         printf("\n");
     }
 #endif
+
+    ssize_t jalrOffset = 0;
+    if (params.callType == EC_FUNC_TOKEN && !IsAddressInRange(params.addr))
+    {
+        // Load upper bits of the absolute call address into a register:
+        // li   ireg, addr_upper
+        // jalr zero/ra, ireg, addr_lo12 (emitted below)
+        assert(params.addr != nullptr);
+        ssize_t imm = (ssize_t)params.addr;
+        jalrOffset  = (imm << (64 - 12)) >> (64 - 12); // low 12-bits, sign-extended
+        imm -= jalrOffset;
+        emitLoadImmediate(EA_PTRSIZE, params.ireg, imm); // upper bits
+    }
 
     /* Managed RetVal: emit sequence point for the call */
     if (emitComp->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
@@ -1881,40 +1891,31 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     id->idIns(INS_jalr);
 
     id->idInsOpt(INS_OPTS_C);
-    // INS_OPTS_C: placeholders.  1/2-ins:
-    //   if (callType == EC_INDIR_R)
-    //      jalr zero/ra, ireg, offset
-    //   else if (callType == EC_FUNC_TOKEN || callType == EC_FUNC_ADDR)
-    //      auipc t2/ra, offset-hi20
-    //      jalr zero/ra, t2/ra, offset-lo12
 
     /* Record the address: method, indirection, or funcptr */
-    if (params.callType == EC_INDIR_R)
+    if ((params.callType == EC_INDIR_R) || (params.callType == EC_FUNC_TOKEN && !IsAddressInRange(params.addr)))
     {
         /* This is an indirect call (either a virtual call or func ptr call) */
-        // assert(callType == EC_INDIR_R);
+
+        //      jalr zero/ra, ireg, offset
 
         id->idSetIsCallRegPtr();
 
         regNumber reg_jalr = params.isJump ? REG_R0 : REG_RA;
         id->idReg4(reg_jalr);
         id->idReg3(params.ireg); // NOTE: for EC_INDIR_R, using idReg3.
-        id->idSmallCns(0);       // SmallCns will contain JALR's offset.
-        if (params.addr != nullptr)
-        {
-            // If addr is not NULL, it must contain JALR's offset, which is set to the lower 12 bits of address.
-            id->idSmallCns((size_t)params.addr);
-        }
-        assert(params.xreg == REG_NA);
-
+        id->idSmallCns(jalrOffset);
         id->idCodeSize(4);
     }
     else
     {
         /* This is a simple direct call: "call helper/method/addr" */
 
+        //      auipc t2/ra, offset-hi20
+        //      jalr zero/ra, t2/ra, offset-lo12
+
         assert(params.callType == EC_FUNC_TOKEN);
-        assert(params.addr != NULL);
+        assert(params.addr != nullptr);
         assert(IsAddressInRange(params.addr));
 
         void* addr =
