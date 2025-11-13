@@ -66,9 +66,9 @@ public class LinkContentToWwwroot : Task
             {
                 var isRooted = Path.IsPathRooted(identity);
                 targetPath = isRooted ? Path.GetFileName(identity) : identity;
-                var contentRoot = isRooted ? Path.GetDirectoryName(identity) : MSBuildProjectDirectory;
+                var contentRoot = isRooted ? Path.GetDirectoryName(identity) : Path.GetDirectoryName(Path.GetFullPath(identity, MSBuildProjectDirectory));
 
-                // Add Identity to WasmFilesToIncludeInFileSystem
+                // Add TargetPath to WasmFilesToIncludeInFileSystem
                 wasmFiles.Add(new TaskItem(targetPath));
 
                 var outItem = new TaskItem(identity, item.CloneCustomMetadata());
@@ -80,12 +80,13 @@ public class LinkContentToWwwroot : Task
                 continue;
             }
 
+            // Case 3: update Link to point to wwwroot
             if (copyPreserveOrAlways && !string.IsNullOrEmpty(link) && !link.StartsWith("wwwroot"))
             {
                 var isRooted = Path.IsPathRooted(identity);
-                var contentRoot = isRooted ? Path.GetDirectoryName(identity) : MSBuildProjectDirectory;
+                var contentRoot = isRooted ? Path.GetDirectoryName(identity) : Path.GetDirectoryName(Path.GetFullPath(identity, MSBuildProjectDirectory));
 
-                // Add Identity to WasmFilesToIncludeInFileSystem
+                // Add Link to WasmFilesToIncludeInFileSystem
                 wasmFiles.Add(new TaskItem(link));
 
                 var outItem = new TaskItem(identity, item.CloneCustomMetadata());
