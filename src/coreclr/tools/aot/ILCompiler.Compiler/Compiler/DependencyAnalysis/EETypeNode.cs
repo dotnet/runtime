@@ -652,7 +652,7 @@ namespace ILCompiler.DependencyAnalysis
                     //   - As a matter of policy, the type and its methods may be exported for use in another module. The policy
                     //     may wish to specify that if a type is to be placed into a shared module, all of the methods associated with
                     //     it should be also be exported.
-                    foreach (var method in _type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific).GetAllMethods())
+                    foreach (var method in _type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific).GetAllMethodsAndAsyncVariants())
                     {
                         if (!MethodHasNonGenericILMethodBody(method))
                             continue;

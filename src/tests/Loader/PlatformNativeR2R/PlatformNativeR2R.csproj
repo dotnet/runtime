@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Explictly testing R2R composite format -->
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <!-- TODO: Enable for macOS and pass -f macho as arguments -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
+    <!-- <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true' and '$(TargetsOSX)' != 'true' and '$(TargetsAppleMobile)' != 'true'">true</CLRTestTargetUnsupported> -->
+    <!-- <CrossGen2TestExtraArguments Condition="'$(TargetsOSX)' == 'true' or '$(TargetsAppleMobile)' == 'true'">-f macho</CrossGen2TestExtraArguments> -->
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PlatformNativeR2R.cs" />
+
+    <CLRTestEnvironmentVariable Include="PLATFORM_NATIVE_R2R" Value="1" />
+  </ItemGroup>
+</Project>

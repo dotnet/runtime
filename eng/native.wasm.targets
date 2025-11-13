@@ -1,0 +1,78 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Condition="'$(TargetsWasm)' == 'true'" Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
+    <PackageReference Condition="'$(TargetsWasm)' == 'true'" Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <_RuntimeVariant />
+    <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
+
+    <_IcuDir Condition="'$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)' != '' and '$(TargetsWasm)' == 'true'">$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)/runtimes/$(TargetOS)-$(TargetArchitecture)$(_RuntimeVariant)/native</_IcuDir>
+    <_TzdDir Condition="'$(PkgSystem_Runtime_TimeZoneData)' != '' and '$(TargetsWasm)' == 'true'">$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_TzdDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+      <NativeCMakeArg Condition="'$(_IcuDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_ICU_DIR=$(_IcuDir)&quot;" />
+      <NativeCMakeArg Condition="'$(_TzdDir)' != ''" Include="-cmakeargs &quot;-DCMAKE_TZD_DIR=$(_TzdDir)&quot;" />
+      <NativeCMakeArg Condition="'$(RuntimeFlavor)' == 'Mono'" Include="-cmakeargs &quot;-DCLR_CMAKE_RUNTIME_MONO=1&quot;" />
+      <NativeCMakeArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="-cmakeargs &quot;-DCLR_CMAKE_RUNTIME_CORECLR=1&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_PRODUCT_VERSION=$(ProductVersion)&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_CONTINUOUS_INTEGRATION_BUILD=$(ContinuousIntegrationBuild)&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_NET_CORE_APP_CURRENT_VERSION=$(NetCoreAppCurrentVersion)&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BUILD_LIBRARIES_CONFIGURATION=$(LibrariesConfiguration)&quot;" />
+      <NativeCMakeArg Include="-cmakeargs &quot;-DCMAKE_BUILD_RUNTIME_CONFIGURATION=$(RuntimeConfiguration)&quot;" />
+      <NativeCMakeArg Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="-cmakeargs &quot;-DBUILD_LIBS_NATIVE_BROWSER=1&quot;" />
+  </ItemGroup>
+
+  <Target Name="GenerateEmccExports" Condition="'$(TargetsBrowser)' == 'true'">
+    <ItemGroup>
+      <EmccExportedRuntimeMethod Include="FS" />
+      <EmccExportedRuntimeMethod Include="out" />
+      <EmccExportedRuntimeMethod Include="err" />
+      <EmccExportedRuntimeMethod Include="ccall" />
+      <EmccExportedRuntimeMethod Include="cwrap" />
+      <EmccExportedRuntimeMethod Include="setValue" />
+      <EmccExportedRuntimeMethod Include="getValue" />
+      <EmccExportedRuntimeMethod Include="UTF8ToString" />
+      <EmccExportedRuntimeMethod Include="UTF8ArrayToString" />
+      <EmccExportedRuntimeMethod Include="lengthBytesUTF8" />
+      <EmccExportedRuntimeMethod Include="stringToUTF8Array" />
+      <EmccExportedRuntimeMethod Include="FS_createPath" />
+      <EmccExportedRuntimeMethod Include="FS_createDataFile" />
+      <EmccExportedRuntimeMethod Include="removeRunDependency" />
+      <EmccExportedRuntimeMethod Include="addRunDependency" />
+      <EmccExportedRuntimeMethod Include="addFunction" />
+      <EmccExportedRuntimeMethod Include="safeSetTimeout" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePush" />
+      <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
+      <EmccExportedRuntimeMethod Include="maybeExit" />
+      <EmccExportedRuntimeMethod Include="abort" />
+
+      <EmccExportedFunction Include="_free" />
+      <EmccExportedFunction Include="_htons" />
+      <EmccExportedFunction Include="_malloc" />
+      <EmccExportedFunction Include="_sbrk" />
+      <EmccExportedFunction Include="_memalign" />
+      <EmccExportedFunction Include="_posix_memalign" />
+      <EmccExportedFunction Include="_memset" />
+      <EmccExportedFunction Include="_ntohs" />
+      <EmccExportedFunction Include="stackAlloc" />
+      <EmccExportedFunction Include="stackRestore" />
+      <EmccExportedFunction Include="stackSave" />
+      <!-- TODO-WASM hide -->
+      <EmccExportedFunction Include="_GetDotNetRuntimeContractDescriptor" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_EmccExportedRuntimeMethods>@(EmccExportedRuntimeMethod -> '%(Identity)',',')</_EmccExportedRuntimeMethods>
+      <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <NativeCMakeArg Condition="'$(TargetsBrowser)' == 'true'" Include="-cmakeargs &quot;-DCMAKE_EMCC_EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)&quot;" />
+      <NativeCMakeArg Condition="'$(TargetsBrowser)' == 'true'" Include="-cmakeargs &quot;-DCMAKE_EMCC_EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)&quot;" />
+    </ItemGroup>
+
+  </Target>
+
+</Project>
