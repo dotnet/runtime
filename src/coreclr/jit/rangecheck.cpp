@@ -1174,44 +1174,33 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
             bool opFound = false;
             for (Statement* stmt : block->Statements())
             {
-                if (stmt->GetRootNode() == nullptr)
-                {
-                    continue;
-                }
-
                 struct WalkData
                 {
                     int*       budget;
                     GenTree*   op;
                     ASSERT_TP* assertions;
                 };
-                auto data = WalkData{&budget, op, &assertions};
 
-                Compiler::fgWalkResult result = m_pCompiler->fgWalkTreePost(
-                    stmt->GetRootNodePointer(),
-                    [](GenTree** ppTree, Compiler::fgWalkData* walkData) {
-                    auto*    data    = static_cast<WalkData*>(walkData->pCallbackData);
-                    GenTree* current = *ppTree;
-
-                    if ((current == data->op) || (--(*(data->budget)) <= 0))
+                auto visitor = [](GenTree** ppTree, Compiler::fgWalkData* walkData) {
+                    auto* data = static_cast<WalkData*>(walkData->pCallbackData);
+                    if ((*ppTree == data->op) || (--(*(data->budget)) <= 0))
                     {
-                        // We've found the op or exhausted the budget; abort the walk.
+                        // We've found the op or run out of budget - abort the walk.
                         return Compiler::fgWalkResult::WALK_ABORT;
                     }
-
-                    if (current->GeneratesAssertion())
+                    if ((*ppTree)->GeneratesAssertion())
                     {
-                        AssertionInfo info = current->GetAssertionInfo();
+                        AssertionInfo info = (*ppTree)->GetAssertionInfo();
                         // Normally, we extend the assertions by calling optImpliedAssertions, but that
                         // doesn't seem to improve anything here, so we just add the assertion directly.
                         BitVecOps::AddElemD(walkData->compiler->apTraits, *data->assertions,
                                             info.GetAssertionIndex() - 1);
                     }
                     return Compiler::fgWalkResult::WALK_CONTINUE;
-                },
-                    &data);
+                };
 
-                if (result != Compiler::fgWalkResult::WALK_CONTINUE)
+                auto data = WalkData{ &budget, op, &assertions };
+                if (m_pCompiler->fgWalkTreePost(stmt->GetRootNodePointer(), visitor, &data) != Compiler::fgWalkResult::WALK_CONTINUE)
                 {
                     opFound = true;
                     break;
