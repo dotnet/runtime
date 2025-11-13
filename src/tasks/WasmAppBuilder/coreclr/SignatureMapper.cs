@@ -54,9 +54,6 @@ internal static class SignatureMapper
             c = 'i';
         else if (t.IsByRef)
             c = 'i';
-        else if (typeof(Delegate).IsAssignableFrom(t))
-            // FIXME: Should we narrow this to only certain types of delegates?
-            c = 'i';
         else if (t.IsClass)
             c = 'i';
         else if (t.IsInterface)
