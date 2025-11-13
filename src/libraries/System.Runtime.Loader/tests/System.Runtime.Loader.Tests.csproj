@@ -108,13 +108,43 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="IncludeDeltasInWasmBundle" BeforeTargets="PrepareForWasmBuildApp" Condition="'$(TargetOS)' == 'browser'">
+  <Target Name="IncludeDeltasInWasmBundle" BeforeTargets="ComputeWasmVfs" DependsOnTargets="GetCopyToOutputDirectoryItems" Condition="'$(TargetOS)' == 'browser'">
     <ItemGroup>
       <!-- FIXME: this belongs in eng/testing/tests.wasm.targets -->
       <!-- FIXME: Can we do something on the Content items in the referenced projects themselves to get this for free? -->
-      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)" Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dmeta'))" />
-      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)" Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dil'))" />
-      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)" Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dpdb'))" />
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dmeta'))" />
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dil'))" />
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
+      <!-- <WasmFilesToIncludeInFileSystem Include="%(_WasmFilesForVfs.TargetPath)" /> -->
+      <!-- <Content Include="@(_WasmFilesForVfs)" /> -->
+      <!-- <Content Include="%(_WasmFilesForVfs.Identity)" Link="wwwroot/%(_WasmFilesForVfs.TargetPath)" /> -->
     </ItemGroup>
+
+    <LinkContentToWwwroot Content="@(_WasmFilesForVfs)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
+      <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
+      <Output TaskParameter="ContentOut" ItemName="_WasmFilesForVfsLinked" />
+    </LinkContentToWwwroot>
+
+    <DefineStaticWebAssets
+      CandidateAssets="@(_WasmFilesForVfsLinked->Distinct())"
+      FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
+      FingerprintPatterns="@(StaticWebAssetFingerprintPattern)"
+      RelativePathPattern="wwwroot/**"
+      SourceType="Discovered"
+      SourceId="$(PackageId)"
+      ContentRoot="$(MSBuildProjectDirectory)\wwwroot\"
+      BasePath="$(StaticWebAssetBasePath)"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)"
+      CacheManifestPath="$(_ResolveProjectStaticWebAssetsCachePath)">
+        <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
+        <Output TaskParameter="Assets" ItemName="_CurrentProjectStaticWebAsset" />
+    </DefineStaticWebAssets>
+
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_CurrentProjectStaticWebAsset)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
   </Target>
 </Project>

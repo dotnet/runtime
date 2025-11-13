@@ -163,17 +163,14 @@
     <WasmNestedPublishAppDependsOn>PrepareForWasmBuildApp;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
   </PropertyGroup>
 
-  <Target Name="IncludeTestAssemblyInVFS" BeforeTargets="PrepareForWasmBuildApp;ResolveProjectStaticWebAssets">
-    <ItemGroup>
-      <!-- <Content Include="$(OutDir)$(AssemblyName).dll" Link="wwwroot\vfs\$(AssemblyName).dll" /> -->
-      <!-- <WasmFilesToIncludeFromPublishDir Include="vfs\$(AssemblyName).dll" Exclude="@(WasmFilesToIncludeFromPublishDir)" /> -->
-      <!-- <WasmFilesToIncludeInFileSystem Include="vfs/$(AssemblyName).dll" /> -->
-    </ItemGroup>
-  </Target>
-
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.LinkContentToWwwroot" AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
 
   <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets">
+    <ItemGroup>
+      <!-- LinkContentToWwwroot will Link it to wwwroot -->
+      <Content Include="$(OutDir)$(AssemblyName).dll" Link="$(AssemblyName).dll" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
     <LinkContentToWwwroot Content="@(Content)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
       <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
       <Output TaskParameter="ContentOut" ItemName="_LinkedContent" />

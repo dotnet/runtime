@@ -141,6 +141,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <GenerateBuildWasmBootJsonDependsOn>
       $(GenerateBuildWasmBootJsonDependsOn);
       GenerateBuildRuntimeConfigurationFiles;
+      ComputeWasmVfs;
       ResolveWasmOutputs;
     </GenerateBuildWasmBootJsonDependsOn>
   </PropertyGroup>
@@ -231,6 +232,46 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="ResolveWasmOutputs" DependsOnTargets="_ResolveWasmOutputs" />
+
+  <Target Name="ComputeWasmVfs">
+    <ItemGroup>
+      <WasmFilesToIncludeInFileSystem Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' == ''">
+        <TargetPath>/%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
+      </WasmFilesToIncludeInFileSystem>
+    </ItemGroup>
+    
+    <DefineStaticWebAssets
+      CandidateAssets="@(StaticWebAsset)"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="vfs:%(WasmFilesToIncludeInFileSystem.TargetPath)"
+      RelativePathFilter="@(WasmFilesToIncludeInFileSystem)"
+      Condition="'@(WasmFilesToIncludeInFileSystem)' != ''"
+    >
+      <Output TaskParameter="Assets" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAsset" />
+    </DefineStaticWebAssets>
+
+    <Error
+      Text="Some of the 'WasmFilesToIncludeInFileSystem' where not found in StaticWebAssets. WasmFilesToIncludeInFileSystem: @(WasmFilesToIncludeInFileSystem), matched StaticWebAssets: @(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
+      Condition="'@(WasmFilesToIncludeInFileSystem->Count())' != '@(_WasmFilesToIncludeInFileSystemStaticWebAsset->Count())'" />
+
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
+      ExistingEndpoints="@(StaticWebAssetEndpoint)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
+
+    <ItemGroup>
+      <!-- Update the boot config static web asset since we've given it a trait -->
+      <_WasmFilesToIncludeInFileSystemOriginalAssetsWithChangedIdentity Include="%(_WasmFilesToIncludeInFileSystemStaticWebAsset.OriginalItemSpec)" Condition="'%(_WasmFilesToIncludeInFileSystemStaticWebAsset.OriginalItemSpec)' != '%(_WasmFilesToIncludeInFileSystemStaticWebAsset.Identity)'" /> 
+
+      <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
+      <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemOriginalAssetsWithChangedIdentity)" />
+      <StaticWebAsset Include="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
+      <StaticWebAssetEndpoint Include="@(_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint)" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
     <PropertyGroup>
@@ -325,46 +366,11 @@ Copyright (c) .NET Foundation. All rights reserved.
     >
       <Output TaskParameter="Endpoints" ItemName="_WasmJsConfigStaticWebAssetEndpoint" />
     </DefineStaticWebAssetEndpoints>
-
-    <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Condition="'%(WasmFilesToIncludeInFileSystem.TargetPath)' == ''">
-        <TargetPath>/%(WasmFilesToIncludeInFileSystem.Identity)</TargetPath>
-      </WasmFilesToIncludeInFileSystem>
-    </ItemGroup>
     
-    <DefineStaticWebAssets
-      CandidateAssets="@(_WasmDiscoveredFileCandidates)"
-      AssetTraitName="WasmResource"
-      AssetTraitValue="vfs:%(WasmFilesToIncludeInFileSystem.TargetPath)"
-      RelativePathFilter="@(WasmFilesToIncludeInFileSystem)"
-      Condition="'@(WasmFilesToIncludeInFileSystem)' != ''"
-    >
-      <Output TaskParameter="Assets" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAsset" />
-    </DefineStaticWebAssets>
-
-    <Error
-      Text="Some of the 'WasmFilesToIncludeInFileSystem' where not found in StaticWebAssets. WasmFilesToIncludeInFileSystem: @(WasmFilesToIncludeInFileSystem), matched StaticWebAssets: @(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
-      Condition="'@(WasmFilesToIncludeInFileSystem->Count())' != '@(_WasmFilesToIncludeInFileSystemStaticWebAsset->Count())'" />
-
-    <DefineStaticWebAssetEndpoints
-      CandidateAssets="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
-      ExistingEndpoints="@(StaticWebAssetEndpoint)"
-      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
-    >
-      <Output TaskParameter="Endpoints" ItemName="_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint" />
-    </DefineStaticWebAssetEndpoints>
-
     <ItemGroup>
-      <!-- Update the boot config static web asset since we've given it a trait -->
-      <_WasmFilesToIncludeInFileSystemOriginalAssetsWithChangedIdentity Include="%(_WasmFilesToIncludeInFileSystemStaticWebAsset.OriginalItemSpec)" Condition="'%(_WasmFilesToIncludeInFileSystemStaticWebAsset.OriginalItemSpec)' != '%(_WasmFilesToIncludeInFileSystemStaticWebAsset.Identity)'" /> 
-
       <StaticWebAsset Remove="@(_WasmJsConfigStaticWebAsset)" />
       <StaticWebAsset Include="@(_WasmJsConfigStaticWebAsset)" />
-      <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
-      <StaticWebAsset Remove="@(_WasmFilesToIncludeInFileSystemOriginalAssetsWithChangedIdentity)" />
-      <StaticWebAsset Include="@(_WasmFilesToIncludeInFileSystemStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(_WasmJsConfigStaticWebAssetEndpoint)" />
-      <StaticWebAssetEndpoint Include="@(_WasmFilesToIncludeInFileSystemStaticWebAssetEndpoint)" />
       <ReferenceCopyLocalPaths Remove="@(_WasmBuildFilesToRemove)" />
     </ItemGroup>
 
