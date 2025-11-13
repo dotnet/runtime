@@ -2,16 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Linq;
 using System.IO.Compression;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace DotnetFuzzing.Fuzzers;
 
-internal sealed class ZipArchiveFuzzer : IFuzzer
+internal sealed class Deflate64Fuzzer : IFuzzer
 {
     public string[] TargetAssemblies { get; } = ["System.IO.Compression"];
     public string[] TargetCoreLibPrefixes => [];
-    public string Corpus => "ziparchive";
+    public string Corpus => "deflate64";
 
     public void FuzzTarget(ReadOnlySpan<byte> bytes)
     {
@@ -22,6 +24,26 @@ internal sealed class ZipArchiveFuzzer : IFuzzer
 
         TestArchive(CopyToRentedArray(bytes), bytes.Length, async: false).GetAwaiter().GetResult();
         TestArchive(CopyToRentedArray(bytes), bytes.Length, async: true).GetAwaiter().GetResult();
+    }
+
+#pragma warning disable IL2026 // RequiresUnreferencedCode
+    private static readonly object _deflate64Value = Enum.ToObject(
+        typeof(ZipArchive).Assembly.GetType("System.IO.Compression.ZipArchiveEntry+CompressionMethodValues", throwOnError: true)!
+        , 0x9); // Deflate64
+
+    private static readonly Type _deflateStreamType = typeof(ZipArchive).Assembly.GetType("System.IO.Compression.DeflateManagedStream", throwOnError: true)!;
+#pragma warning restore IL2026
+
+    private static Stream CreateStream(byte[] bytes, int length)
+    {
+#pragma warning disable IL2077 // dynamic access to non-public ctors
+        return (Stream)Activator.CreateInstance(
+            _deflateStreamType,
+            bindingAttr: BindingFlags.NonPublic | BindingFlags.Instance,
+            binder: null,
+            args: new object[] { new MemoryStream(bytes, 0, length), _deflate64Value, -1L },
+            culture: null)!;
+#pragma warning restore IL2077
     }
 
     private byte[] CopyToRentedArray(ReadOnlySpan<byte> bytes)
@@ -43,36 +65,14 @@ internal sealed class ZipArchiveFuzzer : IFuzzer
     {
         try
         {
-            using var stream = new MemoryStream(buffer, 0, length);
-
-            ZipArchive archive;
-
+            using var stream = CreateStream(buffer, length);
             if (async)
             {
-                archive = await ZipArchive.CreateAsync(stream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
+                await stream.CopyToAsync(Stream.Null);
             }
             else
             {
-                archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
-            }
-
-            foreach (var entry in archive.Entries)
-            {
-                // Access entry properties to simulate usage
-                _ = entry.FullName;
-                _ = entry.Length;
-                _ = entry.Comment;
-                _ = entry.LastWriteTime;
-                _ = entry.Crc32;
-            }
-
-            if (async)
-            {
-                await archive.DisposeAsync();
-            }
-            else
-            {
-                archive.Dispose();
+                stream.CopyTo(Stream.Null);
             }
         }
         catch (InvalidDataException)
