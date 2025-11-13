@@ -45,8 +45,6 @@ namespace Internal.IL.Stubs
             var emitter = new ILEmitter();
             var codestream = emitter.NewCodeStream();
 
-            MethodSignature sig = asyncMethod.Signature;
-
             if (taskReturningMethod.OwningType.HasInstantiation)
             {
                 var instantiatedType = (InstantiatedType)TypeSystemHelpers.InstantiateAsOpen(taskReturningMethod.OwningType);
@@ -62,6 +60,8 @@ namespace Internal.IL.Stubs
                 }
                 taskReturningMethod = taskReturningMethod.MakeInstantiatedMethod(new Instantiation(inst));
             }
+
+            MethodSignature sig = asyncMethod.Signature;
 
             int localArg = 0;
             if (!sig.IsStatic)
@@ -105,6 +105,7 @@ namespace Internal.IL.Stubs
                 ILLocalVariable valueTaskLocal = emitter.NewLocal(valueTaskType);
                 ILCodeLabel valueTaskCompletedLabel = emitter.NewCodeLabel();
 
+                // Store value task returned by call to actual user func
                 codestream.EmitStLoc(valueTaskLocal);
                 codestream.EmitLdLoca(valueTaskLocal);
                 codestream.Emit(ILOpcode.call, emitter.NewToken(isCompletedMethod));
@@ -148,7 +149,7 @@ namespace Internal.IL.Stubs
                 ILLocalVariable taskLocal = emitter.NewLocal(taskType);
                 ILCodeLabel getResultLabel = emitter.NewCodeLabel();
 
-                // Store task returned by actual user func
+                // Store task returned by actual user func or by ValueTask.AsTask
                 codestream.EmitStLoc(taskLocal);
 
                 codestream.EmitLdLoc(taskLocal);
