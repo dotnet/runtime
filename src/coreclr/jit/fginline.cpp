@@ -701,20 +701,21 @@ private:
             // we may be able to sharpen the type for the local.
             if (tree->TypeIs(TYP_REF))
             {
-                LclVarDsc* lcl = m_compiler->lvaGetDesc(lclNum);
+                LclVarDsc* const lcl = m_compiler->lvaGetDesc(lclNum);
 
                 if (lcl->lvSingleDef)
                 {
-                    bool                 isExact;
-                    bool                 isNonNull;
-                    CORINFO_CLASS_HANDLE newClass = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
-
-                    if (newClass != NO_CLASS_HANDLE)
+                    if (lcl->lvClassHnd == NO_CLASS_HANDLE)
                     {
-                        m_compiler->lvaUpdateClass(lclNum, newClass, isExact);
-                        m_madeChanges                    = true;
-                        m_compiler->hasUpdatedTypeLocals = true;
+                        m_compiler->lvaSetClass(lclNum, value);
                     }
+                    else
+                    {
+                        m_compiler->lvaUpdateClass(lclNum, value);
+                    }
+
+                    m_madeChanges                    = true;
+                    m_compiler->hasUpdatedTypeLocals = true;
                 }
             }
 

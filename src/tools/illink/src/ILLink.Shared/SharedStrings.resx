@@ -651,6 +651,12 @@
   <data name="DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessorMessage" xml:space="preserve">
     <value>'DynamicallyAccessedMembersAttribute' on property '{0}' conflicts with the same attribute on its accessor '{1}'.</value>
   </data>
+  <data name="DynamicallyAccessedMembersIsNotAllowedOnExtensionPropertiesTitle" xml:space="preserve">
+    <value>'DynamicallyAccessedMembersAttribute' on extension property is ignored</value>
+  </data>
+  <data name="DynamicallyAccessedMembersIsNotAllowedOnExtensionPropertiesMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMembersAttribute' on extension property '{0}' is not supported and has no effect. Apply the attribute to the accessor return value or value parameter instead.</value>
+  </data>
   <data name="XmlCouldNotFindAnyTypeInNamespaceTitle" xml:space="preserve">
     <value>The XML descriptor specifies a namespace but there are no types found in such namespace.</value>
   </data>
