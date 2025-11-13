@@ -1199,8 +1199,9 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
                     return Compiler::fgWalkResult::WALK_CONTINUE;
                 };
 
-                auto data = WalkData{ &budget, op, &assertions };
-                if (m_pCompiler->fgWalkTreePost(stmt->GetRootNodePointer(), visitor, &data) != Compiler::fgWalkResult::WALK_CONTINUE)
+                auto data = WalkData{&budget, op, &assertions};
+                if (m_pCompiler->fgWalkTreePost(stmt->GetRootNodePointer(), visitor, &data) !=
+                    Compiler::fgWalkResult::WALK_CONTINUE)
                 {
                     opFound = true;
                     break;
