@@ -119,6 +119,8 @@ namespace ILCompiler.DependencyAnalysis
             // Get a list of all methods that have a method body and metadata from the metadata manager.
             foreach (var mappingEntry in factory.MetadataManager.GetMethodMapping(factory))
             {
+                Debug.Assert(!mappingEntry.Entity.IsAsyncVariant());
+
                 MethodDesc method = mappingEntry.Entity;
 
                 // The current format requires us to have an MethodTable for the owning type. We might want to lift this.

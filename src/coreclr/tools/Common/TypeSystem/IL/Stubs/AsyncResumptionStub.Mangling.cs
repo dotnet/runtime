@@ -8,7 +8,7 @@ namespace ILCompiler
 {
     public partial class AsyncResumptionStub : ILStubMethod, IPrefixMangledMethod
     {
-        MethodDesc IPrefixMangledMethod.BaseMethod => _owningMethod;
+        MethodDesc IPrefixMangledMethod.BaseMethod => _targetMethod;
 
         string IPrefixMangledMethod.Prefix => "Resume";
     }
