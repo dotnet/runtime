@@ -1282,6 +1282,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
+        [Intrinsic]
         public static Half operator /(Half left, Half right) => (Half)((float)left / (float)right);
 
         //
@@ -1633,6 +1634,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
+        [Intrinsic]
         public static Half operator *(Half left, Half right) => (Half)((float)left * (float)right);
 
         //
@@ -2221,6 +2223,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
+        [Intrinsic]
         public static Half operator -(Half left, Half right) => (Half)((float)left - (float)right);
 
         //
@@ -2234,6 +2237,7 @@ namespace System
         public static Half AcosPi(Half x) => (Half)float.AcosPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Half Asin(Half x) => (Half)MathF.Asin((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />

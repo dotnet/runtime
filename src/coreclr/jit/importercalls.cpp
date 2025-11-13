@@ -3105,10 +3105,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                 bool                    tailCall,
                                 bool                    callvirt,
                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
-                                CORINFO_THIS_TRANSFORM constraintCallThisTransform
-                                                R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
-                                NamedIntrinsic* pIntrinsicName,
-                                bool*           isSpecialIntrinsic)
+                                CORINFO_THIS_TRANSFORM  constraintCallThisTransform
+                                R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
+                                NamedIntrinsic*         pIntrinsicName,
+                                bool*                   isSpecialIntrinsic)
 {
     bool       mustExpand  = false;
     bool       isSpecial   = false;
@@ -4416,6 +4416,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif // FEATURE_HW_INTRINSICS
 
             case NI_System_Half_op_Addition:
+            case NI_System_Half_op_Subtraction:
+            case NI_System_Half_op_Multiply:
+            case NI_System_Half_op_Division:
             {
 #ifdef TARGET_XARCH
                 if(compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
@@ -4424,7 +4427,27 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree* op1 = impPopStack().val;
                     assert(op1->TypeGet() == TYP_HALF);
                     assert(op2->TypeGet() == TYP_HALF);
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_HALF, op1, op2, NI_AVX10v1_HalfAdd, TYP_HALF, 16);
+
+                    NamedIntrinsic intrinsic;
+                    switch (ni)
+                    {
+                        case NI_System_Half_op_Addition:
+                            intrinsic = NI_AVX10v1_Add;
+                            break;
+                        case NI_System_Half_op_Subtraction:
+                            intrinsic = NI_AVX10v1_Subtract;
+                            break;
+                        case NI_System_Half_op_Multiply:
+                            intrinsic = NI_AVX10v1_Multiply;
+                            break;
+                        case NI_System_Half_op_Division:
+                            intrinsic = NI_AVX10v1_Divide;
+                            break;
+                        default:
+                            unreached();
+                    }
+
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_HALF, op1, op2, intrinsic, TYP_HALF, 16);
                 }
 #endif
                 break;
@@ -4436,9 +4459,20 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                 {
                     GenTree* op1 = impPopStack().val;
-                    assert(op1->TypeGet() == TYP_FLOAT);
-                    // todo-half: these intrinsics follow the same size (though it is unused) as AVX512_ConvertToUInt32
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_HALF, op1, NI_AVX10v1_ConvertFloatToHalf, TYP_FLOAT, 16);
+                    assert(op1->TypeGet() == TYP_FLOAT || op1->TypeGet() == TYP_HALF);
+
+                    if (op1->TypeGet() == TYP_FLOAT)
+                    {
+                        // todo-half: these intrinsics follow the same size (though it is unused) as AVX512_ConvertToUInt32
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_HALF, op1, NI_AVX10v1_ConvertFloatToHalf, TYP_FLOAT, 16);
+                        break;
+                    }
+                    else if (op1->TypeGet() == TYP_HALF)
+                    {
+                        // todo-half: these intrinsics follow the same size (though it is unused) as AVX512_ConvertToUInt32
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_FLOAT, op1, NI_AVX10v1_ConvertHalfToFloat, TYP_HALF, 16);
+                        break;
+                    }
                 }
 #endif
                 break;
@@ -10416,6 +10450,18 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "op_Addition") == 0)
                         {
                             result = NI_System_Half_op_Addition;
+                        }
+                        else if (strcmp(methodName, "op_Subtraction") == 0)
+                        {
+                            result = NI_System_Half_op_Subtraction;
+                        }
+                        else if (strcmp(methodName, "op_Multiply") == 0)
+                        {
+                            result = NI_System_Half_op_Multiply;
+                        }
+                        else if (strcmp(methodName, "op_Division") == 0)
+                        {
+                            result = NI_System_Half_op_Division;
                         }
                         break;
                     }

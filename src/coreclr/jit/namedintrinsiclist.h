@@ -168,6 +168,9 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_Intrinsics_Intrinsic,
 
     NI_System_Half_op_Addition,
+    NI_System_Half_op_Subtraction,
+    NI_System_Half_op_Multiply,
+    NI_System_Half_op_Division,
     NI_System_Half_op_Explicit,
 
 #ifdef FEATURE_HW_INTRINSICS
