@@ -832,7 +832,6 @@ class StringObject : public Object
     // characters and the null terminator you should pass in 5 and NOT 6.
     //========================================================================
     static STRINGREF NewString(int length);
-    static STRINGREF NewString(int length, BOOL bHasTrailByte);
     static STRINGREF NewString(const WCHAR *pwsz);
     static STRINGREF NewString(const WCHAR *pwsz, int length);
     static STRINGREF NewString(LPCUTF8 psz);
@@ -842,10 +841,6 @@ class StringObject : public Object
     static STRINGREF* GetEmptyStringRefPtr(void** pinnedString);
 
     static STRINGREF* InitEmptyStringRefPtr();
-
-    BOOL HasTrailByte();
-    BOOL GetTrailByte(BYTE *bTrailByte);
-    BOOL SetTrailByte(BYTE bTrailByte);
 
     /*=================RefInterpretGetStringValuesDangerousForGC======================
     **N.B.: This performs no range checking and relies on the caller to have done this.

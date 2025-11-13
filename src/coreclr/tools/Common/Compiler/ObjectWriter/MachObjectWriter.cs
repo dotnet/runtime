@@ -417,6 +417,7 @@ namespace ILCompiler.ObjectWriter
             {
                 case IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                 case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                case IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
                     // Addend is handled through ARM64_RELOC_ADDEND
                     break;
 
@@ -629,7 +630,7 @@ namespace ILCompiler.ObjectWriter
                             IsPCRelative = true,
                         });
                 }
-                else if (symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A)
+                else if (symbolicRelocation.Type is IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A or IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L)
                 {
                     if (symbolicRelocation.Addend != 0)
                     {
@@ -649,6 +650,7 @@ namespace ILCompiler.ObjectWriter
                     {
                         IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => ARM64_RELOC_PAGE21,
                         IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => ARM64_RELOC_PAGEOFF12,
+                        IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L => ARM64_RELOC_PAGEOFF12,
                         _ => 0
                     };
 
@@ -660,7 +662,7 @@ namespace ILCompiler.ObjectWriter
                             Length = 4,
                             RelocationType = type,
                             IsExternal = true,
-                            IsPCRelative = symbolicRelocation.Type != IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A,
+                            IsPCRelative = symbolicRelocation.Type == IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
                         });
                 }
                 else if (symbolicRelocation.Type == IMAGE_REL_BASED_DIR64)

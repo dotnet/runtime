@@ -32,12 +32,15 @@ namespace System.Threading
         }
 
         // This replaces the current pending setTimeout with shorter one
+#if MONO
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void MainThreadScheduleTimer(void* callback, int shortestDueTimeMs);
+#else
+        [LibraryImport(RuntimeHelpers.QCall)]
+        private static unsafe partial void SystemJS_ScheduleTimer(int shortestDueTimeMs);
+#endif
 
-#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
-        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-#pragma warning restore CS3016
+        [UnmanagedCallersOnly(EntryPoint = "SystemJS_ExecuteTimerCallback")]
         // this callback will arrive on the main thread, called from mono_wasm_execute_timer
         private static void TimerHandler()
         {
@@ -89,7 +92,11 @@ namespace System.Threading
                 s_shortestDueTimeMs = shortestDueTimeMs;
                 int shortestWait = Math.Max((int)(shortestDueTimeMs - currentTimeMs), 0);
                 // this would cancel the previous schedule and create shorter one, it is expensive callback
-                MainThreadScheduleTimer((void*)(delegate* unmanaged[Cdecl]<void>)&TimerHandler, shortestWait);
+#if MONO
+                MainThreadScheduleTimer((void*)(delegate* unmanaged<void>)&TimerHandler, shortestWait);
+#else
+                SystemJS_ScheduleTimer(shortestWait);
+#endif
             }
         }
 

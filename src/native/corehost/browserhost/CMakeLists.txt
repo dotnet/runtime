@@ -57,7 +57,6 @@ set(SHARED_CLR_DESTINATION
 # these dependencies assume that you built `libs.native+clr.runtime` subsets first
 LIST(APPEND NATIVE_LIBS
     ${SHARED_CLR_DESTINATION}/libcoreclr_static.a
-    ${SHARED_CLR_DESTINATION}/libclrinterpreter.a
     ${SHARED_CLR_DESTINATION}/libnativeresourcestring.a
     ${SHARED_CLR_DESTINATION}/libgcinfo_unix_wasm.a
     ${SHARED_CLR_DESTINATION}/libcoreclrminipal.a
@@ -114,10 +113,12 @@ target_link_options(browserhost PRIVATE
     -sMODULARIZE=1
     -sEXPORT_ES6=1
     -sEXIT_RUNTIME=0
-    -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,BROWSER_HOST
-    -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,___cpp_exception
+    -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+    -sEXPORTED_FUNCTIONS=_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
-    -lnodefs.js)
+    -sENVIRONMENT=web,webview,worker,node,shell
+    -lnodefs.js
+    -Wl,-error-limit=0)
 
 target_link_libraries(browserhost PUBLIC
     BrowserHost-Static
