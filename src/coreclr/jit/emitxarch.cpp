@@ -3165,10 +3165,16 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
             break;
         }
 
+        case 0x06:
+        {
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) || emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
+            evexPrefix |= (0x06 << 16);
+            break;
+        }
+
         case 0x01:
         case 0x02:
         case 0x03:
-        case 0x06:
         case 0x07:
         default:
         {
@@ -21402,7 +21408,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             float insLatency = insLatencyInfos[ins];
             
             // todo-xarch-half: hacking an exit on the unhandled ins to make prototyping easier
-            if (ins == INS_vcvtss2sh || ins == INS_vaddsh)
+            if (ins == INS_vcvtss2sh || ins == INS_vcvtsh2ss || ins == INS_vaddsh || ins == INS_vsubsh || ins == INS_vmulsh || ins == INS_vdivsh)
             {
                 result.insLatency = PERFSCORE_LATENCY_1C;
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
