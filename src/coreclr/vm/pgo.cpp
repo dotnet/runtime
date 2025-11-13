@@ -1002,13 +1002,13 @@ class R2RInstrumentationDataReader
 {
     ReadyToRunInfo *m_pReadyToRunInfo;
     Module* m_pModule;
-    PEDecoder* m_pNativeImage;
+    ReadyToRunLoadedImage* m_pNativeImage;
 
 public:
     StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
     StackSArray<BYTE> instrumentationData;
 
-    R2RInstrumentationDataReader(ReadyToRunInfo *pReadyToRunInfo, Module* pModule, PEDecoder* pNativeImage) :
+    R2RInstrumentationDataReader(ReadyToRunInfo *pReadyToRunInfo, Module* pModule, ReadyToRunLoadedImage* pNativeImage) :
         m_pReadyToRunInfo(pReadyToRunInfo),
         m_pModule(pModule),
         m_pNativeImage(pNativeImage)
@@ -1103,7 +1103,7 @@ public:
 
 HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pReadyToRunInfo,
                                                               Module* pModule,
-                                                              PEDecoder* pNativeImage,
+                                                              ReadyToRunLoadedImage* pNativeImage,
                                                               BYTE* pR2RFormatData,
                                                               size_t pR2RFormatDataMaxSize,
                                                               BYTE** pAllocatedData,

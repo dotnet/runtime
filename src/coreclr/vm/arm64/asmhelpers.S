@@ -4,13 +4,13 @@
 #include "asmconstants.h"
 #include "unixasmmacros.inc"
 
-// LPVOID __stdcall GetCurrentIP(void)//
+// void* GetCurrentIP(void)//
 LEAF_ENTRY GetCurrentIP, _TEXT
     mov x0, lr
     ret lr
 LEAF_END GetCurrentIP, _TEXT
 
-// LPVOID __stdcall GetCurrentSP(void)//
+// void* GetCurrentSP(void)//
 LEAF_ENTRY GetCurrentSP, _TEXT
     mov x0, sp
     ret lr
