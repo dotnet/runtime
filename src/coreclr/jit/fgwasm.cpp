@@ -200,9 +200,9 @@ private:
     unsigned m_enclosingHndIndex;
     // total weight of all entry blocks
     weight_t m_entryWeight;
-    // true if one of the Scc entries is the OSR entry block, and it's within a try region
-    // transforming these is more complex and is only needed when jitting.
-    bool m_hasOSREntryHeaderInTry;
+
+    unsigned        m_num;
+    static unsigned s_nums;
 
 public:
 
@@ -219,7 +219,7 @@ public:
         , m_enclosingTryIndex(0)
         , m_enclosingHndIndex(0)
         , m_entryWeight(0)
-        , m_hasOSREntryHeaderInTry(false)
+        , m_num(s_nums++)
     {
         m_blocks  = BitVecOps::MakeEmpty(&m_traits);
         m_entries = BitVecOps::MakeEmpty(&m_traits);
@@ -239,7 +239,7 @@ public:
 
     void ComputeEntries()
     {
-        JITDUMP("Scc has %u blocks\n", BitVecOps::Count(&m_traits, m_blocks));
+        JITDUMP("Scc %u has %u blocks\n", m_num, BitVecOps::Count(&m_traits, m_blocks));
 
         BitVecOps::Iter iterator(&m_traits, m_blocks);
         unsigned int    poNum;
@@ -274,7 +274,7 @@ public:
 
                 if (BitVecOps::TryAddElemD(&m_traits, m_entries, block->bbPostorderNum))
                 {
-                    JITDUMP(FMT_BB " is scc entry via " FMT_BB "\n", block->bbNum, pred->bbNum);
+                    JITDUMP(FMT_BB " is scc %u entry via " FMT_BB "\n", m_num, block->bbNum, pred->bbNum);
                     isEntry = true;
 
                     m_entryWeight += block->bbWeight;
@@ -292,11 +292,6 @@ public:
 
                         // But possibly different try regions
                         m_enclosingTryIndex = m_comp->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
-                    }
-
-                    if ((block == m_comp->fgOSREntryBB) && block->hasTryIndex())
-                    {
-                        m_hasOSREntryHeaderInTry = true;
                     }
                 }
             }
@@ -323,11 +318,6 @@ public:
     bool IsIrr()
     {
         return NumEntries() > 1;
-    }
-
-    bool HasOSREntryHeaderInTry()
-    {
-        return m_hasOSREntryHeaderInTry;
     }
 
     unsigned NumIrr()
@@ -382,6 +372,51 @@ public:
         JITDUMP("\n");
     }
 
+    void DumpDot()
+    {
+        JITDUMP("digraph SCC_%u {\n", m_num);
+        BitVecOps::Iter iterator(&m_traits, m_blocks);
+        unsigned int    poNum;
+        bool            first = true;
+        while (iterator.NextElem(&poNum))
+        {
+            BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
+            bool              isEntry = BitVecOps::IsMember(&m_traits, m_entries, poNum);
+
+            JITDUMP(FMT_BB "%s;", block->bbNum, isEntry ? " [style=filled]" : "");
+
+            // Show entry edges
+            //
+            if (isEntry)
+            {
+                for (BasicBlock* pred : block->PredBlocks())
+                {
+                    if (pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET))
+                    {
+                        // Ignore EHCATCHRET preds (requires exceptional flow)
+                        continue;
+                    }
+
+                    if (BitVecOps::IsMember(&m_traits, m_blocks, pred->bbPostorderNum))
+                    {
+                        // Pred is in the scc, so not an entry edge
+                        continue;
+                    }
+
+                    JITDUMP(FMT_BB " -> " FMT_BB ";\n", pred->bbNum, block->bbNum);
+                }
+            }
+
+            WasmSuccessorEnumerator successors(m_comp, block, /* useProfile */ true);
+            for (BasicBlock* const succ : successors)
+            {
+                unsigned const succNum = succ->bbPreorderNum;
+                JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
+            }
+        }
+        JITDUMP("}\n");
+    }
+
     void DumpAll(int indent = 0)
     {
         Dump(indent);
@@ -406,11 +441,13 @@ public:
             return;
         }
 
-        JITDUMP("Scc has %u non-entry blocks, finding nested sccs\n", nestedCount);
+        JITDUMP("Scc %u  has %u non-entry blocks. Scc Graph:\n", m_num, nestedCount);
+        DumpDot();
+        JITDUMP("\nLooking for nested SCCs in SCC %u\n", m_num);
 
         // Build a new postorder for the nested blocks
         //
-        BasicBlock** postOrder = new (m_comp, CMK_DepthFirstSearch) BasicBlock*[nestedCount];
+        BasicBlock** postOrder = new (m_comp, CMK_Wasm) BasicBlock*[nestedCount];
 
         auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {};
 
@@ -419,6 +456,29 @@ public:
         };
 
         auto visitEdge = [](BasicBlock* block, BasicBlock* succ) {};
+
+        // Dump subgraph as dot
+        {
+            JITDUMP("digraph scc_%u_nested_subgraph%u {\n", m_num, nestedCount);
+            BitVecOps::Iter iterator(&m_traits, nestedBlocks);
+            unsigned int    poNum;
+            bool            first = true;
+            while (iterator.NextElem(&poNum))
+            {
+                BasicBlock* const block = m_dfsTree->GetPostOrder(poNum);
+
+                JITDUMP(FMT_BB ";\n", block->bbNum);
+
+                WasmSuccessorEnumerator successors(m_comp, block, /* useProfile */ true);
+                for (BasicBlock* const succ : successors)
+                {
+                    unsigned const succNum = succ->bbPreorderNum;
+                    JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
+                }
+            }
+
+            JITDUMP("}\n");
+        }
 
         unsigned numBlocks = WasmRunSubgraphDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
                                                 /* useProfile */ true>(m_comp, m_dfsTree, visitPreorder, visitPostorder,
@@ -432,7 +492,7 @@ public:
 
         // Use that to find the nested Sccs
         //
-        ArrayStack<Scc*> nestedSccs(m_comp->getAllocator(CMK_DepthFirstSearch));
+        ArrayStack<Scc*> nestedSccs(m_comp->getAllocator(CMK_Wasm));
         WasmFindSccsCore(m_comp, m_dfsTree, nestedBlocks, m_traits, nestedSccs, postOrder, nestedCount);
 
         const unsigned nNested = nestedSccs.Height();
@@ -448,7 +508,7 @@ public:
             m_nested.push_back(nestedScc);
         }
 
-        JITDUMP("\n <-- nested ... \n");
+        JITDUMP("\n <-- nested in Scc %u... \n", m_num);
     }
 
     unsigned EnclosingTryIndex()
@@ -604,6 +664,8 @@ public:
     }
 };
 
+unsigned Scc::s_nums = 0;
+
 //-----------------------------------------------------------------------------
 // WasmFindSccs: find strongly connected components in the flow graph
 //
@@ -710,6 +772,8 @@ void WasmFindSccsCore(Compiler*         comp,
             return;
         }
 
+        JITDUMP("Scc-reverse graph: visiting " FMT_BB " with root " FMT_BB "\n", u->bbNum, root->bbNum);
+
         // Else see if there's an Scc for root
         //
         Scc* scc   = nullptr;
@@ -721,11 +785,13 @@ void WasmFindSccsCore(Compiler*         comp,
 
             if (scc == nullptr)
             {
-                scc = new (comp, CMK_DepthFirstSearch) Scc(comp, dfsTree, root);
+                JITDUMP("Root has been visited; forming SCC with root " FMT_BB "\n", root->bbNum);
+                scc = new (comp, CMK_Wasm) Scc(comp, dfsTree, root);
                 map.Set(root, scc, SccMap::SetKind::Overwrite);
                 sccs.Push(scc);
             }
 
+            JITDUMP("Adding " FMT_BB " to SCC with root " FMT_BB "\n", root->bbNum, u->bbNum);
             scc->Add(u);
         }
 
@@ -761,6 +827,9 @@ void WasmFindSccsCore(Compiler*         comp,
             {
                 continue;
             }
+
+            JITDUMP("Scc-reverse graph: walking back from " FMT_BB " to " FMT_BB ", with root " FMT_BB "\n", u->bbNum,
+                    p->bbNum, root->bbNum);
 
             self(self, p, root, subset);
         }

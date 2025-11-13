@@ -122,6 +122,7 @@ CompPhaseNameMacro(PHASE_RATIONALIZE,                "Rationalize IR",          
 CompPhaseNameMacro(PHASE_REPAIR_PROFILE_POST_MORPH,  "Repair profile post-morph",      false, -1, false)
 CompPhaseNameMacro(PHASE_REPAIR_PROFILE_PRE_LAYOUT,  "Repair profile pre-layout",      false, -1, false)
 
+CompPhaseNameMacro(PHASE_DFS_BLOCKS_WASM,            "Wasm remove unreachable blocks", false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_TRANSFORM_SCCS,        "Wasm transform sccs",            false, -1, false)
 CompPhaseNameMacro(PHASE_WASM_CONTROL_FLOW,          "Wasm control flow",              false, -1, false)
 
