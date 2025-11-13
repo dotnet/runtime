@@ -6962,6 +6962,10 @@ private:
             {
                 comp->lvaSetClass(tmp, retClsHnd, isExact);
             }
+            else
+            {
+                JITDUMP("Could not deduce class from [%06u]", comp->dspTreeID(retExpr));
+            }
         }
     }
 
