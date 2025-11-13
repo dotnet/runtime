@@ -382,7 +382,22 @@ namespace System.IO.Compression
         {
             EnsureNotDisposed();
 
-            _context!.SetPrefix(prefix);
+            if (_finished)
+            {
+                throw new InvalidOperationException(SR.ZstandardEncoder_InvalidState);
+            }
+
+            nuint result = _context!.SetPrefix(prefix);
+
+            if (ZstandardUtils.IsError(result))
+            {
+                if ((Interop.Zstd.ZSTD_error)result == Interop.Zstd.ZSTD_error.stage_wrong)
+                {
+                    throw new InvalidOperationException(SR.ZstandardEncoder_InvalidState);
+                }
+
+                ZstandardUtils.Throw(result);
+            }
         }
 
         /// <summary>Sets the pledged source size for the next compression operation.</summary>
@@ -402,7 +417,7 @@ namespace System.IO.Compression
 
             if (_finished || ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context!, (nuint)size)))
             {
-                throw new InvalidOperationException(SR.ZstandardEncoder_SetSourceSize_InvalidState);
+                throw new InvalidOperationException(SR.ZstandardEncoder_InvalidState);
             }
         }
 

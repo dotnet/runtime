@@ -12,7 +12,8 @@ internal static partial class Interop
     {
         internal enum ZSTD_error
         {
-            srcSize_wrong = -72
+            stage_wrong = -60,
+            srcSize_wrong = -72,
         }
 
         // Compression context management
