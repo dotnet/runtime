@@ -45,12 +45,6 @@
   <data name="ZstandardEncoder_Disposed" xml:space="preserve">
     <value>The encoder has been disposed.</value>
   </data>
-  <data name="ZstandardEncoder_InvalidQuality" xml:space="preserve">
-    <value>The quality must be between {0} and {1}.</value>
-  </data>
-  <data name="ZstandardEncoder_InvalidWindow" xml:space="preserve">
-    <value>The window size must be between {0} and {1}.</value>
-  </data>
   <data name="ZstandardEncoder_InvalidDictionary" xml:space="preserve">
     <value>The provided dictionary wasn't created for encoding data.</value>
   </data>

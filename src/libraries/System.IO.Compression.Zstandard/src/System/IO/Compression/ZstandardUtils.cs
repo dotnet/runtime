@@ -18,6 +18,9 @@ namespace System.IO.Compression
         internal const int WindowBits_Max = 31;    // 2GB window
         internal const int WindowBits_Default = 23; // 8MB window
 
+        internal const int TargetBlockSize_Min = 1340;
+        internal const int TargetBlockSize_Max = 131072;   // (2^17)
+
         // Buffer sizes for Zstandard operations
         internal const int DefaultInternalBufferSize = (1 << 16) - 16; // 65520 bytes, similar to Brotli
 

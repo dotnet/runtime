@@ -35,7 +35,10 @@ namespace System.IO.Compression
 
             try
             {
-                SetQuality(_context, quality);
+                if (quality != 0)
+                {
+                    SetQuality(_context, quality);
+                }
             }
             catch
             {
@@ -76,8 +79,14 @@ namespace System.IO.Compression
 
             try
             {
-                SetQuality(_context, quality);
-                SetWindow(_context, window);
+                if (quality != 0)
+                {
+                    SetQuality(_context, quality);
+                }
+                if (window != 0)
+                {
+                    SetWindow(_context, window);
+                }
             }
             catch
             {
@@ -101,7 +110,11 @@ namespace System.IO.Compression
             try
             {
                 SetDictionary(dictionary);
-                SetWindow(_context, window);
+
+                if (window != 0)
+                {
+                    SetWindow(_context, window);
+                }
             }
             catch
             {
@@ -435,9 +448,10 @@ namespace System.IO.Compression
 
         internal static void SetQuality(SafeZstdCompressHandle handle, int quality)
         {
-            if (quality < ZstandardUtils.Quality_Min || quality > ZstandardUtils.Quality_Max)
+            if (quality != 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(quality), string.Format(SR.ZstandardEncoder_InvalidQuality, ZstandardUtils.Quality_Min, ZstandardUtils.Quality_Max));
+                ArgumentOutOfRangeException.ThrowIfLessThan(quality, ZstandardUtils.Quality_Min, nameof(quality));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, ZstandardUtils.Quality_Max, nameof(quality));
             }
 
             SetParameter(handle, Interop.Zstd.ZstdCParameter.ZSTD_c_compressionLevel, quality);
@@ -445,9 +459,10 @@ namespace System.IO.Compression
 
         internal static void SetWindow(SafeZstdCompressHandle handle, int window)
         {
-            if (window < ZstandardUtils.WindowBits_Min || window > ZstandardUtils.WindowBits_Max)
+            if (window != 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(window), string.Format(SR.ZstandardEncoder_InvalidWindow, ZstandardUtils.WindowBits_Min, ZstandardUtils.WindowBits_Max));
+                ArgumentOutOfRangeException.ThrowIfLessThan(window, ZstandardUtils.WindowBits_Min, nameof(window));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(window, ZstandardUtils.WindowBits_Max, nameof(window));
             }
 
             SetParameter(handle, Interop.Zstd.ZstdCParameter.ZSTD_c_windowLog, window);

@@ -29,7 +29,7 @@ namespace System.IO.Compression
         {
         }
 
-        /// <summary>Gets the compression quality to use for Zstandard compression.</summary>
+        /// <summary>Gets or sets the compression quality to use for Zstandard compression.</summary>
         /// <value>The compression quality. The valid range is from <see cref="MinQuality"/> to <see cref="MaxQuality"/>.</value>
         /// <remarks>
         /// The compression quality determines the compression ratio and speed.
@@ -38,9 +38,23 @@ namespace System.IO.Compression
         /// Values 1-22 are normal compression levels, with <see cref="DefaultQuality"/> being the default.
         /// Values 20-22 require more memory and should be used with caution.
         /// </remarks>
-        public int Quality { get; set; }
+        /// <exception cref="ArgumentOutOfRangeException">The value is not 0 and is not between <see cref="MinQuality"/> and <see cref="MaxQuality"/>.</exception>
+        public int Quality
+        {
+            get;
+            set
+            {
+                if (value != 0)
+                {
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZstandardUtils.Quality_Max, nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZstandardUtils.Quality_Min, nameof(value));
+                }
 
-        /// <summary>Gets the window size to use for Zstandard compression.</summary>
+                field = value;
+            }
+        }
+
+        /// <summary>Gets or sets the window size to use for Zstandard compression.</summary>
         /// <value>The window size for compression.</value>
         /// <remarks>
         /// The window size determines how much data the compressor can reference for finding matches.
@@ -48,7 +62,20 @@ namespace System.IO.Compression
         /// The valid range is from <see cref="MinWindow"/> to <see cref="MaxWindow"/>.
         /// Value 0 indicates the implementation-defined default window size.
         /// </remarks>
-        public int Window { get; set; }
+        /// <exception cref="ArgumentOutOfRangeException">The value is not 0 and is not between <see cref="MinWindow"/> and <see cref="MaxWindow"/>.</exception>
+        public int Window
+        {
+            get;
+            set
+            {
+                if (value != 0)
+                {
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZstandardUtils.WindowBits_Min, nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZstandardUtils.WindowBits_Max, nameof(value));
+                }
+                field = value;
+            }
+        }
 
         /// <summary>Gets the dictionary to use for compression. If set, the quality specified during dictionary creation will take precedence over the <see cref="Quality"/> property.</summary>
         /// <value>The compression dictionary, or null if no dictionary is used.</value>
@@ -56,7 +83,19 @@ namespace System.IO.Compression
 
         /// <summary>Gets or sets a hint for the size of the block sizes that the encoder will output. Smaller size leads to more frequent outputs and lower latency when streaming.</summary>
         /// <value>The target block size in bytes. Valid range is from 1340 to 131072 (2^17). A value of 0 indicates no hint (implementation-defined behavior).</value>
-        public int TargetBlockSize { get; set; }
+        public int TargetBlockSize
+        {
+            get;
+            set
+            {
+                if (value != 0)
+                {
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZstandardUtils.TargetBlockSize_Min, nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZstandardUtils.TargetBlockSize_Max, nameof(value));
+                }
+                field = value;
+            }
+        }
 
         /// <summary>If <lang keyword="true"/>, will append a 32-bit checksum at the end of the compressed data.</summary>
         public bool AppendChecksum { get; set; }

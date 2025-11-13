@@ -38,7 +38,10 @@ namespace System.IO.Compression
 
             try
             {
-                SetWindow(maxWindow);
+                if (maxWindow != 0)
+                {
+                    SetWindow(maxWindow);
+                }
             }
             catch
             {
@@ -327,9 +330,10 @@ namespace System.IO.Compression
         {
             Debug.Assert(_context != null);
 
-            if (maxWindow == 0 || maxWindow < ZstandardUtils.WindowBits_Min || maxWindow > ZstandardUtils.WindowBits_Max)
+            if (maxWindow != 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxWindow), string.Format(SR.ZstandardEncoder_InvalidWindow, ZstandardUtils.WindowBits_Min, ZstandardUtils.WindowBits_Max));
+                ArgumentOutOfRangeException.ThrowIfLessThan(maxWindow, ZstandardUtils.WindowBits_Min, nameof(maxWindow));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(maxWindow, ZstandardUtils.WindowBits_Max, nameof(maxWindow));
             }
 
             nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context!, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindow);
