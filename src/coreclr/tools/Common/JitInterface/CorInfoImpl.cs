@@ -882,6 +882,8 @@ namespace Internal.JitInterface
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
             if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
 
+            if (signature.GenericParameterCount != 0) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_GENERIC;
+
             TypeDesc returnType = signature.ReturnType;
 
             CorInfoType corInfoRetType = asCorInfoType(signature.ReturnType, &sig->retTypeClass);
