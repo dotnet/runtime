@@ -244,6 +244,109 @@ namespace System.IO.Compression
             Assert.Equal(output1, output2);
         }
 
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(-100)]
+        [InlineData(long.MinValue)]
+        public void SetSourceSize_WithNegativeSize_ThrowsArgumentOutOfRangeException(long size)
+        {
+            using var encoder = new ZstandardEncoder();
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => encoder.SetSourceSize(size));
+        }
+
+        [Fact]
+        public void SetSourceSize_AfterDispose_ThrowsObjectDisposedException()
+        {
+            var encoder = new ZstandardEncoder();
+            encoder.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => encoder.SetSourceSize(100));
+        }
+
+        [Fact]
+        public void SetSourceSize_BeforeCompression_AllowsCorrectSizeCompression()
+        {
+            using var encoder = new ZstandardEncoder();
+            byte[] input = CreateTestData();
+            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
+
+            // Set the correct source size
+            encoder.SetSourceSize(input.Length);
+
+            OperationStatus result = encoder.Compress(input, output, out int consumed, out int written, isFinalBlock: true);
+
+            Assert.Equal(OperationStatus.Done, result);
+            Assert.Equal(input.Length, consumed);
+            Assert.True(written > 0);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(2)]
+        public void SetSourceSize_SmallerThanActualData_DoesNotReadFurther(long delta)
+        {
+            using var encoder = new ZstandardEncoder();
+            byte[] input = CreateTestData();
+            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
+
+            // Set incorrect source size
+            encoder.SetSourceSize(input.Length + delta);
+
+            // Don't specify isFinalBlock, as otherwise automatic size detection would kick in
+            // and overwrite our pledged size with actual size
+            OperationStatus result = encoder.Compress(input.AsSpan(0, 10), output, out int consumed, out int written, isFinalBlock: false);
+            Assert.Equal(OperationStatus.Done, result);
+
+            // push the rest of the data, which does not match the pledged size
+            result = encoder.Compress(input.AsSpan(10), output, out _, out written, isFinalBlock: true);
+
+            // The behavior depends on implementation - it may succeed or fail
+            // This test just verifies that SetSourceSize doesn't crash and produces some result
+            Assert.Equal(OperationStatus.InvalidData, result);
+        }
+
+        [Fact]
+        public void SetSourceSize_AfterReset_ClearsSize()
+        {
+            using var encoder = new ZstandardEncoder();
+            byte[] input = CreateTestData();
+            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
+
+            // Set source size
+            encoder.SetSourceSize(input.Length / 2);
+
+            // Reset should clear the size
+            encoder.Reset();
+
+            // Now compression should work without size validation
+            OperationStatus result = encoder.Compress(input, output, out int consumed, out int written, isFinalBlock: true);
+
+            Assert.Equal(OperationStatus.Done, result);
+            Assert.Equal(input.Length, consumed);
+            Assert.True(written > 0);
+        }
+
+        [Fact]
+        public void SetSourceSize_InvalidState_Throws()
+        {
+            using var encoder = new ZstandardEncoder();
+            byte[] input = CreateTestData();
+            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
+
+            // First, do a compression
+            OperationStatus status = encoder.Compress(input.AsSpan(0, input.Length / 2), Span<byte>.Empty, out _, out _, isFinalBlock: true);
+
+            Assert.NotEqual(OperationStatus.Done, status);
+            Assert.Throws<InvalidOperationException>(() => encoder.SetSourceSize(input.Length));
+
+            status = encoder.Flush(output, out _);
+            Assert.Equal(OperationStatus.Done, status);
+
+            // should throw also after everything is compressed
+            Assert.Throws<InvalidOperationException>(() => encoder.SetSourceSize(input.Length));
+        }
+
         private static byte[] CreateTestData()
         {
             // Create some test data that compresses well

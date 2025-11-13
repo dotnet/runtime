@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.IO.Compression
 {
     internal static class ZstandardUtils
@@ -32,8 +35,15 @@ namespace System.IO.Compression
         {
             if (IsError(result))
             {
-                throw new Interop.Zstd.ZstdNativeException(SR.Format(message ?? SR.Zstd_NativeError, GetErrorMessage(result)));
+                Throw(result, message);
             }
+        }
+
+        [DoesNotReturn]
+        internal static void Throw(nuint errorResult, string? message = null)
+        {
+            Debug.Assert(IsError(errorResult));
+            throw new Interop.Zstd.ZstdNativeException(SR.Format(message ?? SR.Zstd_NativeError, GetErrorMessage(errorResult)));
         }
 
         internal static int GetQualityFromCompressionLevel(CompressionLevel compressionLevel) =>

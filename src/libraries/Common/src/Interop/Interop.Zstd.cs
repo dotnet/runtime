@@ -10,6 +10,11 @@ internal static partial class Interop
 {
     internal static partial class Zstd
     {
+        internal enum ZSTD_error
+        {
+            srcSize_wrong = -72
+        }
+
         // Compression context management
         [LibraryImport(Libraries.CompressionNative)]
         internal static partial SafeZstdCompressHandle ZSTD_createCCtx();

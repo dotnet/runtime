@@ -63,6 +63,9 @@
   <data name="ZstandardEncoder_DictionaryAttachFailed" xml:space="preserve">
     <value>Failed to attach dictionary to Zstandard encoder context.</value>
   </data>
+  <data name="ZstandardEncoder_SetSourceSize_InvalidState" xml:space="preserve">
+    <value>Source size cannot be set after encryption has begun.</value>
+  </data>
   <data name="ZstandardDecoder_Create" xml:space="preserve">
     <value>Failed to create the Zstandard decoder instance.</value>
   </data>

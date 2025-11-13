@@ -14,6 +14,7 @@ namespace System.IO.Compression
     {
         internal SafeZstdCompressHandle? _context;
         private bool _disposed;
+        private bool _finished;
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardEncoder"/> struct with default settings.</summary>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardEncoder"/> instance.</exception>
@@ -192,7 +193,7 @@ namespace System.IO.Compression
                 isFinalBlock ? Interop.Zstd.ZstdEndDirective.ZSTD_e_end : Interop.Zstd.ZstdEndDirective.ZSTD_e_continue);
         }
 
-        /// <summary>Flushes any remaining data to the destination buffer.</summary>
+        /// <summary>Flushes any remaining processed data to the destination buffer.</summary>
         /// <param name="destination">The buffer to write the flushed data to.</param>
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
         /// <returns>An <see cref="OperationStatus"/> indicating the result of the operation.</returns>
@@ -231,13 +232,24 @@ namespace System.IO.Compression
                     };
 
                     nuint result = Interop.Zstd.ZSTD_compressStream2(_context!, ref output, ref input, endDirective);
-                    ZstandardUtils.ThrowIfError(result, SR.ZstandardEncoder_CompressError);
+                    if (ZstandardUtils.IsError(result))
+                    {
+                        if ((Interop.Zstd.ZSTD_error)result == Interop.Zstd.ZSTD_error.srcSize_wrong)
+                        {
+                            return OperationStatus.InvalidData;
+                        }
+
+                        ZstandardUtils.Throw(result, SR.ZstandardEncoder_CompressError);
+                    }
 
                     bytesConsumed = (int)input.pos;
                     bytesWritten = (int)output.pos;
 
                     if (input.pos == input.size)
                     {
+                        // this may be wrong
+                        _finished |= endDirective == Interop.Zstd.ZstdEndDirective.ZSTD_e_end;
+
                         return result == 0 ? OperationStatus.Done : OperationStatus.DestinationTooSmall;
                     }
                     else
@@ -360,6 +372,7 @@ namespace System.IO.Compression
         {
             EnsureNotDisposed();
 
+            _finished = false;
             _context?.Reset();
         }
 
@@ -387,7 +400,10 @@ namespace System.IO.Compression
 
             EnsureNotDisposed();
 
-            Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context!, (nuint)size);
+            if (_finished || ZstandardUtils.IsError(Interop.Zstd.ZSTD_CCtx_setPledgedSrcSize(_context!, (nuint)size)))
+            {
+                throw new InvalidOperationException(SR.ZstandardEncoder_SetSourceSize_InvalidState);
+            }
         }
 
         /// <summary>Releases all resources used by the <see cref="ZstandardEncoder"/>.</summary>
