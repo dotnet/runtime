@@ -1155,9 +1155,6 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     {
         assertions = block->bbAssertionIn;
 
-        // JIT-TP: Limit the search budget to avoid spending too much time here.
-        int budget = 50;
-
         // bbAssertionIn is a bit conservative and will not include intra-block assertions.
         // e.g. created by GT_BOUNDS_CHECK nodes prior to the 'op' in the current block.
         // For that, we walk the trees in the block until we find "op" and collect assertions
@@ -1171,7 +1168,10 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
             // We're going to be adding to 'assertions', so make a copy first.
             assertions = BitVecOps::MakeCopy(m_pCompiler->apTraits, assertions);
 
-            bool treeFound = false;
+            // JIT-TP: Limit the search budget to avoid spending too much time here.
+            int budget = 50;
+
+            bool opFound = false;
             for (Statement* stmt : block->Statements())
             {
                 if (stmt->GetRootNode() == nullptr)
@@ -1179,56 +1179,45 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
                     continue;
                 }
 
-                class TreeAssertionVisitor final : public GenTreeVisitor<TreeAssertionVisitor>
+                struct WalkData
                 {
-                    int*       m_budget;
-                    GenTree*   m_op;
-                    ASSERT_TP* m_assertions;
-
-                public:
-                    enum
-                    {
-                        DoPostOrder       = true,
-                        UseExecutionOrder = true
-                    };
-
-                    TreeAssertionVisitor(Compiler* compiler, int* budget, GenTree* op, ASSERT_TP* m_assertions)
-                        : GenTreeVisitor(compiler)
-                        , m_budget(budget)
-                        , m_op(op)
-                        , m_assertions(m_assertions)
-                    {
-                    }
-
-                    fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
-                    {
-                        GenTree* current = *use;
-                        if ((current == m_op) || (--(*m_budget) <= 0))
-                        {
-                            // We've found the op or run out of budget; stop the walk.
-                            return fgWalkResult::WALK_ABORT;
-                        }
-
-                        if (current->GeneratesAssertion())
-                        {
-                            AssertionInfo info = current->GetAssertionInfo();
-                            // Normally, we extend the assertions by calling optImpliedAssertions, but that
-                            // doesn't seem to improve anything here, so we just add the assertion directly.
-                            BitVecOps::AddElemD(m_compiler->apTraits, *m_assertions, info.GetAssertionIndex() - 1);
-                        }
-                        return fgWalkResult::WALK_CONTINUE;
-                    }
+                    int*       budget;
+                    GenTree*   op;
+                    ASSERT_TP* assertions;
                 };
+                auto data = WalkData{&budget, op, &assertions};
 
-                TreeAssertionVisitor   visitor(m_pCompiler, &budget, op, &assertions);
-                Compiler::fgWalkResult result = visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+                Compiler::fgWalkResult result = m_pCompiler->fgWalkTreePost(
+                    stmt->GetRootNodePointer(),
+                    [](GenTree** ppTree, Compiler::fgWalkData* walkData) {
+                    auto*    data    = static_cast<WalkData*>(walkData->pCallbackData);
+                    GenTree* current = *ppTree;
+
+                    if ((current == data->op) || (--(*(data->budget)) <= 0))
+                    {
+                        // We've found the op or exhausted the budget; abort the walk.
+                        return Compiler::fgWalkResult::WALK_ABORT;
+                    }
+
+                    if (current->GeneratesAssertion())
+                    {
+                        AssertionInfo info = current->GetAssertionInfo();
+                        // Normally, we extend the assertions by calling optImpliedAssertions, but that
+                        // doesn't seem to improve anything here, so we just add the assertion directly.
+                        BitVecOps::AddElemD(walkData->compiler->apTraits, *data->assertions,
+                                            info.GetAssertionIndex() - 1);
+                    }
+                    return Compiler::fgWalkResult::WALK_CONTINUE;
+                },
+                    &data);
+
                 if (result != Compiler::fgWalkResult::WALK_CONTINUE)
                 {
-                    treeFound = true;
+                    opFound = true;
                     break;
                 }
             }
-            assert(treeFound && "Failed to find op in block statements");
+            assert(opFound && "Failed to find op in block statements");
         }
     }
 
