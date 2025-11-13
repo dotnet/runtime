@@ -655,18 +655,32 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             switch (addrInfo.accessType)
             {
                 case IAT_VALUE:
-                // TODO-RISCV64-CQ: using B/BL for optimization.
+                    params.ireg = REG_INDIRECT_CALL_TARGET_REG;
+                    if (GetEmitter()->IsAddressInRange(addrInfo.addr))
+                    {
+                        params.callType = EC_FUNC_TOKEN;
+                        params.addr     = addrInfo.addr;
+                    }
+                    else
+                    {
+                        // li   rd, addr_upper_bits
+                        // jalr rd, addr_lower_12bits
+                        ssize_t imm  = (ssize_t)addrInfo.addr;
+                        ssize_t lo12 = (imm << (64 - 12)) >> (64 - 12);
+                        imm -= lo12;
+                        GetEmitter()->emitLoadImmediate(EA_PTRSIZE, params.ireg, imm);
+                        params.callType = EC_INDIR_R;
+                        params.addr     = (void*)lo12;
+                    }
+                    break;
+
                 case IAT_PVALUE:
                     // Load the address into a register, load indirect and call  through a register
                     // We have to use REG_INDIRECT_CALL_TARGET_REG since we assume the argument registers are in use
                     params.callType = EC_INDIR_R;
                     params.ireg     = REG_INDIRECT_CALL_TARGET_REG;
-                    instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, params.ireg, (ssize_t)addrInfo.addr);
-                    if (addrInfo.accessType == IAT_PVALUE)
-                    {
-                        GetEmitter()->emitIns_R_R_I(INS_ld, EA_PTRSIZE, params.ireg, params.ireg, 0);
-                        regSet.verifyRegUsed(params.ireg);
-                    }
+                    GetEmitter()->emitIns_R_R_Addr(INS_ld, EA_PTRSIZE, params.ireg, params.ireg, addrInfo.addr);
+                    regSet.verifyRegUsed(params.ireg);
                     break;
 
                 case IAT_RELPVALUE:
