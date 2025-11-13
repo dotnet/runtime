@@ -34,6 +34,7 @@ namespace System.IO.Compression
         /// <remarks>
         /// The compression quality determines the compression ratio and speed.
         /// Negative values extend the range of speed vs. ratio preferences, where lower levels are faster but provide less compression.
+        /// Value 0 indicates the implementation-defined default quality.
         /// Values 1-22 are normal compression levels, with <see cref="DefaultQuality"/> being the default.
         /// Values 20-22 require more memory and should be used with caution.
         /// </remarks>
@@ -41,6 +42,12 @@ namespace System.IO.Compression
 
         /// <summary>Gets the window size to use for Zstandard compression.</summary>
         /// <value>The window size for compression.</value>
+        /// <remarks>
+        /// The window size determines how much data the compressor can reference for finding matches.
+        /// Larger window sizes can improve compression ratios for large files but require more memory.
+        /// The valid range is from <see cref="MinWindow"/> to <see cref="MaxWindow"/>.
+        /// Value 0 indicates the implementation-defined default window size.
+        /// </remarks>
         public int Window { get; set; }
 
         /// <summary>Gets the dictionary to use for compression. If set, the quality specified during dictionary creation will take precedence over the <see cref="Quality"/> property.</summary>
