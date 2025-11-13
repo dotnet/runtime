@@ -241,8 +241,9 @@ void PerfMap::OpenFile(SString& path)
     STANDARD_VM_CONTRACT;
 
     // Open the file stream.
-    fopen_lp(&m_fp, path.GetUnicode(), W("w"));
-        }
+    if (fopen_lp(&m_fp, path.GetUnicode(), W("w")) != 0)
+        m_fp = nullptr;
+}
 
 // Write a line to the map file.
 void PerfMap::WriteLine(SString& line)

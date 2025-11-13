@@ -430,7 +430,8 @@ static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
             DWORD pid = GetCurrentProcessId();
             FormatInteger(pidSuffix + 1, ARRAY_SIZE(pidSuffix) - 1, "%u", pid);
             fullname.Append(pidSuffix);
-            fopen_lp(&r2rLogFile, fullname.GetUnicode(), W("w"));
+            if (fopen_lp(&r2rLogFile, fullname.GetUnicode(), W("w")) != 0)
+                r2rLogFile = NULL;
         }
         else
             r2rLogFile = NULL;
