@@ -99,6 +99,15 @@
   <data name="ZstandardDictionary_CreateDecompressionFailed" xml:space="preserve">
     <value>Failed to create Zstandard decompression dictionary.</value>
   </data>
+  <data name="ZstandardDictionary_SampleLengthsMismatch" xml:space="preserve">
+    <value>The sum of sample lengths does not match the length of the samples buffer.</value>
+  </data>
+  <data name="ZstandardDictionary_Train_Failure" xml:space="preserve">
+    <value>Failed to train dictionary, see inner exception for details.</value>
+  </data>
+  <data name="ZstandardDictionary_Train_MinimumSampleCount" xml:space="preserve">
+    <value>At least {0} samples are required to train the dictionary.</value>
+  </data>
   <data name="Zstd_NativeError" xml:space="preserve">
     <value>An internal error has occured. Native zstd API returned '{0}'.</value>
   </data>

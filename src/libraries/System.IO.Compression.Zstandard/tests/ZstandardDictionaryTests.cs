@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.IO.Compression
@@ -66,6 +68,57 @@ namespace System.IO.Compression
             // Act & Assert - Should not throw
             dictionary.Dispose();
             dictionary.Dispose();
+        }
+
+        [Fact]
+        public void Train_ArgumentChecks()
+        {
+            // empty samples
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train(Span<byte>.Empty, new long[] { }, 50));
+
+            // Sum of lengths does not match the length of the samples buffer
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new long[] { 1, 1, 3, 4, 5 }, 50));
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new long[] { 2, 2, 3, 4, 5 }, 50));
+
+            // too few samples
+            Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardDictionary.Train("AbbCCCdddd"u8.ToArray(), new long[] { 1, 2, 3, 4 }, 0));
+
+            // Invalid max dictionary size
+            Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new long[] { 1, 2, 3, 4, 5 }, -50));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new long[] { 1, 2, 3, 4, 5 }, 0));
+        }
+
+        [Fact]
+        public void Train_TooFewTooSmallSamples()
+        {
+            byte[] samples = "AABBAABBAABBAABBAABB"u8.ToArray();
+            long[] sampleLengths = new long[] { 4, 4, 4, 4, 4 }; // 5 samples of 4 bytes each
+            int maxDictionarySize = 256;
+
+            Assert.Throws<IOException>(() => ZstandardDictionary.Train(samples, sampleLengths, maxDictionarySize));
+        }
+
+        [Fact]
+        public void Train_ValidSamples_Succeeds()
+        {
+            int sampleCount = 19;
+            int sampleSize = 100;
+
+            byte[] samples = new byte[sampleCount * sampleSize];
+            for (int i = 0; i < samples.Length; i++)
+            {
+                samples[i] = (byte)(i % 256);
+            }
+
+            long[] sampleLengths = Enumerable.Repeat((long)sampleSize, sampleCount).ToArray();
+            int maxDictionarySize = 512;
+
+            // Act
+            using ZstandardDictionary dictionary = ZstandardDictionary.Train(samples, sampleLengths, maxDictionarySize);
+
+            // Assert
+            Assert.NotNull(dictionary);
+            Assert.True(dictionary.Data.Length > 0 && dictionary.Data.Length <= maxDictionarySize);
         }
     }
 }

@@ -82,11 +82,26 @@ namespace System.IO.Compression
         public static ZstandardDictionary Train(ReadOnlySpan<byte> samples, ReadOnlySpan<long> sampleLengths, int maxDictionarySize)
         {
             if (samples.IsEmpty)
+            {
                 throw new ArgumentException(SR.ZstandardDictionary_EmptyBuffer, nameof(samples));
-            if (sampleLengths.IsEmpty)
-                throw new ArgumentException("Sample lengths cannot be empty.", nameof(sampleLengths));
-            if (maxDictionarySize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(maxDictionarySize), "Dictionary size must be positive.");
+            }
+
+            if (sampleLengths.Length < 5)
+            {
+                throw new ArgumentException(SR.Format(SR.ZstandardDictionary_Train_MinimumSampleCount, 5), nameof(sampleLengths));
+            }
+
+            long totalLength = 0;
+            foreach (long length in sampleLengths)
+            {
+                totalLength += length;
+            }
+            if (totalLength != samples.Length)
+            {
+                throw new ArgumentException(SR.ZstandardDictionary_SampleLengthsMismatch, nameof(sampleLengths));
+            }
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(maxDictionarySize, 256, nameof(maxDictionarySize));
 
             byte[] dictionaryBuffer = new byte[maxDictionarySize];
 
@@ -100,19 +115,12 @@ namespace System.IO.Compression
                         (IntPtr)dictPtr, (nuint)maxDictionarySize,
                         (IntPtr)samplesPtr, (IntPtr)lengthsPtr, (uint)sampleLengths.Length);
 
-                    if (Interop.Zstd.ZSTD_isError(dictSize) != 0)
-                        throw new IOException("Failed to train dictionary from samples.");
-
-                    if (dictSize == 0)
-                        throw new IOException("Dictionary training produced empty dictionary.");
-
-                    // Resize dictionary to actual size
-                    if (dictSize < (nuint)maxDictionarySize)
+                    if (ZstandardUtils.IsError(dictSize))
                     {
-                        Array.Resize(ref dictionaryBuffer, (int)dictSize);
+                        throw new IOException(SR.ZstandardDictionary_Train_Failure, ZstandardUtils.CreateExceptionForError(dictSize));
                     }
 
-                    return Create(dictionaryBuffer);
+                    return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
                 }
             }
         }

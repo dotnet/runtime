@@ -46,7 +46,13 @@ namespace System.IO.Compression
         internal static void Throw(nuint errorResult, string? message = null)
         {
             Debug.Assert(IsError(errorResult));
-            throw new Interop.Zstd.ZstdNativeException(SR.Format(message ?? SR.Zstd_NativeError, GetErrorMessage(errorResult)));
+            throw CreateExceptionForError(errorResult, message);
+        }
+
+        internal static Exception CreateExceptionForError(nuint errorResult, string? message = null)
+        {
+            Debug.Assert(IsError(errorResult));
+            return new Interop.Zstd.ZstdNativeException(SR.Format(message ?? SR.Zstd_NativeError, GetErrorMessage(errorResult)));
         }
 
         internal static int GetQualityFromCompressionLevel(CompressionLevel compressionLevel) =>
