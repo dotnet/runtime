@@ -26,6 +26,7 @@ public enum RuntimeInfoOperatingSystem : uint
     Unknown = 0,
     Windows,
     Unix,
+    Browser,
 }
 
 public interface IRuntimeInfo : IContract

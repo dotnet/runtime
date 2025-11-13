@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 16
+#define READYTORUN_MAJOR_VERSION 17
 #define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 16
+#define MINIMUM_READYTORUN_MAJOR_VERSION 17
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -47,6 +47,7 @@
 // R2R Version 14 changed x86 code generation to use funclets
 // R2R Version 15 removes double to int/uint helper calls
 // R2R Version 16 replaces the compression format for debug boundaries with a new format that is smaller and more efficient to parse
+// R2R Version 17 adds support for producing "fat" debug information (that e.g. can include async debug info)
 
 struct READYTORUN_CORE_HEADER
 {
@@ -83,6 +84,7 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_COMPONENT                   = 0x00000020,   // This is the header describing a component assembly of composite R2R
     READYTORUN_FLAG_MULTIMODULE_VERSION_BUBBLE  = 0x00000040,   // This R2R module has multiple modules within its version bubble (For versions before version 6.2, all modules are assumed to possibly have this characteristic)
     READYTORUN_FLAG_UNRELATED_R2R_CODE          = 0x00000080,   // This R2R module has code in it that would not be naturally encoded into this module
+    READYTORUN_FLAG_PLATFORM_NATIVE_IMAGE       = 0x00000100,   // The owning composite executable is in the platform native format
 };
 
 enum class ReadyToRunSectionType : uint32_t

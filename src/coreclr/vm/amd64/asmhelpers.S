@@ -444,21 +444,24 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
         INLINE_GETTHREAD // result in rax, it can thrash all argument registers as it can call a helper
         mov             r10, rax
         test            rax, rax
-        jz              LOCAL_LABEL(NoManagedThread)
+        jz              LOCAL_LABEL(NoManagedThreadOrCallStub)
 
         mov             rax, qword ptr [r10 + OFFSETOF__Thread__m_pInterpThreadContext]
         test            rax, rax
         jnz             LOCAL_LABEL(HaveInterpThreadContext)
 
-LOCAL_LABEL(NoManagedThread):
-        mov             rdi, r10
-        call            C_FUNC(GetInterpThreadContextWithPossiblyMissingThread)
+LOCAL_LABEL(NoManagedThreadOrCallStub):
+        lea             rdi, [rsp + __PWTB_TransitionBlock]
+        mov             rsi, rbx
+        call            C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub)
 
 LOCAL_LABEL(HaveInterpThreadContext):
         mov             r10, qword ptr [rax + OFFSETOF__InterpThreadContext__pStackPointer]
         // Load the InterpMethod pointer from the IR bytecode
         mov             rax, qword ptr [rbx]
         mov             rax, qword ptr [rax + OFFSETOF__InterpMethod__pCallStub]
+        test            rax, rax
+        jz              LOCAL_LABEL(NoManagedThreadOrCallStub)
         // Reload the argument registers, the macro to get the thread have likely overwritten them
         mov             rdi, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset]
         mov             rsi, qword ptr [rsp + __InterpreterStubArgumentRegistersOffset + 8]

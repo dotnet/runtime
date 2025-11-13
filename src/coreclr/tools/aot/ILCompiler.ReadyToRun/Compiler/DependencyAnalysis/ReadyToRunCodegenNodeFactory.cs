@@ -52,13 +52,14 @@ namespace ILCompiler.DependencyAnalysis
         SkipTypeValidation
     }
 
-    public sealed class NodeFactoryOptimizationFlags
+    public struct NodeFactoryOptimizationFlags
     {
         public bool OptimizeAsyncMethods;
         public TypeValidationRule TypeValidation;
         public int DeterminismStress;
         public bool PrintReproArgs;
         public bool EnableCachedInterfaceDispatchSupport;
+        public bool IsComponentModule;
     }
 
     // To make the code future compatible to the composite R2R story
@@ -699,6 +700,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
 
             DelayLoadMethodCallThunks = new DelayLoadMethodCallThunkNodeRange();
+            graph.AddRoot(DelayLoadMethodCallThunks, "DelayLoadMethodCallThunks header entry is always generated");
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
 
             ExceptionInfoLookupTableNode exceptionInfoLookupTableNode = new ExceptionInfoLookupTableNode(this);
@@ -1055,6 +1057,16 @@ namespace ILCompiler.DependencyAnalysis
         public void DetectGenericCycles(TypeSystemEntity caller, TypeSystemEntity callee)
         {
             _genericCycleDetector?.DetectCycle(caller, callee);
+        }
+
+        public string GetSymbolAlternateName(ISymbolNode node, out bool isHidden)
+        {
+            isHidden = false;
+            if (node == Header)
+            {
+                return "RTR_HEADER";
+            }
+            return null;
         }
     }
 }

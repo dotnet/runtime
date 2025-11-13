@@ -16,23 +16,18 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
+using Internal.Runtime;
+using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
     public static partial class Monitor
     {
-        #region Object->Lock/Condition mapping
-
-        private static readonly ConditionalWeakTable<object, Condition> s_conditionTable = new ConditionalWeakTable<object, Condition>();
-        private static readonly Func<object, Condition> s_createCondition = (o) => new Condition(ObjectHeader.GetLockObject(o));
-
-        private static Condition GetCondition(object obj)
+        #region Object->Lock mapping
+        internal static Lock GetLockObject(object obj)
         {
-            Debug.Assert(
-                !(obj is Condition),
-                "Do not use Monitor.Pulse or Wait on a Condition instance; use the methods on Condition instead.");
-            return s_conditionTable.GetOrAdd(obj, s_createCondition);
+            return ObjectHeader.GetLockObject(obj);
         }
         #endregion
 
@@ -53,17 +48,6 @@ namespace System.Threading
             lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Enter(object obj, ref bool lockTaken)
-        {
-            // we are inlining lockTaken check as the check is likely be optimized away
-            if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-
-            Enter(obj);
-            lockTaken = true;
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool TryEnter(object obj)
         {
@@ -79,20 +63,10 @@ namespace System.Threading
 
             // The one-shot fast path is not covered by the slow path below for a zero timeout when the thread ID is
             // initialized, so cover it here in case it wasn't already done
-            if (currentThreadID != 0 && lck.TryEnterOneShot(currentThreadID))
+            if (currentThreadID != Lock.UninitializedThreadId && lck.TryEnterOneShot(currentThreadID))
                 return true;
 
-            return lck.TryEnterSlow(0, currentThreadID);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void TryEnter(object obj, ref bool lockTaken)
-        {
-            // we are inlining lockTaken check as the check is likely be optimized away
-            if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-
-            lockTaken = TryEnter(obj);
+            return lck.TryEnterSlow(0, currentThreadID) != Lock.UninitializedThreadId;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -111,20 +85,10 @@ namespace System.Threading
 
             // The one-shot fast path is not covered by the slow path below for a zero timeout when the thread ID is
             // initialized, so cover it here in case it wasn't already done
-            if (millisecondsTimeout == 0 && currentThreadID != 0 && lck.TryEnterOneShot(currentThreadID))
+            if (millisecondsTimeout == 0 && currentThreadID != Lock.UninitializedThreadId && lck.TryEnterOneShot(currentThreadID))
                 return true;
 
-            return lck.TryEnterSlow(millisecondsTimeout, currentThreadID);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void TryEnter(object obj, int millisecondsTimeout, ref bool lockTaken)
-        {
-            // we are inlining lockTaken check as the check is likely be optimized away
-            if (lockTaken)
-                throw new ArgumentException(SR.Argument_MustBeFalse, nameof(lockTaken));
-
-            lockTaken = TryEnter(obj, millisecondsTimeout);
+            return lck.TryEnterSlow(millisecondsTimeout, currentThreadID) != Lock.UninitializedThreadId;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -133,45 +97,50 @@ namespace System.Threading
             ObjectHeader.Release(obj);
         }
 
+        // Marked no-inlining to prevent recursive inlining of IsAcquired.
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static bool IsEntered(object obj)
         {
             return ObjectHeader.IsAcquired(obj);
         }
-
         #endregion
 
-        #region Public Wait/Pulse methods
-
-        [UnsupportedOSPlatform("browser")]
-        public static bool Wait(object obj, int millisecondsTimeout)
+        private static void SynchronizedMethodEnter(object obj, ref bool lockTaken)
         {
-            return GetCondition(obj).Wait(millisecondsTimeout, obj);
+            // Inlined Monitor.Enter with a few tweaks
+            int currentThreadID = ManagedThreadId.CurrentManagedThreadIdUnchecked;
+            int resultOrIndex = ObjectHeader.Acquire(obj, currentThreadID);
+            if (resultOrIndex < 0)
+            {
+                lockTaken = true;
+                return;
+            }
+
+            Lock lck = resultOrIndex == 0 ?
+                ObjectHeader.GetLockObject(obj) :
+                SyncTable.GetLockObject(resultOrIndex);
+
+            lck.TryEnterSlow(Timeout.Infinite, currentThreadID);
+            lockTaken = true;
         }
 
-        public static void Pulse(object obj)
+        private static void SynchronizedMethodExit(object obj, ref bool lockTaken)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            // Inlined Monitor.Exit with a few tweaks
+            if (!lockTaken)
+                return;
 
-            GetCondition(obj).SignalOne();
+            ObjectHeader.Release(obj);
+            lockTaken = false;
         }
 
-        public static void PulseAll(object obj)
+        private static unsafe RuntimeType GetSyncObjectFromClassHandle(MethodTable* pMT) => Type.GetTypeFromMethodTable(pMT);
+
+        private static unsafe MethodTable* GetClassHandleFromMethodParam(IntPtr pDictionary)
         {
-            ArgumentNullException.ThrowIfNull(obj);
-
-            GetCondition(obj).SignalAll();
+            bool success = RuntimeAugments.TypeLoaderCallbacks.TryGetOwningTypeForMethodDictionary(pDictionary, out RuntimeTypeHandle th);
+            Debug.Assert(success);
+            return th.ToMethodTable();
         }
-
-        #endregion
-
-        #region Metrics
-
-        /// <summary>
-        /// Gets the number of times there was contention upon trying to take a <see cref="Monitor"/>'s lock so far.
-        /// </summary>
-        public static long LockContentionCount => Lock.ContentionCount;
-
-        #endregion
     }
 }
