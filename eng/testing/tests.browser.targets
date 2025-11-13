@@ -166,28 +166,6 @@
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.LinkContentToWwwroot" AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
 
   <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets">
-    <ItemGroup>
-      <!-- LinkContentToWwwroot will Link it to wwwroot -->
-      <Content Include="$(OutDir)$(AssemblyName).dll" Link="$(AssemblyName).dll" CopyToOutputDirectory="PreserveNewest" />
-
-      <Content Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
-        TargetPath="%(WasmFilesToIncludeFromPublishDir.TargetDir)/%(WasmFilesToIncludeFromPublishDir.Identity)"
-        CopyToOutputDirectory="PreserveNewest"
-        Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != '' and '%(WasmFilesToIncludeFromPublishDir.TargetDir)' != ''" />
-      <Content Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
-        TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
-        CopyToOutputDirectory="PreserveNewest"
-        Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != '' and '%(WasmFilesToIncludeFromPublishDir.TargetDir)' == ''" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
-      <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
-      <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
-      <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />
-
-      <Content Include="@(_SatelliteAssemblies)" CopyToOutputDirectory="PreserveNewest" />
-    </ItemGroup>
-
     <LinkContentToWwwroot Content="@(Content)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
       <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
       <Output TaskParameter="ContentOut" ItemName="_LinkedContent" />
@@ -196,6 +174,64 @@
       <Content Remove="@(_LinkedContent)" />
       <Content Include="@(_LinkedContent)" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="LinkPublishContentToWwwroot" BeforeTargets="ComputeWasmVfs" DependsOnTargets="GetCopyToOutputDirectoryItems" Condition="'$(TargetOS)' == 'browser'">
+    <ItemGroup>
+      <_WasmFilesForVfs Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
+        TargetPath="%(WasmFilesToIncludeFromPublishDir.TargetDir)/%(WasmFilesToIncludeFromPublishDir.Identity)"
+        CopyToOutputDirectory="PreserveNewest"
+        Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != '' and '%(WasmFilesToIncludeFromPublishDir.TargetDir)' != ''" />
+      <_WasmFilesForVfs Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
+        TargetPath="%(WasmFilesToIncludeFromPublishDir.Identity)"
+        CopyToOutputDirectory="PreserveNewest"
+        Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != '' and '%(WasmFilesToIncludeFromPublishDir.TargetDir)' == ''" />
+
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dmeta'))" />
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dil'))" />
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
+      <_WasmFilesForVfs Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and $([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.dll')) and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
+      <_WasmFilesForVfs Include="$(OutDir)$(AssemblyName).dll" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
+      <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
+      <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
+      <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />
+
+      <_WasmFilesForVfs Include="@(_SatelliteAssemblies)" />
+    </ItemGroup>
+    <ItemGroup>
+      <_WasmFilesForVfs CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+    <LinkContentToWwwroot Content="@(_WasmFilesForVfs->Distinct())" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
+      <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
+      <Output TaskParameter="ContentOut" ItemName="_WasmFilesForVfsLinked" />
+    </LinkContentToWwwroot>
+
+    <DefineStaticWebAssets
+      CandidateAssets="@(_WasmFilesForVfsLinked->Distinct())"
+      FingerprintCandidates="$(StaticWebAssetsFingerprintContent)"
+      FingerprintPatterns="@(StaticWebAssetFingerprintPattern)"
+      RelativePathPattern="wwwroot/**"
+      SourceType="Discovered"
+      SourceId="$(PackageId)"
+      ContentRoot="$(MSBuildProjectDirectory)\wwwroot\"
+      BasePath="$(StaticWebAssetBasePath)"
+      AssetMergeSource="$(StaticWebAssetMergeTarget)"
+      CacheManifestPath="$(_ResolveProjectStaticWebAssetsCachePath)">
+        <Output TaskParameter="Assets" ItemName="StaticWebAsset" />
+        <Output TaskParameter="Assets" ItemName="_CurrentProjectStaticWebAsset" />
+    </DefineStaticWebAssets>
+
+    <DefineStaticWebAssetEndpoints
+      CandidateAssets="@(_CurrentProjectStaticWebAsset)"
+      ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
+    >
+      <Output TaskParameter="Endpoints" ItemName="StaticWebAssetEndpoint" />
+    </DefineStaticWebAssetEndpoints>
   </Target>
 
   <Target Name="PrepareForWasmBuildApp">
