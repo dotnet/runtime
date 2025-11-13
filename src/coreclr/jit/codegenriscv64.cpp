@@ -6313,7 +6313,6 @@ void CodeGen::genJumpToThrowHlpBlk_la(
 
         CORINFO_CONST_LOOKUP helperFunction =
             compiler->compGetHelperFtn((CorInfoHelpFunc)(compiler->acdHelper(codeKind)));
-        assert(emit->IsAddressInRange(helperFunction.addr)); // TODO: remove
         if (helperFunction.accessType == IAT_VALUE)
         {
             // INS_OPTS_C

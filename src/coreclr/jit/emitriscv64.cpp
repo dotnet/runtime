@@ -1915,6 +1915,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
         assert(params.callType == EC_FUNC_TOKEN);
         assert(params.addr != NULL);
+        assert(IsAddressInRange(params.addr));
 
         void* addr =
             (void*)(((size_t)params.addr) + (params.isJump ? 0 : 1)); // NOTE: low-bit0 is used for jalr ra/r0,rd,0
