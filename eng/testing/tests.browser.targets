@@ -171,6 +171,14 @@
       <Content Include="$(OutDir)$(AssemblyName).dll" Link="$(AssemblyName).dll" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
+      <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
+      <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
+      <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />
+
+      <Content Include="@(_SatelliteAssemblies)" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
     <LinkContentToWwwroot Content="@(Content)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
       <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
       <Output TaskParameter="ContentOut" ItemName="_LinkedContent" />
