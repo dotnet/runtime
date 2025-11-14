@@ -754,7 +754,7 @@ PhaseStatus AsyncTransformation::Run()
                 if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall())
                 {
                     // Transform call; continue with the remainder block.
-                    // Transform takes care to to update liveness.
+                    // Transform takes care to update liveness.
                     Transform(block, tree->AsCall(), defs, liveness, &block);
                     defs.clear();
                     any = true;
@@ -919,7 +919,7 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
 //------------------------------------------------------------------------
 // AsyncTransformation::HasNonContextRestoreExceptionalFlow:
 //   Check if there is internal control flow out of the specified block and if
-//   that target is non the canonical "restore context" EH handler.
+//   that target is not the canonical "restore context" EH handler.
 //
 // Parameters:
 //   block - The block
