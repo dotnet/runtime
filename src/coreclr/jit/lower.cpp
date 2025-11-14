@@ -4521,7 +4521,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     return cmp->gtNext;
 }
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
 //------------------------------------------------------------------------
 // Lowering::LowerJTrue: Lowers a JTRUE node.
 //
@@ -4602,7 +4602,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     return nullptr;
 }
-#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64 && !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------------------------------
 // LowerSelect: Lower a GT_SELECT node.
@@ -4735,7 +4735,10 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
         }
 #endif
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
+        // TODO-Cleanup: this ifdef look suspect, we should never get here on architectures without a status register,
+        // i. e. the right thing is to ifdef the whole function.
+        // TODO-Cleanup: introduce a "has CPU flags" target define.
         if (!allowMultipleFlagsChecks)
         {
             const GenConditionDesc& desc = GenConditionDesc::Get(*cond);
@@ -4785,7 +4788,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
     {
         assert((condition->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
         GenTree* flagsDef = condition->gtPrev;
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64) && !defined(TARGET_WASM)
         // CCMP is a flag producing node that also consumes flags, so find the
         // "root" of the flags producers and move the entire range.
         // We limit this to 10 nodes look back to avoid quadratic behavior.
@@ -4802,7 +4805,7 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree*      parent,
 
         *cond = condition->AsCC()->gtCondition;
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64) && !defined(TARGET_WASM)
         if (!allowMultipleFlagsChecks)
         {
             const GenConditionDesc& desc = GenConditionDesc::Get(*cond);
@@ -8195,6 +8198,10 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 #elif defined(TARGET_ARM)
         // Currently there's no GT_MULHI for ARM32
         return false;
+#elif defined(TARGET_WASM)
+        // TODO-WASM: it is not clear this whole transformation is profitable on WASM, since it increases
+        // code size while the WASM VM should be perfectly capable of expanding the DIV/MOD by itself.
+        NYI_WASM("Lowering::TryLowerConstIntDivOrMod");
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -8471,13 +8478,13 @@ PhaseStatus Lowering::DoPhase()
         InsertPInvokeMethodProlog();
     }
 
-#if !defined(TARGET_64BIT)
+#if LOWER_DECOMPOSE_LONGS
     DecomposeLongs decomp(comp, this); // Initialize the long decomposition class.
     if (comp->compLongUsed)
     {
         decomp.PrepareForDecomposition();
     }
-#endif // !defined(TARGET_64BIT)
+#endif // LOWER_DECOMPOSE_LONGS
 
     if (!comp->compEnregLocals())
     {
@@ -8499,7 +8506,7 @@ PhaseStatus Lowering::DoPhase()
         /* Make the block publicly available */
         comp->compCurBB = block;
 
-#if !defined(TARGET_64BIT)
+#if LOWER_DECOMPOSE_LONGS
         if (comp->compLongUsed)
         {
             decomp.DecomposeBlock(block);
@@ -11237,7 +11244,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 
     ind->ChangeType(comp->gtTypeForNullCheck(ind));
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
     bool useNullCheck = true;
 #elif defined(TARGET_ARM)
     bool useNullCheck = false;

@@ -1006,6 +1006,7 @@ bool GenTree::NeedsConsecutiveRegisters() const
 }
 #endif
 
+#if HAS_FIXED_REGISTER_SET
 //---------------------------------------------------------------
 // gtGetContainedRegMask: Get the reg mask of the node including
 //    contained nodes (recursive).
@@ -1076,6 +1077,7 @@ regMaskTP GenTree::gtGetRegMask() const
 
     return resultMask;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 void GenTreeFieldList::AddField(Compiler* compiler, GenTree* node, unsigned offset, var_types type)
 {
@@ -4759,6 +4761,8 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 addrModeCostSz += 4;
             }
         }
+#elif defined(TARGET_WASM)
+        NYI_WASM("gtMarkAddrMode");
 #else
 #error "Unknown TARGET"
 #endif
@@ -5163,6 +5167,19 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costEx = 1;
                 costSz = 4;
                 goto COMMON_CNS;
+#elif defined(TARGET_WASM)
+            case GT_CNS_STR:
+                costEx = IND_COST_EX + 2;
+                costSz = 7;
+                goto COMMON_CNS;
+
+            case GT_CNS_LNG:
+            case GT_CNS_INT:
+                // TODO-WASM: needs tuning based on the [S]LEB128 encoding size.
+                NYI_WASM("GT_CNS_LNG/GT_CNS_INT costing");
+                costEx = 0;
+                costSz = 0;
+                goto COMMON_CNS;
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
@@ -5240,6 +5257,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-RISCV64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
+#elif defined(TARGET_WASM)
+                costEx = 2;
+                costSz = tree->TypeIs(TYP_FLOAT) ? 5 : 9;
 #else
 #error "Unknown TARGET"
 #endif
@@ -5422,6 +5442,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // TODO-RISCV64-CQ: tune the costs.
                     costEx = 1;
                     costSz = 4;
+#elif defined(TARGET_WASM)
+                    // TODO-WASM: 1 byte opcodes except for the int->fp saturating casts which are 2 bytes.
+                    NYI_WASM("Cast costing");
+                    costEx = 0;
+                    costSz = 0;
 #else
 #error "Unknown TARGET"
 #endif
@@ -11719,14 +11744,15 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             }
         }
 
+#if HAS_FIXED_REGISTER_SET
         // for tracking down problems in reguse prediction or liveness tracking
-
         if (verbose && 0)
         {
             printf(" RR=");
             dspRegMask(JitTls::GetCompiler()->codeGen->internalRegisters.GetAll(tree));
             printf("\n");
         }
+#endif // HAS_FIXED_REGISTER_SET
     }
 }
 
@@ -13384,6 +13410,7 @@ void Compiler::gtPrintABILocation(const ABIPassingInformation& abiInfo, char** b
     {
         if (segment.IsPassedInRegister())
         {
+#if HAS_FIXED_REGISTER_SET
             regMaskTP regs = segment.GetRegisterMask();
             while (regs != RBM_NONE)
             {
@@ -13404,6 +13431,10 @@ void Compiler::gtPrintABILocation(const ABIPassingInformation& abiInfo, char** b
                     lastReg  = reg;
                 }
             }
+#else  // !HAS_FIXED_REGISTER_SET
+       // TODO-WASM: refactor this code to not rely on register masks.
+            NYI_WASM("gtPrintABILocation");
+#endif // !HAS_FIXED_REGISTER_SET
         }
         else
         {
@@ -31311,6 +31342,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
     return resultReg;
 }
 
+#if HAS_FIXED_REGISTER_SET
 //--------------------------------------------------------------------------------
 // GetABIReturnRegs: get the mask of return registers as per target arch ABI.
 //
@@ -31337,6 +31369,7 @@ regMaskTP ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) co
 
     return resultMask;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 //------------------------------------------------------------------------
 //  GetNum: Get the SSA number for a given field.

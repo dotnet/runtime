@@ -3,7 +3,11 @@
 
 using System.Runtime.InteropServices;
 
+#if HOST_MODEL
 namespace Microsoft.NET.HostModel.MachO;
+#else
+namespace ILCompiler.Reflection.ReadyToRun.MachO;
+#endif
 
 /// <summary>
 /// The structure for the 64-bit segment load command in a Mach-O binary.
@@ -29,6 +33,7 @@ internal struct Segment64LoadCommand
     public ulong GetFileOffset(MachHeader header) => header.ConvertValue(_fileOffset);
     public ulong GetFileSize(MachHeader header) => header.ConvertValue(_fileSize);
     public void SetFileSize(ulong value, MachHeader header) => _fileSize = header.ConvertValue(value);
+    public ulong GetVMAddress(MachHeader header) => header.ConvertValue(_address);
     public void SetVMSize(ulong value, MachHeader header) => _size = header.ConvertValue(value);
     public ulong GetVMSize(MachHeader header) => header.ConvertValue(_size);
     public uint GetSectionsCount(MachHeader header) => header.ConvertValue(_numberOfSections);

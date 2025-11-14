@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if HOST_MODEL
 namespace Microsoft.NET.HostModel.MachO;
+#else
+namespace ILCompiler.Reflection.ReadyToRun.MachO;
+#endif
 
 /// <summary>
 /// See https://github.com/apple-oss-distributions/cctools/blob/7a5450708479bbff61527d5e0c32a3f7b7e4c1d0/include/mach-o/loader.h#L282 for reference.
