@@ -32,15 +32,67 @@ int fsetpos_64(FILE* stream, int64_t pos)
 
 HRESULT HRESULTFromErrno()
 {
-    // stdio functions preserve last error in simple cases.
-    // It's sufficient for logging only.
-    HRESULT hr = HRESULT_FROM_WIN32(::GetLastError());
+    // maps the common I/O errors
+    // based on FILEGetLastErrorFromErrno
 
-    if (SUCCEEDED(hr) && errno != 0)
+    // stdio functions aren't guaranteed to preserve GetLastError.
+    // errno should be used as source of truth.
+    
+    DWORD win32Err;
+
+    switch(errno)
     {
-        // Fallback when last error was cleared unexpectedly.
-        return E_FAIL;
+    case 0:
+        win32Err = ERROR_SUCCESS;
+        break;
+    case ENAMETOOLONG:
+        win32Err = ERROR_FILENAME_EXCED_RANGE;
+        break;
+    case ENOTDIR:
+        win32Err = ERROR_PATH_NOT_FOUND;
+        break;
+    case ENOENT:
+        win32Err = ERROR_FILE_NOT_FOUND;
+        break;
+    case EACCES:
+    case EPERM:
+    case EROFS:
+    case EISDIR:
+        win32Err = ERROR_ACCESS_DENIED;
+        break;
+    case EEXIST:
+        win32Err = ERROR_ALREADY_EXISTS;
+        break;
+    case ENOTEMPTY:
+        win32Err = ERROR_DIR_NOT_EMPTY;
+        break;
+    case EBADF:
+        win32Err = ERROR_INVALID_HANDLE;
+        break;
+    case ENOMEM:
+        win32Err = ERROR_NOT_ENOUGH_MEMORY;
+        break;
+    case EBUSY:
+        win32Err = ERROR_BUSY;
+        break;
+    case ENOSPC:
+        win32Err = ERROR_DISK_FULL;
+        break;
+    case ELOOP:
+        win32Err = ERROR_BAD_PATHNAME;
+        break;
+    case EIO:
+        win32Err = ERROR_WRITE_FAULT;
+        break;
+    case EMFILE:
+        win32Err = ERROR_TOO_MANY_OPEN_FILES;
+        break;
+    case ERANGE:
+        win32Err = ERROR_BAD_PATHNAME;
+        break;
+    default:
+        win32Err = ERROR_GEN_FAILURE;
     }
 
-    return hr;
+    return HRESULT_FROM_WIN32(win32Err);
 }
