@@ -61,14 +61,7 @@ public class Async2SimpleEH
         int x = GetValue();
         try
         {
-            try
-            {
-                x = await IntThrows();
-            }
-            finally
-            {
-                Console.WriteLine(x);
-            }
+            x = await IntThrows();
         }
         catch
         {
