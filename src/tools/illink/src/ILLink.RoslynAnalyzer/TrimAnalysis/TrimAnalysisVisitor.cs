@@ -266,7 +266,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 return TopValue;
             }
 
-           return new MethodParameterValue(new ParameterProxy(parameter, parameterMethod));
+            return new MethodParameterValue(new ParameterProxy(parameter, parameterMethod));
         }
 
         public override void HandleAssignment(MultiValue source, MultiValue target, IOperation operation, in FeatureContext featureContext)
