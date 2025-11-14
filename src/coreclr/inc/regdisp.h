@@ -358,8 +358,8 @@ struct REGDISPLAY : public REGDISPLAY_BASE {
 
 // This function tells us if the given stack pointer is in one of the frames of the functions called by the given frame
 inline BOOL IsInCalleesFrames(REGDISPLAY *display, LPVOID stackPointer) {
-    _ASSERTE("IsInCalleesFrames is not implemented on wasm");
-    return FALSE;
+    LIMITED_METHOD_CONTRACT;
+    return stackPointer < (LPVOID)(display->SP);
 }
 
 #else // none of the above processors

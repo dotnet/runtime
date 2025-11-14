@@ -219,7 +219,7 @@ inline void SetReg(T_CONTEXT * context, int Regnum, PCODE RegContent)
     *(&context->R0 + Regnum) = RegContent;
 }
 
-extern "C" LPVOID __stdcall GetCurrentSP();
+extern "C" void* GetCurrentSP();
 
 inline void SetSP(T_CONTEXT *context, TADDR sp) {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -301,7 +301,7 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
     UINT32* pCode = (UINT32*)pBufferRW;
@@ -326,29 +326,15 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 }
 
 //------------------------------------------------------------------------
-//  Given the same pBuffer that was used by emitJump this method
+//  Given the same pBuffer that was used by emitBackToBackJump this method
 //  decodes the instructions and returns the jump target
-inline PCODE decodeJump(PCODE pCode)
+inline PCODE decodeBackToBackJump(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
 
     TADDR pInstr = PCODEToPINSTR(pCode);
 
     return *dac_cast<PTR_PCODE>(pInstr + 4 * sizeof(UINT32));
-}
-
-//------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    return decodeJump(pBuffer);
 }
 
 //----------------------------------------------------------------------

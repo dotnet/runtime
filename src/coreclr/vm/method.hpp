@@ -69,7 +69,7 @@ enum class AsyncMethodKind
 
     // Regular methods that return Task/ValueTask
     // Such method has its actual IL body and there also a synthetic variant that is an
-    // Async-callable think. (AsyncVariantThunk)
+    // Async-callable thunk. (AsyncVariantThunk)
     TaskReturning,
 
     // Task-returning methods marked as MethodImpl::Async in metadata.
@@ -1968,19 +1968,6 @@ public:
             asyncKind == AsyncMethodKind::TaskReturning;
     }
 
-    inline bool IsStructMethodOperatingOnCopy()
-    {
-        if (!GetMethodTable()->IsValueType() || IsStatic())
-            return false;
-
-        if (!HasAsyncMethodData())
-            return false;
-
-        // Only async methods backed by actual user code operate on copies.
-        // Thunks with runtime-supplied implementation do not.
-        return GetAddrOfAsyncMethodData()->kind == AsyncMethodKind::AsyncVariantImpl;
-    }
-
     inline bool HasAsyncMethodData() const
     {
         return (m_wFlags & mdfHasAsyncMethodData) != 0;
@@ -1990,6 +1977,17 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_wFlags |= mdfHasAsyncMethodData;
+    }
+
+    // Returns true if this is an async method that requires save and restore
+    // of async contexts. Regular user implemented runtime async methods
+    // require this behavior, but thunks should be transparent and should not
+    // come with this behavior.
+    inline bool RequiresAsyncContextSaveAndRestore() const
+    {
+        if (!HasAsyncMethodData())
+            return false;
+        return GetAddrOfAsyncMethodData()->kind == AsyncMethodKind::AsyncVariantImpl;
     }
 
 #ifdef FEATURE_METADATA_UPDATER

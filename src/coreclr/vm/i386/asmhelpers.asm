@@ -713,7 +713,7 @@ _GetCurrentIP@0 proc public
     retn
 _GetCurrentIP@0 endp
 
-; LPVOID __stdcall GetCurrentSP(void);
+; void* GetCurrentSP(void);
 _GetCurrentSP@0 proc public
     mov     eax, esp
     retn

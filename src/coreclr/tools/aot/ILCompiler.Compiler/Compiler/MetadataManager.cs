@@ -396,6 +396,13 @@ namespace ILCompiler
             if (method.IsStaticConstructor)
                 return false;
 
+            // Non-task returning async methods have special calling convention
+            if (method.IsAsync && !method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
+                return false;
+
+            // And so do async variants but we shouldn't even see them here
+            Debug.Assert(!method.IsAsyncVariant());
+
             if (method.IsConstructor)
             {
                 // Delegate construction is only allowed through specific IL sequences

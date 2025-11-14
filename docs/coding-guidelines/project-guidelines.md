@@ -192,7 +192,7 @@ The `UseCompilerGeneratedDocXmlFile` property controls how XML documentation fil
 </PropertyGroup>
 ```
 
-Setting `UseCompilerGeneratedDocXmlFile` to `false` is typically done for stable APIs where manually curated documentation exists that should be preferred over compiler-generated documentation.
+See the [Documentation](adding-api-guidelines.md#documentation) section in the API guidelines for more details about the documentation workflow.
 
 If a project sets this to `false` but the Microsoft.Private.Intellisense package doesn't have documentation for the assembly, a warning is shown suggesting to remove the property to let the compiler generate the file.
 

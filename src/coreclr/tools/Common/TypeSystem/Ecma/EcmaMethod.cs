@@ -15,6 +15,7 @@ namespace Internal.TypeSystem.Ecma
     {
         private static class MethodFlags
         {
+#pragma warning disable IDE0055 // Disable formatting to keep aligned
             public const int BasicMetadataCache     = 0x00001;
             public const int Virtual                = 0x00002;
             public const int NewSlot                = 0x00004;
@@ -28,11 +29,12 @@ namespace Internal.TypeSystem.Ecma
             public const int AggressiveOptimization = 0x00400;
             public const int NoOptimization         = 0x00800;
             public const int RequireSecObject       = 0x01000;
+            public const int Async                  = 0x02000;
 
-            public const int AttributeMetadataCache = 0x02000;
-            public const int Intrinsic              = 0x04000;
-            public const int UnmanagedCallersOnly   = 0x08000;
-            public const int Async                  = 0x10000;
+            public const int AttributeMetadataCache = 0x04000;
+            public const int Intrinsic              = 0x08000;
+            public const int UnmanagedCallersOnly   = 0x10000;
+#pragma warning restore IDE0055
         };
 
         private EcmaType _type;
