@@ -64,8 +64,8 @@ enum class AsyncMethodKind
 {
     // Regular methods not returning tasks
     // These are "normal" methods that do not get other variants.
-    // Note: Generic T-returning methods are NotAsync, even if T could be a Task.
-    NotAsync,
+    // Note: Generic T-returning methods are Ordinary, even if T could be a Task.
+    Ordinary,
 
     // Regular methods that return Task/ValueTask
     // Such method has its actual IL body and there also a synthetic variant that is an
@@ -75,10 +75,10 @@ enum class AsyncMethodKind
     // Task-returning methods marked as MethodImpl::Async in metadata.
     // Such method has a body that is a thunk that forwards to an Async implementation variant
     // which owns the original IL. (AsyncVariantImpl)
-    RuntimeAsync,
+    TaskReturningILAsync,
 
     //=============================================================
-    // On {TaskReturning, AsyncVariantThunk} and {RuntimeAsync, AsyncVariantImpl} pairs:
+    // On {TaskReturning, AsyncVariantThunk} and {TaskReturningILAsync, AsyncVariantImpl} pairs:
     //
     // When we see a Task-returning method we create 2 method varaints that logically match the same method definition.
     // One variant has the same signature/callconv as the defining method and another is a matching Async variant.
@@ -1955,7 +1955,7 @@ public:
 
         auto asyncType = GetAddrOfAsyncMethodData()->kind;
         return asyncType == AsyncMethodKind::AsyncVariantThunk ||
-            asyncType == AsyncMethodKind::RuntimeAsync;
+            asyncType == AsyncMethodKind::TaskReturningILAsync;
     }
 
     inline bool IsTaskReturningMethod() const
@@ -1964,7 +1964,7 @@ public:
         if (!HasAsyncMethodData())
             return false;
         auto asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return asyncKind == AsyncMethodKind::RuntimeAsync ||
+        return asyncKind == AsyncMethodKind::TaskReturningILAsync ||
             asyncKind == AsyncMethodKind::TaskReturning;
     }
 

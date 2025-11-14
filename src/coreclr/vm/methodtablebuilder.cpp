@@ -1022,7 +1022,7 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_dwImplAttrs(dwImplAttrs),
       m_dwRVA(dwRVA),
       m_type(type),
-      m_asyncMethodKind(AsyncMethodKind::NotAsync),
+      m_asyncMethodKind(AsyncMethodKind::Ordinary),
       m_implType(implType),
       m_methodSig(pOwningType->GetModule(),
                   tok,
@@ -3323,9 +3323,9 @@ MethodTableBuilder::EnumerateClassMethods()
                     //    Declare a TaskReturning method and add an Async variant that is a thunk to the TaskReturing one.
                     //
                     // IsMiAsync Task-returning method:
-                    //    Declare a RuntimeAsync method and add an Async variant with the actual implementation.
-                    //    The RuntimeAsync method becomes a thunk to the implementation helper.
-                    pNewMethod->SetAsyncMethodKind(IsMiAsync(dwImplFlags) ? AsyncMethodKind::RuntimeAsync : AsyncMethodKind::TaskReturning);
+                    //    Declare a TaskReturningILAsync method and add an Async variant with the actual implementation.
+                    //    The TaskReturningILAsync method becomes a thunk to the implementation helper.
+                    pNewMethod->SetAsyncMethodKind(IsMiAsync(dwImplFlags) ? AsyncMethodKind::TaskReturningILAsync : AsyncMethodKind::TaskReturning);
                 }
                 else
                 {
@@ -3342,7 +3342,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     }
                     else
                     {
-                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::NotAsync);
+                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::Ordinary);
                     }
                 }
 
@@ -5150,7 +5150,7 @@ MethodTableBuilder::InitNewMethodDesc(
     if (NeedsNativeCodeSlot(pMethod))
         pNewMD->SetHasNativeCodeSlot();
 
-    if (pMethod->GetAsyncMethodKind() != AsyncMethodKind::NotAsync)
+    if (pMethod->GetAsyncMethodKind() != AsyncMethodKind::Ordinary)
         pNewMD->SetHasAsyncMethodData();
 
     // Now we know the classification we can allocate the correct type of
@@ -6280,7 +6280,7 @@ MethodTableBuilder::InitMethodDesc(
 #endif // !_DEBUG
         pNewMD->SetSynchronized();
 
-    if (asyncKind != AsyncMethodKind::NotAsync)
+    if (asyncKind != AsyncMethodKind::Ordinary)
     {
         AsyncMethodData* pAsyncMethodData = pNewMD->GetAddrOfAsyncMethodData();
         pAsyncMethodData->kind = asyncKind;
@@ -7026,7 +7026,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         if (NeedsNativeCodeSlot(*it))
             size += sizeof(MethodDesc::NativeCodeSlot);
 
-        if (it->GetAsyncMethodKind() != AsyncMethodKind::NotAsync)
+        if (it->GetAsyncMethodKind() != AsyncMethodKind::Ordinary)
             size += sizeof(AsyncMethodData);
 
         // See comment in AllocAndInitMethodDescChunk
