@@ -64,6 +64,8 @@ namespace ILCompiler
                 if (_targetMethod.RequiresInstArg())
                 {
                     ilStream.EmitLdc(0);
+                    if (Context.Target.PointerSize != 4)
+                        ilStream.Emit(ILOpcode.conv_i);
                 }
                 ilStream.EmitLdArg(0);
             }
@@ -82,6 +84,8 @@ namespace ILCompiler
                 if (_targetMethod.RequiresInstArg())
                 {
                     ilStream.EmitLdc(0);
+                    if (Context.Target.PointerSize != 4)
+                        ilStream.Emit(ILOpcode.conv_i);
                 }
             }
 
