@@ -62,22 +62,20 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
             {
                 // Look for RTR_HEADER symbol in the Mach-O symbol table
                 // Mach-O R2R images are always composite (no regular R2R format)
-                _rtrHeaderRva = FindRTRHeaderSymbol();
+                if (TryFindSymbol("RTR_HEADER", out ulong symbolValue))
+                {
+                    System.Diagnostics.Debug.Assert(symbolValue <= int.MaxValue);
+                    _rtrHeaderRva = (int)symbolValue;
+                }
+                else
+                {
+                    _rtrHeaderRva = 0;
+                }
             }
 
             rva = _rtrHeaderRva.Value;
             isComposite = rva != 0; // Mach-O R2R images are always composite
             return rva != 0;
-        }
-
-        private int FindRTRHeaderSymbol()
-        {
-            if (TryFindSymbol("RTR_HEADER", out ulong symbolValue))
-            {
-                return (int)symbolValue;
-            }
-
-            return 0;
         }
 
         public IAssemblyMetadata GetStandaloneAssemblyMetadata() => null;
@@ -211,7 +209,7 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
                 string name = ReadCString(stringTableOffset + strIndex, stringTableSize - strIndex);
 
                 // Symbol names in Mach-O can have a leading underscore
-                if (name == symbolName || (name.Length > 0 && name[0] == '_' && name.Substring(1) == symbolName))
+                if (name == symbolName || (name.Length > 0 && name[0] == '_' && name.AsSpan(1).SequenceEqual(symbolName)))
                 {
                     symbolValue = symbol.GetValue(_header);
                     return true;
