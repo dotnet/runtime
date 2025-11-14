@@ -476,6 +476,7 @@ set( JIT_WASM_HEADERS
     emitfmtswasm.h
     instrswasm.h
     registerwasm.h
+    fgwasm.h
 )
 
 convert_to_absolute_path(JIT_SOURCES ${JIT_SOURCES})
