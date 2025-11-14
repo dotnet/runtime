@@ -9776,7 +9776,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // Spill if we have a byref address and the value to store contains
                             // an async call. This avoids keeping the byref live across an await.
-                            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("byref address with async call in value"));
+                            impSpillSideEffects(true,
+                                                CHECK_SPILL_ALL DEBUGARG("byref address with async call in value"));
                         }
                         break;
 
