@@ -9,6 +9,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public enum ReadyToRunContainerFormat
     {
-        PE
+        PE,
+        MachO,
     }
 }

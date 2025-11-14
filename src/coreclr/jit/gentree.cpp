@@ -1513,10 +1513,13 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
 //   comp - The compiler.
 //   cc   - The calling convention.
 //   arg  - The kind of argument.
+//   reg  - [out] The custom register assigned to the argument. Can be REG_NA for a non-ABI argument.
 //
 // Returns:
-//   The custom register assignment, or REG_NA if this is a normally treated
-//   argument.
+//   True if this is a specially passed argument. If so "reg" is set to the
+//   register to use for passing the argument, or REG_NA if the argument is not
+//   actually passed (used to represent arbitrary uses that are later expanded
+//   out for some cases).
 //
 // Remarks:
 //   Many JIT helpers have custom calling conventions in order to improve
@@ -1525,14 +1528,15 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
 //   them. Note that we only support passing such arguments in custom registers
 //   and generally never on stack.
 //
-regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg)
+bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg, regNumber* reg)
 {
     switch (arg)
     {
 #if defined(TARGET_X86) || defined(TARGET_ARM)
         // The x86 and arm32 CORINFO_HELP_INIT_PINVOKE_FRAME helpers have a custom calling convention.
         case WellKnownArg::PInvokeFrame:
-            return REG_PINVOKE_FRAME;
+            *reg = REG_PINVOKE_FRAME;
+            return true;
 #endif
 #if defined(TARGET_ARM)
         // A non-standard calling convention using wrapper delegate invoke is used
@@ -1545,64 +1549,85 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
         // delegate IL stub) to achieve its goal for delegate VSD call. See
         // COMDelegate::NeedsWrapperDelegate() in the VM for details.
         case WellKnownArg::WrapperDelegateCell:
-            return comp->virtualStubParamInfo->GetReg();
+            *reg = comp->virtualStubParamInfo->GetReg();
+            return true;
 #endif
 #if defined(TARGET_X86)
         // The x86 shift helpers have custom calling conventions and expect the lo
         // part of the long to be in EAX and the hi part to be in EDX.
         case WellKnownArg::ShiftLow:
-            return REG_LNGARG_LO;
+            *reg = REG_LNGARG_LO;
+            return true;
         case WellKnownArg::ShiftHigh:
-            return REG_LNGARG_HI;
+            *reg = REG_LNGARG_HI;
+            return true;
 #endif
         case WellKnownArg::RetBuffer:
             if (hasFixedRetBuffReg(cc))
             {
-                return theFixedRetBuffReg(cc);
+                *reg = theFixedRetBuffReg(cc);
+                return true;
             }
 
             break;
 
         case WellKnownArg::VirtualStubCell:
-            return comp->virtualStubParamInfo->GetReg();
+            *reg = comp->virtualStubParamInfo->GetReg();
+            return true;
 
         case WellKnownArg::PInvokeCookie:
-            return REG_PINVOKE_COOKIE_PARAM;
+            *reg = REG_PINVOKE_COOKIE_PARAM;
+            return true;
 
         case WellKnownArg::PInvokeTarget:
-            return REG_PINVOKE_TARGET_PARAM;
+            *reg = REG_PINVOKE_TARGET_PARAM;
+            return true;
 
         case WellKnownArg::R2RIndirectionCell:
-            return REG_R2R_INDIRECT_PARAM;
+            *reg = REG_R2R_INDIRECT_PARAM;
+            return true;
 
         case WellKnownArg::ValidateIndirectCallTarget:
             if (REG_VALIDATE_INDIRECT_CALL_ADDR != REG_ARG_0)
             {
-                return REG_VALIDATE_INDIRECT_CALL_ADDR;
+                *reg = REG_VALIDATE_INDIRECT_CALL_ADDR;
+                return true;
             }
 
             break;
 
 #ifdef REG_DISPATCH_INDIRECT_CELL_ADDR
         case WellKnownArg::DispatchIndirectCallTarget:
-            return REG_DISPATCH_INDIRECT_CALL_ADDR;
+            *reg = REG_DISPATCH_INDIRECT_CALL_ADDR;
+            return true;
 #endif
 
 #ifdef SWIFT_SUPPORT
         case WellKnownArg::SwiftError:
             assert(cc == CorInfoCallConvExtension::Swift);
-            return REG_SWIFT_ERROR;
+            *reg = REG_SWIFT_ERROR;
+            return true;
 
         case WellKnownArg::SwiftSelf:
             assert(cc == CorInfoCallConvExtension::Swift);
-            return REG_SWIFT_SELF;
+            *reg = REG_SWIFT_SELF;
+            return true;
 #endif // SWIFT_SUPPORT
+
+        case WellKnownArg::StackArrayLocal:
+        case WellKnownArg::AsyncExecutionContext:
+        case WellKnownArg::AsyncSynchronizationContext:
+            // These are pseudo-args; they are not actual arguments, but we
+            // reuse the argument mechanism to represent them as arbitrary uses
+            // that are later expanded out.
+            *reg = REG_NA;
+            return true;
 
         default:
             break;
     }
 
-    return REG_NA;
+    return false;
 }
 
 //---------------------------------------------------------------
@@ -1619,7 +1644,8 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
 //
 bool CallArgs::IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg)
 {
-    return GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg->GetWellKnownArg()) != REG_NA;
+    regNumber reg;
+    return GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg->GetWellKnownArg(), &reg) && (reg != REG_NA);
 }
 
 //---------------------------------------------------------------
@@ -2274,24 +2300,6 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
 bool GenTreeCall::IsAsync() const
 {
     return (gtCallMoreFlags & GTF_CALL_M_ASYNC) != 0;
-}
-
-//-------------------------------------------------------------------------
-// IsAsyncAndAlwaysSavesAndRestoresExecutionContext:
-//   Check if this is an async call that always saves and restores the
-//   ExecutionContext around it.
-//
-// Return Value:
-//   True if so.
-//
-// Remarks:
-//   Normal user await calls have this behavior, while custom awaiters (via
-//   AsyncHelpers.AwaitAwaiter) only saves and restores the ExecutionContext if
-//   actual suspension happens.
-//
-bool GenTreeCall::IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const
-{
-    return IsAsync() && (GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore);
 }
 
 //-------------------------------------------------------------------------
@@ -13236,8 +13244,10 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "&lcl arr";
         case WellKnownArg::RuntimeMethodHandle:
             return "meth hnd";
-        case WellKnownArg::AsyncSuspendedIndicator:
-            return "async susp";
+        case WellKnownArg::AsyncExecutionContext:
+            return "exec ctx";
+        case WellKnownArg::AsyncSynchronizationContext:
+            return "sync ctx";
         default:
             return nullptr;
     }
@@ -19552,32 +19562,6 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 
     // This may be called very late to check validity of LIR.
     node = node->gtSkipReloadOrCopy();
-
-    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
-
-    return node->AsLclVarCommon();
-}
-
-//------------------------------------------------------------------------
-// gtCallGetDefinedAsyncSuspendedIndicatorLclAddr:
-//   Get the tree corresponding to the address of the indicator local that this call defines.
-//
-// Parameters:
-//   call - the Call node
-//
-// Returns:
-//   A tree representing the address of a local.
-//
-GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call)
-{
-    if (!call->IsAsync() || !call->GetAsyncInfo().HasSuspensionIndicatorDef)
-    {
-        return nullptr;
-    }
-
-    CallArg* asyncSuspensionIndicatorArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
-    assert(asyncSuspensionIndicatorArg != nullptr);
-    GenTree* node = asyncSuspensionIndicatorArg->GetNode();
 
     assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
 
