@@ -49,7 +49,7 @@ public class Test121578
         }
         catch (Exception ex)
         {
-            Assert.Fail("The exceptioon should have been handled. Exception: " + ex.ToString());
+            Assert.Fail("The exception should have been handled. Exception: " + ex.ToString());
         }
     }
 }
