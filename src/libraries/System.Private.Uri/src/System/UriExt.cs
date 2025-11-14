@@ -124,7 +124,7 @@ namespace System
                         e = null;
                     // will return from here
 
-                    if (hasUnicode)
+                    if (e is null && hasUnicode)
                     {
                         // In this scenario we need to parse the whole string
                         try
@@ -134,7 +134,6 @@ namespace System
                         catch (UriFormatException ex)
                         {
                             e = ex;
-                            return;
                         }
                     }
                 }
@@ -175,7 +174,7 @@ namespace System
                             e = GetException(ParsingError.CannotCreateRelative);
                         }
 
-                        if (hasUnicode)
+                        if (e is null && hasUnicode)
                         {
                             // In this scenario we need to parse the whole string
                             try
@@ -185,7 +184,6 @@ namespace System
                             catch (UriFormatException ex)
                             {
                                 e = ex;
-                                return;
                             }
                         }
                     }

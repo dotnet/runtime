@@ -2236,12 +2236,14 @@ namespace System
         // This will create the _info based on the copied parser context.
         // If multi-threading, this method may do duplicated yet harmless work.
         //
-        private unsafe void CreateUriInfo(Flags cF)
+        private void CreateUriInfo(Flags cF)
         {
             UriInfo info = new UriInfo();
 
-            // This will be revisited in ParseRemaining but for now just have it at least _string.Length
-            info.Offset.End = _string.Length;
+            string str = OriginalString;
+
+            // This will be revisited in ParseRemaining if we're rewriting the _string.
+            info.Offset.End = str.Length;
 
             if (UserDrivenParsing)
                 goto Done;
@@ -2249,24 +2251,26 @@ namespace System
             int idx;
             bool notCanonicalScheme = false;
 
-            // The _string may have leading spaces, figure that out
-            // plus it will set idx value for next steps
+            // Skip leading whitespace
+            idx = 0;
+            while (UriHelper.IsLWS(str[idx]))
+            {
+                idx++;
+                info.Offset.Scheme++;
+            }
+
             if ((cF & Flags.ImplicitFile) != 0)
             {
-                idx = 0;
-                while (UriHelper.IsLWS(_string[idx]))
-                {
-                    ++idx;
-                    ++info.Offset.Scheme;
-                }
-
                 if (StaticInFact(cF, Flags.UncPath))
                 {
+                    Debug.Assert(str[idx] is '/' or '\\' && str[idx + 1] is '/' or '\\');
+
                     // For implicit file AND Unc only
                     idx += 2;
-                    //skip any other slashes (compatibility with V1.0 parser)
+
+                    // Skip any other slashes (compatibility with V1.0 parser)
                     int end = (int)(cF & Flags.IndexMask);
-                    while (idx < end && (_string[idx] == '/' || _string[idx] == '\\'))
+                    while (idx < end && (str[idx] == '/' || str[idx] == '\\'))
                     {
                         ++idx;
                     }
@@ -2275,25 +2279,24 @@ namespace System
             else
             {
                 // This is NOT an ImplicitFile uri
-                idx = _syntax.SchemeName.Length;
-
-                while (_string[idx++] != ':')
-                {
-                    ++info.Offset.Scheme;
-                }
+                idx += _syntax.SchemeName.Length + 1;
+                Debug.Assert(str[idx - 1] == ':');
 
                 if ((cF & Flags.AuthorityFound) != 0)
                 {
-                    if (_string[idx] == '\\' || _string[idx + 1] == '\\')
+                    Debug.Assert(str[idx] is '/' or '\\' && str[idx + 1] is '/' or '\\');
+
+                    if (str[idx] == '\\' || str[idx + 1] == '\\')
                         notCanonicalScheme = true;
 
                     idx += 2;
+
                     if ((cF & (Flags.UncPath | Flags.DosPath)) != 0)
                     {
                         // Skip slashes if it was allowed during ctor time
                         // NB: Today this is only allowed if a Unc or DosPath was found after the scheme
                         int end = (int)(cF & Flags.IndexMask);
-                        while (idx < end && (_string[idx] == '/' || _string[idx] == '\\'))
+                        while (idx < end && (str[idx] == '/' || str[idx] == '\\'))
                         {
                             notCanonicalScheme = true;
                             ++idx;
@@ -2302,124 +2305,95 @@ namespace System
                 }
             }
 
+            // Up until the userinfo/host, the _string and OriginalString are the same.
+            Debug.Assert(_string.AsSpan(0, idx).SequenceEqual(OriginalString.AsSpan(0, idx)));
+
             // Some schemes (mailto) do not have Authority-based syntax, still they do have a port
             if (_syntax.DefaultPort != UriParser.NoDefaultPort)
                 info.Offset.PortValue = (ushort)_syntax.DefaultPort;
 
-            //Here we set the indexes for already parsed components
-            if ((cF & Flags.HostTypeMask) == Flags.UnknownHostType
-                || StaticInFact(cF, Flags.DosPath)
-                )
-            {
-                //there is no Authority component defined
-                info.Offset.User = (int)(cF & Flags.IndexMask);
-                info.Offset.Host = info.Offset.User;
-                info.Offset.Path = info.Offset.User;
-                cF &= ~Flags.IndexMask;
-                if (notCanonicalScheme)
-                {
-                    cF |= Flags.SchemeNotCanonical;
-                }
-                goto Done;
-            }
-
             info.Offset.User = idx;
-
-            //Basic Host Type does not have userinfo and port
-            if (HostType == Flags.BasicHostType)
-            {
-                info.Offset.Host = idx;
-                info.Offset.Path = (int)(cF & Flags.IndexMask);
-                cF &= ~Flags.IndexMask;
-                goto Done;
-            }
 
             if ((cF & Flags.HasUserInfo) != 0)
             {
-                // we previously found a userinfo, get it again
-                while (_string[idx] != '@')
-                {
-                    ++idx;
-                }
-                ++idx;
-                info.Offset.Host = idx;
-            }
-            else
-            {
-                info.Offset.Host = idx;
+                // We've seen the '@' before. It should also be the first '@' in the input.
+                Debug.Assert(str.AsSpan(idx).Contains('@'));
+                Debug.Assert(str.IndexOf('@') == str.IndexOf('@', idx));
+
+                // The UserInfo in _string may have been modified if we're recreating the string.
+                // Since Offset.Host must point into _string and not OriginalString, find the offset in the new string.
+                idx = _string.IndexOf('@') + 1;
             }
 
-            //Now reload the end of the parsed host
+            info.Offset.Host = idx;
+
+            // Now reload the end of the parsed host.
+            // This index is pointing into the original string.
             idx = (int)(cF & Flags.IndexMask);
+            Debug.Assert((uint)idx <= (uint)OriginalString.Length);
 
-            //From now on we do not need IndexMask bits, and reuse the space for X_NotCanonical flags
-            //clear them now
+            // From now on we do not need IndexMask bits, and reuse the space for X_NotCanonical flags
             cF &= ~Flags.IndexMask;
 
-            // If this is not canonical, don't count on user input to be good
             if (notCanonicalScheme)
             {
                 cF |= Flags.SchemeNotCanonical;
             }
 
-            //Guessing this is a path start
-            info.Offset.Path = idx;
-
-            // parse Port if any. The new spec allows a port after ':' to be empty (assuming default?)
-            bool notEmpty = false;
-            // Note we already checked on general port syntax in ParseMinimal()
-
-            // If iri parsing is on with unicode chars then the end of parsed host
-            // points to _originalUnicodeString and not _string
-
-            if ((cF & Flags.HasUnicode) != 0)
-                info.Offset.End = _originalUnicodeString.Length;
-
-            if (idx < info.Offset.End)
+            // UnknownHostType / DosPath can't have a port.
+            if (((cF & Flags.HostTypeMask) != Flags.UnknownHostType && (cF & Flags.DosPath) == 0) &&
+                (uint)idx < (uint)str.Length && str[idx] == ':' && (cF & Flags.DosPath) == 0)
             {
-                fixed (char* userString = OriginalString)
-                {
-                    if (userString[idx] == ':')
-                    {
-                        int port = 0;
+                Debug.Assert(!IsUnc);
 
-                        //Check on some non-canonical cases http://host:0324/, http://host:03, http://host:0, etc
-                        if (++idx < info.Offset.End)
+                // Parse the Port if any. The new spec allows a port after ':' to be empty (assuming default?)
+                // Note we already checked on general port syntax in ParseMinimal()
+                bool notEmpty = false;
+                int port = 0;
+
+                idx++; // Skip ':'
+
+                // Check on some non-canonical cases http://host:0324/, http://host:03, http://host:0, etc
+                if ((uint)idx < (uint)str.Length)
+                {
+                    port = str[idx] - '0';
+                    if ((uint)port <= ('9' - '0'))
+                    {
+                        notEmpty = true;
+                        if (port == 0)
                         {
-                            port = userString[idx] - '0';
-                            if ((uint)port <= ('9' - '0'))
-                            {
-                                notEmpty = true;
-                                if (port == 0)
-                                {
-                                    cF |= (Flags.PortNotCanonical | Flags.E_PortNotCanonical);
-                                }
-                                for (++idx; idx < info.Offset.End; ++idx)
-                                {
-                                    int val = userString[idx] - '0';
-                                    if ((uint)val > ('9' - '0'))
-                                    {
-                                        break;
-                                    }
-                                    port = (port * 10 + val);
-                                }
-                            }
-                        }
-                        if (notEmpty && _syntax.DefaultPort != port)
-                        {
-                            info.Offset.PortValue = (ushort)port;
-                            cF |= Flags.NotDefaultPort;
-                        }
-                        else
-                        {
-                            //This will tell that we do have a ':' but the port value does
-                            //not follow to canonical rules
                             cF |= (Flags.PortNotCanonical | Flags.E_PortNotCanonical);
                         }
-                        info.Offset.Path = idx;
+
+                        for (idx++; (uint)idx < (uint)str.Length; idx++)
+                        {
+                            int val = str[idx] - '0';
+                            if ((uint)val > ('9' - '0'))
+                            {
+                                break;
+                            }
+                            port = (port * 10 + val);
+                        }
                     }
                 }
+
+                if (notEmpty && _syntax.DefaultPort != port)
+                {
+                    info.Offset.PortValue = (ushort)port;
+                    cF |= Flags.NotDefaultPort;
+                }
+                else
+                {
+                    // This will tell that we do have a ':' but the port value does
+                    // not follow to canonical rules
+                    cF |= (Flags.PortNotCanonical | Flags.E_PortNotCanonical);
+                }
             }
+
+            // While info.Offset values must point into _string instead of OriginalString when we're done with parsing,
+            // we'll temporarily point the path offset into OriginalString.
+            // ParseRemaining will update the value if we're replacing the _string.
+            info.Offset.Path = idx;
 
         Done:
             cF |= Flags.MinimalUriInfoSet;
@@ -2434,7 +2408,7 @@ namespace System
                 {
                     return;
                 }
-                current = (Flags)oldValue;
+                current = oldValue;
             }
         }
 
