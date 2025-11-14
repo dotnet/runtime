@@ -49,7 +49,7 @@ namespace System
                 return false;
             if (!thisInfo->Handle.Equals(thatInfo->Handle))
                 return false;
-            if (thisInfo->NumGenericArgs != thatInfo->NumGenericArgs)
+            if (thisInfo->_numGenericArgsAndFlag != thatInfo->_numGenericArgsAndFlag)
                 return false;
 
             RuntimeTypeHandle* thisFirstArg = &thisInfo->FirstArgument;
@@ -123,7 +123,19 @@ namespace System
     {
         public RuntimeTypeHandle DeclaringType;
         public MethodHandle Handle;
-        public int NumGenericArgs;
+        internal int _numGenericArgsAndFlag;
         public RuntimeTypeHandle FirstArgument;
+
+        public int NumGenericArgs
+        {
+            get => _numGenericArgsAndFlag & ~RuntimeMethodHandleConstants.IsAsyncVariant;
+            set => _numGenericArgsAndFlag = (_numGenericArgsAndFlag & RuntimeMethodHandleConstants.IsAsyncVariant) | value;
+        }
+
+        public bool IsAsyncVariant
+        {
+            get => (_numGenericArgsAndFlag & RuntimeMethodHandleConstants.IsAsyncVariant) != 0;
+            set => _numGenericArgsAndFlag = value ? _numGenericArgsAndFlag | RuntimeMethodHandleConstants.IsAsyncVariant : _numGenericArgsAndFlag & ~RuntimeMethodHandleConstants.IsAsyncVariant;
+        }
     }
 }
