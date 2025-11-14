@@ -931,6 +931,6 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int get_metadata_token(RuntimeConstructorInfo method);
 
-        private IsDisallowedAsyncHelper => false;
+        private bool IsDisallowedAsyncHelper => false;
     }
 }

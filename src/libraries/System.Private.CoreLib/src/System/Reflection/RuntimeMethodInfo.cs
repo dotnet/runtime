@@ -21,6 +21,7 @@ namespace System.Reflection
             if (ContainsGenericParameters // Method has unbound generics
                 || IsDisallowedByRefType(returnType) // Return type is an invalid by-ref (i.e., by-ref-like or void*)
                 || (CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs // Managed varargs
+                || IsDisallowedAsyncHelper
                 )
             {
                 invocationFlags = InvocationFlags.NoInvoke;
@@ -36,10 +37,6 @@ namespace System.Reflection
                     else if (declaringType.IsByRefLike) // Check for byref-like types
                     {
                         invocationFlags |= InvocationFlags.ContainsStackPointers;
-                    }
-                    else if (IsDisallowedAsyncHelper)
-                    {
-                        invocationFlags = InvocationFlags.NoInvoke;
                     }
                 }
 
