@@ -4147,9 +4147,13 @@ namespace System
             {
                 char c = span[i];
 
-                // Control chars usually should be escaped in any case
-                if (c <= '\x1F' || (c >= '\x7F' && c <= '\x9F'))
+                if (char.IsAsciiLetterOrDigit(c))
                 {
+                    // The most common case - unreserved chars.
+                }
+                else if (c <= '\x1F' || (c >= '\x7F' && c <= '\x9F'))
+                {
+                    // Control chars usually should be escaped in any case
                     needsEscaping = true;
                     foundEscaping = true;
                     res |= Check.ReservedFound;
