@@ -47,6 +47,13 @@ namespace ReverseStartupTests
                 return 100;
             }
 
+            // Manually running the test twice since both of them require a fresh server.
+            RunTestWithPrefix("DOTNET");
+            return RunTestWithPrefix("CORECLR");
+        }
+
+        private static int RunTestWithPrefix(string prefix)
+        {
             string serverName = ReverseServer.MakeServerAddress();
             Task backgroundTask = Task.Run(() =>
             {
@@ -110,12 +117,13 @@ namespace ReverseStartupTests
                 { "ReverseServerTest_ClearMe", "OriginalValue" }
             };
 
-            return ProfilerTestRunner.Run(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
-                                          testName: "ReverseStartup",
-                                          profilerClsid: Guid.Empty,
-                                          profileeOptions: ProfileeOptions.NoStartupAttach | ProfileeOptions.ReverseDiagnosticsMode,
-                                          envVars: envVars,
-                                          reverseServerName: serverName);
+            return ProfilerTestRunner.RunOnce(profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
+                                              testName: "ReverseStartup",
+                                              profilerClsid: Guid.Empty,
+                                              profileeOptions: ProfileeOptions.NoStartupAttach | ProfileeOptions.ReverseDiagnosticsMode,
+                                              envVars: envVars,
+                                              reverseServerName: serverName,
+                                              prefix: prefix);
         }
 
         public static string GetProfilerPath()

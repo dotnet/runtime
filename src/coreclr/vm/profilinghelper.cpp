@@ -626,9 +626,20 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
 
     // Find out if profiling is enabled
     DWORD fProfEnabled = 0;
+    // Find out which profiling naming convention is being used.
+    DWORD fProfNewNamingConv = 0;
 
     fProfEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_ENABLE_PROFILING);
 
+    if (fProfEnabled == 0)
+    {
+        fProfEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_ENABLE_PROFILING);
+        fProfNewNamingConv = fProfEnabled;
+    }
+
+#define GET_PROFILER_CONFIG(dotnetConfig, coreclrConfig) \
+    (fProfNewNamingConv == 1 ? CLRConfig::dotnetConfig : CLRConfig::coreclrConfig)
+    
     NewArrayHolder<WCHAR> wszClsid(NULL);
     NewArrayHolder<WCHAR> wszProfilerDLL(NULL);
     CLSID clsid;
@@ -641,23 +652,35 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
 
     LOG((LF_CORPROF, LL_INFO10, "**PROF: Initializing Profiling Services.\n"));
 
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER, &wszClsid));
+    IfFailRet(CLRConfig::GetConfigValue(
+        GET_PROFILER_CONFIG(EXTERNAL_DOTNET_PROFILER, EXTERNAL_CORECLR_PROFILER), 
+        &wszClsid));
 
 #if defined(TARGET_ARM64)
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_ARM64, &wszProfilerDLL));
+    IfFailRet(CLRConfig::GetConfigValue(
+        GET_PROFILER_CONFIG(EXTERNAL_DOTNET_PROFILER_PATH_ARM64, EXTERNAL_CORECLR_PROFILER_PATH_ARM64), 
+        &wszProfilerDLL));
 #elif defined(TARGET_ARM)
-    IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_ARM32, &wszProfilerDLL));
+    IfFailRet(CLRConfig::GetConfigValue(
+        GET_PROFILER_CONFIG(EXTERNAL_DOTNET_PROFILER_PATH_ARM32, EXTERNAL_CORECLR_PROFILER_PATH_ARM32), 
+        &wszProfilerDLL));
 #endif
     if(wszProfilerDLL == NULL)
     {
 #ifdef TARGET_64BIT
-        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_64, &wszProfilerDLL));
+        IfFailRet(CLRConfig::GetConfigValue(
+            GET_PROFILER_CONFIG(EXTERNAL_DOTNET_PROFILER_PATH_64, EXTERNAL_CORECLR_PROFILER_PATH_64), 
+            &wszProfilerDLL));
 #else
-        IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH_32, &wszProfilerDLL));
+        IfFailRet(CLRConfig::GetConfigValue(
+            GET_PROFILER_CONFIG(EXTERNAL_DOTNET_PROFILER_PATH_32, EXTERNAL_CORECLR_PROFILER_PATH_32), 
+            &wszProfilerDLL));
 #endif
         if(wszProfilerDLL == NULL)
         {
-            IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_PROFILER_PATH, &wszProfilerDLL));
+            IfFailRet(CLRConfig::GetConfigValue(
+                GET_PROFILER_CONFIG(EXTERNAL_DOTNET_PROFILER_PATH, EXTERNAL_CORECLR_PROFILER_PATH), 
+                &wszProfilerDLL));
         }
     }
 
@@ -717,6 +740,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
         return hr;
     }
 
+#undef GET_PROFILER_CONFIG
+
     return S_OK;
 }
 
@@ -759,22 +784,38 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
 {
     HRESULT hr = S_OK;
     CLRConfigStringHolder wszProfilerList(NULL);
+ 
+    // Find out which profiling naming convention is being used.
+    DWORD fProfNewNamingConv = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_ENABLE_PROFILING);
+   
+#define GET_PROFILER_CONFIG(dotnetConfig, coreclrConfig) \
+    (fProfNewNamingConv == 1 ? CLRConfig::dotnetConfig : CLRConfig::coreclrConfig)
 
 #if defined(TARGET_ARM64)
-    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM64, &wszProfilerList);
+    CLRConfig::GetConfigValue(
+        GET_PROFILER_CONFIG(EXTERNAL_DOTNET_NOTIFICATION_PROFILERS_ARM64, EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM64),
+        &wszProfilerList);
 #elif defined(TARGET_ARM)
-    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM32, &wszProfilerList);
+    CLRConfig::GetConfigValue(
+        GET_PROFILER_CONFIG(EXTERNAL_DOTNET_NOTIFICATION_PROFILERS_ARM32, EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM32),
+        &wszProfilerList);
 #endif
     if (wszProfilerList == NULL)
     {
 #ifdef TARGET_64BIT
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_64, &wszProfilerList);
+        CLRConfig::GetConfigValue(
+            GET_PROFILER_CONFIG(EXTERNAL_DOTNET_NOTIFICATION_PROFILERS_64, EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_64), 
+            &wszProfilerList);
 #else
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_32, &wszProfilerList);
+        CLRConfig::GetConfigValue(
+            GET_PROFILER_CONFIG(EXTERNAL_DOTNET_NOTIFICATION_PROFILERS_32, EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_32),
+            &wszProfilerList);
 #endif
         if (wszProfilerList == NULL)
         {
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS, &wszProfilerList);
+            CLRConfig::GetConfigValue(
+                GET_PROFILER_CONFIG(EXTERNAL_DOTNET_NOTIFICATION_PROFILERS, EXTERNAL_CORECLR_NOTIFICATION_PROFILERS),
+                &wszProfilerList);
             if (wszProfilerList == NULL)
             {
                 // No profiler list specified, bail
@@ -783,7 +824,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
         }
     }
 
-    DWORD dwEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_ENABLE_NOTIFICATION_PROFILERS);
+    DWORD dwEnabled = CLRConfig::GetConfigValue(
+        GET_PROFILER_CONFIG(EXTERNAL_DOTNET_ENABLE_NOTIFICATION_PROFILERS, EXTERNAL_CORECLR_ENABLE_NOTIFICATION_PROFILERS));
     if (dwEnabled == 0)
     {
         // Profiler list explicitly disabled, bail
@@ -834,6 +876,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             continue;
         }
     }
+
+#undef GET_PROFILER_CONFIG
 
     return storedHr;
 }
