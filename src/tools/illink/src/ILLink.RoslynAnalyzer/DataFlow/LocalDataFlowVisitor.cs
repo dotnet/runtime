@@ -948,8 +948,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     break;
 
                 var parameter = argument.Parameter;
-                int parameterIndex = parameters.IndexOf(parameter);
-                if (parameterIndex >= 0)
+                // Use Ordinal to get the parameter's position
+                int parameterIndex = parameter.Ordinal;
+                if (parameterIndex >= 0 && parameterIndex < parameters.Length)
                 {
                     argumentsByParameter[parameterIndex] = VisitArgument(argument, state);
                 }
