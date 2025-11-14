@@ -13,23 +13,24 @@ namespace ILCompiler
 {
     public partial class AsyncResumptionStub : ILStubMethod
     {
-        private readonly MethodDesc _owningMethod;
+        private readonly MethodDesc _targetMethod;
+        private readonly TypeDesc _owningType;
         private MethodSignature _signature;
 
-        public AsyncResumptionStub(MethodDesc targetMethod)
+        public AsyncResumptionStub(MethodDesc targetMethod, TypeDesc owningType)
         {
             Debug.Assert(targetMethod.IsAsyncCall());
-            _owningMethod = targetMethod;
+            _targetMethod = targetMethod;
         }
 
-        public override ReadOnlySpan<byte> Name => _owningMethod.Name;
-        public override string DiagnosticName => _owningMethod.DiagnosticName;
+        public override ReadOnlySpan<byte> Name => _targetMethod.Name;
+        public override string DiagnosticName => _targetMethod.DiagnosticName;
 
-        public override TypeDesc OwningType => _owningMethod.OwningType;
+        public override TypeDesc OwningType => _owningType;
 
         public override MethodSignature Signature => _signature ??= InitializeSignature();
 
-        public override TypeSystemContext Context => _owningMethod.Context;
+        public override TypeSystemContext Context => _targetMethod.Context;
 
         private MethodSignature InitializeSignature()
         {
@@ -44,9 +45,9 @@ namespace ILCompiler
             ILCodeStream ilStream = ilEmitter.NewCodeStream();
 
             // Ported from jitinterface.cpp CEEJitInfo::getAsyncResumptionStub
-            if (!_owningMethod.Signature.IsStatic)
+            if (!_targetMethod.Signature.IsStatic)
             {
-                if (_owningMethod.OwningType.IsValueType)
+                if (_targetMethod.OwningType.IsValueType)
                 {
                     ilStream.EmitLdc(0);
                     ilStream.Emit(ILOpcode.conv_u);
@@ -62,7 +63,7 @@ namespace ILCompiler
                 ilStream.EmitLdArg(0);
             }
 
-            foreach (var param in _owningMethod.Signature)
+            foreach (var param in _targetMethod.Signature)
             {
                 var local = ilEmitter.NewLocal(param);
                 ilStream.EmitLdLoca(local);
@@ -75,7 +76,7 @@ namespace ILCompiler
                 ilStream.EmitLdArg(0);
             }
 
-            MethodDesc resumingMethod = new ExplicitContinuationAsyncMethod(_owningMethod);
+            MethodDesc resumingMethod = new ExplicitContinuationAsyncMethod(_targetMethod);
             ilStream.Emit(ILOpcode.call, ilEmitter.NewToken(resumingMethod));
 
             bool returnsVoid = resumingMethod.Signature.ReturnType.IsWellKnownType(WellKnownType.Void);
@@ -184,14 +185,6 @@ namespace ILCompiler
         public override TypeDesc OwningType => _wrappedMethod.OwningType;
 
         public override TypeSystemContext Context => _wrappedMethod.Context;
-
-        protected override int ClassCode => 0xd076659;
-
-        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
-        {
-            var otherMethod = (ExplicitContinuationAsyncMethod)other;
-            return comparer.Compare(_wrappedMethod, otherMethod._wrappedMethod);
-        }
 
         public override bool IsInternalCall => true;
     }
