@@ -48,6 +48,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             ExplicitIndexerAccess.Test();
             ImplicitIndexerAccess.Test();
+            IndexerDefaultArgument.Test();
 
             AnnotationOnUnsupportedType.Test();
             AutoPropertyUnrecognizedField.Test();
@@ -924,6 +925,36 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 TestNullCoalescingAssignment();
                 TestSpanIndexerAccess();
                 IndexWithTypeWithDam.Test();
+            }
+        }
+
+        class IndexerDefaultArgument
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            Type this[int index = 0]
+            {
+                get => throw new NotImplementedException();
+                set => throw new NotImplementedException();
+            }
+
+            [ExpectedWarning("IL2072", ["this[Int32].get", nameof(DataFlowTypeExtensions.RequiresAll)], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2072", ["Item.get", nameof(DataFlowTypeExtensions.RequiresAll)], Tool.Trimmer | Tool.NativeAot, "")]
+            static void TestRead(IndexerDefaultArgument instance = null)
+            {
+                instance[1].RequiresAll();
+            }
+
+            [ExpectedWarning("IL2072", [nameof(GetTypeWithPublicConstructors), "this[Int32].set"], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2072", [nameof(GetTypeWithPublicConstructors), "Item.set"], Tool.Trimmer | Tool.NativeAot, "")]
+            static void TestWrite(IndexerDefaultArgument instance = null)
+            {
+                instance[1] = GetTypeWithPublicConstructors();
+            }
+
+            public static void Test()
+            {
+                TestRead();
+                TestWrite();
             }
         }
 

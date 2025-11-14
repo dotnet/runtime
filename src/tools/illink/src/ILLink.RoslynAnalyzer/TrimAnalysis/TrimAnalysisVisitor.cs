@@ -258,7 +258,15 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
         public override MultiValue GetParameterTargetValue(IParameterSymbol parameter)
         {
-            return new MethodParameterValue(new ParameterProxy(parameter, parameter.ContainingSymbol as IMethodSymbol ?? (IMethodSymbol)OwningSymbol));
+            var parameterMethod = parameter.ContainingSymbol as IMethodSymbol ?? OwningSymbol as IMethodSymbol;
+            if (parameterMethod is null)
+            {
+                // If the parameter is not associated with a method, ignore it as it's not interesting for trim analysis.
+                // This can happen in the parameter initializer of an indexer property, for example.
+                return TopValue;
+            }
+
+           return new MethodParameterValue(new ParameterProxy(parameter, parameterMethod));
         }
 
         public override void HandleAssignment(MultiValue source, MultiValue target, IOperation operation, in FeatureContext featureContext)
