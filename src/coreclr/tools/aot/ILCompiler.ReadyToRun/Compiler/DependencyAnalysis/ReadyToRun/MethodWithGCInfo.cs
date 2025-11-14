@@ -303,7 +303,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return ObjectNodeSection.TextSection;
+            // Put executable code into .text for PE files as AV software really
+            // doesn't like executable code in non-standard sections.
+            //
+            // For other formats, use the managed code section for managed code.
+            return factory.Format switch
+            {
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.TextSection,
+                _ => ObjectNodeSection.ManagedCodeUnixContentSection
+            };
         }
 
         public FrameInfo[] FrameInfos => _frameInfos;
