@@ -489,8 +489,12 @@ namespace ILCompiler
                 _context = factory.TypeSystemContext;
 
                 // Do not try to optimize around continuation types, we don't keep good track of them.
-                _unsealedTypes.Add(_context.ContinuationType);
-                _disqualifiedTypes.Add(_context.ContinuationType);
+                // Allow CoreLib not to have this type.
+                if (_context.SystemModule.GetType("System.Runtime.CompilerServices"u8, "Continuation"u8, throwIfNotFound: false) is MetadataType continuationType)
+                {
+                    _unsealedTypes.Add(continuationType);
+                    _disqualifiedTypes.Add(continuationType);
+                }
 
                 var vtables = new Dictionary<TypeDesc, List<MethodDesc>>();
                 var dynamicInterfaceCastableImplementationTargets = new HashSet<TypeDesc>();
