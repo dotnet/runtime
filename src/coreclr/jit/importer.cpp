@@ -3400,7 +3400,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     // before popping it from the stack. This is because we will later create a byref
     // destination (box temp + offset) for storing the value, and we cannot have a
     // byref live across an async call.
-    if (gtContainsAsyncCall(impStackTop().val))
+    if (gtTreeContainsAsyncCall(impStackTop().val))
     {
         impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("async box with call"));
     }
@@ -9772,7 +9772,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("value for stsfld with typeinit"));
                         }
-                        else if (op1->TypeIs(TYP_BYREF) && gtContainsAsyncCall(impStackTop().val))
+                        else if (op1->TypeIs(TYP_BYREF) && gtTreeContainsAsyncCall(impStackTop().val))
                         {
                             // Spill if we have a byref address and the value to store contains
                             // an async call. This avoids keeping the byref live across an await.

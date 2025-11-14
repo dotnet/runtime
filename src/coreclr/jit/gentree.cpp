@@ -3165,67 +3165,6 @@ bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
     return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
 }
 
-//------------------------------------------------------------------------------
-// gtContainsAsyncCall:
-//   Check if a tree contains an async call.
-//
-// Parameters:
-//   tree - the tree to check
-//
-// Return Value:
-//   True if the tree contains an async call; false otherwise.
-//
-// Remarks:
-//   Uses GTF_CALL to quickly skip subtrees without any calls.
-//   Returns false if not compiling an async method.
-//
-bool Compiler::gtContainsAsyncCall(GenTree* tree)
-{
-    if (!compIsAsync())
-    {
-        return false;
-    }
-
-    if ((tree->gtFlags & GTF_CALL) == 0)
-    {
-        return false;
-    }
-
-    struct Visitor : GenTreeVisitor<Visitor>
-    {
-        enum
-        {
-            DoPreOrder = true,
-        };
-
-        Visitor(Compiler* comp)
-            : GenTreeVisitor(comp)
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            GenTree* node = *use;
-
-            // Skip subtrees that don't have calls
-            if ((node->gtFlags & GTF_CALL) == 0)
-            {
-                return WALK_SKIP_SUBTREES;
-            }
-
-            if (node->IsCall() && node->AsCall()->IsAsync())
-            {
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
-    };
-
-    Visitor visitor(this);
-    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
-}
-
 #ifdef DEBUG
 
 /*****************************************************************************
