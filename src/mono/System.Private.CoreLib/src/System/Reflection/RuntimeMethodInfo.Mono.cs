@@ -705,6 +705,8 @@ namespace System.Reflection
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeMethodInfo>(other);
+
+        private static bool IsDisallowedAsyncHelper => false;
     }
 #region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
@@ -930,7 +932,5 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int get_metadata_token(RuntimeConstructorInfo method);
-
-        private static bool IsDisallowedAsyncHelper => false;
     }
 }
