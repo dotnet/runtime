@@ -5,13 +5,13 @@ using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
 {
-    public partial class ValueTypeGetFieldHelperMethodOverride
+    public partial class GetFieldHelperMethodOverride
     {
         protected override int ClassCode => 2036839816;
 
         protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
-            var otherMethod = (ValueTypeGetFieldHelperMethodOverride)other;
+            var otherMethod = (GetFieldHelperMethodOverride)other;
 
             return comparer.Compare(_owningType, otherMethod._owningType);
         }

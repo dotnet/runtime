@@ -17,12 +17,12 @@ namespace Internal.IL.Stubs
     /// into all value types that cannot have their Equals(object) and GetHashCode() methods operate on individual
     /// bytes. The purpose of the override is to provide access to the value types' fields and their types.
     /// </summary>
-    public sealed partial class ValueTypeGetFieldHelperMethodOverride : SpecializableILStubMethod
+    public sealed partial class GetFieldHelperMethodOverride : SpecializableILStubMethod
     {
         private MetadataType _owningType;
         private MethodSignature _signature;
 
-        internal ValueTypeGetFieldHelperMethodOverride(MetadataType owningType)
+        internal GetFieldHelperMethodOverride(MetadataType owningType)
         {
             _owningType = owningType;
         }
