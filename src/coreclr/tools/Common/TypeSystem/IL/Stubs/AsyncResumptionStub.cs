@@ -21,6 +21,7 @@ namespace ILCompiler
         {
             Debug.Assert(targetMethod.IsAsyncCall());
             _targetMethod = targetMethod;
+            _owningType = owningType;
         }
 
         public override ReadOnlySpan<byte> Name => _targetMethod.Name;
@@ -60,6 +61,10 @@ namespace ILCompiler
 
             if (Context.Target.Architecture != TargetArchitecture.X86)
             {
+                if (_targetMethod.RequiresInstArg())
+                {
+                    ilStream.EmitLdc(0);
+                }
                 ilStream.EmitLdArg(0);
             }
 
@@ -74,12 +79,16 @@ namespace ILCompiler
             if (Context.Target.Architecture == TargetArchitecture.X86)
             {
                 ilStream.EmitLdArg(0);
+                if (_targetMethod.RequiresInstArg())
+                {
+                    ilStream.EmitLdc(0);
+                }
             }
 
             MethodDesc resumingMethod = new ExplicitContinuationAsyncMethod(_targetMethod);
             ilStream.Emit(ILOpcode.call, ilEmitter.NewToken(resumingMethod));
 
-            bool returnsVoid = resumingMethod.Signature.ReturnType.IsWellKnownType(WellKnownType.Void);
+            bool returnsVoid = resumingMethod.Signature.ReturnType.IsVoid;
             Internal.IL.Stubs.ILLocalVariable resultLocal = default;
             if (!returnsVoid)
             {
@@ -111,6 +120,12 @@ namespace ILCompiler
         }
     }
 
+    /// <summary>
+    /// A dummy method used to tell the jit that we want to explicitly pass the hidden Continuation parameter
+    /// as well as the generic context parameter (if any) for async resumption methods.
+    /// This method should be marked IsAsync=false and HasInstantiation=false. These are defaults
+    /// for MethodDesc and so aren't explicitly set in the code below.
+    /// </summary>
     internal sealed partial class ExplicitContinuationAsyncMethod : MethodDesc
     {
         private MethodSignature _signature;
@@ -123,6 +138,10 @@ namespace ILCompiler
 
         public MethodDesc Target => _wrappedMethod;
 
+        /// <summary>
+        /// To explicitly pass the hidden parameters for async resumption methods,
+        /// we need to add explicit Continuation and generic context parameters to the signature.
+        /// </summary>
         private MethodSignature InitializeSignature()
         {
             var _methodRepresented = _wrappedMethod;
@@ -137,21 +156,37 @@ namespace ILCompiler
 
             var signature = new MethodSignatureBuilder(_wrappedMethod.Signature)
             {
-                Length = _wrappedMethod.Signature.Length + 1,
+                Length = _wrappedMethod.Signature.Length
+                    + 1 // Continuation
+                    + (_wrappedMethod.RequiresInstArg() ? 1 : 0), // Generic context
             };
 
             TypeDesc continuation = Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
             if (Context.Target.Architecture == TargetArchitecture.X86)
             {
-                for (int i = 0; i < _methodRepresented.Signature.Length; i++)
+                int i = 0;
+                for (; i < _methodRepresented.Signature.Length; i++)
+                {
                     signature[i] = _methodRepresented.Signature[i];
-                signature[_methodRepresented.Signature.Length] = continuation;
+                }
+                signature[i++] = continuation;
+                if (_wrappedMethod.RequiresInstArg())
+                {
+                    signature[i] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
+                }
             }
             else
             {
-                signature[0] = continuation;
-                for (int i = 0; i < _methodRepresented.Signature.Length; i++)
-                    signature[i + 1] = _methodRepresented.Signature[i];
+                int i = 0;
+                if (_wrappedMethod.RequiresInstArg())
+                {
+                    signature[i++] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
+                }
+                signature[i++] = continuation;
+                foreach (var param in _methodRepresented.Signature)
+                {
+                    signature[i++] = param;
+                }
             }
             // Get the return type from the Task-returning variant
             if (_wrappedMethod is AsyncMethodVariant variant
