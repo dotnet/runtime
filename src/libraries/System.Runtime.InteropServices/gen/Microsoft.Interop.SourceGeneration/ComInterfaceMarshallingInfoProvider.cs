@@ -25,6 +25,12 @@ namespace Microsoft.Interop
 
         public MarshallingInfo? ParseAttribute(AttributeData attributeData, ITypeSymbol type, int indirectionDepth, UseSiteAttributeProvider useSiteAttributes, GetMarshallingInfoCallback marshallingInfoCallback)
         {
+            // If the type has a NativeMarshallingAttribute, defer to that parser by returning null
+            if (type.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.NativeMarshallingAttribute))
+            {
+                return null;
+            }
+
             return CreateComInterfaceMarshallingInfo(_compilation, type);
         }
 
