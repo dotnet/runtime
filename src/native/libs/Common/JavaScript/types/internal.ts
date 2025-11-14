@@ -67,6 +67,8 @@ export declare interface EmscriptenModuleInternal extends EmscriptenModule {
     abort(reason: any): void;
     exitJS(status: number, implicit?: boolean | number): void;
     _emscripten_force_exit(exit_code: number): void;
+    _mono_wasm_load_icu_data(ptr: number): number;
+    _coreclr_wasm_load_icu_data(ptr: number): number;
 }
 
 export interface AssetEntryInternal extends AssetEntry {

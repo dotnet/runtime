@@ -56,8 +56,14 @@ static int32_t load_icu_data(const void* pData);
 #include <emscripten.h>
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData);
+EMSCRIPTEN_KEEPALIVE int32_t coreclr_wasm_load_icu_data(const void* pData);
 
 EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)
+{
+    return load_icu_data(pData);
+}
+
+EMSCRIPTEN_KEEPALIVE int32_t coreclr_wasm_load_icu_data(const void* pData)
 {
     return load_icu_data(pData);
 }
@@ -68,8 +74,13 @@ EMSCRIPTEN_KEEPALIVE int32_t mono_wasm_load_icu_data(const void* pData)
  * are not kept.
  */
 void mono_wasm_link_icu_shim(void);
+void coreclr_wasm_link_icu_shim(void);
 
 void mono_wasm_link_icu_shim(void)
+{
+}
+
+void coreclr_wasm_link_icu_shim(void)
 {
 }
 

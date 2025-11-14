@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset, PdbAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, LoaderConfig, DotnetHostBuilder } from "./types";
+import { type LoadBootResourceCallback, type JsModuleExports, type JsAsset, type AssemblyAsset, type PdbAsset, type WasmAsset, type IcuAsset, type EmscriptenModuleInternal, type LoaderConfig, type DotnetHostBuilder, GlobalizationMode } from "./types";
 
 import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
@@ -22,7 +22,6 @@ const nativeModulePromiseController = createPromiseCompletionSource<EmscriptenMo
 
 // WASM-TODO: retry logic
 // WASM-TODO: throttling logic
-// WASM-TODO: load icu data
 // WASM-TODO: invokeLibraryInitializers
 // WASM-TODO: webCIL
 // WASM-TODO: downloadOnly - blazor render mode auto pre-download. Really no start.
@@ -37,6 +36,8 @@ export async function createRuntime(downloadOnly: boolean, loadBootResource?: Lo
     const coreVfsPromise = Promise.all((config.resources.coreVfs || []).map(fetchVfs));
     const assembliesPromise = Promise.all(config.resources.assembly.map(fetchDll));
     const vfsPromise = Promise.all((config.resources.vfs || []).map(fetchVfs));
+    const icuResourceName = getIcuResourceName(config);
+    const icuDataPromise = icuResourceName ? Promise.all((config.resources.icu || []).filter(asset => asset.name === icuResourceName).map(fetchIcu)) : Promise.resolve([]);
     // WASM-TODO fetchWasm(config.resources.wasmNative[0]);// start loading early, no await
 
     const nativeModule = await nativeModulePromise;
@@ -50,7 +51,7 @@ export async function createRuntime(downloadOnly: boolean, loadBootResource?: Lo
     await coreAssembliesPromise;
     await coreVfsPromise;
     await vfsPromise;
-
+    await icuDataPromise;
     if (!downloadOnly) {
         BrowserHost_InitializeCoreCLR();
     }
@@ -66,6 +67,62 @@ async function loadJSModule(asset: JsAsset, loadBootResource?: LoadBootResourceC
     }
     if (!asset.resolvedUrl) throw new Error("Invalid config, resources is not set");
     return await import(/* webpackIgnore: true */ asset.resolvedUrl);
+}
+
+async function fetchIcu(asset: IcuAsset): Promise<void> {
+    if (asset.name && !asset.resolvedUrl) {
+        asset.resolvedUrl = locateFile(asset.name);
+    }
+    const bytes = await fetchBytes(asset);
+    await nativeModulePromiseController.promise;
+    dotnetBrowserHostExports.loadIcuData(bytes, asset);
+}
+
+function getIcuResourceName(config: LoaderConfig): string | null {
+    if (config.resources?.icu && config.globalizationMode != GlobalizationMode.Invariant) {
+        const culture = config.applicationCulture;
+        if (!config.applicationCulture) {
+            config.applicationCulture = culture;
+        }
+
+        const icuFiles = config.resources.icu;
+        let icuFile = null;
+        if (config.globalizationMode === GlobalizationMode.Custom) {
+            // custom ICU file is saved in the resources with fingerprinting and does not require mapping
+            if (icuFiles.length >= 1) {
+                return icuFiles[0].name;
+            }
+        } else if (!culture || config.globalizationMode === GlobalizationMode.All) {
+            icuFile = "icudt.dat";
+        } else if (config.globalizationMode === GlobalizationMode.Sharded) {
+            icuFile = getShardedIcuResourceName(culture);
+        }
+
+        if (icuFile) {
+            for (let i = 0; i < icuFiles.length; i++) {
+                const asset = icuFiles[i];
+                if (asset.virtualPath === icuFile) {
+                    return asset.name;
+                }
+            }
+        }
+    }
+
+    config.globalizationMode = GlobalizationMode.Invariant;
+    return null;
+}
+
+function getShardedIcuResourceName(culture: string): string {
+    const prefix = culture.split("-")[0];
+    if (prefix === "en" || ["fr", "fr-FR", "it", "it-IT", "de", "de-DE", "es", "es-ES"].includes(culture)) {
+        return "icudt_EFIGS.dat";
+    }
+
+    if (["zh", "ko", "ja"].includes(prefix)) {
+        return "icudt_CJK.dat";
+    }
+
+    return "icudt_no_CJK.dat";
 }
 
 async function fetchDll(asset: AssemblyAsset): Promise<void> {

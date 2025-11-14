@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { CharPtr, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
+import type { CharPtr, IcuAsset, VfsAsset, VoidPtr, VoidPtrPtr } from "./types";
 import { } from "./cross-linked"; // ensure ambient symbols are declared
 
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
@@ -19,6 +19,31 @@ export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtu
         Module.HEAPU8.set(bytes, ptr >>> 0);
         loadedAssemblies.set(asset.name, { ptr, length: bytes.length });
         loadedAssemblies.set(asset.virtualPath, { ptr, length: bytes.length });
+    } finally {
+        Module.stackRestore(sp);
+    }
+}
+
+export function loadIcuData(bytes: Uint8Array, asset: IcuAsset) {
+    dotnetLogger.debug("Loading ICU data: " + bytes.length + " asset: " + asset.name);
+
+    const sp = Module.stackSave();
+    try {
+        const sizeOfPtr = 4;
+        const ptrPtr = Module.stackAlloc(sizeOfPtr);
+        if (Module._posix_memalign(ptrPtr as any, 16, bytes.length)) {
+            throw new Error("posix_memalign failed for ICU data");
+        }
+
+        const ptr = Module.HEAPU32[ptrPtr as any >>> 2];
+        Module.HEAPU8.set(bytes, ptr >>> 0);
+
+        const result = Module._coreclr_wasm_load_icu_data(ptr);
+        if (!result) {
+            throw new Error("Failed to initialize ICU data");
+        }
+
+        dotnetLogger.debug("Successfully initialized ICU data: " + asset.name);
     } finally {
         Module.stackRestore(sp);
     }
