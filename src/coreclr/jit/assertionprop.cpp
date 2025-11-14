@@ -5451,13 +5451,13 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
                 //  arr[cond ? 1 : 2] = 0;  // arr must be at least 3 elements long
                 //
                 auto tryGetMaxOrMinConst = [this](ValueNum vn, bool getMin, int* index) -> bool {
-                    *index = INT_MAX;
+                    *index = getMin ? INT_MAX : INT_MIN;
                     return vnStore->VNVisitReachingVNs(vn,
                                                        [this, &index, &getMin](ValueNum vn) -> ValueNumStore::VNVisit {
                         int cns = 0;
                         if (vnStore->IsVNIntegralConstant(vn, &cns))
                         {
-                            *index = getMin ? max(*index, cns) : min(*index, cns);
+                            *index = getMin ? min(*index, cns) : max(*index, cns);
                             return ValueNumStore::VNVisit::Continue;
                         }
                         return ValueNumStore::VNVisit::Abort;
