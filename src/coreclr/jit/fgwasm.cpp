@@ -36,7 +36,7 @@ WasmSuccessorEnumerator::WasmSuccessorEnumerator(Compiler* comp, BasicBlock* blo
 
     if (m_numSuccs > ArrLen(m_successors))
     {
-        m_pSuccessors = new (comp, CMK_BasicBlock) BasicBlock*[m_numSuccs];
+        m_pSuccessors = new (comp, CMK_WasmCfgLowering) BasicBlock*[m_numSuccs];
 
         unsigned numSuccs = 0;
         VisitWasmSuccs(
@@ -69,7 +69,7 @@ FlowGraphDfsTree* Compiler::fgWasmDfs()
 {
     fgInvalidateDfsTree();
 
-    BasicBlock** postOrder = new (this, CMK_Wasm) BasicBlock*[fgBBcount];
+    BasicBlock** postOrder = new (this, CMK_WasmCfgLowering) BasicBlock*[fgBBcount];
     bool         hasCycle  = false;
 
     auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
@@ -92,7 +92,7 @@ FlowGraphDfsTree* Compiler::fgWasmDfs()
         }
     };
 
-    jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_Wasm));
+    jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_WasmCfgLowering));
 
     // We can ignore OSR/genReturnBB "entries"
     //
@@ -126,16 +126,10 @@ FlowGraphDfsTree* Compiler::fgWasmDfs()
         fgRunDfs<WasmSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
                  /* useProfile */ true>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
 
-    return new (this, CMK_Wasm)
+    return new (this, CMK_WasmCfgLowering)
         FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, /* useProfile */ true, /* forWasm */ true);
 }
 
-//------------------------------------------------------------------------
-=======
-#include "algorithm.h"
-
-//------------------------------------------------------------------------
->>>>>>> main
 // WasmInterval
 //
 // Represents a Wasm BLOCK/END or LOOP/END
@@ -221,7 +215,7 @@ public:
     static WasmInterval* NewBlock(Compiler* comp, BasicBlock* start, BasicBlock* end)
     {
         WasmInterval* result =
-            new (comp, CMK_Wasm) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ false);
+            new (comp, CMK_WasmCfgLowering) WasmInterval(start->bbPreorderNum, end->bbPreorderNum, /* isLoop */ false);
         return result;
     }
 
@@ -343,7 +337,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     const unsigned dfsCount = dfsTree->GetPostOrderCount();
     JITDUMP("\nCreating loop-aware RPO (%u blocks)\n", dfsCount);
 
-    BasicBlock** const initialLayout = new (this, CMK_Wasm) BasicBlock*[dfsCount + 1];
+    BasicBlock** const initialLayout = new (this, CMK_WasmCfgLowering) BasicBlock*[dfsCount + 1];
 
     // Note this DFS includes funclets, they should each be contiguous and appear after
     // the main method in the order.
@@ -363,15 +357,9 @@ PhaseStatus Compiler::fgWasmControlFlow()
     //
     BasicBlock bb0;
     INDEBUG(bb0.bbNum = 0;);
-<<<<<<< HEAD
     bb0.bbPreorderNum        = numBlocks;
     bb0.bbPostorderNum       = dfsTree->GetPostOrderCount();
     initialLayout[numBlocks] = &bb0;
-=======
-    bb0.bbPreorderNum           = numHotBlocks;
-    bb0.bbPostorderNum          = m_dfsTree->GetPostOrderCount();
-    initialLayout[numHotBlocks] = &bb0;
->>>>>>> main
 
     // -----------------------------------------------
     // (2) Build the intervals
@@ -380,9 +368,9 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // block intervals that end at a certain point.
     //
     jitstd::vector<WasmInterval*> intervals(getAllocator(CMK_WasmCfgLowering));
-    jitstd::vector<WasmInterval*> scratch(numHotBlocks, nullptr, getAllocator(CMK_WasmCfgLowering));
+    jitstd::vector<WasmInterval*> scratch(numBlocks, nullptr, getAllocator(CMK_WasmCfgLowering));
 
-    for (unsigned int cursor = 0; cursor < numHotBlocks; cursor++)
+    for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
     {
         BasicBlock* const block = initialLayout[cursor];
 
@@ -631,7 +619,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     ArrayStack<WasmInterval*> activeIntervals(getAllocator(CMK_WasmCfgLowering));
     unsigned                  wasmCursor = 0;
 
-    for (unsigned int cursor = 0; cursor < numHotBlocks; cursor++)
+    for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
     {
         BasicBlock* const block = initialLayout[cursor];
 
@@ -886,7 +874,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
         wasmCursor = 0;
         JITDUMP("\ndigraph WASM {\n");
 
-        for (unsigned int cursor = 0; cursor < numHotBlocks; cursor++)
+        for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
         {
             BasicBlock* const block = initialLayout[cursor];
 
@@ -944,8 +932,8 @@ PhaseStatus Compiler::fgWasmControlFlow()
         }
 
         // Now list all the branches
-
-        for (unsigned int cursor = 0; cursor < numHotBlocks; cursor++)
+        //
+        for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
         {
             BasicBlock* const block = initialLayout[cursor];
 
