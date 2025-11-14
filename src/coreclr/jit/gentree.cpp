@@ -5151,9 +5151,228 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             case GT_CNS_LNG:
             case GT_CNS_INT:
-                costEx = 1;
-                costSz = 4;
+            {
+                GenTreeIntConCommon* con            = tree->AsIntConCommon();
+                bool                 iconNeedsReloc = con->ImmedValNeedsReloc(this);
+                INT64                imm            = con->LngValue();
+                emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
+
+                if (iconNeedsReloc)
+                {   
+                    // TODO-RISCV64-CQ: tune the costs.
+                    // The codegen(emitIns_R_AI) is not implemented yet.
+                    // Assuming that it will require two instructions auipc + addi for relocations
+                    costSz = 8;
+                    costEx = 2;
+                }
+                else if (emitter::isValidSimm12((ssize_t)imm))
+                {
+                    costSz = 4;
+                    costEx = 1;
+                }
+                else
+                {
+                    // The below logic mimics emitter::emitLoadImmediate
+#define WordMask(x) (static_cast<unsigned>((1ull << (uint8_t)(x)) - 1))
+
+                    // STEP 1: Determine x & y
+
+                    int x;
+                    int y;
+                    if (((uint64_t)imm >> 63) & 0b1)
+                    {
+                        // last one position from MSB
+                        y = 63 - BitOperations::LeadingZeroCount((uint64_t)~imm) + 1;
+                    }
+                    else
+                    {
+                        // last zero position from MSB
+                        y = 63 - BitOperations::LeadingZeroCount((uint64_t)imm) + 1;
+                    }
+                    if (imm & 0b1)
+                    {
+                        // first zero position from LSB
+                        x = BitOperations::TrailingZeroCount((uint64_t)~imm);
+                    }
+                    else
+                    {
+                        // first one position from LSB
+                        x = BitOperations::TrailingZeroCount((uint64_t)imm);
+                    }
+
+                    // STEP 2: Determine whether to utilize SRLI or not.
+
+                    constexpr int absMaxInsCount  = emitter::instrDescLoadImm::absMaxInsCount;
+                    constexpr int prefMaxInsCount = 5;
+                    assert(prefMaxInsCount <= absMaxInsCount);
+
+                    int insCountLimit = prefMaxInsCount;
+                    if (this->compGeneratingProlog || this->compGeneratingEpilog)
+                    {
+                        insCountLimit = absMaxInsCount;
+                    }
+                
+                    bool     utilizeSRLI     = false;
+                    int      srliShiftAmount = 0;
+                    uint64_t originalImm     = imm;
+                    bool     cond1           = (y - x) > 31;
+                    if ((((uint64_t)imm >> 63) & 0b1) == 0 && cond1)
+                    {
+                        srliShiftAmount  = BitOperations::LeadingZeroCount((uint64_t)imm);
+                        uint64_t tempImm = (uint64_t)imm << srliShiftAmount;
+                        int      m       = BitOperations::LeadingZeroCount(~tempImm);
+                        int      b       = 64 - m;
+                        int      a       = BitOperations::TrailingZeroCount(tempImm);
+                        bool     cond2   = (b - a) < 32;
+                        bool     cond3   = ((y - x) - (b - a)) >= 11;
+                        if (cond2 || cond3)
+                        {
+                            imm         = tempImm;
+                            y           = b;
+                            x           = a;
+                            utilizeSRLI = true;
+                            insCountLimit -= 1;
+                        }
+                    }
+
+                    if (y < 32)
+                    {
+                        y = 31;
+                        x = 0;
+                    }
+                    else if ((y - x) < 31)
+                    {
+                        y = x + 31;
+                    }
+                    else
+                    {
+                        x = y - 31;
+                    }
+                
+                    uint32_t high32 = ((int64_t)imm >> x) & WordMask(32);
+
+                    // STEP 3: Determine whether to use high32 + offset1 or high32 - offset2
+
+                    // TODO-RISCV: Instead of using subtract / add mode, assume that we're always adding
+                    // 12-bit chunks. However, if we encounter such 12-bit chunk with MSB == 1,
+                    // add 1 to the previous chunk, and add the 12-bit chunk as is, which
+                    // essentially does a subtraction. It will generate the least instruction to
+                    // load offset.
+                    // See the following discussion:
+                    // https://github.com/dotnet/runtime/pull/113250#discussion_r1987576070 */
+               
+                    uint32_t offset1        = imm & WordMask((uint8_t)x);
+                    uint32_t offset2        = (~(offset1 - 1)) & WordMask((uint8_t)x);
+                    uint32_t offset         = offset1;
+                    bool     isSubtractMode = false;
+
+                    if ((high32 == 0x7FFFFFFF) && (y != 63))
+                    {
+                        int      newX       = x + 1;
+                        uint32_t newOffset1 = imm & WordMask((uint8_t)newX);
+                        uint32_t newOffset2 = (~(newOffset1 - 1)) & WordMask((uint8_t)newX);
+                        if (newOffset2 < offset1)
+                        {
+                            x              = newX;
+                            high32         = ((int64_t)imm >> x) & WordMask(32);
+                            offset2        = newOffset2;
+                            isSubtractMode = true;
+                        }
+                    }
+                    else if (offset2 < offset1)
+                    {
+                        isSubtractMode = true;
+                    }
+                
+                    if (isSubtractMode)
+                    {
+                        offset = offset2;
+                        high32 = (high32 + 1) & WordMask(32);
+                    }
+                
+                    assert(absMaxInsCount >= 2);
+                    int         numberOfInstructions = 0;
+                    instruction ins[absMaxInsCount];
+                    int32_t     values[absMaxInsCount];
+                
+                    // STEP 4: Generate instructions to load high32
+
+                    uint32_t upper    = (high32 >> 12) & WordMask(20);
+                    uint32_t lower    = high32 & WordMask(12);
+                    int      lowerMsb = (lower >> 11) & 0b1;
+                    if (lowerMsb == 1)
+                    {
+                        upper += 1;
+                        upper &= WordMask(20);
+                    }
+                    if (upper != 0)
+                    {
+                        numberOfInstructions += 1;
+                    }
+                    if (lower != 0)
+                    {
+                        numberOfInstructions += 1;
+                    }
+
+                    // STEP 5: Generate instructions to load offset in 11-bits chunks
+
+                    int chunkLsbPos = (x < 11) ? 0 : (x - 11);
+                    int shift       = (x < 11) ? x : 11;
+                    int chunkMask   = (x < 11) ? WordMask((uint8_t)x) : WordMask(11);
+                    while (true)
+                    {
+                        uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
+                
+                        if (chunk != 0)
+                        {
+                            /* We could move our 11 bit chunk window to the right for as many as the
+                             * leading zeros.*/
+                            int leadingZerosOn11BitsChunk = 11 - (32 - BitOperations::LeadingZeroCount(chunk));
+                            if (leadingZerosOn11BitsChunk > 0)
+                            {
+                                int maxAdditionalShift =
+                                    (chunkLsbPos < leadingZerosOn11BitsChunk) ? chunkLsbPos : leadingZerosOn11BitsChunk;
+                                chunkLsbPos -= maxAdditionalShift;
+                                shift += maxAdditionalShift;
+                                chunk = (offset >> chunkLsbPos) & chunkMask;
+                            }
+                
+                            numberOfInstructions += 2;
+                            if (numberOfInstructions > insCountLimit)
+                            {
+                                break;
+                            }
+                            shift = 0;
+                        }
+                        if (chunkLsbPos == 0)
+                        {
+                            break;
+                        }
+                        shift += (chunkLsbPos < 11) ? chunkLsbPos : 11;
+                        chunkMask = (chunkLsbPos < 11) ? (chunkMask >> (11 - chunkLsbPos)) : WordMask(11);
+                        chunkLsbPos -= (chunkLsbPos < 11) ? chunkLsbPos : 11;
+                    }
+                    if (shift > 0)
+                    {
+                        numberOfInstructions += 1;
+                    }
+                
+                    // STEP 6: Determine whether to use emitDataConst or emit generated instructions
+                
+                    if (numberOfInstructions <= insCountLimit)
+                    {
+                        if (utilizeSRLI)
+                        {
+                            numberOfInstructions += 1;
+                            assert(numberOfInstructions < absMaxInsCount);
+                        }
+                    }
+                    costSz = 4 * numberOfInstructions;
+                    costEx = numberOfInstructions;
+#undef WordMask
+                }
                 goto COMMON_CNS;
+            }
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
