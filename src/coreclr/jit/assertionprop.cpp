@@ -5437,8 +5437,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             {
                 return dropBoundsCheck(INDEBUG("a[*] followed by a[0]"));
             }
-            // Do we have two constant indexes?
-            else if (vnStore->IsVNConstant(vnCurIdx))
+            else
             {
                 // index1 doesn't have to be a constant, it can be a Phi each predecessor of which is a constant.
                 // The smallest of those is what we can rely on. Example:
