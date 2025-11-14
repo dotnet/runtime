@@ -19,7 +19,6 @@ namespace BasicEventSourceTests
         /// Tests the ETW code path
         /// </summary>
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServer))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/88305")]
         public void Test_Write_T_ETW()
         {
             using (var listener = new EtwListener())

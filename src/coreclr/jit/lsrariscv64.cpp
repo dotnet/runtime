@@ -758,6 +758,12 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree);
             break;
 
+        case GT_INC_SATURATE:
+            assert(dstCount == 1);
+            srcCount = 1;
+            setDelayFree(BuildUse(tree->gtGetOp1()));
+            BuildDef(tree);
+            break;
     } // end switch (tree->OperGet())
 
     if (tree->IsUnusedValue() && (dstCount != 0))

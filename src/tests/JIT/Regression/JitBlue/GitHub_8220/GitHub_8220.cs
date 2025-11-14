@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Numerics;
 using Xunit;
 
-namespace Test
+namespace GitHub_8220
 {
 
     public class Program
