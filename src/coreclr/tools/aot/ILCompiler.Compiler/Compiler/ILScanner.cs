@@ -488,6 +488,10 @@ namespace ILCompiler
             {
                 _context = factory.TypeSystemContext;
 
+                // Do not try to optimize around continuation types, we don't keep good track of them.
+                _unsealedTypes.Add(_context.ContinuationType);
+                _disqualifiedTypes.Add(_context.ContinuationType);
+
                 var vtables = new Dictionary<TypeDesc, List<MethodDesc>>();
                 var dynamicInterfaceCastableImplementationTargets = new HashSet<TypeDesc>();
 

@@ -3391,7 +3391,7 @@ namespace Internal.JitInterface
 
         private void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
         {
-            DefType continuation = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
+            DefType continuation = _compilation.TypeSystemContext.ContinuationType;
             pAsyncInfoOut.continuationClsHnd = ObjectToHandle(continuation);
             pAsyncInfoOut.continuationNextFldHnd = ObjectToHandle(continuation.GetKnownField("Next"u8));
             pAsyncInfoOut.continuationResumeInfoFldHnd = ObjectToHandle(continuation.GetKnownField("ResumeInfo"u8));
