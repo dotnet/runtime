@@ -8,6 +8,7 @@ using Internal.IL.Stubs;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
+using ILLocalVariable = Internal.IL.Stubs.ILLocalVariable;
 
 namespace ILCompiler
 {
@@ -91,7 +92,7 @@ namespace ILCompiler
             ilStream.Emit(ILOpcode.call, ilEmitter.NewToken(resumingMethod));
 
             bool returnsVoid = resumingMethod.Signature.ReturnType.IsVoid;
-            Internal.IL.Stubs.ILLocalVariable resultLocal = default;
+            ILLocalVariable resultLocal = default;
             if (!returnsVoid)
             {
                 resultLocal = ilEmitter.NewLocal(resumingMethod.Signature.ReturnType);
