@@ -49,6 +49,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             AnnotationOnByRefParameter.Test();
             WriteCapturedParameter.Test();
             OperatorParameters.Test();
+            RecordWithNamedArgumentsInBaseConstructor.Test();
         }
 
         // Validate the error message when annotated parameter is passed to another annotated parameter
@@ -511,6 +512,33 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         private static Type GetUnknownType()
         {
             return null;
+        }
+
+        // https://github.com/dotnet/runtime/issues/111651
+        class RecordWithNamedArgumentsInBaseConstructor
+        {
+            record ViewMap(
+                Func<Type?>? ViewSelector = null,
+                [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? ViewModel = null,
+                object? Data = null
+            );
+
+            // This should not warn about 'Data' parameter
+            record MessageDialogViewMap(
+                [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? ViewModel = default,
+                object? Data = default
+            ) : ViewMap(
+                ViewModel: ViewModel,
+                Data: Data
+            );
+
+            public static void Test()
+            {
+                var x = new MessageDialogViewMap(typeof(string), "data");
+            }
         }
     }
 }
