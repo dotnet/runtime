@@ -16,7 +16,7 @@ namespace ILCompiler
         private MethodDesc _objectEqualsMethod;
         private MetadataType _iAsyncStateMachineType;
 
-        private sealed class ValueTypeMethodHashtable : LockFreeReaderHashtable<MetadataType, MethodDesc>
+        private sealed class GetFieldMethodHashtable : LockFreeReaderHashtable<MetadataType, MethodDesc>
         {
             protected override int GetKeyHashCode(MetadataType key) => key.GetHashCode();
             protected override int GetValueHashCode(MethodDesc value) => value.OwningType.GetHashCode();
@@ -25,11 +25,11 @@ namespace ILCompiler
 
             protected override MethodDesc CreateValueFromKey(MetadataType key)
             {
-                return new ValueTypeGetFieldHelperMethodOverride(key);
+                return new GetFieldHelperMethodOverride(key);
             }
         }
 
-        private ValueTypeMethodHashtable _valueTypeMethodHashtable = new ValueTypeMethodHashtable();
+        private GetFieldMethodHashtable _getFieldMethodHashtable = new GetFieldMethodHashtable();
 
         protected virtual IEnumerable<MethodDesc> GetAllMethodsForValueType(TypeDesc valueType, bool virtualOnly)
         {
@@ -37,7 +37,7 @@ namespace ILCompiler
 
             if (RequiresValueTypeGetFieldHelperMethod((MetadataType)valueTypeDefinition))
             {
-                MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((MetadataType)valueTypeDefinition);
+                MethodDesc getFieldHelperMethod = _getFieldMethodHashtable.GetOrCreateValue((MetadataType)valueTypeDefinition);
 
                 if (valueType != valueTypeDefinition)
                 {
@@ -60,7 +60,7 @@ namespace ILCompiler
 
             if (RequiresAttributeGetFieldHelperMethod(attributeTypeDefinition))
             {
-                MethodDesc getFieldHelperMethod = _valueTypeMethodHashtable.GetOrCreateValue((MetadataType)attributeTypeDefinition);
+                MethodDesc getFieldHelperMethod = _getFieldMethodHashtable.GetOrCreateValue((MetadataType)attributeTypeDefinition);
 
                 if (attributeType != attributeTypeDefinition)
                 {
