@@ -11651,6 +11651,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
         res->vmTypeHandle = WrapTypeHandle(th);
         res->metadataToken = mdTokenNil;
         res->vmDomainAssembly.SetRawPtr(NULL);
+        res->vmModule.SetRawPtr(NULL);
         break;
 
     case ELEMENT_TYPE_CLASS:
@@ -11661,6 +11662,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
             res->metadataToken = th.GetCl();
             DebuggerModule * pDModule = LookupOrCreateModule(th.GetModule());
             res->vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
+            res->vmModule.SetRawPtr(NULL);
             break;
         }
 
@@ -11668,6 +11670,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
         res->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
         res->metadataToken = mdTokenNil;
         res->vmDomainAssembly.SetRawPtr(NULL);
+        res->vmModule.SetRawPtr(NULL);
         break;
     }
     return;
