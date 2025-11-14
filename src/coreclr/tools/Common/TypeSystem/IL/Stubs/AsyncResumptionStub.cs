@@ -13,25 +13,23 @@ namespace ILCompiler
 {
     public partial class AsyncResumptionStub : ILStubMethod
     {
-        private readonly MethodDesc _targetMethod;
-        private readonly TypeDesc _owningType;
+        private readonly MethodDesc _owningMethod;
         private MethodSignature _signature;
 
-        public AsyncResumptionStub(MethodDesc targetMethod, TypeDesc owningType)
+        public AsyncResumptionStub(MethodDesc targetMethod)
         {
             Debug.Assert(targetMethod.IsAsyncCall());
-            _targetMethod = targetMethod;
-            _owningType = owningType;
+            _owningMethod = targetMethod;
         }
 
-        public override ReadOnlySpan<byte> Name => _targetMethod.Name;
-        public override string DiagnosticName => _targetMethod.DiagnosticName;
+        public override ReadOnlySpan<byte> Name => _owningMethod.Name;
+        public override string DiagnosticName => _owningMethod.DiagnosticName;
 
-        public override TypeDesc OwningType => _owningType;
+        public override TypeDesc OwningType => _owningMethod.OwningType;
 
         public override MethodSignature Signature => _signature ??= InitializeSignature();
 
-        public override TypeSystemContext Context => _targetMethod.Context;
+        public override TypeSystemContext Context => _owningMethod.Context;
 
         private MethodSignature InitializeSignature()
         {
@@ -59,6 +57,11 @@ namespace ILCompiler
                 }
             }
 
+            if (Context.Target.Architecture != TargetArchitecture.X86)
+            {
+                ilStream.EmitLdArg(0);
+            }
+
             foreach (var param in _owningMethod.Signature)
             {
                 var local = ilEmitter.NewLocal(param);
@@ -66,14 +69,20 @@ namespace ILCompiler
                 ilStream.Emit(ILOpcode.initobj, ilEmitter.NewToken(param));
                 ilStream.EmitLdLoc(local);
             }
-            ilStream.Emit(ILOpcode.ldftn, ilEmitter.NewToken(_owningMethod));
-            ilStream.Emit(ILOpcode.calli, ilEmitter.NewToken(this.Signature));
 
-            bool returnsVoid = _owningMethod.Signature.ReturnType != Context.GetWellKnownType(WellKnownType.Void);
+            if (Context.Target.Architecture == TargetArchitecture.X86)
+            {
+                ilStream.EmitLdArg(0);
+            }
+
+            MethodDesc resumingMethod = new ExplicitContinuationAsyncMethod(_owningMethod);
+            ilStream.Emit(ILOpcode.call, ilEmitter.NewToken(resumingMethod));
+
+            bool returnsVoid = resumingMethod.Signature.ReturnType.IsWellKnownType(WellKnownType.Void);
             Internal.IL.Stubs.ILLocalVariable resultLocal = default;
             if (!returnsVoid)
             {
-                resultLocal = ilEmitter.NewLocal(_owningMethod.Signature.ReturnType);
+                resultLocal = ilEmitter.NewLocal(resumingMethod.Signature.ReturnType);
                 ilStream.EmitStLoc(resultLocal);
             }
 
@@ -91,13 +100,111 @@ namespace ILCompiler
                 ilStream.Emit(ILOpcode.brtrue, doneResult);
                 ilStream.EmitLdArg(1);
                 ilStream.EmitLdLoc(resultLocal);
-                ilStream.Emit(ILOpcode.stobj, ilEmitter.NewToken(_owningMethod.Signature.ReturnType));
+                ilStream.Emit(ILOpcode.stobj, ilEmitter.NewToken(resumingMethod.Signature.ReturnType));
                 ilStream.EmitLabel(doneResult);
             }
             ilStream.EmitLdLoc(newContinuationLocal);
             ilStream.Emit(ILOpcode.ret);
 
             return ilEmitter.Link(this);
+        }
+    }
+
+    internal sealed partial class ExplicitContinuationAsyncMethod : MethodDesc
+    {
+        private MethodSignature _signature;
+        private MethodDesc _wrappedMethod;
+
+        public ExplicitContinuationAsyncMethod(MethodDesc target)
+        {
+            _wrappedMethod = target;
+        }
+
+        public MethodDesc Target => _wrappedMethod;
+
+        private MethodSignature InitializeSignature()
+        {
+            var _methodRepresented = _wrappedMethod;
+
+            // Async methods have an implicit Continuation parameter
+            // The order of parameters depends on the architecture
+            // non-x86: this?, genericCtx?, continuation, params...
+            // x86: this?, params, continuation, genericCtx?
+            // To make the jit pass arguments in this order, we can add the continuation parameter
+            // at the end for x86 and at the beginning for other architectures.
+            // The 'this' parameter and generic context parameter (if any) can be handled by the jit.
+
+            var signature = new MethodSignatureBuilder(_wrappedMethod.Signature)
+            {
+                Length = _wrappedMethod.Signature.Length + 1,
+            };
+
+            TypeDesc continuation = Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
+            if (Context.Target.Architecture == TargetArchitecture.X86)
+            {
+                for (int i = 0; i < _methodRepresented.Signature.Length; i++)
+                    signature[i] = _methodRepresented.Signature[i];
+                signature[_methodRepresented.Signature.Length] = continuation;
+            }
+            else
+            {
+                signature[0] = continuation;
+                for (int i = 0; i < _methodRepresented.Signature.Length; i++)
+                    signature[i + 1] = _methodRepresented.Signature[i];
+            }
+            // Get the return type from the Task-returning variant
+            if (_wrappedMethod is AsyncMethodVariant variant
+                && variant.Target.Signature.ReturnType is {HasInstantiation: true } returnType)
+            {
+                signature.ReturnType = returnType.Instantiation[0];
+            }
+            else
+            {
+                signature.ReturnType = Context.GetWellKnownType(WellKnownType.Void);
+            }
+
+            return _signature = signature.ToSignature();
+        }
+
+        public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => throw new NotImplementedException();
+
+        public override MethodSignature Signature
+        {
+            get
+            {
+                if (_signature is null)
+                    return InitializeSignature();
+
+                return _signature;
+            }
+        }
+
+        public override string DiagnosticName => $"ExplicitContinuationAsyncMethod({_wrappedMethod.DiagnosticName})";
+
+        public override TypeDesc OwningType => _wrappedMethod.OwningType;
+
+        public override TypeSystemContext Context => _wrappedMethod.Context;
+
+        protected override int ClassCode => 0xd076659;
+
+        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        {
+            var otherMethod = (ExplicitContinuationAsyncMethod)other;
+            return comparer.Compare(_wrappedMethod, otherMethod._wrappedMethod);
+        }
+
+        public override bool IsInternalCall => true;
+    }
+
+    public static class AsyncResumptionStubExtensions
+    {
+        public static bool IsExplicitContinuationAsyncMethod(this MethodDesc method)
+        {
+            return method is ExplicitContinuationAsyncMethod;
+        }
+        public static MethodDesc GetExplicitContinuationAsyncMethodTarget(this MethodDesc method)
+        {
+            return ((ExplicitContinuationAsyncMethod)method).Target;
         }
     }
 }
