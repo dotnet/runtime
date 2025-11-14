@@ -499,11 +499,6 @@ bool AsyncLiveness::IsLocalCaptureUnnecessary(unsigned lclNum)
         return true;
     }
 
-    if (lclNum == m_comp->lvaNextAsyncCallContArgVar)
-    {
-        return true;
-    }
-
     return false;
 }
 

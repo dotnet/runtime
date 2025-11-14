@@ -881,10 +881,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             // stubs and the VM inserts the arg itself.
             if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
             {
-                GenTree* arg = lvaNextAsyncCallContArgVar != BAD_VAR_NUM
-                                   ? (GenTree*)gtNewLclVarNode(lvaNextAsyncCallContArgVar)
-                                   : gtNewNull();
-                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(arg, TYP_REF)
+                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
             }
 
@@ -900,10 +897,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             // stubs and the VM inserts the arg itself.
             if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
             {
-                GenTree* arg = lvaNextAsyncCallContArgVar != BAD_VAR_NUM
-                                   ? (GenTree*)gtNewLclVarNode(lvaNextAsyncCallContArgVar)
-                                   : gtNewNull();
-                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(arg, TYP_REF)
+                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
             }
 
@@ -3316,18 +3310,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         node->SetHasOrderingSideEffect();
         node->gtFlags |= GTF_CALL | GTF_GLOB_REF;
         info.compUsesAsyncContinuation = true;
-        return node;
-    }
-
-    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_SetAsyncCallContinuationArg)
-    {
-        if (lvaNextAsyncCallContArgVar == BAD_VAR_NUM)
-        {
-            lvaNextAsyncCallContArgVar                     = lvaGrabTemp(false DEBUGARG("Async call continuation arg"));
-            lvaGetDesc(lvaNextAsyncCallContArgVar)->lvType = TYP_REF;
-        }
-
-        GenTree* node = gtNewStoreLclVarNode(lvaNextAsyncCallContArgVar, impPopStack().val);
         return node;
     }
 

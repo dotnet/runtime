@@ -156,7 +156,8 @@ namespace System.Runtime.CompilerServices
         //   * a continuation object if the call requires suspension.
         //     In this case the formal result of the call is undefined.
         [Intrinsic]
-        private static Continuation? AsyncCallContinuation() => throw new UnreachableException();
+        [BypassReadyToRun]
+        internal static Continuation? AsyncCallContinuation() => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
         // Used during suspensions to hold the continuation chain and on what we are waiting.
         // Methods like FinalizeTaskReturningThunk will unlink the state and wrap into a Task.
