@@ -4,7 +4,11 @@
 using System;
 using System.Runtime.InteropServices;
 
+#if HOST_MODEL
 namespace Microsoft.NET.HostModel.MachO;
+#else
+namespace ILCompiler.Reflection.ReadyToRun.MachO;
+#endif
 
 /// <summary>
 /// A 16 byte buffer used to store names in Mach-O load commands.
@@ -15,9 +19,11 @@ internal struct NameBuffer
     private ulong _nameLower;
     private ulong _nameUpper;
 
+    private const int BufferLength = 16;
+
     private NameBuffer(ReadOnlySpan<byte> nameBytes)
     {
-        byte[] buffer = new byte[16];
+        byte[] buffer = new byte[BufferLength];
         nameBytes.CopyTo(buffer);
 
         if (BitConverter.IsLittleEndian)
@@ -34,4 +40,19 @@ internal struct NameBuffer
 
     public static NameBuffer __TEXT = new NameBuffer("__TEXT"u8);
     public static NameBuffer __LINKEDIT = new NameBuffer("__LINKEDIT"u8);
+
+    public unsafe string GetString()
+    {
+        fixed (ulong* ptr = &_nameLower)
+        {
+            byte* bytePtr = (byte*)ptr;
+            int length = 0;
+            while (length < BufferLength && bytePtr[length] != 0)
+            {
+                length++;
+            }
+
+            return System.Text.Encoding.UTF8.GetString(bytePtr, length);
+        }
+    }
 }
