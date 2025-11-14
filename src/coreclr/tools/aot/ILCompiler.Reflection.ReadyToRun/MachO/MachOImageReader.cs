@@ -47,6 +47,7 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
                 // Calculate file offset from segment base and RVA
                 ulong offsetWithinSegment = (ulong)rva - segment.GetVMAddress(_header);
                 ulong fileOffset = segment.GetFileOffset(_header) + offsetWithinSegment;
+                System.Diagnostics.Debug.Assert(fileOffset <= int.MaxValue);
                 return (int)fileOffset;
             }
             else
@@ -107,7 +108,9 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
             EnumerateSections((segmentName, section) =>
             {
                 string sectionName = section.SectionName.GetString();
-                sectionMap[$"{segmentName},{sectionName}"] = (int)section.GetSize(_header);
+                ulong size = section.GetSize(_header);
+                System.Diagnostics.Debug.Assert(size <= int.MaxValue);
+                sectionMap[$"{segmentName},{sectionName}"] = (int)size;
             });
             return sectionMap;
         }
@@ -203,6 +206,7 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
                 {
                     continue;
                 }
+
                 // Read symbol name from string table
                 string name = ReadCString(stringTableOffset + strIndex, stringTableSize - strIndex);
 
@@ -257,7 +261,7 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
         /// <summary>
         /// Reads a null-terminated C string from the image.
         /// </summary>
-        private string ReadCString(long offset, uint maxLength)
+        private string ReadCString(uint offset, uint maxLength)
         {
             if (offset < 0 || offset >= _image.Length)
             {
@@ -266,7 +270,7 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
 
             // Find the null terminator in the image array
             int length;
-            int end = (int)Math.Min(offset + maxLength, _image.Length);
+            long end = Math.Min(offset + maxLength, _image.Length);
             for (length = 0; offset + length < end; length++)
             {
                 if (_image[offset + length] == 0)
@@ -275,6 +279,7 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
                 }
             }
 
+            System.Diagnostics.Debug.Assert(offset <= int.MaxValue);
             return System.Text.Encoding.UTF8.GetString(_image, (int)offset, length);
         }
 
@@ -289,7 +294,7 @@ namespace ILCompiler.Reflection.ReadyToRun.MachO
 
                 fixed (byte* ptr = &_image[offset])
                 {
-                    result = *(T*)ptr;
+                    result = Unsafe.ReadUnaligned<T>(ptr);
                 }
             }
         }

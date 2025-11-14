@@ -54,7 +54,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         IAssemblyMetadata GetStandaloneAssemblyMetadata();
 
         /// <summary>
-        /// Creates manifest assembly metadata the R2R manifest
+        /// Creates manifest assembly metadata from the R2R manifest
         /// </summary>
         /// <param name="manifestReader">Manifest metadata reader</param>
         /// <returns>Manifest assembly metadata</returns>
