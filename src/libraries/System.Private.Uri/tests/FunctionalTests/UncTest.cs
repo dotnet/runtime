@@ -143,7 +143,7 @@ namespace System.PrivateUri.Tests
         [InlineData("\\\\\\\\\\\u200E")]
         [InlineData("\\\\\\\\\\\u200E/")]
         [InlineData("\\\\\\\\\\\u200E/ab")]
-        public static void UncWithWithBidiControlCharacters_CanBeParsed(string uriString)
+        public static void UncWithBidiControlCharacters_CanBeParsed(string uriString)
         {
             Uri uri = new Uri(uriString, UriKind.Absolute);
             Assert.True(uri.IsUnc);
