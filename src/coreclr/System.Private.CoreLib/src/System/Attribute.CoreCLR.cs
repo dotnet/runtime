@@ -372,8 +372,7 @@ namespace System
 
                 Type attrType = attributes[i].GetType();
 
-                if (!types.ContainsKey(attrType))
-                    types[attrType] = InternalGetAttributeUsage(attrType);
+                types.TryAdd(attrType, InternalGetAttributeUsage(attrType));
             }
         }
 
