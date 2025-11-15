@@ -288,7 +288,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     // Check some known conditions.
 
-                    if (OperatingSystem.IsLinux() || PlatformDetection.IsApplePlatform)
+                    if (OperatingSystem.IsLinux() || PlatformDetection.UsesAppleCrypto)
                     {
                         Assert.Equal(3, chain.ChainElements.Count);
                     }
