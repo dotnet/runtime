@@ -1367,8 +1367,8 @@ namespace System
                     //                     yyyyyyyyyyyyyyyy
                     //         zzzzzzzzzzzzzzzz
                     vecX.CopyTo(byteDest.Slice(0, Vector128<byte>.Count));
-                    vecX.CopyTo(byteDest.Slice(20, Vector128<byte>.Count));
-                    vecX.CopyTo(byteDest.Slice(8, Vector128<byte>.Count));
+                    vecY.CopyTo(byteDest.Slice(20, Vector128<byte>.Count));
+                    vecZ.CopyTo(byteDest.Slice(8, Vector128<byte>.Count));
                 }
                 else
                 {
