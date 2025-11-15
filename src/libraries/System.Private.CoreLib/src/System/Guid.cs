@@ -1337,18 +1337,19 @@ namespace System
 
             if (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported)
             {
-                return TryFormatCore_Vector(dest, (flags >> 8) < 0 /* dash */);
+                FormatCore_Vector(dest, (flags >> 8) < 0 /* dash */);
             }
             else
             {
-                return TryFormatCore_Scalar(dest, (flags >> 8) < 0 /* dash */);
+                FormatCore_Scalar(dest, (flags >> 8) < 0 /* dash */);
             }
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        internal bool TryFormatCore_Vector<TChar>(Span<TChar> destination, bool hasDashes) where TChar : unmanaged, IUtfChar<TChar>
+        internal void FormatCore_Vector<TChar>(Span<TChar> destination, bool hasDashes) where TChar : unmanaged, IUtfChar<TChar>
         {
             Span<TChar> dest = destination;
 
@@ -1406,11 +1407,10 @@ namespace System
                     y1.CopyTo(charDest.Slice(24, Vector128<ushort>.Count));
                 }
             }
-            return true;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal bool TryFormatCore_Scalar<TChar>(Span<TChar> destination, bool hasDashes) where TChar : unmanaged, IUtfChar<TChar>
+        internal void FormatCore_Scalar<TChar>(Span<TChar> destination, bool hasDashes) where TChar : unmanaged, IUtfChar<TChar>
         {
             Span<TChar> dest = destination;
 
@@ -1493,11 +1493,12 @@ namespace System
                 dest[29] = TChar.CastFrom(HexConverter.ToCharLower((_j)));
                 dest[30] = TChar.CastFrom(HexConverter.ToCharLower((_k >> 4)));
             }
-            return true;
         }
 
-        private bool TryFormatX<TChar>(Span<TChar> dest, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        private bool TryFormatX<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
+            Span<TChar> dest = destination;
+
             if (dest.Length < 68)
             {
                 charsWritten = 0;
