@@ -70,3 +70,57 @@ FCIMPL2(void, RhUnregisterRefCountedHandleCallback, void * pCallout, MethodTable
     RestrictedCallouts::UnregisterRefCountedHandleCallback(pCallout, pTypeFilter);
 }
 FCIMPLEND
+
+// This structure mirrors the managed type System.Runtime.InteropServices.ComWrappers.ManagedObjectWrapper.
+struct ManagedObjectWrapper
+{
+    intptr_t HolderHandle;
+    uint64_t RefCount;
+
+    int32_t UserDefinedCount;
+    void* /* ComInterfaceEntry */ UserDefined;
+    void* /* InternalComInterfaceDispatch* */ Dispatches;
+
+    int32_t /* CreateComInterfaceFlagsEx */ Flags;
+
+    uint32_t AddRef()
+    {
+        return GetComCount((uint64_t)PalInterlockedIncrement64((int64_t*)&RefCount));
+    }
+
+    static const uint64_t ComRefCountMask = 0x000000007fffffffUL;
+
+    static uint32_t GetComCount(uint64_t c)
+    {
+        return (uint32_t)(c & ComRefCountMask);
+    }
+};
+
+// This structure mirrors the managed type System.Runtime.InteropServices.ComWrappers.InternalComInterfaceDispatch.
+struct InternalComInterfaceDispatch
+{
+    void* Vtable;
+    ManagedObjectWrapper* _thisPtr;
+};
+
+static ManagedObjectWrapper* ToManagedObjectWrapper(void* dispatchPtr)
+{
+    return ((InternalComInterfaceDispatch*)dispatchPtr)->_thisPtr;
+}
+
+//
+// AddRef is implemented in native code so that it does not need to synchronize with the GC. This is important because Xaml
+// invokes AddRef while holding a lock that it *also* holds while a GC is in progress.  If AddRef was managed, we would have
+// to synchronize with the GC before entering AddRef, which would deadlock with the other thread holding Xaml's lock.
+//
+static uint32_t __stdcall IUnknown_AddRef(void* pComThis)
+{
+    ManagedObjectWrapper* wrapper = ToManagedObjectWrapper(pComThis);
+    return wrapper->AddRef();
+}
+
+FCIMPL0(void*, RhGetIUnknownAddRef)
+{
+    return (void*)&IUnknown_AddRef;
+}
+FCIMPLEND

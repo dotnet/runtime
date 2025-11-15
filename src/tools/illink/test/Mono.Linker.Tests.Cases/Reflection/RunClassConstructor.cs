@@ -22,6 +22,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestIfElseUsingRuntimeTypeHandle (1);
 			TestIfElseUsingType (1);
 			TestNullableValueType ();
+			TestNullableEnum ();
 		}
 
 		[Kept]
@@ -130,6 +131,16 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		static void TestNullableValueType ()
 		{
 			RuntimeHelpers.RunClassConstructor (typeof (int?).TypeHandle);
+		}
+
+		[Kept]
+		[KeptMember ( "value__")]
+		enum MyEnum {}
+
+		[Kept]
+		static void TestNullableEnum ()
+		{
+			RuntimeHelpers.RunClassConstructor (typeof (Nullable<MyEnum>).TypeHandle);
 		}
 
 		[Kept]

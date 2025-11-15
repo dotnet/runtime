@@ -40,6 +40,11 @@
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'osx' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'x64')">
+    <!-- https://github.com/dotnet/dnceng/issues/3008 - osx Helix queue doesn't have OpenSSL -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl\tests\System.Security.Cryptography.OpenSsl.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- Samples which are too complex for CI -->
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\console-node-ts\Wasm.Console.Node.TS.Sample.csproj" />
@@ -348,6 +353,10 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/FunctionalTests/System.Net.Security.Tests.csproj" />
     <!-- Reference deleted by _CopyTestArchive https://github.com/dotnet/runtime/issues/80976 -->
     <ProjectExclusions Include="$(RepoRoot)/src/tests/FunctionalTests/iOS/Simulator/StartupHook/iOS.Simulator.StartupHook.Test.csproj" />
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/101692 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Tar/tests/System.Formats.Tar.Tests.csproj" />
+    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/109282 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime/tests/System.IO.UnmanagedMemoryStream.Tests/System.IO.UnmanagedMemoryStream.Tests.csproj" />
 
     <!-- Source generators tests. Not testing customer scenarios. Low priority -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj" />

@@ -7,6 +7,7 @@ namespace System.Data.Odbc.Tests
 {
     public class CommandBuilderTests : IntegrationTestBase
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ConditionalFact]
         public void QuoteIdentifier_UseConnection()
         {
@@ -36,6 +37,7 @@ namespace System.Data.Odbc.Tests
             Assert.Throws<InvalidOperationException>(() => commandBuilder.UnquoteIdentifier("Test"));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/116482", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         [ConditionalFact]
         public void QuoteIdentifier_CustomPrefixSuffix()
         {

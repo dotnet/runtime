@@ -390,5 +390,33 @@ namespace System.Formats.Asn1.Tests.Reader
             outer.ThrowIfNotEmpty();
             initial.ThrowIfNotEmpty();
         }
+
+        [Theory]
+        [InlineData(AsnEncodingRules.BER)]
+        [InlineData(AsnEncodingRules.CER)]
+        [InlineData(AsnEncodingRules.DER)]
+        public static void ExtremelyLargeContentLength(AsnEncodingRules ruleSet)
+        {
+            int start = Environment.CurrentManagedThreadId;
+            int contentOffset = start;
+            int contentLength = start;
+            int bytesConsumed = start;
+
+            ReadOnlySpan<byte> input = [0x31, 0x84, 0x7F, 0xFF, 0xFF, 0xFF, 0x00, 0x00];
+
+            try
+            {
+                AsnDecoder.ReadSetOf(input, ruleSet, out contentOffset, out contentLength, out bytesConsumed);
+                Assert.Fail("ReadSetOf should have thrown AsnContentException");
+            }
+            catch (AsnContentException e)
+            {
+                Assert.IsType<AsnContentException>(e);
+            }
+
+            Assert.Equal(start, contentOffset);
+            Assert.Equal(start, contentLength);
+            Assert.Equal(start, bytesConsumed);
+        }
     }
 }

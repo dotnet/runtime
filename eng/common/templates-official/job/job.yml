@@ -3,7 +3,7 @@ parameters:
   enableSbom: true
   runAsPublic: false
   PackageVersion: 9.0.0
-  BuildDropPath: '$(Build.SourcesDirectory)/artifacts'
+  BuildDropPath: '$(System.DefaultWorkingDirectory)/artifacts'
 
 jobs:
 - template: /eng/common/core-templates/job/job.yml
@@ -16,6 +16,7 @@ jobs:
         parameters:
           PackageVersion: ${{ parameters.packageVersion }}
           BuildDropPath: ${{ parameters.buildDropPath }}
+          ManifestDirPath: $(Build.ArtifactStagingDirectory)/sbom
           publishArtifacts: false
 
     # publish artifacts

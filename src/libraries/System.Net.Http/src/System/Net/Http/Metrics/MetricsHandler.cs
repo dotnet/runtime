@@ -121,14 +121,14 @@ namespace System.Net.Http.Metrics
 
             TimeSpan durationTime = Stopwatch.GetElapsedTime(startTimestamp, Stopwatch.GetTimestamp());
 
-            HttpMetricsEnrichmentContext? enrichmentContext = HttpMetricsEnrichmentContext.GetEnrichmentContextForRequest(request);
-            if (enrichmentContext is null)
+            List<Action<HttpMetricsEnrichmentContext>>? callbacks = HttpMetricsEnrichmentContext.GetEnrichmentCallbacksForRequest(request);
+            if (callbacks is null)
             {
                 _requestsDuration.Record(durationTime.TotalSeconds, tags);
             }
             else
             {
-                enrichmentContext.RecordDurationWithEnrichment(request, response, exception, durationTime, tags, _requestsDuration);
+                HttpMetricsEnrichmentContext.RecordDurationWithEnrichment(callbacks, request, response, exception, durationTime, tags, _requestsDuration);
             }
         }
 

@@ -362,7 +362,7 @@ public class TypeMatchTests : ReadTests
         }
         else
         {
-            Assert.True(arrayRecord is SZArrayRecord<ClassRecord>, userMessage: typeof(T).Name);
+            Assert.True(arrayRecord is SZArrayRecord<SerializationRecord>, userMessage: typeof(T).Name);
             Assert.True(arrayRecord.TypeNameMatches(typeof(T[])));
             Assert.Equal(arrayRecord.TypeName.GetElementType().AssemblyName.FullName, typeof(T).GetAssemblyNameIncludingTypeForwards());
         }

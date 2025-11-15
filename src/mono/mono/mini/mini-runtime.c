@@ -3908,7 +3908,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			if (!mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
+				mono_chain_signal_to_default_sigsegv_handler ();
 			return;
 		}
 	}
@@ -3918,7 +3919,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	} else {
 		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			if (!mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
+				mono_chain_signal_to_default_sigsegv_handler ();
 			return;
 		}
 	}
@@ -5089,9 +5091,9 @@ register_icalls (void)
 #endif
 	register_icall (mono_ckfinite, mono_icall_sig_double_double, FALSE);
 
-#ifdef COMPRESSED_INTERFACE_BITMAP
-	register_icall (mono_class_interface_match, mono_icall_sig_uint32_ptr_int32, TRUE);
-#endif
+	// opt is initialized because mono_metadata_init is ran before this
+	if (mono_opt_compressed_interface_bitmap)
+		register_icall (mono_class_interface_match_compressed, mono_icall_sig_uint32_ptr_int32, TRUE);
 
 	/* other jit icalls */
 	register_icall (ves_icall_mono_delegate_ctor, mono_icall_sig_void_object_object_ptr, FALSE);

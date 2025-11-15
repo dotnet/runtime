@@ -12,10 +12,20 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> IndexOf_TestData()
         {
-            // Empty string
+            // Empty string, invariant
             yield return new object[] { s_invariantCompare, "foo", "", 0, 3, CompareOptions.None, 0, 0 };
             yield return new object[] { s_invariantCompare, "foo", "", 2, 1, CompareOptions.None, 2, 0 };
             yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
+            yield return new object[] { s_invariantCompare, "", "foo", 0, 0, CompareOptions.None, -1, 0 };
+
+            // Empty string, using non-invariant (s_germanCompare) CompareInfo to test the ICU path
+            yield return new object[] { s_germanCompare, "foo", "", 0, 3, CompareOptions.None, 0, 0 };
+            yield return new object[] { s_germanCompare, "foo", "", 2, 1, CompareOptions.None, 2, 0 };
+            yield return new object[] { s_germanCompare, "", "", 0, 0, CompareOptions.None, 0, 0 };
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { s_germanCompare, "", "foo", 0, 0, CompareOptions.None, -1, 0 };
+            }
 
             // OrdinalIgnoreCase
             yield return new object[] { s_invariantCompare, "Hello", "l", 0, 5, CompareOptions.OrdinalIgnoreCase, 2, 1 };
@@ -166,7 +176,7 @@ namespace System.Globalization.Tests
         {
             bool useNls = PlatformDetection.IsNlsGlobalization;
             // Searches for the ligature \u00C6
-            string source1 = "Is AE or ae the same as \u00C6 or \u00E6?"; // 3 failures here
+            string source1 = "Is AE or ae the same as \u00C6 or \u00E6?";
             yield return new object[] { s_invariantCompare, source1, "AE", 8, 18, CompareOptions.None, useNls ? 24 : -1, useNls ? 1 : 0};
             yield return new object[] { s_invariantCompare, source1, "ae", 8, 18, CompareOptions.None, 9 , 2};
             yield return new object[] { s_invariantCompare, source1, "\u00C6", 8, 18, CompareOptions.None, 24, 1 };
@@ -184,7 +194,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> IndexOf_U_WithDiaeresis_TestData()
         {
             // Searches for the combining character sequence Latin capital letter U with diaeresis or Latin small letter u with diaeresis.
-            string source = "Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?"; // 7 failures here
+            string source = "Is \u0055\u0308 or \u0075\u0308 the same as \u00DC or \u00FC?";
             yield return new object[] { s_invariantCompare, source, "U\u0308", 8, 18, CompareOptions.None, 24, 1 };
             yield return new object[] { s_invariantCompare, source, "u\u0308", 8, 18, CompareOptions.None, 9, 2 };
             yield return new object[] { s_invariantCompare, source, "\u00DC", 8, 18, CompareOptions.None, 24, 1 };

@@ -552,6 +552,27 @@ if(GCC)
     set(WARNINGS "${WARNINGS} -Qunused-arguments -Wno-tautological-compare -Wno-parentheses-equality -Wno-self-assign -Wno-return-stack-address -Wno-constant-logical-operand -Wno-zero-length-array -Wno-asm-operand-widths")
   endif()
 
+  if (HOST_MACCAT)
+    # Somewhere between CMake 3.17 and 3.19.4, it became impossible to not pass
+    # a value for mmacosx-version-min (blank CMAKE_OSX_DEPLOYMENT_TARGET gets
+    # replaced with a default value, and always gets expanded to an OS version.
+    # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
+    # We need to disable the warning that -target replaces -mmacosx-version-min
+    #
+    # With https://github.com/llvm/llvm-project/commit/1c66d08b0137cef7761b8220d3b7cb7833f57cdb clang renamed the option so we need to check for both
+    check_c_compiler_flag("-Wno-overriding-option" COMPILER_SUPPORTS_W_NO_OVERRIDING_OPTION)
+    if (COMPILER_SUPPORTS_W_NO_OVERRIDING_OPTION)
+      set(WARNINGS "${WARNINGS} -Wno-overriding-option")
+    else()
+      check_c_compiler_flag("-Wno-overriding-t-option" COMPILER_SUPPORTS_W_NO_OVERRIDING_T_OPTION)
+      if (COMPILER_SUPPORTS_W_NO_OVERRIDING_T_OPTION)
+        set(WARNINGS "${WARNINGS} -Wno-overriding-t-option")
+      else()
+        message(FATAL_ERROR "Compiler does not support -Wno-overriding-option or -Wno-overriding-t-option, needed for Mac Catalyst builds.")
+      endif()
+    endif()
+  endif()
+
   check_c_compiler_flag("-Werror=incompatible-pointer-types" WERROR_INCOMPATIBLE_POINTER_TYPES)
   if(WERROR_INCOMPATIBLE_POINTER_TYPES)
     set(WERROR_C "${WERROR_C} -Werror=incompatible-pointer-types")

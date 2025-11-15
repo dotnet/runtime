@@ -1209,7 +1209,8 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
-                ParameterLookupKey paramKey = new(propertyInfo.PropertyType, propertyInfo.Name);
+                string propertyName = propertyInfo.MemberName ?? propertyInfo.Name;
+                ParameterLookupKey paramKey = new(propertyInfo.PropertyType, propertyName);
                 if (!parameterIndex.TryAdd(paramKey, parameterInfo))
                 {
                     // Multiple object properties cannot bind to the same constructor parameter.

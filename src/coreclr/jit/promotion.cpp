@@ -1885,39 +1885,77 @@ void ReplaceVisitor::InsertPreStatementReadBacks()
     // 3. Creating embedded stores in ReplaceLocal disables local copy prop for
     //    that local (see ReplaceLocal).
 
-    for (GenTreeLclVarCommon* lcl : m_currentStmt->LocalsTreeList())
+    // Normally, we read back only for the uses we will see. However, with
+    // implicit EH flow we may also read back all replacements mid-tree (see
+    // InsertMidTreeReadBacks). So for that case we read back everything. This
+    // is a correctness requirement for QMARKs, but we do it indiscriminately
+    // for the same reasons as mentioned above.
+    if (((m_currentStmt->GetRootNode()->gtFlags & (GTF_EXCEPT | GTF_CALL)) != 0) &&
+        m_compiler->ehBlockHasExnFlowDsc(m_currentBlock))
     {
-        if (lcl->TypeIs(TYP_STRUCT))
-        {
-            continue;
-        }
+        JITDUMP(
+            "Reading back pending replacements before statement with possible exception side effect inside block in try region\n");
 
-        AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
-        if (agg == nullptr)
+        for (AggregateInfo* agg : m_aggregates)
         {
-            continue;
-        }
-
-        size_t index = Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, lcl->GetLclOffs());
-        if ((ssize_t)index < 0)
-        {
-            continue;
-        }
-
-        Replacement& rep = agg->Replacements[index];
-        if (rep.NeedsReadBack)
-        {
-            JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u before [%06u]:\n", agg->LclNum, rep.Offset,
-                    rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
-                    Compiler::dspTreeID(m_currentStmt->GetRootNode()));
-
-            GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
-            Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-            DISPSTMT(stmt);
-            m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
-            ClearNeedsReadBack(rep);
+            for (Replacement& rep : agg->Replacements)
+            {
+                InsertPreStatementReadBackIfNecessary(agg->LclNum, rep);
+            }
         }
     }
+    else
+    {
+        // Otherwise just read back the locals we see uses of.
+        for (GenTreeLclVarCommon* lcl : m_currentStmt->LocalsTreeList())
+        {
+            if (lcl->TypeIs(TYP_STRUCT))
+            {
+                continue;
+            }
+
+            AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
+            if (agg == nullptr)
+            {
+                continue;
+            }
+
+            size_t index =
+                Promotion::BinarySearch<Replacement, &Replacement::Offset>(agg->Replacements, lcl->GetLclOffs());
+            if ((ssize_t)index < 0)
+            {
+                continue;
+            }
+
+            InsertPreStatementReadBackIfNecessary(agg->LclNum, agg->Replacements[index]);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// InsertPreStatementReadBackIfNecessary:
+//   Insert a read back of the specified replacement before the current
+//   statement, if the replacement needs it.
+//
+// Parameters:
+//   aggLclNum - Struct local
+//   rep       - The replacement
+//
+void ReplaceVisitor::InsertPreStatementReadBackIfNecessary(unsigned aggLclNum, Replacement& rep)
+{
+    if (!rep.NeedsReadBack)
+    {
+        return;
+    }
+
+    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u before [%06u]:\n", aggLclNum, rep.Offset,
+            rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, Compiler::dspTreeID(m_currentStmt->GetRootNode()));
+
+    GenTree*   readBack = Promotion::CreateReadBack(m_compiler, aggLclNum, rep);
+    Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+    DISPSTMT(stmt);
+    m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, stmt);
+    ClearNeedsReadBack(rep);
 }
 
 //------------------------------------------------------------------------

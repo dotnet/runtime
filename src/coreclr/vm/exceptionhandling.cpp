@@ -2054,6 +2054,7 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
         {
             pGSCookie = (GSCookie*)cfThisFrame.GetCodeManager()->GetGSCookieAddr(cfThisFrame.pRD,
                                                                                           &cfThisFrame.codeInfo,
+                                                                                          0 /* CodeManFlags */,
                                                                                           &cfThisFrame.codeManState);
             if (pGSCookie)
             {

@@ -77,8 +77,8 @@ public class SatelliteLoadingTests : AppTestBase
 
         // Build the library
         var libraryCsprojPath = Path.GetFullPath(Path.Combine(_projectDir!, "..", "ResourceLibrary"));
-        new DotNetCommand(s_buildEnv, _testOutput)
-            .WithWorkingDirectory(libraryCsprojPath)
+        using DotNetCommand cmd = new DotNetCommand(s_buildEnv, _testOutput);
+        CommandResult res = cmd.WithWorkingDirectory(libraryCsprojPath)
             .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
             .ExecuteWithCapturedOutput("build -c Release")
             .EnsureSuccessful();

@@ -73,5 +73,19 @@ namespace Microsoft.Interop
                 return _defaultDllImportSearchPathsAttrType.Value;
             }
         }
+
+        private Optional<INamedTypeSymbol?> _wasmImportLinkageAttrType;
+        public INamedTypeSymbol? WasmImportLinkageAttrType
+        {
+            get
+            {
+                if (_wasmImportLinkageAttrType.HasValue)
+                {
+                    return _wasmImportLinkageAttrType.Value;
+                }
+                _wasmImportLinkageAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.WasmImportLinkageAttribute));
+                return _wasmImportLinkageAttrType.Value;
+            }
+        }
     }
 }

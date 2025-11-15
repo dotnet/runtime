@@ -4,11 +4,12 @@
 import BuildConfiguration from "consts:configuration";
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { ENVIRONMENT_IS_NODE, Module, loaderHelpers, mono_assert } from "./globals";
+import { ENVIRONMENT_IS_NODE, loaderHelpers, mono_assert } from "./globals";
 import { assert_js_interop } from "./invoke-js";
 import { MemoryViewType, Span } from "./marshal";
 import type { VoidPtr } from "./types/emscripten";
 import { ControllablePromise } from "./types/internal";
+import { mono_log_debug } from "./logging";
 
 
 function verifyEnvironment () {
@@ -72,12 +73,11 @@ export function http_wasm_create_controller (): HttpController {
     return controller;
 }
 
-function handle_abort_error (promise:Promise<any>) {
+function mute_unhandledrejection (promise:Promise<any>) {
     promise.catch((err) => {
         if (err && err !== "AbortError" && err.name !== "AbortError" ) {
-            Module.err("Unexpected error: " + err);
+            mono_log_debug("http muted: " + err);
         }
-        // otherwise, it's expected
     });
 }
 
@@ -86,15 +86,15 @@ export function http_wasm_abort (controller: HttpController): void {
     try {
         if (!controller.isAborted) {
             if (controller.streamWriter) {
-                handle_abort_error(controller.streamWriter.abort());
+                mute_unhandledrejection(controller.streamWriter.abort());
                 controller.isAborted = true;
             }
             if (controller.streamReader) {
-                handle_abort_error(controller.streamReader.cancel());
+                mute_unhandledrejection(controller.streamReader.cancel());
                 controller.isAborted = true;
             }
         }
-        if (!controller.isAborted) {
+        if (!controller.isAborted && !controller.abortController.signal.aborted) {
             controller.abortController.abort("AbortError");
         }
     } catch (err) {
@@ -138,8 +138,8 @@ export function http_wasm_fetch_stream (controller: HttpController, url: string,
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     const transformStream = new TransformStream<Uint8Array, Uint8Array>();
     controller.streamWriter = transformStream.writable.getWriter();
-    handle_abort_error(controller.streamWriter.closed);
-    handle_abort_error(controller.streamWriter.ready);
+    mute_unhandledrejection(controller.streamWriter.closed);
+    mute_unhandledrejection(controller.streamWriter.ready);
     const fetch_promise = http_wasm_fetch(controller, url, header_names, header_values, option_names, option_values, transformStream.readable);
     return fetch_promise;
 }
@@ -177,16 +177,18 @@ export function http_wasm_fetch (controller: HttpController, url: string, header
     }
     // make the fetch cancellable
     controller.responsePromise = wrap_as_cancelable_promise(() => {
-        return loaderHelpers.fetch_like(url, options);
+        return loaderHelpers.fetch_like(url, options).then((res: Response) => {
+            controller.response = res;
+            return null;// drop the response from the promise chain
+        });
     });
     // avoid processing headers if the fetch is canceled
-    controller.responsePromise.then((res: Response) => {
-        controller.response = res;
+    controller.responsePromise.then(() => {
+        mono_assert(controller.response, "expected response");
         controller.responseHeaderNames = [];
         controller.responseHeaderValues = [];
-        if (res.headers && (<any>res.headers).entries) {
-            const entries: Iterable<string[]> = (<any>res.headers).entries();
-
+        if (controller.response.headers && (<any>controller.response.headers).entries) {
+            const entries: Iterable<string[]> = (<any>controller.response.headers).entries();
             for (const pair of entries) {
                 controller.responseHeaderNames.push(pair[0]);
                 controller.responseHeaderValues.push(pair[1]);
@@ -250,9 +252,15 @@ export function http_wasm_get_streamed_response_bytes (controller: HttpControlle
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     return wrap_as_cancelable_promise(async () => {
+        await controller.responsePromise;
         mono_assert(controller.response, "expected response");
+        if (!controller.response.body) {
+            // in FF when the verb is HEAD, the body is null
+            return 0;
+        }
         if (!controller.streamReader) {
-            controller.streamReader = controller.response.body!.getReader();
+            controller.streamReader = controller.response.body.getReader();
+            mute_unhandledrejection(controller.streamReader.closed);
         }
         if (!controller.currentStreamReaderChunk || controller.currentBufferOffset === undefined) {
             controller.currentStreamReaderChunk = await controller.streamReader.read();

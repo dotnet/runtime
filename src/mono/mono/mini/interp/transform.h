@@ -314,6 +314,7 @@ typedef struct
 	// FIXME: ptr_u32
 	dn_simdhash_ptr_ptr_t *data_hash;
 	GSList *imethod_items;
+	GSList *headers_to_free;
 #ifdef ENABLE_EXPERIMENT_TIERED
 	// FIXME: ptr_u32
 	dn_simdhash_ptr_ptr_t *patchsite_hash;

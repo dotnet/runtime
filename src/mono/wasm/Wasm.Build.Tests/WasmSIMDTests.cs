@@ -41,7 +41,6 @@ namespace Wasm.Build.Tests
             Assert.DoesNotContain("Compiling native assets with emcc", output);
 
             RunAndTestWasmApp(buildArgs,
-                                extraXHarnessArgs: host == RunHost.NodeJS ? "--engine-arg=--experimental-wasm-simd --engine-arg=--experimental-wasm-eh" : "",
                                 expectedExitCode: 42,
                                 test: output =>
                                 {
@@ -66,7 +65,6 @@ namespace Wasm.Build.Tests
                                 DotnetWasmFromRuntimePack: false));
 
             RunAndTestWasmApp(buildArgs,
-                                extraXHarnessArgs: host == RunHost.NodeJS ? "--engine-arg=--experimental-wasm-simd --engine-arg=--experimental-wasm-eh" : "",
                                 expectedExitCode: 42,
                                 test: output =>
                                 {

@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             _output = output;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void TypesTest()
         {
             var types = new List<Type>()
@@ -79,7 +79,7 @@ namespace System.Runtime.Serialization.Xml.XsdDataContractExporterTests
             };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         [SkipOnPlatform(TestPlatforms.Browser, "Inconsistent and unpredictable results.")]  // TODO - Why does 'TypeWithReadWriteCollectionAndNoCtorOnCollection' only cause an exception sometimes, but not all the time? What's special about wasm here?
         [ActiveIssue("https://github.com/dotnet/runtime/issues/82967", TestPlatforms.Wasi)]
         [InlineData(typeof(NoDataContractWithoutParameterlessConstructor), typeof(InvalidDataContractException), @"Type 'System.Runtime.Serialization.Xml.XsdDataContractExporterTests.ExporterTypesTests+NoDataContractWithoutParameterlessConstructor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute. Alternatively, you can ensure that the type is public and has a parameterless constructor - all public members of the type will then be serialized, and no attributes will be required.")]

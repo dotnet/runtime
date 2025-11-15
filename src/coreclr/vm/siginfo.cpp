@@ -3604,7 +3604,7 @@ ErrExit:
 #endif //!DACCESS_COMPILE
 } // CompareTypeTokens
 
-static void ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig)
+void MetaSig::ConsumeCustomModifiers(PCCOR_SIGNATURE& pSig, PCCOR_SIGNATURE pEndSig)
 {
     mdToken tk;
     CorElementType type;

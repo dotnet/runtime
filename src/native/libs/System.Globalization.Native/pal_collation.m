@@ -117,6 +117,11 @@ int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName, int3
     }
 }
 
+/**
+ * Removes zero-width and other weightless characters such as U+200B (Zero Width Space), 
+ * U+200C (Zero Width Non-Joiner), U+200D (Zero Width Joiner), U+FEFF (Zero Width No-Break Space), 
+ * and the NUL character from the specified string.
+ */
 static NSString* RemoveWeightlessCharacters(NSString* source)
 {
     NSError *error = nil;
@@ -143,10 +148,9 @@ static int32_t IsIndexFound(int32_t fromBeginning, int32_t foundLocation, int32_
 
 /*
 Function: IndexOf
-Find detailed explanation how this function works in https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-hybrid-mode.md
+Find detailed explanation how this function works in https://github.com/dotnet/runtime/blob/main/docs/design/features/globalization-hybrid-mode.md#string-indexing
 */
-Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpTarget, int32_t cwTargetLength,
-                                        const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions, int32_t fromBeginning)
+Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNameLength, const uint16_t* lpTarget, int32_t cwTargetLength, const uint16_t* lpSource, int32_t cwSourceLength, int32_t comparisonOptions, int32_t fromBeginning)
 {
     @autoreleasepool
     {
@@ -158,6 +162,9 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
             return result;
         }
         NSStringCompareOptions options = ConvertFromCompareOptionsToNSStringCompareOptions(comparisonOptions, true);
+        if (!fromBeginning) // LastIndexOf
+            options |= NSBackwardsSearch;
+
         NSString *searchString = [NSString stringWithCharacters: lpTarget length: (NSUInteger)cwTargetLength];
         NSString *searchStrCleaned = RemoveWeightlessCharacters(searchString);
         NSString *sourceString = [NSString stringWithCharacters: lpSource length: (NSUInteger)cwSourceLength];
@@ -168,7 +175,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
             searchStrCleaned = ConvertToKatakana(searchStrCleaned);
         }
 
-        if (sourceStrCleaned.length == 0 || searchStrCleaned.length == 0)
+        if (searchStrCleaned.length == 0)
         {
             result.location = fromBeginning ? 0 : (int32_t)sourceString.length;
             return result;
@@ -178,9 +185,6 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
         NSString *searchStrPrecomposed = searchStrCleaned.precomposedStringWithCanonicalMapping;
         NSString *sourceStrPrecomposed = sourceStrCleaned.precomposedStringWithCanonicalMapping;
 
-        // last index
-        if (!fromBeginning)
-            options |= NSBackwardsSearch;
 
         // check if there is a possible match and return -1 if not
         // doesn't matter which normalization form is used here
@@ -233,7 +237,7 @@ Range GlobalizationNative_IndexOfNative(const uint16_t* localeName, int32_t lNam
             result.location = (int32_t)precomposedRange.location;
             result.length = (int32_t)precomposedRange.length;
             if (!(comparisonOptions & IgnoreCase))
-            return result;
+                return result;
         }
 
         // check if sourceString has decomposed form of characters and searchString has precomposed form of characters

@@ -540,8 +540,6 @@ JS_ENGINES = [NODE_JS]
     <!-- Mac Catalyst specific options -->
     <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
       <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_VARIANT=maccatalyst" />
-      <!-- https://gitlab.kitware.com/cmake/cmake/-/issues/20132 -->
-      <_MonoCPPFLAGS Include="-Wno-overriding-t-option" />
       <_MonoCFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios$(MacCatalystVersionMin)-macabi" />
       <_MonoCFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios$(MacCatalystVersionMin)-macabi" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
@@ -818,7 +816,8 @@ JS_ENGINES = [NODE_JS]
     <!-- Linux specific options -->
     <ItemGroup Condition="'$(AotHostOS)' == 'linux'">
       <_LibClang Include="$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib/libclang.so" Condition=" Exists('$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib/libclang.so') "/>
-      <_LibClang Include="$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib64/libclang.so.*" Condition=" '$(_LibClang)' == '' "/>
+      <_LibClang Include="$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib64/libclang.so.*" Condition=" '@(_LibClang)' == '' "/>
+      <_LibClang Include="/usr/local/lib/libclang.so" Condition="'@(_LibClang)' == ''" />
     </ItemGroup>
     <PropertyGroup Condition="'$(TargetsLinux)' == 'true' and '$(Platform)' == 'arm64'">
       <MonoUseCrossTool>true</MonoUseCrossTool>

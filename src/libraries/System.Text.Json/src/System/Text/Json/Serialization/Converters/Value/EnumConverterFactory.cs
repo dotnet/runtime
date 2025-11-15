@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Converters
                             or TypeCode.Byte or TypeCode.UInt16 or TypeCode.UInt32 or TypeCode.UInt64;
         }
 
-        [SuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
             Justification = "The constructor has been annotated with RequiredDynamicCodeAttribute.")]
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {

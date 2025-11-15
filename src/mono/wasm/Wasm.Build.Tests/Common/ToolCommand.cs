@@ -13,6 +13,8 @@ namespace Wasm.Build.Tests
 {
     public class ToolCommand : IDisposable
     {
+        private bool isDisposed = false;
+        private readonly object _lock = new object();
         private string _label;
         protected ITestOutputHelper _testOutput;
 
@@ -93,41 +95,45 @@ namespace Wasm.Build.Tests
 
         public virtual void Dispose()
         {
-            if (CurrentProcess is not null && !CurrentProcess.HasExited)
+            lock (_lock)
             {
-                CurrentProcess.Kill(entireProcessTree: true);
-                CurrentProcess.Dispose();
-                CurrentProcess = null;
+                if (isDisposed)
+                    return;
+                if (CurrentProcess is not null && !CurrentProcess.HasExited)
+                {
+                    CurrentProcess.Kill(entireProcessTree: true);
+                    CurrentProcess.Dispose();
+                    CurrentProcess = null;
+                }
+                isDisposed = true;
             }
         }
 
         protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
-
         private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
         {
             var output = new List<string>();
             CurrentProcess = CreateProcess(executable, args);
-            DataReceivedEventHandler errorHandler = (s, e) =>
+            
+            void HandleDataReceived(DataReceivedEventArgs e, DataReceivedEventHandler? additionalHandler)
             {
-                if (e.Data == null)
+                if (e.Data == null || isDisposed)
                     return;
 
-                string msg = $"[{_label}] {e.Data}";
-                output.Add(msg);
-                _testOutput.WriteLine(msg);
-                ErrorDataReceived?.Invoke(s, e);
-            };
+                lock (_lock)
+                {
+                    if (e.Data == null || isDisposed)
+                        return;
 
-            DataReceivedEventHandler outputHandler = (s, e) =>
-            {
-                if (e.Data == null)
-                    return;
+                    string msg = $"[{_label}] {e.Data}";
+                    output.Add(msg);
+                    TryWriteToTestOutput(msg, output);
+                    additionalHandler?.Invoke(this, e);
+                }
+            }
 
-                string msg = $"[{_label}] {e.Data}";
-                output.Add(msg);
-                _testOutput.WriteLine(msg);
-                OutputDataReceived?.Invoke(s, e);
-            };
+            DataReceivedEventHandler errorHandler = (s, e) => HandleDataReceived(e, ErrorDataReceived);
+            DataReceivedEventHandler outputHandler = (s, e) => HandleDataReceived(e, OutputDataReceived);
 
             CurrentProcess.ErrorDataReceived += errorHandler;
             CurrentProcess.OutputDataReceived += outputHandler;
@@ -146,6 +152,20 @@ namespace Wasm.Build.Tests
                 CurrentProcess.StartInfo,
                 CurrentProcess.ExitCode,
                 string.Join(System.Environment.NewLine, output));
+        }
+
+        private void TryWriteToTestOutput(string message, List<string> output)
+        {
+            try
+            {
+                _testOutput.WriteLine(message);
+            }
+            catch (InvalidOperationException)
+            {
+                // Test context may have expired, continue without logging to test output
+                // Add a marker to the output buffer so we know this happened
+                output.Add($"[{_label}] [WARNING: Test context expired, subsequent output may be incomplete]");
+            }
         }
 
         private Process CreateProcess(string executable, string args)

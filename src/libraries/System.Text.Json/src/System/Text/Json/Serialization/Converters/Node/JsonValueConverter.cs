@@ -31,6 +31,6 @@ namespace System.Text.Json.Serialization.Converters
             return JsonValue.CreateFromElement(ref element, options.GetNodeOptions());
         }
 
-        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.True;
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateTrueSchema();
     }
 }

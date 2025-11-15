@@ -314,7 +314,11 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     sigfillset(&signal_set);
     pthread_sigmask(SIG_SETMASK, &signal_set, &old_signal_set);
 
-#if HAVE_VFORK && !(defined(__APPLE__)) // We don't trust vfork on OS X right now.
+// vfork on OS X is deprecated
+// On Android, signal handlers between parent and child processes are shared with vfork, so when we reset
+// the signal handlers during child startup, we end up incorrectly clearing also the ones for the parent.
+#if HAVE_VFORK && !defined(__APPLE__) && !defined(TARGET_ANDROID)
+
     // This platform has vfork(). vfork() is either a synonym for fork or provides shared memory
     // semantics. For a one gigabyte process, the expected performance gain of using shared memory
     // vfork() rather than fork() is 99.5% merely due to avoiding page faults as the kernel does not

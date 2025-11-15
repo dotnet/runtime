@@ -16,6 +16,7 @@ using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -163,10 +164,10 @@ namespace Wasm.Build.Tests
             if (buildProjectOptions.Publish && buildProjectOptions.BuildOnlyAfterPublish)
                 commandLineArgs.Append("-p:WasmBuildOnlyAfterPublish=true");
 
-            var cmd = new DotNetCommand(s_buildEnv, _testOutput)
-                                    .WithWorkingDirectory(_projectDir!)
-                                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                    .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
+            using ToolCommand cmd = new DotNetCommand(s_buildEnv, _testOutput)
+                                        .WithWorkingDirectory(_projectDir!);
+            cmd.WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
+                .WithEnvironmentVariables(buildProjectOptions.ExtraBuildEnvironmentVariables);
             if (UseWBTOverridePackTargets && s_buildEnv.IsWorkload)
                 cmd.WithEnvironmentVariable("WBTOverrideRuntimePack", "true");
 
@@ -176,7 +177,46 @@ namespace Wasm.Build.Tests
             else if (res.ExitCode == 0)
                 throw new XunitException($"Build should have failed, but it didn't. Process exited with exitCode : {res.ExitCode}");
 
+            // Ensure we got all output.
+            string[] successMessages = ["Build succeeded"];
+            string[] errorMessages = ["Build failed", "Build FAILED", "Restore failed", "Stopping the build"];
+            if ((res.ExitCode == 0 && successMessages.All(m => !res.Output.Contains(m))) || (res.ExitCode != 0 && errorMessages.All(m => !res.Output.Contains(m))))
+            {
+                _testOutput.WriteLine("Replacing dotnet process output with messages from binlog");
+
+                var outputBuilder = new StringBuilder();
+                var buildRoot = BinaryLog.ReadBuild(logFilePath);
+                buildRoot.VisitAllChildren<TextNode>(m =>
+                {
+                    if (m is Message || m is Error || m is Warning)
+                    {
+                        var context = GetBinlogMessageContext(m);
+                        outputBuilder.AppendLine($"{context}{m.Title}");
+                    }
+                });
+
+                res = new CommandResult(res.StartInfo, res.ExitCode, outputBuilder.ToString());
+            }
+
             return (res, logFilePath);
+        }
+
+        private string GetBinlogMessageContext(TextNode node)
+        {
+            var currentNode = node;
+            while (currentNode != null)
+            {
+                if (currentNode is Error error)
+                {
+                    return $"{error.File}({error.LineNumber},{error.ColumnNumber}): error {error.Code}: ";
+                }
+                else if (currentNode is Warning warning)
+                {
+                    return $"{warning.File}({warning.LineNumber},{warning.ColumnNumber}): warning {warning.Code}: ";
+                }
+                currentNode = currentNode.Parent as TextNode;
+            }
+            return string.Empty;
         }
 
         protected string RunAndTestWasmApp(BuildArgs buildArgs,
@@ -447,6 +487,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"WorkingDirectory: {workingDir}");
             StringBuilder outputBuilder = new();
             object syncObj = new();
+            bool isDisposed = false;
 
             var processStartInfo = new ProcessStartInfo
             {
@@ -502,11 +543,13 @@ namespace Wasm.Build.Tests
                 using CancellationTokenSource cts = new();
                 cts.CancelAfter(timeoutMs ?? s_defaultPerTestTimeoutMs);
 
-                await process.WaitForExitAsync(cts.Token);
-
-                if (cts.IsCancellationRequested)
+                try
                 {
-                    // process didn't exit
+                    await process.WaitForExitAsync(cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    // process didn't exit within timeout
                     process.Kill(entireProcessTree: true);
                     lock (syncObj)
                     {
@@ -519,6 +562,12 @@ namespace Wasm.Build.Tests
                 // and should be called after process.WaitForExit(int)
                 // https://learn.microsoft.com/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
                 process.WaitForExit();
+
+                // Mark as disposed before detaching handlers to prevent further TestOutput access
+                lock (syncObj)
+                {
+                    isDisposed = true;
+                }
 
                 process.ErrorDataReceived -= logStdErr;
                 process.OutputDataReceived -= logStdOut;
@@ -533,7 +582,12 @@ namespace Wasm.Build.Tests
             }
             catch (Exception ex)
             {
-                _testOutput.WriteLine($"-- exception -- {ex}");
+                // Mark as disposed before writing to avoid potential race condition
+                lock (syncObj)
+                {
+                    isDisposed = true;
+                }
+                TryWriteToTestOutput(_testOutput, $"-- exception -- {ex}", outputBuilder);
                 throw;
             }
 
@@ -541,9 +595,11 @@ namespace Wasm.Build.Tests
             {
                 lock (syncObj)
                 {
+                    if (isDisposed)
+                        return;
                     if (message != null)
                     {
-                        _testOutput.WriteLine($"{label} {message}");
+                        TryWriteToTestOutput(_testOutput, $"{label} {message}", outputBuilder, label);
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }
@@ -587,6 +643,24 @@ namespace Wasm.Build.Tests
             return projectFile;
         }
 
+        private static void TryWriteToTestOutput(ITestOutputHelper testOutput, string message, StringBuilder? outputBuffer = null, string? warningPrefix = null)
+        {
+            try
+            {
+                testOutput.WriteLine(message);
+            }
+            catch (InvalidOperationException)
+            {
+                // Test context has expired, but we still want to capture output in buffer
+                // for potential debugging purposes
+                if (outputBuffer != null)
+                {
+                    string prefix = warningPrefix ?? "";
+                    outputBuffer.AppendLine($"{prefix}[WARNING: Test context expired, subsequent output may be incomplete]");
+                }
+            }
+        }
+
         public void Dispose()
         {
             if (_projectDir != null && _enablePerTestCleanup)
@@ -605,8 +679,8 @@ namespace Wasm.Build.Tests
         }
 
         protected static string GetSkiaSharpReferenceItems()
-            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.6"" />
-                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.6"" />
+            => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.9-preview.2.2"" />
+                <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.9-preview.2.2"" />
                 <NativeFileReference Include=""$(SkiaSharpStaticLibraryPath)\3.1.56\st\*.a"" />";
 
         protected static string s_mainReturns42 = @"
@@ -620,7 +694,6 @@ namespace Wasm.Build.Tests
         private static IHostRunner GetHostRunnerFromRunHost(RunHost host) => host switch
         {
             RunHost.V8 => new V8HostRunner(),
-            RunHost.NodeJS => new NodeJSHostRunner(),
             _ => new BrowserHostRunner(),
         };
     }

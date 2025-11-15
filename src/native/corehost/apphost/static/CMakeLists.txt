@@ -25,7 +25,7 @@ include_directories(${CLR_ARTIFACTS_OBJ_DIR}) # Generated version files
 add_subdirectory(../../hostmisc hostmisc)
 
 configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
-target_include_directories(hostmisc PUBLIC ${GENERATED_INCLUDE_DIR}/corehost)
+target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
 
 if ((NOT DEFINED CLR_CMAKE_USE_SYSTEM_RAPIDJSON) OR (NOT CLR_CMAKE_USE_SYSTEM_RAPIDJSON))
     include_directories(${CLR_SRC_NATIVE_DIR}/external/)

@@ -3565,12 +3565,17 @@ interp_free_method (MonoMethod *method)
 
 	jit_mm_lock (jit_mm);
 
-#if HOST_BROWSER
 	InterpMethod *imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
-	mono_jiterp_free_method_data (method, imethod);
+	if (imethod) {
+#if HOST_BROWSER
+		mono_jiterp_free_method_data (method, imethod);
 #endif
 
-	mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
+		mono_interp_clear_data_items_patch_sites (imethod->data_items, imethod->n_data_items);
+
+		mono_internal_hash_table_remove (&jit_mm->interp_code_hash, method);
+	}
+
 	jit_mm_unlock (jit_mm);
 
 	if (dmethod->mp) {
@@ -3860,6 +3865,34 @@ max_d (double lhs, double rhs)
 		return mono_signbit (rhs) ? lhs : rhs;
 	else
 		return fmax (lhs, rhs);
+}
+
+// Equivalent of mono_get_addr_compiled_method
+static gpointer
+interp_ldvirtftn_delegate (gpointer arg, MonoDelegate *del)
+{
+	MonoMethod *virtual_method = del->method;
+	ERROR_DECL(error);
+
+	MonoClass *klass = del->object.vtable->klass;
+	MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
+	MonoMethodSignature *invoke_sig = mono_method_signature_internal (invoke);
+
+	MonoClass *arg_class = NULL;
+	if (m_type_is_byref (invoke_sig->params [0])) {
+		arg_class = mono_class_from_mono_type_internal (invoke_sig->params [0]);
+	} else {
+		MonoObject *object = (MonoObject*)arg;
+		arg_class = object->vtable->klass;
+	}
+
+	MonoMethod *res = mono_class_get_virtual_method (arg_class, virtual_method, error);
+	mono_error_assert_ok (error);
+
+	gboolean need_unbox = m_class_is_valuetype (res->klass) && !m_class_is_valuetype (virtual_method->klass);
+
+	InterpMethod *imethod = mono_interp_get_imethod (res);
+	return imethod_to_ftnptr (imethod, need_unbox);
 }
 
 /*
@@ -7790,6 +7823,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_LDVIRTFTN_DELEGATE) {
+			gpointer arg = LOCAL_VAR (ip [2], gpointer);
+			MonoDelegate *del = LOCAL_VAR (ip [3], MonoDelegate*);
+			NULL_CHECK (arg);
+
+			LOCAL_VAR (ip [1], gpointer) = interp_ldvirtftn_delegate (arg, del);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
 
 #define MATH_UNOP(mathfunc) \
 	LOCAL_VAR (ip [1], double) = mathfunc (LOCAL_VAR (ip [2], double)); \
@@ -8944,6 +8986,10 @@ mono_ee_interp_init (const char *opts)
 	set_context (NULL);
 
 	interp_parse_options (opts);
+
+	const char *env_opts = g_getenv ("MONO_INTERPRETER_OPTIONS");
+	if (env_opts)
+		interp_parse_options (env_opts);
 	/* Don't do any optimizations if running under debugger */
 	if (mini_get_debug_options ()->mdb_optimizations)
 		mono_interp_opt = 0;

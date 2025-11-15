@@ -22,6 +22,14 @@ void pal::file_vprintf(FILE* f, const pal::char_t* format, va_list vl)
 }
 
 namespace {
+    void file_printf(FILE* fallbackFileHandle, const pal::char_t* format, ...)
+    {
+        va_list args;
+        va_start(args, format);
+        pal::file_vprintf(fallbackFileHandle, format, args);
+        va_end(args);
+    }
+
     void print_line_to_handle(const pal::char_t* message, HANDLE handle, FILE* fallbackFileHandle) {
         // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
         // In order to properly print UTF-8 and GB18030 characters to the console without requiring the user to use chcp to a compatible locale, we use WriteConsoleW.
@@ -33,7 +41,7 @@ namespace {
         {
             // We use file_vprintf to handle UTF-8 formatting. The WriteFile api will output the bytes directly with Unicode bytes,
             // while pal::file_vprintf will convert the characters to UTF-8.
-            pal::file_vprintf(fallbackFileHandle, message, va_list());
+            file_printf(fallbackFileHandle, _X("%s"), message);
         }
         else {
             ::WriteConsoleW(handle, message, (int)pal::strlen(message), NULL, NULL);
@@ -641,9 +649,31 @@ pal::string_t pal::get_current_os_rid_platform()
     return ridOS;
 }
 
+namespace
+{
+    bool is_directory_separator(pal::char_t c)
+    {
+        return c == DIR_SEPARATOR || c == L'/';
+    }
+}
+
 bool pal::is_path_rooted(const string_t& path)
 {
-    return path.length() >= 2 && path[1] == L':';
+    return (path.length() >= 1 && is_directory_separator(path[0])) // UNC or device paths
+        || (path.length() >= 2 && path[1] == L':'); // Drive letter paths
+}
+
+bool pal::is_path_fully_qualified(const string_t& path)
+{
+    if (path.length() < 2)
+        return false;
+
+    // Check for UNC and DOS device paths
+    if (is_directory_separator(path[0]))
+        return path[1] == L'?' || is_directory_separator(path[1]);
+
+    // Check for drive absolute path - for example C:\.
+    return path.length() >= 3 && path[1] == L':' && is_directory_separator(path[2]);
 }
 
 // Returns true only if an env variable can be read successfully to be non-empty.
@@ -884,8 +914,12 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
                 }
             }
 
-            // Remove the \\?\ prefix, unless it is necessary or was already there
-            if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
+            // Remove the UNC extended prefix (\\?\UNC\) or extended prefix (\\?\) unless it is necessary or was already there
+            if (LongFile::IsUNCExtended(str) && !LongFile::IsUNCExtended(*path) && str.length() < MAX_PATH)
+            {
+                str.replace(0, LongFile::UNCExtendedPathPrefix.size(), LongFile::UNCPathPrefix);
+            }
+            else if (LongFile::IsExtended(str) && !LongFile::IsExtended(*path) &&
                 !LongFile::ShouldNormalize(str.substr(LongFile::ExtendedPrefix.size())))
             {
                 str.erase(0, LongFile::ExtendedPrefix.size());

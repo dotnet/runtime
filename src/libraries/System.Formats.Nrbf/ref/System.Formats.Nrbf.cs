@@ -9,7 +9,6 @@ namespace System.Formats.Nrbf
     public abstract partial class ArrayRecord : System.Formats.Nrbf.SerializationRecord
     {
         internal ArrayRecord() { }
-        public virtual long FlattenedLength { get { throw null; } }
         public override System.Formats.Nrbf.SerializationRecordId Id { get { throw null; } }
         public abstract System.ReadOnlySpan<int> Lengths { get; }
         public int Rank { get { throw null; } }
