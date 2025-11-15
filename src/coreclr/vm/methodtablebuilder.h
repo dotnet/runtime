@@ -972,7 +972,7 @@ private:
             DWORD dwImplAttrs,
             DWORD dwRVA,
             Signature sig,
-            AsyncMethodKind thunkKind,
+            AsyncMethodKind asyncMethodKind,
             MethodClassification type,
             METHOD_IMPL_TYPE implType);
 
@@ -1078,8 +1078,7 @@ private:
 
         bool IsAsyncVariant() const
         {
-            return GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantThunk ||
-                GetAsyncMethodKind() == AsyncMethodKind::AsyncVariantImpl;
+            return hasAsyncKindFlags(GetAsyncMethodKind(), AsyncMethodKind::Async | AsyncMethodKind::Variant);
         }
 
         void SetAsyncMethodKind(AsyncMethodKind kind)
