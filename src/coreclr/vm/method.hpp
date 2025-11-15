@@ -78,7 +78,7 @@ enum class AsyncMethodKind
     //=============================================================
     // A few words about Variant pairs:
     //
-    // When we see a Task-returning method in metadata we create 2 method varaints that logically match
+    // When we see a Task-returning method in metadata we create 2 method variants that logically match
     // the same method definition. One variant has the same signature/callconv as the defining method
     // and another is a matching Async variant. 
     // Depending on whether the definition was marked with MethodImpl.Async or not,
@@ -101,8 +101,8 @@ enum class AsyncMethodKind
     // NOTE: Not all Async methods are "variants" from a pair.
     //       Methods that are explicitly declared as MethodImpl.Async in metadata while
     //       not Task returning is a special case used in a few methods like `Await` or
-    //       in infrastructure methods that Await relies on.
-    //       Such methods do not get non-Async variants/thunks and can only be called from
+    //       other infrastructure methods used in implementation of Runtime Async itself.
+    //       Such methods do not get non-Async facades and can only be called from
     //       another Async method.
 };
 

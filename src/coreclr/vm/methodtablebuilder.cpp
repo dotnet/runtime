@@ -3320,12 +3320,13 @@ MethodTableBuilder::EnumerateClassMethods()
                 if (IsTaskReturning(returnKind))
                 {
                     // Declare a TaskReturning variant method.
-                    // We will aslo add an Async variant that can be called by async code when awaiting and skip Task abstraction.
+                    // In the next pass we will aslo add an Async variant that can be called by async
+                    // code when awaiting and bypass Task abstraction.
                     AsyncMethodKind kind = AsyncMethodKind::ReturnsTaskOrValueTask | AsyncMethodKind::Variant;
 
-                    // IsMiAsync Task-returning method:
-                    //    Then the method becomes a task-returning thunk, while actual IL belongs to the Async variant.
-                    //    Otherwise the Async variant would be the thunk.
+                    // if IsMiAsync is set, then the method becomes a task-returning thunk,
+                    // while actual IL belongs to the Async variant.
+                    // Otherwise the Async variant will be the thunk.
                     if (IsMiAsync(dwImplFlags))
                         kind |= AsyncMethodKind::Thunk;
 
@@ -3354,7 +3355,7 @@ MethodTableBuilder::EnumerateClassMethods()
             }
             else
             {
-                // second pass, insert async variants
+                // Second pass, add the async variant.
 
                 ULONG cAsyncThunkMemberSignature = cMemberSignature;
                 ULONG originalTokenOffsetFromAsyncDetailsOffset;
@@ -3365,7 +3366,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG newPrefixSize;
 
                 AsyncMethodKind asyncKind = (AsyncMethodKind::Async | AsyncMethodKind::Variant);
-                // opposite of the "IsMiAsync(dwImplFlags)" code above.
+                // The opposite of the "if (IsMiAsync(dwImplFlags))" code above.
                 if (!IsMiAsync(dwImplFlags))
                     asyncKind |= AsyncMethodKind::Thunk;
 
@@ -6302,7 +6303,7 @@ MethodTableBuilder::InitMethodDesc(
         }
         else
         {
-          _ASSERTE(sig.GetRawSig() == NULL);
+            _ASSERTE(sig.GetRawSig() == NULL);
         }
     }
 
