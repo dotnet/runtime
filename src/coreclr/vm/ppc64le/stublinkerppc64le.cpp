@@ -30,17 +30,28 @@ public:
 	{
 	    LIMITED_METHOD_CONTRACT;
 	}
+
+    enum VariationCodes
+    {
+        DIRECT_TAILCALL           = 0x00000001,    // Direct jump and bcctr
+        DIRECT_NON_TAILCALL       = 0x00000002,    // Direct jump and bcctrl
+
+        INDIRECT_TAILCALL         = 0x00000000,    // Indirect jump using ld and bcctr
+        INDIRECT_NON_TAILCALL     = 0x00000003     // Indirect jump using ld bcctrl
+    };
+
 	virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode)
 	{
             LIMITED_METHOD_CONTRACT;
 
             _ASSERTE(refsize == InstructionFormat::k64);
 
-	    if(variationCode)
-		return 32;
+	    if(variationCode == INDIRECT_TAILCALL || variationCode == INDIRECT_NON_TAILCALL)
+		    return 32;
 	    else
-                return 28;
+            return 28;
 	}
+
 	virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
         {
 	    UINT64 target = (UINT64)(((INT64)pOutBufferRX) + fixedUpReference + GetSizeOfInstruction(refsize, variationCode));
@@ -75,39 +86,75 @@ public:
             pOutBufferRW[18] = 0x8C;
             pOutBufferRW[19] = 0x61;
 
-	    if(variationCode)
+	    switch (variationCode)
 	    {
-		// ld r12, 0(r12) e9 8c 00 00
-		pOutBufferRW[20] = 0x00;
-                pOutBufferRW[21] = 0x00;
-                pOutBufferRW[22] = 0x8C;
-                pOutBufferRW[23] = 0xE9;
+                case DIRECT_TAILCALL:
+                    // mtctr r12
+                    pOutBufferRW[20] = 0xA6;
+                    pOutBufferRW[21] = 0x03;
+                    pOutBufferRW[22] = 0x89;
+                    pOutBufferRW[23] = 0x7D;
 
-		// mtctr r12
-		pOutBufferRW[24] = 0xA6;
-                pOutBufferRW[25] = 0x03;
-                pOutBufferRW[26] = 0x89;
-                pOutBufferRW[27] = 0x7D;
+                    // bcctrl
+                    pOutBufferRW[24] = 0x20;
+                    pOutBufferRW[25] = 0x04;
+                    pOutBufferRW[26] = 0x80;
+                    pOutBufferRW[27] = 0x4E;
+                break;
 
-		// bctr 4e800420
-		pOutBufferRW[28] = 0x20;
-                pOutBufferRW[29] = 0x04;
-                pOutBufferRW[30] = 0x80;
-                pOutBufferRW[31] = 0x4E;
-	    }
-	    else
-	    {
-                // mtctr r12
-            	pOutBufferRW[20] = 0xA6;
-            	pOutBufferRW[21] = 0x03;
-            	pOutBufferRW[22] = 0x89;
-            	pOutBufferRW[23] = 0x7D;
+                case DIRECT_NON_TAILCALL:
+                    // mtctr r12
+                    pOutBufferRW[20] = 0xA6;
+                    pOutBufferRW[21] = 0x03;
+                    pOutBufferRW[22] = 0x89;
+                    pOutBufferRW[23] = 0x7D;
 
-            	// bcctrl
-            	pOutBufferRW[24] = 0x21;
-            	pOutBufferRW[25] = 0x04;
-            	pOutBufferRW[26] = 0x81;
-            	pOutBufferRW[27] = 0x4E;
+                    // bcctrl
+                    pOutBufferRW[24] = 0x21;
+                    pOutBufferRW[25] = 0x04;
+                    pOutBufferRW[26] = 0x81;
+                    pOutBufferRW[27] = 0x4E;
+                break;
+
+                case INDIRECT_TAILCALL:
+                    // ld r12, 0(r12) e9 8c 00 00
+                    pOutBufferRW[20] = 0x00;
+                    pOutBufferRW[21] = 0x00;
+                    pOutBufferRW[22] = 0x8C;
+                    pOutBufferRW[23] = 0xE9;
+
+                    // mtctr r12
+                    pOutBufferRW[24] = 0xA6;
+                    pOutBufferRW[25] = 0x03;
+                    pOutBufferRW[26] = 0x89;
+                    pOutBufferRW[27] = 0x7D;
+
+                    // bctr 4e800420
+                    pOutBufferRW[28] = 0x20;
+                    pOutBufferRW[29] = 0x04;
+                    pOutBufferRW[30] = 0x80;
+                    pOutBufferRW[31] = 0x4E;
+                break;
+
+                case INDIRECT_NON_TAILCALL:
+                    // ld r12, 0(r12) e9 8c 00 00
+                    pOutBufferRW[20] = 0x00;
+                    pOutBufferRW[21] = 0x00;
+                    pOutBufferRW[22] = 0x8C;
+                    pOutBufferRW[23] = 0xE9;
+
+                    // mtctr r12
+                    pOutBufferRW[24] = 0xA6;
+                    pOutBufferRW[25] = 0x03;
+                    pOutBufferRW[26] = 0x89;
+                    pOutBufferRW[27] = 0x7D;
+
+                    // bctr 4e800420
+                    pOutBufferRW[28] = 0x21;
+                    pOutBufferRW[29] = 0x04;
+                    pOutBufferRW[30] = 0x81;
+                    pOutBufferRW[31] = 0x4E;
+                break;
 	    }
 	}
 	/*virtual BOOL CanReach(UINT refsize, UINT variationCode, BOOL fExternal, INT_PTR offset)
@@ -392,7 +439,30 @@ void StubLinkerCPU::EmitRestoreArguments(IntReg R0, IntReg R1)
 
 void StubLinkerCPU::EmitCallLabel(CodeLabel *target, BOOL fTailCall, BOOL fIndirect)
 {
-    EmitLabelRef(target, reinterpret_cast<PPC64LECall&>(gPPC64LECall), fIndirect);
+    PPC64LECall::VariationCodes variationCode;
+    if (!fIndirect)
+    {
+        if (fTailCall)
+        {
+            variationCode = PPC64LECall::DIRECT_TAILCALL;
+        }
+        else
+        {
+            variationCode = PPC64LECall::DIRECT_NON_TAILCALL;
+        }
+    }
+    else
+    {
+        if (fTailCall)
+        {
+            variationCode = PPC64LECall::INDIRECT_TAILCALL;
+        }
+        else
+        {
+            variationCode = PPC64LECall::INDIRECT_NON_TAILCALL;
+        }
+    }
+    EmitLabelRef(target, reinterpret_cast<PPC64LECall&>(gPPC64LECall), (UINT)variationCode);
     //_ASSERTE(!"NYI POWERPC64 EmitCallLabel");
 }
 
