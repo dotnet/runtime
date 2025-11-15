@@ -1408,7 +1408,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 	    // TODO TARGET_POWERPC64 check here offset on StubLinkerCPU::EmitProlog
             unsigned       intRegArgBaseOffset = 0;
 	    unsigned       floatRegArgBaseOffset = intRegArgBaseOffset + (8 * sizeof(void*));
-            unsigned short stackArgBaseOffset = 0;
+            unsigned short stackArgBaseOffset = 496;
 #else
 #error unsupported platform
 #endif
@@ -1462,7 +1462,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_RISCV64)
                     argState.argOffsets[k] += intRegArgBaseOffset;
 #elif defined(HOST_POWERPC64)
-		    argState.argOffsets[k] += intRegArgBaseOffset + (k * sizeof(void*));
+		    argState.argOffsets[k] = intRegArgBaseOffset + (kk * sizeof(void*));
 #else
 #error unsupported platform
 #endif
@@ -1493,9 +1493,10 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 else if (argState.argIsReg[k] == ArgState::ARS_NotReg)
                 {
 #if defined(HOST_POWERPC64)
-                   _ASSERTE_MSG(false, "Power stackArgBaseOffset");
-#endif
+                    argState.argOffsets[k] = stackArgBaseOffset + (kk * sizeof(void*));
+#else
                     argState.argOffsets[k] += stackArgBaseOffset;
+#endif
                 }
                 // So far, x86 doesn't have any FP reg args, and ARM and ARM64 puts them at offset 0, so no
                 // adjustment is necessary (yet) for arguments passed in those registers.
