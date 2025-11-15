@@ -2341,8 +2341,8 @@ namespace System
             }
 
             // UnknownHostType / DosPath can't have a port.
-            if (((cF & Flags.HostTypeMask) != Flags.UnknownHostType && (cF & Flags.DosPath) == 0) &&
-                (uint)idx < (uint)str.Length && str[idx] == ':' && (cF & Flags.DosPath) == 0)
+            if ((cF & Flags.HostTypeMask) != Flags.UnknownHostType && (cF & Flags.DosPath) == 0 &&
+                (uint)idx < (uint)str.Length && str[idx] == ':')
             {
                 Debug.Assert(!IsUnc);
 
