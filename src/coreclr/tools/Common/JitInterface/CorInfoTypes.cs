@@ -813,12 +813,12 @@ namespace Internal.JitInterface
 
     public enum CorInfoArch
     {
-        CORINFO_ARCH_X86 = 0x014c,
-        CORINFO_ARCH_X64 = 0x8664,
-        CORINFO_ARCH_ARM = 0x01c4,
-        CORINFO_ARCH_ARM64 = 0xaa64,
-        CORINFO_ARCH_LOONGARCH64 = 0x6264,
-        CORINFO_ARCH_RISCV64 = 0x5064,
+        CORINFO_ARCH_X86,
+        CORINFO_ARCH_X64,
+        CORINFO_ARCH_ARM,
+        CORINFO_ARCH_ARM64,
+        CORINFO_ARCH_LOONGARCH64,
+        CORINFO_ARCH_RISCV64,
         CORINFO_ARCH_WASM32,
     }
 
