@@ -1184,18 +1184,6 @@ namespace System
 
         public static bool operator !=(Guid a, Guid b) => !EqualsCore(a, b);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int HexsToChars<TChar>(TChar* guidChars, int a, int b) where TChar : unmanaged, IUtfChar<TChar>
-        {
-            guidChars[0] = TChar.CastFrom(HexConverter.ToCharLower(a >> 4));
-            guidChars[1] = TChar.CastFrom(HexConverter.ToCharLower(a));
-
-            guidChars[2] = TChar.CastFrom(HexConverter.ToCharLower(b >> 4));
-            guidChars[3] = TChar.CastFrom(HexConverter.ToCharLower(b));
-
-            return 4;
-        }
-
         // Returns the guid in "registry" format.
         public override string ToString() => ToString("d", null);
 
@@ -1324,128 +1312,187 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // only used from two callers
-        internal unsafe bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, int flags) where TChar : unmanaged, IUtfChar<TChar>
+        internal bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, int flags)
+            where TChar : unmanaged, IUtfChar<TChar>
         {
+            Span<TChar> dest = destination;
+
             // The low byte of flags contains the required length.
-            if ((byte)flags > destination.Length)
+            if ((byte)flags > dest.Length)
             {
                 charsWritten = 0;
                 return false;
             }
 
-            charsWritten = (byte)flags;
+            int length = (byte)flags;
+            charsWritten = length;
+
             flags >>= 8;
-
-            fixed (TChar* guidChars = &MemoryMarshal.GetReference(destination))
+            if ((byte)flags != 0)
             {
-                TChar* p = guidChars;
+                dest[0] = TChar.CastFrom((byte)flags);
+                dest[length - 2] = TChar.CastFrom((byte)flags);
+                dest = dest.Slice(1);
+            }
 
-                // The low byte of flags now contains the opening brace char (if any)
-                if ((byte)flags != 0)
+            if (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported)
+            {
+                return TryFormatCore_Vector(dest, (flags >> 8) < 0 /* dash */);
+            }
+            else
+            {
+                return TryFormatCore_Scalar(dest, (flags >> 8) < 0 /* dash */);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        internal bool TryFormatCore_Vector<TChar>(Span<TChar> destination, bool hasDashes) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Span<TChar> dest = destination;
+
+            // Vectorized implementation for D, N, P and B formats:
+            // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+            (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) = FormatGuidVector128Utf8(this, hasDashes);
+
+            if (typeof(TChar) == typeof(byte))
+            {
+                Span<byte> byteDest = Unsafe.BitCast<Span<TChar>, Span<byte>>(dest);
+                if (hasDashes)
                 {
-                    *p++ = TChar.CastFrom((byte)flags);
-                }
-                flags >>= 8;
-
-                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
-                {
-                    // Vectorized implementation for D, N, P and B formats:
-                    // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-                    (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) = FormatGuidVector128Utf8(this, flags < 0 /* dash */);
-
-                    if (typeof(TChar) == typeof(byte))
-                    {
-                        byte* pChar = (byte*)p;
-                        if (flags < 0 /* dash */)
-                        {
-                            // We need to merge these vectors in this order:
-                            // xxxxxxxxxxxxxxxx
-                            //                     yyyyyyyyyyyyyyyy
-                            //         zzzzzzzzzzzzzzzz
-                            vecX.Store(pChar);
-                            vecY.Store(pChar + 20);
-                            vecZ.Store(pChar + 8);
-                            p += 36;
-                        }
-                        else
-                        {
-                            // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
-                            vecX.Store(pChar);
-                            vecY.Store(pChar + 16);
-                            p += 32;
-                        }
-                    }
-                    else
-                    {
-                        // Expand to UTF-16
-                        (Vector128<ushort> x0, Vector128<ushort> x1) = Vector128.Widen(vecX);
-                        (Vector128<ushort> y0, Vector128<ushort> y1) = Vector128.Widen(vecY);
-                        ushort* pChar = (ushort*)p;
-                        if (flags < 0 /* dash */)
-                        {
-                            (Vector128<ushort> z0, Vector128<ushort> z1) = Vector128.Widen(vecZ);
-
-                            // We need to merge these vectors in this order:
-                            // xxxxxxxxxxxxxxxx
-                            //                     yyyyyyyyyyyyyyyy
-                            //         zzzzzzzzzzzzzzzz
-                            x0.Store(pChar);
-                            y0.Store(pChar + 20);
-                            y1.Store(pChar + 28);
-                            z0.Store(pChar + 8); // overlaps x1
-                            z1.Store(pChar + 16);
-                            p += 36;
-                        }
-                        else
-                        {
-                            // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
-                            x0.Store(pChar);
-                            x1.Store(pChar + 8);
-                            y0.Store(pChar + 16);
-                            y1.Store(pChar + 24);
-                            p += 32;
-                        }
-                    }
+                    // We need to merge these vectors in this order:
+                    // xxxxxxxxxxxxxxxx
+                    //                     yyyyyyyyyyyyyyyy
+                    //         zzzzzzzzzzzzzzzz
+                    vecX.CopyTo(byteDest.Slice(0, Vector128<byte>.Count));
+                    vecX.CopyTo(byteDest.Slice(20, Vector128<byte>.Count));
+                    vecX.CopyTo(byteDest.Slice(8, Vector128<byte>.Count));
                 }
                 else
                 {
-                    // Non-vectorized fallback for D, N, P and B formats:
-                    // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-                    p += HexsToChars(p, _a >> 24, _a >> 16);
-                    p += HexsToChars(p, _a >> 8, _a);
-                    if (flags < 0 /* dash */)
-                    {
-                        *p++ = TChar.CastFrom('-');
-                    }
-                    p += HexsToChars(p, _b >> 8, _b);
-                    if (flags < 0 /* dash */)
-                    {
-                        *p++ = TChar.CastFrom('-');
-                    }
-                    p += HexsToChars(p, _c >> 8, _c);
-                    if (flags < 0 /* dash */)
-                    {
-                        *p++ = TChar.CastFrom('-');
-                    }
-                    p += HexsToChars(p, _d, _e);
-                    if (flags < 0 /* dash */)
-                    {
-                        *p++ = TChar.CastFrom('-');
-                    }
-                    p += HexsToChars(p, _f, _g);
-                    p += HexsToChars(p, _h, _i);
-                    p += HexsToChars(p, _j, _k);
+                    // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
+                    vecX.CopyTo(byteDest.Slice(0, Vector128<byte>.Count));
+                    vecY.CopyTo(byteDest.Slice(16, Vector128<byte>.Count));
                 }
-
-                // The low byte of flags now contains the closing brace char (if any)
-                if ((byte)flags != 0)
-                {
-                    *p = TChar.CastFrom((byte)flags);
-                }
-
-                Debug.Assert(p == guidChars + charsWritten - ((byte)flags != 0 ? 1 : 0));
             }
+            else
+            {
+                // Expand to UTF-16
+                (Vector128<ushort> x0, Vector128<ushort> x1) = Vector128.Widen(vecX);
+                (Vector128<ushort> y0, Vector128<ushort> y1) = Vector128.Widen(vecY);
 
+                Span<ushort> charDest = Unsafe.BitCast<Span<TChar>, Span<ushort>>(dest);
+                if (hasDashes)
+                {
+                    (Vector128<ushort> z0, Vector128<ushort> z1) = Vector128.Widen(vecZ);
+
+                    // We need to merge these vectors in this order:
+                    // xxxxxxxxxxxxxxxx
+                    //                     yyyyyyyyyyyyyyyy
+                    //         zzzzzzzzzzzzzzzz
+                    x0.CopyTo(charDest.Slice(0, Vector128<ushort>.Count));
+                    y0.CopyTo(charDest.Slice(20, Vector128<ushort>.Count));
+                    y1.CopyTo(charDest.Slice(28, Vector128<ushort>.Count));
+                    z0.CopyTo(charDest.Slice(8, Vector128<ushort>.Count)); // overlaps x1
+                    z1.CopyTo(charDest.Slice(16, Vector128<ushort>.Count));
+                }
+                else
+                {
+                    // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
+                    x0.CopyTo(charDest.Slice(0, Vector128<ushort>.Count));
+                    x1.CopyTo(charDest.Slice(8, Vector128<ushort>.Count));
+                    y0.CopyTo(charDest.Slice(16, Vector128<ushort>.Count));
+                    y1.CopyTo(charDest.Slice(24, Vector128<ushort>.Count));
+                }
+            }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal bool TryFormatCore_Scalar<TChar>(Span<TChar> destination, bool hasDashes) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Span<TChar> dest = destination;
+
+            // For better range check elimination, split the dash and no-dash cases.
+            if (hasDashes)
+            {
+                // Hoist bounds checks by writing _k first
+                dest[35] = TChar.CastFrom(HexConverter.ToCharLower((_k)));
+
+                dest[0] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 24) >> 4));
+                dest[1] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 24)));
+                dest[2] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 16) >> 4));
+                dest[3] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 16)));
+                dest[4] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 8) >> 4));
+                dest[5] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 8)));
+                dest[6] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 0) >> 4));
+                dest[7] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 0)));
+                dest[8] = TChar.CastFrom('-');
+                dest[9] = TChar.CastFrom(HexConverter.ToCharLower((_b >> 8) >> 4));
+                dest[10] = TChar.CastFrom(HexConverter.ToCharLower((_b >> 8)));
+                dest[11] = TChar.CastFrom(HexConverter.ToCharLower((_b >> 0) >> 4));
+                dest[12] = TChar.CastFrom(HexConverter.ToCharLower((_b >> 0)));
+                dest[13] = TChar.CastFrom('-');
+                dest[14] = TChar.CastFrom(HexConverter.ToCharLower((_c >> 8) >> 4));
+                dest[15] = TChar.CastFrom(HexConverter.ToCharLower((_c >> 8)));
+                dest[16] = TChar.CastFrom(HexConverter.ToCharLower((_c >> 0) >> 4));
+                dest[17] = TChar.CastFrom(HexConverter.ToCharLower((_c >> 0)));
+                dest[18] = TChar.CastFrom('-');
+                dest[19] = TChar.CastFrom(HexConverter.ToCharLower((_d >> 4)));
+                dest[20] = TChar.CastFrom(HexConverter.ToCharLower((_d)));
+                dest[21] = TChar.CastFrom(HexConverter.ToCharLower((_e >> 4)));
+                dest[22] = TChar.CastFrom(HexConverter.ToCharLower((_e)));
+                dest[23] = TChar.CastFrom('-');
+                dest[24] = TChar.CastFrom(HexConverter.ToCharLower((_f >> 4)));
+                dest[25] = TChar.CastFrom(HexConverter.ToCharLower((_f)));
+                dest[26] = TChar.CastFrom(HexConverter.ToCharLower((_g >> 4)));
+                dest[27] = TChar.CastFrom(HexConverter.ToCharLower((_g)));
+                dest[28] = TChar.CastFrom(HexConverter.ToCharLower((_h >> 4)));
+                dest[29] = TChar.CastFrom(HexConverter.ToCharLower((_h)));
+                dest[30] = TChar.CastFrom(HexConverter.ToCharLower((_i >> 4)));
+                dest[31] = TChar.CastFrom(HexConverter.ToCharLower((_i)));
+                dest[32] = TChar.CastFrom(HexConverter.ToCharLower((_j >> 4)));
+                dest[33] = TChar.CastFrom(HexConverter.ToCharLower((_j)));
+                dest[34] = TChar.CastFrom(HexConverter.ToCharLower((_k >> 4)));
+            }
+            else
+            {
+                // Hoist bounds checks by writing _k first
+                dest[31] = TChar.CastFrom(HexConverter.ToCharLower((_k)));
+
+                dest[0] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 24) >> 4));
+                dest[1] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 24)));
+                dest[2] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 16) >> 4));
+                dest[3] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 16)));
+                dest[4] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 8) >> 4));
+                dest[5] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 8)));
+                dest[6] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 0) >> 4));
+                dest[7] = TChar.CastFrom(HexConverter.ToCharLower((_a >> 0)));
+                dest[8] = TChar.CastFrom(HexConverter.ToCharLower((_b >> 8) >> 4));
+                dest[9] = TChar.CastFrom(HexConverter.ToCharLower((_b >> 8)));
+                dest[10] = TChar.CastFrom(HexConverter.ToCharLower((_b >> 0) >> 4));
+                dest[11] = TChar.CastFrom(HexConverter.ToCharLower((_b >> 0)));
+                dest[12] = TChar.CastFrom(HexConverter.ToCharLower((_c >> 8) >> 4));
+                dest[13] = TChar.CastFrom(HexConverter.ToCharLower((_c >> 8)));
+                dest[14] = TChar.CastFrom(HexConverter.ToCharLower((_c >> 0) >> 4));
+                dest[15] = TChar.CastFrom(HexConverter.ToCharLower((_c >> 0)));
+                dest[16] = TChar.CastFrom(HexConverter.ToCharLower((_d >> 4)));
+                dest[17] = TChar.CastFrom(HexConverter.ToCharLower((_d)));
+                dest[18] = TChar.CastFrom(HexConverter.ToCharLower((_e >> 4)));
+                dest[19] = TChar.CastFrom(HexConverter.ToCharLower((_e)));
+                dest[20] = TChar.CastFrom(HexConverter.ToCharLower((_f >> 4)));
+                dest[21] = TChar.CastFrom(HexConverter.ToCharLower((_f)));
+                dest[22] = TChar.CastFrom(HexConverter.ToCharLower((_g >> 4)));
+                dest[23] = TChar.CastFrom(HexConverter.ToCharLower((_g)));
+                dest[24] = TChar.CastFrom(HexConverter.ToCharLower((_h >> 4)));
+                dest[25] = TChar.CastFrom(HexConverter.ToCharLower((_h)));
+                dest[26] = TChar.CastFrom(HexConverter.ToCharLower((_i >> 4)));
+                dest[27] = TChar.CastFrom(HexConverter.ToCharLower((_i)));
+                dest[28] = TChar.CastFrom(HexConverter.ToCharLower((_j >> 4)));
+                dest[29] = TChar.CastFrom(HexConverter.ToCharLower((_j)));
+                dest[30] = TChar.CastFrom(HexConverter.ToCharLower((_k >> 4)));
+            }
             return true;
         }
 
