@@ -4200,6 +4200,9 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
         MethodTable* pFieldMT = pField->GetFieldTypeHandleThrowing().GetMethodTable();
         bool hasFixedAddr = HasFixedAddressVTStatics();
 
+        // Activate any dependent modules if necessary
+        pFieldMT->EnsureInstanceActive();
+
         // Taking a lock since we might come here from multiple threads/places
         CrstHolder crst(GetAppDomain()->GetStaticBoxInitLock());
 
@@ -4227,9 +4230,7 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OB
     CONTRACTL_END
 
     _ASSERTE(pFieldMT->IsValueType());
-
-    // Activate any dependent modules if necessary
-    pFieldMT->EnsureInstanceActive();
+    _ASSERTE(pFieldMT->CheckInstanceActivated());
 
     OBJECTREF obj = NULL;
     if (canBeFrozen)

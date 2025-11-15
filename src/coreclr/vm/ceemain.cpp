@@ -554,7 +554,11 @@ void EESocketCleanupHelper(bool isExecutingOnAltStack)
 
     if (isExecutingOnAltStack)
     {
-        GetThread()->SetExecutingOnAltStack();
+        Thread *pThread = GetThreadNULLOk();
+        if (pThread)
+        {
+             pThread->SetExecutingOnAltStack();
+        }
     }
 
     // Close the debugger transport socket first

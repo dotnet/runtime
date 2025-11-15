@@ -251,7 +251,7 @@ int stream_size;
         if (state->window == Z_NULL) {
             ZFREE(strm, state);
             strm->state = Z_NULL;
-            ret = Z_MEM_ERROR;
+            return Z_MEM_ERROR;
         }
     }
     state->whave = 0;
@@ -727,7 +727,7 @@ int flush;
                 if (state->window == Z_NULL) {
                     ZFREE(strm, state);
                     strm->state = Z_NULL;
-                    ret = Z_MEM_ERROR;
+                    return Z_MEM_ERROR;
                 }
                 LOAD();
             }

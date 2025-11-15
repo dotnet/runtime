@@ -336,6 +336,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                 chainTest.ChainPolicy.ExtraStore.Add(issuerCert);
 
+                X509ChainStatusFlags allowedFlags = X509ChainStatusFlags.NoError;
+
                 switch (testArguments)
                 {
                     case BuildChainCustomTrustStoreTestArguments.TrustedIntermediateUntrustedRoot:
@@ -353,6 +355,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         chainHolder.DisposeChainElements();
                         chainTest.ChainPolicy.CustomTrustStore.Remove(rootCert);
                         chainTest.ChainPolicy.TrustMode = X509ChainTrustMode.System;
+                        chainTest.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                        chainTest.ChainPolicy.ExtraStore.Add(rootCert);
+                        allowedFlags |= X509ChainStatusFlags.UntrustedRoot;
                         break;
                     default:
                         throw new InvalidDataException();
@@ -360,7 +365,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal(chainBuildsSuccessfully, chainTest.Build(endCert));
                 Assert.Equal(3, chainTest.ChainElements.Count);
-                Assert.Equal(chainFlags, chainTest.AllStatusFlags());
+
+                X509ChainStatusFlags actualFlags = chainTest.AllStatusFlags();
+                actualFlags &= ~allowedFlags;
+
+                Assert.Equal(chainFlags, actualFlags);
             }
         }
 
@@ -1162,12 +1171,12 @@ yY1kePIfwE+GFWvagZ2ehANB/6LgBTT8jFhR95Tw2oE3N0I=");
                 chain.ChainPolicy.ExtraStore.Add(intermediateCert);
                 Assert.False(chain.Build(cert));
 
-                if (PlatformDetection.IsAndroid)
+                if (PlatformDetection.IsAndroid || PlatformDetection.IsApplePlatform26OrLater)
                 {
                     // Android always validates trust as part of building a path,
                     // so violations comes back as PartialChain with no elements
+                    // Apple 26 no longer block these SKIs since the roots are no longer trusted at all and are expired.
                     Assert.Equal(X509ChainStatusFlags.PartialChain, chain.AllStatusFlags());
-                    Assert.Equal(0, chain.ChainElements.Count);
                 }
                 else
                 {

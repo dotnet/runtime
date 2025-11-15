@@ -16,7 +16,7 @@ public class ConfigSrcTests : TestMainJsTestBase
 
     // NOTE: port number determinizes dynamically, so could not generate absolute URI
     [Theory]
-    [BuildAndRun(host: RunHost.V8 | RunHost.NodeJS)]
+    [BuildAndRun(host: RunHost.V8)]
     public void ConfigSrcAbsolutePath(BuildArgs buildArgs, RunHost host, string id)
     {
         buildArgs = buildArgs with { ProjectName = $"configsrcabsolute_{buildArgs.Config}_{buildArgs.AOT}" };

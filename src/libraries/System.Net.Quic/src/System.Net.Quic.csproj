@@ -12,9 +12,6 @@
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetQuic_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == ''">ExcludeApiList.PNSE.txt</ApiExclusionListPath>
-    <!-- This controls if we consume official binaries from MsQuic or if we use binaries published from dotnet/msquic repo.
-         Release branches should generally consume MsQuic release code, transport allows us to consume and test pre-released versions -->
-    <UseQuicTransportPackage  Condition="'$(UseQuicTransportPackage)' == ''">false</UseQuicTransportPackage>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
@@ -141,41 +138,15 @@
                         '$(DotNetBuildFromSource)' != 'true'">
 
     <!-- Project references -->
-    <PackageReference Include="runtime.win-$(TargetArchitecture).runtime.native.System.Net.MsQuic.Transport"
-                      Version="$(SystemNetMsQuicTransportVersion)"
-                      PrivateAssets="all"
-                      Condition="'$(UseQuicTransportPackage)' == 'true'"
-                      GeneratePathProperty="true" />
-
     <PackageReference Include="Microsoft.Native.Quic.MsQuic.Schannel"
                       Version="$(MicrosoftNativeQuicMsQuicSchannelVersion)"
                       PrivateAssets="all"
                       Condition="'$(UseQuicTransportPackage)' != 'true'"
                       GeneratePathProperty="true" />
 
-    <NativeBinPlaceItem Include="$(PkgMicrosoft_Native_Quic_MsQuic_Schannel)\build\native\bin\$(TargetArchitecture)\*"
-                        Condition="'$(UseQuicTransportPackage)' != 'true'" />
-    <NativeBinPlaceItem Include="$(PkgRuntime_win-x64_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
-                        Condition="'$(UseQuicTransportPackage)' == 'true'" />
-    <NativeBinPlaceItem Include="$(PkgRuntime_win-x86_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
-                        Condition="'$(UseQuicTransportPackage)' == 'true'" />
-    <NativeBinPlaceItem Include="$(PkgRuntime_win-arm64_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
-                        Condition="'$(UseQuicTransportPackage)' == 'true'" />
+    <NativeBinPlaceItem Include="$(PkgMicrosoft_Native_Quic_MsQuic_Schannel)\build\native\bin\$(TargetArchitecture)\*" />
   </ItemGroup>
 
-  <!-- Include msquic in debug version for macOS so we can test it without packages. -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' and
-                          '$(TargetOS)' == 'osx' and
-                          '$(TargetArchitecture)' == 'x64' and
-                          '$(Configuration)' == 'Debug' and
-                          '$(DotNetBuildFromSource)' != 'true'">
-      <!-- MsQuic packages do not have macOS binaries. Our transport package is only one source. -->
-      <PackageReference Include="runtime.osx-$(TargetArchitecture).runtime.native.System.Net.MsQuic.Transport"
-                        Version="$(SystemNetMsQuicTransportVersion)"
-                        PrivateAssets="all"
-                        GeneratePathProperty="true" />
-      <NativeBinPlaceItem Include="$(PkgRuntime_osx-x64_runtime_native_System_Net_MsQuic_Transport)\runtimes\osx-$(TargetArchitecture)\native\*" />
-  </ItemGroup>
   <ItemGroup Condition="'@(NativeBinplaceItem)' != ''">
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />

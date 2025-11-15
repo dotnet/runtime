@@ -756,5 +756,32 @@ namespace System.DirectoryServices.Protocols.Tests
 
             Assert.Throws<ObjectDisposedException>(() => connection.SessionOptions.StopTransportLayerSecurity());
         }
+
+#if NET
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void CertificateDirectoryProperty()
+        {
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Null(options.TrustedCertificatesDirectory);
+
+                options.TrustedCertificatesDirectory = ".";
+                Assert.Equal(".", options.TrustedCertificatesDirectory);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CertificateDirectoryProperty_ThrowsPlatformNotSupportedException()
+        {
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Throws<PlatformNotSupportedException>(() => options.TrustedCertificatesDirectory = "CertificateDirectory");
+            }
+        }
+#endif
     }
 }

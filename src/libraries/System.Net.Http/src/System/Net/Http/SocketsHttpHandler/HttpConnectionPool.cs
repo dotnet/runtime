@@ -492,8 +492,7 @@ namespace System.Net.Http
             HttpConnection? connection = null;
             Exception? connectionException = null;
 
-            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
-            waiter.ConnectionCancellationTokenSource = cts;
+            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource(waiter);
             try
             {
                 connection = await CreateHttp11ConnectionAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
@@ -691,8 +690,7 @@ namespace System.Net.Http
             Exception? connectionException = null;
             HttpConnectionWaiter<Http2Connection?> waiter = queueItem.Waiter;
 
-            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
-            waiter.ConnectionCancellationTokenSource = cts;
+            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource(waiter);
             try
             {
                 (Stream stream, TransportContext? transportContext, IPEndPoint? remoteEndPoint) = await ConnectAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
@@ -1520,7 +1518,27 @@ namespace System.Net.Http
             return SendWithProxyAuthAsync(request, async, doRequestAuth, cancellationToken);
         }
 
-        private CancellationTokenSource GetConnectTimeoutCancellationTokenSource() => new CancellationTokenSource(Settings._connectTimeout);
+        private CancellationTokenSource GetConnectTimeoutCancellationTokenSource<T>(HttpConnectionWaiter<T> waiter)
+            where T : HttpConnectionBase?
+        {
+            var cts = new CancellationTokenSource(Settings._connectTimeout);
+
+            lock (waiter)
+            {
+                waiter.ConnectionCancellationTokenSource = cts;
+
+                // The initiating request for this connection attempt may complete concurrently at any time.
+                // If it completed before we've set the CTS, CancelIfNecessary would no-op.
+                // Check it again now that we're holding the lock and ensure we always set a timeout.
+                if (waiter.Task.IsCompleted)
+                {
+                    CancelIfNecessary(waiter, requestCancelled: waiter.Task.IsCanceled);
+                    waiter.ConnectionCancellationTokenSource = null;
+                }
+            }
+
+            return cts;
+        }
 
         private async ValueTask<(Stream, TransportContext?, IPEndPoint?)> ConnectAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {

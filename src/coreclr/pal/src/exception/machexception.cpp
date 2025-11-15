@@ -849,7 +849,7 @@ HijackFaultingThread(
     if (fIsStackOverflow)
     {
         // Allocate the minimal stack necessary for handling stack overflow
-        int stackOverflowStackSize = 7 * 4096;
+        int stackOverflowStackSize = 15 * 4096;
         // Align the size to virtual page size and add one virtual page as a stack guard
         stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
         void* stackOverflowHandlerStack = mmap(NULL, stackOverflowStackSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
@@ -1325,7 +1325,7 @@ void MachExceptionInfo::RestoreState(mach_port_t thread)
     kern_return_t machret = thread_set_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, x86_THREAD_STATE_COUNT);
     CHECK_MACH("thread_set_state(thread)", machret);
 
-    machret = thread_set_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, x86_FLOAT_STATE_COUNT);
+    machret = thread_set_state(thread, FloatState.ash.flavor, (thread_state_t)&FloatState.ufs, FloatState.ash.count);
     CHECK_MACH("thread_set_state(float)", machret);
 
     machret = thread_set_state(thread, x86_DEBUG_STATE, (thread_state_t)&DebugState, x86_DEBUG_STATE_COUNT);

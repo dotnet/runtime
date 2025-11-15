@@ -108,8 +108,14 @@ namespace System.Numerics.Tests
                     return new BigInteger(Max(bytes1, bytes2).ToArray());
                 case "b>>":
                     return new BigInteger(ShiftLeft(bytes1, Negate(bytes2)).ToArray());
+                case "b>>>":
+                    return new BigInteger(ShiftRightUnsigned(bytes1, bytes2).ToArray());
                 case "b<<":
                     return new BigInteger(ShiftLeft(bytes1, bytes2).ToArray());
+                case "bRotateLeft":
+                    return new BigInteger(RotateLeft(bytes1, bytes2).ToArray());
+                case "bRotateRight":
+                    return new BigInteger(RotateLeft(bytes1, Negate(bytes2)).ToArray());
                 case "b^":
                     return new BigInteger(Xor(bytes1, bytes2).ToArray());
                 case "b|":
@@ -637,10 +643,67 @@ namespace System.Numerics.Tests
             return bnew;
         }
 
+        public static List<byte> ShiftRightUnsigned(List<byte> bytes1, List<byte> bytes2)
+        {
+            int byteShift = (int)new BigInteger(Divide(Copy(bytes2), new List<byte>(new byte[] { 8 })).ToArray());
+            sbyte bitShift = (sbyte)new BigInteger(Remainder(Copy(bytes2), new List<byte>(new byte[] { 8 })).ToArray());
+
+            if (byteShift == 0 && bitShift == 0)
+                return bytes1;
+
+            if (byteShift < 0 || bitShift < 0)
+                return ShiftLeft(bytes1, Negate(bytes2));
+
+            Trim(bytes1);
+
+            byte fill = (bytes1[bytes1.Count - 1] & 0x80) != 0 ? byte.MaxValue : (byte)0;
+
+            if (fill == byte.MaxValue)
+            {
+                while (bytes1.Count % 4 != 0)
+                {
+                    bytes1.Add(fill);
+                }
+            }
+
+            if (byteShift >= bytes1.Count)
+            {
+                return [fill];
+            }
+
+            if (fill == byte.MaxValue)
+            {
+                bytes1.Add(0);
+            }
+
+            for (int i = 0; i < bitShift; i++)
+            {
+                bytes1 = ShiftRight(bytes1);
+            }
+
+            List<byte> temp = new List<byte>();
+            for (int i = byteShift; i < bytes1.Count; i++)
+            {
+                temp.Add(bytes1[i]);
+            }
+            bytes1 = temp;
+
+            if (fill == byte.MaxValue && bytes1.Count % 4 == 1)
+            {
+                bytes1.RemoveAt(bytes1.Count - 1);
+            }
+
+            Trim(bytes1);
+
+            return bytes1;
+        }
+
         public static List<byte> ShiftLeft(List<byte> bytes1, List<byte> bytes2)
         {
             int byteShift = (int)new BigInteger(Divide(Copy(bytes2), new List<byte>(new byte[] { 8 })).ToArray());
             sbyte bitShift = (sbyte)new BigInteger(Remainder(bytes2, new List<byte>(new byte[] { 8 })).ToArray());
+
+            Trim(bytes1);
 
             for (int i = 0; i < Math.Abs(bitShift); i++)
             {
@@ -772,6 +835,105 @@ namespace System.Numerics.Tests
             }
 
             return bresult;
+        }
+
+        public static List<byte> RotateRight(List<byte> bytes)
+        {
+            List<byte> bresult = new List<byte>();
+
+            byte bottom = (byte)(bytes[0] & 0x01);
+
+            for (int i = 0; i < bytes.Count; i++)
+            {
+                byte newbyte = bytes[i];
+
+                newbyte = (byte)(newbyte / 2);
+                if ((i != (bytes.Count - 1)) && ((bytes[i + 1] & 0x01) == 1))
+                {
+                    newbyte += 128;
+                }
+                if ((i == (bytes.Count - 1)) && (bottom != 0))
+                {
+                    newbyte += 128;
+                }
+                bresult.Add(newbyte);
+            }
+
+            return bresult;
+        }
+
+        public static List<byte> RotateLeft(List<byte> bytes)
+        {
+            List<byte> bresult = new List<byte>();
+
+            bool prevHead = (bytes[bytes.Count - 1] & 0x80) != 0;
+
+            for (int i = 0; i < bytes.Count; i++)
+            {
+                byte newbyte = bytes[i];
+
+                newbyte = (byte)(newbyte * 2);
+                if (prevHead)
+                {
+                    newbyte += 1;
+                }
+
+                bresult.Add(newbyte);
+
+                prevHead = (bytes[i] & 0x80) != 0;
+            }
+
+            return bresult;
+        }
+
+
+        public static List<byte> RotateLeft(List<byte> bytes1, List<byte> bytes2)
+        {
+            List<byte> bytes1Copy = Copy(bytes1);
+            int byteShift = (int)new BigInteger(Divide(Copy(bytes2), new List<byte>(new byte[] { 8 })).ToArray());
+            sbyte bitShift = (sbyte)new BigInteger(Remainder(bytes2, new List<byte>(new byte[] { 8 })).ToArray());
+
+            Trim(bytes1);
+
+            byte fill = (bytes1[bytes1.Count - 1] & 0x80) != 0 ? byte.MaxValue : (byte)0;
+
+            if (fill == 0 && bytes1.Count > 1 && bytes1[bytes1.Count - 1] == 0)
+                bytes1.RemoveAt(bytes1.Count - 1);
+
+            while (bytes1.Count % 4 != 0)
+            {
+                bytes1.Add(fill);
+            }
+
+            byteShift %= bytes1.Count;
+            if (byteShift == 0 && bitShift == 0)
+                return bytes1Copy;
+
+            for (int i = 0; i < Math.Abs(bitShift); i++)
+            {
+                if (bitShift < 0)
+                {
+                    bytes1 = RotateRight(bytes1);
+                }
+                else
+                {
+                    bytes1 = RotateLeft(bytes1);
+                }
+            }
+
+            List<byte> temp = new List<byte>();
+            for (int i = 0; i < bytes1.Count; i++)
+            {
+                temp.Add(bytes1[(i - byteShift + bytes1.Count) % bytes1.Count]);
+            }
+            bytes1 = temp;
+
+            if (fill == 0)
+                bytes1.Add(0);
+
+            Trim(bytes1);
+
+            return bytes1;
         }
 
         public static List<byte> SetLength(List<byte> bytes, int size)

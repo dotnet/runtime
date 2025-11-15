@@ -73,6 +73,34 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
+        [Fact]
+        public void LoadLibrary_IgnoreWorkingDirectory()
+        {
+            using (TestArtifact cwd = TestArtifact.Create("cwd"))
+            {
+                // Validate that hosting components in the working directory will not be used
+                File.Copy(Binaries.CoreClr.MockPath, Path.Combine(cwd.Location, Binaries.CoreClr.FileName));
+                File.Copy(Binaries.HostFxr.MockPath_5_0, Path.Combine(cwd.Location, Binaries.HostFxr.FileName));
+                File.Copy(Binaries.HostPolicy.MockPath, Path.Combine(cwd.Location, Binaries.HostPolicy.FileName));
+
+                string [] args = {
+                    "ijwhost",
+                    sharedState.IjwApp.AppDll,
+                    "NativeEntryPoint"
+                };
+                var dotnet = new Microsoft.DotNet.Cli.Build.DotNetCli(sharedState.RepoDirectories.BuiltDotnet);
+                sharedState.CreateNativeHostCommand(args, sharedState.RepoDirectories.BuiltDotnet)
+                    .WorkingDirectory(cwd.Location)
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
+                    .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext")
+                    .And.ResolveHostFxr(dotnet)
+                    .And.ResolveHostPolicy(dotnet)
+                    .And.ResolveCoreClr(dotnet);
+            }
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]

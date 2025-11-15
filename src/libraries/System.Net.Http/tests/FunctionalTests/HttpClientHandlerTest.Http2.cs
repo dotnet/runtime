@@ -139,7 +139,8 @@ namespace System.Net.Http.Functional.Tests
 
                 Http2LoopbackConnection connection = await server.AcceptConnectionAsync(timeout: null);
                 _ = await connection.ReadSettingsAsync();
-
+                // Wait until client starts sending request
+                _ = await connection.ReadFrameAsync(TestHelper.PassingTestTimeout);
                 GoAwayFrame goAwayFrame = new GoAwayFrame(lastStreamId: 0, (int)ProtocolErrors.HTTP_1_1_REQUIRED, additionalDebugData: Array.Empty<byte>(), streamId: 0);
                 await connection.WriteFrameAsync(goAwayFrame);
 
@@ -363,6 +364,8 @@ namespace System.Net.Http.Functional.Tests
 
                 Http2LoopbackConnection connection = await server.AcceptConnectionAsync();
                 await connection.ReadSettingsAsync();
+                // Wait until client starts sending request
+                _ = await connection.ReadFrameAsync(TestHelper.PassingTestTimeout);
                 await connection.SendGoAway(0, ProtocolErrors.INTERNAL_ERROR);
 
                 await AssertProtocolErrorAsync(sendTask, ProtocolErrors.INTERNAL_ERROR);
@@ -2494,6 +2497,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
+                    connection.IgnoreWindowUpdates();
                     // Send some data back and forth
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
@@ -2554,6 +2558,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpResponseMessage response = await responseTask;
                     Stream responseStream = await response.Content.ReadAsStreamAsync();
 
+                    connection.IgnoreWindowUpdates();
                     // Send some data back and forth
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
                     await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId);
@@ -2874,6 +2879,7 @@ namespace System.Net.Http.Functional.Tests
                     // This allows the request processing to complete.
                     duplexContent.Fail(e);
 
+                    connection.IgnoreWindowUpdates(); // The RTT algorithm may send a WINDOW_UPDATE before RST_STREAM.
                     // Client should set RST_STREAM.
                     await connection.ReadRstStreamAsync(streamId);
                 }
@@ -2947,6 +2953,7 @@ namespace System.Net.Http.Functional.Tests
                     // This allows the request processing to complete.
                     duplexContent.Fail(e);
 
+                    connection.IgnoreWindowUpdates(); // The RTT algorithm may send a WINDOW_UPDATE before RST_STREAM.
                     // Client should set RST_STREAM.
                     await connection.ReadRstStreamAsync(streamId);
                 }

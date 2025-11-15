@@ -5,7 +5,7 @@ setlocal
 :: Initialize the args that will be passed to cmake
 set "__sourceDir=%~dp0"
 :: remove trailing slash
-if %__sourceDir:~-1%==\ set "__ProjectDir=%__sourceDir:~0,-1%"
+if "%__sourceDir:~-1%"=="\" set "__sourceDir=%__sourceDir:~0,-1%"
 
 set "__RepoRootDir=%__sourceDir%\..\..\.."
 :: normalize

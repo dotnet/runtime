@@ -3,9 +3,6 @@
 
   <ItemGroup>
     <TestConsoleAppSourceFiles Include="DecompressionHandlerTrimmedTest.cs" />
-    <TestConsoleAppSourceFiles Include="HttpClientTest.cs">
-      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
-    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

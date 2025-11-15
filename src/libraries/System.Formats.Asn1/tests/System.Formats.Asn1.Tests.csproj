@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Asn1TagTests.cs" />
+    <Compile Include="Decoder\ReadEncodedValueTests.cs" />
     <Compile Include="Reader\ComprehensiveReadTests.cs" />
     <Compile Include="Reader\OverlappedReads.cs" />
     <Compile Include="Reader\ParseTag.cs" />

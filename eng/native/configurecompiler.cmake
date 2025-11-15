@@ -500,9 +500,21 @@ if (CLR_CMAKE_HOST_UNIX)
   #-fms-compatibility      Enable full Microsoft Visual C++ compatibility
   #-fms-extensions         Accept some non-standard constructs supported by the Microsoft compiler
 
-  # Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
-  # using twos-complement representation (this is normally undefined according to the C++ spec).
-  add_compile_options(-fwrapv)
+  if((CMAKE_C_COMPILER_ID STREQUAL "Clang" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 20.0) OR
+      (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 20.0))
+    # Make signed overflow well-defined. Implies the following flags in clang-20 and above.
+    # -fwrapv - Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
+    # using twos-complement representation (this is normally undefined according to the C++ spec).
+    # -fwrapv-pointer - The same as -fwrapv but for pointers.
+    add_compile_options(-fno-strict-overflow)
+
+    # Suppress C++ strict aliasing rules. This matches our use of MSVC.
+    add_compile_options(-fno-strict-aliasing)
+  else()
+    # Make signed arithmetic overflow of addition, subtraction, and multiplication wrap around
+    # using twos-complement representation (this is normally undefined according to the C++ spec).
+    add_compile_options(-fwrapv)
+  endif()
 
   if(CLR_CMAKE_HOST_APPLE)
     # Clang will by default emit objc_msgSend stubs in Xcode 14, which ld from earlier Xcodes doesn't understand.
@@ -635,9 +647,21 @@ if (CLR_CMAKE_HOST_UNIX)
     # a value for mmacosx-version-min (blank CMAKE_OSX_DEPLOYMENT_TARGET gets
     # replaced with a default value, and always gets expanded to an OS version.
     # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
-    # We need to disable the warning that -tagret replaces -mmacosx-version-min
-    set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
-    add_link_options(-Wno-overriding-t-option)
+    # We need to disable the warning that -target replaces -mmacosx-version-min
+    #
+    # With https://github.com/llvm/llvm-project/commit/1c66d08b0137cef7761b8220d3b7cb7833f57cdb clang renamed the option so we need to check for both
+    check_c_compiler_flag("-Wno-overriding-option" COMPILER_SUPPORTS_W_NO_OVERRIDING_OPTION)
+    if (COMPILER_SUPPORTS_W_NO_OVERRIDING_OPTION)
+      set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-option)
+    else()
+      check_c_compiler_flag("-Wno-overriding-t-option" COMPILER_SUPPORTS_W_NO_OVERRIDING_T_OPTION)
+      if (COMPILER_SUPPORTS_W_NO_OVERRIDING_T_OPTION)
+        set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
+      else()
+        message(FATAL_ERROR "Compiler does not support -Wno-overriding-option or -Wno-overriding-t-option, needed for Mac Catalyst builds.")
+      endif()
+    endif()
+    add_link_options(${DISABLE_OVERRIDING_MIN_VERSION_ERROR})
     if(CLR_CMAKE_HOST_ARCH_ARM64)
       set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios14.2-macabi")
       add_link_options(-target arm64-apple-ios14.2-macabi)

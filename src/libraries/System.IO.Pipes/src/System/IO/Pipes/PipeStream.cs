@@ -144,6 +144,11 @@ namespace System.IO.Pipes
 
         protected override void Dispose(bool disposing)
         {
+            // Mark the pipe as closed before calling DisposeCore. That way, other threads that might
+            // be synchronizing on shared resources disposed of in DisposeCore will be guaranteed to
+            // see the closed state after that synchronization.
+            _state = PipeState.Closed;
+
             try
             {
                 // Nothing will be done differently based on whether we are
@@ -159,8 +164,6 @@ namespace System.IO.Pipes
             {
                 base.Dispose(disposing);
             }
-
-            _state = PipeState.Closed;
         }
 
         // ********************** Public Properties *********************** //

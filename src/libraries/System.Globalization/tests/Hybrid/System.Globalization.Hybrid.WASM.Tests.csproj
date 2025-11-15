@@ -9,7 +9,7 @@
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- This doesn't run on V8 because https://github.com/dotnet/runtime/pull/101671 -->
     <Scenario>WasmTestOnBrowser</Scenario>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
     <XunitShowProgress>true</XunitShowProgress>
