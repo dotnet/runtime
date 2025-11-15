@@ -1367,12 +1367,6 @@ namespace System.StubHelpers
             return element.AddRef();
         }
 
-        internal static void KeepAliveViaCleanupList(ref CleanupWorkListElement? pCleanupWorkList, object obj)
-        {
-            KeepAliveCleanupWorkListElement element = new KeepAliveCleanupWorkListElement(obj);
-            CleanupWorkListElement.AddToCleanupList(ref pCleanupWorkList, element);
-        }
-
         internal static void DestroyCleanupList(ref CleanupWorkListElement? pCleanupWorkList)
         {
             if (pCleanupWorkList != null)
