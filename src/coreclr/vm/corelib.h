@@ -1196,20 +1196,18 @@ DEFINE_CLASS(SZARRAYHELPER,         System,                        SZArrayHelper
 DEFINE_METHOD(SZARRAYHELPER,        GETENUMERATOR,          GetEnumerator,              NoSig)
 // ICollection`1/IReadOnlyCollection`1
 DEFINE_METHOD(SZARRAYHELPER,        GET_COUNT,              get_Count,                  NoSig)
+DEFINE_METHOD(SZARRAYHELPER,        ISREADONLY,             get_IsReadOnly,             NoSig)
 DEFINE_METHOD(SZARRAYHELPER,        ADD,                    Add,                        NoSig)
 DEFINE_METHOD(SZARRAYHELPER,        CLEAR,                  Clear,                      NoSig)
 DEFINE_METHOD(SZARRAYHELPER,        CONTAINS,               Contains,                   NoSig)
+DEFINE_METHOD(SZARRAYHELPER,        COPYTO,                 CopyTo,                     NoSig)
 DEFINE_METHOD(SZARRAYHELPER,        REMOVE,                 Remove,                     NoSig)
 // IList`1/IReadOnlyList`1
 DEFINE_METHOD(SZARRAYHELPER,        GET_ITEM,               get_Item,                   NoSig)
 DEFINE_METHOD(SZARRAYHELPER,        SET_ITEM,               set_Item,                   NoSig)
-DEFINE_METHOD(SZARRAYHELPER,        INSERT,                 Insert,                     NoSig)
-#ifdef FOR_ILLINK
-DEFINE_METHOD(SZARRAYHELPER,        ISREADONLY,             get_IsReadOnly,             NoSig)
-DEFINE_METHOD(SZARRAYHELPER,        COPYTO,                 CopyTo,                     NoSig)
 DEFINE_METHOD(SZARRAYHELPER,        INDEXOF,                IndexOf,                    NoSig)
+DEFINE_METHOD(SZARRAYHELPER,        INSERT,                 Insert,                     NoSig)
 DEFINE_METHOD(SZARRAYHELPER,        REMOVEAT,               RemoveAt,                   NoSig)
-#endif // FOR_ILLINK
 
 DEFINE_CLASS(SZGENERICARRAYENUMERATOR, System, SZGenericArrayEnumerator`1)
 
