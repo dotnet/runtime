@@ -3320,9 +3320,9 @@ MethodTableBuilder::EnumerateClassMethods()
                 if (IsTaskReturning(returnKind))
                 {
                     // Declare a TaskReturning variant method.
-                    // In the next pass we will aslo add an Async variant that can be called by async
+                    // In the next pass we will also add an Async variant that can be called by async
                     // code when awaiting and bypass Task abstraction.
-                    AsyncMethodKind kind = AsyncMethodKind::ReturnsTaskOrValueTask | AsyncMethodKind::Variant;
+                    AsyncMethodKind kind = AsyncMethodKind::ReturnsTaskOrValueTask | AsyncMethodKind::HasAsyncOtherVariant;
 
                     // if IsMiAsync is set, then the method becomes a task-returning thunk,
                     // while actual IL belongs to the Async variant.
@@ -3365,7 +3365,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG newSuffixSize;
                 ULONG newPrefixSize;
 
-                AsyncMethodKind asyncKind = (AsyncMethodKind::Async | AsyncMethodKind::Variant);
+                AsyncMethodKind asyncKind = (AsyncMethodKind::Async | AsyncMethodKind::HasAsyncOtherVariant);
                 // The opposite of the "if (IsMiAsync(dwImplFlags))" code above.
                 if (!IsMiAsync(dwImplFlags))
                     asyncKind |= AsyncMethodKind::Thunk;
@@ -6090,7 +6090,7 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
                     {
                         if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
                         {
-                            if (pCurMD->IsVariantMethod())
+                            if (pCurMD->HasAsyncOtherVariant())
                             {
                                 pCurMD = pCurMD->GetAsyncOtherVariant();
                             }
@@ -6297,7 +6297,7 @@ MethodTableBuilder::InitMethodDesc(
 
         // async variants have a signature different from their task-returning
         // definitions, so we store the signature together with the kind
-        if (hasAsyncKindFlags(asyncKind, AsyncMethodKind::Async | AsyncMethodKind::Variant))
+        if (hasAsyncKindFlags(asyncKind, AsyncMethodKind::Async | AsyncMethodKind::HasAsyncOtherVariant))
         {
             pAsyncMethodData->sig = sig;
         }

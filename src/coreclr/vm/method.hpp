@@ -63,20 +63,22 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 enum class AsyncMethodKind
 {
     // Method body is emitted as a state machine and uses Async call convention.
-    Async                  = 1,
+    Async                      = 1,
     // Not Async method that returns a promise type {Task, Task<T>, ValueTask, ValueTask<T>}
-    ReturnsTaskOrValueTask = 2,
-    // Method has two variants and this is one of them.
-    Variant                = 4,
+    ReturnsTaskOrValueTask     = 2,
+    // HasAsyncOtherVariant indicates that this method belongs to a pair of methods
+    // with different calling conventions (Async vs. not-Async) that represent
+    // the same method definition.
+    HasAsyncOtherVariant       = 4,
     // Method has synthetic body, which forwards to the other variant.
-    Thunk                  = 8,
+    Thunk                      = 8,
     // The rest of the methods that are not in any of the above groups.
     // Such methods are not interesting to the Runtime Async feature.
     // Note: Generic T-returning methods are Ordinary, even if T could be a Task.
-    Ordinary               = 0,
+    Ordinary                   = 0,
 
     //=============================================================
-    // A few words about Variant pairs:
+    // A few words about Async and non-Async variants:
     //
     // When we see a Task-returning method in metadata we create 2 method variants that logically match
     // the same method definition. One variant has the same signature/callconv as the defining method
@@ -1947,14 +1949,14 @@ public:
 
     // Is this a Variant method?
     // If yes, the method has another variant.
-    inline bool IsVariantMethod() const
+    inline bool HasAsyncOtherVariant() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         if (!HasAsyncMethodData())
             return false;
 
         AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::Variant);
+        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::HasAsyncOtherVariant);
     }
 
     // Is this an Async variant method?
@@ -1966,7 +1968,7 @@ public:
             return false;
 
         AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::Async | AsyncMethodKind::Variant);
+        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::Async | AsyncMethodKind::HasAsyncOtherVariant);
     }
 
     // Is this a small(ish) synthetic Task/async adapter to an async/Task implementation?
@@ -2015,7 +2017,7 @@ public:
 
         // async variant, but not a thunk
         AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return asyncKind == (AsyncMethodKind::Async | AsyncMethodKind::Variant);
+        return asyncKind == (AsyncMethodKind::Async | AsyncMethodKind::HasAsyncOtherVariant);
     }
 
 #ifdef FEATURE_METADATA_UPDATER
