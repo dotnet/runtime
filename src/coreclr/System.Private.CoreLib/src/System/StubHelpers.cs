@@ -1299,24 +1299,6 @@ namespace System.StubHelpers
         }
     }
 
-    // Keeps an object instance alive across the full Managed->Native call.
-    // This ensures that users don't have to call GC.KeepAlive after passing a struct or class
-    // that has a delegate field to native code.
-    internal sealed class KeepAliveCleanupWorkListElement : CleanupWorkListElement
-    {
-        public KeepAliveCleanupWorkListElement(object obj)
-        {
-            m_obj = obj;
-        }
-
-        private readonly object m_obj;
-
-        protected override void DestroyCore()
-        {
-            GC.KeepAlive(m_obj);
-        }
-    }
-
     // Aggregates SafeHandle and the "owned" bit which indicates whether the SafeHandle
     // has been successfully AddRef'ed. This allows us to do realiable cleanup (Release)
     // if and only if it is needed.
