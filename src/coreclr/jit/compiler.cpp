@@ -4987,10 +4987,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Now that lowering is completed we can proceed to perform register allocation
     //
-    auto linearScanPhase = [this] {
+    auto regAllocPhase = [this] {
         m_regAlloc->doRegisterAllocation();
     };
-    DoPhase(this, PHASE_LINEAR_SCAN, linearScanPhase);
+    DoPhase(this, PHASE_LINEAR_SCAN, regAllocPhase);
 
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());

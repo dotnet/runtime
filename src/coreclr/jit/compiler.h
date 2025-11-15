@@ -1362,7 +1362,7 @@ enum class PhaseStatus : unsigned
                          // the main jit data strutures.
 };
 
-// interface to hide linearscan implementation from rest of compiler
+// Interface to hide the RA implementation from the rest of the compiler.
 class RegAllocInterface
 {
 public:
