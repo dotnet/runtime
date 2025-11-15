@@ -282,7 +282,7 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 if (metadataType.Name.SequenceEqual("Type"u8) && metadataType.Namespace.SequenceEqual("System"u8))
                     return true;
-            } while ((metadataType = metadataType.MetadataBaseType) != null);
+            } while ((metadataType = metadataType.BaseType) != null);
 
             return false;
         }
@@ -298,7 +298,8 @@ namespace ILLink.Shared.TrimAnalysis
             private readonly Logger _logger;
             private readonly CompilerGeneratedState _compilerGeneratedState;
 
-            public TypeAnnotationsHashtable(Logger logger, ILProvider ilProvider, CompilerGeneratedState compilerGeneratedState) => (_logger, _ilProvider, _compilerGeneratedState) = (logger, ilProvider, compilerGeneratedState);
+            public TypeAnnotationsHashtable(Logger logger, ILProvider ilProvider, CompilerGeneratedState compilerGeneratedState) =>
+                (_logger, _ilProvider, _compilerGeneratedState) = (logger, new AsyncMaskingILProvider(ilProvider), compilerGeneratedState);
 
             private static DynamicallyAccessedMemberTypes GetMemberTypesForDynamicallyAccessedMembersAttribute(MetadataReader reader, CustomAttributeHandleCollection customAttributeHandles)
             {

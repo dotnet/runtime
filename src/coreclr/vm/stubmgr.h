@@ -392,6 +392,7 @@ class ThePreStubManager : public StubManager
 // frame-pushing, StubLinker created stubs
 // -------------------------------------------------------
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
 typedef VPTR(class PrecodeStubManager) PTR_PrecodeStubManager;
 
 class PrecodeStubManager : public StubManager
@@ -434,6 +435,7 @@ class PrecodeStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("MethodDescPrestub"); }
 #endif
 };
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
 // Note that this stub was written by a debugger guy, and thus when he refers to 'multicast'
 // stub, he really means multi or single cast stub.  This was done b/c the same stub
@@ -502,9 +504,9 @@ class StubLinkStubManager : public StubManager
 #endif
 } ;
 
+#ifdef FEATURE_JIT
 //
 // Stub manager for jump stubs created by ExecutionManager::jumpStub()
-// These are currently used only on the 64-bit targets IA64 and AMD64
 //
 typedef VPTR(class JumpStubStubManager) PTR_JumpStubStubManager;
 
@@ -540,6 +542,7 @@ class JumpStubStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("JumpStub"); }
 #endif
 };
+#endif // FEATURE_JIT
 
 //
 // Stub manager for code sections. It forwards the query to the more appropriate

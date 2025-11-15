@@ -2,14 +2,39 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 
 project(browserhost)
+set(DOTNET_PROJECT_NAME "BrowserHost-Static")
+
+# the host library
+
+include(configure.cmake)
+
+set(BROWSERHOST_STATIC_SOURCES
+    ./config.h
+    ./browserhost.cpp
+    ../native.rc
+)
+
+add_compile_definitions(FEATURE_APPHOST)
+add_definitions(-DFEATURE_APPHOST=1)
+add_definitions(-DFEATURE_STATIC_HOST=1)
+
+add_library(BrowserHost-Static
+    STATIC
+    ${BROWSERHOST_STATIC_SOURCES}
+)
+set_target_properties(BrowserHost-Static PROPERTIES OUTPUT_NAME BrowserHost CLEAN_DIRECT_OUTPUT 1)
+
+target_link_libraries(BrowserHost-Static PRIVATE
+    hostmisc
+)
+
+install(TARGETS BrowserHost-Static DESTINATION sharedFramework COMPONENT runtime)
+
+# the executable
 set(DOTNET_PROJECT_NAME "browserhost")
 
-configure_file(${CLR_SRC_NATIVE_DIR}/corehost/configure.h.in ${GENERATED_INCLUDE_DIR}/corehost/configure.h)
-target_include_directories(hostmisc_interface INTERFACE ${GENERATED_INCLUDE_DIR}/corehost)
-
-set(SOURCES
-    ./browserhost.cpp
-    native.rc
+set(BROWSERHOST_SOURCES
+    empty.c
 )
 set(HEADERS
 )
@@ -18,47 +43,47 @@ add_compile_definitions(FEATURE_APPHOST)
 add_definitions(-DFEATURE_APPHOST=1)
 add_definitions(-DFEATURE_STATIC_HOST=1)
 
-add_executable(browserhost ${SOURCES})
+add_executable(browserhost ${BROWSERHOST_SOURCES})
 set_target_properties(browserhost PROPERTIES OUTPUT_NAME dotnet.native)
 set(CMAKE_EXECUTABLE_SUFFIX ".js")
-add_dependencies(browserhost System.Native.Browser-Rollup)
-add_dependencies(browserhost System.Native.Browser-Static)
-add_dependencies(browserhost System.Runtime.InteropServices.JavaScript.Native-Static)
 
-install(TARGETS browserhost DESTINATION corehost COMPONENT runtime)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
 
-include(configure.cmake)
 
+set(SHARED_LIB_DESTINATION
+    ${CLR_ARTIFACTS_BIN_DIR}/native/net${CMAKE_NET_CORE_APP_CURRENT_VERSION}-browser-${CMAKE_BUILD_LIBRARIES_CONFIGURATION}-wasm/sharedFramework)
+set(SHARED_CLR_DESTINATION
+    ${CLR_ARTIFACTS_BIN_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_RUNTIME_CONFIGURATION}/sharedFramework)
+
+# these dependencies assume that you built `libs.native+clr.runtime` subsets first
 LIST(APPEND NATIVE_LIBS
-    coreclr_static
-    System.Native.Browser-Static
-    System.Runtime.InteropServices.JavaScript.Native-Static
-    System.Native-Static
-    System.Globalization.Native-Static
-    System.IO.Compression.Native-Static
-    nativeresourcestring
-    gcinfo
+    ${SHARED_CLR_DESTINATION}/libcoreclr_static.a
+    ${SHARED_CLR_DESTINATION}/libnativeresourcestring.a
+    ${SHARED_CLR_DESTINATION}/libgcinfo_unix_wasm.a
+    ${SHARED_CLR_DESTINATION}/libcoreclrminipal.a
+    ${SHARED_CLR_DESTINATION}/libcoreclrpal.a
+    ${SHARED_CLR_DESTINATION}/libminipal.a
+    ${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.a
+    ${SHARED_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.a
+    ${SHARED_LIB_DESTINATION}/libSystem.Native.a
+    ${SHARED_LIB_DESTINATION}/libSystem.Globalization.Native.a
+    ${CMAKE_ICU_DIR}/lib/libicuuc.a
+    ${CMAKE_ICU_DIR}/lib/libicui18n.a
+    ${CMAKE_ICU_DIR}/lib/libicudata.a
+    ${SHARED_LIB_DESTINATION}/libSystem.IO.Compression.Native.a
+    ${SHARED_LIB_DESTINATION}/libz.a
     # WASM-TODO respect  $(InvariantTimezone)
-    # System.Native.TimeZoneData.Invariant
-    System.Native.TimeZoneData
+    # libSystem.Native.TimeZoneData.Invariant.a
+    ${SHARED_LIB_DESTINATION}/libSystem.Native.TimeZoneData.a
 )
 
-# WASM-TODO set(RUNTIMEINFO_LIB runtimeinfo)
-
-target_compile_options(browserhost PRIVATE 
-        -fwasm-exceptions
-        -msimd128
-    )
-
 set(JS_SYSTEM_NATIVE_BROWSER
-    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Native.Browser.js")
+    "${SHARED_LIB_DESTINATION}/libSystem.Native.Browser.js")
 set(JS_SYSTEM_BROWSER_UTILS
-    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Native.Browser/libSystem.Browser.Utils.js")
+    "${SHARED_LIB_DESTINATION}/libSystem.Browser.Utils.js")
 set(JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE
-    "${CLR_ARTIFACTS_OBJ_DIR}/native/browser-${CMAKE_BUILD_TYPE}-wasm/System.Runtime.InteropServices.JavaScript.Native/libSystem.Runtime.InteropServices.JavaScript.Native.js")
+    "${SHARED_LIB_DESTINATION}/libSystem.Runtime.InteropServices.JavaScript.Native.js")
 set(JS_BROWSER_HOST
-    "${CLR_ARTIFACTS_OBJ_DIR}/coreclr/browser.wasm.${CMAKE_BUILD_TYPE}/corehost/libBrowserHost.js")
+    "${SHARED_LIB_DESTINATION}/libBrowserHost.js")
 set(JS_SYSTEM_NATIVE_BROWSER_EXPOST
     "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/System.Native.Browser/libSystem.Native.Browser.extpost.js")
 
@@ -77,36 +102,37 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     )
 endif ()
 
-# WASM-TODO    -sWASM_BIGINT=1
 # WASM-TODO    -emit-llvm
 # WASM-TODO    --source-map-base http://microsoft.com
 target_link_options(browserhost PRIVATE
     -sINITIAL_MEMORY=134217728
     -sMAXIMUM_MEMORY=2147483648
     -sALLOW_MEMORY_GROWTH=1
-    -sALLOW_TABLE_GROWTH=1
     -sSTACK_SIZE=5MB
+    -sWASM_BIGINT=1
     -sMODULARIZE=1
     -sEXPORT_ES6=1
     -sEXIT_RUNTIME=0
-    -sEXPORTED_RUNTIME_METHODS=UTF8ToString,cwrap,ccall,HEAPU8,HEAPU32,HEAPU64,BROWSER_HOST
-    -sEXPORTED_FUNCTIONS=_posix_memalign,_free,stackAlloc,stackRestore,stackSave,_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,___cpp_exception
+    -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+    -sEXPORTED_FUNCTIONS=_BrowserHost_InitializeCoreCLR,_BrowserHost_ExecuteAssembly,${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
-    -fwasm-exceptions
+    -sENVIRONMENT=web,webview,worker,node,shell
     -lnodefs.js
-    -Wno-unused-command-line-argument
     -Wl,-error-limit=0)
 
-target_link_libraries(
-    browserhost
-    PRIVATE
-    hostmisc
-    clrinterpreter
+target_link_libraries(browserhost PUBLIC
+    BrowserHost-Static
+)
+target_link_libraries(browserhost PRIVATE
     ${NATIVE_LIBS}
-
-    ${START_WHOLE_ARCHIVE}
+	${START_WHOLE_ARCHIVE}
     ${RUNTIMEINFO_LIB}
     ${END_WHOLE_ARCHIVE}
 )
+
+install(TARGETS browserhost DESTINATION corehost COMPONENT runtime)
+install(TARGETS browserhost DESTINATION sharedFramework COMPONENT runtime)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehost COMPONENT runtime)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION sharedFramework COMPONENT runtime)
 
 add_subdirectory(sample)

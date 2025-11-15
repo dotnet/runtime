@@ -90,7 +90,6 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
         pCAMT->GetAssembly(),
         dwAttr,
         pCACtor,
-        NULL,
         *AccessCheckOptions::s_pNormalAccessChecks);
 }
 
@@ -612,7 +611,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetConstraints(QCall::TypeHandle pTy
         TypeVarTypeDesc* pGenericVariable = typeHandle.AsGenericVariable();
 
     DWORD dwCount;
-    constraints = pGenericVariable->GetConstraints(&dwCount);
+    constraints = pGenericVariable->GetConstraints(&dwCount, CLASS_LOADED, WhichConstraintsToLoad::All);
 
     GCX_COOP();
     retTypeArray.Set(CopyRuntimeTypeHandles(constraints, dwCount, CLASS__TYPE));
@@ -1272,7 +1271,7 @@ extern "C" void * QCALLTYPE RuntimeMethodHandle_GetFunctionPointer(MethodDesc * 
     // Ensure the method is active and all types have been loaded so the function pointer can be used.
     pMethod->EnsureActive();
     pMethod->PrepareForUseAsAFunctionPointer();
-    funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode();
+    funcPtr = (void*)pMethod->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
 
     END_QCALL;
 
@@ -2121,8 +2120,19 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsConstructor, MethodDesc *pMethod)
     }
     CONTRACTL_END;
 
-    BOOL ret = (BOOL)pMethod->IsClassConstructorOrCtor();
-    FC_RETURN_BOOL(ret);
+    FC_RETURN_BOOL(pMethod->IsClassConstructorOrCtor());
+}
+FCIMPLEND
+
+FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsAsyncMethod, MethodDesc *pMethod)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pMethod));
+    }
+    CONTRACTL_END;
+
+    FC_RETURN_BOOL(pMethod->IsAsyncMethod());
 }
 FCIMPLEND
 

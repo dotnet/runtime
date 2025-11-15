@@ -410,6 +410,8 @@ namespace CseTest
     public class Test_Main
     {
         [Fact]
+        [OuterLoop]
+        [SkipOnCoreClr("this test simply takes too long to complete under GC stress; it is not fundamentally incompatible", RuntimeTestModes.AnyGCStress)]
         public static int TestEntryPoint()
         {
             int ret = 100;
