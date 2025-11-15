@@ -156,6 +156,27 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_GT:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
+        case GT_AND:
+        {
+            IntegralRange leftRange  = IntegralRange::ForNode(node->gtGetOp1(), compiler);
+            IntegralRange rightRange = IntegralRange::ForNode(node->gtGetOp2(), compiler);
+            if (leftRange.IsNonNegative() && rightRange.IsNonNegative())
+            {
+                // If both sides are known to be non-negative, the result is non-negative.
+                // Further, the top end of the range cannot exceed the min of the two upper bounds.
+                return {SymbolicIntegerValue::Zero, min(leftRange.GetUpperBound(), rightRange.GetUpperBound())};
+            }
+
+            if (leftRange.IsNonNegative() || rightRange.IsNonNegative())
+            {
+                // If only one side is known to be non-negative, however it is harder to
+                // reason about the upper bound.
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
+            break;
+        }
+
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
@@ -215,11 +236,20 @@ bool IntegralRange::Contains(int64_t value) const
         }
 
         case GT_CNS_INT:
+        {
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
             }
+
+            int64_t constValue = node->AsIntCon()->IntegralValue();
+            if (constValue >= 0)
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
             break;
+        }
 
         case GT_QMARK:
             return Union(ForNode(node->AsQmark()->ThenNode(), compiler),

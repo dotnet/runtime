@@ -7,6 +7,9 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Project Path="../../../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj">
+    <BuildType Solution="Checked|*" Project="Debug" />
+  </Project>
   <Project Path="../aot/ILCompiler.Diagnostics/ILCompiler.Diagnostics.csproj">
     <Platform Solution="*|x86" Project="x86" />
     <Platform Solution="Checked|Any CPU" Project="x86" />

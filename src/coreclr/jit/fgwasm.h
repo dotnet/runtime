@@ -244,7 +244,7 @@ unsigned WasmRunSubgraphDfs(Compiler*         comp,
     unsigned preOrderIndex  = 0;
     unsigned postOrderIndex = 0;
 
-    ArrayStack<WasmSuccessorEnumerator> blocks(comp->getAllocator(CMK_Wasm));
+    ArrayStack<WasmSuccessorEnumerator> blocks(comp->getAllocator(CMK_WasmSccTransform));
 
     auto dfsFrom = [&](BasicBlock* firstBB) {
         BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
@@ -280,7 +280,7 @@ unsigned WasmRunSubgraphDfs(Compiler*         comp,
 
     // Find the subgraph entry blocks (blocks that have no pred, or a pred not in the subgraph).
     //
-    ArrayStack<BasicBlock*> entries(comp->getAllocator(CMK_Wasm));
+    ArrayStack<BasicBlock*> entries(comp->getAllocator(CMK_WasmSccTransform));
 
     unsigned        poNum = 0;
     BitVecOps::Iter iterator(&subgraphTraits, subgraph);

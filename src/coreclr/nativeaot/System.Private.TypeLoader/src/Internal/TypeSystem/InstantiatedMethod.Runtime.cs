@@ -65,6 +65,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool AsyncVariant
+        {
+            get
+            {
+                return _methodDef.AsyncVariant;
+            }
+        }
+
 #if DEBUG
         public override string ToString()
         {
