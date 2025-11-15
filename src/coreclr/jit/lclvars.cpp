@@ -4604,6 +4604,20 @@ void Compiler::lvaFixVirtualFrameOffsets()
             delta += lvaLclStackHomeSize(lvaMonAcquired);
         }
 
+        if ((lvaAsyncExecutionContextVar != BAD_VAR_NUM) && !opts.IsOSR())
+        {
+            int offset = lvaTable[lvaAsyncExecutionContextVar].GetStackOffset() + delta;
+            lvaTable[lvaAsyncExecutionContextVar].SetStackOffset(offset);
+            delta += lvaLclStackHomeSize(lvaAsyncExecutionContextVar);
+        }
+
+        if ((lvaAsyncSynchronizationContextVar != BAD_VAR_NUM) && !opts.IsOSR())
+        {
+            int offset = lvaTable[lvaAsyncSynchronizationContextVar].GetStackOffset() + delta;
+            lvaTable[lvaAsyncSynchronizationContextVar].SetStackOffset(offset);
+            delta += lvaLclStackHomeSize(lvaAsyncSynchronizationContextVar);
+        }
+
         JITDUMP("--- delta bump %d for FP frame\n", delta);
     }
 #endif // !TARGET_LOONGARCH64 || !TARGET_RISCV64
@@ -5131,30 +5145,24 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_AMD64
 
-    if (lvaMonAcquired != BAD_VAR_NUM)
+    if (!opts.IsOSR() && (lvaMonAcquired != BAD_VAR_NUM))
     {
-        // For OSR we use the flag set up by the original method.
-        //
-        if (opts.IsOSR())
-        {
-            assert(info.compPatchpointInfo->HasMonitorAcquired());
-            int originalOffset = info.compPatchpointInfo->MonitorAcquiredOffset();
-            int offset         = originalFrameStkOffs + originalOffset;
+        // This var must go first, in what is called the 'frame header' for EnC so that it is
+        // preserved when remapping occurs.  See vm\eetwain.cpp for detailed comment specifying frame
+        // layout requirements for EnC to work.
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclStackHomeSize(lvaMonAcquired), stkOffs);
+    }
 
-            JITDUMP(
-                "---OSR--- V%02u (on tier0 frame, monitor acquired) tier0 FP-rel offset %d tier0 frame offset %d new "
-                "virt offset %d\n",
-                lvaMonAcquired, originalOffset, originalFrameStkOffs, offset);
+    if (!opts.IsOSR() && (lvaAsyncExecutionContextVar != BAD_VAR_NUM))
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncExecutionContextVar,
+                                                   lvaLclStackHomeSize(lvaAsyncExecutionContextVar), stkOffs);
+    }
 
-            lvaTable[lvaMonAcquired].SetStackOffset(offset);
-        }
-        else
-        {
-            // This var must go first, in what is called the 'frame header' for EnC so that it is
-            // preserved when remapping occurs.  See vm\eetwain.cpp for detailed comment specifying frame
-            // layout requirements for EnC to work.
-            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclStackHomeSize(lvaMonAcquired), stkOffs);
-        }
+    if (!opts.IsOSR() && (lvaAsyncSynchronizationContextVar != BAD_VAR_NUM))
+    {
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncSynchronizationContextVar,
+                                                   lvaLclStackHomeSize(lvaAsyncSynchronizationContextVar), stkOffs);
     }
 
     if (mustDoubleAlign)
@@ -5418,8 +5426,24 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 {
                     // Add frampointer-relative offset of this OSR live local in the original frame
                     // to the offset of original frame in our new frame.
-                    const int originalOffset = info.compPatchpointInfo->Offset(lclNum);
-                    const int offset         = originalFrameStkOffs + originalOffset;
+                    int originalOffset;
+                    if (lclNum == lvaMonAcquired)
+                    {
+                        originalOffset = info.compPatchpointInfo->MonitorAcquiredOffset();
+                    }
+                    else if (lclNum == lvaAsyncExecutionContextVar)
+                    {
+                        originalOffset = info.compPatchpointInfo->AsyncExecutionContextOffset();
+                    }
+                    else if (lclNum == lvaAsyncSynchronizationContextVar)
+                    {
+                        originalOffset = info.compPatchpointInfo->AsyncSynchronizationContextOffset();
+                    }
+                    else
+                    {
+                        originalOffset = info.compPatchpointInfo->Offset(lclNum);
+                    }
+                    const int offset = originalFrameStkOffs + originalOffset;
 
                     JITDUMP(
                         "---OSR--- V%02u (on tier0 frame) tier0 FP-rel offset %d tier0 frame offset %d new virt offset "
@@ -5485,7 +5509,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if (lclNum == lvaMonAcquired)
+            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncExecutionContextVar) ||
+                (lclNum == lvaAsyncSynchronizationContextVar))
             {
                 continue;
             }
