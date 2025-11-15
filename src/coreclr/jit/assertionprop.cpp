@@ -5453,7 +5453,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
                 auto tryGetMaxOrMinConst = [this](ValueNum vn, bool getMin, int* index) -> bool {
                     *index = getMin ? INT_MAX : INT_MIN;
                     return vnStore->VNVisitReachingVNs(vn,
-                                                       [this, &index, &getMin](ValueNum vn) -> ValueNumStore::VNVisit {
+                                                       [this, index, getMin](ValueNum vn) -> ValueNumStore::VNVisit {
                         int cns = 0;
                         if (vnStore->IsVNIntegralConstant(vn, &cns))
                         {
