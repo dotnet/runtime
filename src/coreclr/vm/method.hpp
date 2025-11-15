@@ -62,20 +62,14 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 
 enum class AsyncMethodKind
 {
-    // Regular methods not returning tasks
-    // These are "normal" methods that do not get other variants.
+    // Regular methods not returning tasks, not interesting to Runtime Async.
     // Note: Generic T-returning methods are Ordinary, even if T could be a Task.
-    Ordinary,
+    Ordinary               = 0,
 
-    // Regular methods that return Task/ValueTask
-    // Such method has its actual IL body and there also a synthetic variant that is an
-    // Async-callable thunk. (AsyncVariantThunk)
-    TaskReturning,
-
-    // Task-returning methods marked as MethodImpl::Async in metadata.
-    // Such method has a body that is a thunk that forwards to an Async implementation variant
-    // which owns the original IL. (AsyncVariantImpl)
-    TaskReturningILAsync,
+    ReturnsTaskOrValueTask = 1, // returns a promise type, not Async (in runtime sense)
+    Async                  = 2, // the body is a state machine, assumes async callconv
+    Variant                = 4, // method has two variants and this is one of them
+    Thunk                  = 8  // has synthetic body, which forwards to the other variant
 
     //=============================================================
     // On {TaskReturning, AsyncVariantThunk} and {TaskReturningILAsync, AsyncVariantImpl} pairs:
@@ -107,18 +101,45 @@ enum class AsyncMethodKind
     // parameter and extra return - the continuation object.
 
     // Async methods with actual IL implementation of a MethodImpl::Async method.
-    AsyncVariantImpl,
+    // AsyncVariantImpl,
 
     // Async methods with synthetic bodies that forward to a TaskReturning method.
-    AsyncVariantThunk,
+    // AsyncVariantThunk,
 
     // Methods that are explicitly declared as Async in metadata while not Task returning.
     // This is a special case used in a few infrastructure methods like `Await`.
     // Such methods do not get non-Async variants/thunks and can only be called from another Async method.
     // NOTE: These methods have the original signature and it is not possible to tell if the method is Async
     //       from the signature alone, thus all these methods are also JIT intrinsics.
-    AsyncExplicitImpl,
+    // AsyncExplicitImpl,
 };
+
+inline AsyncMethodKind operator|(AsyncMethodKind lhs, AsyncMethodKind rhs)
+{
+    return (AsyncMethodKind)((int)lhs | (int)rhs);
+}
+
+inline AsyncMethodKind operator&(AsyncMethodKind lhs, AsyncMethodKind rhs)
+{
+    return (AsyncMethodKind)((int)lhs & (int)rhs);
+}
+
+inline AsyncMethodKind& operator|=(AsyncMethodKind& lhs, AsyncMethodKind rhs)
+{
+    lhs = lhs | rhs;
+    return lhs;
+}
+
+inline AsyncMethodKind& operator&=(AsyncMethodKind& lhs, AsyncMethodKind rhs)
+{
+    lhs = lhs & rhs;
+    return lhs;
+}
+
+inline bool hasAsyncKindFlags(AsyncMethodKind value, AsyncMethodKind flags)
+{
+    return (value & flags) == flags;
+}
 
 struct AsyncMethodData
 {
@@ -1927,10 +1948,21 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         if (!HasAsyncMethodData())
             return false;
-        auto asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return asyncKind == AsyncMethodKind::AsyncVariantThunk ||
-            asyncKind == AsyncMethodKind::AsyncVariantImpl ||
-            asyncKind == AsyncMethodKind::AsyncExplicitImpl;
+
+        AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::Async);
+    }
+
+    // Is this a Variant method?
+    // If yes, the method has another variant.
+    inline bool IsVariantMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::Variant);
     }
 
     // Is this an Async variant method?
@@ -1940,9 +1972,9 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         if (!HasAsyncMethodData())
             return false;
-        auto asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return asyncKind == AsyncMethodKind::AsyncVariantThunk ||
-            asyncKind == AsyncMethodKind::AsyncVariantImpl;
+
+        AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::Async | AsyncMethodKind::Variant);
     }
 
     // Is this a small(ish) synthetic Task/async adapter to an async/Task implementation?
@@ -1953,19 +1985,18 @@ public:
         if (!HasAsyncMethodData())
             return false;
 
-        auto asyncType = GetAddrOfAsyncMethodData()->kind;
-        return asyncType == AsyncMethodKind::AsyncVariantThunk ||
-            asyncType == AsyncMethodKind::TaskReturningILAsync;
+        AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::Thunk);
     }
 
-    inline bool IsTaskReturningMethod() const
+    inline bool IsTaskOrValueTaskReturningMethod() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         if (!HasAsyncMethodData())
             return false;
-        auto asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return asyncKind == AsyncMethodKind::TaskReturningILAsync ||
-            asyncKind == AsyncMethodKind::TaskReturning;
+
+        AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::ReturnsTaskOrValueTask);
     }
 
     inline bool HasAsyncMethodData() const
@@ -1980,14 +2011,19 @@ public:
     }
 
     // Returns true if this is an async method that requires save and restore
-    // of async contexts. Regular user implemented runtime async methods
-    // require this behavior, but thunks should be transparent and should not
-    // come with this behavior.
+    // of async contexts. User-implemented runtime async methods require this
+    // behavior for compatibility with classic state machine implementations.
+    // Other methods like thunks or infrastructure helpers should be transparent
+    // to the sideeffects of context manipulations in calees and should not
+    // come with save/restore behavior.
     inline bool RequiresAsyncContextSaveAndRestore() const
     {
         if (!HasAsyncMethodData())
             return false;
-        return GetAddrOfAsyncMethodData()->kind == AsyncMethodKind::AsyncVariantImpl;
+
+        // async variant, but not a thunk
+        AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return asyncKind == (AsyncMethodKind::Async | AsyncMethodKind::Variant);
     }
 
 #ifdef FEATURE_METADATA_UPDATER

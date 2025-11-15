@@ -3319,13 +3319,17 @@ MethodTableBuilder::EnumerateClassMethods()
 
                 if (IsTaskReturning(returnKind))
                 {
-                    // ordinary Task-returning method:
-                    //    Declare a TaskReturning method and add an Async variant that is a thunk to the TaskReturing one.
-                    //
+                    // Declare a TaskReturning variant method.
+                    // We will aslo add an Async variant that can be called by async code when awaiting and skip Task abstraction.
+                    AsyncMethodKind kind = AsyncMethodKind::ReturnsTaskOrValueTask | AsyncMethodKind::Variant;
+
                     // IsMiAsync Task-returning method:
-                    //    Declare a TaskReturningILAsync method and add an Async variant with the actual implementation.
-                    //    The TaskReturningILAsync method becomes a thunk to the implementation helper.
-                    pNewMethod->SetAsyncMethodKind(IsMiAsync(dwImplFlags) ? AsyncMethodKind::TaskReturningILAsync : AsyncMethodKind::TaskReturning);
+                    //    Then the method becomes a task-returning thunk, while actual IL belongs to the Async variant.
+                    //    Otherwise the Async variant would be the thunk.
+                    if (IsMiAsync(dwImplFlags))
+                        kind |= AsyncMethodKind::Thunk;
+
+                    pNewMethod->SetAsyncMethodKind(kind);
                 }
                 else
                 {
@@ -3338,7 +3342,7 @@ MethodTableBuilder::EnumerateClassMethods()
                             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
                         }
 
-                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::AsyncExplicitImpl);
+                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::Async);
                     }
                     else
                     {
@@ -3350,8 +3354,9 @@ MethodTableBuilder::EnumerateClassMethods()
             }
             else
             {
+                // second pass, insert async variants
+
                 ULONG cAsyncThunkMemberSignature = cMemberSignature;
-                AsyncMethodKind asyncKind;
                 ULONG originalTokenOffsetFromAsyncDetailsOffset;
                 ULONG newTokenOffsetFromAsyncDetailsOffset;
                 ULONG originalPrefixSize;
@@ -3359,12 +3364,16 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG newSuffixSize;
                 ULONG newPrefixSize;
 
+                AsyncMethodKind asyncKind = (AsyncMethodKind::Async | AsyncMethodKind::Variant);
+                // opposite of the "IsMiAsync(dwImplFlags)" code above.
+                if (!IsMiAsync(dwImplFlags))
+                    asyncKind |= AsyncMethodKind::Thunk;
+
                 if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
                 {
                     cAsyncThunkMemberSignature += 1;
                     originalTokenOffsetFromAsyncDetailsOffset = 1;
                     newTokenOffsetFromAsyncDetailsOffset = 1;
-                    asyncKind = IsMiAsync(dwImplFlags) ? AsyncMethodKind::AsyncVariantImpl : AsyncMethodKind::AsyncVariantThunk;
                     originalPrefixSize = 1;
                     newPrefixSize = 1;
                     originalSuffixSize = 0;
@@ -3375,7 +3384,6 @@ MethodTableBuilder::EnumerateClassMethods()
                     cAsyncThunkMemberSignature -= 2;
                     originalTokenOffsetFromAsyncDetailsOffset = 2;
                     newTokenOffsetFromAsyncDetailsOffset = 1;
-                    asyncKind = IsMiAsync(dwImplFlags)? AsyncMethodKind::AsyncVariantImpl : AsyncMethodKind::AsyncVariantThunk;
                     originalPrefixSize = 2;
                     newPrefixSize = 1;
                     originalSuffixSize = 1;
@@ -6081,7 +6089,7 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
                     {
                         if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
                         {
-                            if (pCurMD->IsTaskReturningMethod() || pCurMD->IsAsyncVariantMethod())
+                            if (pCurMD->IsVariantMethod())
                             {
                                 pCurMD = pCurMD->GetAsyncOtherVariant();
                             }
@@ -6280,17 +6288,21 @@ MethodTableBuilder::InitMethodDesc(
 #endif // !_DEBUG
         pNewMD->SetSynchronized();
 
+    // if the method is not ordinary, we need to at least store its kind
     if (asyncKind != AsyncMethodKind::Ordinary)
     {
         AsyncMethodData* pAsyncMethodData = pNewMD->GetAddrOfAsyncMethodData();
         pAsyncMethodData->kind = asyncKind;
-        if (asyncKind == AsyncMethodKind::AsyncVariantThunk || asyncKind == AsyncMethodKind::AsyncVariantImpl)
+
+        // async variants have a signature different from their task-returning
+        // definitions, so we store the signature together with the kind
+        if (hasAsyncKindFlags(asyncKind, AsyncMethodKind::Async | AsyncMethodKind::Variant))
         {
             pAsyncMethodData->sig = sig;
         }
         else
         {
-            _ASSERTE(sig.GetRawSig() == NULL);
+          _ASSERTE(sig.GetRawSig() == NULL);
         }
     }
 
