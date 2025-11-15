@@ -62,56 +62,48 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 
 enum class AsyncMethodKind
 {
-    // Regular methods not returning tasks, not interesting to Runtime Async.
+    // Method body is emitted as a state machine and uses Async call convention.
+    Async                  = 1,
+    // Not Async method that returns a promise type {Task, Task<T>, ValueTask, ValueTask<T>}
+    ReturnsTaskOrValueTask = 2,
+    // Method has two variants and this is one of them.
+    Variant                = 4,
+    // Method has synthetic body, which forwards to the other variant.
+    Thunk                  = 8,
+    // The rest of the methods that are not in any of the above groups.
+    // Such methods are not interesting to the Runtime Async feature.
     // Note: Generic T-returning methods are Ordinary, even if T could be a Task.
     Ordinary               = 0,
 
-    ReturnsTaskOrValueTask = 1, // returns a promise type, not Async (in runtime sense)
-    Async                  = 2, // the body is a state machine, assumes async callconv
-    Variant                = 4, // method has two variants and this is one of them
-    Thunk                  = 8  // has synthetic body, which forwards to the other variant
-
     //=============================================================
-    // On {TaskReturning, AsyncVariantThunk} and {TaskReturningILAsync, AsyncVariantImpl} pairs:
+    // A few words about Variant pairs:
     //
-    // When we see a Task-returning method we create 2 method varaints that logically match the same method definition.
-    // One variant has the same signature/callconv as the defining method and another is a matching Async variant.
-    // Depending on whether the definition was a runtime async method or an ordinary Task-returning method,
+    // When we see a Task-returning method in metadata we create 2 method varaints that logically match
+    // the same method definition. One variant has the same signature/callconv as the defining method
+    // and another is a matching Async variant. 
+    // Depending on whether the definition was marked with MethodImpl.Async or not,
     // the IL body belongs to one of the variants and another variant is a synthetic thunk.
     //
-    // The signature of the Async variant is derived from the original signature by replacing Task return type with
-    // modreq'd element type:
+    // The signature of the Async variant is derived from the Task-returning signature by replacing
+    // Task return type with modreq'd element type:
     //   Example: "Task<int> Foo();"  ===> "modreq(Task`) int Foo();"
     //   Example: "ValueTask Bar();"  ===> "modreq(ValueTask) void Bar();"
     //
     // The reason for this encoding is that:
     //   - it uses parts of original signature, as-is, thus does not need to look for or construct anything
     //   - it "unwraps" the element type.
-    //   - it is reversible. In particular nonconflicting signatures will map to nonconflicting ones.
+    //   - it is reversible. Thus nonconflicting signatures will map to nonconflicting ones.
     //
     // Async methods are called with CORINFO_CALLCONV_ASYNCCALL call convention.
     //
     // It is possible to get from one variant to another via GetAsyncOtherVariant.
     //
-    // NOTE: not all Async methods are "variants" from a pair, see AsyncExplicitImpl below.
-    //=============================================================
-
-    // The following methods use special calling convention (CORINFO_CALLCONV_ASYNCCALL)
-    // These methods are emitted by the JIT as resumable state machines and also take an extra
-    // parameter and extra return - the continuation object.
-
-    // Async methods with actual IL implementation of a MethodImpl::Async method.
-    // AsyncVariantImpl,
-
-    // Async methods with synthetic bodies that forward to a TaskReturning method.
-    // AsyncVariantThunk,
-
-    // Methods that are explicitly declared as Async in metadata while not Task returning.
-    // This is a special case used in a few infrastructure methods like `Await`.
-    // Such methods do not get non-Async variants/thunks and can only be called from another Async method.
-    // NOTE: These methods have the original signature and it is not possible to tell if the method is Async
-    //       from the signature alone, thus all these methods are also JIT intrinsics.
-    // AsyncExplicitImpl,
+    // NOTE: Not all Async methods are "variants" from a pair.
+    //       Methods that are explicitly declared as MethodImpl.Async in metadata while
+    //       not Task returning is a special case used in a few methods like `Await` or
+    //       in infrastructure methods that Await relies on.
+    //       Such methods do not get non-Async variants/thunks and can only be called from
+    //       another Async method.
 };
 
 inline AsyncMethodKind operator|(AsyncMethodKind lhs, AsyncMethodKind rhs)
