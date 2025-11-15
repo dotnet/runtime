@@ -1331,7 +1331,7 @@ namespace System
             if ((byte)flags != 0)
             {
                 dest[0] = TChar.CastFrom((byte)flags);
-                dest[length - 2] = TChar.CastFrom((byte)flags);
+                dest[length - 1] = TChar.CastFrom((byte)(flags >> 8));
                 dest = dest.Slice(1);
             }
 
