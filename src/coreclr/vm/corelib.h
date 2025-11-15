@@ -1204,6 +1204,12 @@ DEFINE_METHOD(SZARRAYHELPER,        REMOVE,                 Remove,             
 DEFINE_METHOD(SZARRAYHELPER,        GET_ITEM,               get_Item,                   NoSig)
 DEFINE_METHOD(SZARRAYHELPER,        SET_ITEM,               set_Item,                   NoSig)
 DEFINE_METHOD(SZARRAYHELPER,        INSERT,                 Insert,                     NoSig)
+#ifdef FOR_ILLINK
+DEFINE_METHOD(SZARRAYHELPER,        ISREADONLY,             get_IsReadOnly,             NoSig)
+DEFINE_METHOD(SZARRAYHELPER,        COPYTO,                 CopyTo,                     NoSig)
+DEFINE_METHOD(SZARRAYHELPER,        INDEXOF,                IndexOf,                    NoSig)
+DEFINE_METHOD(SZARRAYHELPER,        REMOVEAT,               RemoveAt,                   NoSig)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(SZGENERICARRAYENUMERATOR, System, SZGenericArrayEnumerator`1)
 
