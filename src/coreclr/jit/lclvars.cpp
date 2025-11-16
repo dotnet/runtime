@@ -5145,24 +5145,37 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_AMD64
 
-    if (!opts.IsOSR() && (lvaMonAcquired != BAD_VAR_NUM))
+    if (!opts.IsOSR())
     {
-        // This var must go first, in what is called the 'frame header' for EnC so that it is
-        // preserved when remapping occurs.  See vm\eetwain.cpp for detailed comment specifying frame
-        // layout requirements for EnC to work.
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclStackHomeSize(lvaMonAcquired), stkOffs);
-    }
+        if (lvaMonAcquired != BAD_VAR_NUM)
+        {
+            // This var must go first, in what is called the 'frame header' for EnC so that it is
+            // preserved when remapping occurs.  See vm\eetwain.cpp for detailed comment specifying frame
+            // layout requirements for EnC to work.
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclStackHomeSize(lvaMonAcquired), stkOffs);
+        }
 
-    if (!opts.IsOSR() && (lvaAsyncExecutionContextVar != BAD_VAR_NUM))
-    {
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncExecutionContextVar,
-                                                   lvaLclStackHomeSize(lvaAsyncExecutionContextVar), stkOffs);
-    }
+        if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
+        {
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncExecutionContextVar,
+                                                       lvaLclStackHomeSize(lvaAsyncExecutionContextVar), stkOffs);
+        }
+        else
+        {
+            // For x86 EnC the VM expects that we always allocate stack space
+            // for this local when contexts were saved.
+            assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+        }
 
-    if (!opts.IsOSR() && (lvaAsyncSynchronizationContextVar != BAD_VAR_NUM))
-    {
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncSynchronizationContextVar,
-                                                   lvaLclStackHomeSize(lvaAsyncSynchronizationContextVar), stkOffs);
+        if (lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
+        {
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncSynchronizationContextVar,
+                                                       lvaLclStackHomeSize(lvaAsyncSynchronizationContextVar), stkOffs);
+        }
+        else
+        {
+            assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+        }
     }
 
     if (mustDoubleAlign)
