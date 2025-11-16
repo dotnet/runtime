@@ -10868,12 +10868,6 @@ public:
     // Mask of callee saved float regs on stack.
     regMaskTP compCalleeFPRegsSavedMask;
 #endif
-#ifdef TARGET_AMD64
-// Quirk for VS debug-launch scenario to work:
-// Bytes of padding between save-reg area and locals.
-#define VSQUIRK_STACK_PAD (2 * REGSIZE_BYTES)
-    unsigned compVSQuirkStackPaddingNeeded;
-#endif
 
     unsigned compMapILargNum(unsigned ILargNum);      // map accounting for hidden args
     unsigned compMapILvarNum(unsigned ILvarNum);      // map accounting for hidden args
