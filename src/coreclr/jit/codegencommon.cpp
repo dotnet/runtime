@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfo.h"
 #include "emit.h"
 
-#ifndef JIT32_GCENCODER
+#if EMIT_GENERATE_GCINFO && !defined(JIT32_GCENCODER)
 #include "gcinfoencoder.h"
 #endif
 
@@ -58,12 +58,17 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 #endif // JIT32_GCENCODER
 }
 
-/*****************************************************************************/
 CodeGenInterface* getCodeGenerator(Compiler* comp)
 {
     return new (comp, CMK_Codegen) CodeGen(comp);
 }
 
+// TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
+// 1. Everything shared by all codegen backends (incl. WASM) stays here.
+// 2. Everything else goes into codegenlinear.cpp.
+// 3. codegenlinear.cpp gets renamed to codegennative.cpp.
+//
+#ifndef TARGET_WASM
 NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
     : m_table(comp->getAllocator(CMK_LSRA))
 {
@@ -170,16 +175,6 @@ unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
     return m_table.Lookup(tree, &regs) ? genCountBits(regs & mask) : 0;
 }
 
-// CodeGen constructor
-CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
-    : gcInfo(theCompiler)
-    , regSet(theCompiler, gcInfo)
-    , internalRegisters(theCompiler)
-    , compiler(theCompiler)
-    , treeLifeUpdater(nullptr)
-{
-}
-
 #if defined(TARGET_XARCH)
 void CodeGenInterface::CopyRegisterInfo()
 {
@@ -195,8 +190,19 @@ void CodeGenInterface::CopyRegisterInfo()
     rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
 }
 #endif // TARGET_XARCH
+#endif // !TARGET_WASM
 
-/*****************************************************************************/
+// CodeGen constructor
+CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
+    : gcInfo(theCompiler)
+    , regSet(theCompiler, gcInfo)
+#if HAS_FIXED_REGISTER_SET
+    , internalRegisters(theCompiler)
+#endif // HAS_FIXED_REGISTER_SET
+    , compiler(theCompiler)
+    , treeLifeUpdater(nullptr)
+{
+}
 
 CodeGen::CodeGen(Compiler* theCompiler)
     : CodeGenInterface(theCompiler)
@@ -262,6 +268,7 @@ CodeGen::CodeGen(Compiler* theCompiler)
 #endif // TARGET_ARM64
 }
 
+#ifndef TARGET_WASM
 #if defined(TARGET_X86) || defined(TARGET_ARM)
 
 //---------------------------------------------------------------------
@@ -654,6 +661,7 @@ bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
     return op1Skip->OperIs(GT_LCL_VAR) && op2Skip->OperIs(GT_LCL_VAR) &&
            (op1Skip->AsLclVar()->GetLclNum() == op2Skip->AsLclVar()->GetLclNum());
 }
+#endif // !TARGET_WASM
 
 // The given lclVar is either going live (being born) or dying.
 // It might be both going live and dying (that is, it is a dead store) under MinOpts.
@@ -661,6 +669,7 @@ bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
 // inline
 void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree))
 {
+#if EMIT_GENERATE_GCINFO // The regset being updated here is only needed for codegen-level GCness tracking
     regMaskTP regMask = genGetRegMask(varDsc);
 
 #ifdef DEBUG
@@ -690,8 +699,10 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
         assert(varDsc->IsAlwaysAliveInMemory() || ((regSet.GetMaskVars() & regMask) == 0));
         regSet.AddMaskVars(regMask);
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
+#ifndef TARGET_WASM
 //----------------------------------------------------------------------
 // compHelperCallKillSet: Gets a register mask that represents the kill set for a helper call.
 // Not all JIT Helper calls follow the standard ABI on the target architecture.
@@ -1084,6 +1095,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
     }
 #endif // !FEATURE_FIXED_OUT_ARGS
 }
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // genCreateAddrMode:
@@ -1525,6 +1537,7 @@ FOUND_AM:
     return true;
 }
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genEmitCallWithCurrentGC:
 //   Emit a call with GC information captured from current GC information.
@@ -5884,6 +5897,7 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
+#endif // !TARGET_WASM
 
 //-----------------------------------------------------------------------------------
 // IsMultiRegReturnedType: Returns true if the type is returned in multiple registers
@@ -5967,6 +5981,7 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
 #endif // TARGET_ARM64
 }
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------------------------------ //
 // getFirstArgWithStackSlot - returns the first argument with stack slot on the caller's frame.
 //
@@ -6166,6 +6181,7 @@ void CodeGen::genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefReg
 
 #endif // FEATURE_FIXED_OUT_ARGS
 }
+#endif // !TARGET_WASM
 
 #ifdef DEBUG
 
@@ -6330,6 +6346,7 @@ void CodeGen::genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di,
 #endif // DEBUG
 }
 
+#ifndef TARGET_WASM
 /*****************************************************************************/
 
 void CodeGen::genEnsureCodeEmitted(const DebugInfo& di)
@@ -7988,12 +8005,14 @@ void CodeGen::genStackPointerCheck(bool      doStackPointerCheck,
 }
 
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
+#endif // !TARGET_WASM
 
 unsigned CodeGenInterface::getCurrentStackLevel() const
 {
     return genStackLevel;
 }
 
+#ifndef TARGET_WASM
 //-----------------------------------------------------------------------------
 // genPoisonFrame: Generate code that places a recognizable value into address exposed variables.
 //
@@ -8236,3 +8255,4 @@ void CodeGen::genCodeForSwiftErrorReg(GenTree* tree)
     genProduceReg(tree);
 }
 #endif // SWIFT_SUPPORT
+#endif // !TARGET_WASM
