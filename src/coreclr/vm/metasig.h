@@ -502,7 +502,6 @@ DEFINE_METASIG_T(SM(IntPtr_RuntimeType_RetDelegate, I C(CLASS), C(DELEGATE)))
 
 DEFINE_METASIG(IM(RetRefByte, _, r(b)))
 DEFINE_METASIG_T(IM(Type_RetArrObj, C(TYPE) F, a(j)))
-DEFINE_METASIG(IM(Bool_RetVoid, F, v))
 DEFINE_METASIG_T(IM(BindingFlags_RetArrFieldInfo, g(BINDING_FLAGS), a(C(FIELD_INFO))))
 DEFINE_METASIG_T(IM(BindingFlags_RetArrMethodInfo, g(BINDING_FLAGS), a(C(METHOD_INFO))))
 DEFINE_METASIG_T(IM(BindingFlags_RetArrPropertyInfo, g(BINDING_FLAGS), a(C(PROPERTY_INFO))))
