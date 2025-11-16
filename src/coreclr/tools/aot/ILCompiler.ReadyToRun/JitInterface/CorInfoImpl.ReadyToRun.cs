@@ -1420,7 +1420,8 @@ namespace Internal.JitInterface
                     Debug.Assert(resultMethod is EcmaMethod);
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType))
                     {
-                        ModuleToken result = _compilation.NodeFactory.SignatureContext.Resolver.GetModuleTokenForMethod(resultMethod, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+                        Debug.Assert(_compilation.NodeFactory.Resolver.IsKnownMutableModuleMethod((EcmaMethod)resultMethod));
+                        ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(resultMethod, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                         return result;
                     }
                     token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultMethod).Handle);
@@ -1444,7 +1445,8 @@ namespace Internal.JitInterface
                     {
                         if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(ecmaType))
                         {
-                            ModuleToken result = _compilation.NodeFactory.SignatureContext.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
+                            Debug.Assert(_compilation.NodeFactory.Resolver.IsKnownMutableModuleType(ecmaType));
+                            ModuleToken result = _compilation.NodeFactory.Resolver.GetModuleTokenForType(ecmaType, allowDynamicallyCreatedReference: true, throwIfNotFound: true);
                             return result;
                         }
                         token = (mdToken)MetadataTokens.GetToken(ecmaType.Handle);

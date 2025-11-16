@@ -26,11 +26,11 @@ namespace Internal.IL
 
     public sealed class ReadyToRunILProvider : ILProvider
     {
-        private ReadyToRunCompilationModuleGroupBase _compilationModuleGroup;
+        private CompilationModuleGroup _compilationModuleGroup;
         private MutableModule _manifestMutableModule;
         private int _version = 0;
 
-        public ReadyToRunILProvider(ReadyToRunCompilationModuleGroupBase compilationModuleGroup)
+        public ReadyToRunILProvider(CompilationModuleGroup compilationModuleGroup)
         {
             _compilationModuleGroup = compilationModuleGroup;
         }
