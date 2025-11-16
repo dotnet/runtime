@@ -296,7 +296,6 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         {
             JITDUMP("Looking for array size assertions for: " FMT_VN "\n", arrLenVn);
             Range arrLength = Range(Limit(Limit::keUnknown));
-
             MergeEdgeAssertions(m_pCompiler, arrLenVn, ValueNumStore::NoVN, block->bbAssertionIn, &arrLength);
             if (arrLength.lLimit.IsConstant())
             {
@@ -304,7 +303,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             }
             else
             {
-                // Fast path didn't find anything - do the slow SSA-based search:
+                // Fast path didn't find anything - do the slow SSA-based search.
                 arrLength = GetRangeWorker(block, bndsChk->GetArrayLength(), false DEBUGARG(0));
                 if (arrLength.lLimit.IsConstant())
                 {
