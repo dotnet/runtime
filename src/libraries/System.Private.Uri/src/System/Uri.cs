@@ -4300,7 +4300,7 @@ namespace System
         // the passed array must be long enough to hold at least
         // canonical unescaped path representation (allocated by the caller)
         //
-        private unsafe void GetCanonicalPath(ref ValueStringBuilder dest, UriFormat formatAs)
+        private void GetCanonicalPath(ref ValueStringBuilder dest, UriFormat formatAs)
         {
             if (InFact(Flags.FirstSlashAbsent))
                 dest.Append('/');
@@ -4327,13 +4327,7 @@ namespace System
                     if (_syntax.InFact(UriSyntaxFlags.UnEscapeDotsAndSlashes) && InFact(Flags.PathNotCanonical)
                         && !IsImplicitFile)
                     {
-                        fixed (char* pdest = dest)
-                        {
-                            int end = dest.Length;
-                            UnescapeOnly(pdest, start, ref end, '.', '/',
-                                _syntax.InFact(UriSyntaxFlags.ConvertPathSlashes) ? '\\' : c_DummyChar);
-                            dest.Length = end;
-                        }
+                        UnescapePathSlashesAndDots(ref dest, start, _syntax.InFact(UriSyntaxFlags.ConvertPathSlashes));
                     }
                 }
                 else
@@ -4388,13 +4382,7 @@ namespace System
                     if (_syntax.InFact(UriSyntaxFlags.UnEscapeDotsAndSlashes) && InFact(Flags.PathNotCanonical)
                         && !IsImplicitFile)
                     {
-                        fixed (char* pdest = dest)
-                        {
-                            int end = dest.Length;
-                            UnescapeOnly(pdest, start, ref end, '.', '/',
-                                _syntax.InFact(UriSyntaxFlags.ConvertPathSlashes) ? '\\' : c_DummyChar);
-                            dest.Length = end;
-                        }
+                        UnescapePathSlashesAndDots(ref dest, start, _syntax.InFact(UriSyntaxFlags.ConvertPathSlashes));
                     }
                 }
             }
@@ -4485,72 +4473,32 @@ namespace System
             }
         }
 
-        // works only with ASCII characters, used to partially unescape path before compressing
-        private static unsafe void UnescapeOnly(char* pch, int start, ref int end, char ch1, char ch2, char ch3)
+        /// <summary>Partially unescape the path ('/', '.' and optionally '\\') before compressing.</summary>
+        private static void UnescapePathSlashesAndDots(ref ValueStringBuilder vsb, int i, bool unescapeBackslashes)
         {
-            if (end - start < 3)
+            Span<char> chars = vsb.RawChars.Slice(0, vsb.Length);
+
+            int writeOffset = i;
+
+            while ((uint)i < (uint)chars.Length)
             {
-                //no chance that something is escaped
-                return;
+                if (chars[i] == '%' && (uint)(i + 2) < (uint)chars.Length)
+                {
+                    char decoded = UriHelper.DecodeHexChars(chars[i + 1], chars[i + 2]);
+
+                    if (decoded == '/' || decoded == '.' || (unescapeBackslashes && decoded == '\\'))
+                    {
+                        chars[writeOffset++] = decoded;
+                        i += 3;
+                        continue;
+                    }
+                }
+
+                chars[writeOffset++] = chars[i];
+                i++;
             }
 
-            char* pend = pch + end - 2;
-            pch += start;
-            char* pnew = null;
-
-        over:
-
-            // Just looking for a interested escaped char
-            if (pch >= pend) goto done;
-            if (*pch++ != '%') goto over;
-
-            char ch = UriHelper.DecodeHexChars(*pch++, *pch++);
-            if (!(ch == ch1 || ch == ch2 || ch == ch3)) goto over;
-
-            // Here we found something and now start copying the scanned chars
-            pnew = pch - 2;
-            *(pnew - 1) = ch;
-
-        over_new:
-
-            if (pch >= pend) goto done;
-            if ((*pnew++ = *pch++) != '%') goto over_new;
-
-            ch = UriHelper.DecodeHexChars((*pnew++ = *pch++), (*pnew++ = *pch++));
-            if (!(ch == ch1 || ch == ch2 || ch == ch3))
-            {
-                goto over_new;
-            }
-
-            pnew -= 2;
-            *(pnew - 1) = ch;
-
-            goto over_new;
-
-        done:
-            pend += 2;
-
-            if (pnew == null)
-            {
-                //nothing was found
-                return;
-            }
-
-            //the tail may be already processed
-            if (pch == pend)
-            {
-                end -= (int)(pch - pnew);
-                return;
-            }
-
-            *pnew++ = *pch++;
-            if (pch == pend)
-            {
-                end -= (int)(pch - pnew);
-                return;
-            }
-            *pnew++ = *pch++;
-            end -= (int)(pch - pnew);
+            vsb.Length = writeOffset;
         }
 
         private static void Compress(ref ValueStringBuilder dest, int start, UriParser syntax)
