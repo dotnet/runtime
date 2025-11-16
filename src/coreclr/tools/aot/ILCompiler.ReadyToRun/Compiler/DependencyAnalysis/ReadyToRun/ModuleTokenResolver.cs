@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.IL;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -50,6 +51,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public void InitManifestMutableModule(MutableModule mutableModule)
         {
             _manifestMutableModule = mutableModule;
+            InitializeKnownMethodsAndTypes();
         }
 
         public ModuleToken GetModuleTokenForType(EcmaType type, bool allowDynamicallyCreatedReference, bool throwIfNotFound = true)
@@ -435,6 +437,140 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 typeSpec.DecodeSignature(this, genericContext);
                 return DummyTypeInfo.Instance;
             }
+        }
+
+        private ImmutableHashSet<MethodDesc> KnownMethods;
+        private ImmutableHashSet<TypeDesc> KnownTypes;
+
+        private void InitializeKnownMethodsAndTypes()
+        {
+            var knownTypes = ImmutableHashSet.CreateBuilder<TypeDesc>();
+            var knownMethods = ImmutableHashSet.CreateBuilder<MethodDesc>();
+
+            // AsyncHelpers type and methods
+            var asyncHelpers = CompilerContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            knownTypes.Add(asyncHelpers);
+            var exception = CompilerContext.SystemModule.GetKnownType("System"u8, "Exception"u8);
+
+            knownMethods.Add(asyncHelpers.GetKnownMethod("AsyncCallContinuation"u8, null));
+            knownMethods.Add(asyncHelpers.GetKnownMethod("TaskFromException"u8, new MethodSignature(MethodSignatureFlags.Static, 0, CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8), new TypeDesc[] { exception })));
+            knownMethods.Add(asyncHelpers.GetKnownMethod("ValueTaskFromException"u8, new MethodSignature(MethodSignatureFlags.Static, 0, CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8), new TypeDesc[] { exception })));
+            knownMethods.Add(asyncHelpers.GetKnownMethod("TaskFromException"u8, new MethodSignature(MethodSignatureFlags.Static, 1, CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8).MakeInstantiatedType(CompilerContext.GetSignatureVariable(0, method: true)), new TypeDesc[] { exception })));
+            knownMethods.Add(asyncHelpers.GetKnownMethod("ValueTaskFromException"u8, new MethodSignature(MethodSignatureFlags.Static, 1, CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8).MakeInstantiatedType(CompilerContext.GetSignatureVariable(0, method: true)), new TypeDesc[] { exception })));
+            knownMethods.Add(asyncHelpers.GetKnownMethod("FinalizeTaskReturningThunk"u8, new MethodSignature(MethodSignatureFlags.Static, 0, CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8), Array.Empty<TypeDesc>())));
+            knownMethods.Add(asyncHelpers.GetKnownMethod("FinalizeValueTaskReturningThunk"u8, new MethodSignature(MethodSignatureFlags.Static, 0, CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8), Array.Empty<TypeDesc>())));
+            knownMethods.Add(asyncHelpers.GetKnownMethod("FinalizeTaskReturningThunk"u8, new MethodSignature(MethodSignatureFlags.Static, 1, CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8).MakeInstantiatedType(CompilerContext.GetSignatureVariable(0, method: true)), Array.Empty<TypeDesc>())));
+            knownMethods.Add(asyncHelpers.GetKnownMethod("FinalizeValueTaskReturningThunk"u8, new MethodSignature(MethodSignatureFlags.Static, 1, CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8).MakeInstantiatedType(CompilerContext.GetSignatureVariable(0, method: true)), Array.Empty<TypeDesc>())));
+            knownMethods.Add(asyncHelpers.GetKnownMethod("TransparentAwait"u8, null));
+            knownMethods.Add(asyncHelpers.GetKnownMethod("CompletedTask"u8, null));
+            knownMethods.Add(asyncHelpers.GetKnownMethod("CompletedTaskResult"u8, null));
+
+            // ExecutionAndSyncBlockStore type and methods
+            var executionSyncBlockStore = CompilerContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "ExecutionAndSyncBlockStore"u8);
+            knownTypes.Add(executionSyncBlockStore);
+            knownMethods.Add(executionSyncBlockStore.GetKnownMethod("Push"u8, null));
+            knownMethods.Add(executionSyncBlockStore.GetKnownMethod("Pop"u8, null));
+
+            // Task types and methods
+            var task = CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
+            knownTypes.Add(task);
+            knownMethods.Add(task.GetKnownMethod("FromResult"u8, null));
+            knownMethods.Add(task.GetKnownMethod("get_CompletedTask"u8, null));
+            knownMethods.Add(task.GetKnownMethod("get_IsCompleted"u8, null));
+
+            var taskGeneric = CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8);
+            knownTypes.Add(taskGeneric);
+
+            // ValueTask types and methods
+            var valueTask = CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8);
+            knownTypes.Add(valueTask);
+            knownMethods.Add(valueTask.GetKnownMethod("FromResult"u8, null));
+            knownMethods.Add(valueTask.GetKnownMethod("get_CompletedTask"u8, null));
+            knownMethods.Add(valueTask.GetKnownMethod("get_IsCompleted"u8, null));
+            knownMethods.Add(valueTask.GetKnownMethod("ThrowIfCompletedUnsuccessfully"u8, null));
+            knownMethods.Add(valueTask.GetKnownMethod("AsTaskOrNotifier"u8, null));
+
+            var valueTaskGeneric = CompilerContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8);
+            knownTypes.Add(valueTaskGeneric);
+            knownMethods.Add(valueTaskGeneric.GetKnownMethod("get_IsCompleted"u8, null));
+            knownMethods.Add(valueTaskGeneric.GetKnownMethod("get_Result"u8, null));
+            knownMethods.Add(valueTaskGeneric.GetKnownMethod("AsTaskOrNotifier"u8, null));
+
+            KnownTypes = knownTypes.ToImmutable();
+            KnownMethods = knownMethods.ToImmutable();
+
+            try
+            {
+                Debug.Assert(_manifestMutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences == null);
+                _manifestMutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = _manifestMutableModule.Context.SystemModule;
+                _manifestMutableModule.AddingReferencesToR2RKnownTypesAndMethods = true;
+                foreach (var type in KnownTypes)
+                {
+                    EntityHandle? handle = _manifestMutableModule.TryGetEntityHandle(type);
+                    if (!handle.HasValue)
+                    {
+                        throw new NotImplementedException($"Entity handle for known type ({type}) not found in manifest module");
+                    }
+                    var token = new ModuleToken(_manifestMutableModule, handle.Value);
+                    this.AddModuleTokenForType(type, token);
+                    Debug.Assert(!default(ModuleToken).Equals(this.GetModuleTokenForType((EcmaType)type, allowDynamicallyCreatedReference: true, throwIfNotFound: true)));
+                }
+
+                foreach (var method in KnownMethods)
+                {
+                    EntityHandle? handle = _manifestMutableModule.TryGetEntityHandle(method);
+                    if (!handle.HasValue)
+                    {
+                        throw new NotImplementedException($"Entity handle for known method ({method}) not found in manifest module");
+                    }
+                    var token = new ModuleToken(_manifestMutableModule, handle.Value);
+                    this.AddModuleTokenForMethod(method, token);
+                    Debug.Assert(!default(ModuleToken).Equals(this.GetModuleTokenForMethod(method, allowDynamicallyCreatedReference: true, throwIfNotFound: true)));
+                }
+            }
+            finally
+            {
+                _manifestMutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences = null;
+                _manifestMutableModule.AddingReferencesToR2RKnownTypesAndMethods = false;
+            }
+        }
+
+        private bool IsKnownMethod(EcmaMethod method)
+        {
+            if (KnownMethods is null)
+                InitializeKnownMethodsAndTypes();
+            return KnownMethods.Contains(method);
+        }
+        private bool IsKnownType(EcmaType type)
+        {
+            if (KnownTypes is null)
+                InitializeKnownMethodsAndTypes();
+            return KnownTypes.Contains(type);
+        }
+
+        public enum AsyncKnownType
+        {
+            ExecutionAndSyncBlockStore,
+            SystemException,
+        }
+
+        public enum AsyncKnownMethod
+        {
+            ExecutionAndSyncBlockStore_Push,
+            ExecutionAndSyncBlockStore_Pop,
+            ValueTask_FromResult,
+            Task_FromResult,
+            ValueTask_get_CompletedTask,
+            Task_get_CompletedTask,
+            StubHelpers_AsyncCallContinuation,
+            AsyncHelpers_TaskFromException,
+            AsyncHelpers_ValueTaskFromException,
+            AsyncHelpers_TaskFromExceptionGeneric,
+            AsyncHelpers_ValueTaskFromExceptionGeneric,
+            AsyncHelpers_FinalizeTaskReturningThunk,
+            AsyncHelpers_FinalizeValueTaskReturningThunk,
+            AsyncHelpers_FinalizeTaskReturningThunkGeneric,
+            AsyncHelpers_FinalizeValueTaskReturningThunkGeneric,
         }
     }
 }

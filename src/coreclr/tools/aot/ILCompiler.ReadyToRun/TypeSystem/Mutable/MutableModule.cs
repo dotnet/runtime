@@ -39,7 +39,8 @@ namespace Internal.TypeSystem.Ecma
                 if (!_mutableModule._moduleToModuleRefString.TryGetValue(module, out moduleRefString))
                 {
                     Debug.Assert(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences != null &&
-                        _mutableModule._compilationGroup.CrossModuleInlineableModule(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences));
+                        _mutableModule._compilationGroup.CrossModuleInlineableModule(_mutableModule.ModuleThatIsCurrentlyTheSourceOfNewReferences)
+                        || _mutableModule.AddingReferencesToR2RKnownTypesAndMethods);
 
                     if (module == _typeSystemContext.SystemModule)
                     {
@@ -303,6 +304,7 @@ namespace Internal.TypeSystem.Ecma
 
         public bool DisableNewTokens;
         public ModuleDesc ModuleThatIsCurrentlyTheSourceOfNewReferences;
+        public bool AddingReferencesToR2RKnownTypesAndMethods;
         private ReadyToRunCompilationModuleGroupBase _compilationGroup;
         private Dictionary<ModuleDesc, string> _moduleToModuleRefString = new Dictionary<ModuleDesc, string>();
 

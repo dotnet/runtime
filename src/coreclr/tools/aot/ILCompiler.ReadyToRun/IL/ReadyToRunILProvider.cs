@@ -14,6 +14,7 @@ using Internal.IL.Stubs;
 using System.Buffers.Binary;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace Internal.IL
 {
@@ -25,16 +26,16 @@ namespace Internal.IL
 
     public sealed class ReadyToRunILProvider : ILProvider
     {
-        private CompilationModuleGroup _compilationModuleGroup;
+        private ReadyToRunCompilationModuleGroupBase _compilationModuleGroup;
         private MutableModule _manifestMutableModule;
         private int _version = 0;
 
-        public ReadyToRunILProvider(CompilationModuleGroup compilationModuleGroup)
+        public ReadyToRunILProvider(ReadyToRunCompilationModuleGroupBase compilationModuleGroup)
         {
             _compilationModuleGroup = compilationModuleGroup;
         }
 
-        public void InitManifestMutableModule(MutableModule module)
+        public void InitManifestMutableModule(MutableModule module, ModuleTokenResolver resolver)
         {
             _manifestMutableModule = module;
         }
@@ -170,7 +171,7 @@ namespace Internal.IL
                     // We should not be creating any AsyncMethodVariants yet.
                     // This hasn't been implemented.
                     Debug.Assert(!method.IsAsyncVariant());
-                    return null;
+                    return AsyncThunkILEmitter.EmitTaskReturningThunk(ecmaMethod, ((CompilerTypeSystemContext)ecmaMethod.Context).GetAsyncVariantMethod(ecmaMethod));
                 }
 
                 // Check to see if there is an override for the EcmaMethodIL. If there is not
