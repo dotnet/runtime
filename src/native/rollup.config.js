@@ -89,6 +89,21 @@ const libBrowserUtils = configure({
     }
 });
 
+const dotnetDiagnosticsJS = configure({
+    input: "./libs/System.Native.Browser/diagnostics/index.ts",
+    output: [{
+        file: staticLibDestination + "/dotnet.diagnostics.js",
+    }],
+    terser: {
+        compress: {
+            module: true,
+        }, mangle: {
+            module: true,
+            keep_classnames,
+        }
+    }
+});
+
 const dotnetRuntimeJS = configure({
     input: "./libs/System.Runtime.InteropServices.JavaScript.Native/dotnet.runtime.ts",
     output: [{
@@ -149,6 +164,7 @@ export default defineConfig([
     dotnetDTS,
     libNativeBrowser,
     libBrowserUtils,
+    dotnetDiagnosticsJS,
     dotnetRuntimeJS,
     libInteropJavaScriptNative,
     libBrowserHost,
