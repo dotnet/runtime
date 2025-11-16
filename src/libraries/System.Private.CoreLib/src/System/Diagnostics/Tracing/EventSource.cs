@@ -1632,7 +1632,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventSourceGuid">
         /// The unique identifier for the event source. Must not be Guid.Empty.
         /// </param>
-        /// <param name="config">
+        /// <param name="settings">
         /// Configuration options for the EventSource as a whole.
         /// </param>
         /// <param name="traits">A collection of key-value strings (must be an even number).</param>
