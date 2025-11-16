@@ -295,8 +295,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         if (arrSize <= 0)
         {
             JITDUMP("Looking for array size assertions for: " FMT_VN "\n", arrLenVn);
-            Range arrLength = Range(Limit(Limit::keUnknown));
-            MergeEdgeAssertions(m_pCompiler, arrLenVn, ValueNumStore::NoVN, block->bbAssertionIn, &arrLength);
+            Range arrLength = Range(Limit(Limit::keDependent));
+            MergeEdgeAssertions(m_pCompiler, arrLenVn, arrLenVn, block->bbAssertionIn, &arrLength);
             if (arrLength.lLimit.IsConstant())
             {
                 arrSize = arrLength.lLimit.GetConstant();
