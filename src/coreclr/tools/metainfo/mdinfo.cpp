@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <cinttypes>
 #include <stdio.h>
 #include <windows.h>
 #include <objbase.h>
@@ -3948,10 +3949,10 @@ void MDInfo::DumpRaw(int iDump, bool bunused)
             const MD *pMd;
             pMd = (const MD *)pbMd;
 
-            VWriteLine("Metadata header: %d.%d, heaps: 0x%02x, rid: 0x%02x, valid: 0x%016I64x, sorted: 0x%016I64x",
+            VWriteLine("Metadata header: %d.%d, heaps: 0x%02x, rid: 0x%02x, valid: 0x%016" PRIx64 ", sorted: 0x%016" PRIx64,
                        pMd->m_major, pMd->m_minor, pMd->m_heaps, pMd->m_rid,
-                       (ULONGLONG)GET_UNALIGNED_VAL64(&(pMd->m_maskvalid)),
-                       (ULONGLONG)GET_UNALIGNED_VAL64(&(pMd->m_sorted)));
+                       (uint64_t)GET_UNALIGNED_VAL64(&(pMd->m_maskvalid)),
+                       (uint64_t)GET_UNALIGNED_VAL64(&(pMd->m_sorted)));
 
             if (m_DumpFilter & dumpMoreHex)
             {
