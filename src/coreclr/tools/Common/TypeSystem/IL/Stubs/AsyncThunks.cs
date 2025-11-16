@@ -51,7 +51,9 @@ namespace Internal.IL.Stubs
             {
                 codestream.BeginTry(tryFinallyRegion);
                 codestream.Emit(ILOpcode.nop);
-                ILExceptionRegionBuilder tryCatchRegion = emitter.NewCatchRegion(context.GetWellKnownType(WellKnownType.Object));
+
+                TypeDesc exceptionType = context.GetWellKnownType(WellKnownType.Exception);
+                ILExceptionRegionBuilder tryCatchRegion = emitter.NewCatchRegion(exceptionType);
                 {
                     codestream.BeginTry(tryCatchRegion);
 
@@ -147,8 +149,6 @@ namespace Internal.IL.Stubs
                 // Catch
                 {
                     codestream.BeginHandler(tryCatchRegion);
-
-                    TypeDesc exceptionType = context.GetWellKnownType(WellKnownType.Exception);
 
                     MethodDesc fromExceptionMd;
                     if (logicalReturnType != null)

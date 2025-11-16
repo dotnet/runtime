@@ -170,8 +170,7 @@ namespace Internal.IL
                 {
                     // We should not be creating any AsyncMethodVariants yet.
                     // This hasn't been implemented.
-                    Debug.Assert(!method.IsAsyncVariant());
-                    return AsyncThunkILEmitter.EmitTaskReturningThunk(ecmaMethod, ((CompilerTypeSystemContext)ecmaMethod.Context).GetAsyncVariantMethod(ecmaMethod));
+                    return null;
                 }
 
                 // Check to see if there is an override for the EcmaMethodIL. If there is not
