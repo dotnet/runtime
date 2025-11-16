@@ -1604,13 +1604,38 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        // FrameworkEventSource is on the startup path for the framework, so we have this internal overload that it can use
-        // to prevent the working set hit from looking at the custom attributes on the type to get the Guid.
+        /// <summary>
+        /// Construct an EventSource with a given name for non-contract based events (e.g. those using the Write() API)
+        /// and a given Guid to identify the source.
+        /// </summary>
+        /// <param name="eventSourceName">
+        /// The name of the event source. Must not be null.
+        /// </param>
+        /// <param name="eventSourceGuid">
+        /// The unique identifier for the event source. Must not be Guid.Empty.
+        /// </param>
         public EventSource(string eventSourceName, Guid eventSourceGuid)
             : this(eventSourceName, eventSourceGuid, EventSourceSettings.EtwManifestEventFormat)
         { }
 
-        // Used by the internal FrameworkEventSource constructor and the TraceLogging-style event source constructor
+        /// <summary>
+        /// Construct an EventSource with a given name for non-contract based events (e.g. those using the Write() API)
+        /// and a given Guid to identify the source.
+        ///
+        /// Also specify a list of key-value pairs called traits (you must pass an even number of strings).
+        /// The first string is the key and the second is the value.   These are not interpreted by EventSource
+        /// itself but may be interpreted the listeners.  Can be fetched with GetTrait(string).
+        /// </summary>
+        /// <param name="eventSourceName">
+        /// The name of the event source. Must not be null.
+        /// </param>
+        /// <param name="eventSourceGuid">
+        /// The unique identifier for the event source. Must not be Guid.Empty.
+        /// </param>
+        /// <param name="config">
+        /// Configuration options for the EventSource as a whole.
+        /// </param>
+        /// <param name="traits">A collection of key-value strings (must be an even number).</param>
         public EventSource(string eventSourceName, Guid eventSourceGuid, EventSourceSettings settings, string[]? traits = null)
         {
             if (IsSupported)
