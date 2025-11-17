@@ -243,11 +243,6 @@ CodeGen::CodeGen(Compiler* theCompiler)
 #endif // defined(TARGET_XARCH)
 #endif // DEBUG
 
-#ifdef TARGET_AMD64
-    // This will be set before final frame layout.
-    compiler->compVSQuirkStackPaddingNeeded = 0;
-#endif // TARGET_AMD64
-
     compiler->genCallSite2DebugInfoMap = nullptr;
 
     /* Assume that we not fully interruptible */
