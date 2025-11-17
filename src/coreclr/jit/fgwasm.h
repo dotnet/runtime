@@ -115,9 +115,25 @@ class FgWasm
 private:
 
     Compiler* m_comp;
-    unsigned m_sccNum;
+    unsigned  m_sccNum;
 
 public:
+
+    FgWasm(Compiler* comp)
+        : m_comp(comp)
+        , m_sccNum(0)
+    {
+    }
+
+    Compiler* Comp() const
+    {
+        return m_comp;
+    }
+    unsigned GetSccNum()
+    {
+        return m_sccNum++;
+    }
+
     typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, Scc*> SccMap;
 
     template <typename TFunc>
@@ -132,20 +148,15 @@ public:
                                        BitVec&           subgraph,
                                        BitVecTraits&     subgraphTraits);
 
-    FgWasm(Compiler* comp) : m_comp(comp), m_sccNum(0) {}
-
-    Compiler* Compiler() const { return m_comp; }
-    unsigned GetSccNum() { return m_sccNum++; }
-
     void WasmFindSccs(FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& sccs);
-    
+
     void WasmFindSccsCore(FlowGraphDfsTree* dfsTree,
-        BitVec&           subset,
-        BitVecTraits&     traits,
-        ArrayStack<Scc*>& sccs,
-        BasicBlock**      postorder,
-        unsigned          postorderCount);
-    
+                          BitVec&           subset,
+                          BitVecTraits&     traits,
+                          ArrayStack<Scc*>& sccs,
+                          BasicBlock**      postorder,
+                          unsigned          postorderCount);
+
     bool WasmTransformSccs(ArrayStack<Scc*>& sccs);
 };
 
