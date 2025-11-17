@@ -406,18 +406,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 thisPtr          = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
                 assert(thisPtr != nullptr);
 
-                GenTree* origThisPtr = thisPtr;
                 // Clone the (possibly transformed) "this" pointer
                 GenTree* thisPtrCopy;
                 thisPtr =
                     impCloneExpr(thisPtr, &thisPtrCopy, CHECK_SPILL_ALL, nullptr DEBUGARG("LDVIRTFTN this pointer"));
-
-                // We cloned the "this" pointer, mark it as a single def and set the class for it
-                if (thisPtr->TypeIs(TYP_REF) && (origThisPtr != thisPtr))
-                {
-                    lvaGetDesc(thisPtr->AsLclVar())->lvSingleDef = 1;
-                    lvaSetClass(thisPtr->AsLclVar()->GetLclNum(), origThisPtr);
-                }
 
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
                 assert(fptr != nullptr);
