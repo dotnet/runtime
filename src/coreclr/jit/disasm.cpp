@@ -371,7 +371,7 @@ size_t DisAssembler::disCchFixupMember(
     DISX86::TRMTA terminationType = DISX86::TRMTA(pdis->Trmta());
     // DIS::ADDR disIndAddr;
 
-    DISASM_DUMP("FixupMember %016I64X (%08IX), size %d, termType %u\n", addr, disGetLinearAddr((size_t)addr), size,
+    DISASM_DUMP("FixupMember %016" PRIX64 " (%08" PRIxPTR "), size %d, termType %u\n", (uint64_t)addr, (uintptr_t)disGetLinearAddr((size_t)addr), size,
                 terminationType);
 
     // Is there a relocation registered for the address?
@@ -473,7 +473,7 @@ size_t DisAssembler::disCchFixupMember(
     DISARM64::TRMTA terminationType = DISARM64::TRMTA(pdis->Trmta());
     // DIS::ADDR disIndAddr;
 
-    DISASM_DUMP("FixupMember %016I64X (%08IX), size %d, termType %u\n", addr, disGetLinearAddr((size_t)addr), size,
+    DISASM_DUMP("FixupMember %016" PRIX64 " (%08" PRIxPTR "), size %d, termType %u\n", (uint64_t)addr, (uintptr_t)disGetLinearAddr((size_t)addr), size,
                 terminationType);
 
     // Is there a relocation registered for the address?
@@ -1509,16 +1509,16 @@ void DisAssembler::disAsmCode(BYTE*  hotCodePtr,
     assert(hotCodeSize > 0);
     if (coldCodeSize == 0)
     {
-        fprintf(disAsmFile, "************************** %hs:%hs size 0x%04IX **************************\n\n",
-                disCurClassName, disCurMethodName, hotCodeSize);
+        fprintf(disAsmFile, "************************** %hs:%hs size 0x%04" PRIxPTR " **************************\n\n",
+                disCurClassName, disCurMethodName, (uintptr_t)hotCodeSize);
 
         fprintf(disAsmFile, "Base address : %ph (RW: %ph)\n", dspAddr(hotCodePtr), dspAddr(hotCodePtrRW));
     }
     else
     {
         fprintf(disAsmFile,
-                "************************** %hs:%hs hot size 0x%04IX cold size 0x%04IX **************************\n\n",
-                disCurClassName, disCurMethodName, hotCodeSize, coldCodeSize);
+                "************************** %hs:%hs hot size 0x%04" PRIxPTR " cold size 0x%04" PRIxPTR " **************************\n\n",
+                disCurClassName, disCurMethodName, (uintptr_t)hotCodeSize, (uintptr_t)coldCodeSize);
 
         fprintf(disAsmFile, "Hot  address : %ph (RW: %ph)\n", dspAddr(hotCodePtr), dspAddr(hotCodePtrRW));
         fprintf(disAsmFile, "Cold address : %ph (RW: %ph)\n", dspAddr(coldCodePtr), dspAddr(coldCodePtrRW));

@@ -327,7 +327,7 @@ EXPORT(void) NATIVEAPI InvokeCallback20(PFNACTION20 callback, S20 s)
 #ifdef __GNUC__
     printf("Native S20: %lld, %lld, %lld, %lld\n", s.x, s.y, s.z, s.w);
 #else
-    printf("Native S20: %I64d, %I64d, %I64d, %I64d\n", s.x, s.y, s.z, s.w);
+    printf("Native S20: %" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "\n", (int64_t)s.x, (int64_t)s.y, (int64_t)s.z, (int64_t)s.w);
 #endif
 
     callback(s);
@@ -471,7 +471,7 @@ EXPORT(S20) NATIVEAPI InvokeCallback20R(PFNACTION20 callback, S20 s)
 #ifdef __GNUC__
     printf("Native S20: %lld, %lld, %lld, %lld\n", s.x, s.y, s.z, s.w);
 #else
-    printf("Native S20: %I64d, %I64d, %I64d, %I64d\n", s.x, s.y, s.z, s.w);
+    printf("Native S20: %" PRId64 ", %" PRId64 ", %" PRId64 ", %" PRId64 "\n", (int64_t)s.x, (int64_t)s.y, (int64_t)s.z, (int64_t)s.w);
 #endif
     callback(s);
     return s;
