@@ -465,7 +465,7 @@ namespace System.Text
                         Vector128<byte> firstVector = AdvSimd.LoadVector128(pBuffer);
                         Vector128<byte> secondVector = AdvSimd.LoadVector128(pBuffer + SizeOfVector128);
 
-                        if (VectorContainsNonAsciiChar(firstVector) || VectorContainsNonAsciiChar(secondVector))
+                        if (VectorContainsNonAsciiChar(firstVector | secondVector))
                         {
                             currentAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(firstVector, bitmask);
                             secondAdvSimdIndex = (uint)GetIndexOfFirstNonAsciiByteInLane_AdvSimd(secondVector, bitmask);
