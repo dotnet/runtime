@@ -16,6 +16,7 @@ namespace System.IO.Compression
         private int _bufferOffset;
         private int _bufferCount;
         private bool _nonEmptyInput;
+        private bool _decompressionFinished;
 
         /// <summary>Reads a number of decompressed bytes into the specified byte array.</summary>
         /// <param name="buffer">The array used to store decompressed bytes.</param>
@@ -82,10 +83,11 @@ namespace System.IO.Compression
                 }
             }
 
-            // If decompression is finished and no bytes were written, try rewinding the stream
-            if (bytesWritten == 0 && lastResult == OperationStatus.Done && _stream.CanSeek)
+            // When decompression finishes, rewind the stream to the exact end of compressed data
+            if (bytesWritten == 0 && lastResult == OperationStatus.Done && !_decompressionFinished && _stream.CanSeek)
             {
                 TryRewindStream(_stream);
+                _decompressionFinished = true;
             }
 
             return bytesWritten;
@@ -178,10 +180,11 @@ namespace System.IO.Compression
                         }
                     }
 
-                    // If decompression is finished and no bytes were written, try rewinding the stream
-                    if (bytesWritten == 0 && lastResult == OperationStatus.Done && _stream.CanSeek)
+                    // When decompression finishes, rewind the stream to the exact end of compressed data
+                    if (bytesWritten == 0 && lastResult == OperationStatus.Done && !_decompressionFinished && _stream.CanSeek)
                     {
                         TryRewindStream(_stream);
+                        _decompressionFinished = true;
                     }
 
                     return bytesWritten;

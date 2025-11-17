@@ -22,6 +22,7 @@ namespace System.IO.Compression
         private Deflater? _deflater;
         private byte[]? _buffer;
         private volatile bool _activeAsyncOperation;
+        private bool _decompressionFinished;
 
         internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, ZLibNative.Deflate_DefaultWindowBits, uncompressedSize)
         {
@@ -354,10 +355,11 @@ namespace System.IO.Compression
                 }
             }
 
-            // Rewind the stream if decompression has finished and the stream supports seeking
-            if (bytesRead == 0 && InflatorIsFinished && _stream.CanSeek)
+            // When decompression finishes, rewind the stream to the exact end of compressed data
+            if (bytesRead == 0 && InflatorIsFinished && !_decompressionFinished && _stream.CanSeek)
             {
                 TryRewindStream(_stream);
+                _decompressionFinished = true;
             }
 
             return bytesRead;
@@ -504,10 +506,11 @@ namespace System.IO.Compression
                         }
                     }
 
-                    // Rewind the stream if decompression has finished and the stream supports seeking
-                    if (bytesRead == 0 && InflatorIsFinished && _stream.CanSeek)
+                    // When decompression finishes, rewind the stream to the exact end of compressed data
+                    if (bytesRead == 0 && InflatorIsFinished && !_decompressionFinished && _stream.CanSeek)
                     {
                         TryRewindStream(_stream);
+                        _decompressionFinished = true;
                     }
 
                     return bytesRead;
