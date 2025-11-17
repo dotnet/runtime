@@ -198,16 +198,15 @@ private:
     unsigned m_enclosingHndIndex;
     // total weight of all entry blocks
     weight_t m_entryWeight;
-
+    // scc number
     unsigned        m_num;
-    static unsigned s_nums;
 
 public:
 
     // Factor out traits? Parent links?
     //
-    Scc(Compiler* comp, FlowGraphDfsTree* dfsTree, BasicBlock* block)
-        : m_comp(comp)
+    Scc(FgWasm* fgWasm, FlowGraphDfsTree* dfsTree, BasicBlock* block)
+        : m_comp(fgWasm->Compiler())
         , m_dfsTree(dfsTree)
         , m_traits(dfsTree->GetPostOrderCount(), comp)
         , m_blocks(BitVecOps::UninitVal())
@@ -217,7 +216,7 @@ public:
         , m_enclosingTryIndex(0)
         , m_enclosingHndIndex(0)
         , m_entryWeight(0)
-        , m_num(s_nums++)
+        , m_num(fgWasm->GetSccNum())
     {
         m_blocks  = BitVecOps::MakeEmpty(&m_traits);
         m_entries = BitVecOps::MakeEmpty(&m_traits);
@@ -687,8 +686,6 @@ public:
     }
 };
 
-unsigned Scc::s_nums = 0;
-
 //-----------------------------------------------------------------------------
 // WasmFindSccs: find strongly connected components in the flow graph
 //
@@ -741,7 +738,6 @@ void FgWasm::WasmFindSccs(Compiler* comp, FlowGraphDfsTree* dfsTree, ArrayStack<
 // WasmFindSccsCore: find strongly connected components in a subgraph
 //
 // Arguments:
-//   comp    - compiler instance
 //   dfsTree - wasm dfs tree (entire method)
 //   subset  - bv describing the subgraph
 //   traits  - bv traits
@@ -749,8 +745,7 @@ void FgWasm::WasmFindSccs(Compiler* comp, FlowGraphDfsTree* dfsTree, ArrayStack<
 //   postorder - array of BasicBlock* in postorder
 //   postorderCount - size of hte array
 //
-void FgWasm::WasmFindSccsCore(Compiler*         comp,
-                              FlowGraphDfsTree* dfsTree,
+void FgWasm::WasmFindSccsCore(FlowGraphDfsTree* dfsTree,
                               BitVec&           subset,
                               BitVecTraits&     traits,
                               ArrayStack<Scc*>& sccs,
@@ -760,8 +755,7 @@ void FgWasm::WasmFindSccsCore(Compiler*         comp,
     // Initially we map a block to a null entry in the map.
     // If we then get a second block in that Scc, we allocate an Scc instance.
     //
-    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, Scc*> SccMap;
-    SccMap                                                              map(comp->getAllocator(CMK_WasmSccTransform));
+    SccMap map(Compiler()->getAllocator(CMK_WasmSccTransform));
 
     auto assign = [=, &map, &sccs, &traits](auto self, BasicBlock* u, BasicBlock* root, BitVec& subset) -> void {
         // Ignore blocks not in the subset
@@ -809,7 +803,7 @@ void FgWasm::WasmFindSccsCore(Compiler*         comp,
             if (scc == nullptr)
             {
                 JITDUMP("Root has been visited; forming SCC with root " FMT_BB "\n", root->bbNum);
-                scc = new (comp, CMK_WasmSccTransform) Scc(comp, dfsTree, root);
+                scc = new (Compiler(), CMK_WasmSccTransform) Scc(this, dfsTree, root);
                 map.Set(root, scc, SccMap::SetKind::Overwrite);
                 sccs.Push(scc);
             }
@@ -826,7 +820,7 @@ void FgWasm::WasmFindSccsCore(Compiler*         comp,
         //
         // Do not walk back out of a handler
         //
-        if (comp->bbIsHandlerBeg(u))
+        if (Compiler()->bbIsHandlerBeg(u))
         {
             return;
         }
@@ -918,6 +912,7 @@ bool FgWasm::WasmTransformSccs(ArrayStack<Scc*>& sccs)
 //
 PhaseStatus Compiler::fgWasmTransformSccs()
 {
+    FgWasm            fgWasm(this);
     bool              transformed                 = false;
     bool              hasBlocksOnlyReachableViaEH = false;
     FlowGraphDfsTree* dfsTree                     = fgWasmDfs(hasBlocksOnlyReachableViaEH);
@@ -939,10 +934,10 @@ PhaseStatus Compiler::fgWasmTransformSccs()
         printf("** Fixing improper headers in %u (%s)\n", info.compMethodSuperPMIIndex, info.compFullName);
 
         ArrayStack<Scc*> sccs(getAllocator(CMK_WasmSccTransform));
-        FgWasm::WasmFindSccs(this, dfsTree, sccs);
+        fgWasm->WasmFindSccs(this, dfsTree, sccs);
         assert(!sccs.Empty());
 
-        transformed = FgWasm::WasmTransformSccs(sccs);
+        transformed = fgWasm->WasmTransformSccs(sccs);
         assert(transformed);
 
 #ifdef DEBUG

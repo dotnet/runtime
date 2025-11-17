@@ -112,7 +112,13 @@ public:
 //
 class FgWasm
 {
+private:
+
+    Compiler* m_comp;
+    unsigned m_sccNum;
+
 public:
+    typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, Scc*> SccMap;
 
     template <typename TFunc>
     static BasicBlockVisit VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc func, bool useProfile = false);
@@ -126,17 +132,21 @@ public:
                                        BitVec&           subgraph,
                                        BitVecTraits&     subgraphTraits);
 
-    static void WasmFindSccs(Compiler* comp, FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& sccs);
+    FgWasm(Compiler* comp) : m_comp(comp), m_sccNum(0) {}
 
-    static void WasmFindSccsCore(Compiler*         comp,
-                                 FlowGraphDfsTree* dfsTree,
-                                 BitVec&           subset,
-                                 BitVecTraits&     traits,
-                                 ArrayStack<Scc*>& sccs,
-                                 BasicBlock**      postorder,
-                                 unsigned          postorderCount);
+    Compiler* Compiler() const { return m_comp; }
+    unsigned GetSccNum() { return m_sccNum++; }
 
-    static bool WasmTransformSccs(ArrayStack<Scc*>& sccs);
+    void WasmFindSccs(FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& sccs);
+    
+    void WasmFindSccsCore(FlowGraphDfsTree* dfsTree,
+        BitVec&           subset,
+        BitVecTraits&     traits,
+        ArrayStack<Scc*>& sccs,
+        BasicBlock**      postorder,
+        unsigned          postorderCount);
+    
+    bool WasmTransformSccs(ArrayStack<Scc*>& sccs);
 };
 
 #define RETURN_ON_ABORT(expr)                                                                                          \
