@@ -1692,7 +1692,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
                                     debuggingFlags
                                    );
 
-    LOG((LF_CORDB, LL_EVERYTHING, "Handle in Cordb::CreateProcess is: %p\n", lpProcessInformation->hProcess));
+    LOG((LF_CORDB, LL_EVERYTHING, "Handle in Cordb::CreateProcess is: %.I64x\n", lpProcessInformation->hProcess));
 
     if (SUCCEEDED(hr))
     {

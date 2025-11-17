@@ -7140,13 +7140,13 @@ void gc_heap::gc_thread_function ()
                 wait_time = min (wait_time, (uint32_t)(sample.elapsed_between_gcs / 1000 / 3));
                 wait_time = max (wait_time, 1u);
 
-                dprintf (6666, ("gc#0 thread waiting for %d ms (betwen GCs %" PRId64 ")", wait_time, (int64_t)sample.elapsed_between_gcs));
+                dprintf (6666, ("gc#0 thread waiting for %d ms (betwen GCs %I64d)", wait_time, sample.elapsed_between_gcs));
             }
 #endif //DYNAMIC_HEAP_COUNT
             uint32_t wait_result = gc_heap::ee_suspend_event.Wait(wait_on_time_out_p ? wait_time : INFINITE, FALSE);
 #ifdef DYNAMIC_HEAP_COUNT
-            dprintf (9999, ("waiting for ee done res %d (timeout %d, %" PRId64 " ms since last suspend end)(should_change_heap_count is %d) (gradual_decommit_in_progress_p %d)",
-                wait_result, wait_time, (int64_t)((GetHighPrecisionTimeStamp() - last_suspended_end_time) / 1000),
+            dprintf (9999, ("waiting for ee done res %d (timeout %d, %I64d ms since last suspend end)(should_change_heap_count is %d) (gradual_decommit_in_progress_p %d)",
+                wait_result, wait_time, ((GetHighPrecisionTimeStamp() - last_suspended_end_time) / 1000),
                 dynamic_heap_count_data.should_change_heap_count, gradual_decommit_in_progress_p));
 #endif //DYNAMIC_HEAP_COUNT
             if (wait_result == WAIT_TIMEOUT)
@@ -16324,8 +16324,8 @@ void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* f
     }
 
     end_us = GetHighPrecisionTimeStamp();
-    dprintf (3, ("total - %Id items out of %Id items are from a different heap in %" PRId64 " us",
-        num_fl_items_for_oh, num_fl_items, (int64_t)(end_us - start_us)));
+    dprintf (3, ("total - %Id items out of %Id items are from a different heap in %I64d us",
+        num_fl_items_for_oh, num_fl_items, (end_us - start_us)));
 
     *fl_items_count = num_fl_items;
     *fl_items_for_oh_count = num_fl_items_for_oh;
@@ -16444,8 +16444,8 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
     }
 
     end_us = GetHighPrecisionTimeStamp();
-    dprintf (8888, ("h%d total %Id items rethreaded out of %Id items in %" PRId64 " us (%" PRId64 "ms)",
-        current_heap->heap_number, num_fl_items_rethreaded, num_fl_items, (int64_t)(end_us - start_us), (int64_t)((end_us - start_us) / 1000)));
+    dprintf (8888, ("h%d total %Id items rethreaded out of %Id items in %I64d us (%I64dms)",
+        current_heap->heap_number, num_fl_items_rethreaded, num_fl_items, (end_us - start_us), ((end_us - start_us) / 1000)));
 
     (*num_total_fl_items) += num_fl_items;
     (*num_total_fl_items_rethreaded) += num_fl_items_rethreaded;
@@ -19728,7 +19728,7 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
             {
                 if (alloced_on_retry)
                 {
-                    dprintf (5555, ("UOH h%d allocated %Id on retry (%" PRId64 "us)", alloc_heap->heap_number, size, (int64_t)(end_us - start_us)));
+                    dprintf (5555, ("UOH h%d allocated %Id on retry (%I64dus)", alloc_heap->heap_number, size, (end_us - start_us)));
                 }
             }
         }
@@ -22496,15 +22496,15 @@ void gc_heap::update_end_gc_time_per_heap()
 
         if (heap_number == 0)
         {
-            dprintf (3, ("prev gen%d GC end time: prev start %" PRId64 " + prev gc elapsed %Id = %" PRId64,
-                gen_number, (int64_t)dd_previous_time_clock (dd), dd_gc_elapsed_time (dd), (int64_t)(dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd))));
+            dprintf (3, ("prev gen%d GC end time: prev start %I64d + prev gc elapsed %Id = %I64d",
+                gen_number, dd_previous_time_clock (dd), dd_gc_elapsed_time (dd), (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd))));
         }
 
         dd_gc_elapsed_time (dd) = (size_t)(end_gc_time - dd_time_clock (dd));
 
         if (heap_number == 0)
         {
-            dprintf (3, ("updated NGC%d %Id elapsed time to %" PRId64 " - %" PRId64 " = %" PRId64, gen_number, dd_gc_clock (dd), (int64_t)end_gc_time, (int64_t)dd_time_clock (dd), (int64_t)dd_gc_elapsed_time (dd)));
+            dprintf (3, ("updated NGC%d %Id elapsed time to %I64d - %I64d = %I64d", gen_number, dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
         }
     }
 }
@@ -22661,8 +22661,8 @@ void gc_heap::gc1()
         if ((heap_number == 0) && (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes))
         {
             time_since_last_gen2 = (size_t)(end_gc_time - (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd)));
-            dprintf (6666, ("BGC %Id end %" PRId64 " - (prev gen2 start %" PRId64 " + elapsed %Id = %" PRId64 ") = time inbewteen gen2 %Id",
-                dd_gc_clock (dd), (int64_t)end_gc_time, (int64_t)dd_previous_time_clock (dd), dd_gc_elapsed_time (dd), (int64_t)(dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd)), time_since_last_gen2));
+            dprintf (6666, ("BGC %Id end %I64d - (prev gen2 start %I64d + elapsed %Id = %I64d) = time inbewteen gen2 %Id",
+                dd_gc_clock (dd), end_gc_time, dd_previous_time_clock (dd), dd_gc_elapsed_time (dd), (dd_previous_time_clock (dd) + dd_gc_elapsed_time (dd)), time_since_last_gen2));
         }
 #endif //DYNAMIC_HEAP_COUNT
 
@@ -22670,7 +22670,7 @@ void gc_heap::gc1()
 #ifdef DYNAMIC_HEAP_COUNT
         if ((heap_number == 0) && (dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes))
         {
-            dprintf (6666, ("updating BGC %Id elapsed time to %" PRId64 " - %" PRId64 " = %" PRId64, dd_gc_clock (dd), (int64_t)end_gc_time, (int64_t)dd_time_clock (dd), (int64_t)dd_gc_elapsed_time (dd)));
+            dprintf (6666, ("updating BGC %Id elapsed time to %I64d - %I64d = %I64d", dd_gc_clock (dd), end_gc_time, dd_time_clock (dd), dd_gc_elapsed_time (dd)));
 
             float bgc_percent = (float)dd_gc_elapsed_time (dd) * 100.0f / (float)time_since_last_gen2;
             dynamic_heap_count_data_t::gen2_sample& g2_sample = dynamic_heap_count_data.gen2_samples[dynamic_heap_count_data.gen2_sample_index];
@@ -23328,8 +23328,8 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
 
     uint64_t elapsed = GetHighPrecisionTimeStamp () - start_us;
 
-    dprintf (8888, ("rethreaded %Id items, merging took %" PRId64 "us (%" PRId64 "ms)",
-        total_num_fl_items_rethreaded_stage2, (int64_t)elapsed, (int64_t)(elapsed / 1000)));
+    dprintf (8888, ("rethreaded %Id items, merging took %I64dus (%I64dms)",
+        total_num_fl_items_rethreaded_stage2, elapsed, (elapsed / 1000)));
 #endif //_DEBUG
 
     for (int hn = 0; hn < to_n_heaps; hn++)
@@ -25855,8 +25855,8 @@ void gc_heap::calculate_new_heap_count ()
             assert (throughput_cost_percents[i] >= 0.0);
             if (throughput_cost_percents[i] > 100.0)
                 throughput_cost_percents[i] = 100.0;
-            dprintf (6666, ("sample %d in GC#%Id msl %" PRId64 " / %d + pause %" PRId64 " / elapsed %" PRId64 " = tcp: %.3f, surv %zd, gc speed %zd/ms", i,
-                sample.gc_index, (int64_t)sample.msl_wait_time, n_heaps, (int64_t)sample.gc_pause_time, (int64_t)sample.elapsed_between_gcs, throughput_cost_percents[i],
+            dprintf (6666, ("sample %d in GC#%Id msl %I64d / %d + pause %I64d / elapsed %I64d = tcp: %.3f, surv %zd, gc speed %zd/ms", i,
+                sample.gc_index, sample.msl_wait_time, n_heaps, sample.gc_pause_time, sample.elapsed_between_gcs, throughput_cost_percents[i],
                 sample.gc_survived_size, (sample.gc_pause_time ? (sample.gc_survived_size * 1000 / sample.gc_pause_time) : 0)));
         }
     }
@@ -25875,9 +25875,9 @@ void gc_heap::calculate_new_heap_count ()
         min_pause = min (dynamic_heap_count_data.samples[i].gc_pause_time, min_pause);
     }
 
-    dprintf (6666, ("checking if samples are stable %Id %Id %Id, min tcp %.3f, min pause %" PRId64,
+    dprintf (6666, ("checking if samples are stable %Id %Id %Id, min tcp %.3f, min pause %I64d",
         dynamic_heap_count_data.samples[0].gc_survived_size, dynamic_heap_count_data.samples[1].gc_survived_size, dynamic_heap_count_data.samples[2].gc_survived_size,
-        min_tcp, (int64_t)min_pause));
+        min_tcp, min_pause));
 
     bool survived_stable_p = true;
     if (min_survived > 0)
@@ -26743,7 +26743,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         change_heap_count_time = GetHighPrecisionTimeStamp() - start_time;
         total_change_heap_count_time += change_heap_count_time;
         total_change_heap_count++;
-        dprintf (6666, ("changing HC took %" PRId64 "us", (int64_t)change_heap_count_time));
+        dprintf (6666, ("changing HC took %I64dus", change_heap_count_time));
     }
 
     return true;
@@ -26808,9 +26808,9 @@ void gc_heap::process_datas_sample()
             assign_new_budget (0, desired_per_heap_datas);
         }
 
-        dprintf (6666, ("sample#%d: %d heaps, this GC end %" PRId64 " - last sus end %" PRId64 " = %" PRId64 ", this GC pause %.3fms, msl wait %" PRId64 "us, tcp %.3f, surv %zd, gc speed %.3fmb/ms (%.3fkb/ms/heap)",
-            dynamic_heap_count_data.sample_index, n_heaps, (int64_t)before_distribute_free_regions_time, (int64_t)last_suspended_end_time, (int64_t)sample.elapsed_between_gcs,
-            (sample.gc_pause_time / 1000.0), (int64_t)sample.msl_wait_time, tcp, sample.gc_survived_size,
+        dprintf (6666, ("sample#%d: %d heaps, this GC end %I64d - last sus end %I64d = %I64d, this GC pause %.3fms, msl wait %I64dus, tcp %.3f, surv %zd, gc speed %.3fmb/ms (%.3fkb/ms/heap)",
+            dynamic_heap_count_data.sample_index, n_heaps, before_distribute_free_regions_time, last_suspended_end_time, sample.elapsed_between_gcs,
+            (sample.gc_pause_time / 1000.0), sample.msl_wait_time, tcp, sample.gc_survived_size,
             (sample.gc_pause_time ? (sample.gc_survived_size / 1000.0 / sample.gc_pause_time) : 0),
             (sample.gc_pause_time ? ((float)sample.gc_survived_size / sample.gc_pause_time / n_heaps) : 0)));
 
@@ -26839,8 +26839,8 @@ void gc_heap::process_datas_sample()
             g2_sample.gc_percent = (float)gen2_elapsed_time * 100.0f / elapsed_between_gen2_gcs;
             (dynamic_heap_count_data.current_gen2_samples_count)++;
 
-            dprintf (6666, ("gen2 sample#%d: this GC end %" PRId64 " - last gen2 end %" PRId64 " = %" PRId64 ", GC elapsed %" PRId64 ", percent %.3f",
-                dynamic_heap_count_data.gen2_sample_index, (int64_t)before_distribute_free_regions_time, (int64_t)prev_gen2_end_time, (int64_t)elapsed_between_gen2_gcs, (int64_t)gen2_elapsed_time, g2_sample.gc_percent));
+            dprintf (6666, ("gen2 sample#%d: this GC end %I64d - last gen2 end %I64d = %I64d, GC elapsed %I64d, percent %.3f",
+                dynamic_heap_count_data.gen2_sample_index, before_distribute_free_regions_time, prev_gen2_end_time, elapsed_between_gen2_gcs, gen2_elapsed_time, g2_sample.gc_percent));
             dynamic_heap_count_data.gen2_sample_index = (dynamic_heap_count_data.gen2_sample_index + 1) % dynamic_heap_count_data_t::sample_size;
         }
 

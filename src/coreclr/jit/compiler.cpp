@@ -1497,12 +1497,12 @@ void Compiler::compShutdown()
     jitprintf("GenTree node allocation stats\n");
     jitprintf("---------------------------------------------------\n");
 
-    jitprintf("Allocated %6" PRIu64 " tree nodes (%7" PRIu64 " bytes total, avg %4" PRIu64 " bytes per method)\n",
-              (uint64_t)genNodeSizeStats.genTreeNodeCnt, (uint64_t)genNodeSizeStats.genTreeNodeSize,
-              (uint64_t)(genNodeSizeStats.genTreeNodeSize / genMethodCnt));
+    jitprintf("Allocated %6I64u tree nodes (%7I64u bytes total, avg %4I64u bytes per method)\n",
+              genNodeSizeStats.genTreeNodeCnt, genNodeSizeStats.genTreeNodeSize,
+              genNodeSizeStats.genTreeNodeSize / genMethodCnt);
 
-    jitprintf("Allocated %7" PRIu64 " bytes of unused tree node space (%3.2f%%)\n",
-              (uint64_t)(genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize),
+    jitprintf("Allocated %7I64u bytes of unused tree node space (%3.2f%%)\n",
+              genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize,
               (float)(100 * (genNodeSizeStats.genTreeNodeSize - genNodeSizeStats.genTreeNodeActualSize)) /
                   genNodeSizeStats.genTreeNodeSize);
 
