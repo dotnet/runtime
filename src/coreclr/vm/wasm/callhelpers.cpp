@@ -484,6 +484,12 @@ namespace
         (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_IND(3), ARG_IND(4), ARG_I32(5));
     }
 
+    void CallFunc_I32_I32_IND_RetVoid (PCODE pcode, int8_t *pArgs, int8_t *pRet)
+    {
+        void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
+        (*fptr)(ARG_I32(0), ARG_I32(1), ARG_IND(2));
+    }
+
     void CallFunc_I32_I32_IND_IND_I32_RetVoid (PCODE pcode, int8_t *pArgs, int8_t *pRet)
     {
         void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
@@ -709,6 +715,7 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "viiinn", (void*)&CallFunc_I32_I32_I32_IND_IND_RetVoid },
     { "viiinni", (void*)&CallFunc_I32_I32_I32_IND_IND_I32_RetVoid },
     { "viinni", (void*)&CallFunc_I32_I32_IND_IND_I32_RetVoid },
+    { "viin", (void*)&CallFunc_I32_I32_IND_RetVoid },
     { "viinnii", (void*)&CallFunc_I32_I32_IND_IND_I32_I32_RetVoid },
     { "vil", (void*)&CallFunc_I32_I64_RetVoid },
     { "vili", (void*)&CallFunc_I32_I64_I32_RetVoid },
@@ -752,7 +759,7 @@ static void Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJo
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid)
     {
-        LookupMethodByName("System.Threading.ThreadPool, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
+        LookupMethodByName("System.Threading.ThreadPool, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nullptr, 0, nullptr);
 }
@@ -768,7 +775,7 @@ static void Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid)
     {
-        LookupMethodByName("System.Threading.TimerQueue, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
+        LookupMethodByName("System.Threading.TimerQueue, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nullptr, 0, nullptr);
 }

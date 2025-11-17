@@ -627,9 +627,9 @@ namespace ILCompiler.DependencyAnalysis
                 RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L => 4,
                 RelocType.IMAGE_REL_BASED_THUMB_MOV32 => 8,
                 RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL => 8,
-                RelocType.IMAGE_REL_BASED_LOONGARCH64_PC => 16,
-                RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR => 16,
-                RelocType.IMAGE_REL_BASED_RISCV64_PC => 16,
+                RelocType.IMAGE_REL_BASED_LOONGARCH64_PC => 8,
+                RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR => 8,
+                RelocType.IMAGE_REL_BASED_RISCV64_PC => 8,
                 _ => throw new NotSupportedException(),
             };
         }

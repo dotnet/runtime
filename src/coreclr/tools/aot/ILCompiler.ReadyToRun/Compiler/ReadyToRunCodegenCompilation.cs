@@ -430,6 +430,13 @@ namespace ILCompiler
                     // the composite executable.
                     string outputDirectory = Path.GetDirectoryName(outputFile);
                     string ownerExecutableName = Path.GetFileName(outputFile);
+
+                    if (_format == ReadyToRunContainerFormat.MachO)
+                    {
+                        // MachO composite images have the owner executable name stored with the dylib extension
+                        ownerExecutableName = Path.ChangeExtension(ownerExecutableName, ".dylib");
+                    }
+
                     foreach (string inputFile in _inputFiles)
                     {
                         string relativeMsilPath = Path.GetRelativePath(_compositeRootPath, inputFile);
@@ -469,6 +476,21 @@ namespace ILCompiler
 
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
 
+            bool isNativeCompositeImage = false;
+            if (NodeFactory.Target.IsWindows && NodeFactory.Format == ReadyToRunContainerFormat.PE)
+            {
+                isNativeCompositeImage = true;
+            }
+            else if (NodeFactory.Target.IsApplePlatform && NodeFactory.Format == ReadyToRunContainerFormat.MachO)
+            {
+                isNativeCompositeImage = true;
+            }
+
+            if (isNativeCompositeImage)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNativeImage;
+            }
+
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             // Re-written components shouldn't have any additional diagnostic information - only information about the forwards.
             // Even with all of this, we might be modifying the image in a silly manner - adding a directory when if didn't have one.
@@ -481,10 +503,11 @@ namespace ILCompiler
                 copiedCorHeader,
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
-                flags,
-                optimizationFlags,
-                _nodeFactory.ImageBase,
-                automaticTypeValidation ? inputModule : null,
+                flags: flags,
+                nodeFactoryOptimizationFlags: optimizationFlags,
+                format: ReadyToRunContainerFormat.PE,
+                imageBase: _nodeFactory.ImageBase,
+                associatedModule: automaticTypeValidation ? inputModule : null,
                 genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
                 genericCycleBreadthCutoff: -1); // as we're not actually compiling anything
 
