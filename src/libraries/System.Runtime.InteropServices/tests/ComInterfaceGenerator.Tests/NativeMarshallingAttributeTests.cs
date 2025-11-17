@@ -18,7 +18,7 @@ namespace ComInterfaceGenerator.Tests
         public void GetSameComInterfaceTwiceReturnsUniqueInstances()
         {
             // When using NativeMarshalling with UniqueComInterfaceMarshaller,
-            // getting the same COM interface pointer twice should return different managed instances
+            // calling NewUniqueMarshalling() twice returns different managed instances for the same COM object
             var obj1 = NewUniqueMarshalling();
             var obj2 = NewUniqueMarshalling();
 
