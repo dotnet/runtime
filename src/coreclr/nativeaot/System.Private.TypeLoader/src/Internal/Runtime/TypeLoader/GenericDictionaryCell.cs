@@ -328,7 +328,8 @@ namespace Internal.Runtime.TypeLoader
                 RuntimeMethodHandle handle = TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
                     builder.GetRuntimeTypeHandle(Method.OwningType),
                     Method.NameAndSignature.Handle,
-                    genericArgHandles);
+                    genericArgHandles,
+                    Method.AsyncVariant);
 
                 return *(IntPtr*)&handle;
             }
