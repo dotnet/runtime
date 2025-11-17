@@ -1,0 +1,56 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+using SharedTypes.ComInterfaces;
+using Xunit;
+
+namespace ComInterfaceGenerator.Tests
+{
+    public unsafe partial class NativeMarshallingAttributeTests
+    {
+        [LibraryImport(NativeExportsNE.NativeExportsNE_Binary, EntryPoint = "new_unique_marshalling")]
+        internal static partial IUniqueMarshalling NewUniqueMarshalling();
+
+        [Fact]
+        public void GetSameComInterfaceTwiceReturnsUniqueInstances()
+        {
+            // When using NativeMarshalling with UniqueComInterfaceMarshaller,
+            // getting the same COM interface twice should return different managed instances
+            var obj1 = NewUniqueMarshalling();
+            var obj2 = NewUniqueMarshalling();
+
+            Assert.NotSame(obj1, obj2);
+
+            // Verify they work independently
+            obj1.SetValue(42);
+            obj2.SetValue(100);
+
+            Assert.Equal(42, obj1.GetValue());
+            Assert.Equal(100, obj2.GetValue());
+        }
+
+        [Fact]
+        public void MethodReturningComInterfaceReturnsUniqueInstance()
+        {
+            // When a COM interface method returns the same interface type,
+            // it should return a new managed instance, not the cached one
+            var obj = NewUniqueMarshalling();
+            obj.SetValue(42);
+
+            var returnedObj = obj.GetThis();
+
+            // Should be a different managed object
+            Assert.NotSame(obj, returnedObj);
+
+            // But should refer to the same underlying COM object
+            Assert.Equal(42, returnedObj.GetValue());
+
+            // Modifying through one should affect the other
+            returnedObj.SetValue(100);
+            Assert.Equal(100, obj.GetValue());
+        }
+    }
+}
