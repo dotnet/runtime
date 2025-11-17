@@ -2314,7 +2314,7 @@ instruction CodeGen::ins_Copy(var_types dstType)
     if (dstType == TYP_HALF)
     {
         return INS_vmovsh;
-    } 
+    }
     return INS_movaps;
 #elif defined(TARGET_ARM64)
     if (varTypeIsSIMD(dstType))

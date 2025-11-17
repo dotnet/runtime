@@ -3078,7 +3078,6 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         //                          2. A map number from 0 to 7 (For AVX10.2 and above)
         leadingBytes = check;
         assert((leadingBytes == 0x0F) || ((emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) ||
-                                            emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
                                            (emitComp->compIsaSupportedDebugOnly(InstructionSet_APX))) &&
                                           (leadingBytes >= 0x00) && (leadingBytes <= 0x07)));
 
@@ -3105,7 +3104,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         // 0x0000RM11.
         leadingBytes = (code >> 16) & 0xFF;
         assert(leadingBytes == 0x0F ||
-               ((emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) || emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2)) && leadingBytes >= 0x00 &&
+               ((emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1)) && leadingBytes >= 0x00 &&
                 leadingBytes <= 0x07) ||
                (IsApxExtendedEvexInstruction(ins) && leadingBytes == 0));
         code &= 0xFFFF;
@@ -3160,14 +3159,14 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
 
         case 0x05:
         {
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) || emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
             evexPrefix |= (0x05 << 16);
             break;
         }
 
         case 0x06:
         {
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) || emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1));
             evexPrefix |= (0x06 << 16);
             break;
         }
@@ -5395,8 +5394,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
 
         assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE)                               // Only for x64
                || (attrSize == EA_16BYTE) || (attrSize == EA_32BYTE) || (attrSize == EA_64BYTE) // only for x64
-               || (ins == INS_movzx) || (ins == INS_movsx) || (ins == INS_vmovsh)
-               || (ins == INS_cmpxchg)
+               || (ins == INS_movzx) || (ins == INS_movsx) || (ins == INS_vmovsh) ||
+               (ins == INS_cmpxchg)
                // The prefetch instructions are always 3 bytes and have part of their modr/m byte hardcoded
                || isPrefetch(ins));
 
@@ -21406,11 +21405,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
             assert((unsigned)ins < ArrLen(insLatencyInfos));
             float insLatency = insLatencyInfos[ins];
-            
+
             // todo-xarch-half: hacking an exit on the unhandled ins to make prototyping easier
-            if (ins == INS_vcvtss2sh || ins == INS_vcvtsh2ss || ins == INS_vaddsh || ins == INS_vsubsh || ins == INS_vmulsh || ins == INS_vdivsh)
+            if (ins == INS_vcvtss2sh || ins == INS_vcvtsh2ss || ins == INS_vaddsh || ins == INS_vsubsh ||
+                ins == INS_vmulsh || ins == INS_vdivsh)
             {
-                result.insLatency = PERFSCORE_LATENCY_1C;
+                result.insLatency    = PERFSCORE_LATENCY_1C;
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
                 break;
             }
