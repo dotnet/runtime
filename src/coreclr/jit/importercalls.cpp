@@ -6950,6 +6950,18 @@ private:
 void Compiler::addFatPointerCandidate(GenTreeCall* call)
 {
     JITDUMP("Marking call [%06u] as fat pointer candidate\n", dspTreeID(call));
+
+    GenTree* fptr = call->gtCallAddr;
+    assert(fptr != nullptr);
+    if (!fptr->OperIsLocalRead())
+    {
+        // Spill the call address to a local for fat pointer handling
+        const unsigned fptrLclNum = lvaGrabTemp(true DEBUGARG("fat pointer temp"));
+        impStoreToTemp(fptrLclNum, fptr, CHECK_SPILL_ALL);
+        fptr             = gtNewLclvNode(fptrLclNum, genActualType(fptr->TypeGet()));
+        call->gtCallAddr = fptr;
+    }
+
     setMethodHasFatPointer();
     call->SetFatPointerCandidate();
     SpillRetExprHelper helper(this);
