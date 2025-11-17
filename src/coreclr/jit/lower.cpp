@@ -3491,23 +3491,23 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
 
     unsigned numArgs = call->gtArgs.CountArgs();
 
+    // arg 0 == callTarget.
+    CallArg* argEntry = call->gtArgs.GetArgByIndex(numArgs - 1);
+    assert(argEntry != nullptr);
+
     // JIT_TailCall helper expects the target function pointer arg to have been materialized,
     // because LowerTailCallViaJitHelper rewrites stack arguments assuming that the first arg
     // is a simple local. Historically ldvirtftn was always spilled to a temp which satisfied
     // this requirement. After removing that spill, we can end up with an arbitrary tree here,
     // so force it into a temp when necessary.
     //
-    CallArg*          callTargetArg    = call->gtArgs.GetArgByIndex(numArgs - 1);
-    GenTreePutArgStk* callTargetPutArg = callTargetArg->GetEarlyNode()->AsPutArgStk();
-    if (!callTargetPutArg->gtGetOp1()->OperIs(GT_LCL_VAR))
+    GenTreePutArgStk* argEntryPutArg = argEntry->GetEarlyNode()->AsPutArgStk();
+    if (!argEntryPutArg->gtGetOp1()->OperIs(GT_LCL_VAR))
     {
-        LIR::Use targetUse(BlockRange(), &callTargetPutArg->gtOp1, callTargetPutArg);
+        LIR::Use targetUse(BlockRange(), &argEntryPutArg->gtOp1, argEntryPutArg);
         targetUse.ReplaceWithLclVar(comp);
     }
 
-    // arg 0 == callTarget.
-    CallArg* argEntry = call->gtArgs.GetArgByIndex(numArgs - 1);
-    assert(argEntry != nullptr);
     GenTree* arg0 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
 
     bool               isClosed;
