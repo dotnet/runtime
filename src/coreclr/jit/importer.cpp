@@ -1185,7 +1185,8 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
     const DWORD structFlags = info.compCompHnd->getClassAttribs(structHnd);
 
     // Don't bother if the struct contains GC references of byrefs, it can't be a SIMD type.
-    if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0 && (structFlags & CORINFO_FLG_INTRINSIC_TYPE) != 0)
+    if ((structFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) == 0 &&
+        (structFlags & CORINFO_FLG_INTRINSIC_TYPE) != 0)
     {
         unsigned originalSize = info.compCompHnd->getClassSize(structHnd);
 
@@ -1193,7 +1194,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
         {
             unsigned int sizeBytes;
             var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes);
-            
+
             if (simdBaseType != TYP_UNDEF)
             {
                 assert(sizeBytes == originalSize || sizeBytes == SIZE_UNKNOWN);
@@ -1214,7 +1215,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
                         *pSimdBaseJitType = simdBaseType;
                     }
                 }
-                
+
                 // Also indicate that we use floating point registers.
                 compFloatingPointUsed = true;
             }
