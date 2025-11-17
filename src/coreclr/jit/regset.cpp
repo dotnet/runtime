@@ -35,6 +35,10 @@ const regMaskSmall regMasks[] = {
 };
 #endif
 
+// TODO-WASM-Factoring: remove this whole file from !HAS_FIXED_REGISTER_SET compilation.
+// It is being kept for now to avoid ifdefing too much code related to spill temps (which
+// also should not be used with !HAS_FIXED_REGISTER_SET).
+#if HAS_FIXED_REGISTER_SET
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -240,8 +244,7 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
 
     _rsMaskVars = newMaskVars;
 }
-
-/*****************************************************************************/
+#endif // HAS_FIXED_REGISTER_SET
 
 RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
     : m_rsCompiler(compiler)
@@ -307,6 +310,7 @@ RegSet::SpillDsc* RegSet::rsGetSpillInfo(GenTree* tree, regNumber reg, SpillDsc*
     return dsc;
 }
 
+#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------
 // rsSpillTree: Spill the tree held in 'reg'.
 //
@@ -439,6 +443,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         tree->SetRegSpillFlagByIdx(regFlags, regIdx);
     }
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_X86)
 /*****************************************************************************

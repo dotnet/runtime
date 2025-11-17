@@ -25,8 +25,8 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly);
         private static readonly ObjectNodeSection EhFrameSection = new ObjectNodeSection(".eh_frame", SectionType.UnwindData);
 
-        protected UnixObjectWriter(NodeFactory factory, ObjectWritingOptions options)
-            : base(factory, options)
+        protected UnixObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
+            : base(factory, options, outputInfoBuilder)
         {
         }
 

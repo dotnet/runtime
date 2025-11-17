@@ -1314,7 +1314,7 @@ namespace System
             if (name.StartsWith('[') && name.EndsWith(']'))
             {
                 // we require that _entire_ name is recognized as ipv6 address
-                if (IPv6AddressHelper.IsValid(name.AsSpan(1), out end) && end == name.Length - 1)
+                if (IPv6AddressHelper.IsValid(name, out end) && end == name.Length)
                 {
                     return UriHostNameType.IPv6;
                 }
@@ -1337,10 +1337,11 @@ namespace System
 
             // This checks the form without []
             // we require that _entire_ name is recognized as ipv6 address
-            if (IPv6AddressHelper.IsValid(name + "]", out end) && end - 1 == name.Length)
+            if (IPv6AddressHelper.IsValid($"[{name}]", out end) && end - 2 == name.Length)
             {
                 return UriHostNameType.IPv6;
             }
+
             return UriHostNameType.Unknown;
         }
 
@@ -3847,9 +3848,9 @@ namespace System
             }
 
             if (ch == '[' && syntax.InFact(UriSyntaxFlags.AllowIPv6Host) &&
-                IPv6AddressHelper.IsValid(new ReadOnlySpan<char>(pString + (start + 1), end - (start + 1)), out int seqEnd))
+                IPv6AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), out int seqEnd))
             {
-                end = start + 1 + seqEnd;
+                end = start + seqEnd;
                 if (end < length && pString[end] is not ('/' or '\\') && (IsImplicitFile || pString[end] is not (':' or '?' or '#')))
                 {
                     // A valid IPv6 address wasn't followed by a valid delimiter (e.g. http://[::]extra).

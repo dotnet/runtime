@@ -812,7 +812,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
     lvaParameterPassingInfo =
         info.compArgsCount == 0 ? nullptr : new (this, CMK_LvaTable) ABIPassingInformation[info.compArgsCount];
 
-    regMaskTP argRegs = RBM_NONE;
     for (unsigned i = 0; i < info.compArgsCount; i++)
     {
         LclVarDsc*   dsc          = lvaGetDesc(i);
@@ -853,7 +852,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         {
             if (segment.IsPassedInRegister())
             {
-                argRegs |= segment.GetRegisterMask();
                 numRegisters++;
             }
         }
@@ -863,11 +861,6 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
     }
 
     lvaParameterStackSize = classifier.StackSize();
-
-    // genFnPrologCalleeRegArgs expect these to be the counts of registers it knows how to handle.
-    // TODO-Cleanup: Recompute these values in the backend instead, where they are used.
-    codeGen->intRegState.rsCalleeRegArgCount   = genCountBits(argRegs & RBM_ARG_REGS);
-    codeGen->floatRegState.rsCalleeRegArgCount = genCountBits(argRegs & RBM_FLTARG_REGS);
 
 #ifdef TARGET_ARM
     // Prespill all argument regs on to stack in case of Arm when under profiler.
@@ -1109,14 +1102,14 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 
     // Is this a varargs function?
-    if (info.compIsVarArgs && varNum == lvaVarargsHandleArg)
+    if (info.compIsVarArgs && (varNum == lvaVarargsHandleArg))
     {
         return (unsigned)ICorDebugInfo::VARARGS_HND_ILNUM;
     }
 
     // We create an extra argument for the type context parameter
     // needed for shared generic code.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum == info.compTypeCtxtArg)
+    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) && (varNum == info.compTypeCtxtArg))
     {
         return (unsigned)ICorDebugInfo::TYPECTXT_ILNUM;
     }
@@ -1128,21 +1121,31 @@ unsigned Compiler::compMap2ILvarNum(unsigned varNum) const
     }
 #endif // FEATURE_FIXED_OUT_ARGS
 
+    if (varNum == lvaAsyncContinuationArg)
+    {
+        return (unsigned)ICorDebugInfo::UNKNOWN_ILNUM;
+    }
+
     // Now mutate varNum to remove extra parameters from the count.
-    if ((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) && varNum > info.compTypeCtxtArg)
+    if (((info.compMethodInfo->args.callConv & CORINFO_CALLCONV_PARAMTYPE) != 0) && (varNum > info.compTypeCtxtArg))
     {
         varNum--;
     }
 
-    if (info.compIsVarArgs && varNum > lvaVarargsHandleArg)
+    if (info.compIsVarArgs && (varNum > lvaVarargsHandleArg))
     {
         varNum--;
     }
 
-    /* Is there a hidden argument for the return buffer.
-       Note that this code works because if the RetBuffArg is not present,
-       compRetBuffArg will be BAD_VAR_NUM */
-    if (info.compRetBuffArg != BAD_VAR_NUM && varNum > info.compRetBuffArg)
+    if ((lvaAsyncContinuationArg != BAD_VAR_NUM) && (varNum > lvaAsyncContinuationArg))
+    {
+        varNum--;
+    }
+
+    // Is there a hidden argument for the return buffer. Note that this code
+    // works because if the RetBuffArg is not present, compRetBuffArg will be
+    // BAD_VAR_NUM
+    if ((info.compRetBuffArg != BAD_VAR_NUM) && (varNum > info.compRetBuffArg))
     {
         varNum--;
     }
@@ -5112,20 +5115,6 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     stkOffs -= calleeFPRegsSavedSize;
     lvaIncrementFrameSize(calleeFPRegsSavedSize);
 
-    // Quirk for VS debug-launch scenario to work
-    if (compVSQuirkStackPaddingNeeded > 0)
-    {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nAdding VS quirk stack padding of %d bytes between save-reg area and locals\n",
-                   compVSQuirkStackPaddingNeeded);
-        }
-#endif // DEBUG
-
-        stkOffs -= compVSQuirkStackPaddingNeeded;
-        lvaIncrementFrameSize(compVSQuirkStackPaddingNeeded);
-    }
 #endif // TARGET_AMD64
 
     if (lvaMonAcquired != BAD_VAR_NUM)
