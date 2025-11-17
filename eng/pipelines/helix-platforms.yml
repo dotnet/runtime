@@ -33,12 +33,12 @@ variables:
     value: OSX.13.Arm64
 
   # macOS on x64 (Intel)
-  # Latest: Sequoia 15 (macOS 26.x kernel)
+  # Latest: Sequoia 15
   - name: helix_macos_x64_latest
-    value: OSX.26.Amd64.Open
+    value: OSX.15.Amd64.Open
 
   - name: helix_macos_x64_latest_internal
-    value: OSX.26.Amd64
+    value: OSX.15.Amd64
 
   # Oldest: Ventura 13
   - name: helix_macos_x64_oldest
