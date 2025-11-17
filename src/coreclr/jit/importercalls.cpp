@@ -276,7 +276,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         exactContextHnd                = callInfo->contextHandle;
         exactContextNeedsRuntimeLookup = callInfo->exactContextNeedsRuntimeLookup;
 
-          switch (callInfo->kind)
+        switch (callInfo->kind)
         {
             case CORINFO_VIRTUALCALL_STUB:
             {
@@ -3086,10 +3086,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                                 bool                    tailCall,
                                 bool                    callvirt,
                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
-                                CORINFO_THIS_TRANSFORM  constraintCallThisTransform
-                                R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
-                                NamedIntrinsic*         pIntrinsicName,
-                                bool*                   isSpecialIntrinsic)
+                                CORINFO_THIS_TRANSFORM constraintCallThisTransform
+                                                R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
+                                NamedIntrinsic* pIntrinsicName,
+                                bool*           isSpecialIntrinsic)
 {
     bool       mustExpand  = false;
     bool       isSpecial   = false;
@@ -4402,7 +4402,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Half_op_Division:
             {
 #ifdef TARGET_XARCH
-                if(compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                 {
                     GenTree* op2 = impPopStack().val;
                     GenTree* op1 = impPopStack().val;
@@ -4442,16 +4442,23 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree* op1 = impPopStack().val;
                     assert(op1->TypeGet() == TYP_FLOAT || op1->TypeGet() == TYP_HALF);
 
+                    GenTree* op2 = gtNewDconNodeF(0.0f);
+
                     if (op1->TypeGet() == TYP_FLOAT)
                     {
-                        // todo-half: these intrinsics follow the same size (though it is unused) as AVX512_ConvertToUInt32
-                        retNode = gtNewSimdHWIntrinsicNode(TYP_HALF, op1, NI_AVX10v1_ConvertFloatToHalf, TYP_FLOAT, 16);
+                        // todo-half: these intrinsics follow the same size (though it is unused) as
+                        // AVX512_ConvertToUInt32
+
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(TYP_HALF, op2, op1, NI_AVX10v1_ConvertFloatToHalf, TYP_FLOAT, 16);
                         break;
                     }
                     else if (op1->TypeGet() == TYP_HALF)
                     {
-                        // todo-half: these intrinsics follow the same size (though it is unused) as AVX512_ConvertToUInt32
-                        retNode = gtNewSimdHWIntrinsicNode(TYP_FLOAT, op1, NI_AVX10v1_ConvertHalfToFloat, TYP_HALF, 16);
+                        // todo-half: these intrinsics follow the same size (though it is unused) as
+                        // AVX512_ConvertToUInt32
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(TYP_FLOAT, op2, op1, NI_AVX10v1_ConvertHalfToFloat, TYP_HALF, 16);
                         break;
                     }
                 }
@@ -6525,6 +6532,14 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         var_types            jitSigType = JITtype2varType(params[i - 1].CorType);
         CORINFO_CLASS_HANDLE classHnd   = params[i - 1].ClassHandle;
 
+#if defined(TARGET_XARCH)
+        if (jitSigType == TYP_STRUCT)
+        {
+            var_types normSigType = impNormStructType(classHnd);
+            jitSigType            = (normSigType == TYP_HALF) ? TYP_HALF : jitSigType;
+        }
+#endif
+
         if (!impCheckImplicitArgumentCoercion(jitSigType, argNode->TypeGet()))
         {
             BADCODE("the call argument has a type that can't be implicitly converted to the signature type");
@@ -7500,7 +7515,16 @@ bool Compiler::isCompatibleMethodGDV(GenTreeCall* call, CORINFO_METHOD_HANDLE gd
 
         CORINFO_CLASS_HANDLE classHnd = NO_CLASS_HANDLE;
         CorInfoType          corType  = strip(info.compCompHnd->getArgType(&sig, sigParam, &classHnd));
-        var_types            sigType  = JITtype2varType(corType);
+
+        // todo-half: hacking for half
+        var_types sigType = JITtype2varType(corType);
+#if defined(TARGET_XARCH)
+        if (sigType == TYP_STRUCT)
+        {
+            var_types normSigType = impNormStructType(classHnd);
+            sigType == (normSigType == TYP_HALF) ? TYP_HALF : sigType;
+        }
+#endif
 
         if (!impCheckImplicitArgumentCoercion(sigType, arg.GetNode()->TypeGet()))
         {

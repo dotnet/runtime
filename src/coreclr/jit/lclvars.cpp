@@ -3132,6 +3132,7 @@ void Compiler::lvaSortByRefCount()
 
             switch (type)
             {
+                case TYP_HALF:
                 case TYP_FLOAT:
                 case TYP_DOUBLE:
                 case TYP_INT:

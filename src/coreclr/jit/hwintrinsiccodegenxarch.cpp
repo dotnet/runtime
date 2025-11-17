@@ -3743,7 +3743,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             emitAttr attr = emitTypeSize(targetType);
 
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
-            genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
+            genHWIntrinsic_R_R_RM(node, ins, attr, instOptions);
             break;
         }
 

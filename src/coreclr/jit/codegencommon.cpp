@@ -3018,20 +3018,7 @@ void CodeGen::genSpillOrAddRegisterParam(
             storeType = genActualType(varDsc);
         }
 
-        instruction store_ins = ins_Store(storeType);
-        if (storeType == TYP_HALF)
-        {
-            // We cannot use `vmovsh` with an integer register, which is what the ABI would pass the 
-            // 16-bit float value in. Switch to `vmov` which supports integer registers.
-#if defined(TARGET_XARCH)
-            store_ins = INS_mov;
-#else
-            store_ins = INS_invalid;
-            assert(!"TYP_HALF parameter passing not supported on this platform");
-#endif
-        }
-
-        GetEmitter()->emitIns_S_R(store_ins, emitActualTypeSize(storeType), segment.GetRegister(), lclNum,
+        GetEmitter()->emitIns_S_R(ins_Store(storeType), emitActualTypeSize(storeType), segment.GetRegister(), lclNum,
                                   offset);
     }
 
@@ -8193,7 +8180,7 @@ void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types sr
 //
 void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
 {
-    //assert(treeNode->TypeGet() == genActualType(treeNode));
+    assert(treeNode->TypeGet() == genActualType(treeNode));
     regNumber targetReg  = treeNode->GetRegNum();
     var_types targetType = treeNode->TypeGet();
     GenTree*  op1        = treeNode->gtGetOp1();
