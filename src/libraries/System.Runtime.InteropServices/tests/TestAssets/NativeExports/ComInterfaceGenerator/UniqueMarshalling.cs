@@ -9,15 +9,21 @@ namespace NativeExports.ComInterfaceGenerator
 {
     public static unsafe class UniqueMarshalling
     {
+        private static void* s_cachedPtr = null;
+
         // Call from another assembly to get a ptr to make an RCW
         [UnmanagedCallersOnly(EntryPoint = "new_unique_marshalling")]
         public static void* CreateComObject()
         {
-            StrategyBasedComWrappers wrappers = new();
-            var myObject = new SharedTypes.ComInterfaces.UniqueMarshalling();
-            nint ptr = wrappers.GetOrCreateComInterfaceForObject(myObject, CreateComInterfaceFlags.None);
+            if (s_cachedPtr == null)
+            {
+                StrategyBasedComWrappers wrappers = new();
+                var myObject = new SharedTypes.ComInterfaces.UniqueMarshalling();
+                nint ptr = wrappers.GetOrCreateComInterfaceForObject(myObject, CreateComInterfaceFlags.None);
+                s_cachedPtr = (void*)ptr;
+            }
 
-            return (void*)ptr;
+            return s_cachedPtr;
         }
     }
 }
