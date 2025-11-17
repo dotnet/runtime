@@ -6310,61 +6310,129 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
 
     JITDUMP("Target is a GVM; seeing if we can move arguments ahead of resolution\n");
 
-    bool               callClosed;
-    LIR::ReadOnlyRange callRange = BlockRange().GetTreeRange(call, &callClosed);
-    if (!callClosed)
-    {
-        JITDUMP("  No; call range is not closed\n");
-        return;
-    }
+    m_scratchSideEffects.Clear();
 
-    bool               tarClosed;
-    LIR::ReadOnlyRange tarRange = BlockRange().GetTreeRange(call->gtCallAddr, &tarClosed);
-    if (!tarClosed)
-    {
-        JITDUMP("  No; target range is not closed\n");
-        return;
-    }
+    // Now move nodes ahead of the target range until we interfere or until we
+    // run out of nodes in the call's data flow.
+    unsigned numMarked = 1;
+    call->gtLIRFlags |= LIR::Flags::Mark;
 
-    if (tarRange.FirstNode() == callRange.FirstNode())
-    {
-        JITDUMP("  Resolution is already before args (or there are no args)\n");
-        // Nothing to do
-        return;
-    }
+    LIR::ReadOnlyRange movingRange;
 
-    if (!IsRangeInvariantInRange(callRange.FirstNode(), tarRange.FirstNode()->gtPrev, tarRange.LastNode(), nullptr))
+    GenTree* prev;
+    for (GenTree* cur = call; numMarked > 0; cur = prev)
     {
-        JITDUMP("  No; range of nodes is not invariant\n");
-        return;
-    }
+        prev = cur->gtPrev;
 
-    // We did not check CORINFO_HELP_VIRTUAL_FUNC_PTR. It can throw NRE, so
-    // verify that we can move other effects past NRE.
-    for (GenTree* cur = callRange.FirstNode(); cur != tarRange.FirstNode(); cur = cur->gtNext)
-    {
-        GenTreeFlags flags = cur->OperEffects(comp);
-        if ((flags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) == 0)
         {
-            JITDUMP("  No; [%06u] has persistent side effects\n", Compiler::dspTreeID(cur));
-            return;
+            // If we are still moving nodes then extend the range so that we
+            // also move this node outside the data flow of the call.
+            if (!movingRange.IsEmpty())
+            {
+                assert(cur->gtNext == movingRange.FirstNode());
+                movingRange = LIR::ReadOnlyRange(cur, movingRange.LastNode());
+                m_scratchSideEffects.AddNode(comp, cur);
+            }
+
+            continue;
         }
 
-        if ((flags & GTF_EXCEPT) != 0)
+        cur->gtLIRFlags &= ~LIR::Flags::Mark;
+        numMarked--;
+
+        if (cur == call->gtCallAddr)
         {
-            ExceptionSetFlags preciseExceptions = cur->OperExceptions(comp);
-            if (preciseExceptions != ExceptionSetFlags::NullReferenceException)
+            // Start moving this range. Do not add its side effects as we will
+            // check the NRE manually for precision.
+            movingRange = LIR::ReadOnlyRange(cur, cur);
+            continue;
+        }
+
+        cur->VisitOperands([&](GenTree* op) {
+            assert((op->gtLIRFlags & LIR::Flags::Mark) == 0);
+            op->gtLIRFlags |= LIR::Flags::Mark;
+            numMarked++;
+            return GenTree::VisitResult::Continue;
+        });
+
+        if (!movingRange.IsEmpty())
+        {
+            // This node is in the dataflow. See if we can move it ahead of the
+            // range we are moving.
+            bool interferes = m_scratchSideEffects.InterferesWith(comp, cur, /* strict */ true);
+            if (!interferes)
             {
-                JITDUMP("  No; [%06u] throws an exception that is not NRE\n", Compiler::dspTreeID(cur));
-                return;
+                // No problem so far. However the side effect set does not
+                // include the GVM call itself, which can throw NRE. Check the
+                // NRE now for precision.
+                GenTreeFlags flags = cur->OperEffects(comp);
+                if ((flags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
+                {
+                    JITDUMP("  Stopping at [%06u]; it has persistent side effects\n", Compiler::dspTreeID(cur));
+                    interferes = true;
+                }
+
+                if ((flags & GTF_EXCEPT) != 0)
+                {
+                    ExceptionSetFlags preciseExceptions = cur->OperExceptions(comp);
+                    if (preciseExceptions != ExceptionSetFlags::NullReferenceException)
+                    {
+                        JITDUMP("  Stopping at [%06u]; it throws an exception that is not NRE\n",
+                                Compiler::dspTreeID(cur));
+                        interferes = true;
+                    }
+                }
+            }
+
+            if (interferes)
+            {
+                // Stop moving the range, but keep going through the rest
+                // of the nodes to unmark them
+                movingRange = LIR::Range();
+            }
+            else
+            {
+                // Move 'cur' ahead of 'movingRange'
+                assert(cur->gtNext == movingRange.FirstNode());
+                BlockRange().Remove(cur);
+                BlockRange().InsertAfter(movingRange.LastNode(), cur);
             }
         }
     }
 
-    LIR::Range removedRange = BlockRange().Remove(std::move(tarRange));
+    // if (!IsRangeInvariantInRange(callRange.FirstNode(), tarRange.FirstNode()->gtPrev, tarRange.LastNode(), nullptr))
+    //{
+    //     JITDUMP("  No; range of nodes is not invariant\n");
+    //     return;
+    // }
 
-    BlockRange().InsertBefore(callRange.FirstNode(), std::move(removedRange));
-    JITDUMP("Moved target evaluation before arguments:\n");
+    // We did not check CORINFO_HELP_VIRTUAL_FUNC_PTR. It can throw NRE, so
+    // verify that we can move other effects past NRE.
+    // for (GenTree* cur = callRange.FirstNode(); cur != tarRange.FirstNode(); cur = cur->gtNext)
+    //{
+    //    GenTreeFlags flags = cur->OperEffects(comp);
+    //    if ((flags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
+    //    {
+    //        JITDUMP("  No; [%06u] has persistent side effects\n", Compiler::dspTreeID(cur));
+    //        return;
+    //    }
+
+    //    if ((flags & GTF_EXCEPT) != 0)
+    //    {
+    //        ExceptionSetFlags preciseExceptions = cur->OperExceptions(comp);
+    //        if (preciseExceptions != ExceptionSetFlags::NullReferenceException)
+    //        {
+    //            JITDUMP("  No; [%06u] throws an exception that is not NRE\n", Compiler::dspTreeID(cur));
+    //            return;
+    //        }
+    //    }
+    //}
+
+    // LIR::Range removedRange = BlockRange().Remove(std::move(tarRange));
+
+    // BlockRange().InsertBefore(callRange.FirstNode(), std::move(removedRange));
+    JITDUMP("Result of moved target evaluation:\n");
     DISPTREERANGE(BlockRange(), call);
 }
 
