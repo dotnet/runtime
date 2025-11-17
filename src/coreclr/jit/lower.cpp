@@ -2833,6 +2833,12 @@ GenTree* Lowering::LowerCall(GenTree* node)
 #endif
 
     call->ClearOtherRegs();
+
+    if (call->gtCallType == CT_INDIRECT)
+    {
+        OptimizeCallIndirectTargetEvaluation(call);
+    }
+
     LowerArgsForCall(call);
 
     // note that everything generated from this point might run AFTER the outgoing args are placed
@@ -6280,6 +6286,86 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // don't need to sequence and insert this tree, caller will do it
 
     return callTarget;
+}
+
+//------------------------------------------------------------------------
+// OptimizeCallIndirectTargetEvaluation:
+//   Try to optimize the evaluation of the indirect call target to happen
+//   before arguments, if possible.
+//
+// Parameters:
+//   call - Call node
+//
+void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
+{
+    assert((call->gtCallType == CT_INDIRECT) && (call->gtCallAddr != nullptr));
+
+    if (!call->gtCallAddr->IsHelperCall(comp, CORINFO_HELP_VIRTUAL_FUNC_PTR) &&
+        !call->gtCallAddr->IsHelperCall(comp, CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR) &&
+        !call->gtCallAddr->IsHelperCall(comp, CORINFO_HELP_GVMLOOKUP_FOR_SLOT) &&
+        !call->gtCallAddr->IsHelperCall(comp, CORINFO_HELP_READYTORUN_GENERIC_HANDLE))
+    {
+        return;
+    }
+
+    JITDUMP("Target is a GVM; seeing if we can move arguments ahead of resolution\n");
+
+    bool               callClosed;
+    LIR::ReadOnlyRange callRange = BlockRange().GetTreeRange(call, &callClosed);
+    if (!callClosed)
+    {
+        JITDUMP("  No; call range is not closed\n");
+        return;
+    }
+
+    bool               tarClosed;
+    LIR::ReadOnlyRange tarRange = BlockRange().GetTreeRange(call->gtCallAddr, &tarClosed);
+    if (!tarClosed)
+    {
+        JITDUMP("  No; target range is not closed\n");
+        return;
+    }
+
+    if (tarRange.FirstNode() == callRange.FirstNode())
+    {
+        JITDUMP("  Resolution is already before args (or there are no args)\n");
+        // Nothing to do
+        return;
+    }
+
+    if (!IsRangeInvariantInRange(callRange.FirstNode(), tarRange.FirstNode()->gtPrev, tarRange.LastNode(), nullptr))
+    {
+        JITDUMP("  No; range of nodes is not invariant\n");
+        return;
+    }
+
+    // We did not check CORINFO_HELP_VIRTUAL_FUNC_PTR. It can throw NRE, so
+    // verify that we can move other effects past NRE.
+    for (GenTree* cur = callRange.FirstNode(); cur != tarRange.FirstNode(); cur = cur->gtNext)
+    {
+        GenTreeFlags flags = cur->OperEffects(comp);
+        if ((flags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
+        {
+            JITDUMP("  No; [%06u] has persistent side effects\n", Compiler::dspTreeID(cur));
+            return;
+        }
+
+        if ((flags & GTF_EXCEPT) != 0)
+        {
+            ExceptionSetFlags preciseExceptions = cur->OperExceptions(comp);
+            if (preciseExceptions != ExceptionSetFlags::NullReferenceException)
+            {
+                JITDUMP("  No; [%06u] throws an exception that is not NRE\n", Compiler::dspTreeID(cur));
+                return;
+            }
+        }
+    }
+
+    LIR::Range removedRange = BlockRange().Remove(std::move(tarRange));
+
+    BlockRange().InsertBefore(callRange.FirstNode(), std::move(removedRange));
+    JITDUMP("Moved target evaluation before arguments:\n");
+    DISPTREERANGE(BlockRange(), call);
 }
 
 GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
