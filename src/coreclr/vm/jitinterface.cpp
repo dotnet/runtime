@@ -12045,20 +12045,65 @@ void CEEJitInfo::recordRelocation(void * location,
         {
             _ASSERTE(addlDelta == 0);
 
-            INT64 offset = (INT64)target - (INT64)location;
-
-            INT32 lo12 = (offset << (64 - 12)) >> (64 - 12);
-            INT32 hi20 = INT32(offset - lo12);
-
-            if (INT64(hi20) + INT64(lo12) == offset)
+            auto putTargetIntoAuipcCombo = [location, locationRW](void* targetAddr) -> bool
             {
+                INT64 offset = (INT64)targetAddr - (INT64)location;
+
+                INT32 lo12 = (offset << (64 - 12)) >> (64 - 12);
+                INT32 hi20 = INT32(offset - lo12);
+
+                if (INT64(hi20) + INT64(lo12) != offset)
+                    return false; // out of range
+
                 PutRiscV64AuipcCombo((UINT32 *)locationRW, lo12, hi20);
-            }
-            else // out of 32-bit range
+                LOG((LF_JIT, LL_INFO100000, "Fixed up an auipc + I-type relocation at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%08x\n",
+                    DBG_ADDR(location), DBG_ADDR(targetAddr), offset));
+                return true;
+            };
+
+            if (putTargetIntoAuipcCombo(target))
+                break; // success
+
+            // Target is out of 32-bit range
+            // If we're fixing up a jump, try jumping through a stub
+            enum
             {
-                // TODO: emit a stub if it's a jump
-                m_fJumpStubOverflow = TRUE;
+                OpcodeJalr = 0x67,
+                OpcodeMask = 0x7F,
+            };
+            bool isJalr = ((((UINT32 *)locationRW)[1] & OpcodeMask) == OpcodeJalr);
+            if (isJalr && !m_fJumpStubOverflow)
+            {
+                BYTE* loAddr = (BYTE*)location - (1l << 31) - (1l << 11);
+                BYTE* hiAddr = (BYTE*)location + (1l << 31) - (1l << 11) - 1;
+
+                // Check for the wrap around cases
+                if (loAddr > location)
+                    loAddr = (BYTE*)UINT64_MIN; // overflow
+                if (hiAddr < location)
+                    hiAddr = (BYTE*)UINT64_MAX; // overflow
+
+                PCODE jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled, (PCODE)target, loAddr, hiAddr, nullptr, false);
+
+                // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it
+                // to reserve extra memory on retry to increase chances that the retry succeeds.
+                m_reserveForJumpStubs = max((size_t)0x400, m_reserveForJumpStubs + 2*BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
+
+                if (jumpStubAddr != NULL)
+                {
+                    if (!putTargetIntoAuipcCombo((void*)jumpStubAddr))
+                    {
+                        _ASSERTE(!"jump stub was not in expected range");
+                        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+                    }
+
+                    LOG((LF_JIT, LL_INFO100000, "Using JumpStub at" FMT_ADDR "that jumps to" FMT_ADDR "\n",
+                        DBG_ADDR(jumpStubAddr), DBG_ADDR(target)));
+                    break; // success
+                }
             }
+
+            m_fJumpStubOverflow = TRUE;
         }
         break;
 
