@@ -94,7 +94,7 @@ export function is_receiver_should_free (args: JSMarshalerArguments): boolean {
 export function get_sync_done_semaphore_ptr (args: JSMarshalerArguments): VoidPtr {
     if (!WasmEnableThreads) return VoidPtrNull;
     mono_assert(args, "Null args");
-    return getI32(<any>args + JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr) as any;
+    return getU32(<any>args + JSMarshalerArgumentOffsets.SyncDoneSemaphorePtr) as any;
 }
 
 export function get_caller_native_tid (args: JSMarshalerArguments): PThreadPtr {
