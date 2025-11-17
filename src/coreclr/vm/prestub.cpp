@@ -1057,6 +1057,9 @@ bool MethodDesc::TryGenerateTransientILImplementation(DynamicResolver** resolver
 {
     STANDARD_VM_CONTRACT;
 
+    // When adding new methods implemented by Transient IL, consider if MethodDesc::IsDiagnosticsHidden() needs to be
+    // updated as well.
+
     if (TryGenerateAsyncThunk(resolver, methodILDecoder))
     {
         return true;
@@ -1469,15 +1472,12 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
 #endif // TARGET_X86
 }
 
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-
 Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
 {
 
     CONTRACT(Stub*)
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -1582,8 +1582,7 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     CONTRACT(Stub*)
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pHiddenArg));
         POSTCONDITION(CheckPointer(RETVAL));
     }
@@ -1689,15 +1688,13 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     RETURN Stub::NewStub(JitILStub(pStubMD));
 }
-#endif
 
 /* Make a stub that for a value class method that expects a BOXed this pointer */
 Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 {
     CONTRACT(Stub*)
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
@@ -1737,36 +1734,17 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
+        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
     }
-    else
-#endif
+#elif defined(TARGET_X86)
+    CPUSTUBLINKER sl;
+    if (sl.EmitUnboxMethodStub(pUnboxedMD))
     {
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        pstub = CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
-        if (pUnboxedMD->RequiresInstMethodTableArg())
-#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
-        {
-            _ASSERTE(pUnboxedMD->RequiresInstMethodTableArg());
-            pstub = CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
-        }
-#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
-        else
-#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
-#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
-#ifndef FEATURE_PORTABLE_SHUFFLE_THUNKS
-        {
-            CPUSTUBLINKER sl;
-            sl.EmitUnboxMethodStub(pUnboxedMD);
-            pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
-        }
-#endif // !FEATURE_PORTABLE_SHUFFLE_THUNKS
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
+        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
     }
-    RETURN pstub;
+#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
+
+    RETURN CreateUnboxingILStubForValueTypeMethods(pUnboxedMD);
 }
 
 #if defined(FEATURE_SHARE_GENERIC_CODE)
@@ -1774,8 +1752,7 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
 {
     CONTRACT(Stub*)
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(pMD->IsInstantiatingStub());
         PRECONDITION(!pMD->RequiresInstArg());
         PRECONDITION(!pMD->IsSharedByGenericMethodInstantiations());
@@ -1804,7 +1781,6 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         // It's a per-instantiation static method
         extraArg = pMD->GetMethodTable();
     }
-    Stub *pstub = NULL;
 
 #ifdef FEATURE_PORTABLE_SHUFFLE_THUNKS
     StackSArray<ShuffleEntry> portableShuffle;
@@ -1814,23 +1790,17 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
+        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
     }
-    else
-#endif
+#elif defined(TARGET_X86)
+    CPUSTUBLINKER sl;
+    if (sl.EmitInstantiatingMethodStub(pSharedMD, extraArg))
     {
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
-        pstub = CreateInstantiatingILStub(pSharedMD, extraArg);
-#else
-        CPUSTUBLINKER sl;
-        _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
-        sl.EmitInstantiatingMethodStub(pSharedMD, extraArg);
-
-        pstub = sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
-#endif
+        RETURN sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
     }
+#endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
-    RETURN pstub;
+    RETURN CreateInstantiatingILStub(pSharedMD, extraArg);
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
 
@@ -2086,18 +2056,37 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     return frames.interpMethodContextFrame.pRetVal;
 }
 
-extern "C" void* STDCALL ExecuteInterpretedMethodWithArgs(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, int8_t* pArgs, size_t size, void* retBuff)
+void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff)
 {
-    // copy the arguments to the stack
-    if (size > 0 && pArgs != nullptr)
+    // Copy arguments to the stack
+    if (argSize > 0)
     {
+        _ASSERTE(args != NULL);
         InterpThreadContext *threadContext = GetInterpThreadContext();
-        int8_t *sp = threadContext->pStackPointer;
-
-        memcpy(sp, pArgs, size);
+        int8_t* sp = threadContext->pStackPointer;
+        memcpy(sp, args, argSize);
     }
 
-    return ExecuteInterpretedMethod(pTransitionBlock, byteCodeAddr, retBuff);
+    TransitionBlock dummy{};
+    (void)ExecuteInterpretedMethod(&dummy, (TADDR)targetIp, retBuff);
+}
+
+extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret)
+{
+    _ASSERTE(pMD != NULL);
+
+    // This path assumes the caller is unmanaged code. This assumption is important for
+    // because the DoPrestub call may trigger a GC. If a GC occurs, there would be no explicit
+    // protection for the arguments, but since this from an unmanaged caller, no protection is needed.
+
+    InterpByteCodeStart* targetIp = pMD->GetInterpreterCode();
+    if (targetIp == NULL)
+    {
+        GCX_PREEMP();
+        (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
+        targetIp = pMD->GetInterpreterCode();
+    }
+    (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -2433,14 +2422,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     pCode = DoBackpatch(pMT, pDispatchingMT, false /* doFullBackpatch */);
 
 Return:
-// Interpreter-FIXME: Call stubs are not yet supported on WASM
-#if defined(FEATURE_INTERPRETER) && !defined(TARGET_WASM)
-    InterpByteCodeStart *pInterpreterCode = GetInterpreterCode();
-    if (pInterpreterCode != NULL)
-    {
-        CreateNativeToInterpreterCallStub(pInterpreterCode->Method);
-    }
-#endif // FEATURE_INTERPRETER && !TARGET_WASM
 
     RETURN pCode;
 }
@@ -2604,7 +2585,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     {
         GCX_PREEMP_THREAD_EXISTS(CURRENT_THREAD);
 
-        PEImageLayout *pNativeImage = pModule->GetReadyToRunImage();
+        ReadyToRunLoadedImage *pNativeImage = pModule->GetReadyToRunImage();
 
         RVA rva = pNativeImage->GetDataRva(pIndirection);
 
@@ -3216,7 +3197,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 {
     STANDARD_VM_CONTRACT;
 
-    PEImageLayout *pNativeImage = pModule->GetReadyToRunImage();
+    ReadyToRunLoadedImage *pNativeImage = pModule->GetReadyToRunImage();
 
     RVA rva = pNativeImage->GetDataRva((TADDR)pCell);
 

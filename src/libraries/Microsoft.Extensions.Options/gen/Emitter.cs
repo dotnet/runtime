@@ -431,7 +431,7 @@ namespace Microsoft.Extensions.Options.Generators
                             {
                                 convertedValue = ConvertValue(value, formatProvider);
                             }
-                            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
                             {
                                 return false;
                             }
@@ -443,7 +443,7 @@ namespace Microsoft.Extensions.Options.Generators
                         {
                             convertedValue = ConvertValue(value, formatProvider);
                         }
-                        catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+                        catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
                         {
                             return false;
                         }
@@ -653,12 +653,12 @@ namespace Microsoft.Extensions.Options.Generators
             OutCloseBrace();
         }
 
-        private void GenModelSelfValidationIfNecessary(ValidatedModel modelToValidate, string modelName)
+        private void GenModelSelfValidationIfNecessary(ValidatedModel modelToValidate)
         {
             if (modelToValidate.SelfValidates)
             {
                 OutLn($"context.MemberName = \"Validate\";");
-                OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{modelName}.Validate\" : $\"{{name}}.Validate\";");
+                OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"Validate\" : $\"{{name}}.Validate\";");
                 OutLn($"(builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));");
                 OutLn();
             }
@@ -693,8 +693,7 @@ namespace Microsoft.Extensions.Options.Generators
             OutOpenBrace();
             OutLn($"global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;");
             OutLn("#if NET10_0_OR_GREATER");
-            OutLn($"string displayName = string.IsNullOrEmpty(name) ? \"{modelToValidate.SimpleName}.Validate\" : $\"{{name}}.Validate\";");
-            OutLn($"var context = new {StaticValidationContextType}(options, displayName, null, null);");
+            OutLn($"var context = new {StaticValidationContextType}(options, \"{modelToValidate.SimpleName}\", null, null);");
             OutLn("#else");
             OutLn($"var context = new {StaticValidationContextType}(options);");
             OutLn("#endif");
@@ -712,33 +711,33 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 if (vm.ValidationAttributes.Count > 0)
                 {
-                    GenMemberValidation(vm, modelToValidate.SimpleName, ref staticValidationAttributesDict, cleanListsBeforeUse);
+                    GenMemberValidation(vm, ref staticValidationAttributesDict, cleanListsBeforeUse);
                     cleanListsBeforeUse = true;
                     OutLn();
                 }
 
                 if (vm.TransValidatorType is not null)
                 {
-                    GenTransitiveValidation(vm, modelToValidate.SimpleName, ref staticValidatorsDict);
+                    GenTransitiveValidation(vm, ref staticValidatorsDict);
                     OutLn();
                 }
 
                 if (vm.EnumerationValidatorType is not null)
                 {
-                    GenEnumerationValidation(vm, modelToValidate.SimpleName, ref staticValidatorsDict);
+                    GenEnumerationValidation(vm, ref staticValidatorsDict);
                     OutLn();
                 }
             }
 
-            GenModelSelfValidationIfNecessary(modelToValidate, modelToValidate.SimpleName);
+            GenModelSelfValidationIfNecessary(modelToValidate);
             OutLn($"return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();");
             OutCloseBrace();
         }
 
-        private void GenMemberValidation(ValidatedMember vm, string modelName, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, bool cleanListsBeforeUse)
+        private void GenMemberValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, bool cleanListsBeforeUse)
         {
             OutLn($"context.MemberName = \"{vm.Name}\";");
-            OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{modelName}.{vm.Name}\" : $\"{{name}}.{vm.Name}\";");
+            OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{vm.Name}\" : $\"{{name}}.{vm.Name}\";");
 
             if (cleanListsBeforeUse)
             {
@@ -818,7 +817,7 @@ namespace Microsoft.Extensions.Options.Generators
             return staticValidationAttributeInstance;
         }
 
-        private void GenTransitiveValidation(ValidatedMember vm, string modelName, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
+        private void GenTransitiveValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
         {
             string callSequence;
             if (vm.TransValidateTypeIsSynthetic)
@@ -834,7 +833,7 @@ namespace Microsoft.Extensions.Options.Generators
 
             var valueAccess = (vm.IsNullable && vm.IsValueType) ? ".Value" : string.Empty;
 
-            var baseName = $"string.IsNullOrEmpty(name) ? \"{modelName}.{vm.Name}\" : $\"{{name}}.{vm.Name}\"";
+            var baseName = $"string.IsNullOrEmpty(name) ? \"{vm.Name}\" : $\"{{name}}.{vm.Name}\"";
 
             if (vm.IsNullable)
             {
@@ -849,7 +848,7 @@ namespace Microsoft.Extensions.Options.Generators
             }
         }
 
-        private void GenEnumerationValidation(ValidatedMember vm, string modelName, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
+        private void GenEnumerationValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
         {
             var valueAccess = (vm.IsValueType && vm.IsNullable) ? ".Value" : string.Empty;
             var enumeratedValueAccess = (vm.EnumeratedIsNullable && vm.EnumeratedIsValueType) ? ".Value" : string.Empty;
@@ -880,7 +879,7 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 OutLn($"if (o is not null)");
                 OutOpenBrace();
-                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count}}]\" : $\"{{name}}.{vm.Name}[{{count}}]\"";
+                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{vm.Name}[{{count}}]\" : $\"{{name}}.{vm.Name}[{{count}}]\"";
                 OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
                 OutCloseBrace();
 
@@ -888,7 +887,7 @@ namespace Microsoft.Extensions.Options.Generators
                 {
                     OutLn($"else");
                     OutOpenBrace();
-                    var error = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count}}] is null\" : $\"{{name}}.{vm.Name}[{{count}}] is null\"";
+                    var error = $"string.IsNullOrEmpty(name) ? $\"{vm.Name}[{{count}}] is null\" : $\"{{name}}.{vm.Name}[{{count}}] is null\"";
                     OutLn($"(builder ??= new()).AddError({error});");
                     OutCloseBrace();
                 }
@@ -897,7 +896,7 @@ namespace Microsoft.Extensions.Options.Generators
             }
             else
             {
-                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{modelName}.{vm.Name}[{{count++}}] is null\" : $\"{{name}}.{vm.Name}[{{count++}}] is null\"";
+                var propertyName = $"string.IsNullOrEmpty(name) ? $\"{vm.Name}[{{count++}}]\" : $\"{{name}}.{vm.Name}[{{count++}}]\"";
                 OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({propertyName}, o{enumeratedValueAccess}));");
             }
 

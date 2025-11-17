@@ -14,10 +14,6 @@ namespace System.IO.Tests
 
         static bool IsBindMountSupportedAndPrivilegedProcess => IsBindMountSupported && PlatformDetection.IsPrivilegedProcess;
 
-        static bool IsRemoteExecutorSupportedAndUsingNewNormalization => RemoteExecutor.IsSupported && UsingNewNormalization;
-
-        static bool IsRemoteExecutorSupportedAndLongPathsAreNotBlockedAndUsingNewNormalization => RemoteExecutor.IsSupported && LongPathsAreNotBlocked && UsingNewNormalization;
-
         #region Utilities
 
         protected virtual void Delete(string path)
@@ -126,7 +122,7 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(linkPath), "linkPath should no longer exist");
         }
 
-        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndUsingNewNormalization))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ExtendedDirectoryWithSubdirectories()
         {
             RemoteExecutor.Invoke(() =>
@@ -139,7 +135,7 @@ namespace System.IO.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(nameof(IsRemoteExecutorSupportedAndLongPathsAreNotBlockedAndUsingNewNormalization))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void LongPathExtendedDirectory()
         {
             RemoteExecutor.Invoke(() =>
@@ -166,7 +162,7 @@ namespace System.IO.Tests
             testDir.Attributes = FileAttributes.Normal;
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Deleting extended readonly directory throws IOException
         public void WindowsDeleteExtendedReadOnlyDirectory()
         {
@@ -197,7 +193,7 @@ namespace System.IO.Tests
             Assert.False(testDir.Exists);
         }
 
-        [ConditionalFact(nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Deleting extended hidden directory succeeds
         public void WindowsShouldBeAbleToDeleteExtendedHiddenDirectory()
         {

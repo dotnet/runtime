@@ -1006,6 +1006,7 @@ bool GenTree::NeedsConsecutiveRegisters() const
 }
 #endif
 
+#if HAS_FIXED_REGISTER_SET
 //---------------------------------------------------------------
 // gtGetContainedRegMask: Get the reg mask of the node including
 //    contained nodes (recursive).
@@ -1076,6 +1077,7 @@ regMaskTP GenTree::gtGetRegMask() const
 
     return resultMask;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 void GenTreeFieldList::AddField(Compiler* compiler, GenTree* node, unsigned offset, var_types type)
 {
@@ -1513,10 +1515,13 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
 //   comp - The compiler.
 //   cc   - The calling convention.
 //   arg  - The kind of argument.
+//   reg  - [out] The custom register assigned to the argument. Can be REG_NA for a non-ABI argument.
 //
 // Returns:
-//   The custom register assignment, or REG_NA if this is a normally treated
-//   argument.
+//   True if this is a specially passed argument. If so "reg" is set to the
+//   register to use for passing the argument, or REG_NA if the argument is not
+//   actually passed (used to represent arbitrary uses that are later expanded
+//   out for some cases).
 //
 // Remarks:
 //   Many JIT helpers have custom calling conventions in order to improve
@@ -1525,14 +1530,15 @@ void CallArgs::RemovedWellKnownArg(WellKnownArg arg)
 //   them. Note that we only support passing such arguments in custom registers
 //   and generally never on stack.
 //
-regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg)
+bool CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension cc, WellKnownArg arg, regNumber* reg)
 {
     switch (arg)
     {
 #if defined(TARGET_X86) || defined(TARGET_ARM)
         // The x86 and arm32 CORINFO_HELP_INIT_PINVOKE_FRAME helpers have a custom calling convention.
         case WellKnownArg::PInvokeFrame:
-            return REG_PINVOKE_FRAME;
+            *reg = REG_PINVOKE_FRAME;
+            return true;
 #endif
 #if defined(TARGET_ARM)
         // A non-standard calling convention using wrapper delegate invoke is used
@@ -1545,64 +1551,85 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
         // delegate IL stub) to achieve its goal for delegate VSD call. See
         // COMDelegate::NeedsWrapperDelegate() in the VM for details.
         case WellKnownArg::WrapperDelegateCell:
-            return comp->virtualStubParamInfo->GetReg();
+            *reg = comp->virtualStubParamInfo->GetReg();
+            return true;
 #endif
 #if defined(TARGET_X86)
         // The x86 shift helpers have custom calling conventions and expect the lo
         // part of the long to be in EAX and the hi part to be in EDX.
         case WellKnownArg::ShiftLow:
-            return REG_LNGARG_LO;
+            *reg = REG_LNGARG_LO;
+            return true;
         case WellKnownArg::ShiftHigh:
-            return REG_LNGARG_HI;
+            *reg = REG_LNGARG_HI;
+            return true;
 #endif
         case WellKnownArg::RetBuffer:
             if (hasFixedRetBuffReg(cc))
             {
-                return theFixedRetBuffReg(cc);
+                *reg = theFixedRetBuffReg(cc);
+                return true;
             }
 
             break;
 
         case WellKnownArg::VirtualStubCell:
-            return comp->virtualStubParamInfo->GetReg();
+            *reg = comp->virtualStubParamInfo->GetReg();
+            return true;
 
         case WellKnownArg::PInvokeCookie:
-            return REG_PINVOKE_COOKIE_PARAM;
+            *reg = REG_PINVOKE_COOKIE_PARAM;
+            return true;
 
         case WellKnownArg::PInvokeTarget:
-            return REG_PINVOKE_TARGET_PARAM;
+            *reg = REG_PINVOKE_TARGET_PARAM;
+            return true;
 
         case WellKnownArg::R2RIndirectionCell:
-            return REG_R2R_INDIRECT_PARAM;
+            *reg = REG_R2R_INDIRECT_PARAM;
+            return true;
 
         case WellKnownArg::ValidateIndirectCallTarget:
             if (REG_VALIDATE_INDIRECT_CALL_ADDR != REG_ARG_0)
             {
-                return REG_VALIDATE_INDIRECT_CALL_ADDR;
+                *reg = REG_VALIDATE_INDIRECT_CALL_ADDR;
+                return true;
             }
 
             break;
 
 #ifdef REG_DISPATCH_INDIRECT_CELL_ADDR
         case WellKnownArg::DispatchIndirectCallTarget:
-            return REG_DISPATCH_INDIRECT_CALL_ADDR;
+            *reg = REG_DISPATCH_INDIRECT_CALL_ADDR;
+            return true;
 #endif
 
 #ifdef SWIFT_SUPPORT
         case WellKnownArg::SwiftError:
             assert(cc == CorInfoCallConvExtension::Swift);
-            return REG_SWIFT_ERROR;
+            *reg = REG_SWIFT_ERROR;
+            return true;
 
         case WellKnownArg::SwiftSelf:
             assert(cc == CorInfoCallConvExtension::Swift);
-            return REG_SWIFT_SELF;
+            *reg = REG_SWIFT_SELF;
+            return true;
 #endif // SWIFT_SUPPORT
+
+        case WellKnownArg::StackArrayLocal:
+        case WellKnownArg::AsyncExecutionContext:
+        case WellKnownArg::AsyncSynchronizationContext:
+            // These are pseudo-args; they are not actual arguments, but we
+            // reuse the argument mechanism to represent them as arbitrary uses
+            // that are later expanded out.
+            *reg = REG_NA;
+            return true;
 
         default:
             break;
     }
 
-    return REG_NA;
+    return false;
 }
 
 //---------------------------------------------------------------
@@ -1619,7 +1646,8 @@ regNumber CallArgs::GetCustomRegister(Compiler* comp, CorInfoCallConvExtension c
 //
 bool CallArgs::IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg)
 {
-    return GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg->GetWellKnownArg()) != REG_NA;
+    regNumber reg;
+    return GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg->GetWellKnownArg(), &reg) && (reg != REG_NA);
 }
 
 //---------------------------------------------------------------
@@ -2265,7 +2293,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
 //   those cases the JIT does not know (and does not need to know) which arg is
 //   the async continuation.
 //
-//   The VM also uses the StubHelpers.AsyncCallContinuation() intrinsic in the
+//   The VM also uses the AsyncHelpers.AsyncCallContinuation() intrinsic in the
 //   stubs discussed above. The JIT must take care in those cases to still mark
 //   the preceding call as an async call; this is required for correct LSRA
 //   behavior and GC reporting around the returned async continuation. This is
@@ -2274,24 +2302,6 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
 bool GenTreeCall::IsAsync() const
 {
     return (gtCallMoreFlags & GTF_CALL_M_ASYNC) != 0;
-}
-
-//-------------------------------------------------------------------------
-// IsAsyncAndAlwaysSavesAndRestoresExecutionContext:
-//   Check if this is an async call that always saves and restores the
-//   ExecutionContext around it.
-//
-// Return Value:
-//   True if so.
-//
-// Remarks:
-//   Normal user await calls have this behavior, while custom awaiters (via
-//   AsyncHelpers.AwaitAwaiter) only saves and restores the ExecutionContext if
-//   actual suspension happens.
-//
-bool GenTreeCall::IsAsyncAndAlwaysSavesAndRestoresExecutionContext() const
-{
-    return IsAsync() && (GetAsyncInfo().ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore);
 }
 
 //-------------------------------------------------------------------------
@@ -2734,6 +2744,7 @@ AGAIN:
 
             case GT_NOP:
             case GT_LABEL:
+            case GT_ASYNC_RESUME_INFO:
             case GT_SWIFT_ERROR:
             case GT_GCPOLL:
                 return true;
@@ -4750,6 +4761,8 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 addrModeCostSz += 4;
             }
         }
+#elif defined(TARGET_WASM)
+        NYI_WASM("gtMarkAddrMode");
 #else
 #error "Unknown TARGET"
 #endif
@@ -5154,6 +5167,19 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costEx = 1;
                 costSz = 4;
                 goto COMMON_CNS;
+#elif defined(TARGET_WASM)
+            case GT_CNS_STR:
+                costEx = IND_COST_EX + 2;
+                costSz = 7;
+                goto COMMON_CNS;
+
+            case GT_CNS_LNG:
+            case GT_CNS_INT:
+                // TODO-WASM: needs tuning based on the [S]LEB128 encoding size.
+                NYI_WASM("GT_CNS_LNG/GT_CNS_INT costing");
+                costEx = 0;
+                costSz = 0;
+                goto COMMON_CNS;
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
@@ -5231,6 +5257,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-RISCV64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
+#elif defined(TARGET_WASM)
+                costEx = 2;
+                costSz = tree->TypeIs(TYP_FLOAT) ? 5 : 9;
 #else
 #error "Unknown TARGET"
 #endif
@@ -5413,6 +5442,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // TODO-RISCV64-CQ: tune the costs.
                     costEx = 1;
                     costSz = 4;
+#elif defined(TARGET_WASM)
+                    // TODO-WASM: 1 byte opcodes except for the int->fp saturating casts which are 2 bytes.
+                    NYI_WASM("Cast costing");
+                    costEx = 0;
+                    costSz = 0;
 #else
 #error "Unknown TARGET"
 #endif
@@ -6693,6 +6727,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -6724,6 +6759,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -7744,6 +7780,22 @@ GenTreeIntCon* Compiler::gtNewTrue()
 GenTreeIntCon* Compiler::gtNewFalse()
 {
     return gtNewIconNode(0, TYP_INT);
+}
+
+//-----------------------------------------------------------------------------------------
+// gtNewILOffsetNode:
+//   Create a GT_IL_OFFSET node with the specified debug information.
+//
+// Arguments:
+//    di         - The debug information
+//    lastOffset - Offset corresponding to the IL instruction after this one
+//
+// Return Value:
+//    New node.
+//
+GenTreeILOffset* Compiler::gtNewILOffsetNode(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset))
+{
+    return new (this, GT_IL_OFFSET) GenTreeILOffset(di DEBUGARG(lastOffset));
 }
 
 // return a new node representing the value in a physical register
@@ -9580,6 +9632,8 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
             case GT_END_LFIN:
 #endif // FEATURE_EH_WINDOWS_X86
             case GT_JMP:
+            case GT_RECORD_ASYNC_RESUME:
+            case GT_ASYNC_RESUME_INFO:
                 copy = new (this, oper) GenTreeVal(oper, tree->gtType, tree->AsVal()->gtVal1);
                 goto DONE;
 
@@ -10326,6 +10380,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
+        case GT_ASYNC_RESUME_INFO:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -10357,6 +10412,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PINVOKE_PROLOG:
         case GT_PINVOKE_EPILOG:
         case GT_IL_OFFSET:
+        case GT_RECORD_ASYNC_RESUME:
         case GT_NOP:
         case GT_SWIFT_ERROR:
         case GT_GCPOLL:
@@ -11688,14 +11744,15 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             }
         }
 
+#if HAS_FIXED_REGISTER_SET
         // for tracking down problems in reguse prediction or liveness tracking
-
         if (verbose && 0)
         {
             printf(" RR=");
             dspRegMask(JitTls::GetCompiler()->codeGen->internalRegisters.GetAll(tree));
             printf("\n");
         }
+#endif // HAS_FIXED_REGISTER_SET
     }
 }
 
@@ -12443,6 +12500,11 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             tree->AsILOffset()->gtStmtDI.Dump(true);
             break;
 
+        case GT_RECORD_ASYNC_RESUME:
+        case GT_ASYNC_RESUME_INFO:
+            printf(" state=%zu", tree->AsVal()->gtVal1);
+            break;
+
         case GT_JCC:
         case GT_SETCC:
             printf(" cond=%s", tree->AsCC()->gtCondition.Name());
@@ -12837,6 +12899,15 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 case NI_System_Math_MinUnsigned:
                     printf(" minUnsigned");
                     break;
+                case NI_PRIMITIVE_LeadingZeroCount:
+                    printf(" leadingZeroCount");
+                    break;
+                case NI_PRIMITIVE_TrailingZeroCount:
+                    printf(" trailingZeroCount");
+                    break;
+                case NI_PRIMITIVE_PopCount:
+                    printf(" popCount");
+                    break;
 #endif // TARGET_RISCV64
                 case NI_System_Math_Pow:
                     printf(" pow");
@@ -13199,8 +13270,10 @@ const char* Compiler::gtGetWellKnownArgNameForArgMsg(WellKnownArg arg)
             return "&lcl arr";
         case WellKnownArg::RuntimeMethodHandle:
             return "meth hnd";
-        case WellKnownArg::AsyncSuspendedIndicator:
-            return "async susp";
+        case WellKnownArg::AsyncExecutionContext:
+            return "exec ctx";
+        case WellKnownArg::AsyncSynchronizationContext:
+            return "sync ctx";
         default:
             return nullptr;
     }
@@ -13337,6 +13410,7 @@ void Compiler::gtPrintABILocation(const ABIPassingInformation& abiInfo, char** b
     {
         if (segment.IsPassedInRegister())
         {
+#if HAS_FIXED_REGISTER_SET
             regMaskTP regs = segment.GetRegisterMask();
             while (regs != RBM_NONE)
             {
@@ -13357,6 +13431,10 @@ void Compiler::gtPrintABILocation(const ABIPassingInformation& abiInfo, char** b
                     lastReg  = reg;
                 }
             }
+#else  // !HAS_FIXED_REGISTER_SET
+       // TODO-WASM: refactor this code to not rely on register masks.
+            NYI_WASM("gtPrintABILocation");
+#endif // !HAS_FIXED_REGISTER_SET
         }
         else
         {
@@ -19522,32 +19600,6 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// gtCallGetDefinedAsyncSuspendedIndicatorLclAddr:
-//   Get the tree corresponding to the address of the indicator local that this call defines.
-//
-// Parameters:
-//   call - the Call node
-//
-// Returns:
-//   A tree representing the address of a local.
-//
-GenTreeLclVarCommon* Compiler::gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call)
-{
-    if (!call->IsAsync() || !call->GetAsyncInfo().HasSuspensionIndicatorDef)
-    {
-        return nullptr;
-    }
-
-    CallArg* asyncSuspensionIndicatorArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
-    assert(asyncSuspensionIndicatorArg != nullptr);
-    GenTree* node = asyncSuspensionIndicatorArg->GetNode();
-
-    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsDefinedViaAddress());
-
-    return node->AsLclVarCommon();
-}
-
-//------------------------------------------------------------------------
 // ParseArrayAddress: Rehydrate the array and index expression from ARR_ADDR.
 //
 // Arguments:
@@ -19878,6 +19930,11 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 //
 bool GenTree::SupportsSettingZeroFlag()
 {
+    if (SupportsSettingResultFlags())
+    {
+        return true;
+    }
+
 #if defined(TARGET_XARCH)
     if (OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
     {
@@ -19896,18 +19953,42 @@ bool GenTree::SupportsSettingZeroFlag()
         return true;
     }
 #endif
-#elif defined(TARGET_ARM64)
+#endif
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// SupportsSettingResultFlags: Returns true if this is an arithmetic operation
+// whose codegen supports setting the carry, overflow, zero and sign flags based
+// on the result of the operation.
+//
+// Return Value:
+//    True if so. A false return does not imply that codegen for the node will
+//    not trash the result flags.
+//
+// Remarks:
+//    For example, for GT (AND x y) 0, arm64 can emit instructions that
+//    directly set the flags after the 'AND' and thus no comparison is needed.
+//
+//    The backend expects any node for which the flags will be consumed to be
+//    marked with GTF_SET_FLAGS.
+//
+bool GenTree::SupportsSettingResultFlags()
+{
+#if defined(TARGET_ARM64)
     if (OperIs(GT_AND, GT_AND_NOT))
     {
         return true;
     }
 
-    // We do not support setting zero flag for madd/msub.
+    // We do not support setting result flags if neg has a contained mul
     if (OperIs(GT_NEG) && (!gtGetOp1()->OperIs(GT_MUL) || !gtGetOp1()->isContained()))
     {
         return true;
     }
 
+    // We do not support setting result flags for madd/msub.
     if (OperIs(GT_ADD, GT_SUB) && (!gtGetOp2()->OperIs(GT_MUL) || !gtGetOp2()->isContained()))
     {
         return true;
@@ -31261,6 +31342,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
     return resultReg;
 }
 
+#if HAS_FIXED_REGISTER_SET
 //--------------------------------------------------------------------------------
 // GetABIReturnRegs: get the mask of return registers as per target arch ABI.
 //
@@ -31287,6 +31369,7 @@ regMaskTP ReturnTypeDesc::GetABIReturnRegs(CorInfoCallConvExtension callConv) co
 
     return resultMask;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 //------------------------------------------------------------------------
 //  GetNum: Get the SSA number for a given field.
