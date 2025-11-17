@@ -27,9 +27,7 @@
 
     <GenerateFileFromTemplate TemplateFile="$(ILTargetsTemplateFile)"
                               OutputPath="$(ILTargetsOutputFile)"
-                              Properties="IlAsmVersion=$(Version)">
-      <Output TaskParameter="ResolvedOutputPath" ItemName="FileWrites" />
-    </GenerateFileFromTemplate>
+                              Properties="IlAsmVersion=$(Version)" />
 
     <ItemGroup>
       <None Include="$(ILTargetsOutputFile)" Pack="true" PackagePath="targets/" />

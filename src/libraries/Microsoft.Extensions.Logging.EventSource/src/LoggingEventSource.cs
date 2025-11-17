@@ -82,8 +82,10 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// }
     /// </code>
     /// </example>
+#pragma warning disable ESGEN001 // EventSource class is not partial. It's blocked by https://github.com/dotnet/runtime/issues/121205
     [EventSource(Name = "Microsoft-Extensions-Logging")]
     public sealed class LoggingEventSource : System.Diagnostics.Tracing.EventSource
+#pragma warning restore ESGEN001
     {
         /// <summary>
         /// Defines the different ways data can be formatted in an event.
@@ -126,6 +128,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         private static readonly char[] s_semicolon = new[] { ';' };
         private static readonly char[] s_colon = new[] { ':' };
 
+        // This event source uses IEnumerable<T> as an event parameter type which is only supported by EtwSelfDescribingEventFormat.
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }

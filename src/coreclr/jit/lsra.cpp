@@ -1009,9 +1009,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
 
-    compiler->codeGen->intRegState.rsIsFloat   = false;
-    compiler->codeGen->floatRegState.rsIsFloat = true;
-
     // Block sequencing (the order in which we schedule).
     // Note that we don't initialize the bbVisitedSet until we do the first traversal
     // This is so that any blocks that are added during the first traversal are accounted for.

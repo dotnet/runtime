@@ -157,6 +157,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS path length exceeds character limit for domain sockets")]
         public static async Task ConnectOnPipeFromExistingHandle_Throws_InvalidOperationException()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();

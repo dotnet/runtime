@@ -1,7 +1,5 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(RUNTIME_DIR ../runtime)
-
 # Needed due to the munged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
@@ -272,12 +270,10 @@ endif(FEATURE_READYTORUN)
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     conditionalweaktable.cpp # The usage of conditionalweaktable is only in the DAC, but we put the headers in the VM to enable validation.
-    threaddebugblockinginfo.cpp
 )
 
 set(VM_HEADERS_DAC
     ${VM_HEADERS_DAC_AND_WKS_COMMON}
-    threaddebugblockinginfo.h
 )
 
 set(GC_SOURCES_DAC
@@ -324,7 +320,6 @@ set(VM_SOURCES_WKS
     eepolicy.cpp
     eetoprofinterfaceimpl.cpp
     eventpipeinternal.cpp
-    eventstore.cpp
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp
@@ -376,7 +371,6 @@ set(VM_SOURCES_WKS
     syncclean.cpp
     synch.cpp
     tailcallhelp.cpp
-    threaddebugblockinginfo.cpp
     threadsuspend.cpp
     typeparse.cpp
     unsafeaccessors.cpp
@@ -432,7 +426,6 @@ set(VM_HEADERS_WKS
     eventpipeadapter.h
     eventpipeadaptertypes.h
     eventpipeinternal.h
-    eventstore.hpp
     fcall.h
     fieldmarshaler.h
     finalizerthread.h
@@ -477,7 +470,6 @@ set(VM_HEADERS_WKS
     synch.h
     tailcallhelp.h
     tieredcompilation.h
-    threaddebugblockinginfo.h
     threadsuspend.h
     typeparse.h
     weakreferencenative.h
@@ -921,6 +913,9 @@ elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         gcinfodecoder.cpp
     )
 elseif(CLR_CMAKE_TARGET_ARCH_WASM)
+    set(VM_HEADERS_WKS_ARCH_ASM
+        ${ARCH_SOURCES_DIR}/entrypoints.h
+    )
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
