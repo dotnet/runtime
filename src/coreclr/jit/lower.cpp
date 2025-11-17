@@ -6401,37 +6401,6 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
         }
     }
 
-    // if (!IsRangeInvariantInRange(callRange.FirstNode(), tarRange.FirstNode()->gtPrev, tarRange.LastNode(), nullptr))
-    //{
-    //     JITDUMP("  No; range of nodes is not invariant\n");
-    //     return;
-    // }
-
-    // We did not check CORINFO_HELP_VIRTUAL_FUNC_PTR. It can throw NRE, so
-    // verify that we can move other effects past NRE.
-    // for (GenTree* cur = callRange.FirstNode(); cur != tarRange.FirstNode(); cur = cur->gtNext)
-    //{
-    //    GenTreeFlags flags = cur->OperEffects(comp);
-    //    if ((flags & GTF_PERSISTENT_SIDE_EFFECTS) != 0)
-    //    {
-    //        JITDUMP("  No; [%06u] has persistent side effects\n", Compiler::dspTreeID(cur));
-    //        return;
-    //    }
-
-    //    if ((flags & GTF_EXCEPT) != 0)
-    //    {
-    //        ExceptionSetFlags preciseExceptions = cur->OperExceptions(comp);
-    //        if (preciseExceptions != ExceptionSetFlags::NullReferenceException)
-    //        {
-    //            JITDUMP("  No; [%06u] throws an exception that is not NRE\n", Compiler::dspTreeID(cur));
-    //            return;
-    //        }
-    //    }
-    //}
-
-    // LIR::Range removedRange = BlockRange().Remove(std::move(tarRange));
-
-    // BlockRange().InsertBefore(callRange.FirstNode(), std::move(removedRange));
     JITDUMP("Result of moved target evaluation:\n");
     DISPTREERANGE(BlockRange(), call);
 }
