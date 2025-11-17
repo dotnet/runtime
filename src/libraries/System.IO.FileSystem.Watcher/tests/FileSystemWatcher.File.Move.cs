@@ -225,7 +225,7 @@ namespace System.IO.Tests
             Action action = () => Array.ForEach(files, file => File.Move(file.FileInWatchedDir, file.FileInUnwatchedDir));
 
             // Filter out Created and Changed events as there is a race-condition when moving a file and then observing a parent folder. It receives Create and Changed events although Watcher is not registered yet.
-            Func<FiredEvent, bool> filter = skipOldEvents ? x => (x.EventType & (WatcherChangeTypes.Created | WatcherChangeTypes.Changed)) == 0 : _ => true;
+            Func<FiredEvent, bool>? filter = skipOldEvents ? x => (x.EventType & (WatcherChangeTypes.Created | WatcherChangeTypes.Changed)) == 0 : null;
 
             IEnumerable<FiredEvent> events = ExpectEvents(watcher, filesCount, action, filter);
 

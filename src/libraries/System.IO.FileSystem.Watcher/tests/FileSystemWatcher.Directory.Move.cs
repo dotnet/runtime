@@ -173,7 +173,7 @@ namespace System.IO.Tests
             Action action = () => Array.ForEach(dirs, dir => Directory.Move(dir.DirectoryInWatchedDir, dir.DirectoryInUnwatchedDir));
 
             // Filter out Created events as there is a race-condition when moving a directory and then observing a parent folder. It receives Create event although Watcher is not registered yet.
-            Func<FiredEvent, bool> filter = skipOldEvents ? x => x.EventType != WatcherChangeTypes.Created : _ => true;
+            Func<FiredEvent, bool>? filter = skipOldEvents ? x => x.EventType != WatcherChangeTypes.Created : null;
 
             IEnumerable<FiredEvent> events = ExpectEvents(watcher, filesCount, action, filter);
 
