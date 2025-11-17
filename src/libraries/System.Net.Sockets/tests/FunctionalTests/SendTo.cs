@@ -94,7 +94,7 @@ namespace System.Net.Sockets.Tests
             Assert.NotNull(socket.LocalEndPoint);
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.FreeBSD, "FreeBSD allows sendto() to broadcast")]
         public async Task Datagram_UDP_AccessDenied_Throws_DoesNotBind()
         {
