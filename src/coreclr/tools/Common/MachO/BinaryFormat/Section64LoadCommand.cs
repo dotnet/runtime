@@ -3,7 +3,11 @@
 
 using System.Runtime.InteropServices;
 
+#if HOST_MODEL
 namespace Microsoft.NET.HostModel.MachO;
+#else
+namespace ILCompiler.Reflection.ReadyToRun.MachO;
+#endif
 
 /// <summary>
 /// A load command that provides information about a section in a segment.
@@ -25,5 +29,8 @@ internal readonly struct Section64LoadCommand
     private readonly uint _reserved2;
     private readonly uint _reserved3;
 
+    internal NameBuffer SectionName => _sectionName;
+    internal ulong GetVMAddress(MachHeader header) => header.ConvertValue(_address);
+    internal ulong GetSize(MachHeader header) => header.ConvertValue(_size);
     internal uint GetFileOffset(MachHeader header) => header.ConvertValue(_fileOffset);
 }

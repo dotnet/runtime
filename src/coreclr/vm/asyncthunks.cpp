@@ -469,7 +469,8 @@ int MethodDesc::GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream
     return pCode->GetToken(md, typeSigToken);
 }
 
-// provided a Task-returning method, emits an async wrapper.
+// Provided a Task-returning method, emits an async wrapper.
+// The emitted code matches method EmitAsyncMethodThunk in the Managed Type System.
 void MethodDesc::EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL)
 {
     _ASSERTE(!pAsyncOtherVariant->IsAsyncThunkMethod());

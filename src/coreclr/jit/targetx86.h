@@ -8,7 +8,6 @@
 
 // clang-format off
   #define CPU_LOAD_STORE_ARCH      0
-  #define ROUND_FLOAT              1       // round intermed float expression results
   #define CPU_HAS_BYTE_REGS        1
 
   #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the threshold of the number
@@ -47,14 +46,15 @@
                                            // ASM barriers we definitely don't have NOGC barriers).
 #endif
   #define USER_ARGS_COME_LAST      0
-  #define EMIT_TRACK_STACK_DEPTH   1
   #define TARGET_POINTER_SIZE      4       // equal to sizeof(void*) and the managed pointer size in bytes for this
                                            // target
-  #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter,
-                                           // filter-handler, fault) and directly execute 'finally' clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based
                                            // frames for most methods
+
   #define CSE_CONSTS               1       // Enable if we want to CSE constants
+  #define LOWER_DECOMPOSE_LONGS    1       // Decompose TYP_LONG operations into (typically two) TYP_INT ones
+  #define EMIT_TRACK_STACK_DEPTH   1
+  #define EMIT_GENERATE_GCINFO     1       // Track GC ref liveness in codegen and emit and generate GCInfo based on that
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX
@@ -115,8 +115,8 @@
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
   #define ZMM_REGSIZE_BYTES        64      // ZMM register size in bytes
 
+  #define HAS_FIXED_REGISTER_SET   1       // Has a fixed register set
   #define REGNUM_BITS              6       // number of bits in a REG_*
-
   #define REGSIZE_BYTES            4       // number of bytes in one register
   #define MIN_ARG_AREA_FOR_CALL    0       // Minimum required outgoing argument space for a call.
 

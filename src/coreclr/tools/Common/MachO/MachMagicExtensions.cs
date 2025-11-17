@@ -4,7 +4,11 @@
 using System.Buffers.Binary;
 using System.IO;
 
+#if HOST_MODEL
 namespace Microsoft.NET.HostModel.MachO;
+#else
+namespace ILCompiler.Reflection.ReadyToRun.MachO;
+#endif
 
 internal static class MachMagicExtensions
 {
