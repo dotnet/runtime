@@ -64,6 +64,10 @@ WasmSuccessorEnumerator::WasmSuccessorEnumerator(Compiler* comp, BasicBlock* blo
 //------------------------------------------------------------------------
 // FgWasmDfs: run depth first search for wasm control flow codegen
 //
+// Arguments:
+//   hasBlocksOnlyReachableViaEH - [out] set to true if there are non-funclet
+//     blocks only reachable via EH
+//
 // Returns:
 //   dfs tree
 //
@@ -74,7 +78,7 @@ WasmSuccessorEnumerator::WasmSuccessorEnumerator(Compiler* comp, BasicBlock* blo
 //   Invalidates any existing DFS, because we use the numbering
 //   slots on BasicBlocks.
 //
-FlowGraphDfsTree* Compiler::fgWasmDfs()
+FlowGraphDfsTree* Compiler::fgWasmDfs(bool& hasBlocksOnlyReachableViaEH)
 {
     fgInvalidateDfsTree();
 
@@ -128,6 +132,8 @@ FlowGraphDfsTree* Compiler::fgWasmDfs()
     // way for control to reach these blocks, at which point we should make this
     // manifest (either as Wasm EH, or via explicit control flow).
     //
+    hasBlocksOnlyReachableViaEH = false;
+
     for (BasicBlock* const block : Blocks())
     {
         bool onlyHasEHPreds = true;
@@ -151,6 +157,7 @@ FlowGraphDfsTree* Compiler::fgWasmDfs()
         {
             JITDUMP(FMT_BB " is only reachable via EH\n", block->bbNum);
             entryBlocks.push_back(block);
+            hasBlocksOnlyReachableViaEH = true;
         }
     }
 
@@ -274,7 +281,7 @@ public:
 
                 if (BitVecOps::TryAddElemD(&m_traits, m_entries, block->bbPostorderNum))
                 {
-                    JITDUMP(FMT_BB " is scc %u entry via " FMT_BB "\n",block->bbNum,  m_num, pred->bbNum);
+                    JITDUMP(FMT_BB " is scc %u entry via " FMT_BB "\n", block->bbNum, m_num, pred->bbNum);
                     isEntry = true;
 
                     m_entryWeight += block->bbWeight;
@@ -595,16 +602,40 @@ public:
                     dispatcher->setBBProfileWeight(TotalEntryWeight());
                 }
 
+                JITDUMP("Fixing flow for preds of header " FMT_BB "\n", header->bbNum);
                 weight_t headerWeight = header->bbWeight;
 
                 for (FlowEdge* const f : header->PredEdgesEditing())
                 {
                     assert(f->getDestinationBlock() == header);
-                    BasicBlock* const pred            = f->getSourceBlock();
-                    BasicBlock* const transferBlock   = m_comp->fgSplitEdge(pred, header);
-                    GenTree* const    targetIndex     = m_comp->gtNewIconNode(headerNumber);
-                    GenTree* const    storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
-                    Statement* const  assignStmt      = m_comp->fgNewStmtAtBeg(transferBlock, storeControlVar);
+                    BasicBlock* const pred          = f->getSourceBlock();
+                    BasicBlock*       transferBlock = nullptr;
+
+                    // Note we can actually sink the control var store into pred if
+                    // pred has does not also have some other SCC header as a successor.
+                    // The assignment many end up partially dead, but likely avoiding a branch
+                    // is preferable; the assignment should be cheap.
+                    //
+                    // For now we just check if the pred has only this header as successor.
+                    // We also don't putcode into BBJ_CALLFINALLYRET (note that restriction
+                    // is perhaps no longer needed).
+                    //
+                    if (pred->HasTarget() && (pred->GetTarget() == header) && !pred->isBBCallFinallyPairTail())
+                    {
+                        // Note this handles BBJ_EHCATCHRET which is the only expected case
+                        // of an unsplittable pred edge.
+                        //
+                        transferBlock = pred;
+                    }
+                    else
+                    {
+                        assert(!pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHFINALLYRET));
+                        transferBlock = m_comp->fgSplitEdge(pred, header);
+                    }
+
+                    GenTree* const   targetIndex     = m_comp->gtNewIconNode(headerNumber);
+                    GenTree* const   storeControlVar = m_comp->gtNewStoreLclVarNode(controlVarNum, targetIndex);
+                    Statement* const assignStmt      = m_comp->fgNewStmtNearEnd(transferBlock, storeControlVar);
 
                     m_comp->gtSetStmtInfo(assignStmt);
                     m_comp->fgSetStmtSeq(assignStmt);
@@ -895,9 +926,17 @@ bool WasmTransformSccs(ArrayStack<Scc*>& sccs)
 //
 PhaseStatus Compiler::fgWasmTransformSccs()
 {
-    bool              transformed = false;
-    FlowGraphDfsTree* dfsTree     = fgWasmDfs();
+    bool              transformed                 = false;
+    bool              hasBlocksOnlyReachableViaEH = false;
+    FlowGraphDfsTree* dfsTree                     = fgWasmDfs(hasBlocksOnlyReachableViaEH);
     assert(dfsTree->IsForWasm());
+
+    if (hasBlocksOnlyReachableViaEH)
+    {
+        JITDUMP("\nThere are blocks only reachable via EH, bailing out for now\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     FlowGraphNaturalLoops* loops = FlowGraphNaturalLoops::Find(dfsTree);
 
     // If there are irreducible loops, transforrm them.
@@ -916,9 +955,12 @@ PhaseStatus Compiler::fgWasmTransformSccs()
 
 #ifdef DEBUG
         // Rebuild DFS and loops; verify no improper headers remain
+        // We should not have altered the EH reachability of any block...?
         //
-        dfsTree = fgWasmDfs();
-        loops   = FlowGraphNaturalLoops::Find(dfsTree);
+        bool hasBlocksOnlyReachableViaEH2 = false;
+        dfsTree                           = fgWasmDfs(hasBlocksOnlyReachableViaEH2);
+        assert(!hasBlocksOnlyReachableViaEH2);
+        loops = FlowGraphNaturalLoops::Find(dfsTree);
         assert(loops->ImproperLoopHeaders() == 0);
 #endif
     }
@@ -1114,7 +1156,15 @@ PhaseStatus Compiler::fgWasmControlFlow()
     //
     // We don't install our DFS tree as "the" DFS tree as it is non-standard.
     //
-    FlowGraphDfsTree* dfsTree = fgWasmDfs();
+    bool              hasBlocksOnlyReachableViaEH = false;
+    FlowGraphDfsTree* dfsTree                     = fgWasmDfs(hasBlocksOnlyReachableViaEH);
+
+    if (hasBlocksOnlyReachableViaEH)
+    {
+        JITDUMP("\nThere are blocks only reachable via EH, bailing out for now\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
     assert(dfsTree->IsForWasm());
     FlowGraphNaturalLoops* loops = FlowGraphNaturalLoops::Find(dfsTree);
 

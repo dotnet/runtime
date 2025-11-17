@@ -6249,7 +6249,7 @@ public:
 
     PhaseStatus fgFindOperOrder();
 
-    FlowGraphDfsTree* fgWasmDfs();
+    FlowGraphDfsTree* fgWasmDfs(bool& hasBlocksOnlyReachableViaEH);
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
 

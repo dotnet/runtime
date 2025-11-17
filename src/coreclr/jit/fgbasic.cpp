@@ -4932,7 +4932,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 //    Returns a new block, that is a successor of 'curr' and which branches unconditionally to 'succ'
 //
 // Assumptions:
-//    'curr' must have a bbKind of BBJ_COND, BBJ_ALWAYS, BBJ_SWITCH, BBJ_CALLFINALLYRET, or BBJ_EHCATCHRET
+//    'curr' must have a bbKind of BBJ_COND, BBJ_ALWAYS, BBJ_SWITCH, or BBJ_CALLFINALLYRET
 //
 // Notes:
 //    The returned block is empty.
@@ -4940,12 +4940,9 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
 BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 {
-    assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS, BBJ_CALLFINALLYRET, BBJ_EHCATCHRET));
+    assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS, BBJ_CALLFINALLYRET));
     assert(fgPredsComputed);
     assert(fgGetPredForBlock(succ, curr) != nullptr);
-
-    // For EHCATCHRET put the split block in succ's EH region
-    BasicBlock* const cursor = curr->KindIs(BBJ_EHCATCHRET) ? succ : curr;
 
     BasicBlock* newBlock;
     if (curr->NextIs(succ))
@@ -4954,12 +4951,12 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
         // an immediately following block of a BBJ_SWITCH (which has
         // no fall-through path). For this case, simply insert a new
         // fall-through block after 'curr'.
-        newBlock = fgNewBBafter(BBJ_ALWAYS, cursor, true /* extendRegion */);
+        newBlock = fgNewBBafter(BBJ_ALWAYS, curr, true /* extendRegion */);
     }
     else
     {
         // The new block always jumps to 'succ'
-        newBlock = fgNewBBinRegion(BBJ_ALWAYS, cursor, /* isRunRarely */ curr->isRunRarely());
+        newBlock = fgNewBBinRegion(BBJ_ALWAYS, curr, /* isRunRarely */ curr->isRunRarely());
     }
     newBlock->CopyFlags(curr, succ->GetFlagsRaw() & BBF_BACKWARD_JUMP);
 
