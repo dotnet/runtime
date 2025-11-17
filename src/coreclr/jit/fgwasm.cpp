@@ -9,15 +9,6 @@
 #include "fgwasm.h"
 #include "algorithm.h"
 
-class Scc;
-void WasmFindSccsCore(Compiler*         comp,
-                      FlowGraphDfsTree* dfsTree,
-                      BitVec&           subset,
-                      BitVecTraits&     traits,
-                      ArrayStack<Scc*>& sccs,
-                      BasicBlock**      postorder,
-                      unsigned          postorderCount);
-
 //------------------------------------------------------------------------
 //  WasmSuccessorEnumerator: Construct an instance of the enumerator.
 //
@@ -30,7 +21,7 @@ WasmSuccessorEnumerator::WasmSuccessorEnumerator(Compiler* comp, BasicBlock* blo
     : m_block(block)
 {
     m_numSuccs = 0;
-    VisitWasmSuccs(
+    FgWasm::VisitWasmSuccs(
         comp, block,
         [this](BasicBlock* succ) {
         if (m_numSuccs < ArrLen(m_successors))
@@ -48,7 +39,7 @@ WasmSuccessorEnumerator::WasmSuccessorEnumerator(Compiler* comp, BasicBlock* blo
         m_pSuccessors = new (comp, CMK_WasmCfgLowering) BasicBlock*[m_numSuccs];
 
         unsigned numSuccs = 0;
-        VisitWasmSuccs(
+        FgWasm::VisitWasmSuccs(
             comp, block,
             [this, &numSuccs](BasicBlock* succ) {
             assert(numSuccs < m_numSuccs);
@@ -487,9 +478,10 @@ public:
             JITDUMP("}\n");
         }
 
-        unsigned numBlocks = WasmRunSubgraphDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
-                                                /* useProfile */ true>(m_comp, m_dfsTree, visitPreorder, visitPostorder,
-                                                                       visitEdge, nestedBlocks, m_traits);
+        unsigned numBlocks =
+            FgWasm::WasmRunSubgraphDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                                       /* useProfile */ true>(m_comp, m_dfsTree, visitPreorder, visitPostorder,
+                                                              visitEdge, nestedBlocks, m_traits);
 
         if (numBlocks != nestedCount)
         {
@@ -500,7 +492,7 @@ public:
         // Use that to find the nested Sccs
         //
         ArrayStack<Scc*> nestedSccs(m_comp->getAllocator(CMK_WasmSccTransform));
-        WasmFindSccsCore(m_comp, m_dfsTree, nestedBlocks, m_traits, nestedSccs, postOrder, nestedCount);
+        FgWasm::WasmFindSccsCore(m_comp, m_dfsTree, nestedBlocks, m_traits, nestedSccs, postOrder, nestedCount);
 
         const unsigned nNested = nestedSccs.Height();
 
@@ -708,7 +700,7 @@ unsigned Scc::s_nums = 0;
 // Returns:
 //   true if the flow graph was modified
 //
-void WasmFindSccs(Compiler* comp, FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& sccs)
+void FgWasm::WasmFindSccs(Compiler* comp, FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& sccs)
 {
     assert(dfsTree->IsForWasm());
 
@@ -757,13 +749,13 @@ void WasmFindSccs(Compiler* comp, FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& s
 //   postorder - array of BasicBlock* in postorder
 //   postorderCount - size of hte array
 //
-void WasmFindSccsCore(Compiler*         comp,
-                      FlowGraphDfsTree* dfsTree,
-                      BitVec&           subset,
-                      BitVecTraits&     traits,
-                      ArrayStack<Scc*>& sccs,
-                      BasicBlock**      postorder,
-                      unsigned          postorderCount)
+void FgWasm::WasmFindSccsCore(Compiler*         comp,
+                              FlowGraphDfsTree* dfsTree,
+                              BitVec&           subset,
+                              BitVecTraits&     traits,
+                              ArrayStack<Scc*>& sccs,
+                              BasicBlock**      postorder,
+                              unsigned          postorderCount)
 {
     // Initially we map a block to a null entry in the map.
     // If we then get a second block in that Scc, we allocate an Scc instance.
@@ -905,7 +897,7 @@ void WasmFindSccsCore(Compiler*         comp,
 //   to have a flat list of SCCs. If so we should transform these as outer to
 //   inner.
 //
-bool WasmTransformSccs(ArrayStack<Scc*>& sccs)
+bool FgWasm::WasmTransformSccs(ArrayStack<Scc*>& sccs)
 {
     bool modified = false;
 
@@ -947,10 +939,10 @@ PhaseStatus Compiler::fgWasmTransformSccs()
         printf("** Fixing improper headers in %u (%s)\n", info.compMethodSuperPMIIndex, info.compFullName);
 
         ArrayStack<Scc*> sccs(getAllocator(CMK_WasmSccTransform));
-        WasmFindSccs(this, dfsTree, sccs);
+        FgWasm::WasmFindSccs(this, dfsTree, sccs);
         assert(!sccs.Empty());
 
-        transformed = WasmTransformSccs(sccs);
+        transformed = FgWasm::WasmTransformSccs(sccs);
         assert(transformed);
 
 #ifdef DEBUG

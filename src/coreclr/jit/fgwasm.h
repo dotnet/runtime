@@ -4,99 +4,9 @@
 #ifndef FGWASM_H
 #define FGWASM_H
 
-#define RETURN_ON_ABORT(expr)                                                                                          \
-    if (expr == BasicBlockVisit::Abort)                                                                                \
-    {                                                                                                                  \
-        return BasicBlockVisit::Abort;                                                                                 \
-    }
-
-//------------------------------------------------------------------------------
-// VisitWasmSuccs: Visit Wasm successors of this block.
+// Forward declarations
 //
-// Arguments:
-//   comp       - Compiler instance
-//   block      - BasicBlock to visit
-//   func       - Callback
-//   useProfile - visit BBJ_COND successors in increasing likelihood order
-//
-// Returns:
-//   Whether or not the visiting was aborted.
-//
-// Notes:
-//
-//  An enumerator of a block's successors for Wasm control flow code gen. Does not
-//  consider exceptional successors or successors that require runtime intervention
-//  (eg funclet returns).
-//
-template <typename TFunc>
-BasicBlockVisit VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc func, bool useProfile = false)
-{
-    switch (block->GetKind())
-    {
-        // Funclet returns have no successors
-        //
-        case BBJ_EHFINALLYRET:
-        case BBJ_EHCATCHRET:
-        case BBJ_EHFILTERRET:
-        case BBJ_LEAVE:
-        case BBJ_THROW:
-        case BBJ_RETURN:
-        case BBJ_EHFAULTRET:
-            return BasicBlockVisit::Continue;
-
-        case BBJ_CALLFINALLY:
-            if (block->isBBCallFinallyPair())
-            {
-                RETURN_ON_ABORT(func(block->Next()));
-            }
-
-            return BasicBlockVisit::Continue;
-
-        case BBJ_CALLFINALLYRET:
-        case BBJ_ALWAYS:
-            return func(block->GetTarget());
-
-        case BBJ_COND:
-            if (block->TrueEdgeIs(block->GetFalseEdge()))
-            {
-                RETURN_ON_ABORT(func(block->GetFalseTarget()));
-            }
-            else if (useProfile && (block->GetTrueEdge()->getLikelihood() < block->GetFalseEdge()->getLikelihood()))
-            {
-                // When building an RPO-based block layout, we want to visit the unlikely successor first
-                // so that in the DFS computation, the likely successor will be processed right before this block,
-                // meaning the RPO-based layout will enable fall-through into the likely successor.
-                //
-                RETURN_ON_ABORT(func(block->GetTrueTarget()));
-                RETURN_ON_ABORT(func(block->GetFalseTarget()));
-            }
-            else
-            {
-                RETURN_ON_ABORT(func(block->GetFalseTarget()));
-                RETURN_ON_ABORT(func(block->GetTrueTarget()));
-            }
-
-            return BasicBlockVisit::Continue;
-
-        case BBJ_SWITCH:
-        {
-            BBswtDesc* const desc      = block->GetSwitchTargets();
-            unsigned const   succCount = desc->GetSuccCount();
-
-            for (unsigned i = 0; i < succCount; i++)
-            {
-                RETURN_ON_ABORT(func(desc->GetSucc(i)->getDestinationBlock()));
-            }
-
-            return BasicBlockVisit::Continue;
-        }
-
-        default:
-            unreached();
-    }
-}
-
-#undef RETURN_ON_ABORT
+class Scc;
 
 //------------------------------------------------------------------------------
 // WasmSuccessorEnumerator: adapter for visiting Wasm successors in a DFS
@@ -197,6 +107,132 @@ public:
     }
 };
 
+//------------------------------------------------------------------------------
+// FgWasm: Wasm-specific flow graph methods
+//
+class FgWasm
+{
+public:
+
+    template <typename TFunc>
+    static BasicBlockVisit VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc func, bool useProfile = false);
+
+    template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile = false>
+    static unsigned WasmRunSubgraphDfs(Compiler*         comp,
+                                       FlowGraphDfsTree* dfsTree,
+                                       VisitPreorder     visitPreorder,
+                                       VisitPostorder    visitPostorder,
+                                       VisitEdge         visitEdge,
+                                       BitVec&           subgraph,
+                                       BitVecTraits&     subgraphTraits);
+
+    static void WasmFindSccs(Compiler* comp, FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& sccs);
+
+    static void WasmFindSccsCore(Compiler*         comp,
+                                 FlowGraphDfsTree* dfsTree,
+                                 BitVec&           subset,
+                                 BitVecTraits&     traits,
+                                 ArrayStack<Scc*>& sccs,
+                                 BasicBlock**      postorder,
+                                 unsigned          postorderCount);
+
+    static bool WasmTransformSccs(ArrayStack<Scc*>& sccs);
+};
+
+#define RETURN_ON_ABORT(expr)                                                                                          \
+    if (expr == BasicBlockVisit::Abort)                                                                                \
+    {                                                                                                                  \
+        return BasicBlockVisit::Abort;                                                                                 \
+    }
+
+//------------------------------------------------------------------------------
+// VisitWasmSuccs: Visit Wasm successors of this block.
+//
+// Arguments:
+//   comp       - Compiler instance
+//   block      - BasicBlock to visit
+//   func       - Callback
+//   useProfile - visit BBJ_COND successors in increasing likelihood order
+//
+// Returns:
+//   Whether or not the visiting was aborted.
+//
+// Notes:
+//
+//  An enumerator of a block's successors for Wasm control flow code gen. Does not
+//  consider exceptional successors or successors that require runtime intervention
+//  (eg funclet returns).
+//
+template <typename TFunc>
+BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc func, bool useProfile)
+{
+    switch (block->GetKind())
+    {
+        // Funclet returns have no successors
+        //
+        case BBJ_EHFINALLYRET:
+        case BBJ_EHCATCHRET:
+        case BBJ_EHFILTERRET:
+        case BBJ_LEAVE:
+        case BBJ_THROW:
+        case BBJ_RETURN:
+        case BBJ_EHFAULTRET:
+            return BasicBlockVisit::Continue;
+
+        case BBJ_CALLFINALLY:
+            if (block->isBBCallFinallyPair())
+            {
+                RETURN_ON_ABORT(func(block->Next()));
+            }
+
+            return BasicBlockVisit::Continue;
+
+        case BBJ_CALLFINALLYRET:
+        case BBJ_ALWAYS:
+            return func(block->GetTarget());
+
+        case BBJ_COND:
+            if (block->TrueEdgeIs(block->GetFalseEdge()))
+            {
+                RETURN_ON_ABORT(func(block->GetFalseTarget()));
+            }
+            else if (useProfile && (block->GetTrueEdge()->getLikelihood() < block->GetFalseEdge()->getLikelihood()))
+            {
+                // When building an RPO-based block layout, we want to visit the unlikely successor first
+                // so that in the DFS computation, the likely successor will be processed right before this block,
+                // meaning the RPO-based layout will enable fall-through into the likely successor.
+                //
+                RETURN_ON_ABORT(func(block->GetTrueTarget()));
+                RETURN_ON_ABORT(func(block->GetFalseTarget()));
+            }
+            else
+            {
+                RETURN_ON_ABORT(func(block->GetFalseTarget()));
+                RETURN_ON_ABORT(func(block->GetTrueTarget()));
+            }
+
+            return BasicBlockVisit::Continue;
+
+        case BBJ_SWITCH:
+        {
+            BBswtDesc* const desc      = block->GetSwitchTargets();
+            unsigned const   succCount = desc->GetSuccCount();
+
+            for (unsigned i = 0; i < succCount; i++)
+            {
+                RETURN_ON_ABORT(func(desc->GetSucc(i)->getDestinationBlock()));
+            }
+
+            return BasicBlockVisit::Continue;
+        }
+
+        default:
+            unreached();
+    }
+}
+
+#undef RETURN_ON_ABORT
+
 //------------------------------------------------------------------------
 // WasmRunSubgraphDfs: Run DFS over a subgraph of the flow graph.
 //
@@ -227,13 +263,13 @@ public:
 //   Encapsulate subgraph as functor...?
 //
 template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile /* = false */>
-unsigned WasmRunSubgraphDfs(Compiler*         comp,
-                            FlowGraphDfsTree* dfsTree,
-                            VisitPreorder     visitPreorder,
-                            VisitPostorder    visitPostorder,
-                            VisitEdge         visitEdge,
-                            BitVec&           subgraph,
-                            BitVecTraits&     subgraphTraits)
+unsigned FgWasm::WasmRunSubgraphDfs(Compiler*         comp,
+                                    FlowGraphDfsTree* dfsTree,
+                                    VisitPreorder     visitPreorder,
+                                    VisitPostorder    visitPostorder,
+                                    VisitEdge         visitEdge,
+                                    BitVec&           subgraph,
+                                    BitVecTraits&     subgraphTraits)
 {
     JITDUMP("Running Wasm subgraph DFS on %u blocks\n", BitVecOps::Count(&subgraphTraits, subgraph));
     BitVecTraits traits(comp->fgBBNumMax + 1, comp);
