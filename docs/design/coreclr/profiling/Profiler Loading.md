@@ -1,5 +1,5 @@
 **Note:**
-The profiler environment variables now support both `DOTNET` and `CORECLR` prefixes. The `DOTNET` prefix is the new standard, while `CORECLR` is maintained for backwards compatibility and may be removed in the future. **Do not mix both conventions in a project** as this will result in errors. New projects should use the `DOTNET` prefix.
+Starting in .NET 11, profiler environment variables now support both `DOTNET` and `CORECLR` prefixes. The `DOTNET` prefix is the new standard, while `CORECLR` is maintained for backwards compatibility and may be removed in the future. **Do not mix both conventions in a project** as this will result in errors. New projects should use the `DOTNET` prefix.
 
 ## Environment Variable Reference
 
