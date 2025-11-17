@@ -204,7 +204,7 @@ extern "C" void RhpVTableOffsetDispatch();
 
 typedef void (*InterfaceDispatchStub)();
 
-static void * g_rgDispatchStubs[CID_MAX_CACHE_SIZE_LOG2 + 1] = {
+static const void * g_rgDispatchStubs[CID_MAX_CACHE_SIZE_LOG2 + 1] = {
     (void *)&RhpInterfaceDispatch1,
     (void *)&RhpInterfaceDispatch2,
     (void *)&RhpInterfaceDispatch4,
