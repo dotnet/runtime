@@ -1509,16 +1509,16 @@ void DisAssembler::disAsmCode(BYTE*  hotCodePtr,
     assert(hotCodeSize > 0);
     if (coldCodeSize == 0)
     {
-        fprintf(disAsmFile, "************************** %hs:%hs size 0x%04" PRIxPTR " **************************\n\n",
-                disCurClassName, disCurMethodName, (uintptr_t)hotCodeSize);
+        fprintf(disAsmFile, "************************** %hs:%hs size 0x%04zx **************************\n\n",
+                disCurClassName, disCurMethodName, hotCodeSize);
 
         fprintf(disAsmFile, "Base address : %ph (RW: %ph)\n", dspAddr(hotCodePtr), dspAddr(hotCodePtrRW));
     }
     else
     {
         fprintf(disAsmFile,
-                "************************** %hs:%hs hot size 0x%04" PRIxPTR " cold size 0x%04" PRIxPTR " **************************\n\n",
-                disCurClassName, disCurMethodName, (uintptr_t)hotCodeSize, (uintptr_t)coldCodeSize);
+                "************************** %hs:%hs hot size 0x%04zx cold size 0x%04zx **************************\n\n",
+                disCurClassName, disCurMethodName, hotCodeSize, coldCodeSize);
 
         fprintf(disAsmFile, "Hot  address : %ph (RW: %ph)\n", dspAddr(hotCodePtr), dspAddr(hotCodePtrRW));
         fprintf(disAsmFile, "Cold address : %ph (RW: %ph)\n", dspAddr(coldCodePtr), dspAddr(coldCodePtrRW));
