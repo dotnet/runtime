@@ -143,59 +143,59 @@ namespace TestCastRightShift
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastASR7_byte_int(byte x)
+        static int CastASR7_byte_int(int x)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #7
-            return x >> 7;
+            return (byte)x >> 7;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastASR8_byte_int(byte x)
+        static int CastASR8_byte_int(int x)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
-            return x >> 8;
+            return (byte)x >> 8;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint CastLSR7_byte_uint(byte x)
+        static uint CastLSR7_byte_uint(int x)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}}, #7
-            return (uint)x >> 7;
+            return (uint)(byte)x >> 7;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint CastLSR8_byte_uint(byte x)
+        static uint CastLSR8_byte_uint(int x)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
-            return (uint)x >> 8;
+            return (uint)(byte)x >> 8;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastASR7_byte_long(byte x)
+        static long CastASR7_byte_long(int x)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #7
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return x >> 7;
+            return (byte)x >> 7;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastASR8_byte_long(byte x)
+        static long CastASR8_byte_long(int x)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return x >> 8;
+            return (byte)x >> 8;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastLSR7_byte_ulong(byte x)
+        static ulong CastLSR7_byte_ulong(int x)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: lsr {{x[0-9]+}}, {{x[0-9]+}}, #7
-            return (ulong)x >> 7;
+            return (ulong)(byte)x >> 7;
         }
 
         // This produces the following tree section with 2 CASTs
@@ -207,12 +207,12 @@ namespace TestCastRightShift
         // |  \--*  CAST      int <- ubyte <- int
         // |     \--*  LCL_VAR   int
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastLSR8_byte_ulong(byte x)
+        static ulong CastLSR8_byte_ulong(int x)
         {
             //ARM64-FULL-LINE: uxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: lsr {{x[0-9]+}}, {{x[0-9]+}}, #8
-            return (ulong)x >> 8;
+            return (ulong)(byte)x >> 8;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -237,93 +237,93 @@ namespace TestCastRightShift
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #7
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return x >> 7;
+            return (sbyte)x >> 7;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastASR8_sbyte_long(sbyte x)
+        static long CastASR8_sbyte_long(int x)
         {
             //ARM64-FULL-LINE: sxtb {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #8
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return x >> 8;
+            return (sbyte)x >> 8;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastASR15_ushort_int(ushort x)
+        static int CastASR15_ushort_int(int x)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #15
-            return x >> 15;
+            return (ushort)x >> 15;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastASR16_ushort_int(ushort x)
+        static int CastASR16_ushort_int(int x)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
-            return x >> 16;
+            return (ushort)x >> 16;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint CastLSR15_ushort_uint(ushort x)
+        static uint CastLSR15_ushort_uint(int x)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: lsr {{w[0-9]+}}, {{w[0-9]+}}, #15
-            return (uint)x >> 15;
+            return (uint)(ushort)x >> 15;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static uint CastLSR16_ushort_uint(ushort x)
+        static uint CastLSR16_ushort_uint(int x)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
-            return (uint)x >> 16;
+            return (uint)(ushort)x >> 16;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastASR15_ushort_long(ushort x)
+        static long CastASR15_ushort_long(int x)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #15
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return x >> 15;
+            return (ushort)x >> 15;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastASR16_ushort_long(ushort x)
+        static long CastASR16_ushort_long(int x)
         {
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, wzr
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return x >> 16;
+            return (ushort)x >> 16;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastLSR15_ushort_ulong(ushort x)
+        static ulong CastLSR15_ushort_ulong(int x)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: lsr {{x[0-9]+}}, {{x[0-9]+}}, #15
-            return (ulong)x >> 15;
+            return (ulong)(ushort)x >> 15;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static ulong CastLSR16_ushort_ulong(ushort x)
+        static ulong CastLSR16_ushort_ulong(int x)
         {
             //ARM64-FULL-LINE: uxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: mov {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: lsr {{x[0-9]+}}, {{x[0-9]+}}, #16
-            return (ulong)x >> 16;
+            return (ulong)(ushort)x >> 16;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastASR15_short_int(short x)
+        static int CastASR15_short_int(int x)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #15
-            return x >> 15;
+            return (short)x >> 15;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static int CastASR16_short_int(short x)
+        static int CastASR16_short_int(int x)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #16
@@ -331,21 +331,21 @@ namespace TestCastRightShift
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastASR15_short_long(short x)
+        static long CastASR15_short_long(int x)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #15
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return x >> 15;
+            return (short)x >> 15;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long CastASR16_short_long(short x)
+        static long CastASR16_short_long(int x)
         {
             //ARM64-FULL-LINE: sxth {{w[0-9]+}}, {{w[0-9]+}}
             //ARM64-FULL-LINE: asr {{w[0-9]+}}, {{w[0-9]+}}, #16
             //ARM64-FULL-LINE: sxtw {{x[0-9]+}}, {{w[0-9]+}}
-            return x >> 16;
+            return (short)x >> 16;
         }
     }
 }
