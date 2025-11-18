@@ -300,7 +300,6 @@ public:
 // Still TODO
 //
 // * handling irreducible loops
-// * handling funclets
 // * proper handling of BR_TABLE defaults
 // * branch inversion
 // * actual block reordering
