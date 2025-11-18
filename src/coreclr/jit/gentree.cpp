@@ -19939,6 +19939,19 @@ bool GenTree::SupportsSettingZeroFlag()
 }
 
 //------------------------------------------------------------------------
+// SupportsSettingFlagsAsCompareToZero: Returns true if we support setting
+// flags for compare to zero operations.
+//
+bool GenTree::SupportsSettingFlagsAsCompareToZero()
+{
+#if defined(TARGET_ARM64)
+    return true;
+#else
+    return false;
+#endif
+}
+
+//------------------------------------------------------------------------
 // Create: Create or retrieve a field sequence for the given field handle.
 //
 // The field sequence instance contains some cached information relevant to
