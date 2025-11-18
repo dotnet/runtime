@@ -5158,7 +5158,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 emitAttr             size           = EA_SIZE(emitActualTypeSize(tree));
 
                 if (iconNeedsReloc)
-                {   
+                {
                     // TODO-RISCV64-CQ: tune the costs.
                     // The codegen(emitIns_R_AI) is not implemented yet.
                     // Assuming that it will require two instructions auipc + addi for relocations
@@ -5211,7 +5211,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         insCountLimit = absMaxInsCount;
                     }
-                
+
                     bool     utilizeSRLI     = false;
                     int      srliShiftAmount = 0;
                     uint64_t originalImm     = imm;
@@ -5248,7 +5248,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         x = y - 31;
                     }
-                
+
                     uint32_t high32 = ((int64_t)imm >> x) & WordMask(32);
 
                     // STEP 3: Determine whether to use high32 + offset1 or high32 - offset2
@@ -5260,7 +5260,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     // load offset.
                     // See the following discussion:
                     // https://github.com/dotnet/runtime/pull/113250#discussion_r1987576070 */
-               
+
                     uint32_t offset1        = imm & WordMask((uint8_t)x);
                     uint32_t offset2        = (~(offset1 - 1)) & WordMask((uint8_t)x);
                     uint32_t offset         = offset1;
@@ -5283,18 +5283,18 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         isSubtractMode = true;
                     }
-                
+
                     if (isSubtractMode)
                     {
                         offset = offset2;
                         high32 = (high32 + 1) & WordMask(32);
                     }
-                
+
                     assert(absMaxInsCount >= 2);
                     int         numberOfInstructions = 0;
                     instruction ins[absMaxInsCount];
                     int32_t     values[absMaxInsCount];
-                
+
                     // STEP 4: Generate instructions to load high32
 
                     uint32_t upper    = (high32 >> 12) & WordMask(20);
@@ -5322,7 +5322,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     while (true)
                     {
                         uint32_t chunk = (offset >> chunkLsbPos) & chunkMask;
-                
+
                         if (chunk != 0)
                         {
                             /* We could move our 11 bit chunk window to the right for as many as the
@@ -5336,7 +5336,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 shift += maxAdditionalShift;
                                 chunk = (offset >> chunkLsbPos) & chunkMask;
                             }
-                
+
                             numberOfInstructions += 2;
                             if (numberOfInstructions > insCountLimit)
                             {
@@ -5356,9 +5356,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     {
                         numberOfInstructions += 1;
                     }
-                
+
                     // STEP 6: Determine whether to use emitDataConst or emit generated instructions
-                
+
                     if (numberOfInstructions <= insCountLimit)
                     {
                         if (utilizeSRLI)
