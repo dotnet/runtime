@@ -38,12 +38,12 @@ public class TestClass
 		T t = (T) Activator.CreateInstance(typeof(U));
 	}
 
-	private static void CaseClassUToTWrapper<T,U>()
+	private static void CaseClassUToTWrapper<T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] U>()
 	{
 		UnboxUToTInternal<T,U>();
 	}
 
-	public static bool UnboxUToT<T,U>(bool expected)
+	public static bool UnboxUToT<T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] U>(bool expected)
 	{
 		try
 		{
