@@ -30,6 +30,7 @@ const char* emitVectorRegName(regNumber reg);
 #endif // DEBUG
 
 void emitIns_J_cond_la(instruction ins, BasicBlock* dst, regNumber reg1 = REG_R0, regNumber reg2 = REG_R0);
+void emitIns_J(instruction ins, BasicBlock* dst);
 
 void emitLoadImmediate(emitAttr attr, regNumber reg, ssize_t imm);
 
@@ -61,6 +62,8 @@ private:
 bool emitInsIsLoad(instruction ins);
 bool emitInsIsStore(instruction ins);
 bool emitInsIsLoadOrStore(instruction ins);
+
+void emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1 = REG_ZERO, regNumber reg2 = REG_ZERO);
 
 // RVC emitters
 bool tryEmitCompressedIns_R_R_R(
@@ -138,9 +141,7 @@ unsigned emitOutput_JTypeInstr(BYTE* dst, instruction ins, regNumber rd, unsigne
 BYTE* emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRc(BYTE* dst, const instrDesc* id, instruction* ins);
 BYTE* emitOutputInstr_OptsRl(BYTE* dst, instrDesc* id, instruction* ins);
-BYTE* emitOutputInstr_OptsJalr(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins);
-BYTE* emitOutputInstr_OptsJCond(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
-BYTE* emitOutputInstr_OptsJ(BYTE* dst, instrDesc* id, const insGroup* ig, instruction* ins);
+BYTE* emitOutputInstr_OptsJump(BYTE* dst, instrDescJmp* jmp, const insGroup* ig, instruction* ins);
 BYTE* emitOutputInstr_OptsC(BYTE* dst, instrDesc* id, const insGroup* ig, size_t* size);
 BYTE* emitOutputInstr_OptsI(BYTE* dst, instrDesc* id, instruction* ins);
 
@@ -285,12 +286,6 @@ inline static bool isFloatReg(regNumber reg)
 }
 
 /************************************************************************/
-/*                   Output target-independent instructions             */
-/************************************************************************/
-
-void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
-
-/************************************************************************/
 /*           The public entry points to output instructions             */
 /************************************************************************/
 
@@ -345,8 +340,6 @@ void emitIns_R_C(instruction ins, emitAttr attr, regNumber destReg, regNumber ad
 
 void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
 
-void emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
-
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
 void emitIns_R_AI(instruction  ins,
@@ -357,5 +350,38 @@ void emitIns_R_AI(instruction  ins,
 unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id);
 
 unsigned get_curTotalCodeSize(); // bytes of code
+
+//------------------------------------------------------------------------
+// emitIsCmpJump: checks if it's a compare and jump (branch)
+//
+// Arguments:
+//    jmp - the instruction to check
+//
+inline static bool emitIsCmpJump(instrDesc* jmp)
+{
+    return emitIsCmpJump(jmp->idIns());
+}
+
+inline static bool emitIsCmpJump(instruction ins)
+{
+    return (ins == INS_beqz) || (ins == INS_bnez) || (ins == INS_bne) || (ins == INS_beq) || (ins == INS_blt) ||
+           (ins == INS_bltu) || (ins == INS_bge) || (ins == INS_bgeu);
+}
+
+//------------------------------------------------------------------------
+// emitIsUncondJump: checks if it's an unconditional jump
+//
+// Arguments:
+//    jmp - the instruction to check
+//
+inline static bool emitIsUncondJump(instrDesc* jmp)
+{
+    return emitIsUncondJump(jmp->idIns());
+}
+
+inline static bool emitIsUncondJump(instruction ins)
+{
+    return (ins == INS_j) || (ins == INS_jal);
+}
 
 #endif // TARGET_RISCV64

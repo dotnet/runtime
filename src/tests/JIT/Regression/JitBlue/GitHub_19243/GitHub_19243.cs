@@ -3,6 +3,9 @@
 //
 // This test exposed a bug with the ordering of evaluation of a cpblk.
 
+
+namespace GitHub_19243_ro;
+
 using Xunit;
 struct S0
 {
@@ -38,6 +41,7 @@ public class GitHub_19243
         return ref s_37;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

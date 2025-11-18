@@ -4103,7 +4103,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             goto Exit;
         }
 
-        if (doingFuncletUnwind && pThis->GetNextExInfo() != NULL && GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()) > (TADDR)pTopExInfo)
+        if (doingFuncletUnwind && pThis->GetNextExInfo() != NULL && pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD)
         {
             // Detected collided unwind
             if ((pThis->GetNextExInfo()->m_passNumber == 1) ||
