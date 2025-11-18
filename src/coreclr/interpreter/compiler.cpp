@@ -2012,6 +2012,7 @@ void InterpCompiler::CreateILVars()
             assert(interpType == InterpTypeO);
             assert(!hasParamArg); // We don't support both a param arg and a this pointer shadow copy
             m_paramArgIndex = m_numILVars; // The param arg is stored after the IL locals in the m_pVars array
+            INTERP_DUMP("Set m_paramArgIndex to %d for hasThisPointerShadowCopyAsParamIndex\n", m_paramArgIndex);
         }
 
         int thisVar = hasThisPointerShadowCopyAsParamIndex ? m_paramArgIndex : 0;
@@ -2029,7 +2030,7 @@ void InterpCompiler::CreateILVars()
 
     if (hasContinuationArg)
     {
-        m_continuationArgIndex = hasParamArg ? m_numILVars + 1 : m_numILVars;
+        m_continuationArgIndex = (hasParamArg || hasThisPointerShadowCopyAsParamIndex) ? m_numILVars + 1 : m_numILVars;
         CreateNextLocalVar(m_continuationArgIndex, NULL, InterpTypeO, &offset);
         INTERP_DUMP("alloc continuation var(var %d) to offset %d\n", m_continuationArgIndex, m_pVars[m_continuationArgIndex].offset);
     }
@@ -2068,12 +2069,6 @@ void InterpCompiler::CreateILVars()
         index++;
     }
 
-    if (hasContinuationArg)
-    {
-        assert(index == m_continuationArgIndex);
-        index++;
-    }
-
     if (hasThisPointerShadowCopyAsParamIndex)
     {
         // This is the allocation of memory space for the shadow copy of the this pointer, operations like starg 0, and ldarga 0 will operate on this copy
@@ -2082,6 +2077,12 @@ void InterpCompiler::CreateILVars()
         m_shadowThisVar = index;
         INTERP_DUMP("alloc shadow this var (var %d) to offset %d\n", m_shadowThisVar, m_pVars[0].offset);
         index++; // We need to account for the shadow copy in the variable index
+    }
+
+    if (hasContinuationArg)
+    {
+        assert(index == m_continuationArgIndex);
+        index++;
     }
 
     if (m_isAsyncMethodWithContextSaveRestore)
