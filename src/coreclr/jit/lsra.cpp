@@ -2723,6 +2723,7 @@ void LinearScan::setFrameType()
         // We reserve REG_SAVED_LOCALLOC_SP to store SP on entry for stack unwinding
         compiler->codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
         JITDUMP("  Reserved REG_SAVED_LOCALLOC_SP (%s) due to localloc\n", getRegName(REG_SAVED_LOCALLOC_SP));
+        removeMask |= RBM_SAVED_LOCALLOC_SP.GetIntRegSet();
     }
 #endif // TARGET_ARM
 
