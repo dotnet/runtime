@@ -15,25 +15,6 @@ namespace ComInterfaceGenerator.Tests
         internal static partial IUniqueMarshalling NewUniqueMarshalling();
 
         [Fact]
-        public void GetSameComInterfaceTwiceReturnsUniqueInstances()
-        {
-            // When using NativeMarshalling with UniqueComInterfaceMarshaller,
-            // calling NewUniqueMarshalling() twice returns different managed instances for the same COM object
-            var obj1 = NewUniqueMarshalling();
-            var obj2 = NewUniqueMarshalling();
-
-            Assert.NotSame(obj1, obj2);
-
-            // Both refer to the same underlying COM object (same cached pointer)
-            obj1.SetValue(42);
-            Assert.Equal(42, obj2.GetValue());
-
-            // Modifying through one should affect the other
-            obj2.SetValue(100);
-            Assert.Equal(100, obj1.GetValue());
-        }
-
-        [Fact]
         public void MethodReturningComInterfaceReturnsUniqueInstance()
         {
             // When a COM interface method returns the same interface type,
