@@ -39,8 +39,7 @@ namespace System.IO.Compression
                 throw new ArgumentException(SR.ZstandardDictionary_EmptyBuffer, nameof(buffer));
             }
 
-            // TODO: make this data being referenced by the native dict structures
-            // and avoid them having their own copies
+            // since the data needs to be pinned for the lifetime of the dictionary, allocate directly to the pinned heap
             byte[] data = GC.AllocateArray<byte>(buffer.Length, pinned: true);
             buffer.CopyTo(data);
 
@@ -56,7 +55,7 @@ namespace System.IO.Compression
                     {
                         throw new IOException(SR.ZstandardDictionary_CreateCompressionFailed);
                     }
-                    compressionDict._pinnedData = GCHandle.Alloc(data, GCHandleType.Pinned);
+                    compressionDict._pinnedData = new PinnedGCHandle<byte[]>(data);
 
                     SafeZstdDDictHandle decompressionDict = Interop.Zstd.ZSTD_createDDict_byReference(dictData, (nuint)data.Length);
 
@@ -65,7 +64,7 @@ namespace System.IO.Compression
                         compressionDict.Dispose();
                         throw new IOException(SR.ZstandardDictionary_CreateDecompressionFailed);
                     }
-                    decompressionDict._pinnedData = GCHandle.Alloc(data, GCHandleType.Pinned);
+                    decompressionDict._pinnedData = new PinnedGCHandle<byte[]>(data);
 
                     return new ZstandardDictionary(compressionDict, decompressionDict, data);
                 }
@@ -90,6 +89,7 @@ namespace System.IO.Compression
                 throw new ArgumentException(SR.ZstandardDictionary_EmptyBuffer, nameof(samples));
             }
 
+            // this requirement is enforced by zstd native library, probably due to the underlying algorithm design
             if (sampleLengths.Length < 5)
             {
                 throw new ArgumentException(SR.Format(SR.ZstandardDictionary_Train_MinimumSampleCount, 5), nameof(sampleLengths));

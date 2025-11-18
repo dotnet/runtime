@@ -206,8 +206,7 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The stream is closed.</exception>
         public override void WriteByte(byte value)
         {
-            Span<byte> singleByte = stackalloc byte[1] { value };
-            Write(singleByte);
+            Write([value]);
         }
 
         /// <summary>Asynchronously writes compressed bytes to the underlying stream from the specified array.</summary>
