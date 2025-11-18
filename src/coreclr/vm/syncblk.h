@@ -444,7 +444,7 @@ class SyncBlock
   public:
     SyncBlock(DWORD indx)
         : m_Lock((OBJECTHANDLE)NULL)
-        , m_thinLock(0)
+        , m_thinLock()
         , m_dwSyncIndex(indx)
 #ifdef FEATURE_METADATA_UPDATER
         , m_pEnCInfo(PTR_NULL)
@@ -966,13 +966,6 @@ struct cdac_data<ObjHeader>
 };
 
 typedef DPTR(class ObjHeader) PTR_ObjHeader;
-
-
-#define ENTER_SPIN_LOCK(pOh)        \
-    pOh->EnterSpinLock();
-
-#define LEAVE_SPIN_LOCK(pOh)        \
-    pOh->ReleaseSpinLock();
 
 #ifdef TARGET_X86
 #include <poppack.h>

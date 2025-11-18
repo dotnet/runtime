@@ -438,6 +438,7 @@ namespace Internal.JitInterface
                                                    CORINFO_GENERICS_CTXT_FROM_METHODDESC |
                                                    CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
         CORINFO_GENERICS_CTXT_KEEP_ALIVE = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
+        CORINFO_ASYNC_SAVE_CONTEXTS = 0x00000200, // Runtime async method must save and restore contexts
     }
 
     // These are used to detect array methods as NamedIntrinsic in JIT importer,
@@ -549,6 +550,7 @@ namespace Internal.JitInterface
         CORINFO_ACCESS_NONNULL = 0x0004, // Instance is guaranteed non-null
 
         CORINFO_ACCESS_LDFTN = 0x0010, // Accessed via ldftn
+        CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE = 0x0020, // Method might be attributed with UnmanagedCallersOnlyAttribute.
 
         // Field access flags
         CORINFO_ACCESS_GET = 0x0100, // Field get (ldfld)
