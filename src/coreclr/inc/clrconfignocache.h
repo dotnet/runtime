@@ -87,7 +87,7 @@ public:
                 return {};
             }
 
-            // Priority order is DOTNET_, CORECLR_, and then COMPlus_.
+            // Priority order is DOTNET_, then (CORECLR_ or COMPlus_).
             strcpy_s(nameBuffer, ARRAY_SIZE(nameBuffer), DOTNET_PREFIX_A);
             fallbackPrefix = coreclrFallbackPrefix ? CORECLR_PREFIX_A : COMPLUS_PREFIX_A;
         }
