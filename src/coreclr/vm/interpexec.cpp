@@ -3971,14 +3971,14 @@ do                                                                      \
                                 ip += 4;
                                 goto CALL_INTERP_METHOD;
                             }
-                            ip += 4;
                             LOCAL_VAR(ip[1], void*) = helperFtn(OBJECTREFToObject(exception));
+                            ip += 4;
                         }
                     }
 
                     // No exception needed. Do nothing.
-                    ip += 4;
                     LOCAL_VAR(ip[1], void*) = NULL;
+                    ip += 4;
                     break;
                 }
 

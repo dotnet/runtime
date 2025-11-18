@@ -5194,6 +5194,30 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo)
     PushStackType(StackTypeI4, NULL);
     m_pStackPointer--;
     m_pLastNewIns->SetDVar(m_pStackPointer[0].var);
+
+    // Once we've resumed, if the return type is a primitive integral type which
+    // isn't an I4/U4 but is represented as such on the evaluation stack, sign/zero
+    // extend it to the proper size.
+    switch (callInfo.sig.retType)
+    {
+        case CORINFO_TYPE_UBYTE:
+        case CORINFO_TYPE_BOOL:
+            EmitConv(&m_pStackPointer[-1], StackTypeI4, INTOP_CONV_U1_I4);
+            break;
+        case CORINFO_TYPE_BYTE:
+            EmitConv(&m_pStackPointer[-1], StackTypeI4, INTOP_CONV_I1_I4);
+            break;
+        case CORINFO_TYPE_USHORT:
+        case CORINFO_TYPE_CHAR:
+            EmitConv(&m_pStackPointer[-1], StackTypeI4, INTOP_CONV_U2_I4);
+            break;
+        case CORINFO_TYPE_SHORT:
+            EmitConv(&m_pStackPointer[-1], StackTypeI4, INTOP_CONV_I2_I4);
+            break;
+        default:
+            // Other types do not need extension
+            break;
+    }
 }
 
 InterpIntervalMapEntry InterpCompiler::ComputeNextIntervalMapEntry_ForVars(const TArray<int32_t, MemPoolAllocator> &vars, int32_t *pNextIndex)
