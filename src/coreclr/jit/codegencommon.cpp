@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfo.h"
 #include "emit.h"
 
-#ifndef JIT32_GCENCODER
+#if EMIT_GENERATE_GCINFO && !defined(JIT32_GCENCODER)
 #include "gcinfoencoder.h"
 #endif
 
@@ -58,12 +58,17 @@ void CodeGenInterface::setFramePointerRequiredEH(bool value)
 #endif // JIT32_GCENCODER
 }
 
-/*****************************************************************************/
 CodeGenInterface* getCodeGenerator(Compiler* comp)
 {
     return new (comp, CMK_Codegen) CodeGen(comp);
 }
 
+// TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
+// 1. Everything shared by all codegen backends (incl. WASM) stays here.
+// 2. Everything else goes into codegenlinear.cpp.
+// 3. codegenlinear.cpp gets renamed to codegennative.cpp.
+//
+#ifndef TARGET_WASM
 NodeInternalRegisters::NodeInternalRegisters(Compiler* comp)
     : m_table(comp->getAllocator(CMK_LSRA))
 {
@@ -170,16 +175,6 @@ unsigned NodeInternalRegisters::Count(GenTree* tree, regMaskTP mask)
     return m_table.Lookup(tree, &regs) ? genCountBits(regs & mask) : 0;
 }
 
-// CodeGen constructor
-CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
-    : gcInfo(theCompiler)
-    , regSet(theCompiler, gcInfo)
-    , internalRegisters(theCompiler)
-    , compiler(theCompiler)
-    , treeLifeUpdater(nullptr)
-{
-}
-
 #if defined(TARGET_XARCH)
 void CodeGenInterface::CopyRegisterInfo()
 {
@@ -195,8 +190,19 @@ void CodeGenInterface::CopyRegisterInfo()
     rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
 }
 #endif // TARGET_XARCH
+#endif // !TARGET_WASM
 
-/*****************************************************************************/
+// CodeGen constructor
+CodeGenInterface::CodeGenInterface(Compiler* theCompiler)
+    : gcInfo(theCompiler)
+    , regSet(theCompiler, gcInfo)
+#if HAS_FIXED_REGISTER_SET
+    , internalRegisters(theCompiler)
+#endif // HAS_FIXED_REGISTER_SET
+    , compiler(theCompiler)
+    , treeLifeUpdater(nullptr)
+{
+}
 
 CodeGen::CodeGen(Compiler* theCompiler)
     : CodeGenInterface(theCompiler)
@@ -237,11 +243,6 @@ CodeGen::CodeGen(Compiler* theCompiler)
 #endif // defined(TARGET_XARCH)
 #endif // DEBUG
 
-#ifdef TARGET_AMD64
-    // This will be set before final frame layout.
-    compiler->compVSQuirkStackPaddingNeeded = 0;
-#endif // TARGET_AMD64
-
     compiler->genCallSite2DebugInfoMap = nullptr;
 
     /* Assume that we not fully interruptible */
@@ -262,6 +263,7 @@ CodeGen::CodeGen(Compiler* theCompiler)
 #endif // TARGET_ARM64
 }
 
+#ifndef TARGET_WASM
 #if defined(TARGET_X86) || defined(TARGET_ARM)
 
 //---------------------------------------------------------------------
@@ -654,6 +656,7 @@ bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
     return op1Skip->OperIs(GT_LCL_VAR) && op2Skip->OperIs(GT_LCL_VAR) &&
            (op1Skip->AsLclVar()->GetLclNum() == op2Skip->AsLclVar()->GetLclNum());
 }
+#endif // !TARGET_WASM
 
 // The given lclVar is either going live (being born) or dying.
 // It might be both going live and dying (that is, it is a dead store) under MinOpts.
@@ -661,6 +664,7 @@ bool CodeGen::genIsSameLocalVar(GenTree* op1, GenTree* op2)
 // inline
 void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bool isDying DEBUGARG(GenTree* tree))
 {
+#if EMIT_GENERATE_GCINFO // The regset being updated here is only needed for codegen-level GCness tracking
     regMaskTP regMask = genGetRegMask(varDsc);
 
 #ifdef DEBUG
@@ -690,8 +694,10 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
         assert(varDsc->IsAlwaysAliveInMemory() || ((regSet.GetMaskVars() & regMask) == 0));
         regSet.AddMaskVars(regMask);
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
+#ifndef TARGET_WASM
 //----------------------------------------------------------------------
 // compHelperCallKillSet: Gets a register mask that represents the kill set for a helper call.
 // Not all JIT Helper calls follow the standard ABI on the target architecture.
@@ -1084,6 +1090,7 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
     }
 #endif // !FEATURE_FIXED_OUT_ARGS
 }
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // genCreateAddrMode:
@@ -1525,6 +1532,7 @@ FOUND_AM:
     return true;
 }
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genEmitCallWithCurrentGC:
 //   Emit a call with GC information captured from current GC information.
@@ -1552,14 +1560,11 @@ void CodeGen::genExitCode(BasicBlock* block)
        Note that this may result in a duplicate IPmapping entry, and
        that this is ok  */
 
-    // For non-optimized debuggable code, there is only one epilog.
     genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
-
-    bool jmpEpilog = block->HasFlag(BBF_HAS_JMP);
 
 #ifdef DEBUG
     // For returnining epilogs do some validation that the GC info looks right.
-    if (!jmpEpilog)
+    if (!block->HasFlag(BBF_HAS_JMP))
     {
         if (compiler->compMethodReturnsRetBufAddr())
         {
@@ -1583,7 +1588,7 @@ void CodeGen::genExitCode(BasicBlock* block)
 
     if (compiler->getNeedsGSSecurityCookie())
     {
-        genEmitGSCookieCheck(jmpEpilog);
+        genEmitGSCookieCheck(block->HasFlag(BBF_HAS_JMP));
     }
 
     genReserveEpilog(block);
@@ -2201,6 +2206,8 @@ void CodeGen::genEmitUnwindDebugGCandEH()
 
     genReportRichDebugInfo();
 
+    genReportAsyncDebugInfo();
+
     /* Finalize the Local Var info in terms of generated code */
 
     genSetScopeInfo();
@@ -2506,6 +2513,54 @@ CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInf
         default:
             unreached();
     }
+}
+
+// -----------------------------------------------------------------------------
+// genGetGSCookieTempRegs:
+//   Get a mask of registers to use for the GS cookie check generated in a
+//   block.
+//
+// Parameters:
+//   tailCall - Whether the block is a tailcall
+//
+// Returns:
+//   Mask of all the registers that can be used. Some targets may need more
+//   than one register.
+//
+regMaskTP CodeGenInterface::genGetGSCookieTempRegs(bool tailCall)
+{
+#ifdef TARGET_AMD64
+    if (tailCall)
+    {
+        // If we are tailcalling then arg regs cannot be used. For both SysV and winx64 that
+        // leaves rax, r10, r11. rax and r11 are used for indirection cells, so we pick r10.
+        return RBM_R10;
+    }
+    // Otherwise on x64 (win-x64, SysV and Swift) r9 is never used for return values
+    return RBM_R9;
+#elif TARGET_X86
+    if (tailCall)
+    {
+        // For tailcall we may need ecx and edx for args. We could use eax, but
+        // leave it free in case the tailcall needs something for the target.
+        // Since this is only for explicit tailcalls or CEE_JMP we can just use
+        // a callee save.
+        return RBM_ESI;
+    }
+
+    // For regular calls we have only eax, ecx and edx available as volatile
+    // registers, and all of them may be used for return values (longs + async continuation).
+    if (compiler->compIsAsync())
+    {
+        // Just use a callee save for this rare async + gs cookie check case.
+        return RBM_ESI;
+    }
+
+    // Outside async ecx is not used for returns.
+    return RBM_ECX;
+#else
+    return RBM_GSCOOKIE_TMP;
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -5604,6 +5659,53 @@ unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
     return jmpTabBase;
 }
 
+//----------------------------------------------------------------------------------
+// genEmitAsyncResumeInfoTable:
+//   Register the singleton async resumption info table if not registered
+//   before. Return information about it.
+//
+// Arguments:
+//    dataSection - [out] The information about the registered data section
+//
+// Return Value:
+//    Base offset of the async resumption info table
+//
+UNATIVE_OFFSET CodeGen::genEmitAsyncResumeInfoTable(emitter::dataSection** dataSection)
+{
+    assert(compiler->compSuspensionPoints != nullptr);
+
+    if (genAsyncResumeInfoTable == nullptr)
+    {
+        GetEmitter()->emitAsyncResumeTable((unsigned)compiler->compSuspensionPoints->size(),
+                                           &genAsyncResumeInfoTableOffset, &genAsyncResumeInfoTable);
+    }
+
+    *dataSection = genAsyncResumeInfoTable;
+    return genAsyncResumeInfoTableOffset;
+}
+
+//----------------------------------------------------------------------------------
+// genEmitAsyncResumeInfo:
+//   Obtain a pseudo-CORINFO_FIELD_HANDLE describing how to access the async
+//   resume information for a specific state number.
+//
+// Arguments:
+//    stateNum - The state
+//
+// Return Value:
+//    CORINFO_FIELD_HANDLE encoding access of read-only data at a specific
+//    offset.
+//
+CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
+{
+    assert(compiler->compSuspensionPoints != nullptr);
+    assert(stateNum < compiler->compSuspensionPoints->size());
+
+    emitter::dataSection* dataSection;
+    UNATIVE_OFFSET        baseOffs = genEmitAsyncResumeInfoTable(&dataSection);
+    return compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(emitter::dataAsyncResumeInfo));
+}
+
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
 //
@@ -5790,6 +5892,7 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
+#endif // !TARGET_WASM
 
 //-----------------------------------------------------------------------------------
 // IsMultiRegReturnedType: Returns true if the type is returned in multiple registers
@@ -5873,6 +5976,7 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
 #endif // TARGET_ARM64
 }
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------------------------------ //
 // getFirstArgWithStackSlot - returns the first argument with stack slot on the caller's frame.
 //
@@ -6072,6 +6176,7 @@ void CodeGen::genPopRegs(regMaskTP regs, regMaskTP byrefRegs, regMaskTP noRefReg
 
 #endif // FEATURE_FIXED_OUT_ARGS
 }
+#endif // !TARGET_WASM
 
 #ifdef DEBUG
 
@@ -6100,14 +6205,19 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, const IPmappingDsc* ipMappin
         case IPmappingDscKind::Normal:
             const ILLocation& loc = ipMapping->ipmdLoc;
             Compiler::eeDispILOffs(loc.GetOffset());
-            if (loc.IsStackEmpty())
+            if ((loc.GetSourceTypes() & ICorDebugInfo::STACK_EMPTY) != 0)
             {
                 printf(" STACK_EMPTY");
             }
 
-            if (loc.IsCall())
+            if ((loc.GetSourceTypes() & ICorDebugInfo::CALL_INSTRUCTION) != 0)
             {
                 printf(" CALL_INSTRUCTION");
+            }
+
+            if ((loc.GetSourceTypes() & ICorDebugInfo::ASYNC) != 0)
+            {
+                printf(" ASYNC");
             }
 
             break;
@@ -6231,6 +6341,7 @@ void CodeGen::genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di,
 #endif // DEBUG
 }
 
+#ifndef TARGET_WASM
 /*****************************************************************************/
 
 void CodeGen::genEnsureCodeEmitted(const DebugInfo& di)
@@ -6342,15 +6453,15 @@ void CodeGen::genIPmappingGen()
 
         // For managed return values we store all calls. Keep both in this case
         // too.
-        if (((prev->ipmdKind == IPmappingDscKind::Normal) && (prev->ipmdLoc.IsCall())) ||
-            ((it->ipmdKind == IPmappingDscKind::Normal) && (it->ipmdLoc.IsCall())))
+        if (((prev->ipmdKind == IPmappingDscKind::Normal) && prev->ipmdLoc.IsCallInstruction()) ||
+            ((it->ipmdKind == IPmappingDscKind::Normal) && it->ipmdLoc.IsCallInstruction()))
         {
             ++it;
             continue;
         }
 
         // Otherwise report the higher offset unless the previous mapping is a
-        // label.
+        // label coming from IL.
         if (prev->ipmdIsLabel)
         {
             it = compiler->genIPmappings.erase(it);
@@ -6443,7 +6554,7 @@ void CodeGen::genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* 
         fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
         fprintf(file, "\"MethodID\":%lld,", (int64_t)context->GetCallee());
         fprintf(file, "\"ILOffset\":%u,", context->GetLocation().GetOffset());
-        fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().EncodeSourceTypes());
+        fprintf(file, "\"LocationFlags\":%u,", (uint32_t)context->GetLocation().GetSourceTypes());
         fprintf(file, "\"ExactILOffset\":%u,", context->GetActualCallOffset());
         auto append = [&]() {
             char        buffer[256];
@@ -6608,7 +6719,7 @@ void CodeGen::genReportRichDebugInfo()
         mapping->NativeOffset = richMapping.nativeLoc.CodeOffset(GetEmitter());
         mapping->Inlinee      = richMapping.debugInfo.GetInlineContext()->GetOrdinal();
         mapping->ILOffset     = richMapping.debugInfo.GetLocation().GetOffset();
-        mapping->Source       = richMapping.debugInfo.GetLocation().EncodeSourceTypes();
+        mapping->Source       = richMapping.debugInfo.GetLocation().GetSourceTypes();
 
         mappingIndex++;
     }
@@ -6652,6 +6763,73 @@ void CodeGen::genAddRichIPMappingHere(const DebugInfo& di)
     mapping.nativeLoc.CaptureLocation(GetEmitter());
     mapping.debugInfo = di;
     compiler->genRichIPmappings.push_back(mapping);
+}
+
+//------------------------------------------------------------------------
+// genReportAsyncDebugInfo:
+//   Report async debug info back to EE.
+//
+void CodeGen::genReportAsyncDebugInfo()
+{
+    if (!compiler->opts.compDbgInfo)
+    {
+        return;
+    }
+
+    jitstd::vector<ICorDebugInfo::AsyncSuspensionPoint>* suspPoints = compiler->compSuspensionPoints;
+    if (suspPoints == nullptr)
+    {
+        return;
+    }
+
+    for (size_t i = 0; i < suspPoints->size(); i++)
+    {
+        uint32_t diagNativeOffset = 0;
+        if (genAsyncResumeInfoTable != nullptr)
+        {
+            emitLocation& emitLoc = ((emitLocation*)genAsyncResumeInfoTable->dsCont)[i];
+            if (emitLoc.Valid())
+            {
+                diagNativeOffset = emitLoc.CodeOffset(GetEmitter());
+            }
+        }
+
+        (*suspPoints)[i].DiagnosticNativeOffset = diagNativeOffset;
+    }
+
+    ICorDebugInfo::AsyncInfo asyncInfo;
+    asyncInfo.NumSuspensionPoints = static_cast<uint32_t>(suspPoints->size());
+
+    ICorDebugInfo::AsyncSuspensionPoint* hostSuspensionPoints = static_cast<ICorDebugInfo::AsyncSuspensionPoint*>(
+        compiler->info.compCompHnd->allocateArray(suspPoints->size() * sizeof(ICorDebugInfo::AsyncSuspensionPoint)));
+    for (size_t i = 0; i < suspPoints->size(); i++)
+        hostSuspensionPoints[i] = (*suspPoints)[i];
+
+    jitstd::vector<ICorDebugInfo::AsyncContinuationVarInfo>* asyncVars = compiler->compAsyncVars;
+    ICorDebugInfo::AsyncContinuationVarInfo* hostVars = static_cast<ICorDebugInfo::AsyncContinuationVarInfo*>(
+        compiler->info.compCompHnd->allocateArray(asyncVars->size() * sizeof(ICorDebugInfo::AsyncContinuationVarInfo)));
+    for (size_t i = 0; i < asyncVars->size(); i++)
+        hostVars[i] = (*asyncVars)[i];
+
+    compiler->info.compCompHnd->reportAsyncDebugInfo(&asyncInfo, hostSuspensionPoints, hostVars,
+                                                     static_cast<uint32_t>(asyncVars->size()));
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("Reported async suspension points:\n");
+        for (size_t i = 0; i < suspPoints->size(); i++)
+        {
+            printf("  [%zu] NumAsyncVars = %u\n", i, hostSuspensionPoints[i].NumContinuationVars);
+        }
+
+        printf("Reported async vars:\n");
+        for (size_t i = 0; i < asyncVars->size(); i++)
+        {
+            printf("  [%zu] VarNumber = %u, Offset = %x\n", i, hostVars[i].VarNumber, hostVars[i].Offset);
+        }
+    }
+#endif
 }
 
 /*============================================================================
@@ -6862,7 +7040,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     // Reason for not materializing Leave callback as a GT_PROF_HOOK node after GT_RETURN:
     // In flowgraph and other places assert that the last node of a block marked as
-    // BBJ_RETURN is either a GT_RETURN or GT_JMP or a tail call.  It would be nice to
+    // BBJ_RETURN is either a GT_RETURN, GT_JMP or a tail call.  It would be nice to
     // maintain such an invariant irrespective of whether profiler hook needed or not.
     // Also, there is not much to be gained by materializing it as an explicit node.
     //
@@ -7822,12 +8000,14 @@ void CodeGen::genStackPointerCheck(bool      doStackPointerCheck,
 }
 
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
+#endif // !TARGET_WASM
 
 unsigned CodeGenInterface::getCurrentStackLevel() const
 {
     return genStackLevel;
 }
 
+#ifndef TARGET_WASM
 //-----------------------------------------------------------------------------
 // genPoisonFrame: Generate code that places a recognizable value into address exposed variables.
 //
@@ -8070,3 +8250,4 @@ void CodeGen::genCodeForSwiftErrorReg(GenTree* tree)
     genProduceReg(tree);
 }
 #endif // SWIFT_SUPPORT
+#endif // !TARGET_WASM

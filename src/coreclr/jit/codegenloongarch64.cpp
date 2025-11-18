@@ -2279,6 +2279,19 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    GetEmitter()->emitIns_R_C(INS_bl, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+                              genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1), 0);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
 // genLockedInstructions: Generate code for a GT_XADD or GT_XCHG node.
 //
 // Arguments:
@@ -4367,6 +4380,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld_d, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -4380,7 +4397,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_IL_OFFSET:
-            // Do nothing; these nodes are simply markers for debug info.
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         default:
@@ -4464,7 +4485,10 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 // genEmitGSCookieCheck: Generate code to check that the GS cookie
 // wasn't thrashed by a buffer overrun.
 //
-void CodeGen::genEmitGSCookieCheck(bool pushReg)
+// Parameters:
+//   tailCall - Whether or not this is being emitted for a tail call
+//
+void CodeGen::genEmitGSCookieCheck(bool tailCall)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
@@ -4474,8 +4498,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     // We don't have any IR node representing this check, so LSRA can't communicate registers
     // for us to use.
 
-    regNumber regGSConst = REG_GSCOOKIE_TMP_0;
-    regNumber regGSValue = REG_GSCOOKIE_TMP_1;
+    regMaskTP tmpRegs    = genGetGSCookieTempRegs(tailCall);
+    regNumber regGSConst = genFirstRegNumFromMaskAndToggle(tmpRegs);
+    regNumber regGSValue = genFirstRegNumFromMaskAndToggle(tmpRegs);
 
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
@@ -5691,12 +5716,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
 
-        // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
+        // The epilog may use and trash REG_GSCOOKIE_TMP. Make sure we have no
         // non-standard args that may be trash if this is a tailcall.
         if (compiler->getNeedsGSSecurityCookie())
         {
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
+            trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
         }
 
         for (CallArg& arg : call->gtArgs.Args())

@@ -33,14 +33,6 @@ c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 
 int32_t CryptoNative_EnsureOpenSslInitialized(void);
 
-#ifdef NEED_OPENSSL_1_0
-static void EnsureLibSsl10Initialized(void)
-{
-    SSL_library_init();
-    SSL_load_error_strings();
-}
-#endif
-
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
 // redirect all SSL_CTX_set_options and SSL_set_options calls via dynamic shims
 // to work around ABI breaking change between 1.1 and 3.0
@@ -93,26 +85,6 @@ static char* g_emptyAlpn = "";
 
 static void DetectCiphersuiteConfiguration(void)
 {
-#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-
-    if (API_EXISTS(SSL_state))
-    {
-        // For portable builds NEED_OPENSSL_1_1 is always set.
-        // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
-        g_config_specified_ciphersuites = 1;
-        return;
-    }
-
-#endif
-
-    // This routine will always produce g_config_specified_ciphersuites = 1 on OpenSSL 1.0.x,
-    // so if we're building direct for 1.0.x (the only time NEED_OPENSSL_1_1 is undefined) then
-    // just omit all the code here.
-    //
-    // The method uses OpenSSL 1.0.x API, except for the fallback function SSL_CTX_config, to
-    // make the portable version easier.
-#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
-
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
     assert(ctx != NULL);
@@ -164,31 +136,11 @@ static void DetectCiphersuiteConfiguration(void)
     }
 
     SSL_CTX_free(ctx);
-
-#else
-
-    // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
-    g_config_specified_ciphersuites = 1;
-
-#endif
 }
 
 void CryptoNative_EnsureLibSslInitialized(void)
 {
     CryptoNative_EnsureOpenSslInitialized();
-
-    // If portable, call the 1.0 initializer when needed.
-    // If 1.0, call it statically.
-    // In 1.1 no action is required, since EnsureOpenSslInitialized does both libraries.
-#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
-    if (API_EXISTS(SSL_state))
-    {
-        EnsureLibSsl10Initialized();
-    }
-#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-    EnsureLibSsl10Initialized();
-#endif
-
     DetectCiphersuiteConfiguration();
 }
 
@@ -242,57 +194,10 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
     return ctx;
 }
 
-/*
-Openssl supports setting ecdh curves by default from version 1.1.0.
-For lower versions, this is the recommended approach.
-Returns 1 on success, 0 on failure.
-*/
-static long TrySetECDHNamedCurve(SSL_CTX* ctx)
-{
-#ifdef NEED_OPENSSL_1_0
-    int64_t version = CryptoNative_OpenSslVersionNumber();
-    long result = 0;
-
-    if (version >= OPENSSL_VERSION_1_1_0_RTM)
-    {
-        // OpenSSL 1.1+ automatically set up ECDH
-        result = 1;
-    }
-    else if (version >= OPENSSL_VERSION_1_0_2_RTM)
-    {
-#ifndef SSL_CTRL_SET_ECDH_AUTO
-#define SSL_CTRL_SET_ECDH_AUTO 94
-#endif
-        // Expanded form of SSL_CTX_set_ecdh_auto(ctx, 1)
-        result = SSL_CTX_ctrl(ctx, SSL_CTRL_SET_ECDH_AUTO, 1, NULL);
-    }
-    else
-    {
-        EC_KEY *ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
-
-        if (ecdh != NULL)
-        {
-            result = SSL_CTX_set_tmp_ecdh(ctx, ecdh);
-            EC_KEY_free(ecdh);
-        }
-    }
-
-    return result;
-#else
-    (void)ctx;
-    return 1;
-#endif
-}
-
 static void ResetCtxProtocolRestrictions(SSL_CTX* ctx)
 {
-#ifndef SSL_CTRL_SET_MIN_PROTO_VERSION
-#define SSL_CTRL_SET_MIN_PROTO_VERSION 123
-#endif
-#ifndef SSL_CTRL_SET_MAX_PROTO_VERSION
-#define SSL_CTRL_SET_MAX_PROTO_VERSION 124
-#endif
-
+    c_static_assert(SSL_CTRL_SET_MIN_PROTO_VERSION == 123);
+    c_static_assert(SSL_CTRL_SET_MAX_PROTO_VERSION == 124);
     SSL_CTX_ctrl(ctx, SSL_CTRL_SET_MIN_PROTO_VERSION, 0, NULL);
     SSL_CTX_ctrl(ctx, SSL_CTRL_SET_MAX_PROTO_VERSION, 0, NULL);
 }
@@ -300,12 +205,6 @@ static void ResetCtxProtocolRestrictions(SSL_CTX* ctx)
 void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
-
-    // Ensure that ECDHE is available
-    if (TrySetECDHNamedCurve(ctx) == 0)
-    {
-        ERR_clear_error();
-    }
 
     // protocols may be 0, meaning system default, in which case let OpenSSL do what OpenSSL wants.
     if (protocols == 0)
@@ -494,17 +393,9 @@ int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error)
     #endif
     if (SSL_version(ssl) == TLS1_3_VERSION)
     {
-        // this is just a sanity check, if TLS 1.3 was negotiated, then the function must be available
-        if (API_EXISTS(SSL_verify_client_post_handshake))
-        {
-            // Post-handshake auth reqires SSL_VERIFY_PEER to be set
-            CryptoNative_SslSetVerifyPeer(ssl);
-            return SSL_verify_client_post_handshake(ssl);
-        }
-        else
-        {
-            return 0;
-        }
+        // Post-handshake auth reqires SSL_VERIFY_PEER to be set
+        CryptoNative_SslSetVerifyPeer(ssl);
+        return SSL_verify_client_post_handshake(ssl);
     }
 #endif
 
@@ -663,18 +554,6 @@ void CryptoNative_SslSetVerifyPeer(SSL* ssl)
 int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
 {
     int retValue = 1;
-    if (mode && !API_EXISTS(SSL_SESSION_get0_hostname))
-    {
-        // Disable caching on old OpenSSL.
-        // While TLS resume is optional, none of this is critical.
-        mode = 0;
-
-        if (newSessionCb != NULL || removeSessionCb != NULL)
-        {
-            // Indicate unwillingness to restore sessions
-            retValue = 0;
-        }
-    }
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
 
     // We never reuse same CTX for both client and server
@@ -733,28 +612,12 @@ void CryptoNative_SslSessionFree(SSL_SESSION* session)
 
 const char* CryptoNative_SslSessionGetHostname(SSL_SESSION* session)
 {
-#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
-    if (API_EXISTS(SSL_SESSION_get0_hostname))
-    {
-        return SSL_SESSION_get0_hostname(session);
-    }
-#else
-    (void*)session;
-#endif
-    return NULL;
+    return SSL_SESSION_get0_hostname(session);
 }
 
 int CryptoNative_SslSessionSetHostname(SSL_SESSION* session, const char* hostname)
 {
-#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
-    if (API_EXISTS(SSL_SESSION_set1_hostname))
-    {
-        SSL_SESSION_set1_hostname(session, hostname);
-    }
-#else
-    (void*)session;
-    (const void*)hostname;
-#endif
+    SSL_SESSION_set1_hostname(session, hostname);
     return 0;
 }
 
@@ -1039,15 +902,7 @@ void CryptoNative_SslCtxSetKeylogCallback(SSL_CTX* ctx, SslCtxSetKeylogCallback 
 
 void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)
 {
-#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
-    if (API_EXISTS(SSL_set_post_handshake_auth))
-    {
-        SSL_set_post_handshake_auth(ssl, val);
-    }
-#else
-    (void)ssl;
-    (void)val;
-#endif
+    SSL_set_post_handshake_auth(ssl, val);
 }
 
 int32_t CryptoNative_SslSetData(SSL* ssl, void* ptr)
@@ -1238,7 +1093,7 @@ int32_t CryptoNative_GetDefaultSignatureAlgorithms(uint16_t* buffer, int32_t* co
         // send/receive the client hello
         ret = SSL_do_handshake(client);
         ret = SSL_do_handshake(server);
-        
+
         int c = SSL_get_sigalgs(server, 0, NULL, NULL, NULL, NULL, NULL);
         if (c > 0)
         {
@@ -1251,12 +1106,12 @@ int32_t CryptoNative_GetDefaultSignatureAlgorithms(uint16_t* buffer, int32_t* co
                     break;
                 }
 
-                unsigned char sig, hash; 
+                unsigned char sig, hash;
                 SSL_get_sigalgs(server, i, NULL, NULL, NULL, &sig, &hash);
                 buffer[i] = (uint16_t)(hash << 8 | sig);
             }
 
-            *count = c;        
+            *count = c;
             ret = 0;
         }
     }

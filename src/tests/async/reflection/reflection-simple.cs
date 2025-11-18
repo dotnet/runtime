@@ -22,13 +22,12 @@ public class Async2Reflection
         Assert.Equal(100, (int)(r.Result + d.Bar().Result));
     }
 
-#pragma warning disable SYSLIB5007 // 'System.Runtime.CompilerServices.AsyncHelpers' is for evaluation purposes only
     [Fact]
     public static void MethodInfo_Invoke_AsyncHelper()
     {
         var mi = typeof(System.Runtime.CompilerServices.AsyncHelpers).GetMethod("Await", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(Task) })!;
         Assert.NotNull(mi);
-        Assert.Throws<TargetInvocationException>(() => mi.Invoke(null, new object[] { FooTask() }));
+        Assert.Throws<NotSupportedException>(() => mi.Invoke(null, new object[] { FooTask() }));
 
         // Sadly the following does not throw and results in UB
         // We cannot completely prevent putting a token of an Async method into IL stream.
@@ -37,7 +36,6 @@ public class Async2Reflection
         // dynamic d = FooTask();
         // System.Runtime.CompilerServices.AsyncHelpers.Await(d);
     }
-#pragma warning restore SYSLIB5007
 
     private static async Task<int> Foo()
     {
@@ -130,7 +128,7 @@ public class Async2Reflection
             $"{map.InterfaceMethods[1]?.ToString()} --> {map.TargetMethods[1]?.ToString()}");
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsReflectionEmitSupported))]
     public static void TypeBuilder_DefineMethod()
     {
         //  we will be compiling a dynamic vesion of this method
@@ -164,9 +162,7 @@ public class Async2Reflection
         // }
         ILGenerator ilGenerator = methodBuilder.GetILGenerator();
         ilGenerator.Emit(OpCodes.Ldarg_0);
-#pragma warning disable SYSLIB5007 // 'System.Runtime.CompilerServices.AsyncHelpers' is for evaluation purposes only
         var mi = typeof(System.Runtime.CompilerServices.AsyncHelpers).GetMethod("Await", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(Task) })!;
-#pragma warning restore SYSLIB5007
         ilGenerator.EmitCall(OpCodes.Call, mi, new Type[] { typeof(Task) });
         ilGenerator.Emit(OpCodes.Ret);
 

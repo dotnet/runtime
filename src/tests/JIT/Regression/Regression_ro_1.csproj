@@ -1,0 +1,88 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <HasMergedInTests>True</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CLR-x86-JIT\dev10\b392262\b392262.cs" />
+    <Compile Include="CLR-x86-JIT\dev10\b402658\b402658.cs" />
+    <Compile Include="CLR-x86-JIT\dev10\b402701\b402701.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\b106272\b106272.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\b598034\b598034.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\b610750\32vs64.cs" />
+    <Compile Include="CLR-x86-JIT\v2.1\b610750\b610750.cs" />
+    <Compile Include="Dev11\dev11_20929\dev11_20929.cs" />
+    <Compile Include="Dev14\DevDiv_876169\DevDiv_876169.cs" />
+    <Compile Include="JitBlue\CoreFX_15913\CoreFX_15913.cs" />
+    <Compile Include="JitBlue\devdiv_174983\devdiv_174983.cs" />
+    <Compile Include="JitBlue\DevDiv_359736\DevDiv_359736.cs" />
+    <Compile Include="JitBlue\DevDiv_653853\DevDiv_653853.cs" />
+    <Compile Include="JitBlue\DevDiv_794115\DevDiv_794115.cs" />
+    <Compile Include="JitBlue\DevDiv_794631\DevDiv_794631.cs" />
+    <Compile Include="JitBlue\DevDiv_815940\DevDiv_815940.cs" />
+    <Compile Include="JitBlue\DevDiv_816617\DevDiv_816617.cs" />
+    <Compile Include="JitBlue\devdiv_911875\DevDiv_911875.cs" />
+    <Compile Include="JitBlue\GitHub_11508\GitHub_11508.cs" />
+    <Compile Include="JitBlue\GitHub_11574\GitHub_11574.cs" />
+    <Compile Include="JitBlue\GitHub_18043\GitHub_18043.cs" />
+    <Compile Include="JitBlue\GitHub_18144\GitHub_18144.cs" />
+    <Compile Include="JitBlue\GitHub_18238\GitHub_18238.cs" />
+    <Compile Include="JitBlue\GitHub_19243\GitHub_19243.cs" />
+    <Compile Include="JitBlue\GitHub_19256\GitHub_19256.cs" />
+    <Compile Include="JitBlue\GitHub_19537\GitHub_19537.cs" />
+    <Compile Include="JitBlue\GitHub_19550\GitHub_19550.cs" />
+    <Compile Include="JitBlue\Github_19558\Github_19558.cs" />
+    <Compile Include="JitBlue\GitHub_19583\GitHub_19583.cs" />
+    <Compile Include="JitBlue\GitHub_19674\GitHub_19674.cs" />
+    <Compile Include="JitBlue\GitHub_20040\GitHub_20040.cs" />
+    <Compile Include="JitBlue\GitHub_20211\GitHub_20211.cs" />
+    <Compile Include="JitBlue\GitHub_20260\GitHub_20260.cs" />
+    <Compile Include="JitBlue\GitHub_20269\GitHub_20269.cs" />
+    <Compile Include="JitBlue\GitHub_20499\GitHub_20499.cs" />
+    <Compile Include="JitBlue\GitHub_20657\GitHub_20657.cs" />
+    <Compile Include="JitBlue\Github_21011\Github_21011.cs" />
+    <Compile Include="JitBlue\GitHub_21546\GitHub_21546.cs" />
+    <Compile Include="JitBlue\GitHub_21854\GitHub_21854.cs" />
+    <Compile Include="JitBlue\GitHub_21915\Github_21915.cs" />
+    <Compile Include="JitBlue\GitHub_22330\GitHub_22330.cs" />
+    <Compile Include="JitBlue\GitHub_22556\GitHub_22556.cs" />
+    <Compile Include="JitBlue\GitHub_22820\GitHub_22820.cs" />
+    <Compile Include="JitBlue\GitHub_23159\GitHub_23159.cs" />
+    <Compile Include="JitBlue\GitHub_23861\GitHub_23861.cs" />
+    <Compile Include="JitBlue\GitHub_23885\GitHub_23885.cs" />
+    <Compile Include="JitBlue\GitHub_24114\GitHub_24114.cs" />
+    <Compile Include="JitBlue\GitHub_24185\GitHub_24185.cs" />
+    <Compile Include="JitBlue\GitHub_24253\GitHub_24253.cs" />
+    <Compile Include="JitBlue\GitHub_25039\GitHub_25039.cs" />
+    <Compile Include="JitBlue\GitHub_25134\GitHub_25134.cs" />
+    <Compile Include="JitBlue\GitHub_26417\GitHub_26417.cs" />
+    <Compile Include="JitBlue\GitHub_27107\GitHub_27107.cs" />
+    <Compile Include="JitBlue\GitHub_27279\GitHub_27279.cs" />
+    <Compile Include="JitBlue\GitHub_27405\GitHub_27405.cs" />
+    <Compile Include="JitBlue\GitHub_27923\GitHub_27923.cs" />
+    <Compile Include="JitBlue\GitHub_37666\GitHub_37666.cs" />
+    <Compile Include="JitBlue\GitHub_77854\GitHub_77854.cs" />
+    <Compile Include="JitBlue\GitHub_8170\GitHub_8170.cs" />
+    <Compile Include="JitBlue\GitHub_85129\GitHub_85129.cs" />
+    <Compile Include="JitBlue\ImageSharp_2117\ImageSharp_2117.cs" />
+    <Compile Include="JitBlue\Runtime_1104\Runtime_1104.cs" />
+    <Compile Include="JitBlue\Runtime_119008\Runtime_119008.cs" />
+    <Compile Include="JitBlue\Runtime_119058\Runtime_119058.cs" />
+    <Compile Include="JitBlue\Runtime_119061\Runtime_119061.cs" />
+    <Compile Include="JitBlue\Runtime_119654\Runtime_119654.cs" />
+    <Compile Include="JitBlue\Runtime_120270\Runtime_120270.cs" />
+    <Compile Include="JitBlue\Runtime_120414\Runtime_120414.cs" />
+    <Compile Include="JitBlue\Runtime_120522\Runtime_120522.cs" />
+    <Compile Include="JitBlue\Runtime_31615\Runtime_31615.cs" />
+    <Compile Include="JitBlue\Runtime_33884\Runtime_33884.cs" />
+    <Compile Include="JitBlue\Runtime_38920\Runtime_38920.cs" />
+    <Compile Include="JitBlue\Runtime_43391\Runtime_43391.cs" />
+    <Compile Include="JitBlue\Runtime_44762\Runtime_44762.cs" />
+    <Compile Include="JitBlue\Runtime_44895\Runtime_44895.cs" />
+    <Compile Include="JitBlue\Runtime_45557\Runtime_45557.cs" />
+    <Compile Include="JitBlue\Runtime_46239\Runtime_46239.cs" />
+    <Compile Include="JitBlue\Runtime_46240\Runtime_46240.cs" />
+  </ItemGroup>
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

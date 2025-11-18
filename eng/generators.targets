@@ -40,6 +40,12 @@
                                      '$(DisableImplicitFrameworkReferences)' == 'true' and
                                      '@(ProjectReference->AnyHaveMetadataValue('Filename', 'System.Runtime.InteropServices'))' == 'true'
                                  )" />
+
+    <EnabledGenerators Include="EventSourceGenerator"
+                       Condition="'$(IsSourceProject)' == 'true' and
+                                 '$(MSBuildProjectExtension)' == '.csproj' and
+                                 '$(DisableImplicitFrameworkReferences)' == 'true'
+                                 " />
   </ItemGroup>
 
   <ItemGroup Condition="'@(EnabledGenerators)' != '' and
@@ -70,6 +76,11 @@
                       OutputItemType="Analyzer"
                       SetConfiguration="Configuration=$(LibrariesConfiguration)"
                       Condition="@(EnabledGenerators->AnyHaveMetadataValue('Identity', 'ComInterfaceGenerator'))" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.CoreLib\gen\EventSourceGenerator.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer"
+                      SetConfiguration="Configuration=$(LibrariesConfiguration)"
+                      Condition="@(EnabledGenerators->AnyHaveMetadataValue('Identity', 'EventSourceGenerator'))" />
   </ItemGroup>
 
   <Target Name="ConfigureGenerators"

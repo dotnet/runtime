@@ -11,6 +11,8 @@
     <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeSpanPolyfills>true</IncludeSpanPolyfills>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -290,6 +292,10 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Configuration" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
 </Project>
