@@ -27,11 +27,7 @@ public class Async2Reflection
     {
         var mi = typeof(System.Runtime.CompilerServices.AsyncHelpers).GetMethod("Await", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(Task) })!;
         Assert.NotNull(mi);
-
-        if (TestLibrary.Utilities.IsNativeAot)
-            Assert.Throws<NotSupportedException>(() => mi.Invoke(null, new object[] { FooTask() }));
-        else
-            Assert.Throws<TargetInvocationException>(() => mi.Invoke(null, new object[] { FooTask() }));
+        Assert.Throws<NotSupportedException>(() => mi.Invoke(null, new object[] { FooTask() }));
 
         // Sadly the following does not throw and results in UB
         // We cannot completely prevent putting a token of an Async method into IL stream.
