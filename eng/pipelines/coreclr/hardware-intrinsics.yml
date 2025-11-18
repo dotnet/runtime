@@ -101,7 +101,7 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
-                  testBuildArgs: 'tree JIT/HardwareIntrinsics'
+                  testBuildArgs: 'nativeaot tree JIT/HardwareIntrinsics'
                   testRunNamePrefixSuffix: NativeAOT
                   nativeAotTest: true
             extraVariablesTemplates:
@@ -132,7 +132,7 @@ extends:
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
-                  testBuildArgs: '-tree:JIT/HardwareIntrinsics'
+                  testBuildArgs: 'nativeaot -tree:JIT/HardwareIntrinsics'
                   testRunNamePrefixSuffix: NativeAOT
                   nativeAotTest: true
             extraVariablesTemplates:

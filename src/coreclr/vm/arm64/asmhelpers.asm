@@ -69,13 +69,13 @@
     ;;like TEXTAREA, but with 64 byte alignment so that we can align the patchable pool below to 64 without warning
     AREA    |.text|,ALIGN=6,CODE,READONLY
 
-;; LPVOID __stdcall GetCurrentIP(void);
+;; void* GetCurrentIP(void);
     LEAF_ENTRY GetCurrentIP
         mov     x0, lr
         ret     lr
     LEAF_END
 
-;; LPVOID __stdcall GetCurrentSP(void);
+;; void* GetCurrentSP(void);
     LEAF_ENTRY GetCurrentSP
         mov     x0, sp
         ret     lr

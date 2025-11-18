@@ -145,6 +145,9 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_X86 and TARGET_RISCV64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_X86 and TARGET_WASM32
+#endif
 #elif defined(TARGET_AMD64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_AMD64 and TARGET_X86
@@ -160,6 +163,9 @@
 #endif
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_AMD64 and TARGET_RISCV64
+#endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_AMD64 and TARGET_WASM32
 #endif
 #elif defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -177,6 +183,9 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM and TARGET_RISCV64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_ARM and TARGET_WASM32
+#endif
 #elif defined(TARGET_ARM64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_ARM64 and TARGET_X86
@@ -192,6 +201,9 @@
 #endif
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_ARM64 and TARGET_RISCV64
+#endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_ARM64 and TARGET_WASM32
 #endif
 #elif defined(TARGET_LOONGARCH64)
 #if defined(TARGET_X86)
@@ -209,6 +221,9 @@
 #if defined(TARGET_RISCV64)
 #error Cannot define both TARGET_LOONGARCH64 and TARGET_RISCV64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_WASM32
+#endif
 #elif defined(TARGET_RISCV64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_RISCV64 and TARGET_X86
@@ -225,6 +240,29 @@
 #if defined(TARGET_LOONGARCH64)
 #error Cannot define both TARGET_RISCV64 and TARGET_LOONGARCH64
 #endif
+#if defined(TARGET_WASM32)
+#error Cannot define both TARGET_RISCV64 and TARGET_WASM32
+#endif
+
+#elif defined(TARGET_WASM32)
+#if defined(TARGET_X86)
+#error Cannot define both TARGET_WASM32 and TARGET_X86
+#endif
+#if defined(TARGET_AMD64)
+#error Cannot define both TARGET_WASM32 and TARGET_AMD64
+#endif
+#if defined(TARGET_ARM)
+#error Cannot define both TARGET_WASM32 and TARGET_ARM
+#endif
+#if defined(TARGET_ARM64)
+#error Cannot define both TARGET_WASM32 and TARGET_ARM64
+#endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_WASM32 and TARGET_LOONGARCH64
+#endif
+#if defined(TARGET_RISCV64)
+#error Cannot define both TARGET_WASM32 and TARGET_RISCV64
+#endif
 
 #else
 #error Unsupported or unset target architecture
@@ -236,6 +274,9 @@
 #endif // TARGET_X86
 #ifdef TARGET_ARM
 #error Cannot define both TARGET_ARM and TARGET_64BIT
+#endif // TARGET_ARM
+#ifdef TARGET_WASM32
+#error Cannot define both TARGET_WASM32 and TARGET_64BIT
 #endif // TARGET_ARM
 #endif // TARGET_64BIT
 
@@ -277,6 +318,11 @@
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_LOONGARCH64 // 0x6264
 #elif defined(TARGET_RISCV64)
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_RISCV64 // 0x5064
+#elif defined(TARGET_WASM32)
+// TODO-WASM: refactor the Jit-EE interface (getExpectedTargetArchitecture) to stop relying on constants from the PE
+// spec for this.
+// TODO-Cleanup: move the defines to target<name>.h files.
+#define IMAGE_FILE_MACHINE_TARGET 0
 #else
 #error Unsupported or unset target architecture
 #endif
