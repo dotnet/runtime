@@ -49,7 +49,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             AnnotationOnByRefParameter.Test();
             WriteCapturedParameter.Test();
             OperatorParameters.Test();
-            RecordWithNamedArgumentsInBaseConstructor.Test();
+            NamedArgumentsWithAnnotations.Test();
         }
 
         // Validate the error message when annotated parameter is passed to another annotated parameter
@@ -515,29 +515,49 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // https://github.com/dotnet/runtime/issues/111651
-        class RecordWithNamedArgumentsInBaseConstructor
+        class NamedArgumentsWithAnnotations
         {
-            record ViewMap(
-                Func<Type?>? ViewSelector = null,
+            record BaseRecord(
+                string? OptionalParameter = null,
                 [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
-                Type? ViewModel = null,
-                object? Data = null
+                Type? AnnotatedParameter = null,
+                object? UnannotatedParameter = null
             );
 
-            // This should not warn about 'Data' parameter
-            record MessageDialogViewMap(
+            // This should not warn about 'UnannotatedParameter'
+            record DerivedRecord(
                 [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicConstructors)]
-                Type? ViewModel = default,
-                object? Data = default
-            ) : ViewMap(
-                ViewModel: ViewModel,
-                Data: Data
+                Type? AnnotatedParameter = default,
+                object? UnannotatedParameter = default
+            ) : BaseRecord(
+                AnnotatedParameter: AnnotatedParameter,
+                UnannotatedParameter: UnannotatedParameter
             );
+
+            static void RequiresPublicConstructors(
+                string? optionalParameter = null,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? annotatedParameter = null,
+                object? unannotatedParameter = null)
+            {
+            }
+
+            // This should not warn about 'unannotatedParameter'
+            static void CallWithNamedArguments(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.PublicConstructors)]
+                Type? annotatedParameter,
+                object? unannotatedParameter)
+            {
+                RequiresPublicConstructors(
+                    annotatedParameter: annotatedParameter,
+                    unannotatedParameter: unannotatedParameter);
+            }
 
             public static void Test()
             {
-                var x = new MessageDialogViewMap(typeof(string), "data");
+                var x = new DerivedRecord(typeof(string), "data");
+                CallWithNamedArguments(typeof(string), "data");
             }
         }
     }
