@@ -33,6 +33,7 @@ namespace System.Numerics
         private static readonly UInt128 PositiveInfinityValue = new UInt128(upper: 0x7800_0000_0000_0000, lower: 0);
         private static readonly UInt128 NegativeInfinityValue = new UInt128(upper: 0xf800_0000_0000_0000, lower: 0);
         private static readonly UInt128 ZeroValue = new UInt128(0, 0);
+        private static readonly UInt128 NegativeZeroValue = new UInt128(0x8000_0000_0000_0000, 0);
 
         internal Decimal128(UInt128 value)
         {
@@ -332,6 +333,8 @@ namespace System.Numerics
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Zero => ZeroValue;
 
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NegativeZero => NegativeZeroValue;
+
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MostSignificantBitOfSignificandMask => new UInt128(0x0002_0000_0000_0000, 0);
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NumberBitsEncoding => 128;
@@ -355,9 +358,5 @@ namespace System.Numerics
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.GwPlus4SignificandMask => new UInt128(0x0000_7FFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MaxSignificand => new UInt128(upper: 0x0001_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF); // 9_999_999_999_999_999_999_999_999_999_999_999;
-
-        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NegativeOne => new UInt128(0xB040_0000_0000_0000, 1);
-
-        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.PositiveOne => new UInt128(0x3040_0000_0000_0000, 1);
     }
 }

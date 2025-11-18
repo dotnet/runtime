@@ -12,14 +12,9 @@ namespace System
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            if (exponent == 0)
-            {
-                return signed ? TDecimal.NegativeOne : TDecimal.PositiveOne;
-            }
-
             if (TValue.IsZero(significand))
             {
-                return TDecimal.Zero;
+                return signed ? TDecimal.NegativeZero : TDecimal.Zero;
             }
 
             if (significand > TDecimal.MaxSignificand || exponent > TDecimal.MaxExponent || exponent < TDecimal.MinExponent)
@@ -269,7 +264,7 @@ namespace System
                     }
                     else
                     {
-                        return TDecimal.Zero;
+                        return number.IsNegative ? TDecimal.NegativeZero : TDecimal.Zero;
                     }
                 }
 

@@ -30,7 +30,8 @@ namespace System.Numerics
         private const int NumberBitsExponent = 8;
         private const uint PositiveInfinityValue = 0x7800_0000;
         private const uint NegativeInfinityValue = 0xF800_0000;
-        private const uint ZeroValue = 0x00000000;
+        private const uint ZeroValue = 0x0000_0000;
+        private const uint NegativeZeroValue = 0x8000_0000;
         private const uint G0G1Mask = 0x6000_0000;
         private const uint SignMask = 0x8000_0000;
         private const uint MostSignificantBitOfSignificandMask = 0x0080_0000;
@@ -291,6 +292,8 @@ namespace System.Numerics
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Zero => ZeroValue;
 
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NegativeZero => NegativeZeroValue;
+
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NumberBitsEncoding => 32;
@@ -314,9 +317,5 @@ namespace System.Numerics
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.GwPlus4SignificandMask => 0x001F_FFFF;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MaxSignificand => MaxSignificand;
-
-        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NegativeOne => 0xB280_0001;
-
-        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.PositiveOne => 0x3280_0001;
     }
 }

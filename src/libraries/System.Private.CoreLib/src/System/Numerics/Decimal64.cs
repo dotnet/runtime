@@ -24,6 +24,7 @@ namespace System.Numerics
         private const ulong PositiveInfinityValue = 0x7800_0000_0000_0000;
         private const ulong NegativeInfinityValue = 0xF800_0000_0000_0000;
         private const ulong ZeroValue = 0x0000_0000_0000_0000;
+        private const ulong NegativeZeroValue = 0x1000_0000_0000_0000;
         private const ulong G0G1Mask = 0x6000_0000_0000_0000;
         private const ulong SignMask = 0x8000_0000_0000_0000;
         private const ulong MostSignificantBitOfSignificandMask = 0x0020_0000_0000_0000;
@@ -293,6 +294,8 @@ namespace System.Numerics
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Zero => ZeroValue;
 
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NegativeZero => NegativeZeroValue;
+
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberBitsEncoding => 64;
@@ -316,9 +319,5 @@ namespace System.Numerics
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.GwPlus4SignificandMask => 0x0007_FFFF_FFFF_FFFF;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MaxSignificand => MaxSignificand;
-
-        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NegativeOne => 0xB1C0_0000_0000_0001;
-
-        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.PositiveOne => 0x31C0_0000_0000_0001;
     }
 }

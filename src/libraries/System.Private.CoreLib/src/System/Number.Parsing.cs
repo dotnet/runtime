@@ -147,8 +147,7 @@ namespace System
         static abstract TValue PositiveInfinity { get; }
         static abstract TValue NegativeInfinity { get; }
         static abstract TValue Zero { get; }
-        static abstract TValue NegativeOne { get; }
-        static abstract TValue PositiveOne { get; }
+        static abstract TValue NegativeZero { get; }
         static abstract TValue MaxSignificand { get; }
         static abstract TValue NumberToSignificand(ref Number.NumberBuffer number, int digits);
         static abstract unsafe byte* ToDecChars(byte* p, TValue significand);
@@ -1215,7 +1214,7 @@ namespace System
 
             if ((number.DigitsCount == 0) || (number.Scale < TDecimal.MinScale))
             {
-                value = TDecimal.Zero;
+                value = number.IsNegative ? TDecimal.NegativeZero : TDecimal.Zero;
             }
             else if (number.Scale > TDecimal.MaxScale)
             {
