@@ -107,7 +107,9 @@ namespace System.IO.Compression
         {
             _context = Interop.Zstd.ZSTD_createDCtx();
             if (_context.IsInvalid)
+            {
                 throw new IOException(SR.ZstandardDecoder_Create);
+            }
         }
 
         /// <summary>Decompresses the specified data.</summary>
@@ -123,12 +125,16 @@ namespace System.IO.Compression
             bytesConsumed = 0;
 
             if (_finished)
+            {
                 return OperationStatus.Done;
+            }
 
             EnsureNotDisposed();
 
             if (destination.IsEmpty)
+            {
                 return OperationStatus.DestinationTooSmall;
+            }
 
             unsafe
             {
@@ -152,7 +158,9 @@ namespace System.IO.Compression
                     nuint result = Interop.Zstd.ZSTD_decompressStream(_context!, ref output, ref input);
 
                     if (Interop.Zstd.ZSTD_isError(result) != 0)
+                    {
                         return OperationStatus.InvalidData;
+                    }
 
                     bytesConsumed = (int)input.pos;
                     bytesWritten = (int)output.pos;
@@ -216,7 +224,9 @@ namespace System.IO.Compression
             bytesWritten = 0;
 
             if (source.IsEmpty)
+            {
                 return false;
+            }
 
             unsafe
             {
@@ -228,7 +238,9 @@ namespace System.IO.Compression
                         (IntPtr)sourcePtr, (nuint)source.Length);
 
                     if (Interop.Zstd.ZSTD_isError(result) != 0)
+                    {
                         return false;
+                    }
 
                     bytesWritten = (int)result;
                     return true;
@@ -250,11 +262,15 @@ namespace System.IO.Compression
             bytesWritten = 0;
 
             if (source.IsEmpty)
+            {
                 return false;
+            }
 
             using var dctx = Interop.Zstd.ZSTD_createDCtx();
             if (dctx.IsInvalid)
+            {
                 return false;
+            }
 
             unsafe
             {
@@ -266,7 +282,9 @@ namespace System.IO.Compression
                         (IntPtr)sourcePtr, (nuint)source.Length, dictionary.DecompressionDictionary);
 
                     if (Interop.Zstd.ZSTD_isError(result) != 0)
+                    {
                         return false;
+                    }
 
                     bytesWritten = (int)result;
                     return true;
@@ -282,7 +300,9 @@ namespace System.IO.Compression
             EnsureNotDisposed();
 
             if (_context is null)
+            {
                 return;
+            }
 
             _context.Reset();
             _finished = false;
@@ -327,7 +347,9 @@ namespace System.IO.Compression
         private void ThrowIfDisposed()
         {
             if (_disposed)
+            {
                 throw new ObjectDisposedException(nameof(ZstandardDecoder), SR.ZstandardDecoder_Disposed);
+            }
         }
 
         internal void SetWindow(int maxWindow)

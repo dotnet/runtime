@@ -107,7 +107,9 @@ namespace System.IO.Compression
         public override int Read(Span<byte> buffer)
         {
             if (_mode != CompressionMode.Decompress)
+            {
                 throw new InvalidOperationException(SR.CannotReadFromCompressionStream);
+            }
 
             EnsureNotDisposed();
 
@@ -171,7 +173,9 @@ namespace System.IO.Compression
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (_mode != CompressionMode.Decompress)
+            {
                 throw new InvalidOperationException(SR.CannotReadFromCompressionStream);
+            }
 
             EnsureNotDisposed();
 

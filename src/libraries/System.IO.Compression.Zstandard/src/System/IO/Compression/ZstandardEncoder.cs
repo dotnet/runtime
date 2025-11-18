@@ -181,7 +181,9 @@ namespace System.IO.Compression
         {
             _context = Interop.Zstd.ZSTD_createCCtx();
             if (_context.IsInvalid)
+            {
                 throw new IOException(SR.ZstandardEncoder_Create);
+            }
         }
 
         /// <summary>Compresses the specified data.</summary>
@@ -200,7 +202,9 @@ namespace System.IO.Compression
             bytesWritten = 0;
 
             if (source.IsEmpty && !isFinalBlock)
+            {
                 return OperationStatus.Done;
+            }
 
             return CompressCore(source, destination, out bytesConsumed, out bytesWritten,
                 isFinalBlock ? Interop.Zstd.ZstdEndDirective.ZSTD_e_end : Interop.Zstd.ZstdEndDirective.ZSTD_e_continue);
@@ -338,7 +342,9 @@ namespace System.IO.Compression
             bytesWritten = 0;
 
             if (source.IsEmpty)
+            {
                 return true;
+            }
 
             unsafe
             {

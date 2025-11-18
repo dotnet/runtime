@@ -53,7 +53,9 @@ namespace System.IO.Compression
         public void SetSourceSize(long size)
         {
             if (_mode != CompressionMode.Compress)
+            {
                 throw new InvalidOperationException(SR.CannotWriteToDecompressionStream);
+            }
             EnsureNotDisposed();
             Debug.Assert(_encoder != null);
 
@@ -63,7 +65,9 @@ namespace System.IO.Compression
         private void WriteCore(ReadOnlySpan<byte> buffer, bool isFinalBlock = false, bool flush = false, bool checkActiveRWOps = true)
         {
             if (_mode != CompressionMode.Compress)
+            {
                 throw new InvalidOperationException(SR.CannotWriteToDecompressionStream);
+            }
             EnsureNotDisposed();
             Debug.Assert(_encoder != null);
 
@@ -93,11 +97,17 @@ namespace System.IO.Compression
                     }
 
                     if (lastResult == OperationStatus.InvalidData)
+                    {
                         throw new InvalidOperationException(SR.ZstandardStream_Compress_InvalidData);
+                    }
                     if (bytesWritten > 0)
+                    {
                         _stream.Write(output.Slice(0, bytesWritten));
+                    }
                     if (bytesConsumed > 0)
+                    {
                         buffer = buffer.Slice(bytesConsumed);
+                    }
                 }
             }
             finally
@@ -112,7 +122,9 @@ namespace System.IO.Compression
         private async ValueTask WriteCoreAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, bool isFinalBlock = false, bool flush = false, bool checkActiveRWOps = true)
         {
             if (_mode != CompressionMode.Compress)
+            {
                 throw new InvalidOperationException(SR.CannotWriteToDecompressionStream);
+            }
             EnsureNotDisposed();
             Debug.Assert(_encoder != null);
 
@@ -142,11 +154,17 @@ namespace System.IO.Compression
                     }
 
                     if (lastResult == OperationStatus.InvalidData)
+                    {
                         throw new InvalidOperationException(SR.ZstandardStream_Compress_InvalidData);
+                    }
                     if (bytesWritten > 0)
+                    {
                         await _stream.WriteAsync(output.Slice(0, bytesWritten), cancellationToken).ConfigureAwait(false);
+                    }
                     if (bytesConsumed > 0)
+                    {
                         buffer = buffer.Slice(bytesConsumed);
+                    }
                 }
             }
             finally
@@ -218,7 +236,9 @@ namespace System.IO.Compression
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             if (_mode != CompressionMode.Compress)
+            {
                 throw new InvalidOperationException(SR.CannotWriteToDecompressionStream);
+            }
 
             EnsureNotDisposed();
 

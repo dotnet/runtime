@@ -35,7 +35,9 @@ namespace System.IO.Compression
         public static ZstandardDictionary Create(ReadOnlySpan<byte> buffer, int quality)
         {
             if (buffer.IsEmpty)
+            {
                 throw new ArgumentException(SR.ZstandardDictionary_EmptyBuffer, nameof(buffer));
+            }
 
             // TODO: make this data being referenced by the native dict structures
             // and avoid them having their own copies
@@ -51,7 +53,9 @@ namespace System.IO.Compression
                     SafeZstdCDictHandle compressionDict = Interop.Zstd.ZSTD_createCDict_byReference(dictData, (nuint)data.Length, quality);
 
                     if (compressionDict.IsInvalid)
+                    {
                         throw new IOException(SR.ZstandardDictionary_CreateCompressionFailed);
+                    }
                     compressionDict._pinnedData = GCHandle.Alloc(data, GCHandleType.Pinned);
 
                     SafeZstdDDictHandle decompressionDict = Interop.Zstd.ZSTD_createDDict_byReference(dictData, (nuint)data.Length);
