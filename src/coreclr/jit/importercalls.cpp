@@ -386,6 +386,27 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
+                assert(stackState.esStackDepth >= sig->numArgs + 1);
+
+                const bool needsFatPointerHandling =
+                    (sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+                if (needsFatPointerHandling)
+                {
+                    // NativeAOT generic virtual method: need to handle potential fat function pointers
+                    // Spill any side-effecting arguments before we do the LDVIRTFTN
+                    for (unsigned argIndex = 0; argIndex < sig->numArgs; argIndex++)
+                    {
+                        const unsigned level   = stackState.esStackDepth - 1 - argIndex;
+                        GenTree*       argTree = stackState.esStack[level].val;
+                        if ((argTree->gtFlags & GTF_SIDE_EFFECT) == 0)
+                        {
+                            continue;
+                        }
+
+                        impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("fat pointer arg spill"));
+                    }
+                }
+
                 // OK, We've been told to call via LDVIRTFTN, so just
                 // take the call now....
                 call = gtNewIndCallNode(nullptr, callRetTyp, di);
@@ -421,9 +442,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 call->AsCall()->gtCallAddr = fptr;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
-                if ((sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                if (needsFatPointerHandling)
                 {
-                    // NativeAOT generic virtual method: need to handle potential fat function pointers
+                    const unsigned fptrLclNum = lvaGrabTemp(true DEBUGARG("fat pointer temp"));
+                    impStoreToTemp(fptrLclNum, fptr, CHECK_SPILL_ALL);
+                    call->AsCall()->gtCallAddr = gtNewLclvNode(fptrLclNum, genActualType(fptr->TypeGet()));
                     addFatPointerCandidate(call->AsCall());
                 }
 #ifdef FEATURE_READYTORUN
@@ -6942,17 +6965,6 @@ private:
 void Compiler::addFatPointerCandidate(GenTreeCall* call)
 {
     JITDUMP("Marking call [%06u] as fat pointer candidate\n", dspTreeID(call));
-
-    GenTree* fptr = call->gtCallAddr;
-    assert(fptr != nullptr);
-    if (!fptr->OperIsLocalRead())
-    {
-        // Spill the call address to a local for fat pointer handling
-        const unsigned fptrLclNum = lvaGrabTemp(true DEBUGARG("fat pointer temp"));
-        impStoreToTemp(fptrLclNum, fptr, CHECK_SPILL_ALL);
-        fptr             = gtNewLclvNode(fptrLclNum, genActualType(fptr->TypeGet()));
-        call->gtCallAddr = fptr;
-    }
 
     setMethodHasFatPointer();
     call->SetFatPointerCandidate();
