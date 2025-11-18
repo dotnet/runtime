@@ -114,14 +114,18 @@ class FgWasm
 {
 private:
 
-    Compiler* m_comp;
-    unsigned  m_sccNum;
+    Compiler*         m_comp;
+    unsigned          m_sccNum;
+    FlowGraphDfsTree* m_dfsTree;
+    BitVecTraits      m_traits;
 
 public:
 
     FgWasm(Compiler* comp)
         : m_comp(comp)
         , m_sccNum(0)
+        , m_dfsTree(nullptr)
+        , m_traits(0, nullptr)
     {
     }
 
@@ -129,9 +133,27 @@ public:
     {
         return m_comp;
     }
+
     unsigned GetSccNum()
     {
         return m_sccNum++;
+    }
+
+    FlowGraphDfsTree* GetDfsTree() const
+    {
+        return m_dfsTree;
+    }
+
+    void SetDfsAndTraits(FlowGraphDfsTree* dfsTree)
+    {
+        assert(m_dfsTree == nullptr);
+        m_dfsTree = dfsTree;
+        m_traits  = m_dfsTree->PostOrderTraits();
+    }
+
+    BitVecTraits* GetTraits()
+    {
+        return &m_traits;
     }
 
     typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, Scc*> SccMap;
@@ -140,32 +162,18 @@ public:
     static BasicBlockVisit VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc func, bool useProfile = false);
 
     template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile = false>
-    static unsigned WasmRunSubgraphDfs(Compiler*         comp,
-                                       FlowGraphDfsTree* dfsTree,
-                                       VisitPreorder     visitPreorder,
-                                       VisitPostorder    visitPostorder,
-                                       VisitEdge         visitEdge,
-                                       BitVec&           subgraph,
-                                       BitVecTraits&     subgraphTraits);
+    unsigned WasmRunSubgraphDfs(VisitPreorder  visitPreorder,
+                                VisitPostorder visitPostorder,
+                                VisitEdge      visitEdge,
+                                BitVec&        subgraph);
 
     FlowGraphDfsTree* WasmDfs(bool& hasBlocksOnlyReachableByEH);
 
-    void WasmFindSccs(FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& sccs);
+    void WasmFindSccs(ArrayStack<Scc*>& sccs);
 
-    void WasmFindSccsCore(FlowGraphDfsTree* dfsTree,
-                          BitVec&           subset,
-                          BitVecTraits&     traits,
-                          ArrayStack<Scc*>& sccs,
-                          BasicBlock**      postorder,
-                          unsigned          postorderCount);
+    void WasmFindSccsCore(BitVec& subset, ArrayStack<Scc*>& sccs, BasicBlock** postorder, unsigned postorderCount);
 
-    void AssignBlockToScc(BasicBlock*       block,
-                          BasicBlock*       root,
-                          BitVec&           subset,
-                          BitVecTraits&     traits,
-                          ArrayStack<Scc*>& sccs,
-                          SccMap&           map,
-                          FlowGraphDfsTree* dfsTree);
+    void AssignBlockToScc(BasicBlock* block, BasicBlock* root, BitVec& subset, ArrayStack<Scc*>& sccs, SccMap& map);
 
     bool WasmTransformSccs(ArrayStack<Scc*>& sccs);
 };
@@ -275,46 +283,43 @@ BasicBlockVisit FgWasm::VisitWasmSuccs(Compiler* comp, BasicBlock* block, TFunc 
 //
 // Parameters:
 //   comp           - Compiler instance
-//   dfsTree        - Wasm DFS instance
 //   visitPreorder  - Functor to visit block in its preorder
 //   visitPostorder - Functor to visit block in its postorder
 //   visitEdge      - Functor to visit an edge. Called after visitPreorder (if
 //                    this is the first time the successor is seen).
 //   subgraphBlocks - bitvector (in postorder num space) identifying the subgraph
-//   subgraphTraits - traits for the subgraphBlocks
 //
 // Returns:
 //   Number of blocks visited.
 //
 // Notes:
-//   Assumes m_dfs is valid (in particular, uses block post order numbers)
+//   Uses block post order numbers.
 //   So, visitors must not clobber these numbers.
 //
 // TODO:
 //   Encapsulate subgraph as functor...?
 //
 template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile /* = false */>
-unsigned FgWasm::WasmRunSubgraphDfs(Compiler*         comp,
-                                    FlowGraphDfsTree* dfsTree,
-                                    VisitPreorder     visitPreorder,
-                                    VisitPostorder    visitPostorder,
-                                    VisitEdge         visitEdge,
-                                    BitVec&           subgraph,
-                                    BitVecTraits&     subgraphTraits)
+unsigned FgWasm::WasmRunSubgraphDfs(VisitPreorder  visitPreorder,
+                                    VisitPostorder visitPostorder,
+                                    VisitEdge      visitEdge,
+                                    BitVec&        subgraph)
 {
-    JITDUMP("Running Wasm subgraph DFS on %u blocks\n", BitVecOps::Count(&subgraphTraits, subgraph));
-    BitVecTraits traits(comp->fgBBNumMax + 1, comp);
-    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+    JITDUMP("Running Wasm subgraph DFS on %u blocks\n", BitVecOps::Count(&m_traits, subgraph));
 
-    assert(dfsTree->IsForWasm());
+    // We should have a wasm DFS for the entire method
+    //
+    assert(m_dfsTree->IsForWasm());
 
-    unsigned preOrderIndex  = 0;
-    unsigned postOrderIndex = 0;
+    BitVec          visited(BitVecOps::MakeEmpty(&m_traits));
+    unsigned        preOrderIndex  = 0;
+    unsigned        postOrderIndex = 0;
+    Compiler* const comp           = Comp();
 
     ArrayStack<WasmSuccessorEnumerator> blocks(comp->getAllocator(CMK_WasmSccTransform));
 
     auto dfsFrom = [&](BasicBlock* firstBB) {
-        BitVecOps::AddElemD(&traits, visited, firstBB->bbNum);
+        BitVecOps::AddElemD(&m_traits, visited, firstBB->bbPostorderNum);
         blocks.Emplace(comp, firstBB, useProfile);
         JITDUMP(" visiting " FMT_BB "\n", firstBB->bbNum);
         visitPreorder(firstBB, preOrderIndex++);
@@ -326,9 +331,9 @@ unsigned FgWasm::WasmRunSubgraphDfs(Compiler*         comp,
 
             if (succ != nullptr)
             {
-                if (BitVecOps::IsMember(&subgraphTraits, subgraph, succ->bbPostorderNum))
+                if (BitVecOps::IsMember(&m_traits, subgraph, succ->bbPostorderNum))
                 {
-                    if (BitVecOps::TryAddElemD(&traits, visited, succ->bbNum))
+                    if (BitVecOps::TryAddElemD(&m_traits, visited, succ->bbPostorderNum))
                     {
                         blocks.Emplace(comp, succ, useProfile);
                         visitPreorder(succ, preOrderIndex++);
@@ -350,15 +355,15 @@ unsigned FgWasm::WasmRunSubgraphDfs(Compiler*         comp,
     ArrayStack<BasicBlock*> entries(comp->getAllocator(CMK_WasmSccTransform));
 
     unsigned        poNum = 0;
-    BitVecOps::Iter iterator(&subgraphTraits, subgraph);
+    BitVecOps::Iter iterator(&m_traits, subgraph);
     while (iterator.NextElem(&poNum))
     {
-        BasicBlock* const block   = dfsTree->GetPostOrder(poNum);
+        BasicBlock* const block   = m_dfsTree->GetPostOrder(poNum);
         bool              hasPred = false;
         for (BasicBlock* const pred : block->PredBlocks())
         {
             hasPred = true;
-            if (!BitVecOps::IsMember(&subgraphTraits, subgraph, pred->bbPostorderNum))
+            if (!BitVecOps::IsMember(&m_traits, subgraph, pred->bbPostorderNum))
             {
                 JITDUMP(FMT_BB " is subgraph entry\n", block->bbNum);
                 entries.Emplace(block);
@@ -378,7 +383,7 @@ unsigned FgWasm::WasmRunSubgraphDfs(Compiler*         comp,
     {
         BasicBlock* const block = entries.Pop();
 
-        if (!BitVecOps::IsMember(&traits, visited, block->bbNum))
+        if (!BitVecOps::IsMember(&m_traits, visited, block->bbPostorderNum))
         {
             dfsFrom(block);
         }
