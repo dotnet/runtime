@@ -807,6 +807,16 @@ namespace Internal.JitInterface
             {
                 methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
             }
+
+            // Indicate this is an async method that requires save and restore
+            // of async contexts. Regular user implemented runtime async methods
+            // require this behavior, but thunks should be transparent and should not
+            // come with this behavior.
+            if (method.IsAsyncVariant() && method.IsAsync)
+            {
+                methodInfo->options |= CorInfoOptions.CORINFO_ASYNC_SAVE_CONTEXTS;
+            }
+
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);

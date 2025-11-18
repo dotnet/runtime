@@ -848,10 +848,14 @@ LEAF_END JIT_PatchpointForced, _TEXT
 // size_t GetThreadStaticsVariableOffset()
 
 // Load offset of native thread local variable `t_ThreadStatics` in TCB and return it in `a0` register.
+#if !defined(TARGET_LINUX_MUSL)
+// Uses initial-exec TLS model which is faster but incompatible with musl's dynamic loading.
+// On musl, this function is not compiled and the optimization is disabled in threadstatics.cpp.
 LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
     la.tls.ie   a0, t_ThreadStatics
     EPILOG_RETURN
 LEAF_END GetThreadStaticsVariableOffset, _TEXT
+#endif // !TARGET_LINUX_MUSL
 
 LEAF_ENTRY JIT_PollGC, _TEXT
         PREPARE_EXTERNAL_VAR g_TrapReturningThreads, t0

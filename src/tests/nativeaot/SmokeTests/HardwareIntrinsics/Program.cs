@@ -14,23 +14,27 @@ unsafe class Program
         s_success = true;
 
 #if !DEBUG
-        Console.WriteLine("****************************************************");
-        Console.WriteLine("* Size test                                        *");
-        long fileSize = new System.IO.FileInfo(Environment.ProcessPath).Length;
-        Console.WriteLine($"* Size of the executable is {fileSize / 1024,7:n0} kB             *");
-        Console.WriteLine("****************************************************");
-
-        long lowerBound, upperBound;
-        lowerBound = 1090 * 1024; // ~1.09 MB
-        upperBound = 1500 * 1024; // ~1.5 MB
-
-        if (fileSize < lowerBound || fileSize > upperBound)
+        if (!OperatingSystem.IsAndroid())
         {
-            Console.WriteLine($"BUG: File size is not in the expected range ({lowerBound} to {upperBound} bytes). Did a libraries change regress size of Hello World?");
-            return 1;
-        }
+            // Environment.ProcessPath is app_process64 on Android
+            Console.WriteLine("****************************************************");
+            Console.WriteLine("* Size test                                        *");
+            long fileSize = new System.IO.FileInfo(Environment.ProcessPath).Length;
+            Console.WriteLine($"* Size of the executable is {fileSize / 1024,7:n0} kB             *");
+            Console.WriteLine("****************************************************");
 
-        Console.WriteLine();
+            long lowerBound, upperBound;
+            lowerBound = 1090 * 1024; // ~1.09 MB
+            upperBound = 1500 * 1024; // ~1.5 MB
+
+            if (fileSize < lowerBound || fileSize > upperBound)
+            {
+                Console.WriteLine($"BUG: File size is not in the expected range ({lowerBound} to {upperBound} bytes). Did a libraries change regress size of Hello World?");
+                return 1;
+            }
+
+            Console.WriteLine();
+        }
 #endif
 
         // We expect the AOT compiler generated HW intrinsics with the following characteristics:
