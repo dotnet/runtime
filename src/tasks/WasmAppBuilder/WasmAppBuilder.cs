@@ -183,8 +183,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             var itemHash = Utils.ComputeIntegrity(item.ItemSpec);
 
             Dictionary<string, string>? resourceList = helper.GetNativeResourceTargetInBootConfig(bootConfig, name);
-            if (resourceList != null)
-                resourceList[name] = itemHash;
+            resourceList?[name] = itemHash;
         }
 
         string packageJsonPath = Path.Combine(AppDir, "package.json");
@@ -284,6 +283,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             StringDictionary targetPathTable = new();
             var vfs = new Dictionary<string, Dictionary<string, string>>();
             var coreVfs = new Dictionary<string, Dictionary<string, string>>();
+            var virtualPathPrefix = !string.IsNullOrEmpty(RuntimeAssetsLocation) ? $"{RuntimeAssetsLocation}/supportFiles" : "supportFiles";
             foreach (var item in FilesToIncludeInFileSystem)
             {
                 string? targetPath = item.GetMetadata("TargetPath");
@@ -324,7 +324,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
                 };
                 vfsDict[targetPath] = new()
                 {
-                    [$"supportFiles/{generatedFileName}"] = Utils.ComputeIntegrity(vfsPath)
+                    [$"{virtualPathPrefix}/{generatedFileName}"] = Utils.ComputeIntegrity(vfsPath)
                 };
             }
 

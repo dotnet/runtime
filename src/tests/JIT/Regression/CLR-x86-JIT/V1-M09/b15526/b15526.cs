@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace DefaultNamespace
+namespace b15526
 {
     //@BEGINRENAME; Verify this renames
     //@ENDRENAME; Verify this renames
@@ -17,6 +17,7 @@ namespace DefaultNamespace
             int iVal2 = 3;
             Console.WriteLine(Math.Min(iVal1, iVal2));
         }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

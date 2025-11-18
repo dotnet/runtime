@@ -22,6 +22,7 @@ export const proxy_debug_symbol = Symbol.for("wasm proxy_debug");
 export const JavaScriptMarshalerArgSize = 32;
 // keep in sync with JSMarshalerArgumentImpl offsets
 const enum JSMarshalerArgumentOffsets {
+    /* eslint-disable @typescript-eslint/no-duplicate-enum-values */
     BooleanValue = 0,
     ByteValue = 0,
     CharValue = 0,

@@ -319,18 +319,13 @@ namespace System.Security.Cryptography.Tests
                 AssertExtensions.FalseExpression(dsa.VerifyData(buffer.Slice(1, 3), signature, context));
             }
 
-            // Flip randomizer
-            signature[0] ^= 1;
-            AssertExtensions.FalseExpression(dsa.VerifyData(data, signature, context));
-            signature[0] ^= 1;
-
             // Flip mldsaSig
-            signature[32] ^= 1;
+            signature[0] ^= 1;
             AssertExtensions.FalseExpression(dsa.VerifyData(data, signature, context));
-            signature[32] ^= 1;
+            signature[0] ^= 1;
 
             // Flip tradSig
-            int tradSigOffset = 32 + CompositeMLDsaTestHelpers.MLDsaAlgorithms[dsa.Algorithm].SignatureSizeInBytes;
+            int tradSigOffset = CompositeMLDsaTestHelpers.MLDsaAlgorithms[dsa.Algorithm].SignatureSizeInBytes;
             signature[tradSigOffset] ^= 1;
             AssertExtensions.FalseExpression(dsa.VerifyData(data, signature, context));
             signature[tradSigOffset] ^= 1;

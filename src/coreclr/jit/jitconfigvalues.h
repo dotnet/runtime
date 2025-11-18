@@ -754,6 +754,12 @@ RELEASE_CONFIG_INTEGER(JitVTableProfiling, "JitVTableProfiling", 0)       // Pro
 RELEASE_CONFIG_INTEGER(JitEdgeProfiling, "JitEdgeProfiling", 1)           // Profile edges instead of blocks
 RELEASE_CONFIG_INTEGER(JitCollect64BitCounts, "JitCollect64BitCounts", 0) // Collect counts as 64-bit values.
 
+CONFIG_INTEGER(JitInstrumentIfOptimizing, "JitInstrumentIfOptimizing", 0) // 1: Always add instrumentation if optimizing
+                                                                          // and not prejitting
+CONFIG_STRING(JitInstrumentIfOptimizingRange, "JitInstrumentIfOptimizingRange")
+
+RELEASE_CONFIG_INTEGER(JitInstrumentInlinees, "JitInstrumentInlinees", 1) // Add instrumentation to inlined methods
+
 // Profile consumption options
 RELEASE_CONFIG_INTEGER(JitDisablePGO, "JitDisablePGO", 0)     // Ignore PGO data for all methods
 CONFIG_STRING(JitEnablePGORange, "JitEnablePGORange")         // Enable PGO data for only some methods
@@ -847,6 +853,9 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 
 // Allow to enregister locals with struct type.
 RELEASE_CONFIG_INTEGER(JitEnregStructLocals, "JitEnregStructLocals", 1)
+
+// Simulate generation of Wasm control flow, even if not targeting wasm
+CONFIG_INTEGER(JitWasmControlFlow, "JitWasmControlFlow", 0);
 
 #undef CONFIG_INTEGER
 #undef CONFIG_STRING

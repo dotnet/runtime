@@ -1864,7 +1864,7 @@ extern "C" void __stdcall NotifyRightSideOfSyncCompleteFlare(void);
 extern "C" void __stdcall NotifySecondChanceReadyForDataFlare(void);
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
 #if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, bool fIsInPlaceSingleStep, PRD_TYPE opcode);
+extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, DWORD64 flag, PRD_TYPE opcode);
 #else
 #error Platform not supported
 #endif
@@ -2302,10 +2302,12 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
+#ifdef FEATURE_CODE_VERSIONING
 private:
     HRESULT DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef);
 
 public:
+#endif // FEATURE_CODE_VERSIONING
     HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
 #endif //DACCESS_COMPILE
     HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
@@ -3025,7 +3027,7 @@ private:
     BOOL m_fOutOfProcessSetContextEnabled;
 public:
     // Used by Debugger::FirstChanceNativeException to update the context from out of process
-    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL);
+    void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL, bool fHasActivePatchSkip = false, bool fClearSetIP = false);
     BOOL IsOutOfProcessSetContextEnabled();
 };
 

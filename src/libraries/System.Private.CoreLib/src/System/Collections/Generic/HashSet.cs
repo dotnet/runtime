@@ -444,7 +444,7 @@ namespace System.Collections.Generic
             internal static IAlternateEqualityComparer<TAlternate, T> GetAlternateComparer(HashSet<T> set)
             {
                 Debug.Assert(IsCompatibleItem(set));
-                return Unsafe.As<IAlternateEqualityComparer<TAlternate, T>>(set._comparer);
+                return Unsafe.As<IAlternateEqualityComparer<TAlternate, T>>(set._comparer)!;
             }
 
             /// <summary>Adds the specified element to a set.</summary>
