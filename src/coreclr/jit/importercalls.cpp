@@ -386,7 +386,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
-                assert(stackState.esStackDepth >= sig->numArgs + 1);
+                assert(stackState.esStackDepth >= sig->numArgs + 1u);
 
                 const bool needsFatPointerHandling =
                     (sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
