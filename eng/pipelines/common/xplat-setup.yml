@@ -160,6 +160,9 @@ jobs:
         container: ${{ parameters.container }}
 
     ${{ if eq(parameters.jobParameters.pool, '') }}:
+      # N.B.: We should always be building on the latest available version of our build platform.
+      # Each of these queues should be the latest version or have a tracking issue if the latest version
+      # does not work for some reason.
       pool:
         # Public Linux Build Pool
         ${{ if and(or(in(parameters.osGroup, 'linux', 'freebsd', 'android', 'tizen'), eq(parameters.jobParameters.hostedOs, 'linux')), eq(variables['System.TeamProject'], 'public')) }}:
