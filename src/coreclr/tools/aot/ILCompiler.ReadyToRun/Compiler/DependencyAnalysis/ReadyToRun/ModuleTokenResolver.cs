@@ -3,7 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Immutable;
+using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -439,13 +439,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        private ImmutableHashSet<MethodDesc> KnownMethods;
-        private ImmutableHashSet<TypeDesc> KnownTypes;
+        private HashSet<MethodDesc> KnownMethods;
+        private HashSet<TypeDesc> KnownTypes;
 
         private void InitializeKnownMethodsAndTypes()
         {
-            var knownTypes = ImmutableHashSet.CreateBuilder<TypeDesc>();
-            var knownMethods = ImmutableHashSet.CreateBuilder<MethodDesc>();
+            var knownTypes = new HashSet<TypeDesc>();
+            var knownMethods = new HashSet<MethodDesc>();
 
             var exception = CompilerContext.SystemModule.GetKnownType("System"u8, "Exception"u8);
             knownTypes.Add(exception);
@@ -498,8 +498,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             knownMethods.Add(valueTaskGeneric.GetKnownMethod("get_Result"u8, null));
             knownMethods.Add(valueTaskGeneric.GetKnownMethod("AsTaskOrNotifier"u8, null));
 
-            KnownTypes = knownTypes.ToImmutable();
-            KnownMethods = knownMethods.ToImmutable();
+            KnownTypes = knownTypes;
+            KnownMethods = knownMethods;
 
             try
             {
@@ -527,7 +527,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (_compilationModuleGroup.VersionsWithMethodBody((EcmaMethod)method))
                         continue;
 
-                    EntityHandle ? handle = _manifestMutableModule.TryGetEntityHandle(method);
+                    EntityHandle? handle = _manifestMutableModule.TryGetEntityHandle(method);
                     if (!handle.HasValue)
                         throw new NotImplementedException($"Entity handle for known method ({method}) not found in manifest module");
 
