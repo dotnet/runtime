@@ -199,7 +199,7 @@ namespace System.IO.Compression
             if (buffer != null)
             {
                 _buffer = null!;
-                if (!_activeRwOperation)
+                if (!Volatile.Read(ref _activeRwOperation))
                 {
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
