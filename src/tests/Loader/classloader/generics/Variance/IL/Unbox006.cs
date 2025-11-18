@@ -7,8 +7,8 @@ using Xunit;
 public class Base {}
 public class Sub : Base {}
 
-public class GBase<T> {}
-public class GSubT<T> : GBase<T> {}
+public class GBase<T> { public GBase() {} }
+public class GSubT<T> : GBase<T> { public GSubT() {} }
 	
 public struct GTU<T,U> : IPlusT<T>, IMinusT<U>, IPlusTMinusU<T,U> {}
 public struct GTArrUArr<T,U> : IPlusT<T[]>, IMinusT<U[]>, IPlusTMinusU<T[],U[]> {}

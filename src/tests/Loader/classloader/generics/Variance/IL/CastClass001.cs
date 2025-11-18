@@ -7,14 +7,14 @@ using Xunit;
 public class Base {}
 public class Sub : Base {}
 
-public class GBase<T> { }
-public class GSubT<T> : GBase<T> { }
+public class GBase<T> { public GBase() { } }
+public class GSubT<T> : GBase<T> { public GSubT() { } }
 
-public class GTU<T,U> : IPlusT<T>, IMinusT<U>, IPlusTMinusU<T,U> {}
-public class GTArrUArr<T,U> : IPlusT<T[]>, IMinusT<U[]>, IPlusTMinusU<T[],U[]> {}
-public class GRefTRefU<T,U> : IPlusT<IPlusT<T>>, IPlusT<IMinusT<U>>, IPlusTMinusU<IPlusT<T>, IPlusT<U>> {}
-public class GRefTArrRefUArr<T,U> : IPlusT<IPlusT<T[]>>, IPlusT<IMinusT<U[]>>, IPlusTMinusU<IPlusT<T[]>,IPlusT<U[]>> {}
-public class GArrRefTArrRefU<T,U> : IPlusT<IPlusT<T>[]>, IPlusT<IMinusT<U>[]>, IPlusTMinusU<IPlusT<T>[],IPlusT<U>[]> {}
+public class GTU<T,U> : IPlusT<T>, IMinusT<U>, IPlusTMinusU<T,U> { public GTU() {} }
+public class GTArrUArr<T,U> : IPlusT<T[]>, IMinusT<U[]>, IPlusTMinusU<T[],U[]> { public GTArrUArr() {} }
+public class GRefTRefU<T,U> : IPlusT<IPlusT<T>>, IPlusT<IMinusT<U>>, IPlusTMinusU<IPlusT<T>, IPlusT<U>> { public GRefTRefU() {} }
+public class GRefTArrRefUArr<T,U> : IPlusT<IPlusT<T[]>>, IPlusT<IMinusT<U[]>>, IPlusTMinusU<IPlusT<T[]>,IPlusT<U[]>> { public GRefTArrRefUArr() {} }
+public class GArrRefTArrRefU<T,U> : IPlusT<IPlusT<T>[]>, IPlusT<IMinusT<U>[]>, IPlusTMinusU<IPlusT<T>[],IPlusT<U>[]> { public GArrRefTArrRefU() {} }
 
 
 public class TestClass
