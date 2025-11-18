@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Xunit;
 
 public class Base {}
@@ -32,7 +33,7 @@ public class TestClass
 			Console.WriteLine("Test Failed at location: {0} @ count {1} ", location, iTestCount);
 		}
 	}
-	private static void UnboxUToTInternal<T,U>()
+	private static void UnboxUToTInternal<T, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] U>()
 	{
 		T t = (T) Activator.CreateInstance(typeof(U));
 	}
