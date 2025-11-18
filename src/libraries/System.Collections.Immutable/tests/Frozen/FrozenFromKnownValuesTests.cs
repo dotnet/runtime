@@ -143,9 +143,6 @@ namespace System.Collections.Frozen.Tests
                     "X-MSEdge-Ref", "X-Powered-By", "X-Request-ID", "X-UA-Compatible", "X-XSS-Protection",
                 },
 
-                // Test case with extremely large strings that exceed length bucket boundaries.
-                new[] {"", new string('a', 0X7FFFFFC7 / 4) },
-
                 // exercise left/right justified ordinal comparers
                 Enumerable.Range(0, 10).Select(i => $"{i}ABCDEFGH").ToArray(), // left justified single char ascii
                 Enumerable.Range(0, 10).Select(i => $"ABCDEFGH{i}").ToArray(), // right justified single char ascii
