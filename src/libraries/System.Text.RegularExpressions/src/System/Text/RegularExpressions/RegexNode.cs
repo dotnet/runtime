@@ -1167,6 +1167,17 @@ namespace System.Text.RegularExpressions
                             {
                                 prev.Options &= ~RegexOptions.IgnoreCase;
                             }
+                            
+                            // Reduce the merged set to handle cases like [^\n] becoming Notone('\n')
+                            RegexNode reduced = prev.ReduceSet();
+                            if (reduced != prev)
+                            {
+                                children[j] = reduced;
+                                prev = reduced;
+                            }
+                            
+                            // Update lastNodeCannotMerge based on the final node type
+                            lastNodeCannotMerge = prev.Kind == RegexNodeKind.Set && !RegexCharClass.IsMergeable(prev.Str!);
                         }
                         else if (at.Kind == RegexNodeKind.Nothing)
                         {

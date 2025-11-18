@@ -307,6 +307,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a|b|c|def|g|h", "(?>[a-c]|def|[gh])")]
         [InlineData("a|[^a]", @"[\s\S]")]
         [InlineData(".|\n", @"[\s\S]")]
+        [InlineData(".|\r|\n", @"[\s\S]")]
         [InlineData(".|\n|a", @"[\s\S]")]
         [InlineData("abc|.|\n|def", @"abc|[\s\S]|def")]
         [InlineData("this|that|there|then|those", "th(?>is|at|ere|en|ose)")]
