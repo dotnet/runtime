@@ -13,6 +13,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
     <Compile Include="usereventstracee.cs" />
+    <Compile Include="UserEventsRequirements.cs" />
   </ItemGroup>
 
   <ItemGroup>

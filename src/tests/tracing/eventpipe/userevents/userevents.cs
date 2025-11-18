@@ -36,6 +36,11 @@ namespace Tracing.Tests.UserEvents
             string scriptFilePath = Path.Combine(appBaseDir, "dotnet-common.script");
             const string userEventsDataPath = "/sys/kernel/tracing/user_events_data";
 
+            if (!UserEventsRequirements.IsSupported())
+            {
+                Console.WriteLine("Skipping test: environment does not support user events.");
+                return 100;
+            }
             if (!File.Exists(recordTracePath))
             {
                 Console.Error.WriteLine($"record-trace not found at `{recordTracePath}`. Test cannot run.");
@@ -61,9 +66,21 @@ namespace Tracing.Tests.UserEvents
 
             Console.WriteLine($"Starting record-trace: {recordTraceStartInfo.FileName} {recordTraceStartInfo.Arguments}");
             using Process recordTraceProcess = Process.Start(recordTraceStartInfo);
-            recordTraceProcess.OutputDataReceived += (_, args) => Console.WriteLine($"[record-trace] {args.Data}");
+            recordTraceProcess.OutputDataReceived += (_, args) =>
+            {
+                if (!string.IsNullOrEmpty(args.Data))
+                {
+                    Console.WriteLine($"[record-trace] {args.Data}");
+                }
+            };
             recordTraceProcess.BeginOutputReadLine();
-            recordTraceProcess.ErrorDataReceived += (_, args) => Console.Error.WriteLine($"[record-trace] {args.Data}");
+            recordTraceProcess.ErrorDataReceived += (_, args) =>
+            {
+                if (!string.IsNullOrEmpty(args.Data))
+                {
+                    Console.Error.WriteLine($"[record-trace] {args.Data}");
+                }
+            };
             recordTraceProcess.BeginErrorReadLine();
             Console.WriteLine($"record-trace started with PID: {recordTraceProcess.Id}");
 
@@ -77,9 +94,21 @@ namespace Tracing.Tests.UserEvents
             Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {traceeStartInfo.Arguments}");
             using Process traceeProcess = Process.Start(traceeStartInfo);
             Console.WriteLine($"Tracee process started with PID: {traceeProcess.Id}");
-            traceeProcess.OutputDataReceived += (_, args) => Console.WriteLine($"[tracee] {args.Data}");
+            traceeProcess.OutputDataReceived += (_, args) =>
+            {
+                if (!string.IsNullOrEmpty(args.Data))
+                {
+                    Console.WriteLine($"[tracee] {args.Data}");
+                }
+            };
             traceeProcess.BeginOutputReadLine();
-            traceeProcess.ErrorDataReceived += (_, args) => Console.Error.WriteLine($"[tracee] {args.Data}");
+            traceeProcess.ErrorDataReceived += (_, args) =>
+            {
+                if (!string.IsNullOrEmpty(args.Data))
+                {
+                    Console.Error.WriteLine($"[tracee] {args.Data}");
+                }
+            };
             traceeProcess.BeginErrorReadLine();
 
             Console.WriteLine($"Waiting for tracee process to exit...");
@@ -118,6 +147,7 @@ namespace Tracing.Tests.UserEvents
             if (!ValidateTraceeEvents(traceFilePath))
             {
                 Console.Error.WriteLine($"Trace file `{traceFilePath}` does not contain expected events.");
+                UploadTraceFile(traceFilePath);
                 return -1;
             }
 
@@ -143,6 +173,21 @@ namespace Tracing.Tests.UserEvents
 
             source.Process();
             return allocationSampledEventFound;
+        }
+
+        private static void UploadTraceFile(string traceFilePath)
+        {
+            var helixWorkItemDirectory = Environment.GetEnvironmentVariable("HELIX_WORKITEM_UPLOAD_ROOT");
+            if (helixWorkItemDirectory != null && Directory.Exists(helixWorkItemDirectory))
+            {
+                var destPath = Path.Combine(helixWorkItemDirectory, Path.GetFileName(traceFilePath));
+                Console.WriteLine($"Uploading trace file to Helix work item directory: {destPath}");
+                File.Copy(traceFilePath, destPath, overwrite: true);
+            }
+            else
+            {
+                Console.WriteLine($"Helix work item directory not found. Trace file remains at: {traceFilePath}");
+            }
         }
     }
 }
