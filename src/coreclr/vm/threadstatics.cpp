@@ -917,6 +917,8 @@ bool CanJITOptimizeTLSAccess()
     // Optimization is disabled for linux/x86
 #elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
     // Optimization is disabled for linux musl arm64
+#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_RISCV64)
+    // Optimization is disabled for linux musl riscv64
 #elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
     // Optimization is disabled for FreeBSD/arm64
 #elif defined(TARGET_ANDROID)
@@ -1096,7 +1098,10 @@ void GetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
     // For Linux arm64/loongarch64/riscv64, just get the offset of thread static variable, and during execution,
     // this offset, arm64 taken from trpid_elp0 system register gives back the thread variable address.
     // this offset, loongarch64 taken from $tp register gives back the thread variable address.
+#if !(defined(TARGET_LINUX_MUSL) && defined(TARGET_RISCV64))
+    // On musl riscv64, this optimization is disabled due to initial-exec TLS incompatibility.
     threadStaticBaseOffset = GetThreadStaticsVariableOffset();
+#endif
 
 #else
     _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86 and Android");

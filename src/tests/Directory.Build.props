@@ -215,7 +215,7 @@
     <ImportProjectExtensionTargets>false</ImportProjectExtensionTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or ('$(TargetOS)' == 'android' and '$(TestBuildMode)' == 'nativeaot')">
     <EnableAggressiveTrimming Condition="'$(OutputType)' == 'Exe'">true</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(OutputType)' == 'Exe'">true</PublishTrimmed>
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
@@ -235,6 +235,21 @@
     <HybridGlobalization Condition="'$(_IsApplePlatform)' == 'true'">true</HybridGlobalization>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true' and '$(TargetOS)' == 'android' and '$(TestBuildMode)' == 'nativeaot' and '$(OutputType)' == 'Exe'">
+    <NativeLib>shared</NativeLib>
+    <CustomNativeMain>true</CustomNativeMain>
+  </PropertyGroup>
+
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />
   <Import Project="$(BaseOutputPath)\packages\Common\test_dependencies\test_dependencies\test_dependencies.*.props" Condition="'$(IsTestsCommonProject)' != 'true'" />
+
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true' and '$(TargetsAndroid)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">
+    <!-- We need the library import generator when running android tests. -->
+    <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
+    <!-- Treat as merged runners so that each assembly gets its own apk -->
+    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
+    <HasMergedInTests>true</HasMergedInTests>
+    <ExpectedExitCode>100</ExpectedExitCode>
+  </PropertyGroup>
+
 </Project>
