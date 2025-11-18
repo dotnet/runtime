@@ -171,6 +171,16 @@ namespace System.Runtime.CompilerServices
             public INotifyCompletion? Notifier;
             public IValueTaskSourceNotifier? ValueTaskSourceNotifier;
             public Task? TaskNotifier;
+
+            public ExecutionContext? ExecutionContext;
+            public SynchronizationContext? SynchronizationContext;
+
+            public void CaptureContexts()
+            {
+                Thread curThread = Thread.CurrentThreadAssumedInitialized;
+                ExecutionContext = curThread._executionContext;
+                SynchronizationContext = curThread._synchronizationContext;
+            }
         }
 
         [ThreadStatic]
@@ -238,6 +248,7 @@ namespace System.Runtime.CompilerServices
             else
             {
                 state.ValueTaskSourceNotifier = (IValueTaskSourceNotifier)o;
+                state.CaptureContexts();
             }
 
             AsyncSuspend(sentinelContinuation);
@@ -569,6 +580,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (critNotifier != null)
                     {
+                        RestoreContexts(false, state.ExecutionContext, state.SynchronizationContext);
                         critNotifier.UnsafeOnCompleted(TOps.GetContinuationAction(task));
                     }
                     else if (taskNotifier != null)
@@ -583,6 +595,8 @@ namespace System.Runtime.CompilerServices
                     }
                     else if (vtsNotifier != null)
                     {
+                        RestoreContexts(false, state.ExecutionContext, state.SynchronizationContext);
+
                         // The awaiter must inform the ValueTaskSource source on whether the continuation
                         // wants to run on a context, although the source may decide to ignore the suggestion.
                         // Since the behavior of the source takes precedence, we clear the context flags of
@@ -611,6 +625,9 @@ namespace System.Runtime.CompilerServices
                     else
                     {
                         Debug.Assert(notifier != null);
+
+                        RestoreContexts(false, state.ExecutionContext, state.SynchronizationContext);
+
                         notifier.OnCompleted(TOps.GetContinuationAction(task));
                     }
                 }
