@@ -469,7 +469,7 @@ namespace Internal.IL
 
                 // If this is the task await pattern, we're actually going to call the variant
                 // so switch our focus to the variant.
-                if (method.GetMethodDefinition().Signature.ReturnsTaskOrValueTask()
+                if (method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask()
                     && MatchTaskAwaitPattern())
                 {
                     runtimeDeterminedMethod = _factory.TypeSystemContext.GetAsyncVariantMethod(runtimeDeterminedMethod);
