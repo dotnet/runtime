@@ -173,7 +173,7 @@ namespace
             if (!EnvCacheValueNameSeenPerhaps(name))
                 return NULL;
 
-            // Priority order is DOTNET_, CORECLR_, and then COMPlus_.
+            // Priority order is DOTNET_, then (CORECLR_ or COMPlus_).
             wcscpy_s(buff, ARRAY_SIZE(buff), DOTNET_PREFIX);
             fallbackPrefix = coreclrFallbackPrefix ? CORECLR_PREFIX : COMPLUS_PREFIX;
         }
