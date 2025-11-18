@@ -3463,6 +3463,7 @@ const char* emitter::emitGetFrameReg()
 
 void emitter::emitDispRegSet(regMaskTP regs)
 {
+#if HAS_FIXED_REGISTER_SET
     regNumber reg;
     bool      sp = false;
 
@@ -3496,6 +3497,7 @@ void emitter::emitDispRegSet(regMaskTP regs)
     }
 
     printf("}");
+#endif // HAS_FIXED_REGISTER_SET
 }
 
 /*****************************************************************************
@@ -3834,6 +3836,9 @@ const size_t hexEncodingSize = 19;
 #elif defined(TARGET_RISCV64)
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 19;
+#elif defined(TARGET_WASM)
+const size_t basicIndent     = 12;
+const size_t hexEncodingSize = 19; // 8 bytes (wasm-objdump default) + 1 space.
 #endif
 
 #ifdef DEBUG
@@ -5505,6 +5510,9 @@ AGAIN:
         assert((sizeDif == 4) || (sizeDif == 8));
 #elif defined(TARGET_RISCV64)
         assert((sizeDif == 0) || (sizeDif == 4) || (sizeDif == 8));
+#elif defined(TARGET_WASM)
+        // TODO-WASM: likely the whole thing needs to be made unreachable.
+        NYI_WASM("emitJumpDistBind");
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7685,6 +7693,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
+#elif defined(TARGET_WASM)
+                    NYI_WASM("Short jump distance adjustment");
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7700,6 +7710,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
+#elif defined(TARGET_WASM)
+                    NYI_WASM("Jump distance adjustment");
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -9221,6 +9233,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
         return;
     }
 
+#if EMIT_GENERATE_GCINFO
     regMaskTP life;
     regMaskTP dead;
     regMaskTP chg;
@@ -9275,6 +9288,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
     // The 2 GC reg masks can't be overlapping
 
     assert((emitThisGCrefRegs & emitThisByrefRegs) == 0);
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -9542,6 +9556,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
 {
     assert(emitIssuing);
 
+#if EMIT_GENERATE_GCINFO
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
     {
@@ -9583,6 +9598,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
     // The 2 GC reg masks can't be overlapping
 
     assert((emitThisGCrefRegs & emitThisByrefRegs) == 0);
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -9600,6 +9616,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
         return;
     }
 
+#if EMIT_GENERATE_GCINFO
     // First, handle the gcref regs going dead
 
     regMaskTP gcrefRegs = emitThisGCrefRegs & regs;
@@ -9635,6 +9652,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
 
         emitThisByrefRegs &= ~byrefRegs;
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -9646,6 +9664,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
 {
     assert(emitIssuing);
 
+#if EMIT_GENERATE_GCINFO
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
     {
@@ -9674,6 +9693,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
 
         emitThisByrefRegs &= ~regMask;
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -10646,6 +10666,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 
 #endif // DEBUG
 
+#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------
 // emitGetGCRegsSavedOrModified: Returns the set of registers that keeps gcrefs and byrefs across the call.
 //
@@ -10761,6 +10782,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 
     return result;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 //------------------------------------------------------------------------
 // emitDisableGC: Requests that the following instruction groups are not GC-interruptible.

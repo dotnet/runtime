@@ -77,11 +77,11 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\StructMarshallingThunk.Sorting.cs">
       <Link>IL\Stubs\StructMarshallingThunk.Sorting.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs">
-      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs</Link>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\GetFieldHelperMethodOverride.cs">
+      <Link>IL\Stubs\GetFieldHelperMethodOverride.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs">
-      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs</Link>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\GetFieldHelperMethodOverride.Sorting.cs">
+      <Link>IL\Stubs\GetFieldHelperMethodOverride.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\InlineArrayType.Sorting.cs">
       <Link>TypeSystem\Interop\IL\InlineArrayType.Sorting.cs</Link>
@@ -397,10 +397,11 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.GeneratedAssembly.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.GeneratedAssembly.Sorting.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.EnumMethods.cs" />
-    <Compile Include="Compiler\CompilerTypeSystemContext.ValueTypeMethods.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.GetFieldMethodOverrides.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
     <Compile Include="Compiler\CustomAttributeExtensions.cs" />
     <Compile Include="Compiler\Dataflow\ArrayValue.cs" />
+    <Compile Include="Compiler\Dataflow\AsyncMaskingILProvider.cs" />
     <Compile Include="Compiler\Dataflow\AttributeDataFlow.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedCallGraph.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedState.cs" />
