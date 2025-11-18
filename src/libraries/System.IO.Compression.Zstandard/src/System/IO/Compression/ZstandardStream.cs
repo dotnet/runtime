@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net;
 
 namespace System.IO.Compression
 {
@@ -14,7 +15,7 @@ namespace System.IO.Compression
     {
         private const int DefaultInternalBufferSize = 65536; // 64KB default buffer
         private Stream _stream;
-        private byte[] _buffer;
+        private ArrayBuffer _buffer;
         private readonly bool _leaveOpen;
         private readonly CompressionMode _mode;
         private volatile bool _activeRwOperation;
@@ -55,7 +56,7 @@ namespace System.IO.Compression
             }
 
             _stream = stream;
-            _buffer = ArrayPool<byte>.Shared.Rent(DefaultInternalBufferSize);
+            _buffer = new ArrayBuffer(DefaultInternalBufferSize, usePool: true);
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression mode, and optionally leaves the stream open.</summary>
@@ -195,16 +196,10 @@ namespace System.IO.Compression
                 _decoder?.Reset();
             }
 
-            byte[] buffer = _buffer;
-            if (buffer != null)
+            // only return the buffer if no read/write operation is active
+            if (!Interlocked.Exchange(ref _activeRwOperation, true))
             {
-                _buffer = null!;
-
-                // only return the buffer if no read/write operation is active
-                if (!Interlocked.Exchange(ref _activeRwOperation, true))
-                {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                }
+                _buffer.Dispose();
             }
         }
 

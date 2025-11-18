@@ -11,8 +11,6 @@ namespace System.IO.Compression
     public sealed partial class ZstandardStream
     {
         private ZstandardDecoder? _decoder;
-        private int _bufferOffset;
-        private int _bufferCount;
         private bool _nonEmptyInput;
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and decoder instance.</summary>
@@ -31,16 +29,12 @@ namespace System.IO.Compression
             Debug.Assert(_decoder != null);
 
             // Decompress any data we may have in our buffer.
-            OperationStatus lastResult = _decoder.Decompress(new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount), destination, out int bytesConsumed, out bytesWritten);
+            OperationStatus lastResult = _decoder.Decompress(_buffer.ActiveSpan, destination, out int bytesConsumed, out bytesWritten);
+            _buffer.Discard(bytesConsumed);
+
             if (lastResult == OperationStatus.InvalidData)
             {
                 throw new InvalidOperationException(SR.ZstandardStream_Decompress_InvalidData);
-            }
-
-            if (bytesConsumed != 0)
-            {
-                _bufferOffset += bytesConsumed;
-                _bufferCount -= bytesConsumed;
             }
 
             // If we successfully decompressed any bytes, or if we've reached the end of the decompression, we're done.
@@ -60,7 +54,7 @@ namespace System.IO.Compression
                 // for the 99% case.  If it's wrong, it just means that a caller using zero-byte reads as a way to delay
                 // getting a buffer to use for a subsequent call may end up getting one earlier than otherwise preferred.
                 Debug.Assert(lastResult == OperationStatus.DestinationTooSmall);
-                if (_bufferCount != 0)
+                if (_buffer.ActiveLength != 0)
                 {
                     Debug.Assert(bytesWritten == 0);
                     return true;
@@ -69,14 +63,7 @@ namespace System.IO.Compression
 
             Debug.Assert(
                 lastResult == OperationStatus.NeedMoreData ||
-                (lastResult == OperationStatus.DestinationTooSmall && destination.IsEmpty && _bufferCount == 0), $"{nameof(lastResult)} == {lastResult}, {nameof(destination.Length)} == {destination.Length}");
-
-            // Ensure any left over data is at the beginning of the array so we can fill the remainder.
-            if (_bufferCount != 0 && _bufferOffset != 0)
-            {
-                new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount).CopyTo(_buffer);
-            }
-            _bufferOffset = 0;
+                (lastResult == OperationStatus.DestinationTooSmall && destination.IsEmpty && _buffer.ActiveLength == 0), $"{nameof(lastResult)} == {lastResult}, {nameof(destination.Length)} == {destination.Length}");
 
             return false;
         }
@@ -120,7 +107,7 @@ namespace System.IO.Compression
                 int bytesWritten;
                 while (!TryDecompress(buffer, out bytesWritten))
                 {
-                    int bytesRead = _stream.Read(_buffer, _bufferCount, _buffer.Length - _bufferCount);
+                    int bytesRead = _stream.Read(_buffer.AvailableSpan);
                     if (bytesRead <= 0)
                     {
                         if (s_useStrictValidation && _nonEmptyInput && !buffer.IsEmpty)
@@ -129,12 +116,13 @@ namespace System.IO.Compression
                     }
 
                     _nonEmptyInput = true;
-                    _bufferCount += bytesRead;
 
-                    if (_bufferCount > _buffer.Length)
+                    if (bytesRead > _buffer.AvailableLength)
                     {
                         ThrowInvalidStream();
                     }
+
+                    _buffer.Commit(bytesRead);
                 }
 
                 return bytesWritten;
@@ -186,7 +174,7 @@ namespace System.IO.Compression
                 int bytesWritten;
                 while (!TryDecompress(buffer.Span, out bytesWritten))
                 {
-                    int bytesRead = await _stream.ReadAsync(_buffer.AsMemory(_bufferCount), cancellationToken).ConfigureAwait(false);
+                    int bytesRead = await _stream.ReadAsync(_buffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
                     if (bytesRead <= 0)
                     {
                         if (s_useStrictValidation && _nonEmptyInput && !buffer.IsEmpty)
@@ -195,12 +183,13 @@ namespace System.IO.Compression
                     }
 
                     _nonEmptyInput = true;
-                    _bufferCount += bytesRead;
 
-                    if (_bufferCount > _buffer.Length)
+                    if (bytesRead > _buffer.AvailableLength)
                     {
                         ThrowInvalidStream();
                     }
+
+                    _buffer.Commit(bytesRead);
                 }
 
                 return bytesWritten;

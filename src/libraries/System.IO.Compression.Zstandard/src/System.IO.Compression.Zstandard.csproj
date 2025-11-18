@@ -32,6 +32,11 @@
     <Compile Include="System\IO\Compression\ZstandardUtils.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeZstdHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeZstdHandle.cs" />
+
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
+       <Link>Common\System\Net\ArrayBuffer.cs</Link>
+    </Compile>
+
   </ItemGroup>
 
   <!-- Windows specific files -->

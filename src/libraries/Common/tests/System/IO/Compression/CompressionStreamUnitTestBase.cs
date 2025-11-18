@@ -838,7 +838,7 @@ namespace System.IO.Compression
         public BadWrappedStream(Mode mode) { _mode = mode; }
         public BadWrappedStream(Mode mode, byte[] buffer) : base(buffer) { _mode = mode; }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read(Span<byte> buffer)
         {
             switch (_mode)
             {
@@ -847,10 +847,24 @@ namespace System.IO.Compression
                 case Mode.ReturnTooLargeCounts:
                     return buffer.Length + 1;
                 case Mode.ReadSlowly:
-                    return base.Read(buffer, offset, 1);
+                    int b = base.ReadByte();
+                    if (b == -1)
+                    {
+                        return 0;
+                    }
+                    else
+                    {
+                        buffer[0] = (byte)b;
+                        return 1;
+                    }
                 default:
                     return 0;
             }
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return Read(buffer.AsSpan(offset, count));
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)

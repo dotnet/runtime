@@ -79,7 +79,12 @@ namespace System.IO.Compression
                 }
 
                 OperationStatus lastResult = OperationStatus.DestinationTooSmall;
-                Span<byte> output = new Span<byte>(_buffer);
+
+                // we don't need extra tracking of ArrayBuffer for write operations as
+                // we propagate the entire result downstream, so just grab the span
+                Span<byte> output = _buffer.AvailableSpan;
+                Debug.Assert(!output.IsEmpty, "Internal buffer should be initialized to non-zero size");
+
                 while (lastResult == OperationStatus.DestinationTooSmall)
                 {
                     int bytesWritten;
@@ -136,7 +141,12 @@ namespace System.IO.Compression
                 }
 
                 OperationStatus lastResult = OperationStatus.DestinationTooSmall;
-                Memory<byte> output = _buffer.AsMemory();
+
+                // we don't need extra tracking of ArrayBuffer for write operations as
+                // we propagate the entire result downstream, so just grab the memory
+                Memory<byte> output = _buffer.AvailableMemory;
+                Debug.Assert(!output.IsEmpty, "Internal buffer should be initialized to non-zero size");
+
                 while (lastResult == OperationStatus.DestinationTooSmall)
                 {
                     int bytesWritten;
