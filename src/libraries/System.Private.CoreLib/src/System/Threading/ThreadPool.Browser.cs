@@ -83,7 +83,7 @@ namespace System.Threading
                 return;
             _callbackQueued = true;
 #if MONO
-            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            MainThreadScheduleBackgroundJob((void*)(delegate* unmanaged<void>)&BackgroundJobHandler);
 #else
             SystemJS_ScheduleBackgroundJob();
 #endif
@@ -128,9 +128,7 @@ namespace System.Threading
         private static unsafe partial void SystemJS_ScheduleBackgroundJob();
 #endif
 
-#pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
-        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-#pragma warning restore CS3016
+        [UnmanagedCallersOnly(EntryPoint = "SystemJS_ExecuteBackgroundJobCallback")]
         // this callback will arrive on the bound thread, called from mono_background_exec
         private static void BackgroundJobHandler()
         {

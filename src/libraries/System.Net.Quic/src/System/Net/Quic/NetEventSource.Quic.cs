@@ -6,13 +6,9 @@ using System.Net.Quic;
 
 namespace System.Net
 {
-    [EventSource(Name = NetEventSourceName)]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Quic")]
     internal sealed partial class NetEventSource
     {
-        private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.Quic";
-
-        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
-
         static partial void AdditionalCustomizedToString(object value, ref string? result)
         {
             if (value is MsQuicSafeHandle safeHandle)

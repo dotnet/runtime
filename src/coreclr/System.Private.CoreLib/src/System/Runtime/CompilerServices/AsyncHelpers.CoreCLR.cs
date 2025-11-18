@@ -13,6 +13,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
+#if NATIVEAOT
+using Internal.Runtime;
+#endif
+
 namespace System.Runtime.CompilerServices
 {
     internal struct ExecutionAndSyncBlockStore
@@ -140,11 +144,19 @@ namespace System.Runtime.CompilerServices
 
     public static partial class AsyncHelpers
     {
-        // This is the "magic" method on wich other "Await" methods are built.
+        // This is the "magic" method on which other "Await" methods are built.
         // Calling this from an Async method returns the continuation to the caller thus
         // explicitly initiates suspension.
         [Intrinsic]
         private static void AsyncSuspend(Continuation continuation) => throw new UnreachableException();
+
+        // An intrinsic that provides access to continuations produced by Async calls.
+        // Calling this after an Async method call returns:
+        //   * `null` if the call has completed synchronously, or
+        //   * a continuation object if the call requires suspension.
+        //     In this case the formal result of the call is undefined.
+        [Intrinsic]
+        private static Continuation? AsyncCallContinuation() => throw new UnreachableException();
 
         // Used during suspensions to hold the continuation chain and on what we are waiting.
         // Methods like FinalizeTaskReturningThunk will unlink the state and wrap into a Task.
@@ -166,11 +178,16 @@ namespace System.Runtime.CompilerServices
 
         private static unsafe Continuation AllocContinuation(Continuation prevContinuation, MethodTable* contMT)
         {
+#if NATIVEAOT
+            Continuation newContinuation = (Continuation)RuntimeImports.RhNewObject(contMT);
+#else
             Continuation newContinuation = (Continuation)RuntimeTypeHandle.InternalAllocNoChecks(contMT);
+#endif
             prevContinuation.Next = newContinuation;
             return newContinuation;
         }
 
+#if !NATIVEAOT
         private static unsafe Continuation AllocContinuationMethod(Continuation prevContinuation, MethodTable* contMT, int keepAliveOffset, MethodDesc* method)
         {
             LoaderAllocator loaderAllocator = RuntimeMethodHandle.GetLoaderAllocator(new RuntimeMethodHandleInternal((IntPtr)method));
@@ -192,6 +209,7 @@ namespace System.Runtime.CompilerServices
             }
             return newContinuation;
         }
+#endif
 
         /// <summary>
         /// Used by internal thunks that implement awaiting on Task or a ValueTask.
@@ -228,7 +246,7 @@ namespace System.Runtime.CompilerServices
         private interface IRuntimeAsyncTaskOps<T>
         {
             static abstract Action GetContinuationAction(T task);
-            static abstract Continuation GetContinuationState(T task);
+            static abstract Continuation MoveContinuationState(T task);
             static abstract void SetContinuationState(T task, Continuation value);
             static abstract bool SetCompleted(T task);
             static abstract void PostToSyncContext(T task, SynchronizationContext syncCtx);
@@ -287,9 +305,16 @@ namespace System.Runtime.CompilerServices
             private struct Ops : IRuntimeAsyncTaskOps<RuntimeAsyncTask<T>>
             {
                 public static Action GetContinuationAction(RuntimeAsyncTask<T> task) => (Action)task.m_action!;
-                public static Continuation GetContinuationState(RuntimeAsyncTask<T> task) => (Continuation)task.m_stateObject!;
+                public static Continuation MoveContinuationState(RuntimeAsyncTask<T> task)
+                {
+                    Continuation continuation = (Continuation)task.m_stateObject!;
+                    task.m_stateObject = null;
+                    return continuation;
+                }
+
                 public static void SetContinuationState(RuntimeAsyncTask<T> task, Continuation value)
                 {
+                    Debug.Assert(task.m_stateObject == null);
                     task.m_stateObject = value;
                 }
 
@@ -363,9 +388,16 @@ namespace System.Runtime.CompilerServices
             private struct Ops : IRuntimeAsyncTaskOps<RuntimeAsyncTask>
             {
                 public static Action GetContinuationAction(RuntimeAsyncTask task) => (Action)task.m_action!;
-                public static Continuation GetContinuationState(RuntimeAsyncTask task) => (Continuation)task.m_stateObject!;
+                public static Continuation MoveContinuationState(RuntimeAsyncTask task)
+                {
+                    Continuation continuation = (Continuation)task.m_stateObject!;
+                    task.m_stateObject = null;
+                    return continuation;
+                }
+
                 public static void SetContinuationState(RuntimeAsyncTask task, Continuation value)
                 {
+                    Debug.Assert(task.m_stateObject == null);
                     task.m_stateObject = value;
                 }
 
@@ -419,7 +451,7 @@ namespace System.Runtime.CompilerServices
 
                 DispatcherInfo dispatcherInfo;
                 dispatcherInfo.Next = t_dispatcherInfo;
-                dispatcherInfo.NextContinuation = TOps.GetContinuationState(task);
+                dispatcherInfo.NextContinuation = TOps.MoveContinuationState(task);
                 t_dispatcherInfo = &dispatcherInfo;
 
                 while (true)
@@ -524,7 +556,7 @@ namespace System.Runtime.CompilerServices
                 sentinelContinuation.Next = null;
 
                 // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
-                // These never have special continuation handling.
+                // These never have special continuation context handling.
                 const ContinuationFlags continueFlags =
                     ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                     ContinuationFlags.ContinueOnThreadPool |
@@ -742,28 +774,33 @@ namespace System.Runtime.CompilerServices
             syncCtx = thread._synchronizationContext;
         }
 
+        // Restore contexts onto current Thread. If "resumed" then this is not the first starting call for the async method.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreContexts(bool suspended, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        private static void RestoreContexts(bool resumed, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
         {
-            Thread thread = Thread.CurrentThreadAssumedInitialized;
-            if (!suspended && previousSyncCtx != thread._synchronizationContext)
+            if (!resumed)
             {
-                thread._synchronizationContext = previousSyncCtx;
-            }
+                Thread thread = Thread.CurrentThreadAssumedInitialized;
+                if (previousSyncCtx != thread._synchronizationContext)
+                {
+                    thread._synchronizationContext = previousSyncCtx;
+                }
 
-            ExecutionContext? currentExecCtx = thread._executionContext;
-            if (previousExecCtx != currentExecCtx)
-            {
-                ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
+                ExecutionContext? currentExecCtx = thread._executionContext;
+                if (previousExecCtx != currentExecCtx)
+                {
+                    ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
+                }
             }
         }
 
-        private static void CaptureContinuationContext(SynchronizationContext syncCtx, ref object context, ref ContinuationFlags flags)
+        private static void CaptureContinuationContext(ref object continuationContext, ref ContinuationFlags flags)
         {
+            SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
             if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
             {
                 flags |= ContinuationFlags.ContinueOnCapturedSynchronizationContext;
-                context = syncCtx;
+                continuationContext = syncCtx;
                 return;
             }
 
@@ -771,7 +808,7 @@ namespace System.Runtime.CompilerServices
             if (sched != null && sched != TaskScheduler.Default)
             {
                 flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
-                context = sched;
+                continuationContext = sched;
                 return;
             }
 
