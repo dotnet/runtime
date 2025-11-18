@@ -377,7 +377,6 @@ namespace System.Collections.Frozen.Tests
             Assert.All(expected, s => actual.Contains(s));
         }
 
-
         [Fact]
         [OuterLoop]
         public void ToFrozenSet_WithExtremelyLargeStrings()
@@ -385,7 +384,7 @@ namespace System.Collections.Frozen.Tests
             // Test case with extremely large strings that exceed length bucket boundaries.
             var keys = new[] { "", new string('a', 0X7FFFFFC7 / 4) };
             var frozen = keys.ToFrozenSet(GetIEqualityComparer());
-            Assert.Equal(2, frozen.Count);
+            Assert.Equal(keys.Length, frozen.Count);
             Assert.All(keys, key => frozen.Contains(key));
         }
     }
