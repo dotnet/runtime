@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
@@ -205,10 +206,9 @@ namespace ILCompiler
 
             return _signature = new MethodSignature(
                 _wrappedMethod.Signature.Flags,
-                _wrappedMethod.Signature.GenericParameterCount,
+                0,
                 returnType,
-                parameters,
-                _wrappedMethod.Signature.GetEmbeddedSignatureData());
+                parameters);
         }
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => throw new NotImplementedException();
