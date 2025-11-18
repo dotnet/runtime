@@ -58,7 +58,7 @@
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(OutputPath)$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" />
+  <UsingTask TaskName="ManagedToNativeGenerator" Runtime="NET" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" />
 
   <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
       <ItemGroup>
