@@ -10,7 +10,7 @@ using Microsoft.Win32.SafeHandles;
 namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties to decompress data using Zstandard decompression.</summary>
-    public class ZstandardDecoder : IDisposable
+    public sealed class ZstandardDecoder : IDisposable
     {
         private SafeZstdDecompressHandle _context;
         private bool _disposed;

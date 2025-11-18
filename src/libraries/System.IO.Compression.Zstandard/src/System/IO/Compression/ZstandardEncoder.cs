@@ -10,7 +10,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.IO.Compression
 {
     /// <summary>Provides methods and properties to compress data using Zstandard compression.</summary>
-    public class ZstandardEncoder : IDisposable
+    public sealed class ZstandardEncoder : IDisposable
     {
         internal SafeZstdCompressHandle? _context;
         private bool _disposed;
