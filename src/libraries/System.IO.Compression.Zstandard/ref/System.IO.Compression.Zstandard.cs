@@ -22,7 +22,7 @@ namespace System.IO.Compression
         public int TargetBlockSize { get { throw null; } set { } }
         public int Window { get { throw null; } set { } }
     }
-    public partial sealed class ZstandardDecoder : System.IDisposable
+    public sealed partial class ZstandardDecoder : System.IDisposable
     {
         public ZstandardDecoder() { }
         public ZstandardDecoder(int maxWindow) { }
@@ -45,7 +45,7 @@ namespace System.IO.Compression
         public void Dispose() { }
         public static System.IO.Compression.ZstandardDictionary Train(System.ReadOnlySpan<byte> samples, System.ReadOnlySpan<long> sampleLengths, int maxDictionarySize) { throw null; }
     }
-    public partial sealed class ZstandardEncoder : System.IDisposable
+    public sealed partial class ZstandardEncoder : System.IDisposable
     {
         public ZstandardEncoder() { }
         public ZstandardEncoder(int quality) { }
