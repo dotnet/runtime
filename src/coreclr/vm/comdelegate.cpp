@@ -1277,17 +1277,22 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
         // We can get virtual delegates closed over null through this code path, so be careful to handle that case (no need to
         // virtualize since we're just going to throw NullRefException at invocation time).
         // </TODO>
-        if (pTargetMethod->IsVirtual() &&
-            *pRefFirstArg != NULL &&
-            pTargetMethod->GetMethodTable() != (*pRefFirstArg)->GetMethodTable())
+        if (pTargetMethod->IsVirtual()
+            && *pRefFirstArg != NULL
+            && pTargetMethod->GetMethodTable() != (*pRefFirstArg)->GetMethodTable())
+        {
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfVirtualizedCode(pRefFirstArg, pTargetMethod->GetMethodTable());
-        else
+        }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-        if (pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        else if (pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        {
             pTargetCode = pTargetMethod->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pTargetMethod, PRECODE_THISPTR_RETBUF);
-        else
+        }
 #endif // HAS_THISPTR_RETBUF_PRECODE
+        else
+        {
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfCode();
+        }
         _ASSERTE(pTargetCode);
 
         refRealDelegate->SetTarget(*pRefFirstArg);

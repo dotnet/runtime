@@ -33,6 +33,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Common\Compiler\AsyncContinuationType.cs" Link="Compiler\AsyncContinuationType.cs" />
+    <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.cs" Link="Compiler\AsyncMethodVariant.cs" />
+    <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.Mangling.cs" Link="Compiler\AsyncMethodVariant.Mangling.cs" />
+    <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Async.cs" Link="Compiler\CompilerTypeSystemContext.Async.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
@@ -42,6 +46,10 @@
     <Compile Include="..\..\Common\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.cs" Link="IL\Stubs\AsyncResumptionStub.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Mangling.cs" Link="IL\Stubs\AsyncResumptionStub.Mangling.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Sorting.cs" Link="IL\Stubs\AsyncResumptionStub.Sorting.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncThunks.cs" Link="IL\Stubs\AsyncThunks.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateThunks.Sorting.cs">
       <Link>IL\Stubs\DelegateThunks.Sorting.cs</Link>
     </Compile>
@@ -69,11 +77,11 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\StructMarshallingThunk.Sorting.cs">
       <Link>IL\Stubs\StructMarshallingThunk.Sorting.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs">
-      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs</Link>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\GetFieldHelperMethodOverride.cs">
+      <Link>IL\Stubs\GetFieldHelperMethodOverride.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs">
-      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs</Link>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\GetFieldHelperMethodOverride.Sorting.cs">
+      <Link>IL\Stubs\GetFieldHelperMethodOverride.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\InlineArrayType.Sorting.cs">
       <Link>TypeSystem\Interop\IL\InlineArrayType.Sorting.cs</Link>
@@ -373,6 +381,7 @@
     <Compile Include="Compiler\DependencyAnalysis\AnalysisCharacteristicNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AnalyzedExternalTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AnalyzedProxyTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AsyncContinuationEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ByRefTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratableObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DehydratedDataNode.cs" />
@@ -388,10 +397,11 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.GeneratedAssembly.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.GeneratedAssembly.Sorting.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.EnumMethods.cs" />
-    <Compile Include="Compiler\CompilerTypeSystemContext.ValueTypeMethods.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.GetFieldMethodOverrides.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
     <Compile Include="Compiler\CustomAttributeExtensions.cs" />
     <Compile Include="Compiler\Dataflow\ArrayValue.cs" />
+    <Compile Include="Compiler\Dataflow\AsyncMaskingILProvider.cs" />
     <Compile Include="Compiler\Dataflow\AttributeDataFlow.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedCallGraph.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedState.cs" />
@@ -582,7 +592,7 @@
     <Compile Include="Compiler\DependencyAnalysis\EETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CanonicalDefinitionEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\GCStaticEETypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\DataOnlyEETypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StaticsInfoHashtableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\INodeWithCodeInfo.Aot.cs" />

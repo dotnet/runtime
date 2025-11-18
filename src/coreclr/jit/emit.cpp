@@ -1306,7 +1306,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitFirstColdIG   = nullptr;
     emitTotalCodeSize = 0;
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64)
     emitCounts_INS_OPTS_J = 0;
 #endif
 
@@ -3463,6 +3463,7 @@ const char* emitter::emitGetFrameReg()
 
 void emitter::emitDispRegSet(regMaskTP regs)
 {
+#if HAS_FIXED_REGISTER_SET
     regNumber reg;
     bool      sp = false;
 
@@ -3496,6 +3497,7 @@ void emitter::emitDispRegSet(regMaskTP regs)
     }
 
     printf("}");
+#endif // HAS_FIXED_REGISTER_SET
 }
 
 /*****************************************************************************
@@ -3834,6 +3836,9 @@ const size_t hexEncodingSize = 19;
 #elif defined(TARGET_RISCV64)
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 19;
+#elif defined(TARGET_WASM)
+const size_t basicIndent     = 12;
+const size_t hexEncodingSize = 19; // 8 bytes (wasm-objdump default) + 1 space.
 #endif
 
 #ifdef DEBUG
@@ -4840,7 +4845,7 @@ void emitter::emitRemoveJumpToNextInst()
 /*****************************************************************************
  *  Bind targets of relative jumps to choose the smallest possible encoding.
  *  X86 and AMD64 have a small and large encoding.
- *  ARM has a small, medium, and large encoding. The large encoding is a pseudo-op
+ *  ARM and RISC-V have a small, medium, and large encoding. The large encoding is a pseudo-op
  *      to handle greater range than the conditional branch instructions can handle.
  *  ARM64 has a small and large encoding for both conditional branch and loading label addresses.
  *      The large encodings are pseudo-ops that represent a multiple instruction sequence, similar to ARM. (Currently
@@ -4848,7 +4853,7 @@ void emitter::emitRemoveJumpToNextInst()
  *  LoongArch64 has an individual implementation for emitJumpDistBind().
  */
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_LOONGARCH64)
 void emitter::emitJumpDistBind()
 {
 #ifdef DEBUG
@@ -4873,9 +4878,9 @@ void emitter::emitJumpDistBind()
                                   // to a small jump. If it is small enough, we will iterate in hopes of
                                   // converting those jumps we missed converting the first (or second...) time.
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     UNATIVE_OFFSET minMediumExtra; // Same as 'minShortExtra', but for medium-sized jumps.
-#endif                             // TARGET_ARM
+#endif                             // TARGET_ARM || TARGET_RISCV64
 
     UNATIVE_OFFSET adjIG;
     UNATIVE_OFFSET adjLJ;
@@ -4911,9 +4916,9 @@ AGAIN:
     adjIG         = 0;
     minShortExtra = (UNATIVE_OFFSET)-1;
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     minMediumExtra = (UNATIVE_OFFSET)-1;
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64
 
     for (jmp = emitJumpList; jmp; jmp = jmp->idjNext)
     {
@@ -4926,12 +4931,12 @@ AGAIN:
         NATIVE_OFFSET  nsd = 0; // small  jump max. neg distance
         NATIVE_OFFSET  psd = 0; // small  jump max. pos distance
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
         UNATIVE_OFFSET msz = 0; // medium jump size
         NATIVE_OFFSET  nmd = 0; // medium jump max. neg distance
         NATIVE_OFFSET  pmd = 0; // medium jump max. pos distance
         NATIVE_OFFSET  mextra;  // How far beyond the medium jump range is this jump offset?
-#endif                          // TARGET_ARM
+#endif                          // TARGET_ARM || TARGET_RISCV64
 
         NATIVE_OFFSET  extra;           // How far beyond the short jump range is this jump offset?
         UNATIVE_OFFSET srcInstrOffs;    // offset of the source instruction of the jump
@@ -5038,6 +5043,34 @@ AGAIN:
             assert(!"Unknown jump instruction");
         }
 #endif // TARGET_ARM64
+
+#ifdef TARGET_RISCV64
+        /* Figure out the smallest size we can end up with */
+
+        // TODO-RISC64-RVC: add compressed branches and jumps
+        if (emitIsCmpJump(jmp))
+        {
+            ssz = sizeof(code_t);
+            nsd = B_DIST_SMALL_MAX_NEG;
+            psd = B_DIST_SMALL_MAX_POS;
+
+            // 2 instructions: "reverse cmp-and-branch; jal offset;"
+            // Move bounds to the right by 'ssz' to account for the reversed branch instruction size.
+            msz = sizeof(code_t) * 2;
+            nmd = J_DIST_SMALL_MAX_NEG + ssz;
+            pmd = J_DIST_SMALL_MAX_POS + ssz;
+        }
+        else if (emitIsUncondJump(jmp))
+        {
+            ssz = sizeof(code_t);
+            nsd = J_DIST_SMALL_MAX_NEG;
+            psd = J_DIST_SMALL_MAX_POS;
+        }
+        else
+        {
+            assert(!"Unknown jump instruction");
+        }
+#endif // TARGET_RISCV64
 
         /* Make sure the jumps are properly ordered */
 
@@ -5244,9 +5277,9 @@ AGAIN:
 #if defined(TARGET_ARM)
         srcEncodingOffs =
             srcInstrOffs + 4; // For relative branches, ARM PC is always considered to be the instruction address + 4
-#elif defined(TARGET_ARM64)
-        srcEncodingOffs =
-            srcInstrOffs; // For relative branches, ARM64 PC is always considered to be the instruction address
+#elif defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+        srcEncodingOffs = srcInstrOffs; // For relative branches, ARM64 and RISC-V PC is always considered to be the
+                                        // instruction address
 #else
         srcEncodingOffs = srcInstrOffs + ssz; // Encoding offset of relative offset for small branch
 #endif
@@ -5360,14 +5393,14 @@ AGAIN:
             minShortExtra = (unsigned)extra;
         }
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
 
         // If we're here, we couldn't convert to a small jump.
         // Handle conversion to medium-sized conditional jumps.
         // 'srcInstrOffs', 'srcEncodingOffs', 'dstOffs', 'jmpDist' have already been computed
         // and don't need to be recomputed.
 
-        if (emitIsCondJump(jmp))
+        if (emitIsCmpJump(jmp))
         {
             if (jmpIG->igNum < tgtIG->igNum)
             {
@@ -5432,7 +5465,7 @@ AGAIN:
                 minMediumExtra = (unsigned)mextra;
         }
 
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64
 
         /*****************************************************************************
          * We arrive here if the jump must stay long, at least for now.
@@ -5475,13 +5508,18 @@ AGAIN:
         // The size of IF_LARGEJMP/IF_LARGEADR/IF_LARGELDC are 8 or 12.
         // All other code size is 4.
         assert((sizeDif == 4) || (sizeDif == 8));
+#elif defined(TARGET_RISCV64)
+        assert((sizeDif == 0) || (sizeDif == 4) || (sizeDif == 8));
+#elif defined(TARGET_WASM)
+        // TODO-WASM: likely the whole thing needs to be made unreachable.
+        NYI_WASM("emitJumpDistBind");
 #else
 #error Unsupported or unset target architecture
 #endif
 
         goto NEXT_JMP;
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
 
         /*****************************************************************************/
         /* Handle conversion to medium jump                                          */
@@ -5508,7 +5546,7 @@ AGAIN:
 
         goto NEXT_JMP;
 
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64
 
         /*****************************************************************************/
 
@@ -7655,6 +7693,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
+#elif defined(TARGET_WASM)
+                    NYI_WASM("Short jump distance adjustment");
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7670,6 +7710,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
+#elif defined(TARGET_WASM)
+                    NYI_WASM("Jump distance adjustment");
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7963,6 +8005,54 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
     emitConsDsc.dsdLast = secDesc;
 
     return secOffs;
+}
+
+//---------------------------------------------------------------------------
+// emitAsyncResumeTable:
+//   Allocate space for an async resumption info table in the data sections.
+//
+// Arguments:
+//    numEntries    - Number of entries in the table
+//    dataSecOffset - [out] Offset of the data section that was allocated
+//    dataSec       - [out] Information about the data section that was allocated
+//
+void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecOffs, emitter::dataSection** dataSec)
+{
+    UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
+    unsigned       emittedSize = sizeof(emitter::dataAsyncResumeInfo) * numEntries;
+    emitConsDsc.dsdOffs += emittedSize;
+
+    dataSection* secDesc = (dataSection*)emitGetMem(roundUp(sizeof(dataSection) + numEntries * sizeof(emitLocation)));
+
+    for (unsigned i = 0; i < numEntries; i++)
+        new (secDesc->dsCont + i * sizeof(emitLocation), jitstd::placement_t()) emitLocation();
+
+    secDesc->dsSize     = emittedSize;
+    secDesc->dsType     = dataSection::asyncResumeInfo;
+    secDesc->dsDataType = TYP_UNKNOWN;
+    secDesc->dsNext     = nullptr;
+
+    if (emitConsDsc.dsdLast)
+    {
+        emitConsDsc.dsdLast->dsNext = secDesc;
+    }
+    else
+    {
+        emitConsDsc.dsdList = secDesc;
+    }
+
+    emitConsDsc.dsdLast   = secDesc;
+    emitConsDsc.alignment = std::max(emitConsDsc.alignment, (UNATIVE_OFFSET)TARGET_POINTER_SIZE);
+
+    *dataSecOffs = secOffs;
+    *dataSec     = secDesc;
+
+    // We will need the resume stub. Get it from the EE now so we can display
+    // it before we emit the actual table later.
+    if (emitAsyncResumeStub == NO_METHOD_HANDLE)
+    {
+        emitAsyncResumeStub = emitCmpHandle->getAsyncResumptionStub(&emitAsyncResumeStubEntryPoint);
+    }
 }
 
 /*****************************************************************************
@@ -8435,7 +8525,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 bDstRW[i] = (target_size_t)(size_t)target;
                 if (emitComp->opts.compReloc)
                 {
-                    emitRecordRelocation(&(bDstRW[i]), target, IMAGE_REL_BASED_HIGHLOW);
+                    uint16_t relocType = TARGET_POINTER_SIZE == 8 ? IMAGE_REL_BASED_DIR64 : IMAGE_REL_BASED_HIGHLOW;
+                    emitRecordRelocation(&(bDstRW[i]), target, relocType);
                 }
 
                 JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDstRW[i]);
@@ -8461,6 +8552,35 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 uDstRW[i] = lab->igOffs - labFirst->igOffs;
 
                 JITDUMP("  " FMT_BB ": 0x%x\n", block->bbNum, uDstRW[i]);
+            }
+        }
+        else if (dsc->dsType == dataSection::asyncResumeInfo)
+        {
+            JITDUMP("  section %u, size %u, async resume info\n", secNum++, dscSize);
+
+            size_t numElems = dscSize / sizeof(emitter::dataAsyncResumeInfo);
+
+            emitter::dataAsyncResumeInfo* aDstRW = (emitter::dataAsyncResumeInfo*)dstRW;
+            for (size_t i = 0; i < numElems; i++)
+            {
+                emitLocation* emitLoc = &((emitLocation*)dsc->dsCont)[i];
+
+                // Async call may have been removed very late, after we have introduced suspension/resumption.
+                // In those cases just encode null.
+                BYTE* target           = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
+                aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
+                aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
+                if (emitComp->opts.compReloc)
+                {
+                    uint16_t relocType = TARGET_POINTER_SIZE == 8 ? IMAGE_REL_BASED_DIR64 : IMAGE_REL_BASED_HIGHLOW;
+                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, relocType);
+                    if (target != nullptr)
+                    {
+                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, relocType);
+                    }
+                }
+
+                JITDUMP("  Resume=%p, FinalResumeIP=%p\n", emitAsyncResumeStubEntryPoint, (void*)target);
             }
         }
         else
@@ -8597,6 +8717,40 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                 if (!emitComp->opts.disDiffable)
                 {
                     printf(" ; case %s\n", blockLabel);
+                }
+            }
+        }
+        else if (data->dsType == dataSection::asyncResumeInfo)
+        {
+            assert(emitAsyncResumeStub != NO_METHOD_HANDLE);
+            assert(emitAsyncResumeStubEntryPoint != nullptr);
+
+            char        nameBuffer[256];
+            const char* resumeStubName =
+                emitComp->eeGetMethodFullName(emitAsyncResumeStub, true, true, nameBuffer, sizeof(nameBuffer));
+
+            size_t infoCount = data->dsSize / sizeof(emitLocation);
+            for (size_t i = 0; i < infoCount; i++)
+            {
+                if (i > 0)
+                {
+                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(dataAsyncResumeInfo));
+                    printf(labelFormat, label);
+                }
+
+                emitLocation* emitLoc = &((emitLocation*)data->dsCont)[i];
+
+                printf("\tdq\t%s\n", resumeStubName);
+
+                UNATIVE_OFFSET codeOffset = emitLoc->CodeOffset(this);
+                if (codeOffset != emitLoc->GetIG()->igOffs)
+                {
+                    printf("\tdq\t%s + %zu\n", emitLabelString(emitLoc->GetIG()),
+                           static_cast<size_t>(codeOffset - emitLoc->GetIG()->igOffs));
+                }
+                else
+                {
+                    printf("\tdq\t%s\n", emitLabelString(emitLoc->GetIG()));
                 }
             }
         }
@@ -9079,6 +9233,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
         return;
     }
 
+#if EMIT_GENERATE_GCINFO
     regMaskTP life;
     regMaskTP dead;
     regMaskTP chg;
@@ -9133,6 +9288,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
     // The 2 GC reg masks can't be overlapping
 
     assert((emitThisGCrefRegs & emitThisByrefRegs) == 0);
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -9400,6 +9556,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
 {
     assert(emitIssuing);
 
+#if EMIT_GENERATE_GCINFO
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
     {
@@ -9441,6 +9598,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
     // The 2 GC reg masks can't be overlapping
 
     assert((emitThisGCrefRegs & emitThisByrefRegs) == 0);
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -9458,6 +9616,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
         return;
     }
 
+#if EMIT_GENERATE_GCINFO
     // First, handle the gcref regs going dead
 
     regMaskTP gcrefRegs = emitThisGCrefRegs & regs;
@@ -9493,6 +9652,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
 
         emitThisByrefRegs &= ~byrefRegs;
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -9504,6 +9664,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
 {
     assert(emitIssuing);
 
+#if EMIT_GENERATE_GCINFO
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
     {
@@ -9532,6 +9693,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
 
         emitThisByrefRegs &= ~regMask;
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -10504,6 +10666,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 
 #endif // DEBUG
 
+#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------
 // emitGetGCRegsSavedOrModified: Returns the set of registers that keeps gcrefs and byrefs across the call.
 //
@@ -10619,6 +10782,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 
     return result;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 //------------------------------------------------------------------------
 // emitDisableGC: Requests that the following instruction groups are not GC-interruptible.
