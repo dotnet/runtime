@@ -80,7 +80,7 @@ namespace System.IO.Compression
             bool result = ZstandardEncoder.TryCompress(source, destination, out int bytesWritten);
 
             Assert.True(result);
-            Assert.Equal(0, bytesWritten);
+            Assert.NotEqual(0, bytesWritten);
         }
 
         [Fact]

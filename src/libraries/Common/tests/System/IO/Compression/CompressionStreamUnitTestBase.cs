@@ -42,6 +42,30 @@ namespace System.IO.Compression
             }
         }
 
+        [Fact]
+        public void EmptyData_RoundTrips()
+        {
+            using (var compressed = new MemoryStream())
+            {
+                using (var compressor = CreateStream(compressed, CompressionMode.Compress, leaveOpen: true))
+                {
+                    // Write no data
+                }
+
+                Assert.NotEqual(0, compressed.Length);
+
+                compressed.Position = 0;
+
+                using MemoryStream decompressed = new MemoryStream();
+                using (var decompressor = CreateStream(compressed, CompressionMode.Decompress))
+                {
+                    decompressor.CopyTo(decompressed);
+                    Assert.Equal(0, decompressed.Length);
+                }
+            }
+        }
+
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
         {

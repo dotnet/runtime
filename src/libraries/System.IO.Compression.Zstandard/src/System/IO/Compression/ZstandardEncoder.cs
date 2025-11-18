@@ -303,7 +303,7 @@ namespace System.IO.Compression
         /// <param name="source">The data to compress.</param>
         /// <param name="destination">The buffer to write the compressed data to.</param>
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
-        /// <returns>True if compression was successful; otherwise, false.</returns>
+        /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             return TryCompress(source, destination, out bytesWritten, ZstandardUtils.Quality_Default, 0);
@@ -315,7 +315,7 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
         /// <param name="quality">The compression quality level.</param>
         /// <param name="window">The window size for compression.</param>
-        /// <returns>True if compression was successful; otherwise, false.</returns>
+        /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="quality"/> or <paramref name="window"/> is out of the valid range.</exception>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int window)
         {
@@ -328,7 +328,7 @@ namespace System.IO.Compression
         /// <param name="bytesWritten">The number of bytes written to the destination.</param>
         /// <param name="dictionary">The compression dictionary to use.</param>
         /// <param name="window">The window size for compression.</param>
-        /// <returns>True if compression was successful; otherwise, false.</returns>
+        /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="window"/> is out of the valid range.</exception>
         public static bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary, int window)
@@ -340,11 +340,6 @@ namespace System.IO.Compression
         internal static bool TryCompressCore(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int window, ZstandardDictionary? dictionary)
         {
             bytesWritten = 0;
-
-            if (source.IsEmpty)
-            {
-                return true;
-            }
 
             unsafe
             {
