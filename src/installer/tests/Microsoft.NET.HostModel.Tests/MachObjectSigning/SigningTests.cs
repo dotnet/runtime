@@ -20,16 +20,19 @@ using System.Collections.Generic;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System.Security.AccessControl;
 using Microsoft.NET.HostModel.Bundle;
+using Xunit.Abstractions;
 
 namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 {
     public class SigningTests :IClassFixture<SigningTests.SharedTestState>
     {
         private SharedTestState sharedTestState;
+        private ITestOutputHelper output;
 
-        public SigningTests(SharedTestState fixture)
+        public SigningTests(SharedTestState fixture, ITestOutputHelper output)
         {
             sharedTestState = fixture;
+            this.output = output;
         }
 
         [Theory]
@@ -98,7 +101,19 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
             (exitCode, stdErr) = Codesign.Run("-v", managedSignedPath);
             Assert.Equal(0, exitCode);
-            AssertMachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName);
+            try
+            {
+                AssertMachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName);
+            }
+            catch
+            {
+                string args = "--display --verbose=6";
+                var (_, stderr) = Codesign.Run(args, codesignFilePath);
+                output.WriteLine($"Codesign info for {codesignFilePath}:\n{stderr}");
+                (int _, stderr) = Codesign.Run(args, managedSignedPath);
+                output.WriteLine($"Codesign info for {managedSignedPath}:\n{stderr}");
+                throw;
+            }
         }
 
         [Fact]
