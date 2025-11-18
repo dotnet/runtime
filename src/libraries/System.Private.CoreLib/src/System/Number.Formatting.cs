@@ -428,7 +428,6 @@ namespace System
             for (int i = 0; i < significand.Length; i++)
             {
                 number.Digits[i] = (byte)significand[i];
-                ++i;
             }
 
             number.Scale = TValue.IsZero(unpackDecimal.Significand) ? 0 : significand.Length + unpackDecimal.UnbiasedExponent;

@@ -353,7 +353,7 @@ namespace System
             else if (midPointValue == '5')
             {
                 int index = digits + 1;
-                int c = number.Digits[digits];
+                int c = number.Digits[index];
                 bool tiedToEvenRounding = true;
 
                 while (index < number.DigitsCount && c != 0)
