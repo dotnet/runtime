@@ -1,0 +1,603 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.HeaderNode" Collapsed="true">
+    <Position X="25.25" Y="12.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIQEACAGACAAAAAAAAAAAAAABQAAAAAAAAAAAAAnAA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\HeaderNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ObjectNode" Collapsed="true">
+    <Position X="16.5" Y="9.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQAAIAEAGAAAAAAAAAA0QEAAAAAAAAAAAAAAEAAEA=</HashCode>
+      <FileName>tools\Common\Compiler\DependencyAnalysis\ObjectNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.GlobalHeaderNode" Collapsed="true">
+    <Position X="24.25" Y="14" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAEQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\HeaderNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.AssemblyHeaderNode" Collapsed="true">
+    <Position X="26.5" Y="14" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAgAAAAAAQAAAEAAAAAAAAAEQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\HeaderNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.MethodGCInfoNode" Collapsed="true">
+    <Position X="7.5" Y="9.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAAEAAACAAAAAEAAAAABgAAAAAAAAEAAgAAACAABQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\MethodGCInfoNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.EmbeddedObjectNode" Collapsed="true">
+    <Position X="13.5" Y="10.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAQQAAIAAEEAAAEAIACgAAQEAAAAAAIAAAAAAAEAAEA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\EmbeddedObjectNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.SortableDependencyNode" Collapsed="true">
+    <Position X="13.5" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAgAAAAAAAAAAAAAAAAAAAAAEAIAAAAAAABQA=</HashCode>
+      <FileName>tools\Common\Compiler\DependencyAnalysis\SortableDependencyNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.Import" Collapsed="true">
+    <Position X="4.75" Y="14.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAACAAAAAEAAAggQiQAAAAAAAGAAgAAACAABQE=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\Import.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.ImportSectionNode">
+    <Position X="7" Y="17.5" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
+    <NestedTypes>
+      <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.ImportSectionNode.ImportTable" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\ImportSectionNode.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAEMQiCAAAKAAUAAAgAAgQAAAIAQQEAAAAAAAQAFQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\ImportSectionNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.EmbeddedPointerIndirectionNode&lt;TTarget&gt;" Collapsed="true">
+    <Position X="12.25" Y="13" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAEAAACAAAAAEAAAAAAiAAAAAAAACAAACAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.SignatureEmbeddedPointerIndirectionNode" Collapsed="true">
+    <Position X="11.75" Y="14.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAAAAEAAAAAAgAAAAAAAAEAAAAAAAAABQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\SignatureEmbeddedPointerIndirectionNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.DelayLoadHelperImport" Collapsed="true">
+    <Position X="2.5" Y="16.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAAAAEAAAAAAgAgAACAAAEAAAAgACAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperImport.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.PrecodeHelperImport" Collapsed="true">
+    <Position X="4.75" Y="16.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAEAAAAAAAAAAAAAAAEAAAAAAAAABQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\PrecodeHelperImport.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.StringImport" Collapsed="true">
+    <Position X="7" Y="16.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAACAEAAAAAAAQAAAAAAAEAAAAAAAAABQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\StringImport.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.PrecodeMethodImport" Collapsed="true">
+    <Position X="4.75" Y="17.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAAAAACACAAAAAAABgAgAAAAAAAAEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\PrecodeMethodImport.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.DelayLoadHelperMethodImport" Collapsed="true">
+    <Position X="2.75" Y="17.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAABgAgAAAAAAABEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperMethodImport.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.DelayLoadMethodImport" Collapsed="true">
+    <Position X="0.5" Y="17.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAAAAAAACAAAAAAAAgAgAAAAAAAAEAAAAAAgAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\DelayLoadMethodImport.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.ImportSectionsTableNode" Collapsed="true">
+    <Position X="21.75" Y="19.25" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAACAABQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\ImportSectionsTableNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ArrayOfEmbeddedDataNode&lt;TEmbedded&gt;" Collapsed="true">
+    <Position X="20" Y="17.75" Width="3.75" />
+    <TypeIdentifier>
+      <HashCode>AAAQEIAIEACABAAEAAAAAUAAABAEAAAAAAAAACAADQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.EmbeddedDataContainerNode" Collapsed="true">
+    <Position X="20.75" Y="16.5" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAAAAQAAAAAAAAAAAAAAAEAAAAAAAAAgQA=</HashCode>
+      <FileName>tools\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.Signature" Collapsed="true">
+    <Position X="27.5" Y="21.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQEAAACACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAhQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\Signature.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.DelegateCtorSignature" Collapsed="true">
+    <Position X="24" Y="26.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAGAAAAAAAACAAAEAEAAAAAAEAAAAgAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\DelegateCtorSignature.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.FieldFixupSignature" Collapsed="true">
+    <Position X="27.75" Y="26.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAGAAAAAAAAAAAQAAAAAAAAQEAAAAAQAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\FieldFixupSignature.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.GenericLookupSignature" Collapsed="true">
+    <Position X="28.25" Y="28" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>CAAAAAAAWAAACAAAAAAAAEAAAAAAAQECAAAAAAAAAwA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\GenericLookupSignature.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.ILBodyFixupSignature" Collapsed="true">
+    <Position X="28.5" Y="29.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AACAAAAAGAAAAAAEgABAAAAAAAAAAQEAAgAAAAAIAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\ILBodyFixupSignature.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.MethodFixupSignature" Collapsed="true">
+    <Position X="29" Y="31" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAACAAAGAAAAIAAAABgAEAAAAAAAQFQAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\MethodFixupSignature.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.NewArrayFixupSignature" Collapsed="true">
+    <Position X="31.5" Y="25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAACAAGAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\NewArrayFixupSignature.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.NewObjectFixupSignature" Collapsed="true">
+    <Position X="32" Y="27" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAGAAAAAAAAAAAAAAABAAAAAEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\NewObjectFixupSignature.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunHelperSignature" Collapsed="true">
+    <Position X="31.75" Y="29" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAGAAAAAAAAAAAAAAAAAAAAQEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHelperSignature.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.ReadyToRunInstructionSetSupportSignature" Collapsed="true">
+    <Position X="31.75" Y="31" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAIAAAGAAAACAAAAAAgAAAAAAAAAEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunInstructionSetSupportSignature.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.StringImportSignature" Collapsed="true">
+    <Position X="30.75" Y="33" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAGAAACAAAAAAAAAAAAAAAAAEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\StringImportSignature.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.TypeFixupSignature" Collapsed="true">
+    <Position X="32.25" Y="32.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAGAAAAAAAAAAAEEAARAAAAQEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.VirtualResolutionFixupSignature" Collapsed="true">
+    <Position X="29" Y="32.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAABAAAAGAAAAAAEgAAAIAAAABAAAQEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\VirtualResolutionFixupSignature.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.ManifestMetadataTableNode" Collapsed="true">
+    <Position X="24.75" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IAAAAgEAGCIICAAQAoEIFAAAAAgAAAAABAAAAAiAAQg=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\ManifestMetadataTableNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.MethodEntryPointTableNode" Collapsed="true">
+    <Position X="28.25" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\MethodEntryPointTableNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.HeaderTableNode" Collapsed="true">
+    <Position X="33.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQEAAACACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAhAA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\HeaderNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.ModuleSpecificHeaderTableNode" Collapsed="true">
+    <Position X="28.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABAAAEAACAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\HeaderNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.CopiedCorHeaderNode" Collapsed="true">
+    <Position X="2" Y="1.25" Width="1.5" />
+    <InheritanceLine Type="ILCompiler.DependencyAnalysis.ObjectNode" ManuallyRouted="true">
+      <Path>
+        <Point X="17.25" Y="9.5" />
+        <Point X="17.25" Y="8.666" />
+        <Point X="2.75" Y="8.666" />
+        <Point X="2.75" Y="1.941" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>ABAQEAAAGACAgAAAAAgAAAAAAAAAAAEAAQAAAAAAhQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\CopiedCorHeaderNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.CopiedDebugDirectoryEntryNode" Collapsed="true">
+    <Position X="11" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAGAAAAAAAEAAAAAAAAAAAAAEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.CopiedFieldRvaNode" Collapsed="true">
+    <Position X="3.25" Y="2.25" Width="1.5" />
+    <InheritanceLine Type="ILCompiler.DependencyAnalysis.ObjectNode" ManuallyRouted="true">
+      <Path>
+        <Point X="17.25" Y="9.5" />
+        <Point X="17.25" Y="8.406" />
+        <Point X="4" Y="8.406" />
+        <Point X="4" Y="2.941" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>ABAQEABAGACAAAAAAAAAAAAAAAAAAAEAAAAAAAABhQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\CopiedFieldRvaNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.CopiedManagedResourcesNode" Collapsed="true">
+    <Position X="5" Y="2.25" Width="1.5" />
+    <InheritanceLine Type="ILCompiler.DependencyAnalysis.ObjectNode" ManuallyRouted="true">
+      <Path>
+        <Point X="17.25" Y="9.5" />
+        <Point X="17.25" Y="4.151" />
+        <Point X="14.083" Y="4.151" Type="JumpStart" />
+        <Point X="13.917" Y="4.151" Type="JumpEnd" />
+        <Point X="8.158" Y="4.151" />
+        <Point X="8.158" Y="3.141" />
+        <Point X="5.75" Y="3.141" />
+        <Point X="5.75" Y="2.941" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>ABAQEAAAGACAgAAAAAAAAAAAAAAAAAEAAAAAAAAAhQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\CopiedManagedResourcesNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.CopiedMetadataBlobNode" Collapsed="true">
+    <Position X="2.5" Y="3.75" Width="1.5" />
+    <InheritanceLine Type="ILCompiler.DependencyAnalysis.ObjectNode" ManuallyRouted="true">
+      <Path>
+        <Point X="17.25" Y="9.5" />
+        <Point X="17.25" Y="8.488" />
+        <Point X="3.25" Y="8.488" />
+        <Point X="3.25" Y="4.441" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AAAQEAAAGACAgAABAACAAAAAAAAAAAEAAEAAAAAAhQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\CopiedMetadataBlobNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.CopiedMethodILNode" Collapsed="true">
+    <Position X="4.5" Y="3.5" Width="1.5" />
+    <InheritanceLine Type="ILCompiler.DependencyAnalysis.ObjectNode" ManuallyRouted="true">
+      <Path>
+        <Point X="17.25" Y="9.5" />
+        <Point X="17.25" Y="5.844" />
+        <Point X="5.25" Y="5.844" />
+        <Point X="5.25" Y="4.191" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AAAQEAAAGACAAAAAAABAAAAAAAAAAAEAAAAAAAAAhQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\CopiedMethodILNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.CopiedStrongNameSignatureNode" Collapsed="true">
+    <Position X="4.5" Y="5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABAQEAAAGACAgAAAAAAAAAAAAAAAAAEAAAAAAAAAhQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\CopiedStrongNameSignatureNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.CompilerIdentifierNode" Collapsed="true">
+    <Position X="31" Y="1.75" Width="1.5" />
+    <InheritanceLine Type="ILCompiler.DependencyAnalysis.ReadyToRun.HeaderTableNode" FixedToPoint="true">
+      <Path>
+        <Point X="34" Y="1.191" />
+        <Point X="34" Y="1.491" />
+        <Point X="31.812" Y="1.491" />
+        <Point X="31.812" Y="1.75" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AAAACAAAGACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\CompilerIdentifierNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.AssemblyTableNode" Collapsed="true">
+    <Position X="29" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAIAAAAAGAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\AssemblyTableNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.DebugDirectoryEntryNode" Collapsed="true">
+    <Position X="13.25" Y="2.25" Width="1.5" />
+    <InheritanceLine Type="ILCompiler.DependencyAnalysis.ObjectNode" ManuallyRouted="true">
+      <Path>
+        <Point X="17.25" Y="9.5" />
+        <Point X="17.25" Y="5.881" />
+        <Point X="14" Y="5.881" />
+        <Point X="14" Y="2.941" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>ABAQEAAACACAAAAAAAAAAAAAAAAAAAEAAAAAAAAAhAA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.DebugInfoTableNode" Collapsed="true">
+    <Position X="27.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAQGAAAAAAAAAAAABAQAAAAAAAAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\DebugInfoTableNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.DeterministicDebugDirectoryEntry" Collapsed="true">
+    <Position X="4" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.EHInfoNode" Collapsed="true">
+    <Position X="22.5" Y="12" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQEAAAWASAAAAAAAAAAAQAAAAAAAAAAAAAAAAAhQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\ExceptionInfoLookupTableNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.EnclosingTypeMapNode" Collapsed="true">
+    <Position X="31" Y="4.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AQAAAEAAEAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\EnclosingTypeMapNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.ExceptionInfoLookupTableNode" Collapsed="true">
+    <Position X="33" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAGAAACAgAAIAAAUAQAAAAAAAAAAAAACAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\ExceptionInfoLookupTableNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.GCRefMapNode" Collapsed="true">
+    <Position X="18" Y="13.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AABQEAAAGACQAIAAAAAAAAAAAAAAAQEAAAAAAgAAhQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\GCRefMapNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.HotColdMapNode" Collapsed="true">
+    <Position X="38.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAGAABAAAAAAAAAAAAAAAAAAAAAAAAgAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\HotColdMapNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.ImportThunk" Collapsed="true">
+    <Position X="13.25" Y="19.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAAAAAABgBAAEAAAgAAAAGAAgAEAAAABQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\Target_ARM\ImportThunk.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.AssemblyStubNode" Collapsed="true">
+    <Position X="13" Y="21" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQGAAAGACAAAAAAABAAAAAAAAAAAAAAAAAAAAAgAA=</HashCode>
+      <FileName>tools\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.TypesTableNode" Collapsed="true">
+    <Position X="29.25" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAEAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.TypeGenericInfoMapNode" Collapsed="true">
+    <Position X="26.5" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAAAEAAEAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\TypeGenericInfoMapNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.RuntimeFunctionsTableNode" Collapsed="true">
+    <Position X="35.5" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEABAIHACACBAQAAAAAAAAAAAAAAAAAAAAACAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsTableNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.RuntimeFunctionsGCInfoNode" Collapsed="true">
+    <Position X="19.75" Y="19.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQEAAAAACAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.PerfMapDebugDirectoryEntryNode" Collapsed="true">
+    <Position X="11.75" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAABAAmAAAgAAAAAAAAAGAAAAoCAEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.OwnerCompositeExecutableNode" Collapsed="true">
+    <Position X="31.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAGACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\OwnerCompositeExecutableNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.NativeDebugDirectoryEntryNode" Collapsed="true">
+    <Position X="13.5" Y="0.5" Width="1.5" />
+    <Compartments>
+      <Compartment Name="Nested Types" Collapsed="false" />
+    </Compartments>
+    <NestedTypes>
+      <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.NativeDebugDirectoryEntryNode.RSDSChecksumNode" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs</NewMemberFileName>
+        </TypeIdentifier>
+        <Lollipop Position="0.2" />
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAAAAAQAGAQAgAAABAAAAAAAICAgAAEAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.MethodIsGenericMapNode" Collapsed="true">
+    <Position X="35.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAAAEAAEAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\MethodIsGenericMapNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.MethodColdCodeNode" Collapsed="true">
+    <Position X="14.5" Y="22.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAEQEAAAGACAAAAAAAAAAIAAAAAAAAEAAAAAgAAAhQg=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\MethodColdCodeNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.ManifestAssemblyMvidHeaderNode" Collapsed="true">
+    <Position X="30.5" Y="10" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAgQEAAAGACAgAAAAAAAAAAAAAAAAAAAAAAAAAAAhQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\ManifestAssemblyMvidHeaderNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.InstrumentationDataTableNode" Collapsed="true">
+    <Position X="36.75" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAGAAAAYACAAAAAEAAAAAAAAAEAAACAAAAEQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\InstrumentationDataTableNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.InstanceEntryPointTableNode" Collapsed="true">
+    <Position X="39.25" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAGgAAAAAAAAAAAAAAAAIAAAAAAAASAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\InstanceEntryPointTableNode.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.InliningInfoNode" Collapsed="true">
+    <Position X="30.75" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAFAAMAAAAYAAAAAAAAAAAAAAAAAAAQAAAAAAAQA=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\InliningInfoNode.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ILCompiler.DependencyAnalysis.ReadyToRun.MethodWithGCInfo" Collapsed="true">
+    <Position X="12.75" Y="22.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IYBTUBKAGFCCgiEEgEBgAUgIgECEAYUIAgIAAAJAlQg=</HashCode>
+      <FileName>tools\aot\ILCompiler.ReadyToRun\Compiler\DependencyAnalysis\ReadyToRun\MethodWithGCInfo.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
