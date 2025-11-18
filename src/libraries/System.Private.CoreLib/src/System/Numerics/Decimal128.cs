@@ -286,7 +286,7 @@ namespace System.Numerics
             return Number.UInt128ToDecChars(p, significand, 0);
         }
 
-        Number.DecimalIeee754<UInt128> IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Unpack()
+        Number.DecodedDecimalIeee754<UInt128> IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Unpack()
         {
             return Number.UnpackDecimalIeee754<Decimal128, UInt128>(new UInt128(_upper, _lower));
         }
@@ -309,6 +309,14 @@ namespace System.Numerics
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ConvertToExponent(UInt128 value) => (int)value;
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Power10(int exponent) => UInt128Powers10[exponent];
+
+        static (UInt128 Quotient, UInt128 Remainder) IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.DivRemPow10(UInt128 value, int exponent)
+        {
+            UInt128 power = UInt128Powers10[exponent];
+            return UInt128.DivRem(value, power);
+        }
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.CountDigits(UInt128 significand) => FormattingHelpers.CountDigits(significand);
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Precision => Precision;
 
@@ -348,11 +356,8 @@ namespace System.Numerics
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MaxSignificand => new UInt128(upper: 0x0001_ED09_BEAD_87C0, lower: 0x378D_8E63_FFFF_FFFF); // 9_999_999_999_999_999_999_999_999_999_999_999;
 
-        static unsafe void IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ToNumber(UInt128 significand, ref Number.NumberBuffer number)
-        {
-            Number.UInt128ToNumber(significand, ref number);
-        }
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NegativeOne => new UInt128(0xB040_0000_0000_0000, 1);
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.SignificandBufferLength => Number.UInt128NumberBufferLength;
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.PositiveOne => new UInt128(0x3040_0000_0000_0000, 1);
     }
 }

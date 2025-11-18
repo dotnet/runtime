@@ -426,7 +426,7 @@ namespace System
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
             byte* buffer = number.DigitsPtr;
-            DecimalIeee754<TValue> unpackDecimal = value.Unpack();
+            DecodedDecimalIeee754<TValue> unpackDecimal = value.Unpack();
             number.IsNegative = unpackDecimal.Signed;
 
             byte* p = buffer + TDecimal.Precision;
@@ -440,15 +440,15 @@ namespace System
                 *dst++ = *p++;
             }
 
-            number.Scale = TValue.IsZero(unpackDecimal.Significand) ? 0 : numberDigitsSignificand + unpackDecimal.Exponent;
+            number.Scale = TValue.IsZero(unpackDecimal.Significand) ? 0 : numberDigitsSignificand + unpackDecimal.UnbiasedExponent;
 
-            if (unpackDecimal.Exponent >= 0)
+            if (unpackDecimal.UnbiasedExponent >= 0)
             {
-                number.DigitsCount = numberDigitsSignificand + unpackDecimal.Exponent;
+                number.DigitsCount = numberDigitsSignificand + unpackDecimal.UnbiasedExponent;
 
-                if (unpackDecimal.Exponent > 0)
+                if (unpackDecimal.UnbiasedExponent > 0)
                 {
-                    i = unpackDecimal.Exponent;
+                    i = unpackDecimal.UnbiasedExponent;
                     while (--i >= 0)
                     {
                         *dst++ = (byte)'0';

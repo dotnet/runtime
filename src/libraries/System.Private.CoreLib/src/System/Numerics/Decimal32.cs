@@ -254,7 +254,7 @@ namespace System.Numerics
             return Number.UInt32ToDecChars(p, significand, 0);
         }
 
-        Number.DecimalIeee754<uint> IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Unpack()
+        Number.DecodedDecimalIeee754<uint> IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Unpack()
         {
             return Number.UnpackDecimalIeee754<Decimal32, uint>(_value);
         }
@@ -265,10 +265,20 @@ namespace System.Numerics
         }
 
         static Decimal32 IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Construct(uint value) => new Decimal32(value);
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.ConvertToExponent(uint value) => (int)value;
+
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Power10(int exponent) => UInt32Powers10[exponent];
 
+        static (uint Quotient, uint Remainder) IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.DivRemPow10(uint value, int exponent)
+        {
+            uint power = UInt32Powers10[exponent];
+            return Math.DivRem(value, power);
+        }
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.CountDigits(uint significand) => FormattingHelpers.CountDigits(significand);
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MaxScale => 97;
+
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MinScale => -100;
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MaxExponent => MaxExponent;
@@ -305,11 +315,8 @@ namespace System.Numerics
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MaxSignificand => MaxSignificand;
 
-        static unsafe void IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.ToNumber(uint significand, ref Number.NumberBuffer number)
-        {
-            Number.UInt32ToNumber(significand, ref number);
-        }
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NegativeOne => 0xB280_0001;
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.SignificandBufferLength => Number.UInt32NumberBufferLength;
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.PositiveOne => 0x3280_0001;
     }
 }

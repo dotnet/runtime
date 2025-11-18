@@ -113,14 +113,17 @@ namespace System
         static abstract TValue PositiveInfinity { get; }
         static abstract TValue NegativeInfinity { get; }
         static abstract TValue Zero { get; }
+        static abstract TValue NegativeOne { get; }
+        static abstract TValue PositiveOne { get; }
         static abstract TValue MaxSignificand { get; }
         static abstract TValue NumberToSignificand(ref Number.NumberBuffer number, int digits);
         static abstract unsafe byte* ToDecChars(byte* p, TValue significand);
         static abstract int ConvertToExponent(TValue value);
         static abstract TValue Power10(int exponent);
-        Number.DecimalIeee754<TValue> Unpack();
+        static abstract (TValue Quotient, TValue Remainder) DivRemPow10(TValue value, int exponent);
+        Number.DecodedDecimalIeee754<TValue> Unpack();
         static abstract TSelf Construct(TValue value);
-        static abstract void ToNumber(TValue significand, ref Number.NumberBuffer number);
+        static abstract int CountDigits(TValue significand);
         static abstract int NumberBitsEncoding { get; }
         static abstract int NumberBitsExponent { get; }
         static abstract int NumberBitsSignificand { get; }
@@ -131,7 +134,6 @@ namespace System
         static abstract TValue GwPlus2ToGwPlus4SignificandMask { get; } //G(w+2) to G(w+4)
         static abstract TValue GwPlus4SignificandMask { get; } //G(w+4)
         static abstract TValue MostSignificantBitOfSignificandMask { get; }
-        static abstract int SignificandBufferLength { get; }
     }
 
     internal static partial class Number

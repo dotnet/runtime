@@ -255,7 +255,7 @@ namespace System.Numerics
             return Number.UInt64ToDecChars(p, significand, 0);
         }
 
-        Number.DecimalIeee754<ulong> IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Unpack()
+        Number.DecodedDecimalIeee754<ulong> IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Unpack()
         {
             return Number.UnpackDecimalIeee754<Decimal64, ulong>(_value);
         }
@@ -270,6 +270,14 @@ namespace System.Numerics
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.ConvertToExponent(ulong value) => (int)value;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Power10(int exponent) => UInt64Powers10[exponent];
+
+        static (ulong Quotient, ulong Remainder) IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.DivRemPow10(ulong value, int exponent)
+        {
+            ulong power = UInt64Powers10[exponent];
+            return Math.DivRem(value, power);
+        }
+
+        static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.CountDigits(ulong significand) => FormattingHelpers.CountDigits(significand);
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MaxScale => 385;
 
@@ -309,11 +317,8 @@ namespace System.Numerics
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MaxSignificand => MaxSignificand;
 
-        static unsafe void IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.ToNumber(ulong significand, ref Number.NumberBuffer number)
-        {
-            Number.UInt64ToNumber(significand, ref number);
-        }
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NegativeOne => 0xB1C0_0000_0000_0001;
 
-        static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.SignificandBufferLength => Number.UInt64NumberBufferLength;
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.PositiveOne => 0x31C0_0000_0000_0001;
     }
 }
