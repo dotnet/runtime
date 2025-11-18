@@ -53,7 +53,7 @@ WasmSuccessorEnumerator::WasmSuccessorEnumerator(Compiler* comp, BasicBlock* blo
 }
 
 //------------------------------------------------------------------------
-// FgWasmDfs: run depth first search for wasm control flow codegen
+// WasmDfs: run depth first search for wasm control flow codegen
 //
 // Arguments:
 //   hasBlocksOnlyReachableViaEH - [out] set to true if there are non-funclet
@@ -69,11 +69,12 @@ WasmSuccessorEnumerator::WasmSuccessorEnumerator(Compiler* comp, BasicBlock* blo
 //   Invalidates any existing DFS, because we use the numbering
 //   slots on BasicBlocks.
 //
-FlowGraphDfsTree* Compiler::fgWasmDfs(bool& hasBlocksOnlyReachableViaEH)
+FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
 {
-    fgInvalidateDfsTree();
+    Compiler* const comp = Comp();
+    comp->fgInvalidateDfsTree();
 
-    BasicBlock** postOrder = new (this, CMK_WasmCfgLowering) BasicBlock*[fgBBcount];
+    BasicBlock** postOrder = new (comp, CMK_WasmCfgLowering) BasicBlock*[comp->fgBBcount];
     bool         hasCycle  = false;
 
     auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
@@ -83,7 +84,7 @@ FlowGraphDfsTree* Compiler::fgWasmDfs(bool& hasBlocksOnlyReachableViaEH)
 
     auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
         block->bbPostorderNum = postorderNum;
-        assert(postorderNum < fgBBcount);
+        assert(postorderNum < comp->fgBBcount);
         postOrder[postorderNum] = block;
     };
 
@@ -96,18 +97,18 @@ FlowGraphDfsTree* Compiler::fgWasmDfs(bool& hasBlocksOnlyReachableViaEH)
         }
     };
 
-    jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_WasmCfgLowering));
+    jitstd::vector<BasicBlock*> entryBlocks(comp->getAllocator(CMK_WasmCfgLowering));
 
     // We can ignore OSR/genReturnBB "entries"
     //
-    assert(fgEntryBB == nullptr);
-    assert(fgGlobalMorphDone);
+    assert(comp->fgEntryBB == nullptr);
+    assert(comp->fgGlobalMorphDone);
 
     JITDUMP("Determining Wasm DFS entry points\n");
 
     // All funclets are entries. For now we assume finallys are funclets.
     //
-    for (EHblkDsc* const ehDsc : EHClauses(this))
+    for (EHblkDsc* const ehDsc : EHClauses(comp))
     {
         JITDUMP(FMT_BB " is handler entry\n", ehDsc->ebdHndBeg->bbNum);
         entryBlocks.push_back(ehDsc->ebdHndBeg);
@@ -125,7 +126,7 @@ FlowGraphDfsTree* Compiler::fgWasmDfs(bool& hasBlocksOnlyReachableViaEH)
     //
     hasBlocksOnlyReachableViaEH = false;
 
-    for (BasicBlock* const block : Blocks())
+    for (BasicBlock* const block : comp->Blocks())
     {
         bool onlyHasEHPreds = true;
         bool hasPreds       = false;
@@ -154,8 +155,8 @@ FlowGraphDfsTree* Compiler::fgWasmDfs(bool& hasBlocksOnlyReachableViaEH)
 
     // Main entry is an entry. Add it last so it ends up first in the RPO.
     //
-    JITDUMP(FMT_BB " is method entry\n", fgFirstBB->bbNum);
-    entryBlocks.push_back(fgFirstBB);
+    JITDUMP(FMT_BB " is method entry\n", comp->fgFirstBB->bbNum);
+    entryBlocks.push_back(comp->fgFirstBB);
 
     JITDUMP("Running Wasm DFS\n");
     JITDUMP("Entry blocks: ");
@@ -166,11 +167,11 @@ FlowGraphDfsTree* Compiler::fgWasmDfs(bool& hasBlocksOnlyReachableViaEH)
     JITDUMP("\n");
 
     unsigned numBlocks =
-        fgRunDfs<WasmSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
-                 /* useProfile */ true>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
+        comp->fgRunDfs<WasmSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                       /* useProfile */ true>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
 
-    return new (this, CMK_WasmCfgLowering)
-        FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, /* useProfile */ true, /* forWasm */ true);
+    return new (comp, CMK_WasmCfgLowering)
+        FlowGraphDfsTree(comp, postOrder, numBlocks, hasCycle, /* useProfile */ true, /* forWasm */ true);
 }
 
 //------------------------------------------------------------------------
@@ -940,9 +941,8 @@ bool FgWasm::WasmTransformSccs(ArrayStack<Scc*>& sccs)
 PhaseStatus Compiler::fgWasmTransformSccs()
 {
     FgWasm            fgWasm(this);
-    bool              transformed                 = false;
     bool              hasBlocksOnlyReachableViaEH = false;
-    FlowGraphDfsTree* dfsTree                     = fgWasmDfs(hasBlocksOnlyReachableViaEH);
+    FlowGraphDfsTree* dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
     assert(dfsTree->IsForWasm());
 
     if (hasBlocksOnlyReachableViaEH)
@@ -951,7 +951,8 @@ PhaseStatus Compiler::fgWasmTransformSccs()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    FlowGraphNaturalLoops* loops = FlowGraphNaturalLoops::Find(dfsTree);
+    bool                   transformed = false;
+    FlowGraphNaturalLoops* loops       = FlowGraphNaturalLoops::Find(dfsTree);
 
     // If there are irreducible loops, transforrm them.
     //
@@ -972,7 +973,7 @@ PhaseStatus Compiler::fgWasmTransformSccs()
         // We should not have altered the EH reachability of any block...?
         //
         bool hasBlocksOnlyReachableViaEH2 = false;
-        dfsTree                           = fgWasmDfs(hasBlocksOnlyReachableViaEH2);
+        dfsTree                           = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH2);
         assert(!hasBlocksOnlyReachableViaEH2);
         loops = FlowGraphNaturalLoops::Find(dfsTree);
         assert(loops->ImproperLoopHeaders() == 0);
@@ -1170,8 +1171,9 @@ PhaseStatus Compiler::fgWasmControlFlow()
     //
     // We don't install our DFS tree as "the" DFS tree as it is non-standard.
     //
+    FgWasm            fgWasm(this);
     bool              hasBlocksOnlyReachableViaEH = false;
-    FlowGraphDfsTree* dfsTree                     = fgWasmDfs(hasBlocksOnlyReachableViaEH);
+    FlowGraphDfsTree* dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
 
     if (hasBlocksOnlyReachableViaEH)
     {

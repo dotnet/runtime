@@ -148,6 +148,8 @@ public:
                                        BitVec&           subgraph,
                                        BitVecTraits&     subgraphTraits);
 
+    FlowGraphDfsTree* WasmDfs(bool& hasBlocksOnlyReachableByEH);
+
     void WasmFindSccs(FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& sccs);
 
     void WasmFindSccsCore(FlowGraphDfsTree* dfsTree,
