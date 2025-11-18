@@ -746,6 +746,10 @@ void FgWasm::WasmFindSccs(FlowGraphDfsTree* dfsTree, ArrayStack<Scc*>& sccs)
 //   postorder - array of BasicBlock* in postorder
 //   postorderCount - size of hte array
 //
+// Notes:
+//   Uses Kosaraju's algorithm: we walk the reverse graph starting
+//   from each block in reverse postorder.
+//
 void FgWasm::WasmFindSccsCore(FlowGraphDfsTree* dfsTree,
                               BitVec&           subset,
                               BitVecTraits&     traits,
@@ -753,105 +757,7 @@ void FgWasm::WasmFindSccsCore(FlowGraphDfsTree* dfsTree,
                               BasicBlock**      postorder,
                               unsigned          postorderCount)
 {
-    // Initially we map a block to a null entry in the map.
-    // If we then get a second block in that Scc, we allocate an Scc instance.
-    //
     SccMap map(Comp()->getAllocator(CMK_WasmSccTransform));
-
-    auto assign = [=, &map, &sccs, &traits](auto self, BasicBlock* u, BasicBlock* root, BitVec& subset) -> void {
-        // Ignore blocks not in the subset
-        //
-        // This might be too restrictive. Consider
-        //
-        // X -> A; X -> B;
-        // A -> B; A -> C;
-        // B -> A; B -> B;
-        //
-        // We find the A,B Scc. Its non-header subset is empty.
-        //
-        // Thus we fail to find the B self loop "nested" inside.
-        //
-        // Might need to be: "ignore in-edges from outside the set, or from
-        // non-dominated edges in the set...?" So we'd ignore A->B and B->A,
-        // but not B->B.
-        //
-        // However I think we still find all nested Sccs, since those cannot
-        // share a header with the outer Scc?
-        //
-        if (!BitVecOps::IsMember(&traits, subset, u->bbPostorderNum))
-        {
-            return;
-        }
-
-        // If we've assigned u an scc, no more work needed.
-        //
-        if (map.Lookup(u))
-        {
-            return;
-        }
-
-        JITDUMP("Scc-reverse graph: visiting " FMT_BB " with root " FMT_BB "\n", u->bbNum, root->bbNum);
-
-        // Else see if there's an Scc for root
-        //
-        Scc* scc   = nullptr;
-        bool found = map.Lookup(root, &scc);
-
-        if (found)
-        {
-            assert(u != root);
-
-            if (scc == nullptr)
-            {
-                JITDUMP("Root has been visited; forming SCC with root " FMT_BB "\n", root->bbNum);
-                scc = new (Comp(), CMK_WasmSccTransform) Scc(this, dfsTree, root);
-                map.Set(root, scc, SccMap::SetKind::Overwrite);
-                sccs.Push(scc);
-            }
-
-            JITDUMP("Adding " FMT_BB " to SCC with root " FMT_BB "\n", root->bbNum, u->bbNum);
-            scc->Add(u);
-        }
-
-        // Indicate we've visited u
-        //
-        map.Set(u, scc);
-
-        // Walk u's preds looking for more Scc members
-        //
-        // Do not walk back out of a handler
-        //
-        if (Comp()->bbIsHandlerBeg(u))
-        {
-            return;
-        }
-
-        // Do not walk back into a finally,
-        // instead skip to the call finally.
-        //
-        if (u->isBBCallFinallyPairTail())
-        {
-            self(self, u->Prev(), root, subset);
-            return;
-        }
-
-        // Else walk preds...
-        //
-        for (BasicBlock* p : u->PredBlocks())
-        {
-            // Do not walk back into a catch or filter.
-            //
-            if (p->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_EHFAULTRET))
-            {
-                continue;
-            }
-
-            JITDUMP("Scc-reverse graph: walking back from " FMT_BB " to " FMT_BB ", with root " FMT_BB "\n", u->bbNum,
-                    p->bbNum, root->bbNum);
-
-            self(self, p, root, subset);
-        }
-    };
 
     // proper rdfs? bv iter...?
     //
@@ -865,7 +771,7 @@ void FgWasm::WasmFindSccsCore(FlowGraphDfsTree* dfsTree,
             continue;
         }
 
-        assign(assign, block, block, subset);
+        AssignBlockToScc(block, block, subset, traits, sccs, map, dfsTree);
     }
 
     if (sccs.Height() > 0)
@@ -875,6 +781,126 @@ void FgWasm::WasmFindSccsCore(FlowGraphDfsTree* dfsTree,
             Scc* const scc = sccs.Bottom(i);
             scc->Finalize();
         }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// AssignBlockToScc: assign block to an SCC, then recursively assign its predecessors
+//
+// Arguments:
+//   block   - block to assign
+//   root    - root block of the SCC
+//   subset  - bv describing the subgraph
+//   traits  - bv traits
+//   sccs    - [out] collection of Sccs found in this subgraph
+//   map     - map from block to SCC
+//   dfsTree - dfsTree
+//
+// Notes:
+//   Most blocks won't be in an Scc. So initially we map a block to a null entry in the map.
+//   If we then get a second block in that Scc, we allocate an Scc instance and add both blocks.
+//
+void FgWasm::AssignBlockToScc(BasicBlock*       block,
+                              BasicBlock*       root,
+                              BitVec&           subset,
+                              BitVecTraits&     traits,
+                              ArrayStack<Scc*>& sccs,
+                              SccMap&           map,
+                              FlowGraphDfsTree* dfsTree)
+{
+    // Ignore blocks not in the subset
+    //
+    // This might be too restrictive. Consider
+    //
+    // X -> A; X -> B;
+    // A -> B; A -> C;
+    // B -> A; B -> B;
+    //
+    // We find the A,B Scc. Its non-header subset is empty.
+    //
+    // Thus we fail to find the B self loop "nested" inside.
+    //
+    // Might need to be: "ignore in-edges from outside the set, or from
+    // non-dominated edges in the set...?" So we'd ignore A->B and B->A,
+    // but not B->B.
+    //
+    // However I think we still find all nested Sccs, since those cannot
+    // share a header with the outer Scc?
+    //
+    if (!BitVecOps::IsMember(&traits, subset, block->bbPostorderNum))
+    {
+        return;
+    }
+
+    // If we've assigned u an scc, no more work needed.
+    //
+    if (map.Lookup(block))
+    {
+        return;
+    }
+
+    JITDUMP("Scc-reverse graph: visiting " FMT_BB " with root " FMT_BB "\n", block->bbNum, root->bbNum);
+
+    // Else see if there's an Scc for root
+    //
+    Scc* scc   = nullptr;
+    bool found = map.Lookup(root, &scc);
+
+    if (found)
+    {
+        assert(block != root);
+
+        if (scc == nullptr)
+        {
+            // We haven't yet created an SCC object. Now's the time.
+            //
+            JITDUMP("Root has been visited; forming SCC with root " FMT_BB "\n", root->bbNum);
+            scc = new (Comp(), CMK_WasmSccTransform) Scc(this, dfsTree, root);
+            map.Set(root, scc, SccMap::SetKind::Overwrite);
+            sccs.Push(scc);
+        }
+
+        JITDUMP("Adding " FMT_BB " to SCC with root " FMT_BB "\n", root->bbNum, block->bbNum);
+        scc->Add(block);
+    }
+
+    // Indicate we've visited the block
+    //
+    map.Set(block, scc);
+
+    // Walk block's preds looking for more Scc members
+    //
+    // Do not walk back out of a handler
+    //
+    if (Comp()->bbIsHandlerBeg(block))
+    {
+        return;
+    }
+
+    // Do not walk back into a finally,
+    // instead skip to the call finally.
+    //
+    if (block->isBBCallFinallyPairTail())
+    {
+        AssignBlockToScc(block->Prev(), root, subset, traits, sccs, map, dfsTree);
+        return;
+    }
+
+    // Else walk preds...
+    //
+    for (BasicBlock* const pred : block->PredBlocks())
+    {
+        // Do not walk back into a catch or filter.
+        //
+        if (pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_EHFAULTRET))
+        {
+            continue;
+        }
+
+        JITDUMP("Scc-reverse graph: walking back from " FMT_BB " to " FMT_BB ", with root " FMT_BB "\n", block->bbNum,
+                pred->bbNum, root->bbNum);
+
+        AssignBlockToScc(pred, root, subset, traits, sccs, map, dfsTree);
     }
 }
 

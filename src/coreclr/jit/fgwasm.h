@@ -157,6 +157,14 @@ public:
                           BasicBlock**      postorder,
                           unsigned          postorderCount);
 
+    void AssignBlockToScc(BasicBlock*       block,
+                          BasicBlock*       root,
+                          BitVec&           subset,
+                          BitVecTraits&     traits,
+                          ArrayStack<Scc*>& sccs,
+                          SccMap&           map,
+                          FlowGraphDfsTree* dfsTree);
+
     bool WasmTransformSccs(ArrayStack<Scc*>& sccs);
 };
 
