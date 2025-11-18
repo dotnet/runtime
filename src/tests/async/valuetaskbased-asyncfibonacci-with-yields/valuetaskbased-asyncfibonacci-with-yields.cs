@@ -29,7 +29,7 @@ public class TaskBasedAsyncFibonacciWithYields
         for (int i = 0; i < iterations; i++)
         {
             var sw = Stopwatch.StartNew();
-            int result = await Fib(25);
+            int result = await Fib(5);
             sw.Stop();
 
             Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result}");

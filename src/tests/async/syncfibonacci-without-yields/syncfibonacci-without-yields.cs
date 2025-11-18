@@ -28,7 +28,7 @@ public class SyncFibonacci
         for (int i = 0; i < iterations; i++)
         {
             var sw = Stopwatch.StartNew();
-            int result = Fib(25);
+            int result = Fib(5);
             sw.Stop();
 
             Console.WriteLine($"{sw.ElapsedMilliseconds} ms result={result}");

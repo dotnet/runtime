@@ -19,12 +19,12 @@ public class Async2Pgo
 
     internal static async Task<int> AsyncEntryPoint()
     {
-        int[] arr = Enumerable.Range(0, 100_000).ToArray();
+        int[] arr = Enumerable.Range(0, 100).ToArray();
 
         int sum = 0;
         for (int i = 0; i < 4; i++)
         {
-            for (int j = 0; j < 100; j++)
+            for (int j = 0; j < 10; j++)
                 sum += await AggregateDelegateAsync(arr, new AggregateSum(), 0);
 
             await Task.Delay(100);

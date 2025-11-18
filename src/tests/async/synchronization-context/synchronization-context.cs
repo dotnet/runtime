@@ -206,9 +206,11 @@ public class Async2SynchronizationContext
 
         SynchronizationContext.SetSynchronizationContext(context1);
         await SetContext(context2, suspend: false);
+        Console.WriteLine("After SetContext to context2 (no suspend)");
         Assert.True(SynchronizationContext.Current == context1);
 
         await SetContext(context2, suspend: true);
+        Console.WriteLine("After SetContext to context2 (suspend)");
         Assert.True(SynchronizationContext.Current == context1);
     }
 

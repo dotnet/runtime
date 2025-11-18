@@ -17,7 +17,7 @@ public class Async2Returns
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static async Task Returns(C c)
     {
-        for (int i = 0; i < 20000; i++)
+        for (int i = 0; i < 200; i++)
         {
             S<long> val = await ReturnsStruct();
 

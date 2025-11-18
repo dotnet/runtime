@@ -54,6 +54,7 @@ public class Async2SharedGeneric
     [RuntimeAsyncMethodGeneration(false)]
     private static async Task Async1EntryPoint<T>(Type t, T value)
     {
+        Console.WriteLine($"Async1EntryPoint {typeof(T).FullName}");
         await new GenericClass<T>().InstanceMethod(t);
         await GenericClass<T>.StaticMethod(t);
         await GenericClass<T>.StaticMethod<T>(t, t);
