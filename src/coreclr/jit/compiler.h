@@ -1798,13 +1798,17 @@ class FlowGraphDfsTree
     // Whether the DFS that produced the tree used edge likelihoods to influence successor visitation order.
     bool m_profileAware;
 
+    // Whether the DFS reflects Wasm control flow rules.
+    bool m_forWasm;
+
 public:
-    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle, bool profileAware)
+    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle, bool profileAware, bool forWasm = false)
         : m_comp(comp)
         , m_postOrder(postOrder)
         , m_postOrderCount(postOrderCount)
         , m_hasCycle(hasCycle)
         , m_profileAware(profileAware)
+        , m_forWasm(forWasm)
     {
     }
 
@@ -1842,6 +1846,11 @@ public:
     bool IsProfileAware() const
     {
         return m_profileAware;
+    }
+
+    bool IsForWasm() const
+    {
+        return m_forWasm;
     }
 
 #ifdef DEBUG
@@ -2137,7 +2146,7 @@ class FlowGraphNaturalLoops
 
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
-    static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
+    bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
     static bool IsLoopCanonicalizable(FlowGraphNaturalLoop* loop);
 
 public:
@@ -2156,6 +2165,8 @@ public:
 
     bool IsLoopBackEdge(FlowEdge* edge);
     bool IsLoopExitEdge(FlowEdge* edge);
+
+    bool IsForWasm() { return m_dfsTree->IsForWasm(); }
 
     class LoopsPostOrderIter
     {
@@ -4609,7 +4620,7 @@ protected:
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
 
-    void impSetupAndSpillForAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
+    void impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
     void impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call);
 
@@ -6237,6 +6248,7 @@ public:
 
     PhaseStatus fgFindOperOrder();
 
+    FlowGraphDfsTree* fgWasmDfs();
     PhaseStatus fgWasmControlFlow();
 
     // method that returns if you should split here
@@ -6245,8 +6257,8 @@ public:
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
 
-    template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile = false>
-    unsigned fgRunDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge);
+    template <typename SuccessorEnumerator, typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile = false>
+    unsigned fgRunDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge, jitstd::vector<BasicBlock*>& entries);
 
     template <const bool useProfile = false>
     FlowGraphDfsTree* fgComputeDfs();
@@ -10867,12 +10879,6 @@ public:
 #if defined(TARGET_XARCH)
     // Mask of callee saved float regs on stack.
     regMaskTP compCalleeFPRegsSavedMask;
-#endif
-#ifdef TARGET_AMD64
-// Quirk for VS debug-launch scenario to work:
-// Bytes of padding between save-reg area and locals.
-#define VSQUIRK_STACK_PAD (2 * REGSIZE_BYTES)
-    unsigned compVSQuirkStackPaddingNeeded;
 #endif
 
     unsigned compMapILargNum(unsigned ILargNum);      // map accounting for hidden args

@@ -5437,21 +5437,38 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             {
                 return dropBoundsCheck(INDEBUG("a[*] followed by a[0]"));
             }
-            // Do we have two constant indexes?
-            else if (vnStore->IsVNConstant(curAssertion->op1.bnd.vnIdx) && vnStore->IsVNConstant(vnCurIdx))
+            else
             {
-                // Make sure the types match.
-                var_types type1 = vnStore->TypeOfVN(curAssertion->op1.bnd.vnIdx);
-                var_types type2 = vnStore->TypeOfVN(vnCurIdx);
+                // index1 doesn't have to be a constant, it can be a Phi each predecessor of which is a constant.
+                // The smallest of those is what we can rely on. Example:
+                //
+                //  arr[cond ? 10 : 5] = 0;  // arr is at least 6 elements long
+                //  arr[2] = 0;              // arr must be at least 3 elements long
+                //
+                // or even:
+                //
+                //  arr[cond ? 10 : 5] = 0; // arr is at least 6 elements long
+                //  arr[cond ? 1 : 2] = 0;  // arr must be at least 3 elements long
+                //
+                auto tryGetMaxOrMinConst = [this](ValueNum vn, bool getMin, int* index) -> bool {
+                    *index = getMin ? INT_MAX : INT_MIN;
+                    return vnStore->VNVisitReachingVNs(vn,
+                                                       [this, index, getMin](ValueNum vn) -> ValueNumStore::VNVisit {
+                        int cns = 0;
+                        if (vnStore->IsVNIntegralConstant(vn, &cns))
+                        {
+                            *index = getMin ? min(*index, cns) : max(*index, cns);
+                            return ValueNumStore::VNVisit::Continue;
+                        }
+                        return ValueNumStore::VNVisit::Abort;
+                    }) == ValueNumStore::VNVisit::Continue;
+                };
 
-                if (type1 == type2 && type1 == TYP_INT)
+                int index1;
+                int index2;
+                if (tryGetMaxOrMinConst(curAssertion->op1.bnd.vnIdx, /*min*/ true, &index1) &&
+                    tryGetMaxOrMinConst(vnCurIdx, /*max*/ false, &index2))
                 {
-                    int index1 = vnStore->ConstantValue<int>(curAssertion->op1.bnd.vnIdx);
-                    int index2 = vnStore->ConstantValue<int>(vnCurIdx);
-
-                    // the case where index1 == index2 should have been handled above
-                    assert(index1 != index2);
-
                     // It can always be considered as redundant with any previous higher constant value
                     //       a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2
                     if (index2 >= 0 && index1 >= index2)

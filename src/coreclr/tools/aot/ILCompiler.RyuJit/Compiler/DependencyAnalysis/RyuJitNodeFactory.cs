@@ -28,6 +28,10 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     return MethodEntrypoint(TypeSystemContext.GetRealDefaultInterfaceMethodImplementationThunkTargetMethod(method));
                 }
+                else if (method.IsExplicitContinuationAsyncMethod())
+                {
+                    return MethodEntrypoint(method.GetExplicitContinuationAsyncMethodTarget());
+                }
                 else if (method.IsArrayAddressMethod())
                 {
                     return MethodEntrypoint(((ArrayType)method.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
