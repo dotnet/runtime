@@ -199,7 +199,9 @@ namespace System.IO.Compression
             if (buffer != null)
             {
                 _buffer = null!;
-                if (!Volatile.Read(ref _activeRwOperation))
+
+                // only return the buffer if no read/write operation is active
+                if (!Interlocked.Exchange(ref _activeRwOperation, true))
                 {
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
