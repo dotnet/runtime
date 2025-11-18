@@ -73,7 +73,7 @@
       <ManagedToNativeGenerator
           Assemblies="@(WasmPInvokeAssembly)"
           PInvokeModules="@(WasmPInvokeModule)"
-          PInvokeOutputPath="$(GeneratorOutputPath)todo-pinvoke-helpers.cpp"
+          PInvokeOutputPath="$(GeneratorOutputPath)callhelpers-reverse.cpp"
           InterpToNativeOutputPath="$(GeneratorOutputPath)callhelpers-interp-to-managed.cpp">
           <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       </ManagedToNativeGenerator>

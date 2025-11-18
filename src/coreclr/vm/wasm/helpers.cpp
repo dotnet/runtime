@@ -618,7 +618,12 @@ namespace
         if (!GetSignatureKey(sig, keyBuffer, keyBufferLen))
             return NULL;
 
-        return LookupThunk(keyBuffer);
+        void* thunk = LookupThunk(keyBuffer);
+#ifdef _DEBUG
+        if (thunk == NULL)
+            printf("WASM calli missing for key: %s\n", keyBuffer);
+#endif
+        return thunk;
     }
 
     // TODO: This hashing function should be replaced.
