@@ -157,7 +157,7 @@ namespace System.IO.Compression
 
                     nuint result = Interop.Zstd.ZSTD_decompressStream(_context!, ref output, ref input);
 
-                    if (Interop.Zstd.ZSTD_isError(result) != 0)
+                    if (ZstandardUtils.IsError(result))
                     {
                         return OperationStatus.InvalidData;
                     }
@@ -237,7 +237,7 @@ namespace System.IO.Compression
                         (IntPtr)destPtr, (nuint)destination.Length,
                         (IntPtr)sourcePtr, (nuint)source.Length);
 
-                    if (Interop.Zstd.ZSTD_isError(result) != 0)
+                    if (ZstandardUtils.IsError(result))
                     {
                         return false;
                     }
@@ -281,7 +281,7 @@ namespace System.IO.Compression
                         dctx, (IntPtr)destPtr, (nuint)destination.Length,
                         (IntPtr)sourcePtr, (nuint)source.Length, dictionary.DecompressionDictionary);
 
-                    if (Interop.Zstd.ZSTD_isError(result) != 0)
+                    if (ZstandardUtils.IsError(result))
                     {
                         return false;
                     }
