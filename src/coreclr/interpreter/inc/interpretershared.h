@@ -217,6 +217,14 @@ struct InterpAsyncSuspendData
 #else
     DPTR(MethodDesc) pRestoreContextsMethod;
 #endif
+
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_CLASS_HANDLE asyncMethodReturnType;
+#else
+    DPTR(MethodTable) asyncMethodReturnType;
+#endif
+    int32_t asyncMethodReturnTypePrimitiveSize; // 0 if not primitive, otherwise size in bytes
+
     // ResumeInfo . Keep in sync with dataAsyncResumeInfo in the JIT and System.Runtime.CompilerServices.ResumeInfo
     void* resumeFuncPtr; // Pointer to the resume function
     void* DiagnosticIP; // IP to report in diagnostic scenarios
@@ -226,7 +234,6 @@ struct InterpAsyncSuspendData
     CorInfoContinuationFlags flags;
     int32_t offsetIntoContinuationTypeForExecutionContext;
     int32_t keepAliveOffset; // Only needed if we have a generic context to keep alive
-    int32_t returnSize; // Size of return value stored in the continuation
     InterpByteCodeStart* methodStartIP;
     int32_t continuationArgOffset;
     // The continuation argument is implicit and stored in an OBJECTREF in the interpreter frame.

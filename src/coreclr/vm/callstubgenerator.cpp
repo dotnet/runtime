@@ -2340,6 +2340,10 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig)
 
     m_interpreterToNative = true; // We always generate the interpreter to native call stub here
 
+    if (sig.IsAsyncCall())
+    {
+        COMPlusThrow(kPlatformNotSupportedException);
+    }
     ComputeCallStub(sig, pRoutines);
 
     xxHash hashState;

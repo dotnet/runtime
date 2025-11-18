@@ -67,8 +67,6 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                 return NI_System_StubHelpers_NextCallReturnAddress;
             else if (!strcmp(methodName, "GetStubContext"))
                 return NI_System_StubHelpers_GetStubContext;
-            else if (!strcmp(methodName, "AsyncCallContinuation"))
-                return NI_System_StubHelpers_AsyncCallContinuation;
         }
     }
     else if (!strcmp(namespaceName, "System.Numerics"))
@@ -116,9 +114,9 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
             else if (!strcmp(className, "AsyncHelpers"))
             {
                 if (!strcmp(methodName, "AsyncSuspend"))
-                {
                     return NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend;
-                }
+                else if (!strcmp(methodName, "AsyncCallContinuation"))
+                    return NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
             }
         }
         else if (!strcmp(namespaceName, "System.Runtime.InteropServices"))

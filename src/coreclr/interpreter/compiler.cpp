@@ -2013,7 +2013,10 @@ void InterpCompiler::CreateILVars()
             assert(!hasParamArg); // We don't support both a param arg and a this pointer shadow copy
             m_paramArgIndex = m_numILVars; // The param arg is stored after the IL locals in the m_pVars array
         }
-        CreateNextLocalVar(hasThisPointerShadowCopyAsParamIndex ? m_paramArgIndex : 0, argClass, interpType, &offset);
+
+        int thisVar = hasThisPointerShadowCopyAsParamIndex ? m_paramArgIndex : 0;
+        CreateNextLocalVar(thisVar, argClass, interpType, &offset);
+        INTERP_DUMP("alloc this var(var %d) to offset %d\n", thisVar, m_pVars[thisVar].offset);
         argIndexOffset++;
     }
 
@@ -2021,12 +2024,14 @@ void InterpCompiler::CreateILVars()
     {
         m_paramArgIndex = m_numILVars; // The param arg is stored after the IL locals in the m_pVars array
         CreateNextLocalVar(m_paramArgIndex, NULL, InterpTypeI, &offset);
+        INTERP_DUMP("alloc param var(var %d) to offset %d\n", m_paramArgIndex, m_pVars[m_paramArgIndex].offset);
     }
 
     if (hasContinuationArg)
     {
         m_continuationArgIndex = hasParamArg ? m_numILVars + 1 : m_numILVars;
         CreateNextLocalVar(m_continuationArgIndex, NULL, InterpTypeO, &offset);
+        INTERP_DUMP("alloc continuation var(var %d) to offset %d\n", m_continuationArgIndex, m_pVars[m_continuationArgIndex].offset);
     }
 
     for (int i = argIndexOffset; i < numArgs; i++)
@@ -2036,6 +2041,7 @@ void InterpCompiler::CreateILVars()
         InterpType interpType = GetInterpType(argCorType);
         sigArg = m_compHnd->getArgNext(sigArg);
         CreateNextLocalVar(i, argClass, interpType, &offset);
+        INTERP_DUMP("alloc arg var %d var (var %d) to offset %d\n", i, i, m_pVars[i].offset);
     }
     offset = ALIGN_UP_TO(offset, INTERP_STACK_ALIGNMENT);
 
@@ -2050,6 +2056,7 @@ void InterpCompiler::CreateILVars()
         bool pinned = (argCorTypeWithFlags & CORINFO_TYPE_MOD_PINNED) == CORINFO_TYPE_MOD_PINNED;
         InterpType interpType = GetInterpType(argCorType);
         CreateNextLocalVar(index, argClass, interpType, &offset, pinned);
+        INTERP_DUMP("alloc il local var %d var (var %d) to offset %d\n", i, index, m_pVars[index].offset);
         sigArg = m_compHnd->getArgNext(sigArg);
         index++;
     }
@@ -2073,6 +2080,7 @@ void InterpCompiler::CreateILVars()
         CORINFO_CLASS_HANDLE argClass = m_compHnd->getMethodClass(m_methodInfo->ftn);
         CreateNextLocalVar(0, argClass, InterpTypeO, &offset);
         m_shadowThisVar = index;
+        INTERP_DUMP("alloc shadow this var (var %d) to offset %d\n", m_shadowThisVar, m_pVars[0].offset);
         index++; // We need to account for the shadow copy in the variable index
     }
 
@@ -2080,9 +2088,11 @@ void InterpCompiler::CreateILVars()
     {
         m_execContextVarIndex = index;
         CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
+        INTERP_DUMP("alloc ExecutableContextVar (var %d) to offset %d\n", m_execContextVarIndex, m_pVars[m_execContextVarIndex].offset);
         index++;
         m_syncContextVarIndex = index;
         CreateNextLocalVar(index, NULL, InterpTypeO, &offset);
+        INTERP_DUMP("alloc SyncContextVar (var %d) to offset %d\n", m_syncContextVarIndex, m_pVars[m_syncContextVarIndex].offset);
         index++;
     }
 
@@ -2120,7 +2130,6 @@ void InterpCompiler::CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argC
     *pOffset = ALIGN_UP_TO(*pOffset, align);
     m_pVars[iArgToSet].offset = *pOffset;
     m_pVars[iArgToSet].pinned = pinned;
-    INTERP_DUMP("alloc arg var %d to offset %d\n", iArgToSet, *pOffset);
     *pOffset += size;
 }
 
@@ -3076,7 +3085,7 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             AddIns(INTOP_RET_VOID);
             return true;
 
-        case NI_System_StubHelpers_AsyncCallContinuation:
+        case NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation:
             if (m_methodInfo->args.isAsyncCall())
             {
                 BADCODE("AsyncCallContinuation should not be used in async methods");
@@ -4187,7 +4196,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             //  cause user code to misbehave. This is by design. One-off method Interpretation is for internal use only.
             bool isMustExpand = (callInfo.hMethod == m_methodHnd) ||
                 (ni == NI_System_StubHelpers_GetStubContext) ||
-                (ni == NI_System_StubHelpers_AsyncCallContinuation) ||
+                (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation) ||
                 (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend);
             if ((InterpConfig.InterpMode() == 3) || isMustExpand)
             {
@@ -4766,6 +4775,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_ip += 5;
 }
 
+void SetSlotToTrue(TArray<bool, MemPoolAllocator> &gcRefMap, int32_t slotIndex)
+{
+    while (gcRefMap.GetSize() <= slotIndex)
+    {
+        int32_t growSize = gcRefMap.GetSize();
+        if (growSize < 16)
+            growSize = 16;
+        gcRefMap.GrowBy(growSize);
+    }
+    gcRefMap.Set(slotIndex, true);
+}
+
 void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo)
 {
     CORINFO_LOOKUP_KIND kindForAllocationContinuation;
@@ -4867,65 +4888,12 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo)
     }
 
     // Step 4: Build GC reference map
-    int32_t totalDataSize = 0;
-    for (int32_t i = 0; i < liveVars.GetSize(); i++)
-    {
-        int32_t var = liveVars.Get(i);
-        int32_t align;
-        int32_t size = GetInterpTypeStackSize(m_pVars[var].clsHnd, m_pVars[var].interpType, &align);
-        if (align < INTERP_STACK_SLOT_SIZE)
-            align = INTERP_STACK_SLOT_SIZE;
-        totalDataSize = ALIGN_UP_TO(totalDataSize, align);
-        totalDataSize += size;
-    }
-
-    // Add size of return value if present
-    if (returnValueVar != -1)
-    {
-        int32_t align;
-        int32_t size = GetInterpTypeStackSize(
-            m_pVars[returnValueVar].clsHnd,
-            m_pVars[returnValueVar].interpType,
-            &align
-        );
-        if (align < INTERP_STACK_SLOT_SIZE)
-            align = INTERP_STACK_SLOT_SIZE;
-        totalDataSize = ALIGN_UP_TO(totalDataSize, align);
-        totalDataSize += size;
-    }
-
-    // Add size of ExecContext
-    int32_t execContextOffset = totalDataSize;
-    totalDataSize += sizeof(void*); // Assuming ExecContext is pointer-sized
-
-    // Add size for keep-alive pointer if needed
-    if (needsKeepAlive)
-    {
-        totalDataSize = ALIGN_UP_TO(totalDataSize, sizeof(void*));
-        totalDataSize += sizeof(void*);
-    }
-
-    // Add size for Exception object if needed
-    if (needsEHHandling)
-    {
-        totalDataSize = ALIGN_UP_TO(totalDataSize, sizeof(void*));
-        totalDataSize += sizeof(void*);
-    }
-
-    // Add size for Continuation Context if needed
-    if (captureContinuationContext)
-    {
-        totalDataSize = ALIGN_UP_TO(totalDataSize, sizeof(void*));
-        totalDataSize += sizeof(void*);
-    }
 
     // Calculate number of pointer-sized slots
-    int32_t numSlots = (totalDataSize + sizeof(void*) - 1) / sizeof(void*);
-    bool* objRefs = (bool*)AllocTemporary0(numSlots * sizeof(bool));
+    TArray<bool, MemPoolAllocator> objRefSlots(GetMemPoolAllocator());
 
     // Fill in the GC reference map
     int32_t currentOffset = 0;
-    int32_t currentOffsetFromReturnValueDataStart = 0;
     int32_t returnValueDataStartOffset = 0;
     for (int32_t i = -3; i < liveVars.GetSize(); i++)
     {
@@ -4935,9 +4903,9 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo)
         {
             if (!needsEHHandling)
                 continue;
+            INTERP_DUMP("Allocate EH at offset %d\n", currentOffset);
             int32_t slotIndex = currentOffset / sizeof(void*);
-            assert(slotIndex < numSlots);
-            objRefs[slotIndex] = true;
+            SetSlotToTrue(objRefSlots, slotIndex);
             currentOffset += sizeof(void*); // Align to pointer size to match the expected layout
             continue;
         }
@@ -4945,9 +4913,9 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo)
         {
             if (!captureContinuationContext)
                 continue;
+            INTERP_DUMP("Allocate ContinuationContext at offset %d\n", currentOffset);
             int32_t slotIndex = currentOffset / sizeof(void*);
-            assert(slotIndex < numSlots);
-            objRefs[slotIndex] = true;
+            SetSlotToTrue(objRefSlots, slotIndex);
             currentOffset += sizeof(void*); // Align to pointer size to match the expected layout
             continue;
         }
@@ -4958,6 +4926,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo)
             if (returnValueVar == -1)
                 continue;
             var = returnValueVar;
+            INTERP_DUMP("returnValueVar is  %d\n", returnValueVar);
         }
         else
         {
@@ -4968,29 +4937,21 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo)
         InterpType interpType = m_pVars[var].interpType;
         CORINFO_CLASS_HANDLE clsHnd = m_pVars[var].clsHnd;
         
-        int32_t align;
-        int32_t size = GetInterpTypeStackSize(clsHnd, interpType, &align);
+        int32_t alignUNUSED;
+        int32_t size = GetInterpTypeStackSize(clsHnd, interpType, &alignUNUSED);
 
-        if (i == -1)
-        {
-            // Return values are only aligned to pointer size
-            align = sizeof(void*);
-        }
+        // Since we're representing copying out of the continuation into interpreter stack frames
+        // which are always aligned to INTERP_STACK_SLOT_SIZE, we need to ensure that each
+        // var takes up at least that much space.
+        size = ALIGN_UP_TO(size, INTERP_STACK_SLOT_SIZE);
 
-        // The data for vars stored in the continuation starts at the returnvalue data in the Continuation.
-        // That may/may not actually be aligned with interpreter alignment, but we fill it starting from there with interpreter aligned data
-        // to ease copy in/out from the interpreter frames.
-        currentOffsetFromReturnValueDataStart = currentOffset - returnValueDataStartOffset;
-        int32_t newCurrentOffsetFromReturnValueDataStart = ALIGN_UP_TO(currentOffsetFromReturnValueDataStart, align);
-        currentOffset += newCurrentOffsetFromReturnValueDataStart - currentOffsetFromReturnValueDataStart;
-        currentOffsetFromReturnValueDataStart = currentOffset - returnValueDataStartOffset;
-        
+        INTERP_DUMP("Allocate var %d at data offset %d (size %d) (offsetFromStartOfReturnValue = %d)\n", var, currentOffset, size, currentOffset - returnValueDataStartOffset);
+
         if (interpType == InterpTypeO)
         {
             // Mark as GC reference
             int32_t slotIndex = currentOffset / sizeof(void*);
-            assert(slotIndex < numSlots);
-            objRefs[slotIndex] = true;
+            SetSlotToTrue(objRefSlots, slotIndex);
         }
         else if (interpType == InterpTypeVT)
         {
@@ -5001,38 +4962,40 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo)
             {
                 InterpreterStackMapSlot slotInfo = stackMap->m_slots[j];
                 int32_t slotIndex = (currentOffset + slotInfo.m_offsetBytes) / sizeof(void*);
-                objRefs[slotIndex] = true;
+                SetSlotToTrue(objRefSlots, slotIndex);
             }
         }
         
         currentOffset += size;
     }
 
+    int32_t execContextOffset = 0;
     {
         // Mark ExecContext pointer as a GC reference
+        execContextOffset = currentOffset;
+        INTERP_DUMP("Allocate ExecutableContext at offset %d\n", currentOffset);
         int32_t slotIndex = currentOffset / sizeof(void*);
-        assert(slotIndex < numSlots);
-        objRefs[slotIndex] = true;
+        SetSlotToTrue(objRefSlots, slotIndex);
+        currentOffset += sizeof(void*);
     }
 
     int32_t keepAliveOffset = 0;
     if (needsKeepAlive)
     {
-        currentOffset += sizeof(void*);
         // Mark keep-alive pointer as a GC reference
         keepAliveOffset = currentOffset;
+        INTERP_DUMP("Allocate KeepAlive at offset %d\n", currentOffset);
         int32_t slotIndex = currentOffset / sizeof(void*);
-        assert(slotIndex < numSlots);
-        objRefs[slotIndex] = true;
+        SetSlotToTrue(objRefSlots, slotIndex);
+        currentOffset += sizeof(void*);
     }
 
-    assert(currentOffset + sizeof(void*) == totalDataSize);
-
     // Step 5: Get continuation type handle
+    assert(currentOffset / sizeof(void*) <= objRefSlots.GetSize());
     CORINFO_CLASS_HANDLE continuationTypeHnd = m_compHnd->getContinuationType(
-        totalDataSize,
-        objRefs,
-        numSlots * sizeof(bool)
+        currentOffset,
+        objRefSlots.GetUnderlyingArray(),
+        (currentOffset / sizeof(void*)) * sizeof(bool)
     );
 
     // Step 6: Build InterpAsyncSuspendData structure
@@ -5065,7 +5028,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo)
     suspendData->flags = (CorInfoContinuationFlags)flags;
 
     suspendData->offsetIntoContinuationTypeForExecutionContext = execContextOffset + OFFSETOF__CORINFO_Continuation__data;
-    suspendData->keepAliveOffset = keepAliveOffset;
+    suspendData->keepAliveOffset = keepAliveOffset + OFFSETOF__CORINFO_Continuation__data;
     suspendData->pCaptureSyncContextMethod = asyncInfo.captureContinuationContextMethHnd;
     suspendData->pMDRestoreExecutionContext = asyncInfo.restoreExecutionContextMethHnd;
     suspendData->pRestoreContextsMethod = asyncInfo.restoreContextsMethHnd;
@@ -5073,18 +5036,72 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo)
     suspendData->DiagnosticIP = NULL;
     suspendData->methodStartIP = 0;
     suspendData->continuationArgOffset = m_pVars[m_continuationArgIndex].offset;
-    
-    // Calculate return size
-    if (callInfo.sig.retType != CORINFO_TYPE_VOID)
+    suspendData->asyncMethodReturnType = NULL;
+    switch (m_methodInfo->args.retType)
     {
-        InterpType retInterpType = GetInterpType(callInfo.sig.retType);
-        int32_t retAlign;
-        suspendData->returnSize = GetInterpTypeStackSize(callInfo.sig.retTypeClass, retInterpType, &retAlign);
-        suspendData->flags = (CorInfoContinuationFlags)(suspendData->flags | CORINFO_CONTINUATION_HAS_RESULT);
-    }
-    else
-    {
-        suspendData->returnSize = 0;
+        case CORINFO_TYPE_VALUECLASS:
+            suspendData->asyncMethodReturnType = m_methodInfo->args.retTypeClass;
+            suspendData->asyncMethodReturnTypePrimitiveSize = 0;
+            break;
+        case CORINFO_TYPE_STRING:
+        case CORINFO_TYPE_CLASS:
+            suspendData->asyncMethodReturnType = m_compHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);
+            suspendData->asyncMethodReturnTypePrimitiveSize = 0;
+            break;
+        case CORINFO_TYPE_BYTE:
+        case CORINFO_TYPE_UBYTE:
+            suspendData->asyncMethodReturnTypePrimitiveSize = 1;
+            break;
+        case CORINFO_TYPE_SHORT:
+        case CORINFO_TYPE_USHORT:
+            suspendData->asyncMethodReturnTypePrimitiveSize = 2;
+            break;
+        case CORINFO_TYPE_INT:
+        case CORINFO_TYPE_UINT:
+            suspendData->asyncMethodReturnTypePrimitiveSize = 4;
+            break;
+        case CORINFO_TYPE_LONG:
+        case CORINFO_TYPE_ULONG:
+            suspendData->asyncMethodReturnTypePrimitiveSize = 8;
+            break;
+        case CORINFO_TYPE_FLOAT:
+            suspendData->asyncMethodReturnTypePrimitiveSize = 4;
+            break;
+        case CORINFO_TYPE_DOUBLE:
+            suspendData->asyncMethodReturnTypePrimitiveSize = 8;
+            break;
+        case CORINFO_TYPE_BOOL:
+            suspendData->asyncMethodReturnTypePrimitiveSize = 1;
+            break;
+        case CORINFO_TYPE_CHAR:
+            suspendData->asyncMethodReturnTypePrimitiveSize = 2;
+            break;
+        case CORINFO_TYPE_BYREF:
+            BADCODE("ByRef return types not supported for async methods");
+            break;
+        case CORINFO_TYPE_NATIVEINT:
+        case CORINFO_TYPE_NATIVEUINT:
+            suspendData->asyncMethodReturnTypePrimitiveSize = sizeof(void*);
+            break;
+
+        case CORINFO_TYPE_VOID:
+            suspendData->asyncMethodReturnType = NULL;
+            suspendData->asyncMethodReturnTypePrimitiveSize = 0;
+            break;
+        case CORINFO_TYPE_PTR:
+            suspendData->asyncMethodReturnTypePrimitiveSize = sizeof(void*);
+            break;
+        case CORINFO_TYPE_REFANY:
+            BADCODE("TypedReference return types not supported for async methods");
+            break;
+
+        case CORINFO_TYPE_VAR:
+            BADCODE("VAR return types should have been translated before we get here on async methods");
+            break;
+        default:
+            // Other types are not supported
+            BADCODE("Unsupported async method return type");
+            break;
     }
 
     // Step 7: Emit the INTOP_HANDLE_CONTINUATION instruction
@@ -5140,16 +5157,13 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo)
     }
     m_pLastNewIns->SetDVar(varAllocatedContinuation);
 
-    if (captureContinuationContext)
-    {
-        AddIns(INTOP_CAPTURE_SYNC_CONTEXT_ON_SUSPEND);
-        m_pLastNewIns->data[0] = suspendDataIndex;
-        m_pLastNewIns->SetSVar(varAllocatedContinuation);
-        PushInterpType(InterpTypeO, NULL);
-        varAllocatedContinuation = m_pStackPointer[-1].var;
-        m_pStackPointer--;
-        m_pLastNewIns->SetDVar(varAllocatedContinuation);
-    }
+    AddIns(INTOP_CAPTURE_CONTEXT_ON_SUSPEND);
+    m_pLastNewIns->data[0] = suspendDataIndex;
+    m_pLastNewIns->SetSVar(varAllocatedContinuation);
+    PushInterpType(InterpTypeI, NULL);
+    int32_t unusedRetVal = m_pStackPointer[-1].var;
+    m_pStackPointer--;
+    m_pLastNewIns->SetDVar(unusedRetVal);
 
     if (m_isAsyncMethodWithContextSaveRestore)
     {
@@ -9761,7 +9775,6 @@ void InterpCompiler::PrintInterpAsyncSuspendData(InterpAsyncSuspendData* pSuspen
     printf(" AsyncSuspendData[");
     printf("ContinuationTypeHnd=%p", pSuspendInfo->ContinuationTypeHnd);
     printf(", flags=%d", pSuspendInfo->flags);
-    printf(", returnSize=%d", pSuspendInfo->returnSize);
     printf(", offsetIntoContinuationTypeForExecutionContext=%d", pSuspendInfo->offsetIntoContinuationTypeForExecutionContext);
     printf(", liveLocalsIntervals=");
     PrintLocalIntervals(pSuspendInfo->liveLocalsIntervals);

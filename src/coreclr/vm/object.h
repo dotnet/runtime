@@ -2216,6 +2216,19 @@ class ContinuationObject : public Object
         return dataAddress;
     }
 
+    PTR_OBJECTREF GetExceptionObjectStorage()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE((GetFlags() & CORINFO_CONTINUATION_HAS_EXCEPTION));
+
+        PTR_BYTE dataAddress = dac_cast<PTR_BYTE>((dac_cast<TADDR>(this) + OFFSETOF__CORINFO_Continuation__data));
+        if (GetFlags() & CORINFO_CONTINUATION_HAS_OSR_ILOFFSET)
+        {
+            dataAddress += sizeof(void*);
+        }
+        return dac_cast<PTR_OBJECTREF>(dataAddress);
+    }
+
 #ifndef DACCESS_COMPILE
     int32_t* GetFlagsAddress()
     {

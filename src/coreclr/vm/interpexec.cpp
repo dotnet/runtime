@@ -406,6 +406,7 @@ typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(MethodTable*, intptr_t);
 typedef void* (*HELPER_FTN_P_PP)(void*, void*);
 typedef void (*HELPER_FTN_V_PPP)(void*, void*, void*);
+typedef void* (*HELPER_FTN_P_PPIP)(void*, void*, int32_t, void*);
 typedef void (*HELPER_FTN_V_PP)(void*, void*);
 
 InterpThreadContext::InterpThreadContext()
@@ -752,17 +753,29 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
     // InterpMethodContextFrame. This is important for the stack walking code.
     struct Frames
     {
+        // Since the address of this Frame is below that of the InterpreterFrame, we need to make sure to run its
+        // constructor AFTER interpreterFrame is constructed, and its destructor BEFORE interpreterFrame is destructed.
+        char retValProtectData[sizeof(ProtectValueClassFrame)];
         InterpMethodContextFrame interpMethodContextFrame = {0};
         InterpreterFrame interpreterFrame;
 
         Frames(TransitionBlock* pTransitionBlock)
         : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
         {
+            new (retValProtectData) ProtectValueClassFrame();
+        }
+
+        ~Frames()
+        {
+            ((ProtectValueClassFrame*)retValProtectData)->~ProtectValueClassFrame();
+        }
+
+        ProtectValueClassFrame& retValProtect()
+        {
+            return *(ProtectValueClassFrame*)retValProtectData;
         }
     }
     frames(NULL);
-
-    StackVal retVal;
 
     CONTINUATIONREF contRef = (CONTINUATIONREF)ObjectToOBJECTREF(cont.Get());
     NULL_CHECK(contRef);
@@ -779,11 +792,51 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
 
     frames.interpMethodContextFrame.startIp = pSuspendData->methodStartIP;
     frames.interpMethodContextFrame.pStack = sp;
-    frames.interpMethodContextFrame.pRetVal = (int8_t*)&retVal;
+
+    // The return value may need gc protection, so use a ProtectValueClassFrame for that
+    // Also, figure out the exact sizes to work with, since we may be copying into a Task<T>
+    // and not only into another interpreter continuation
+    int32_t returnValueSize = pSuspendData->asyncMethodReturnTypePrimitiveSize;
+    if (pSuspendData->asyncMethodReturnType != NULL)
+    {
+        if (pSuspendData->asyncMethodReturnType->IsValueType())
+            returnValueSize = pSuspendData->asyncMethodReturnType->GetNumInstanceFieldBytes();
+        else
+            returnValueSize = sizeof(OBJECTREF);
+    }
+    
+    void* returnValueLocation = alloca(returnValueSize < sizeof(StackVal) ? sizeof(StackVal) : returnValueSize);
+    memset(returnValueLocation, 0, returnValueSize);
+    ValueClassInfo returnValueInfo(returnValueLocation, pSuspendData->asyncMethodReturnType, NULL);
+
+    if (pSuspendData->asyncMethodReturnType != NULL)
+    {
+        *frames.retValProtect().GetValueClassInfoList() = &returnValueInfo;
+    }
+
+    frames.interpMethodContextFrame.pRetVal = (int8_t*)returnValueLocation;
 
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
 
+    if (frames.interpreterFrame.GetContinuation() == NULL)
+    {
+        // We had a normal return, so copy out the return value
+        if (returnValueSize > 0)
+        {
+            if (pSuspendData->asyncMethodReturnType != NULL && pSuspendData->asyncMethodReturnType->ContainsGCPointers())
+            {
+                // GC refs need to be written with write barriers
+                memmoveGCRefs(resultStorage, returnValueLocation, returnValueSize);
+            }
+            else
+            {
+                memcpyNoGCRefs(resultStorage, returnValueLocation, returnValueSize);
+            }
+        }
+    }
+
     cont.Set(frames.interpreterFrame.GetContinuation());
+    frames.retValProtect().Pop();
     frames.interpreterFrame.Pop();
 
     END_QCALL;
@@ -3641,9 +3694,13 @@ do                                                                      \
                     COMPlusThrow(kPlatformNotSupportedException);
                     break;
 
+                case INTOP_HANDLE_CONTINUATION_GENERIC:
                 case INTOP_HANDLE_CONTINUATION:
                 {
-                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[2]];
+                    int32_t helperOffset = *ip == INTOP_HANDLE_CONTINUATION_GENERIC ? 4 : 3;
+                    int32_t ipAdjust = *ip == INTOP_HANDLE_CONTINUATION_GENERIC ? 5 : 4;
+                    int32_t suspendDataOffset = *ip == INTOP_HANDLE_CONTINUATION_GENERIC ? 3 : 2;
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[suspendDataOffset]];
 
                     // Zero out locals that need zeroing
                     InterpIntervalMapEntry *pZeroLocalsEntry = pAsyncSuspendData->zeroedLocalsIntervals;
@@ -3657,13 +3714,22 @@ do                                                                      \
                     {
                         // No continuation to handle.
                         LOCAL_VAR(ip[1], void*) = NULL; // We don't allocate a continuation here
-                        ip += 4; // (4 for this opcode)
+                        ip += ipAdjust; // (4 for this opcode)
                         break;
                     }
                     MethodTable *pContinuationType = pAsyncSuspendData->ContinuationTypeHnd;
 
                     MethodDesc *pILTargetMethod = NULL;
-                    HELPER_FTN_P_PP helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[3], &pILTargetMethod);
+                    HELPER_FTN_P_PP helperFtn = NULL;
+                    HELPER_FTN_P_PPIP helperFtnGeneric = NULL;
+                    if (*ip == INTOP_HANDLE_CONTINUATION_GENERIC)
+                    {
+                        helperFtnGeneric = GetPossiblyIndirectHelper<HELPER_FTN_P_PPIP>(pMethod, ip[helperOffset], &pILTargetMethod);
+                    }
+                    else
+                    {
+                        helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_PP>(pMethod, ip[helperOffset], &pILTargetMethod);
+                    }
                     if (pILTargetMethod != NULL)
                     {
                         returnOffset = ip[1];
@@ -3671,23 +3737,37 @@ do                                                                      \
 
                         // Pass argument to the target method
                         LOCAL_VAR(callArgsOffset, OBJECTREF) = pInterpreterFrame->GetContinuation();
-                        LOCAL_VAR(callArgsOffset + 8, MethodTable*) = pContinuationType;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, MethodTable*) = pContinuationType;
+                        if (*ip == INTOP_HANDLE_CONTINUATION_GENERIC)
+                        {
+                            LOCAL_VAR(callArgsOffset + 2 * INTERP_STACK_SLOT_SIZE, int32_t) = pAsyncSuspendData->keepAliveOffset;
+                            LOCAL_VAR(callArgsOffset + 3 * INTERP_STACK_SLOT_SIZE, uintptr_t) = LOCAL_VAR(ip[2], uintptr_t);
+                        }
 
                         pInterpreterFrame->SetContinuation(NULL);
                         targetMethod = pILTargetMethod;
-                        ip += 4;
+                        ip += ipAdjust;
                         goto CALL_INTERP_METHOD;
                     }
 
-                    _ASSERTE(helperFtn != NULL);
                     OBJECTREF chainedContinuation = pInterpreterFrame->GetContinuation();
                     pInterpreterFrame->SetContinuation(NULL);
-                    ip += 4;
-                    LOCAL_VAR(ip[1], void*) = helperFtn(OBJECTREFToObject(chainedContinuation), pContinuationType);
+                    OBJECTREF* pDest = LOCAL_VAR_ADDR(ip[1], OBJECTREF);
+                    if (*ip == INTOP_HANDLE_CONTINUATION_GENERIC)
+                    {
+                        uintptr_t context = LOCAL_VAR(ip[2], uintptr_t);
+                        ip += ipAdjust;
+                        *pDest = ObjectToOBJECTREF((Object*)helperFtnGeneric(OBJECTREFToObject(chainedContinuation), pContinuationType, pAsyncSuspendData->keepAliveOffset, (void*)context));
+                    }
+                    else
+                    {
+                        ip += ipAdjust;
+                        *pDest = ObjectToOBJECTREF((Object*)helperFtn(OBJECTREFToObject(chainedContinuation), pContinuationType));
+                    }
                     break;
                 }
 
-                case INTOP_CAPTURE_SYNC_CONTEXT_ON_SUSPEND:
+                case INTOP_CAPTURE_CONTEXT_ON_SUSPEND:
                 {
                     CONTINUATIONREF continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
 
@@ -3700,24 +3780,37 @@ do                                                                      \
                     }
 
                     InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[3]];
-                    MethodDesc *pCaptureSyncContextMethod = pAsyncSuspendData->pCaptureSyncContextMethod;
-                    int32_t *flagsAddress = continuation->GetFlagsAddress();
-                    size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
-                    uint8_t *pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
-                    if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_EXCEPTION)
+
+                    THREADBASEREF threadBase = ((THREADBASEREF)GetThread()->GetExposedObject());
+                    continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
+                    SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), threadBase->GetExecutionContext());
+
+                    if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT)
                     {
-                        pContinuationData += sizeof(OBJECTREF);
+                        MethodDesc *pCaptureSyncContextMethod = pAsyncSuspendData->pCaptureSyncContextMethod;
+                        int32_t *flagsAddress = continuation->GetFlagsAddress();
+                        size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
+                        uint8_t *pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
+                        if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_EXCEPTION)
+                        {
+                            pContinuationData += sizeof(OBJECTREF);
+                        }
+
+                        returnOffset = ip[1];
+                        callArgsOffset = pMethod->allocaSize;
+
+                        // Pass argument to the target method
+                        LOCAL_VAR(callArgsOffset, void*) = pContinuationData;
+                        LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int32_t*) = flagsAddress;
+                        targetMethod = pCaptureSyncContextMethod;
+                        ip += 4;
+                        goto CALL_INTERP_METHOD;
                     }
-
-                    returnOffset = ip[1];
-                    callArgsOffset = pMethod->allocaSize;
-
-                    // Pass argument to the target method
-                    LOCAL_VAR(callArgsOffset, void*) = pContinuationData;
-                    LOCAL_VAR(callArgsOffset + INTERP_STACK_SLOT_SIZE, int32_t*) = flagsAddress;
-                    targetMethod = pCaptureSyncContextMethod;
-                    ip += 4;
-                    goto CALL_INTERP_METHOD;
+                    else
+                    {
+                        ip += 4;
+                        break;
+                    }
                 }
 
                 case INTOP_RESTORE_CONTEXTS_ON_SUSPEND:
@@ -3786,10 +3879,6 @@ do                                                                      \
                     }
                     ip += 3;
                     
-                    THREADBASEREF threadBase = ((THREADBASEREF)GetThread()->GetExposedObject());
-                    continuation = LOCAL_VAR(ip[1], CONTINUATIONREF);
-                    SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), threadBase->GetExecutionContext());
-                    
                     // copy locals that need to move to the continuation object
                     size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
                     continuation->SetFlags(pAsyncSuspendData->flags);
@@ -3797,21 +3886,33 @@ do                                                                      \
                     uint8_t *pContinuationData = pContinuationDataStart;
                     size_t bytesTotal = 0;
                     InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
-                    GCHeapMemoryBarrier();
-                    while (pCopyEntry->countBytes != 0)
+                    if (pCopyEntry->countBytes > 0)
                     {
-                        InlinedForwardGCSafeCopyHelper(pContinuationData, LOCAL_VAR_ADDR(pCopyEntry->startOffset, uint8_t), pCopyEntry->countBytes);
-                        bytesTotal += pCopyEntry->countBytes;
-                        pContinuationData += pCopyEntry->countBytes;
-                        pCopyEntry++;
-                    }
-                    InlinedSetCardsAfterBulkCopyHelper((Object**)pContinuationDataStart, bytesTotal);
-                    
-                    if (pAsyncSuspendData->returnSize > 0)
-                    {
-                        if (pAsyncSuspendData->returnSize > INTERP_STACK_SLOT_SIZE)
+                        GCHeapMemoryBarrier();
+                        while (pCopyEntry->countBytes != 0)
                         {
-                            memset(pFrame->pRetVal, 0, pAsyncSuspendData->returnSize);
+                            InlinedForwardGCSafeCopyHelper(pContinuationData, LOCAL_VAR_ADDR(pCopyEntry->startOffset, uint8_t), pCopyEntry->countBytes);
+                            bytesTotal += pCopyEntry->countBytes;
+                            pContinuationData += pCopyEntry->countBytes;
+                            pCopyEntry++;
+                        }
+                        InlinedSetCardsAfterBulkCopyHelper((Object**)pContinuationDataStart, bytesTotal);
+                    }
+                    
+                    int32_t returnValueSize = pAsyncSuspendData->asyncMethodReturnTypePrimitiveSize;
+                    if (pAsyncSuspendData->asyncMethodReturnType != NULL)
+                    {
+                        if (pAsyncSuspendData->asyncMethodReturnType->IsValueType())
+                            returnValueSize = pAsyncSuspendData->asyncMethodReturnType->GetNumInstanceFieldBytes();
+                        else
+                            returnValueSize = sizeof(OBJECTREF);
+                    }
+
+                    if (returnValueSize > 0)
+                    {
+                        if (returnValueSize > INTERP_STACK_SLOT_SIZE)
+                        {
+                            memset(pFrame->pRetVal, 0, returnValueSize);
                         }
                         else
                         {
@@ -3840,21 +3941,19 @@ do                                                                      \
                     // Now copy the locals
 
                     // copy locals that need to move from the continuation object
-                    size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
-                    uint8_t *pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
+                    uint8_t *pContinuationData = continuation->GetResultStorage();
                     InterpIntervalMapEntry *pCopyEntry = pAsyncSuspendData->liveLocalsIntervals;
                     while (pCopyEntry->countBytes != 0)
                     {
                         memcpy(LOCAL_VAR_ADDR(pCopyEntry->startOffset, uint8_t), pContinuationData, pCopyEntry->countBytes);
-                        pCopyEntry++;
                         pContinuationData += pCopyEntry->countBytes;
+                        pCopyEntry++;
                     }
 
                     if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_EXCEPTION)
                     {
                         // Throw exception if needed
-                        pContinuationData = (uint8_t*)OBJECTREFToObject(continuation) + continuationOffset;
-                        OBJECTREF exception = *(OBJECTREF*)pContinuationData;
+                        OBJECTREF exception = *continuation->GetExceptionObjectStorage();
 
                         if (exception != NULL)
                         {
