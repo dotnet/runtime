@@ -31,47 +31,12 @@ namespace Profiler.Tests
                               Dictionary<string, string> envVars = null,
                               string reverseServerName = null,
                               bool loadAsNotification = false,
-                              int notificationCopies = 1)
-        {
-            // Run the test for both environment variables naming conventions. 
-            RunOnce(profileePath,
-                    testName,
-                    profilerClsid,
-                    profileeArguments,
-                    profileeOptions,
-                    envVars != null ? new Dictionary<string, string>(envVars) : envVars,
-                    reverseServerName,
-                    loadAsNotification,
-                    notificationCopies,
-                    "DOTNET");
-
-            return RunOnce(profileePath,
-                           testName,
-                           profilerClsid,
-                           profileeArguments,
-                           profileeOptions,
-                           envVars != null ? new Dictionary<string, string>(envVars) : envVars,
-                           reverseServerName,
-                           loadAsNotification,
-                           notificationCopies,
-                           "CORECLR");
-        }
-        
-        public static int RunOnce(string profileePath,
-                                  string testName,
-                                  Guid profilerClsid,
-                                  string profileeArguments = "",
-                                  ProfileeOptions profileeOptions = ProfileeOptions.None,
-                                  Dictionary<string, string> envVars = null,
-                                  string reverseServerName = null,
-                                  bool loadAsNotification = false,
-                                  int notificationCopies = 1,
-                                  string prefix = "DOTNET")
+                              int notificationCopies = 1,
+                              string envVarProfilerPrefix = "DOTNET")
         {
             string arguments;
             string program;
             string profileeAppDir = Path.GetDirectoryName(profileePath);
-            Console.WriteLine($"Running the test using environment variables with {prefix} prefix.");
 
             if (envVars == null)
             {
@@ -83,7 +48,7 @@ namespace Profiler.Tests
             string profilerPath = GetProfilerPath();
             if (!profileeOptions.HasFlag(ProfileeOptions.NoStartupAttach))
             {
-                envVars.Add(prefix + "_ENABLE_PROFILING", "1");
+                envVars.Add(envVarProfilerPrefix + "_ENABLE_PROFILING", "1");
 
                 if (loadAsNotification)
                 {
@@ -98,14 +63,14 @@ namespace Profiler.Tests
                         builder.Append(";");
                     }
 
-                    envVars.Add(prefix + "_ENABLE_NOTIFICATION_PROFILERS", "1");
-                    envVars.Add(prefix + "_NOTIFICATION_PROFILERS", builder.ToString());
+                    envVars.Add(envVarProfilerPrefix + "_ENABLE_NOTIFICATION_PROFILERS", "1");
+                    envVars.Add(envVarProfilerPrefix + "_NOTIFICATION_PROFILERS", builder.ToString());
 
                 }
                 else
                 {
-                    envVars.Add(prefix + "_PROFILER", "{" + profilerClsid + "}");
-                    envVars.Add(prefix + "_PROFILER_PATH", profilerPath);
+                    envVars.Add(envVarProfilerPrefix + "_PROFILER", "{" + profilerClsid + "}");
+                    envVars.Add(envVarProfilerPrefix + "_PROFILER_PATH", profilerPath);
                 }
             }
 
