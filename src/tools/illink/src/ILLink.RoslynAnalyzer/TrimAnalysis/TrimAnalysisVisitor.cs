@@ -263,6 +263,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
             {
                 // If the parameter is not associated with a method, ignore it as it's not interesting for trim analysis.
                 // This can happen in the parameter initializer of an indexer property, for example.
+                // When visiting the assignment for the parameter initializer, the owning symbol will be the property
+                // symbol, not the get/set method. The get/set methods get analyzed in a separate context where the owning
+                // symbol of the same parameter (this time on the method) is the get/set method.
                 return TopValue;
             }
 

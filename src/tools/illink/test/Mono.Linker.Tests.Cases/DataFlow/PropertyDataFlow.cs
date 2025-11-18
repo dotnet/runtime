@@ -48,6 +48,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             ExplicitIndexerAccess.Test();
             ImplicitIndexerAccess.Test();
+            AnnotatedIndexerParameter.Test();
             IndexerDefaultArgument.Test();
 
             AnnotationOnUnsupportedType.Test();
@@ -925,6 +926,44 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 TestNullCoalescingAssignment();
                 TestSpanIndexerAccess();
                 IndexWithTypeWithDam.Test();
+            }
+        }
+
+        class AnnotatedIndexerParameter
+        {
+            public Type this[[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type index]
+            {
+                get
+                {
+                    index.RequiresPublicConstructors();
+                    return null;
+                }
+                [ExpectedWarning("IL2067", ["this[Type].set", "index"], Tool.Analyzer, "")]
+                [ExpectedWarning("IL2067", ["Item.set", "index"], Tool.Trimmer | Tool.NativeAot, "")]
+                set
+                {
+                    index.RequiresPublicMethods();
+                }
+            }
+
+            [ExpectedWarning("IL2067", ["this[Type].set", nameof(unannotated), "index"], Tool.Analyzer, "")]
+            [ExpectedWarning("IL2067", ["Item.set", nameof(unannotated), "index"], Tool.Trimmer | Tool.NativeAot, "")]
+            static void ParameterMismatch(Type unannotated = null)
+            {
+                var instance = new AnnotatedIndexerParameter();
+                instance[unannotated] = null;
+            }
+
+            static void ParameterMatch([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type annotated = null)
+            {
+                var instance = new AnnotatedIndexerParameter();
+                instance[annotated] = null;
+            }
+
+            public static void Test()
+            {
+                ParameterMismatch();
+                ParameterMatch();
             }
         }
 
