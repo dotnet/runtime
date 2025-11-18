@@ -52,9 +52,14 @@ namespace Tracing.Tests.UserEvents
                 return -1;
             }
 
-            string traceFilePath = Path.GetTempFileName();
-            File.Delete(traceFilePath); // record-trace requires the output file to not exist
-            traceFilePath = Path.ChangeExtension(traceFilePath, ".nettrace");
+            string traceFilePath = Path.Combine(appBaseDir, "trace.nettrace"); // Path.GetTempFileName();
+            string helixWorkItemDirectory = Environment.GetEnvironmentVariable("HELIX_WORKITEM_UPLOAD_ROOT");
+            if (helixWorkItemDirectory != null && Directory.Exists(helixWorkItemDirectory))
+            {
+                traceFilePath = Path.Combine(helixWorkItemDirectory, "trace.nettrace");
+            }
+            // File.Delete(traceFilePath); // record-trace requires the output file to not exist
+            // traceFilePath = Path.ChangeExtension(traceFilePath, ".nettrace");
 
             ProcessStartInfo recordTraceStartInfo = new();
             recordTraceStartInfo.FileName = "sudo";
@@ -112,7 +117,7 @@ namespace Tracing.Tests.UserEvents
             traceeProcess.BeginErrorReadLine();
 
             Console.WriteLine($"Waiting for tracee process to exit...");
-            if (!traceeProcess.HasExited && !traceeProcess.WaitForExit(5000))
+            if (!traceeProcess.HasExited && !traceeProcess.WaitForExit(15000))
             {
                 Console.WriteLine($"Tracee process did not exit within the 5s timeout, killing it.");
                 traceeProcess.Kill();
@@ -125,7 +130,7 @@ namespace Tracing.Tests.UserEvents
                 Console.WriteLine($"Stopping record-trace with SIGINT.");
                 Kill(recordTraceProcess.Id, SIGINT);
                 Console.WriteLine($"Waiting for record-trace to exit...");
-                if (!recordTraceProcess.WaitForExit(20000))
+                if (!recordTraceProcess.WaitForExit(30000))
                 {
                     // record-trace needs to stop gracefully to generate the trace file
                     Console.WriteLine($"record-trace did not exit within the 20s timeout, killing it.");
@@ -147,7 +152,7 @@ namespace Tracing.Tests.UserEvents
             if (!ValidateTraceeEvents(traceFilePath))
             {
                 Console.Error.WriteLine($"Trace file `{traceFilePath}` does not contain expected events.");
-                UploadTraceFile(traceFilePath);
+                // UploadTraceFile(traceFilePath);
                 return -1;
             }
 
@@ -157,13 +162,24 @@ namespace Tracing.Tests.UserEvents
         private static bool ValidateTraceeEvents(string traceFilePath)
         {
             using EventPipeEventSource source = new EventPipeEventSource(traceFilePath);
+            bool startEventFound = false;
+            bool stopEventFound = false;
             bool allocationSampledEventFound = false;
 
             source.Dynamic.All += (TraceEvent e) =>
             {
                 if (e.ProviderName == "Microsoft-Windows-DotNETRuntime")
                 {
-                    if (e.EventName == "AllocationSampled" || (e.ID == (TraceEventID)303 && e.EventName.StartsWith("Unknown")))
+                    Console.WriteLine($"Event: {e.ProviderName} - {e.EventName} (ID: {e.ID})");
+                    if (e.EventName == "GC/Start" || (e.ID == (TraceEventID)1 && e.EventName.StartsWith("Unknown")))
+                    {
+                        startEventFound = true;
+                    }
+                    else if (e.EventName == "GC/Stop" || (e.ID == (TraceEventID)2 && e.EventName.StartsWith("Unknown")))
+                    {
+                        stopEventFound = true;
+                    }
+                    else if (e.EventName == "AllocationSampled" || (e.ID == (TraceEventID)303 && e.EventName.StartsWith("Unknown")))
                     {
                         allocationSampledEventFound = true;
                     }
@@ -171,7 +187,7 @@ namespace Tracing.Tests.UserEvents
             };
 
             source.Process();
-            return allocationSampledEventFound;
+            return startEventFound && stopEventFound && allocationSampledEventFound;
         }
 
         private static void UploadTraceFile(string traceFilePath)

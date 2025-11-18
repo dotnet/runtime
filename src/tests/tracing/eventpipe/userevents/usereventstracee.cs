@@ -14,11 +14,12 @@ namespace Tracing.Tests.UserEvents
         public static void Run()
         {
             long startTimestamp = Stopwatch.GetTimestamp();
-            long targetTicks = Stopwatch.Frequency; // 1s
+            long targetTicks = Stopwatch.Frequency * 10; // 10s
 
             while (Stopwatch.GetTimestamp() - startTimestamp < targetTicks)
             {
                 s_array = new byte[1024 * 100];
+                GC.Collect(2);
                 Thread.Sleep(100);
             }
         }
