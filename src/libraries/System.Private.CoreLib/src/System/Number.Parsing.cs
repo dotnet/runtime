@@ -150,7 +150,7 @@ namespace System
         static abstract TValue NegativeZero { get; }
         static abstract TValue MaxSignificand { get; }
         static abstract TValue NumberToSignificand(ref Number.NumberBuffer number, int digits);
-        static abstract unsafe byte* ToDecChars(byte* p, TValue significand);
+        static abstract string ToDecStr(TValue significand);
         static abstract int ConvertToExponent(TValue value);
         static abstract TValue Power10(int exponent);
         static abstract (TValue Quotient, TValue Remainder) DivRemPow10(TValue value, int exponent);

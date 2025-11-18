@@ -282,9 +282,9 @@ namespace System.Numerics
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MinScale => -6175;
 
-        static unsafe byte* IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ToDecChars(byte* p, UInt128 significand)
+        static string IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.ToDecStr(UInt128 significand)
         {
-            return Number.UInt128ToDecChars(p, significand, 0);
+            return Number.UInt128ToDecStr(significand);
         }
 
         Number.DecodedDecimalIeee754<UInt128> IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Unpack()

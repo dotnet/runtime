@@ -251,9 +251,9 @@ namespace System.Numerics
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.BufferLength => Number.Decimal64NumberBufferLength;
 
-        static unsafe byte* IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.ToDecChars(byte* p, ulong significand)
+        static string IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.ToDecStr(ulong significand)
         {
-            return Number.UInt64ToDecChars(p, significand, 0);
+            return Number.UInt64ToDecStr(significand);
         }
 
         Number.DecodedDecimalIeee754<ulong> IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Unpack()

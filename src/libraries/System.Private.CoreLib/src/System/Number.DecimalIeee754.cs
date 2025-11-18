@@ -273,6 +273,28 @@ namespace System
             return DecimalIeee754BinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
         }
 
+        /// <summary>
+        /// Encodes the given IEEE 754 decimal components into their binary IEEE 754
+        /// decimal interchange format (BID), producing the final <typeparamref name="TValue"/> bit pattern.
+        /// </summary>
+        /// <param name="signed">
+        /// The sign of the value. <c>true</c> indicates a negative number; otherwise, <c>false</c>.
+        /// </param>
+        /// <param name="significand">
+        /// The fully decoded significand (coefficient):
+        /// - This is the complete integer coefficient with no packed BID encoding.
+        /// - It includes all significant digits (non-trailing).
+        /// - It has not been scaled by the exponent.
+        /// </param>
+        /// <param name="exponent">
+        /// The <b>unbiased</b> exponent (actual exponent as defined by IEEE 754).
+        /// This value has already been adjusted by subtracting the format's exponent bias,
+        /// and will be re-biased internally when constructing the BID bit pattern.
+        /// </param>
+        /// <returns>
+        /// The 32-bit or 64-bit or 128-bit IEEE 754 decimal BID encoding (depending on <typeparamref name="TValue"/>),
+        /// containing the sign bit, combination field, biased exponent, and coefficient continuation bits.
+        /// </returns>
         private static TValue DecimalIeee754BinaryEncoding<TDecimal, TValue>(bool signed, TValue significand, int exponent)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>

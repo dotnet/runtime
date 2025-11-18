@@ -336,35 +336,29 @@ namespace System
         {
             char fmt = ParseFormatSpecifier(format, out int digits);
             byte[] buffer = ArrayPool<byte>.Shared.Rent(TDecimal.BufferLength);
-            try
+
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, buffer);
+
+            DecimalIeee754ToNumber<TDecimal, TValue>(value, ref number);
+            char* stackPtr = stackalloc char[CharStackBufferSize];
+            var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
+
+            if (fmt != 0)
             {
-                fixed (byte* pDigits = buffer)
-                {
-                    NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, TDecimal.BufferLength);
-
-                    DecimalIeee754ToNumber<TDecimal, TValue>(value, ref number);
-
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
-
-                    if (fmt != 0)
-                    {
-                        NumberToString(ref vlb, ref number, fmt, digits, info);
-                    }
-                    else
-                    {
-                        NumberToStringFormat(ref vlb, ref number, format, info);
-                    }
-
-                    string result = vlb.AsSpan().ToString();
-                    vlb.Dispose();
-                    return result;
-                }
+                NumberToString(ref vlb, ref number, fmt, digits, info);
             }
-            finally
+            else
+            {
+                NumberToStringFormat(ref vlb, ref number, format, info);
+            }
+
+            string result = vlb.AsSpan().ToString();
+            vlb.Dispose();
+            if (buffer != null)
             {
                 ArrayPool<byte>.Shared.Return(buffer);
             }
+            return result;
         }
 
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
@@ -421,38 +415,31 @@ namespace System
             return success;
         }
 
-        internal static unsafe void DecimalIeee754ToNumber<TDecimal, TValue>(TDecimal value, ref NumberBuffer number)
+        internal static void DecimalIeee754ToNumber<TDecimal, TValue>(TDecimal value, ref NumberBuffer number)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            byte* buffer = number.DigitsPtr;
             DecodedDecimalIeee754<TValue> unpackDecimal = value.Unpack();
             number.IsNegative = unpackDecimal.Signed;
 
-            byte* p = buffer + TDecimal.Precision;
-            p = TDecimal.ToDecChars(p, unpackDecimal.Significand);
-            int numberDigitsSignificand = (int)((buffer + TDecimal.Precision) - p);
+            string significand = TDecimal.ToDecStr(unpackDecimal.Significand);
+            int numberDigitsSignificand = significand.Length;
 
-            byte* dst = number.DigitsPtr;
-            int i = numberDigitsSignificand;
-            while (--i >= 0)
+            for (int i = 0; i < significand.Length; i++)
             {
-                *dst++ = *p++;
+                number.Digits[i] = (byte)significand[i];
+                ++i;
             }
 
-            number.Scale = TValue.IsZero(unpackDecimal.Significand) ? 0 : numberDigitsSignificand + unpackDecimal.UnbiasedExponent;
+            number.Scale = TValue.IsZero(unpackDecimal.Significand) ? 0 : significand.Length + unpackDecimal.UnbiasedExponent;
 
-            if (unpackDecimal.UnbiasedExponent >= 0)
+            if (unpackDecimal.UnbiasedExponent > 0)
             {
-                number.DigitsCount = numberDigitsSignificand + unpackDecimal.UnbiasedExponent;
+                number.DigitsCount = significand.Length + unpackDecimal.UnbiasedExponent;
 
-                if (unpackDecimal.UnbiasedExponent > 0)
+                for (int i = 0; i < unpackDecimal.UnbiasedExponent; i++)
                 {
-                    i = unpackDecimal.UnbiasedExponent;
-                    while (--i >= 0)
-                    {
-                        *dst++ = (byte)'0';
-                    }
+                    number.Digits[significand.Length + i] = (byte)'0';
                 }
             }
             else
@@ -460,7 +447,7 @@ namespace System
                 number.DigitsCount = numberDigitsSignificand;
             }
 
-            *dst = (byte)'\0';
+            number.Digits[number.DigitsCount] = (byte)'\0';
 
             number.CheckConsistency();
         }

@@ -250,9 +250,9 @@ namespace System.Numerics
 
         static int IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.BufferLength => Number.Decimal32NumberBufferLength;
 
-        static unsafe byte* IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.ToDecChars(byte* p, uint significand)
+        static string IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.ToDecStr(uint significand)
         {
-            return Number.UInt32ToDecChars(p, significand, 0);
+            return Number.UInt32ToDecStr(significand);
         }
 
         Number.DecodedDecimalIeee754<uint> IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Unpack()
