@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Compression
 {
@@ -52,13 +53,18 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentNullException>(() => new ZstandardEncoder(null!, ValidWindow));
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(0)]
         [InlineData(1000)]
         [InlineData(int.MaxValue)]
         [InlineData(long.MaxValue / 2)]
         public void GetMaxCompressedLength_WithValidInput_ReturnsPositiveValue(long inputSize)
         {
+            if (inputSize > int.MaxValue && PlatformDetection.Is32BitProcess)
+            {
+                throw new SkipTestException("Skipping test on 32-bit process due to input size exceeding int.MaxValue.");
+            }
+
             long maxLength = ZstandardEncoder.GetMaxCompressedLength(inputSize);
 
             Assert.True(maxLength > 0);
