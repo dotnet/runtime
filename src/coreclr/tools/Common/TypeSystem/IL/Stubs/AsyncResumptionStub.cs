@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
@@ -147,8 +146,6 @@ namespace ILCompiler
         /// </summary>
         private MethodSignature InitializeSignature()
         {
-            var _methodRepresented = _wrappedMethod;
-
             // Async methods have an implicit Continuation parameter
             // The order of parameters depends on the architecture
             // non-x86: this?, genericCtx?, continuation, params...
@@ -157,25 +154,20 @@ namespace ILCompiler
             // at the end for x86 and at the beginning for other architectures.
             // The 'this' parameter and generic context parameter (if any) can be handled by the jit.
 
-            var signature = new MethodSignatureBuilder(_wrappedMethod.Signature)
-            {
-                Length = _wrappedMethod.Signature.Length
-                    + 1 // Continuation
-                    + (_wrappedMethod.RequiresInstArg() ? 1 : 0), // Generic context
-            };
+            var parameters = new TypeDesc[_wrappedMethod.Signature.Length + 1 + (_wrappedMethod.RequiresInstArg() ? 1 : 0)];
 
             TypeDesc continuation = Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
             if (Context.Target.Architecture == TargetArchitecture.X86)
             {
                 int i = 0;
-                for (; i < _methodRepresented.Signature.Length; i++)
+                for (; i < _wrappedMethod.Signature.Length; i++)
                 {
-                    signature[i] = _methodRepresented.Signature[i];
+                    parameters[i] = _wrappedMethod.Signature[i];
                 }
-                signature[i++] = continuation;
+                parameters[i++] = continuation;
                 if (_wrappedMethod.RequiresInstArg())
                 {
-                    signature[i] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
+                    parameters[i] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
                 }
             }
             else
@@ -183,26 +175,40 @@ namespace ILCompiler
                 int i = 0;
                 if (_wrappedMethod.RequiresInstArg())
                 {
-                    signature[i++] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
+                    parameters[i++] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
                 }
-                signature[i++] = continuation;
-                foreach (var param in _methodRepresented.Signature)
+                parameters[i++] = continuation;
+                foreach (var param in _wrappedMethod.Signature)
                 {
-                    signature[i++] = param;
+                    parameters[i++] = param;
                 }
             }
             // Get the return type from the Task-returning variant
-            if (_wrappedMethod is AsyncMethodVariant variant
-                && variant.Target.Signature.ReturnType is {HasInstantiation: true } returnType)
+            TypeDesc returnType;
+            if (_wrappedMethod is AsyncMethodVariant variant)
             {
-                signature.ReturnType = returnType.Instantiation[0];
+                Debug.Assert(variant.Target.Signature.ReturnsTaskOrValueTask());
+                if (variant.Target.Signature.ReturnType is { HasInstantiation: true } wrappedReturnType)
+                {
+                    returnType = wrappedReturnType.Instantiation[0];
+                }
+                else
+                {
+                    returnType = Context.GetWellKnownType(WellKnownType.Void);
+                }
             }
             else
             {
-                signature.ReturnType = Context.GetWellKnownType(WellKnownType.Void);
+                // AsyncExplicitImpl
+                returnType = _wrappedMethod.Signature.ReturnType;
             }
 
-            return _signature = signature.ToSignature();
+            return _signature = new MethodSignature(
+                _wrappedMethod.Signature.Flags,
+                _wrappedMethod.Signature.GenericParameterCount,
+                returnType,
+                parameters,
+                _wrappedMethod.Signature.GetEmbeddedSignatureData());
         }
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => throw new NotImplementedException();
