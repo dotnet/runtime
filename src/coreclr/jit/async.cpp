@@ -751,17 +751,18 @@ PhaseStatus AsyncTransformation::Run()
                     return GenTree::VisitResult::Continue;
                 });
 
-                // Update liveness to reflect state after this node.
-                liveness.Update(tree);
-
                 if (tree->IsCall() && tree->AsCall()->IsAsync() && !tree->AsCall()->IsTailCall())
                 {
-                    // Transform call; continue with the remainder block
+                    // Transform call; continue with the remainder block.
+                    // Transform takes care to update liveness.
                     Transform(block, tree->AsCall(), defs, liveness, &block);
                     defs.clear();
                     any = true;
                     break;
                 }
+
+                // Update liveness to reflect state after this node.
+                liveness.Update(tree);
 
                 // Push a new definition if necessary; this defined value is
                 // now a live LIR edge.
@@ -859,11 +860,21 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
 {
     SmallHashTable<unsigned, bool> excludedLocals(m_comp->getAllocator(CMK_Async));
 
+    // As a special case exclude locals that are fully defined by the call if
+    // we don't have internal EH. Liveness does this automatically, but this
+    // improves tier0 and also address exposed locals.
     auto visitDef = [&](const LocalDef& def) {
         if (def.IsEntire)
         {
-            JITDUMP("  V%02u is fully defined and will not be considered live\n", def.Def->GetLclNum());
-            excludedLocals.AddOrUpdate(def.Def->GetLclNum(), true);
+            if (HasNonContextRestoreExceptionalFlow(block))
+            {
+                JITDUMP("  V%02u is fully defined but the block has exceptional flow\n", def.Def->GetLclNum());
+            }
+            else
+            {
+                JITDUMP("  V%02u is fully defined and will not be considered live\n", def.Def->GetLclNum());
+                excludedLocals.AddOrUpdate(def.Def->GetLclNum(), true);
+            }
         }
         return GenTree::VisitResult::Continue;
     };
@@ -903,6 +914,29 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         }
     }
 #endif
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::HasNonContextRestoreExceptionalFlow:
+//   Check if there is internal control flow out of the specified block and if
+//   that target is not the canonical "restore context" EH handler.
+//
+// Parameters:
+//   block - The block
+//
+// Returns:
+//   True if there is such control flow.
+//
+bool AsyncTransformation::HasNonContextRestoreExceptionalFlow(BasicBlock* block)
+{
+    if (!block->hasTryIndex())
+    {
+        return false;
+    }
+
+    EHblkDsc* ehDsc = m_comp->ehGetDsc(block->getTryIndex());
+    return (ehDsc->ebdID != m_comp->asyncContextRestoreEHID) ||
+           (ehDsc->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX);
 }
 
 //------------------------------------------------------------------------
@@ -1142,20 +1176,15 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
         layout.OSRILOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
     }
 
-    if (block->hasTryIndex())
+    if (HasNonContextRestoreExceptionalFlow(block))
     {
         // If we are enclosed in any try region that isn't our special "context
         // restore" try region then we need to rethrow an exception. For our
         // special "context restore" try region we know that it is a no-op on
         // the resumption path.
-        EHblkDsc* ehDsc = m_comp->ehGetDsc(block->getTryIndex());
-        if ((ehDsc->ebdID != m_comp->asyncContextRestoreEHID) ||
-            (ehDsc->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX))
-        {
-            layout.ExceptionOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
-            JITDUMP("  " FMT_BB " is in try region %u; exception will be at offset %u\n", block->bbNum,
-                    block->getTryIndex(), layout.ExceptionOffset);
-        }
+        layout.ExceptionOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
+        JITDUMP("  " FMT_BB " is in try region %u; exception will be at offset %u\n", block->bbNum,
+                block->getTryIndex(), layout.ExceptionOffset);
     }
 
     if (call->GetAsyncInfo().ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext)
@@ -1274,9 +1303,9 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
 
 //------------------------------------------------------------------------
 // AsyncTransformation::CanonicalizeCallDefinition:
-//   Put the call definition in a canonical form. This ensures that either the
-//   value is defined by a LCL_ADDR retbuffer or by a
-//   STORE_LCL_VAR/STORE_LCL_FLD that follows the call node.
+//   Put the call definition in a canonical form and update liveness for it.
+//   This ensures that either the value is defined by a LCL_ADDR retbuffer or
+//   by a STORE_LCL_VAR/STORE_LCL_FLD that follows the call node.
 //
 // Parameters:
 //   block - The block containing the async call
@@ -1296,11 +1325,18 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
 
     CallArg* retbufArg = call->gtArgs.GetRetBufferArg();
 
+    life.Update(call);
+
     if (!call->TypeIs(TYP_VOID) && !call->IsUnusedValue())
     {
         assert(retbufArg == nullptr);
         assert(call->gtNext != nullptr);
-        if (!call->gtNext->OperIsLocalStore() || (call->gtNext->Data() != call))
+        // Canonicalize the store. In the common case where we are already
+        // storing to a local we can usually reuse it, except if we may need to
+        // preserve its value because of an exception being thrown after
+        // potential resumption. (This check is conservative, we could use liveness for it as well.)
+        if (!call->gtNext->OperIsLocalStore() || (call->gtNext->Data() != call) ||
+            HasNonContextRestoreExceptionalFlow(block))
         {
             LIR::Use use;
             bool     gotUse = LIR::AsRange(block).TryGetUse(call, &use);

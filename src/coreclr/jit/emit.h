@@ -758,6 +758,7 @@ protected:
         // arm64:       21 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
+        // wasm:        16 bits (TODO-WASM-TP: shrink the format field)
 
     private:
 #if defined(TARGET_XARCH)
@@ -806,6 +807,7 @@ protected:
         // arm64:       46 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
+        // wasm:        20 bits (TODO-WASM-TP: remove the reg fields)
 
         unsigned _idSmallDsc : 1; // is this a "small" descriptor?
         unsigned _idLargeCns : 1; // does a large constant     follow? (or if large call descriptor used)
@@ -898,6 +900,7 @@ protected:
         // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
+        // wasm:        28 bits
 
         //
         // How many bits have been used beyond the first 32?
@@ -914,6 +917,8 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (18)
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
+#elif defined(TARGET_WASM)
+#define ID_EXTRA_BITFIELD_BITS (-4)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -953,12 +958,17 @@ protected:
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
+        // wasm:        35/30 bits
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
         /* Use whatever bits are left over for small constants */
 
+#if ID_EXTRA_BITS <= 0
+#define ID_BIT_SMALL_CNS 30 // Not 32 or 31 here to avoid breaking the math below.
+#else
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
+#endif
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
@@ -968,6 +978,7 @@ protected:
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
+        // wasm:        32 bits
 
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
@@ -1251,6 +1262,13 @@ protected:
             // e.g. the `emitter::emitLoadImmediate` for emitting the immediates.
             assert(sz <= 32);
             _idCodeSize = sz;
+        }
+#elif defined(TARGET_WASM)
+        unsigned idCodeSize() const
+        {
+            // TODO-WASM: return an accurate number here based on instruction format/opcode like ARM64 above.
+            NYI_WASM("isCodeSize");
+            return 0;
         }
 #endif
 
@@ -2138,7 +2156,28 @@ protected:
 #define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
 
-#endif // TARGET_XXX
+#elif defined(TARGET_WASM)
+// Latencies for an "average" physical target.
+//
+// a read,write or modify from stack location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_STACK         PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK         PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK      PERFSCORE_LATENCY_3C
+
+// a read, write or modify from constant location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_CONST_ADDR    PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR    PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
+
+// a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
+// plus an extra cost  (of 1.0) for a increased chance  of a cache miss
+#define PERFSCORE_LATENCY_RD_GENERAL       PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
+
+#else
+#error Unknown TARGET
+#endif
 
 // Make this an enum:
 //
@@ -4326,6 +4365,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
 
 #endif // TARGET_XARCH
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************
  *
  *  Returns true if the given register contains a live GC ref.
@@ -4348,6 +4388,7 @@ inline GCtype emitter::emitRegGCtype(regNumber reg)
         return GCT_NONE;
     }
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 #ifdef DEBUG
 

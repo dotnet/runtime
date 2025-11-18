@@ -401,6 +401,7 @@
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
     <Compile Include="Compiler\CustomAttributeExtensions.cs" />
     <Compile Include="Compiler\Dataflow\ArrayValue.cs" />
+    <Compile Include="Compiler\Dataflow\AsyncMaskingILProvider.cs" />
     <Compile Include="Compiler\Dataflow\AttributeDataFlow.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedCallGraph.cs" />
     <Compile Include="Compiler\Dataflow\CompilerGeneratedState.cs" />
