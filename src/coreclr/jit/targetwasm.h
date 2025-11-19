@@ -7,6 +7,12 @@
 #endif
 
 // clang-format off
+#ifdef TARGET_WASM32
+#define CORINFO_ARCH_TARGET      CORINFO_ARCH_WASM32
+#else
+#error NYI: WASM64
+#endif
+
 #define CPU_LOAD_STORE_ARCH      1
 #define CPU_HAS_FP_SUPPORT       1
 #define CPU_HAS_BYTE_REGS        0
@@ -244,14 +250,10 @@
 
 // clang-format on
 
+#include "registeropswasm.h"
+
 // TODO-WASM: implement the following functions in terms of a "locals registry" that would hold information
 // about the registers.
-
-inline bool genIsValidReg(regNumber reg)
-{
-    NYI_WASM("genIsValidReg");
-    return false;
-}
 
 inline bool genIsValidIntReg(regNumber reg)
 {
