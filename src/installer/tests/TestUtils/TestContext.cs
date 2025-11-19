@@ -13,6 +13,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static string Configuration { get; }
 
         public static string MicrosoftNETCoreAppVersion { get; }
+        public static string ProductVersionNoPrerelease => 
+            MicrosoftNETCoreAppVersion.Split('-')[0];
         public static string Tfm { get; }
 
         public static string TestAssetsOutput { get; }

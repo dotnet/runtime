@@ -37,15 +37,12 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.ProductVersionNoPrerelease);
 
             if (OperatingSystem.IsWindows())
             {
                 // App sets FileVersion to NETCoreApp version. On Windows, this should be copied to app resources.
-                string expectedVersion = TestContext.MicrosoftNETCoreAppVersion.Contains('-')
-                    ? TestContext.MicrosoftNETCoreAppVersion[..TestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
-                    : TestContext.MicrosoftNETCoreAppVersion;
-                Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(appExe).FileVersion);
+                Assert.Equal(TestContext.ProductVersionNoPrerelease, System.Diagnostics.FileVersionInfo.GetVersionInfo(appExe).FileVersion);
             }
         }
 
@@ -62,7 +59,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.ProductVersionNoPrerelease);
         }
 
         [Fact]
@@ -107,7 +104,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.ProductVersionNoPrerelease);
         }
 
         [Fact]
@@ -134,7 +131,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.ProductVersionNoPrerelease);
         }
 
         [Fact]
@@ -171,7 +168,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.ProductVersionNoPrerelease);
 
             appExe = $@"\\.\{sharedTestState.App.AppExe}";
             Command.Create(appExe)
@@ -180,7 +177,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.ProductVersionNoPrerelease);
         }
 
         [Fact]
@@ -224,7 +221,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion)
+                .And.HaveStdOutContaining(TestContext.ProductVersionNoPrerelease)
                 .And.HaveStdErrContaining($"CoreCLR path = '{Path.Join(app.Location, subdirectory, Binaries.CoreClr.FileName)}'");
         }
 
