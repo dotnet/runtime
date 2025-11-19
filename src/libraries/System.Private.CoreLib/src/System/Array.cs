@@ -2495,8 +2495,10 @@ namespace System
 
             if (array.Length > 1)
             {
+                // Use the unsafe Span constructor instead of AsSpan to avoid a possible ArrayTypeMismatchException
+                // when the array is covariant and its type is not exactly T[].
                 var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
-                ArraySortHelper<T>.Default.Sort(span, null);
+                span.Sort();
             }
         }
 
@@ -2544,8 +2546,10 @@ namespace System
 
             if (length > 1)
             {
+                // Use the unsafe Span constructor instead of AsSpan to avoid a possible ArrayTypeMismatchException
+                // when the array is covariant and its type is not exactly T[].
                 var span = new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index), length);
-                ArraySortHelper<T>.Default.Sort(span, comparer);
+                span.Sort(comparer);
             }
         }
 
@@ -2568,9 +2572,11 @@ namespace System
                     return;
                 }
 
+                // Use the unsafe Span constructor instead of AsSpan to avoid a possible ArrayTypeMismatchException
+                // when the array is covariant and its type is not exactly T[].
                 var spanKeys = new Span<TKey>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(keys), index), length);
                 var spanItems = new Span<TValue>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(items), index), length);
-                ArraySortHelper<TKey, TValue>.Default.Sort(spanKeys, spanItems, comparer);
+                spanKeys.Sort(spanItems, comparer);
             }
         }
 
@@ -2586,6 +2592,8 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
 
+            // Use the unsafe Span constructor instead of AsSpan to avoid a possible ArrayTypeMismatchException
+            // when the array is covariant and its type is not exactly T[].
             var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
             ArraySortHelper<T>.Sort(span, comparison);
         }
