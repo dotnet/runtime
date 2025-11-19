@@ -12053,7 +12053,7 @@ void CEEJitInfo::recordRelocation(void * location,
             {
                 // Target is out of 32-bit range
                 // If we're fixing up a jump, try jumping through a stub
-                PCODE jumpStubAddr = NULL;
+                PCODE jumpStubAddr = (PCODE)NULL;
                 if ((fRelocType == IMAGE_REL_RISCV64_CALL_PLT) && !m_fJumpStubOverflow)
                 {
                     BYTE* loAddr = (BYTE*)location - (1ll << 31) - (1ll << 11);
@@ -12072,7 +12072,7 @@ void CEEJitInfo::recordRelocation(void * location,
                     m_reserveForJumpStubs = max((size_t)0x400, m_reserveForJumpStubs + 2*BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
                 }
 
-                if (jumpStubAddr == NULL)
+                if (jumpStubAddr == (PCODE)NULL)
                 {
                     // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
                     // we will find space for them.
