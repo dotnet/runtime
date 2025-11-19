@@ -1480,12 +1480,6 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
         pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
     }
 
-    if (msig.HasAsyncContinuation())
-    {
-        pCode->EmitLDNULL();
-        pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_ASYNC_CONTINUATION, 1, 0);
-    }
-
     // Push the thisptr
     // We need to skip over the MethodTable*
     // The trick below will do that.
@@ -1574,12 +1568,6 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     pCode->EmitLDC((TADDR)pHiddenArg);
     pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
-
-    if (msig.HasAsyncContinuation())
-    {
-        pCode->EmitLDNULL();
-        pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_ASYNC_CONTINUATION, 1, 0);
-    }
 
     // Emit the method body
     if (msig.HasThis())
