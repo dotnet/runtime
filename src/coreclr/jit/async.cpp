@@ -1121,6 +1121,11 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
             inf.Alignment = genTypeAlignments[dsc->TypeGet()];
             inf.Size      = genTypeSize(dsc);
         }
+
+        // Saving/storing of longs here may be the first place we introduce
+        // long IR. We need to potentially decompose this on x86, so indicate
+        // that to the backend.
+        m_comp->compLongUsed |= dsc->TypeIs(TYP_LONG);
     }
 
     jitstd::sort(liveLocals.begin(), liveLocals.end(), [=](const LiveLocalInfo& lhs, const LiveLocalInfo& rhs) {
