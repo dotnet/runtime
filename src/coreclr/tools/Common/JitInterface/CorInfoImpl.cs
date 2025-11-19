@@ -1856,7 +1856,7 @@ namespace Internal.JitInterface
                     // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                     // we cannot resolve to an Async variant in such case.
                     // return NULL, so that caller would re-resolve as a regular method call
-                    method = method.IsAsync && method.GetMethodDefinition().Signature.ReturnsTaskOrValueTask()
+                    method = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask()
                         ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
                         : null;
                 }
@@ -3390,7 +3390,7 @@ namespace Internal.JitInterface
 
         private void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
         {
-            DefType continuation = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
+            DefType continuation = _compilation.TypeSystemContext.ContinuationType;
             pAsyncInfoOut.continuationClsHnd = ObjectToHandle(continuation);
             pAsyncInfoOut.continuationNextFldHnd = ObjectToHandle(continuation.GetKnownField("Next"u8));
             pAsyncInfoOut.continuationResumeInfoFldHnd = ObjectToHandle(continuation.GetKnownField("ResumeInfo"u8));
