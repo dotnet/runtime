@@ -3682,7 +3682,7 @@ bool ObjectAllocator::CloneOverlaps(CloneInfo* info)
 }
 
 //------------------------------------------------------------------------------
-// BlockIsCloneOrWasCloned: check if this block is a clone or was cloned as 
+// BlockIsCloneOrWasCloned: check if this block is a clone or was cloned as
 //    part of an conditional escape optimization
 //
 // Arguments:
