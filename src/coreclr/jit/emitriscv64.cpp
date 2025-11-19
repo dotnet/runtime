@@ -1461,22 +1461,9 @@ void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, reg
 
 static inline constexpr unsigned WordMask(uint8_t bits);
 
-/*****************************************************************************
- *
- *  Emits load of 64-bit constant to register.
- *
- */
-void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
+// namu
+int emitter::emitLoadImmediateLarge(emitAttr size, regNumber reg, ssize_t imm, bool doEmit = true)
 {
-    assert(!EA_IS_RELOC(size));
-    assert(isGeneralRegister(reg));
-
-    if (isValidSimm12(imm))
-    {
-        emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
-        return;
-    }
-
     /* The following algorithm works based on the following equation:
      * `imm = high32 + offset1` OR `imm = high32 - offset2`
      *
@@ -1551,6 +1538,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     int insCountLimit = prefMaxInsCount;
     // If we are currently generating prolog / epilog, we are currently not inside a method block, therefore, we should
     // not use the emitDataConst + emitIns_R_C combination.
+
     if (emitComp->compGeneratingProlog || emitComp->compGeneratingEpilog)
     {
         insCountLimit = absMaxInsCount;
@@ -1658,14 +1646,20 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     }
     if (upper != 0)
     {
-        ins[numberOfInstructions]    = INS_lui;
-        values[numberOfInstructions] = ((upper >> 19) & 0b1) ? (upper + 0xFFF00000) : upper;
+        if (doEmit)
+        {
+            ins[numberOfInstructions]    = INS_lui;
+            values[numberOfInstructions] = ((upper >> 19) & 0b1) ? (upper + 0xFFF00000) : upper;
+        }
         numberOfInstructions += 1;
     }
     if (lower != 0)
     {
-        ins[numberOfInstructions]    = INS_addiw;
-        values[numberOfInstructions] = lower;
+        if (doEmit)
+        {
+            ins[numberOfInstructions]    = INS_addiw;
+            values[numberOfInstructions] = lower;
+        }
         numberOfInstructions += 1;
     }
 
@@ -1697,17 +1691,20 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
             {
                 break;
             }
-            ins[numberOfInstructions - 2]    = INS_slli;
-            values[numberOfInstructions - 2] = shift;
-            if (isSubtractMode)
+            if (doEmit)
             {
-                ins[numberOfInstructions - 1]    = INS_addi;
-                values[numberOfInstructions - 1] = -(int32_t)chunk;
-            }
-            else
-            {
-                ins[numberOfInstructions - 1]    = INS_addi;
-                values[numberOfInstructions - 1] = chunk;
+                ins[numberOfInstructions - 2]    = INS_slli;
+                values[numberOfInstructions - 2] = shift;
+                if (isSubtractMode)
+                {
+                    ins[numberOfInstructions - 1]    = INS_addi;
+                    values[numberOfInstructions - 1] = -(int32_t)chunk;
+                }
+                else
+                {
+                    ins[numberOfInstructions - 1]    = INS_addi;
+                    values[numberOfInstructions - 1] = chunk;
+                }
             }
             shift = 0;
         }
@@ -1722,7 +1719,7 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     if (shift > 0)
     {
         numberOfInstructions += 1;
-        if (numberOfInstructions <= insCountLimit)
+        if (doEmit && (numberOfInstructions <= insCountLimit))
         {
             ins[numberOfInstructions - 1]    = INS_slli;
             values[numberOfInstructions - 1] = shift;
@@ -1733,32 +1730,69 @@ void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
 
     if (numberOfInstructions <= insCountLimit)
     {
-        instrDescLoadImm* id = static_cast<instrDescLoadImm*>(emitNewInstrLoadImm(size, originalImm));
-        id->idReg1(reg);
-        memcpy(id->ins, ins, sizeof(instruction) * numberOfInstructions);
-        memcpy(id->values, values, sizeof(int32_t) * numberOfInstructions);
+        instrDescLoadImm* id;
+        if (doEmit)
+        {
+            id = static_cast<instrDescLoadImm*>(emitNewInstrLoadImm(size, originalImm));
+            id->idReg1(reg);
+            memcpy(id->ins, ins, sizeof(instruction) * numberOfInstructions);
+            memcpy(id->values, values, sizeof(int32_t) * numberOfInstructions);
+        }
+
         if (utilizeSRLI)
         {
             numberOfInstructions += 1;
             assert(numberOfInstructions < absMaxInsCount);
-            id->ins[numberOfInstructions - 1]    = INS_srli;
-            id->values[numberOfInstructions - 1] = srliShiftAmount;
+            if (doEmit)
+            {
+                id->ins[numberOfInstructions - 1]    = INS_srli;
+                id->values[numberOfInstructions - 1] = srliShiftAmount;
+            }
         }
-        id->idCodeSize(numberOfInstructions * 4);
-        id->idIns(id->ins[numberOfInstructions - 1]);
 
-        appendToCurIG(id);
+        if (doEmit)
+        {
+            id->idCodeSize(numberOfInstructions * 4);
+            id->idIns(id->ins[numberOfInstructions - 1]);
+            appendToCurIG(id);
+        }
+
+        return numberOfInstructions;
     }
     else if (size == EA_PTRSIZE)
     {
-        assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
-        auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
-        emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr));
+        if (doEmit)
+        {
+            assert(!emitComp->compGeneratingProlog && !emitComp->compGeneratingEpilog);
+            auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
+            emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, emitComp->eeFindJitDataOffs(constAddr));
+        }
+        return 2;
     }
     else
     {
         assert(false && "If number of instruction exceeds MAX_NUM_OF_LOAD_IMM_INS, imm must be 8 bytes");
     }
+    return 0;
+}
+
+/*****************************************************************************
+ *
+ *  Emits load of 64-bit constant to register.
+ *
+ */
+void emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
+{
+    assert(!EA_IS_RELOC(size));
+    assert(isGeneralRegister(reg));
+
+    if (isValidSimm12(imm))
+    {
+        emitIns_R_R_I(INS_addi, size, reg, REG_R0, imm & 0xFFF);
+        return;
+    }
+
+    emitLoadImmediateLarge(size, reg, imm, /* doEmit */ true);
 }
 
 /*****************************************************************************
