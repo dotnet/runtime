@@ -107,6 +107,17 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.Quality = 12);
         }
 
+        [Fact]
+        public void InvalidBrotliCompressionWindowSize()
+        {
+            BrotliCompressionOptions options = new();
+
+            Assert.Equal(22, options.WindowSize); // default value
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowSize = -1);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowSize = 9);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowSize = 25);
+        }
+
         [Theory]
         [MemberData(nameof(UncompressedTestFilesBrotli))]
         public async Task BrotliCompressionQuality_SizeInOrder(string testFile)
