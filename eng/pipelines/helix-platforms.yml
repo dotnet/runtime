@@ -121,9 +121,9 @@ variables:
     value: Ubuntu.2204.Amd64
   
   # Ubuntu x64
-  # Latest: 25.10
+  # Latest: 26.04
   - name: helix_linux_x64_ubuntu_latest
-    value: (Ubuntu.2510.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.10-helix-amd64
+    value: (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-amd64
   
   # Oldest: 22.04
   - name: helix_linux_x64_ubuntu_oldest
@@ -181,9 +181,9 @@ variables:
     value: (Debian.12.Arm32)Ubuntu.2204.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
   
   # Linux ARM64
-  # Latest: Ubuntu 25.10
+  # Latest: Ubuntu 26.04
   - name: helix_linux_arm64_latest
-    value: (Ubuntu.2510.ArmArch.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.10-helix-arm64v8
+    value: (Ubuntu.2604.ArmArch.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-arm64v8
   
   # Oldest: Ubuntu 22.04
   - name: helix_linux_arm64_oldest
