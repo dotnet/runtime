@@ -5,4 +5,4 @@ Only the 'lib' and 'build' directories from the original source were included to
 
 Apply https://github.com/facebook/zstd/commit/0d1f8de9addeb2fcb53f1a6a68ef4ac505253c0e
 Apply https://github.com/facebook/zstd/commit/ebfa660b8297170fb0742ac8959aa64940292853
-Apply src/native/external/zstd.patch # fixes build issues of CLR on Windows by suppressing enabling of ASM language by CMAKE. zstd contains ASM sources only for Linux
+Apply https://github.com/facebook/zstd/commit/23dae4bf49a8b36ab88509c85137b49f74bbc76d
