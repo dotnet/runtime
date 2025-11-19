@@ -15,6 +15,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter instructionEncoder, bool relocsOnly)
         {
+            // WASM-TODO: implement.
             // throw new NotImplementedException();
         }
     }

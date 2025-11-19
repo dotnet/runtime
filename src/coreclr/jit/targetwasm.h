@@ -9,6 +9,8 @@
 // clang-format off
 #ifdef TARGET_WASM32
 #define CORINFO_ARCH_TARGET      CORINFO_ARCH_WASM32
+#else
+#error NYI: WASM64
 #endif
 
 #define CPU_LOAD_STORE_ARCH      1
