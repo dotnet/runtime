@@ -7577,9 +7577,10 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
     _ASSERTE(scopeHnd != NULL);
     methInfo->scope = scopeHnd;
     methInfo->options = (CorInfoOptions)(((UINT32)methInfo->options) |
-                            ((ftn->AcquiresInstMethodTableFromThis() ? CORINFO_GENERICS_CTXT_FROM_THIS : 0) |
-                             (ftn->RequiresInstMethodTableArg() ? CORINFO_GENERICS_CTXT_FROM_METHODTABLE : 0) |
-                             (ftn->RequiresInstMethodDescArg() ? CORINFO_GENERICS_CTXT_FROM_METHODDESC : 0)));
+                    ((ftn->AcquiresInstMethodTableFromThis() ? CORINFO_GENERICS_CTXT_FROM_THIS : 0) |
+                        (ftn->RequiresInstMethodTableArg() ? CORINFO_GENERICS_CTXT_FROM_METHODTABLE : 0) |
+                        (ftn->RequiresInstMethodDescArg() ? CORINFO_GENERICS_CTXT_FROM_METHODDESC : 0) |
+                        (ftn->RequiresAsyncContextSaveAndRestore() ? CORINFO_ASYNC_SAVE_CONTEXTS : 0)));
 
     if (methInfo->options & CORINFO_GENERICS_CTXT_MASK)
     {
@@ -9158,7 +9159,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     }
     else
     {
-        ret = (void *)ftn->TryGetMultiCallableAddrOfCode(accessFlags);
+        ret = (void*)ftn->TryGetMultiCallableAddrOfCode((CORINFO_ACCESS_FLAGS)(accessFlags | CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE));
 
         // TryGetMultiCallableAddrOfCode returns NULL if indirect access is desired
         if (ret == NULL)
@@ -9166,7 +9167,7 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
             // should never get here for EnC methods or if interception via remoting stub is required
             _ASSERTE(!ftn->InEnCEnabledModule());
 
-            ret = (void *)ftn->GetAddrOfSlot();
+            ret = (void*)ftn->GetAddrOfSlot();
 
             accessType = IAT_PVALUE;
         }
@@ -9205,7 +9206,7 @@ void CEEInfo::getFunctionFixedEntryPoint(CORINFO_METHOD_HANDLE   ftn,
         pMD->PrepareForUseAsAFunctionPointer();
 
     pResult->accessType = IAT_VALUE;
-    pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode();
+    pResult->addr = (void*)pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
 
     EE_TO_JIT_TRANSITION();
 }
@@ -11317,7 +11318,7 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 #ifdef FEATURE_INTERPRETER
 
 // Forward declare the function for mapping MetaSig to a cookie.
-LPVOID GetCookieForCalliSig(MetaSig metaSig);
+void* GetCookieForCalliSig(MetaSig metaSig);
 
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
@@ -12151,13 +12152,6 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
 
     // No hints
     return (WORD)-1;
-}
-
-uint32_t CEEJitInfo::getExpectedTargetArchitecture()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return IMAGE_FILE_MACHINE_NATIVE;
 }
 
 void CEEInfo::JitProcessShutdownWork()
@@ -14008,7 +14002,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
 
         MethodEntry:
-            result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+            result = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
         }
         break;
 
@@ -14810,7 +14804,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 
     TypeHandle continuationTypeHnd = CoreLibBinder::GetClass(CLASS__CONTINUATION);
     DWORD newContinuationLoc = pCode->NewLocal(LocalDesc(continuationTypeHnd));
-    pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC_CALL_CONTINUATION, 0, 1);
+    pCode->EmitCALL(METHOD__ASYNC_HELPERS__ASYNC_CALL_CONTINUATION, 0, 1);
     pCode->EmitSTLOC(newContinuationLoc);
 
     if (!msig.IsReturnTypeVoid())
@@ -15020,8 +15014,24 @@ WORD CEEInfo::getRelocTypeHint(void * target)
 uint32_t CEEInfo::getExpectedTargetArchitecture()
 {
     LIMITED_METHOD_CONTRACT;
-
-    return IMAGE_FILE_MACHINE_NATIVE;
+#if defined(TARGET_X86)
+    return CORINFO_ARCH_X86;
+#elif defined(TARGET_AMD64)
+    return CORINFO_ARCH_X64;
+#elif defined(TARGET_ARM)
+    return CORINFO_ARCH_ARM;
+#elif defined(TARGET_ARM64)
+    return CORINFO_ARCH_ARM64;
+#elif defined(TARGET_LOONGARCH64)
+    return CORINFO_ARCH_LOONGARCH64;
+#elif defined(TARGET_RISCV64)
+    return CORINFO_ARCH_RISCV64;
+#elif defined(TARGET_WASM32)
+    return CORINFO_ARCH_WASM32;
+#else
+    PORTABILITY_ASSERT("NYI: CEEInfo::getExpectedTargetArchitecture");
+    return -1;
+#endif
 }
 
 void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
