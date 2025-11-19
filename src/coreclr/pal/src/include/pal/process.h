@@ -152,6 +152,7 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info
+  context - signal context or nullptr
 
   Does not return
 --*/
@@ -159,7 +160,7 @@ Parameters:
                         // making crash dumps impossible to analyze
 PAL_NORETURN
 #endif
-VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr);
+VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr, void* context = nullptr);
 
 /*++
 Function:
