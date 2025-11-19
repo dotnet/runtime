@@ -22,7 +22,6 @@ MemoryMappedFile::MemoryMappedFile(const WCHAR* path)
     size_t ret = minipal_convert_utf16_to_utf8((CHAR16_T*)path, pathLen, pathU8, pathU8Len, 0);
     pathU8[ret] = '\0';
 
-    int fd = -1;
     void* address = nullptr;
 
     int fd = open(pathU8, O_RDONLY);
