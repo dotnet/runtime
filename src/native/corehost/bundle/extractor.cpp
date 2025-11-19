@@ -169,16 +169,19 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
         } while (zStream.availOut == 0);
 
         CompressionNative_InflateEnd(&zStream);
-    #else
+#else
     trace::error(_X("Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost."));
     throw StatusCode::BundleExtractionIOError;
-    #endif
+#endif
     }
     else
     {
         extracted_size = fwrite(reader, 1, cast_size, file);
-        int error_code = errno;
-        trace::error(_X("I/O failure when writing extracted files. %s (%d)"), pal::strerror(error_code).c_str(), error_code);
+        if (extracted_size != cast_size)
+        {
+            int error_code = errno;
+            trace::error(_X("I/O failure when writing extracted files. %s (%d)"), pal::strerror(error_code).c_str(), error_code);
+        }
     }
 
     if (extracted_size != cast_size)
