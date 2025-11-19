@@ -2,252 +2,120 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
+using System.Reflection;
 using Xunit;
-using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Compression
 {
-    public class ZstandardEncoderTests
+    public class ZstandardEncoderDecoderTests : EncoderDecoderTestBase
     {
-        private static int ValidWindow = 10;
-        private static int ValidQuality = 3;
+        protected override bool SupportsDictionaries => true;
+        protected override bool SupportsReset => true;
 
-        public static int[] InvalidWindows = [int.MinValue, 9, 32, int.MaxValue];
-        public static int[] InvalidQualities = [int.MinValue, -(1 << 17) - 1, 23, int.MaxValue];
+        protected override int ValidQuality => 3;
+        protected override int ValidWindow => 10;
 
-        public static IEnumerable<object[]> InvalidWindowsTestData =>
+        protected override int InvalidQualityTooLow => -(1 << 17) - 1;
+        protected override int InvalidQualityTooHigh => 23;
+        protected override int InvalidWindowTooLow => 9;
+        protected override int InvalidWindowTooHigh => 32;
 
-            InvalidWindows.Select(window => new object[] { window });
-
-        public static IEnumerable<object[]> InvalidQualitiesTestData =>
-            InvalidQualities.Select(quality => new object[] { quality });
-
-        [Theory]
-        [MemberData(nameof(InvalidQualitiesTestData))]
-        public void Constructor_WithInvalidQuality_ThrowsArgumentOutOfRangeException(int quality)
+        public class ZstandardEncoderAdapter : EncoderAdapter
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ZstandardEncoder(quality, ValidWindow));
-        }
+            private readonly ZstandardEncoder _encoder;
 
-        [Theory]
-        [MemberData(nameof(InvalidWindowsTestData))]
-        public void Constructor_WithInvalidWindow_ThrowsArgumentOutOfRangeException(int window)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new ZstandardEncoder(5, window));
-        }
-
-        [Fact]
-        public void Constructor_WithDictionary_WithQuality_Succeeds()
-        {
-            using ZstandardDictionary dictionary = ZstandardDictionary.Create(ZstandardTestUtils.CreateSampleDictionary(), ValidQuality);
-
-            using ZstandardEncoder encoder = new(dictionary, ValidWindow);
-        }
-
-        [Fact]
-        public void Constructor_WithNullDictionary_ThrowsArgumentNullException()
-        {
-            Assert.Throws<ArgumentNullException>(() => new ZstandardEncoder(null!, ValidWindow));
-        }
-
-        [ConditionalTheory]
-        [InlineData(0)]
-        [InlineData(1000)]
-        [InlineData(int.MaxValue)]
-        [InlineData(long.MaxValue / 2)]
-        public void GetMaxCompressedLength_WithValidInput_ReturnsPositiveValue(long inputSize)
-        {
-            if (inputSize > int.MaxValue && PlatformDetection.Is32BitProcess)
+            public ZstandardEncoderAdapter(ZstandardEncoder encoder)
             {
-                throw new SkipTestException("Skipping test on 32-bit process due to input size exceeding int.MaxValue.");
+                _encoder = encoder;
             }
 
-            long maxLength = ZstandardEncoder.GetMaxCompressedLength(inputSize);
+            public override OperationStatus Compress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) =>
+                _encoder.Compress(source, destination, out bytesConsumed, out bytesWritten, isFinalBlock);
 
-            Assert.True(maxLength > 0);
-            Assert.True(maxLength >= inputSize); // Compressed size should be at least input size for worst case
+            public override OperationStatus Flush(Span<byte> destination, out int bytesWritten) =>
+                _encoder.Flush(destination, out bytesWritten);
+
+            public override void Dispose() => _encoder.Dispose();
+            public override void Reset() => _encoder.Reset();
         }
 
-        [Fact]
-        public void GetMaxCompressedLength_WithNegativeInput_ThrowsArgumentOutOfRangeException()
+        public class ZstandardDecoderAdapter : DecoderAdapter
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardEncoder.GetMaxCompressedLength(-1));
-        }
+            private readonly ZstandardDecoder _decoder;
 
-        [Fact]
-        public void TryCompress_WithEmptyInput_ReturnsTrue()
-        {
-            ReadOnlySpan<byte> source = ReadOnlySpan<byte>.Empty;
-            Span<byte> destination = new byte[100];
-
-            bool result = ZstandardEncoder.TryCompress(source, destination, out int bytesWritten);
-
-            Assert.True(result);
-            Assert.NotEqual(0, bytesWritten);
-        }
-
-        [Fact]
-        public void TryCompress_WithValidInput_CompressesData()
-        {
-            byte[] input = ZstandardTestUtils.CreateTestData();
-            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
-
-            bool result = ZstandardEncoder.TryCompress(input, output, out int bytesWritten);
-
-            Assert.True(result);
-            Assert.True(bytesWritten > 0);
-            Assert.True(bytesWritten < input.Length); // Should compress to smaller size
-        }
-
-        [Fact]
-        public void TryCompress_WithQualityAndWindow_CompressesData()
-        {
-            byte[] input = ZstandardTestUtils.CreateTestData();
-            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
-
-            bool result = ZstandardEncoder.TryCompress(input, output, out int bytesWritten, quality: ValidQuality, window: ValidWindow);
-
-            Assert.True(result);
-            Assert.True(bytesWritten > 0);
-        }
-
-        [Theory]
-        [MemberData(nameof(InvalidQualitiesTestData))]
-        public void TryCompress_WithInvalidQuality_ThrowsArgumentOutOfRangeException(int quality)
-        {
-            byte[] input = ZstandardTestUtils.CreateTestData();
-            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardEncoder.TryCompress(input, output, out _, quality: quality, window: ValidWindow));
-        }
-
-        [Theory]
-        [MemberData(nameof(InvalidWindowsTestData))]
-        public void TryCompress_WithInvalidWindow_ThrowsArgumentOutOfRangeException(int window)
-        {
-            byte[] input = ZstandardTestUtils.CreateTestData();
-            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardEncoder.TryCompress(input, output, out _, quality: ValidQuality, window: window));
-        }
-
-        [Fact]
-        public void TryCompress_WithDictionary_WithQuality_Succeeds()
-        {
-            byte[] input = ZstandardTestUtils.CreateTestData();
-            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
-            using ZstandardDictionary dictionary = ZstandardDictionary.Create(ZstandardTestUtils.CreateSampleDictionary(), ValidQuality);
-
-            bool result = ZstandardEncoder.TryCompress(input, output, out int bytesWritten, dictionary: dictionary, window: ValidWindow);
-
-            Assert.True(result);
-            Assert.True(bytesWritten > 0);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void Compress_WithValidInput_CompressesData(bool explicitInit)
-        {
-            using var encoder = explicitInit ? new ZstandardEncoder(ValidQuality, ValidWindow) : new ZstandardEncoder();
-            byte[] input = ZstandardTestUtils.CreateTestData();
-            byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
-
-            OperationStatus result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: true);
-
-            Assert.Equal(OperationStatus.Done, result);
-            Assert.Equal(input.Length, bytesConsumed);
-            Assert.True(bytesWritten > 0);
-        }
-
-        [Fact]
-        public void Encoder_Finalize()
-        {
+            public ZstandardDecoderAdapter(ZstandardDecoder decoder)
             {
-                ZstandardEncoder encoder = new(ValidQuality, ValidWindow);
-                byte[] input = ZstandardTestUtils.CreateTestData();
-                byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
-
-                OperationStatus result = encoder.Compress(input, output, out int bytesConsumed, out int bytesWritten, isFinalBlock: true);
+                _decoder = decoder;
             }
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
+            public override OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten) =>
+                _decoder.Decompress(source, destination, out bytesConsumed, out bytesWritten);
+
+            public override void Dispose() => _decoder.Dispose();
+            public override void Reset() => _decoder.Reset();
         }
+
+        public class ZstandardDictionaryAdapter : DictionaryAdapter
+        {
+            public readonly ZstandardDictionary Dictionary;
+
+            public ZstandardDictionaryAdapter(ZstandardDictionary dictionary)
+            {
+                Dictionary = dictionary;
+            }
+
+            public override void Dispose() => Dictionary.Dispose();
+        }
+
+        private static ZstandardDictionary? FromAdapter(DictionaryAdapter? adapter) =>
+            (adapter as ZstandardDictionaryAdapter)?.Dictionary;
+
+        protected override EncoderAdapter CreateEncoder() =>
+            new ZstandardEncoderAdapter(new ZstandardEncoder());
+
+        protected override EncoderAdapter CreateEncoder(int quality, int windowBits) =>
+            new ZstandardEncoderAdapter(new ZstandardEncoder(quality, windowBits));
+
+        protected override EncoderAdapter CreateEncoder(DictionaryAdapter dictionary, int windowBits) =>
+            new ZstandardEncoderAdapter(new ZstandardEncoder(FromAdapter(dictionary), windowBits));
+
+        protected override DecoderAdapter CreateDecoder() =>
+            new ZstandardDecoderAdapter(new ZstandardDecoder());
+
+        protected override DecoderAdapter CreateDecoder(DictionaryAdapter dictionary) =>
+            new ZstandardDecoderAdapter(new ZstandardDecoder(FromAdapter(dictionary)));
+
+        protected override DictionaryAdapter CreateDictionary(ReadOnlySpan<byte> dictionaryData, int quality) =>
+            new ZstandardDictionaryAdapter(ZstandardDictionary.Create(dictionaryData, quality));
+
+        protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
+            ZstandardEncoder.TryCompress(source, destination, out bytesWritten);
+
+        protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int windowBits) =>
+            ZstandardEncoder.TryCompress(source, destination, out bytesWritten, FromAdapter(dictionary), windowBits);
+
+        protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowBits) =>
+            ZstandardEncoder.TryCompress(source, destination, out bytesWritten, quality, windowBits);
+
+        protected override bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, DictionaryAdapter dictionary, out int bytesWritten) =>
+            ZstandardDecoder.TryDecompress(source, FromAdapter(dictionary), destination, out bytesWritten);
+
+        protected override bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
+            ZstandardDecoder.TryDecompress(source, destination, out bytesWritten);
+
+        protected override long GetMaxCompressedLength(long inputSize) =>
+            ZstandardEncoder.GetMaxCompressedLength(inputSize);
+
 
         [Fact]
-        public void Compress_AfterDispose_ThrowsObjectDisposedException()
+        public void GetMaxDecompressedLength_WithEmptyData_ReturnsZero()
         {
-            ZstandardEncoder encoder = new(ValidQuality, ValidWindow);
-            encoder.Dispose();
-            byte[] input = ZstandardTestUtils.CreateTestData();
-            byte[] output = new byte[100];
+            ReadOnlySpan<byte> emptyData = ReadOnlySpan<byte>.Empty;
 
-            Assert.Throws<ObjectDisposedException>(() => encoder.Compress(input, output, out _, out _, isFinalBlock: true));
-        }
-
-        [Fact]
-        public void Flush_WithValidEncoder_Succeeds()
-        {
-            using ZstandardEncoder encoder = new(ValidQuality, ValidWindow);
-            byte[] output = new byte[1000];
-
-            OperationStatus result = encoder.Flush(output, out int bytesWritten);
-
-            Assert.True(result == OperationStatus.Done || result == OperationStatus.DestinationTooSmall);
-            Assert.True(bytesWritten >= 0);
-        }
-
-        [Fact]
-        public void Dispose_CanBeCalledMultipleTimes()
-        {
-            ZstandardEncoder encoder = new(ValidQuality, ValidWindow);
-
-            encoder.Dispose();
-            encoder.Dispose();
-        }
-
-        [Fact]
-        public void Reset_AfterDispose_ThrowsObjectDisposedException()
-        {
-            ZstandardEncoder encoder = new(ValidQuality, ValidWindow);
-            encoder.Dispose();
-
-            Assert.Throws<ObjectDisposedException>(() => encoder.Reset());
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void Reset_AllowsReuseForMultipleCompressions(bool useDictionary)
-        {
-            using ZstandardDictionary dictionary = ZstandardDictionary.Create(ZstandardTestUtils.CreateSampleDictionary(), ValidQuality);
-            using var encoder = useDictionary
-                ? new ZstandardEncoder(dictionary, ValidWindow)
-                : new ZstandardEncoder(ValidQuality, ValidWindow);
-
-            byte[] input = ZstandardTestUtils.CreateTestData();
-            byte[] output1 = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
-            byte[] output2 = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
-
-            // First compression
-            OperationStatus result1 = encoder.Compress(input, output1, out int consumed1, out int written1, isFinalBlock: true);
-            Assert.Equal(OperationStatus.Done, result1);
-            Assert.Equal(input.Length, consumed1);
-            Assert.True(written1 > 0);
-
-            // Reset and compress again
-            encoder.Reset();
-            OperationStatus result2 = encoder.Compress(input, output2, out int consumed2, out int written2, isFinalBlock: true);
-            Assert.Equal(OperationStatus.Done, result2);
-            Assert.Equal(input.Length, consumed2);
-            Assert.True(written2 > 0);
-
-            Assert.Equal(output1, output2);
+            bool result = ZstandardDecoder.TryGetMaxDecompressedLength(emptyData, out long maxLength);
+            Assert.True(result);
+            Assert.Equal(0, maxLength);
         }
 
         [Theory]
