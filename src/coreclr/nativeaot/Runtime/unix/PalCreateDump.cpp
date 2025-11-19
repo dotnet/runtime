@@ -346,17 +346,17 @@ CreateCrashDump(
 
 #endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
 
-// Helper function to ensure context is not optimized away
+// Helper function to prevent compiler from optimizing away a variable
 #if defined(__llvm__)
 __attribute__((noinline, optnone))
 #else
 __attribute__((noinline, optimize("O0")))
 #endif
-static void PreserveContextPointer(void** pContext)
+static void DoNotOptimize(const void* p)
 {
-    // This function takes the address of the context pointer to ensure
+    // This function takes the address of a variable to ensure
     // it's preserved and available in crash dumps
-    (void)pContext;
+    (void)p;
 }
 
 /*++
@@ -377,7 +377,7 @@ void
 PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void* exceptionRecord)
 {
     // Preserve context pointer to prevent optimization
-    PreserveContextPointer(&context);
+    DoNotOptimize(&context);
 
 #if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
     // If enabled, launch the create minidump utility and wait until it completes

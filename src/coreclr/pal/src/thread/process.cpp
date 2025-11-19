@@ -2706,13 +2706,13 @@ PAL_GenerateCoreDump(
     return result;
 }
 
-// Helper function to ensure context is not optimized away
+// Helper function to prevent compiler from optimizing away a variable
 __attribute__((noinline,NOOPT_ATTRIBUTE))
-static void PreserveContextPointer(void** pContext)
+static void DoNotOptimize(const void* p)
 {
-    // This function takes the address of the context pointer to ensure
+    // This function takes the address of a variable to ensure
     // it's preserved and available in crash dumps
-    (void)pContext;
+    (void)p;
 }
 
 /*++
@@ -2736,7 +2736,7 @@ VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
     // Preserve context pointer to prevent optimization
-    PreserveContextPointer(&context);
+    DoNotOptimize(&context);
 
     // TODO: Dump all managed threads callstacks into logcat and/or file?
     // TODO: Dump stress log into logcat and/or file when enabled?
@@ -2747,7 +2747,7 @@ VOID
 PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
     // Preserve context pointer to prevent optimization
-    PreserveContextPointer(&context);
+    DoNotOptimize(&context);
 
     // If enabled, launch the create minidump utility and wait until it completes
     if (!g_argvCreateDump.empty())
