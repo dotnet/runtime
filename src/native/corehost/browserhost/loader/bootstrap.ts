@@ -75,7 +75,7 @@ async function fetchIcu(asset: IcuAsset): Promise<void> {
     }
     const bytes = await fetchBytes(asset);
     await nativeModulePromiseController.promise;
-    dotnetBrowserHostExports.loadIcuData(bytes, asset);
+    dotnetBrowserHostExports.loadIcuData(bytes);
 }
 
 function getIcuResourceName(config: LoaderConfig): string | null {

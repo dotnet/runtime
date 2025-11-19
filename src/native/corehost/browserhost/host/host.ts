@@ -24,9 +24,7 @@ export function registerDllBytes(bytes: Uint8Array, asset: { name: string, virtu
     }
 }
 
-export function loadIcuData(bytes: Uint8Array, asset: IcuAsset) {
-    dotnetLogger.debug("Loading ICU data: " + bytes.length + " asset: " + asset.name);
-
+export function loadIcuData(bytes: Uint8Array) {
     const sp = Module.stackSave();
     try {
         const sizeOfPtr = 4;
@@ -38,12 +36,10 @@ export function loadIcuData(bytes: Uint8Array, asset: IcuAsset) {
         const ptr = Module.HEAPU32[ptrPtr as any >>> 2];
         Module.HEAPU8.set(bytes, ptr >>> 0);
 
-        const result = Module._coreclr_wasm_load_icu_data(ptr);
+        const result = Module.ccall("coreclr_wasm_load_icu_data", "number", ["number"], [ptr]) as number;
         if (!result) {
             throw new Error("Failed to initialize ICU data");
         }
-
-        dotnetLogger.debug("Successfully initialized ICU data: " + asset.name);
     } finally {
         Module.stackRestore(sp);
     }
