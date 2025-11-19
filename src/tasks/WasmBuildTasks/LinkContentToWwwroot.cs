@@ -65,7 +65,14 @@ public class LinkContentToWwwroot : Task
                 var contentRoot = isRooted ? Path.GetDirectoryName(identity) : Path.GetDirectoryName(Path.GetFullPath(identity, MSBuildProjectDirectory));
 
                 // Add TargetPath to WasmFilesToIncludeInFileSystem
-                wasmFiles.Add(new TaskItem(targetPath));
+                var wasmVfsFile = new TaskItem(targetPath);
+                wasmFiles.Add(wasmVfsFile);
+                if (isRooted && identity.StartsWith(MSBuildProjectDirectory, StringComparison.OrdinalIgnoreCase))
+                {
+                    var wasmVfsTargetPath = Path.GetRelativePath(MSBuildProjectDirectory, identity);
+                    if (!string.IsNullOrEmpty(wasmVfsTargetPath))
+                        wasmVfsFile.SetMetadata("TargetPath", wasmVfsTargetPath);
+                }
 
                 var outItem = new TaskItem(identity, item.CloneCustomMetadata());
                 outItem.SetMetadata("ContentRoot", contentRoot);
