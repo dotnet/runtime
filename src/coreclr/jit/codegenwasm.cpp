@@ -8,14 +8,15 @@
 
 #include "codegen.h"
 
-void CodeGen::genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode)
+void CodeGen::genMarkLabelsForCodegen()
 {
-    NYI_WASM("Undef genGenerateCode in codegencommon.cpp and proceed from there");
+    // TODO-WASM: serialize fgWasmControlFlow results into codegen-level metadata/labels
+    // (or use them directly and leave this empty).
 }
 
-void CodeGen::genSpillVar(GenTree* tree)
+void CodeGen::genFnProlog()
 {
-    NYI_WASM("Put all spillng to memory under '#if HAS_FIXED_REGISTER_SET'");
+    NYI_WASM("Uncomment CodeGen::genFnProlog and proceed from there");
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
@@ -28,6 +29,10 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #endif // DEBUG
 
     NYI_WASM("genFnEpilog");
+}
+
+void CodeGen::genCaptureFuncletPrologEpilogInfo()
+{
 }
 
 void CodeGen::genFuncletProlog(BasicBlock* block)
@@ -52,6 +57,53 @@ void CodeGen::genFuncletEpilog()
 #endif
 
     NYI_WASM("genFuncletEpilog");
+}
+
+void CodeGen::genCodeForTreeNode(GenTree* node)
+{
+    NYI_WASM("genCodeForTreeNode");
+}
+
+BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
+{
+    assert(block->KindIs(BBJ_CALLFINALLY));
+    NYI_WASM("genCallFinally");
+    return nullptr;
+}
+
+void CodeGen::genEHCatchRet(BasicBlock* block)
+{
+    NYI_WASM("genEHCatchRet");
+}
+
+void CodeGen::genEmitGSCookieCheck(bool tailCall)
+{
+    // TODO-WASM: GS cookie checks have limited utility on WASM since they can only help
+    // with detecting linear memory stack corruption. Decide if we want them anyway.
+    NYI_WASM("genEmitGSCookieCheck");
+}
+
+void CodeGen::genSpillVar(GenTree* tree)
+{
+    NYI_WASM("Put all spillng to memory under '#if HAS_FIXED_REGISTER_SET'");
+}
+
+//------------------------------------------------------------------------
+// inst_JMP: Generate a jump instruction.
+//
+void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
+{
+    NYI_WASM("inst_JMP");
+}
+
+void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* code))
+{
+    // GCInfo not captured/created by codegen.
+}
+
+void CodeGen::genReportEH()
+{
+    // EHInfo not captured/created by codegen.
 }
 
 //---------------------------------------------------------------------

@@ -10871,10 +10871,12 @@ public:
 
     unsigned compLclFrameSize; // secObject+lclBlk+locals+temps
 
+#if HAS_FIXED_REGISTER_SET
     // Count of callee-saved regs we pushed in the prolog.
     // Does not include EBP for isFramePointerUsed() and double-aligned frames.
     // In case of Amd64 this doesn't include float regs saved on stack.
     unsigned compCalleeRegsPushed;
+#endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_XARCH)
     // Mask of callee saved float regs on stack.

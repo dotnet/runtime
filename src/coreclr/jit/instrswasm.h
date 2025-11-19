@@ -25,6 +25,7 @@
 INST(invalid,     "INVALID",     0, BAD_CODE)
 INST(unreachable, "unreachable", 0, 0x00)
 INST(nop,         "nop",         0, 0x01)
+INST(br,          "br",          0, 0x0C)
 INST(i32_add,     "i32.add",     0, 0x6a)
 // clang-format on
 
