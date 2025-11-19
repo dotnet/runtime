@@ -16,8 +16,15 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "compiler.h"
 #include "phase.h"
-#include "lsra.h"
 #include "sideeffects.h"
+
+#if HAS_FIXED_REGISTER_SET
+#include "lsra.h"
+#endif
+
+#ifdef TARGET_WASM
+#include "regallocwasm.h"
+#endif
 
 class Lowering final : public Phase
 {
@@ -151,14 +158,18 @@ private:
     bool     LowerCallMemcmp(GenTreeCall* call, GenTree** next);
     bool     LowerCallMemset(GenTreeCall* call, GenTree** next);
     void     LowerCFGCall(GenTreeCall* call);
-    void     MoveCFGCallArgs(GenTreeCall* call);
-    void     MoveCFGCallArg(GenTreeCall* call, GenTree* node);
+    void     MovePutArgNodesUpToCall(GenTreeCall* call);
+    void     MovePutArgUpToCall(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif
-    GenTree*   OptimizeConstCompare(GenTree* cmp);
-    GenTree*   LowerCompare(GenTree* cmp);
-    GenTree*   LowerJTrue(GenTreeOp* jtrue);
+    GenTree* OptimizeConstCompare(GenTree* cmp);
+    GenTree* LowerCompare(GenTree* cmp);
+    GenTree* LowerJTrue(GenTreeOp* jtrue);
+#ifdef TARGET_RISCV64
+    GenTree* LowerSavedIntegerCompare(GenTree* cmp);
+    void     SignExtendIfNecessary(GenTree** arg);
+#endif
     GenTree*   LowerSelect(GenTreeConditional* cond);
     bool       TryLowerConditionToFlagsNode(GenTree*      parent,
                                             GenTree*      condition,

@@ -701,20 +701,21 @@ private:
             // we may be able to sharpen the type for the local.
             if (tree->TypeIs(TYP_REF))
             {
-                LclVarDsc* lcl = m_compiler->lvaGetDesc(lclNum);
+                LclVarDsc* const lcl = m_compiler->lvaGetDesc(lclNum);
 
                 if (lcl->lvSingleDef)
                 {
-                    bool                 isExact;
-                    bool                 isNonNull;
-                    CORINFO_CLASS_HANDLE newClass = m_compiler->gtGetClassHandle(value, &isExact, &isNonNull);
-
-                    if (newClass != NO_CLASS_HANDLE)
+                    if (lcl->lvClassHnd == NO_CLASS_HANDLE)
                     {
-                        m_compiler->lvaUpdateClass(lclNum, newClass, isExact);
-                        m_madeChanges                    = true;
-                        m_compiler->hasUpdatedTypeLocals = true;
+                        m_compiler->lvaSetClass(lclNum, value);
                     }
+                    else
+                    {
+                        m_compiler->lvaUpdateClass(lclNum, value);
+                    }
+
+                    m_madeChanges                    = true;
+                    m_compiler->hasUpdatedTypeLocals = true;
                 }
             }
 
@@ -1360,7 +1361,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     struct Param
     {
         Compiler*             pThis;
-        GenTree*              call;
+        GenTreeCall*          call;
         CORINFO_METHOD_HANDLE fncHandle;
         InlineCandidateInfo*  inlineCandidateInfo;
         InlineInfo*           inlineInfo;
@@ -1419,6 +1420,10 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
             compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_TRACK_TRANSITIONS);
+            if (!pParam->call->IsAsync())
+            {
+                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_ASYNC);
+            }
 
 #ifdef DEBUG
             if (pParam->pThis->verbose)
@@ -2315,6 +2320,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         {
             case WellKnownArg::RetBuffer:
             case WellKnownArg::AsyncContinuation:
+            case WellKnownArg::AsyncExecutionContext:
+            case WellKnownArg::AsyncSynchronizationContext:
                 continue;
             case WellKnownArg::InstParam:
                 argInfo = inlineInfo->inlInstParamArgInfo;

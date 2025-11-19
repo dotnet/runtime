@@ -106,7 +106,7 @@ namespace ILCompiler
 
             NodeFactory.SetMarkingComplete();
 
-            ObjectWritingOptions options = default;
+            ObjectWritingOptions options = ObjectWritingOptions.GenerateUnwindInfo;
             if ((_compilationOptions & RyuJitCompilationOptions.UseDwarf5) != 0)
                 options |= ObjectWritingOptions.UseDwarf5;
 

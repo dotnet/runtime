@@ -43,8 +43,6 @@ EXTERN_C BOOL CallRtlUnwind(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame, PV
 #endif
 #endif // !TARGET_UNIX
 
-bool IsCallDescrWorkerInternalReturnAddress(PCODE pCode);
-
 #ifdef USE_CURRENT_CONTEXT_IN_FILTER
 inline void CaptureNonvolatileRegisters(PKNONVOLATILE_CONTEXT pNonvolatileContext, PCONTEXT pContext)
 {
@@ -1528,6 +1526,41 @@ void FirstChanceExceptionNotification()
         }
     }
 #endif // TARGET_WINDOWS
+}
+
+void NormalizeThrownObject(OBJECTREF *ppThrowable)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    Thread *pThread = GetThread();
+    if (!IsException((*ppThrowable)->GetMethodTable()))
+    {
+        GCPROTECT_BEGIN(*ppThrowable);
+
+        WrapNonCompliantException(ppThrowable);
+
+        GCPROTECT_END();
+    }
+    else
+    {   // We know that the object derives from System.Exception
+
+        // If the flag indicating ForeignExceptionRaise has been set,
+        // then do not clear the "_stackTrace" field of the exception object.
+        if (pThread->GetExceptionState()->IsRaisingForeignException())
+        {
+            ((EXCEPTIONREF)(*ppThrowable))->SetStackTraceString(NULL);
+        }
+        else
+        {
+            ((EXCEPTIONREF)(*ppThrowable))->ClearStackTracePreservingRemoteStackTrace();
+        }
+    }
 }
 
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, EXCEPTION_RECORD* pExceptionRecord)
@@ -3081,6 +3114,17 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
     exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
     DWORD_PTR dwResumePC = 0;
     UINT_PTR callerTargetSp = 0;
+
+#ifdef FEATURE_INTERPRETER
+    if (GetControlPC(pvRegDisplay) == InterpreterFrame::DummyCallerIP)
+    {
+        // This is a case when we have unwound out of an interpreted filter funclet. The "Next" moves the
+        // REGDISPLAY to the native code context that was there before we started to iterate over the
+        // interpreted frames.
+        exInfo->m_frameIter.Next();
+    }
+#endif // FEATURE_INTERPRETER
+
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     size_t targetSSP = exInfo->m_frameIter.m_crawl.GetRegisterSet()->SSP;
     // Verify the SSP points to the slot that matches the ControlPC of the frame containing the catch funclet.
@@ -3914,31 +3958,33 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
     if (isNativeTransition &&
         (GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext) == InterpreterFrame::DummyCallerIP))
     {
-        // The callerIP is InterpreterFrame::DummyCallerIP when we are going to unwind from the first interpreted frame belonging to an InterpreterFrame.
-        // That means it is at a transition where non-interpreted code called interpreted one.
-        // Move the stack frame iterator to the InterpreterFrame and extract the IP of the real caller of the interpreted code.
-        retVal = pThis->Next();
-        _ASSERTE(retVal != SWA_FAILED);
-        _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION);
         _ASSERTE(pThis->m_crawl.GetFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
         InterpreterFrame *pInterpreterFrame = (InterpreterFrame *)pThis->m_crawl.GetFrame();
-        // Move to the caller of the interpreted code
-        retVal = pThis->Next();
-        _ASSERTE(retVal != SWA_FAILED);
-        if (pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD)
+        // If the GetReturnAddress returns 0, it means the caller is InterpreterCodeManager::CallFunclet.
+        // We don't have any TransitionFrame to update the regdisplay from in that case.
+        PCODE returnAddress = pInterpreterFrame->GetReturnAddress();
+        if (returnAddress != 0)
         {
-            // The caller of the interpreted code is not managed.
-            if (pInterpreterFrame->GetReturnAddress() != 0)
+            // The callerIP is InterpreterFrame::DummyCallerIP when we are going to unwind from the first interpreted frame belonging to an InterpreterFrame.
+            // That means it is at a transition where non-interpreted code called interpreted one.
+            // Move the stack frame iterator to the InterpreterFrame and extract the IP of the real caller of the interpreted code.
+            retVal = pThis->Next();
+            _ASSERTE(retVal != SWA_FAILED);
+            _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAME_FUNCTION);
+            _ASSERTE(pThis->m_crawl.GetFrame()->GetFrameIdentifier() == FrameIdentifier::InterpreterFrame);
+            if (ExecutionManager::IsManagedCode(returnAddress))
             {
-                // The caller is not InterpreterCodeManager::CallFunclet, so we can update the regdisplay
-                // (The CallFunclet has no TransitionFrame to update from)
+                // The caller of the interpreted code is managed code. Advance the stack frame iterator to that frame.
+                retVal = pThis->Next();
+                _ASSERTE(retVal != SWA_FAILED);
+                _ASSERTE(pThis->GetFrameState() == StackFrameIterator::SFITER_FRAMELESS_METHOD);
+                isNativeTransition = false;
+            }
+            else
+            {
+                // The caller is native code, so we can update the regdisplay to point to it.
                 pInterpreterFrame->UpdateRegDisplay(pThis->m_crawl.GetRegisterSet(), /* updateFloats */ true);
             }
-        }
-        else
-        {
-            // The caller of the interpreted code is managed.
-            isNativeTransition = false;
         }
     }
 #endif // FEATURE_INTERPRETER
@@ -3986,12 +4032,12 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             // Propagating to CallDescrWorkerInternal, filter funclet or CallEHFunclet.
             if (IsCallDescrWorkerInternalReturnAddress(GetIP(pThis->m_crawl.GetRegisterSet()->pCurrentContext)))
             {
-                EH_LOG((LL_INFO100, "SfiNext: the native frame is CallDescrWorkerInternal"));
+                EH_LOG((LL_INFO100, "SfiNext: the native frame is CallDescrWorkerInternal\n"));
                 isPropagatingToNativeCode = TRUE;
             }
             else if (doingFuncletUnwind && codeInfo.GetJitManager()->IsFilterFunclet(&codeInfo))
             {
-                EH_LOG((LL_INFO100, "SfiNext: current frame is filter funclet"));
+                EH_LOG((LL_INFO100, "SfiNext: current frame is filter funclet\n"));
                 isPropagatingToNativeCode = TRUE;
             }
         }
@@ -4057,7 +4103,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
             goto Exit;
         }
 
-        if (doingFuncletUnwind && pThis->GetNextExInfo() != NULL && GetRegdisplaySP(pThis->m_crawl.GetRegisterSet()) > (TADDR)pTopExInfo)
+        if (doingFuncletUnwind && pThis->GetNextExInfo() != NULL && pThis->GetFrameState() != StackFrameIterator::SFITER_FRAMELESS_METHOD)
         {
             // Detected collided unwind
             if ((pThis->GetNextExInfo()->m_passNumber == 1) ||

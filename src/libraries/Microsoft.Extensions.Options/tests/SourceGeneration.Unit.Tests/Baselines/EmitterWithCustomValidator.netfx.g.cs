@@ -17,8 +17,7 @@
         {
             global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
             #if NET10_0_OR_GREATER
-            string displayName = string.IsNullOrEmpty(name) ? "MyOptions.Validate" : $"{name}.Validate";
-            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, displayName, null, null);
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "MyOptions", null, null);
             #else
             var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
             #endif
@@ -26,7 +25,7 @@
             var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
 
             context.MemberName = "Val1";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.Val1" : $"{name}.Val1";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val1" : $"{name}.Val1";
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Val1, context, validationResults, validationAttributes))
             {
@@ -34,7 +33,7 @@
             }
 
             context.MemberName = "Val2";
-            context.DisplayName = string.IsNullOrEmpty(name) ? "MyOptions.Val2" : $"{name}.Val2";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Val2" : $"{name}.Val2";
             validationResults.Clear();
             validationAttributes.Clear();
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
@@ -149,7 +148,7 @@ namespace __OptionValidationGeneratedAttributes
             {
                 convertedValue = ConvertValue(value, formatProvider);
             }
-            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException)
+            catch (global::System.Exception e) when (e is global::System.FormatException or global::System.InvalidCastException or global::System.NotSupportedException or global::System.OverflowException)
             {
                 return false;
             }

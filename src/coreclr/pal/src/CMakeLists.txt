@@ -361,3 +361,7 @@ endif(FEATURE_EVENT_TRACE)
 
 # Install the static PAL library for VS
 install_clr (TARGETS coreclrpal DESTINATIONS lib)
+
+if (CLR_CMAKE_TARGET_ARCH_WASM)
+  install_clr(TARGETS coreclrpal DESTINATIONS sharedFramework COMPONENT runtime)
+endif (CLR_CMAKE_TARGET_ARCH_WASM)

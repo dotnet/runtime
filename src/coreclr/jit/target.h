@@ -60,6 +60,8 @@ inline bool compUnixX86Abi()
 #define TARGET_READABLE_NAME "LOONGARCH64"
 #elif defined(TARGET_RISCV64)
 #define TARGET_READABLE_NAME "RISCV64"
+#elif defined(TARGET_WASM32)
+#define TARGET_READABLE_NAME "WASM32"
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -91,6 +93,10 @@ inline bool compUnixX86Abi()
 #define REGMASK_BITS              64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
+#elif defined(TARGET_WASM)
+#define REGMASK_BITS              32
+#define CSE_CONST_SHARED_LOW_BITS 12
+
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -106,10 +112,10 @@ inline bool compUnixX86Abi()
 //                       be assigned during register allocation.
 //    REG_NA           - Used to indicate that a register is either not yet assigned or not required.
 //
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 enum _regNumber_enum : unsigned
 {
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 // LA64 and RV64 don't require JITREG_ workaround for Android (see register.h)
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname)       REG_##alias = REG_##realname,
@@ -331,7 +337,7 @@ public:
     }
 #endif
 
-#ifndef TARGET_X86
+#if REGMASK_BITS != 32
     explicit operator unsigned int() const
     {
         return (unsigned int)low;
@@ -413,7 +419,7 @@ public:
     }
 };
 
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 
 #define REGDEF(name, rnum, mask, sname)                                                                                \
     static constexpr regMaskTP RBM_##name =                                                                            \
@@ -599,8 +605,10 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 #include "targetloongarch64.h"
 #elif defined(TARGET_RISCV64)
 #include "targetriscv64.h"
+#elif defined(TARGET_WASM)
+#include "targetwasm.h"
 #else
-  #error Unsupported or unset target architecture
+#error Unsupported or unset target architecture
 #endif
 
 #ifdef TARGET_XARCH
@@ -621,10 +629,6 @@ static uint32_t BitScanForward(const regMaskTP& mask)
   #define CALL_INST_SIZE          (5)
 
 #endif // TARGET_XARCH
-
-static_assert(REG_FIRST == 0);
-static_assert(REG_INT_FIRST < REG_INT_LAST);
-static_assert(REG_FP_FIRST  < REG_FP_LAST);
 
 // Opportunistic tail call feature converts non-tail prefixed calls into
 // tail calls where possible. It requires fast tail calling mechanism for
@@ -674,6 +678,84 @@ const char* getRegName(regNumber reg);
 const char* getRegNameFloat(regNumber reg, var_types type);
 extern void dspRegMask(regMaskTP regMask, size_t minSiz = 0);
 #endif
+
+inline bool isFloatRegType(var_types type)
+{
+    // TODO-Cleanup: delete and use "varTypeUsesFloatReg" directly.
+    return varTypeUsesFloatReg(type);
+}
+
+//-------------------------------------------------------------------------------------------
+// hasFixedRetBuffReg:
+//     Returns true if our target architecture uses a fixed return buffer register
+//
+inline bool hasFixedRetBuffReg(CorInfoCallConvExtension callConv)
+{
+#if defined(TARGET_ARM64)
+    // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
+    return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(callConv);
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    return callConv == CorInfoCallConvExtension::Swift;
+#else
+    return false;
+#endif
+}
+
+//-------------------------------------------------------------------------------------------
+// theFixedRetBuffReg:
+//     Returns the regNumber to use for the fixed return buffer
+//
+inline regNumber theFixedRetBuffReg(CorInfoCallConvExtension callConv)
+{
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
+#if defined(TARGET_ARM64)
+    return REG_ARG_RET_BUFF;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return REG_SWIFT_ARG_RET_BUFF;
+#else
+    return REG_NA;
+#endif
+}
+
+//-------------------------------------------------------------------------------------------
+// theFixedRetBuffMask:
+//     Returns the regNumber to use for the fixed return buffer
+//
+inline regMaskTP theFixedRetBuffMask(CorInfoCallConvExtension callConv)
+{
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
+#if defined(TARGET_ARM64)
+    return RBM_ARG_RET_BUFF;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return RBM_SWIFT_ARG_RET_BUFF;
+#else
+    return 0;
+#endif
+}
+
+//-------------------------------------------------------------------------------------------
+// theFixedRetBuffArgNum:
+//     Returns the argNum to use for the fixed return buffer
+//
+inline unsigned theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
+{
+    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
+#ifdef TARGET_ARM64
+    return RET_BUFF_ARGNUM;
+#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
+    assert(callConv == CorInfoCallConvExtension::Swift);
+    return SWIFT_RET_BUFF_ARGNUM;
+#else
+    return BAD_VAR_NUM;
+#endif
+}
+
+#if HAS_FIXED_REGISTER_SET
+static_assert(REG_FIRST == 0);
+static_assert(REG_INT_FIRST < REG_INT_LAST);
+static_assert(REG_FP_FIRST < REG_FP_LAST);
 
 #if CPU_HAS_BYTE_REGS
 inline bool isByteReg(regNumber reg)
@@ -748,73 +830,6 @@ inline bool genIsValidDoubleReg(regNumber reg)
 }
 
 #endif // TARGET_ARM
-
-//-------------------------------------------------------------------------------------------
-// hasFixedRetBuffReg:
-//     Returns true if our target architecture uses a fixed return buffer register
-//
-inline bool hasFixedRetBuffReg(CorInfoCallConvExtension callConv)
-{
-#if defined(TARGET_ARM64)
-    // Windows does not use fixed ret buff arg for instance calls, but does otherwise.
-    return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(callConv);
-#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
-    return callConv == CorInfoCallConvExtension::Swift;
-#else
-    return false;
-#endif
-}
-
-//-------------------------------------------------------------------------------------------
-// theFixedRetBuffReg:
-//     Returns the regNumber to use for the fixed return buffer
-//
-inline regNumber theFixedRetBuffReg(CorInfoCallConvExtension callConv)
-{
-    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
-#if defined(TARGET_ARM64)
-    return REG_ARG_RET_BUFF;
-#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
-    assert(callConv == CorInfoCallConvExtension::Swift);
-    return REG_SWIFT_ARG_RET_BUFF;
-#else
-    return REG_NA;
-#endif
-}
-
-//-------------------------------------------------------------------------------------------
-// theFixedRetBuffMask:
-//     Returns the regNumber to use for the fixed return buffer
-//
-inline regMaskTP theFixedRetBuffMask(CorInfoCallConvExtension callConv)
-{
-    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
-#if defined(TARGET_ARM64)
-    return RBM_ARG_RET_BUFF;
-#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
-    assert(callConv == CorInfoCallConvExtension::Swift);
-    return RBM_SWIFT_ARG_RET_BUFF;
-#else
-    return 0;
-#endif
-}
-
-//-------------------------------------------------------------------------------------------
-// theFixedRetBuffArgNum:
-//     Returns the argNum to use for the fixed return buffer
-//
-inline unsigned theFixedRetBuffArgNum(CorInfoCallConvExtension callConv)
-{
-    assert(hasFixedRetBuffReg(callConv)); // This predicate should be checked before calling this method
-#ifdef TARGET_ARM64
-    return RET_BUFF_ARGNUM;
-#elif defined(TARGET_AMD64) && defined(SWIFT_SUPPORT)
-    assert(callConv == CorInfoCallConvExtension::Swift);
-    return SWIFT_RET_BUFF_ARGNUM;
-#else
-    return BAD_VAR_NUM;
-#endif
-}
 
 //-------------------------------------------------------------------------------------------
 // fullIntArgRegMask:
@@ -1119,16 +1134,6 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
     return regReturn;
 }
 
-/*****************************************************************************
- *
- *  Type checks
- */
-
-inline bool isFloatRegType(var_types type)
-{
-    return varTypeUsesFloatReg(type);
-}
-
 // If the WINDOWS_AMD64_ABI is defined make sure that TARGET_AMD64 is also defined.
 #if defined(WINDOWS_AMD64_ABI)
 #if !defined(TARGET_AMD64)
@@ -1158,6 +1163,7 @@ static_assert((RBM_ALLINT & RBM_FPBASE) == RBM_NONE);
 static_assert((RBM_INT_CALLEE_SAVED & RBM_FPBASE) == RBM_NONE);
 #endif
 /*****************************************************************************/
+#endif // HAS_FIXED_REGISTER_SET
 
 #ifdef TARGET_64BIT
 typedef uint64_t target_size_t;

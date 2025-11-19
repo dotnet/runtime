@@ -1305,6 +1305,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // Fast tail call - make sure that call target is always computed in volatile registers
             // that will not be restored in the epilog sequence.
             ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
+            if (compiler->getNeedsGSSecurityCookie())
+            {
+                ctrlExprCandidates &= ~compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
+            }
         }
 #ifdef TARGET_X86
         else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT) &&

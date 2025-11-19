@@ -13,7 +13,7 @@
 //    newObjThis                - tree for this pointer or uninitialized newobj temp (or nullptr)
 //    prefixFlags               - IL prefix flags for the call
 //    callInfo                  - EE supplied info for the call
-//    rawILOffset               - IL offset of the opcode, used for guarded devirtualization.
+//    rawILOffset               - IL offset of the opcode
 //
 // Returns:
 //    Type of the call's return value.
@@ -66,6 +66,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // to see any imperative security.
     // Reverse P/Invokes need a call to CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
     // at the end, so tailcalls should be disabled.
+    // Async methods need to restore contexts, so tailcalls should be disabled.
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
         canTailCall             = false;
@@ -75,6 +76,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         canTailCall             = false;
         szCanTailCallFailReason = "Caller is Reverse P/Invoke";
+    }
+    else if (compIsAsync())
+    {
+        canTailCall             = false;
+        szCanTailCallFailReason = "Caller is async method";
     }
 #if !FEATURE_FIXED_OUT_ARGS
     else if (info.compIsVarArgs)
@@ -386,7 +392,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags);
+                    impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
                 }
 
                 impPopCallArgs(sig, call->AsCall());
@@ -691,7 +697,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags);
+        impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
     }
 
     // Now create the argument list.
@@ -1433,40 +1439,15 @@ DONE_CALL:
 
                 // Propagate retExpr as the placeholder for the call.
                 call = retExpr;
-
-                if (origCall->IsAsyncAndAlwaysSavesAndRestoresExecutionContext())
-                {
-                    // Async calls that require save/restore of
-                    // ExecutionContext need to be top most so that we can
-                    // insert try-finally around them. We can inline these, so
-                    // we need to ensure that the RET_EXPR is findable when we
-                    // later expand this.
-
-                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG("async"));
-                    LclVarDsc* varDsc    = lvaGetDesc(resultLcl);
-                    // Keep the information about small typedness to avoid
-                    // inserting unnecessary casts around normalization.
-                    if (varTypeIsSmall(origCall->gtReturnType))
-                    {
-                        assert(origCall->NormalizesSmallTypesOnReturn());
-                        varDsc->lvType = origCall->gtReturnType;
-                    }
-
-                    impStoreToTemp(resultLcl, call, CHECK_SPILL_ALL);
-                    // impStoreToTemp can change src arg list and return type for call that returns struct.
-                    var_types type = genActualType(lvaGetDesc(resultLcl)->TypeGet());
-                    call           = gtNewLclvNode(resultLcl, type);
-                }
             }
             else
             {
-                if (call->IsCall() &&
-                    (isFatPointerCandidate || call->AsCall()->IsAsyncAndAlwaysSavesAndRestoresExecutionContext()))
+                if (call->IsCall() && isFatPointerCandidate)
                 {
                     // these calls should be in statements of the form call() or var = call().
                     // Such form allows to find statements with fat calls without walking through whole trees
                     // and removes problems with cutting trees.
-                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG(isFatPointerCandidate ? "calli" : "async"));
+                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG("calli"));
                     LclVarDsc* varDsc    = lvaGetDesc(resultLcl);
                     // Keep the information about small typedness to avoid
                     // inserting unnecessary casts around normalization.
@@ -3323,7 +3304,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    if (ni == NI_System_StubHelpers_AsyncCallContinuation)
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation)
     {
         GenTree* node = new (this, GT_ASYNC_CONTINUATION) GenTree(GT_ASYNC_CONTINUATION, TYP_REF);
         node->SetHasOrderingSideEffect();
@@ -4165,16 +4146,23 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
+#if defined(TARGET_X86)
+                // On x86, TYP_LONG is not supported as an intrinsic
+                if (genActualType(callType) == TYP_LONG)
+                {
+                    break;
+                }
+#endif
+                // TODO: Implement support for XAND/XORR with small integer types (byte/short)
+                if ((callType != TYP_INT) && (callType != TYP_LONG))
+                {
+                    break;
+                }
+
 #if defined(TARGET_ARM64)
                 if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
 #endif
                 {
-#if defined(TARGET_X86)
-                    if (genActualType(callType) == TYP_LONG)
-                    {
-                        break;
-                    }
-#endif
                     assert(sig->numArgs == 2);
                     GenTree*   op2 = impPopStack().val;
                     GenTree*   op1 = impPopStack().val;
@@ -6806,25 +6794,27 @@ void Compiler::impCheckForPInvokeCall(
 }
 
 //------------------------------------------------------------------------
-// impSetupAndSpillForAsyncCall:
+// impSetupAsyncCall:
 //   Register a call as being async and set up context handling information depending on the IL.
-//   Also spill IL arguments if necessary.
 //
 // Arguments:
 //    call        - The call
 //    opcode      - The IL opcode for the call
 //    prefixFlags - Flags containing context handling information from IL
+//    callDI      - Debug info for the async call
 //
-void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags)
+void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
     AsyncCallInfo asyncInfo;
+
+    unsigned newSourceTypes = ICorDebugInfo::ASYNC;
+    newSourceTypes |= (unsigned)callDI.GetLocation().GetSourceTypes() & ~ICorDebugInfo::CALL_INSTRUCTION;
+    ILLocation newILLocation(callDI.GetLocation().GetOffset(), (ICorDebugInfo::SourceTypes)newSourceTypes);
+    asyncInfo.CallAsyncDebugInfo = DebugInfo(callDI.GetInlineContext(), newILLocation);
 
     if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
     {
         JITDUMP("Call is an async task await\n");
-
-        asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::SaveAndRestore;
-        asyncInfo.SaveAndRestoreSynchronizationContextField = true;
 
         if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
         {
@@ -6845,40 +6835,9 @@ void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall* call, OPCODE opcode, un
     else
     {
         JITDUMP("Call is an async non-task await\n");
-        // Only expected non-task await to see in IL is one of the AsyncHelpers.AwaitAwaiter variants.
-        // These are awaits of custom awaitables, and they come with the behavior that the execution context
-        // is captured and restored on suspension/resumption.
-        // We could perhaps skip this for AwaitAwaiter (but not for UnsafeAwaitAwaiter) since it is expected
-        // that the safe INotifyCompletion will take care of flowing ExecutionContext.
-        asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
-    }
-
-    // For tailcalls the contexts does not need saving/restoring: they will be
-    // overwritten by the caller anyway.
-    //
-    // More specifically, if we can show that
-    // Thread.CurrentThread._executionContext is not accessed between the
-    // call and returning then we can omit save/restore of the execution
-    // context. We do not do that optimization yet.
-    if ((prefixFlags & PREFIX_TAILCALL) != 0)
-    {
-        asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
-        asyncInfo.ContinuationContextHandling               = ContinuationContextHandling::None;
-        asyncInfo.SaveAndRestoreSynchronizationContextField = false;
     }
 
     call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
-
-    if (asyncInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore)
-    {
-        compMustSaveAsyncContexts = true;
-
-        // In this case we will need to save the context after the arguments are evaluated.
-        // Spill the arguments to accomplish that.
-        // (We could do this via splitting in SaveAsyncContexts, but since we need to
-        //  handle inline candidates we won't gain much.)
-        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Async await with execution context save and restore"));
-    }
 }
 
 //------------------------------------------------------------------------
@@ -6966,6 +6925,10 @@ private:
             if (retClsHnd != nullptr)
             {
                 comp->lvaSetClass(tmp, retClsHnd, isExact);
+            }
+            else
+            {
+                JITDUMP("Could not deduce class from [%06u]", comp->dspTreeID(retExpr));
             }
         }
     }
@@ -10852,6 +10815,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
                             }
+                            else if (strcmp(methodName, "AsyncCallContinuation") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation;
+                            }
                         }
                         else if (strcmp(className, "StaticsHelpers") == 0)
                         {
@@ -11109,10 +11076,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_StubHelpers_NextCallReturnAddress;
                         }
-                        else if (strcmp(methodName, "AsyncCallContinuation") == 0)
-                        {
-                            result = NI_System_StubHelpers_AsyncCallContinuation;
-                        }
                     }
                 }
                 else if (strcmp(namespaceName, "Text") == 0)
@@ -11195,7 +11158,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     if (strcmp(methodName, "ConfigureAwait") == 0)
                     {
                         if (strcmp(className, "Task`1") == 0 || strcmp(className, "Task") == 0 ||
-                            strcmp(className, "ValuTask`1") == 0 || strcmp(className, "ValueTask") == 0)
+                            strcmp(className, "ValueTask`1") == 0 || strcmp(className, "ValueTask") == 0)
                         {
                             result = NI_System_Threading_Tasks_Task_ConfigureAwait;
                         }

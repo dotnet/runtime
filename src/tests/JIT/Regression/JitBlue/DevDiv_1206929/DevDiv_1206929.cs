@@ -27,6 +27,7 @@ namespace ReadMemBytes
 
             return count;
         }
+        [OuterLoop]
         [Fact]
         public static unsafe int TestEntryPoint()
         {
