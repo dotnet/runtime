@@ -119,6 +119,41 @@ namespace System.IO.Compression
         }
 
         [Theory]
+        [InlineData(10)]
+        [InlineData(15)]
+        [InlineData(22)]
+        [InlineData(24)]
+        public void BrotliCompressionWindowSize_RoundTrip(int windowSize)
+        {
+            byte[] testData = new byte[10000];
+            Random.Shared.NextBytes(testData);
+
+            // Compress with specific window size
+            byte[] compressed;
+            using (var ms = new MemoryStream())
+            {
+                using (var compressor = new BrotliStream(ms, new BrotliCompressionOptions() { WindowSize = windowSize }, leaveOpen: true))
+                {
+                    compressor.Write(testData);
+                }
+                compressed = ms.ToArray();
+            }
+
+            // Decompress and verify
+            byte[] decompressed;
+            using (var ms = new MemoryStream(compressed))
+            using (var decompressor = new BrotliStream(ms, CompressionMode.Decompress))
+            using (var resultStream = new MemoryStream())
+            {
+                decompressor.CopyTo(resultStream);
+                decompressed = resultStream.ToArray();
+            }
+
+            Assert.Equal(testData.Length, decompressed.Length);
+            Assert.Equal<byte>(testData, decompressed);
+        }
+
+        [Theory]
         [MemberData(nameof(UncompressedTestFilesBrotli))]
         public async Task BrotliCompressionQuality_SizeInOrder(string testFile)
         {
