@@ -552,7 +552,6 @@ namespace System
         {
             return Number.TryFormatFloat(this, format, NumberFormatInfo.GetInstance(provider), utf8Destination, out bytesWritten);
         }
-
         //
         // Explicit Convert To Half
         //
