@@ -409,7 +409,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     // Do we have a matched VM? Or are we "abusing" the VM to help us do JIT work (such as using an x86 native VM
     // with an ARM-targeting "altjit").
     // Match CPU/ABI for compMatchedVM
-    info.compMatchedVM = IMAGE_FILE_MACHINE_TARGET == info.compCompHnd->getExpectedTargetArchitecture();
+    info.compMatchedVM = info.compCompHnd->getExpectedTargetArchitecture() == CORINFO_ARCH_TARGET;
 
     // Match OS for compMatchedVM
     CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
@@ -1836,41 +1836,42 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
 
 const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
 {
-    if (size == 0 || size >= 4)
+#if CPU_HAS_BYTE_REGS
+    if (size == 1 || size == 2)
     {
-        return compRegVarName(reg, true);
+        // clang-format off
+        static const char* sizeNames[][2] =
+        {
+            { "al", "ax" },
+            { "cl", "cx" },
+            { "dl", "dx" },
+            { "bl", "bx" },
+    #ifdef TARGET_AMD64
+            {  "spl",   "sp" }, // ESP
+            {  "bpl",   "bp" }, // EBP
+            {  "sil",   "si" }, // ESI
+            {  "dil",   "di" }, // EDI
+            {  "r8b",  "r8w" },
+            {  "r9b",  "r9w" },
+            { "r10b", "r10w" },
+            { "r11b", "r11w" },
+            { "r12b", "r12w" },
+            { "r13b", "r13w" },
+            { "r14b", "r14w" },
+            { "r15b", "r15w" },
+    #endif // TARGET_AMD64
+        };
+        // clang-format on
+
+        assert(isByteReg(reg));
+        assert(genRegMask(reg) & RBM_BYTE_REGS);
+        assert(size == 1 || size == 2);
+
+        return sizeNames[reg][size - 1];
     }
+#endif // CPU_HAS_BYTE_REGS
 
-    // clang-format off
-    static
-    const char  *   sizeNames[][2] =
-    {
-        { "al", "ax" },
-        { "cl", "cx" },
-        { "dl", "dx" },
-        { "bl", "bx" },
-#ifdef TARGET_AMD64
-        {  "spl",   "sp" }, // ESP
-        {  "bpl",   "bp" }, // EBP
-        {  "sil",   "si" }, // ESI
-        {  "dil",   "di" }, // EDI
-        {  "r8b",  "r8w" },
-        {  "r9b",  "r9w" },
-        { "r10b", "r10w" },
-        { "r11b", "r11w" },
-        { "r12b", "r12w" },
-        { "r13b", "r13w" },
-        { "r14b", "r14w" },
-        { "r15b", "r15w" },
-#endif // TARGET_AMD64
-    };
-    // clang-format on
-
-    assert(isByteReg(reg));
-    assert(genRegMask(reg) & RBM_BYTE_REGS);
-    assert(size == 1 || size == 2);
-
-    return sizeNames[reg][size - 1];
+    return compRegVarName(reg, true);
 }
 
 #ifdef DEBUG
@@ -4368,7 +4369,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_POST_IMPORT, &Compiler::fgPostImportationCleanup);
 
-    // Capture and restore contexts around awaited calls, if needed.
+    // Capture and restore contexts around the body, if needed.
     //
     DoPhase(this, PHASE_ASYNC_SAVE_CONTEXTS, &Compiler::SaveAsyncContexts);
 
@@ -4964,14 +4965,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Assign registers to variables, etc.
 
-    // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
-    // for determining whether locals are register candidates and (for xarch) whether
+    // Create the RA before Lowering, so that Lowering can call RA methods for
+    // determining whether locals are register candidates and (for xarch) whether
     // a node is a containable memory op.
-    m_pLinearScan = getLinearScanAllocator(this);
+    m_regAlloc = GetRegisterAllocator(this);
 
     // Lower
     //
-    m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
+    m_pLowering = new (this, CMK_LSRA) Lowering(this, m_regAlloc); // PHASE_LOWERING
     m_pLowering->Run();
 
     // Set stack levels and analyze throw helper usage.
@@ -4986,10 +4987,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Now that lowering is completed we can proceed to perform register allocation
     //
-    auto linearScanPhase = [this] {
-        m_pLinearScan->doLinearScan();
+    auto regAllocPhase = [this] {
+        m_regAlloc->doRegisterAllocation();
     };
-    DoPhase(this, PHASE_LINEAR_SCAN, linearScanPhase);
+    DoPhase(this, PHASE_LINEAR_SCAN, regAllocPhase);
 
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
@@ -5015,6 +5016,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);
 #endif
 
+#ifdef DEBUG
+    // Optionally, simulate generating wasm control flow
+    // (eventually this will become part of the wasm target)
+    //
+    if (JitConfig.JitWasmControlFlow() > 0)
+    {
+        DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
+    }
+#endif
+
     // The common phase checks and dumps are no longer relevant past this point.
     //
     activePhaseChecks = PhaseChecks::CHECK_NONE;
@@ -5026,7 +5037,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if TRACK_LSRA_STATS
     if (JitConfig.DisplayLsraStats() == 2)
     {
-        m_pLinearScan->dumpLsraStatsCsv(jitstdout());
+        m_regAlloc->dumpLsraStatsCsv(jitstdout());
     }
 #endif // TRACK_LSRA_STATS
 
