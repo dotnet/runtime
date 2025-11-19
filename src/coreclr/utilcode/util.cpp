@@ -2336,7 +2336,7 @@ void PutLoongArch64JIR(UINT32 * pCode, INT64 imm38)
 //*****************************************************************************
 //  Extract the PC-Relative offset from auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-INT64 GetRiscV64AuipcCombo(UINT32 * pCode)
+INT64 GetRiscV64AuipcCombo(UINT32 * pCode, BOOL isStype)
 {
     enum
     {
@@ -2365,11 +2365,12 @@ INT64 GetRiscV64AuipcCombo(UINT32 * pCode)
     UINT32 funct3 = instr & Funct3Mask;
     _ASSERTE(opcode == OpcodeLoad || opcode == OpcodeStore || opcode == OpcodeLoadFp || opcode == OpcodeStoreFp ||
         ((opcode == OpcodeAddi || opcode == OpcodeJalr) && funct3 == Funct3AddiJalr));
+    _ASSERTE(isStype == (opcode == OpcodeStore || opcode == OpcodeStoreFp));
     int addrReg = (instr >> 15) & 0x1F;
     _ASSERTE(auipcRegDest == addrReg);
 
     INT64 lo12 = (INT32(instr) >> 25) << 5; // top 7 bits are in the same spot
-    int bottomBitsPos = (opcode == OpcodeStore || opcode == OpcodeStoreFp) ? 7 : 20;
+    int bottomBitsPos = isStype ? 7 : 20;
     lo12 |= (instr >> bottomBitsPos) & 0x1F;
 
     return hi20 + lo12;
@@ -2379,25 +2380,18 @@ INT64 GetRiscV64AuipcCombo(UINT32 * pCode)
 //*****************************************************************************
 //  Deposit the PC-Relative offset into auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset)
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, BOOL isStype)
 {
-    enum
-    {
-        OpcodeStore = 0x23,
-        OpcodeStoreFp = 0x27,
-        OpcodeMask = 0x7F,
-    };
     INT32 lo12 = (offset << (64 - 12)) >> (64 - 12);
     INT32 hi20 = INT32(offset - lo12);
     _ASSERTE(INT64(lo12) + INT64(hi20) == offset);
 
-    _ASSERTE(GetRiscV64AuipcCombo(pCode) == 0);
+    _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == 0);
     pCode[0] |= hi20;
-    UINT32 opcode = pCode[1] & OpcodeMask;
-    int bottomBitsPos = (opcode == OpcodeStore || opcode == OpcodeStoreFp) ? 7 : 20;
+    int bottomBitsPos = isStype ? 7 : 20;
     pCode[1] |= (lo12 >> 5) << 25; // top 7 bits are in the same spot
     pCode[1] |= (lo12 & 0x1F) << bottomBitsPos;
-    _ASSERTE(GetRiscV64AuipcCombo(pCode) == offset);
+    _ASSERTE(GetRiscV64AuipcCombo(pCode, isStype) == offset);
 }
 
 //======================================================================

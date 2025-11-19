@@ -12047,16 +12047,18 @@ void CEEJitInfo::recordRelocation(void * location,
         {
             _ASSERTE(addlDelta == 0);
 
-            auto putTargetIntoAuipcCombo = [location, locationRW](void* targetAddr) -> bool
+            BOOL isStype = (fRelocType == IMAGE_REL_RISCV64_PCREL_S);
+
+            auto putTargetIntoAuipcCombo = [location, locationRW, isStype](void* targetAddr) -> bool
             {
                 INT64 offset = (INT64)targetAddr - (INT64)location;
 
                 if (!FitsInAuipcCombo(offset))
                     return false; // out of range
 
-                PutRiscV64AuipcCombo((UINT32 *)locationRW, offset);
-                LOG((LF_JIT, LL_INFO100000, "Fixed up an auipc + I-type relocation at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%08x\n",
-                    DBG_ADDR(location), DBG_ADDR(targetAddr), offset));
+                PutRiscV64AuipcCombo((UINT32 *)locationRW, offset, isStype);
+                LOG((LF_JIT, LL_INFO100000, "Fixed up an auipc + %c-type relocation at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%08x\n",
+                    (isStype ? 'S' : 'I'), DBG_ADDR(location), DBG_ADDR(targetAddr), offset));
                 return true;
             };
 

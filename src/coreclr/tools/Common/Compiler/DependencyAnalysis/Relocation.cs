@@ -493,7 +493,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GetLoongArch64JIR(pCode) == imm38);
         }
 
-        private static unsafe long GetRiscV64AuipcCombo(uint* pCode)
+        private static unsafe long GetRiscV64AuipcCombo(uint* pCode, bool isStype)
         {
             const uint OpcodeAuipc = 0x17;
             const uint OpcodeAddi = 0x13;
@@ -519,11 +519,12 @@ namespace ILCompiler.DependencyAnalysis
             uint funct3 = instr & Funct3Mask;
             Debug.Assert(opcode == OpcodeLoad || opcode == OpcodeStore || opcode == OpcodeLoadFp || opcode == OpcodeStoreFp ||
                 ((opcode == OpcodeAddi || opcode == OpcodeJalr) && funct3 == Funct3AddiJalr));
+            Debug.Assert(isStype == (opcode == OpcodeStore || opcode == OpcodeStoreFp));
             uint addrReg = (instr >> 15) & 0x1F;
             Debug.Assert(auipcRegDest == addrReg);
 
             long lo12 = (((int)instr) >> 25) << 5; // top 7 bits are in the same spot
-            int bottomBitsPos = (opcode == OpcodeStore || opcode == OpcodeStoreFp) ? 7 : 20;
+            int bottomBitsPos = isStype ? 7 : 20;
             lo12 |= (instr >> bottomBitsPos) & 0x1F;
 
             return hi20 + lo12;
@@ -540,23 +541,18 @@ namespace ILCompiler.DependencyAnalysis
         // INS_OPTS_C
         //   auipc  reg, off-hi-20bits
         //   jalr   reg, reg, off-lo-12bits
-        private static unsafe void PutRiscV64AuipcCombo(uint* pCode, long offset)
+        private static unsafe void PutRiscV64AuipcCombo(uint* pCode, long offset, bool isStype)
         {
-            const uint OpcodeStore = 0x23;
-            const uint OpcodeStoreFp = 0x27;
-            const uint OpcodeMask = 0x7F;
-
             int lo12 = (int)((offset << (64 - 12)) >> (64 - 12));
             int hi20 = (int)(offset - lo12);
             Debug.Assert((long)lo12 + (long)hi20 == offset);
 
-            Debug.Assert(GetRiscV64AuipcCombo(pCode) == 0);
+            Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == 0);
             pCode[0] |= (uint)hi20;
-            uint opcode = pCode[1] & OpcodeMask;
-            int bottomBitsPos = (opcode == OpcodeStore || opcode == OpcodeStoreFp) ? 7 : 20;
+            int bottomBitsPos = isStype ? 7 : 20;
             pCode[1] |= (uint)((lo12 >> 5) << 25); // top 7 bits are in the same spot
             pCode[1] |= (uint)((lo12 & 0x1F) << bottomBitsPos);
-            Debug.Assert(GetRiscV64AuipcCombo(pCode) == offset);
+            Debug.Assert(GetRiscV64AuipcCombo(pCode, isStype) == offset);
         }
 
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
@@ -622,7 +618,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT:
                 case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I:
                 case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
-                    PutRiscV64AuipcCombo((uint*)location, value);
+                    bool isStype = (relocType is RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S);
+                    PutRiscV64AuipcCombo((uint*)location, value, isStype);
                     break;
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
@@ -710,7 +707,8 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT:
                 case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I:
                 case RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S:
-                    return (long)GetRiscV64AuipcCombo((uint*)location);
+                    bool isStype = (relocType is RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S);
+                    return GetRiscV64AuipcCombo((uint*)location, isStype);
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;
