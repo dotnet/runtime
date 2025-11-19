@@ -1351,6 +1351,7 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
                 LclVarDsc* dsc = m_comp->lvaGetDesc(use.User()->AsLclVar());
                 if (m_comp->lvaGetPromotionType(dsc) == Compiler::PROMOTION_TYPE_INDEPENDENT)
                 {
+                    m_comp->lvaSetVarDoNotEnregister(newLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
                     JITDUMP("  Call is multi-reg stored to an independently promoted local; decomposing store\n");
                     for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
                     {
