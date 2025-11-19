@@ -16,6 +16,10 @@
 
 #define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
 
+#define MAX_LOADED_NATIVE_CODE_COUNT 64 // Arbitrarily 'large enough' number
+static void* loaded_native_code_handles[MAX_LOADED_NATIVE_CODE_COUNT];
+static int loaded_native_code_handle_count = 0;
+
 const char *
 get_bundle_path (void)
 {
@@ -128,10 +132,13 @@ bool get_native_code_data(const struct host_runtime_contract_native_code_context
     if (written <= 0 || (size_t)written >= sizeof(r2r_path) - dir_len)
         return false;
 
-    // TODO: store and dlclose the handles after the app runs
+    assert(loaded_native_code_handle_count < MAX_LOADED_NATIVE_CODE_COUNT);
     void* handle = dlopen(r2r_path, RTLD_LAZY | RTLD_LOCAL);
     if (handle == NULL)
         return false;
+
+    loaded_native_code_handles[loaded_native_code_handle_count] = handle;
+    loaded_native_code_handle_count++;
 
     void* r2r_header = dlsym(handle, "RTR_HEADER");
     if (r2r_header == NULL)
@@ -240,6 +247,14 @@ mono_ios_runtime_init (void)
     os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", res);
 
     free_managed_args (&managed_argv, argi);
+
+    // Close all loaded handles after the app runs
+    for (int i = 0; i < loaded_native_code_handle_count; ++i)
+    {
+        if (loaded_native_code_handles[i] != NULL) {
+            dlclose(loaded_native_code_handles[i]);
+        }
+    }
 
     exit (res);
 }
