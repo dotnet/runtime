@@ -24,7 +24,7 @@ namespace System.Numerics
         private const ulong PositiveInfinityValue = 0x7800_0000_0000_0000;
         private const ulong NegativeInfinityValue = 0xF800_0000_0000_0000;
         private const ulong ZeroValue = 0x0000_0000_0000_0000;
-        private const ulong NegativeZeroValue = 0x1000_0000_0000_0000;
+        private const ulong NegativeZeroValue = 0x8000_0000_0000_0000;
         private const ulong G0G1Mask = 0x6000_0000_0000_0000;
         private const ulong SignMask = 0x8000_0000_0000_0000;
         private const ulong MostSignificantBitOfSignificandMask = 0x0020_0000_0000_0000;
