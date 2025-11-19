@@ -3360,7 +3360,7 @@ INT64 GetRiscV64AuipcCombo(UINT32 * pCode);
 //*****************************************************************************
 //  Deposit the PC-Relative offset into auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-void PutRiscV64AuipcCombo(UINT32 * pCode, INT32 offsetLo12, INT32 offsetHi20);
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset);
 
 //*****************************************************************************
 // Returns whether the offset fits into bl instruction
@@ -3400,6 +3400,14 @@ inline bool FitsInRel12(INT32 val32)
 inline bool FitsInRel28(INT64 val64)
 {
     return (val64 >= -0x08000000LL) && (val64 < 0x08000000LL);
+}
+
+//*****************************************************************************
+// Returns whether the offset fits into a RISC-V auipc + I-type or S-type instruction combo
+//*****************************************************************************
+inline bool FitsInAuipcCombo(INT64 val64)
+{
+    return (val64 >= -(1ll << 31) - (1ll << 11)) && (val64 < (1ll << 31) - (1ll << 11));
 }
 
 //

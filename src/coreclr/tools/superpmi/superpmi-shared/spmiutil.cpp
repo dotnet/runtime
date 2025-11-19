@@ -508,7 +508,7 @@ INT64 GetRiscV64AuipcCombo(UINT32 * pCode)
 //*****************************************************************************
 //  Deposit the PC-Relative offset into auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-void PutRiscV64AuipcCombo(UINT32 * pCode, INT32 lo12, INT32 hi20)
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset)
 {
     enum
     {
@@ -516,8 +516,9 @@ void PutRiscV64AuipcCombo(UINT32 * pCode, INT32 lo12, INT32 hi20)
         OpcodeStoreFp = 0x27,
         OpcodeMask = 0x7F,
     };
-    _ASSERTE((lo12 >> 11) == 0 || (lo12 >> 11) == -1);
-    _ASSERTE((hi20 & 0xfff) == 0);
+    INT32 lo12 = (offset << (64 - 12)) >> (64 - 12);
+    INT32 hi20 = INT32(offset - lo12);
+    _ASSERTE(INT64(lo12) + INT64(hi20) == offset);
 
     _ASSERTE(GetRiscV64AuipcCombo(pCode) == 0);
     pCode[0] |= hi20;
@@ -525,7 +526,7 @@ void PutRiscV64AuipcCombo(UINT32 * pCode, INT32 lo12, INT32 hi20)
     int bottomBitsPos = (opcode == OpcodeStore || opcode == OpcodeStoreFp) ? 7 : 20;
     pCode[1] |= (lo12 >> 5) << 25; // top 7 bits are in the same spot
     pCode[1] |= (lo12 & 0x1F) << bottomBitsPos;
-    _ASSERTE(GetRiscV64AuipcCombo(pCode) == INT64(hi20) + INT64(lo12));
+    _ASSERTE(GetRiscV64AuipcCombo(pCode) == offset);
 }
 
 template<typename TPrint>

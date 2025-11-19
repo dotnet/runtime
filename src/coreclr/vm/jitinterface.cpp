@@ -12049,13 +12049,10 @@ void CEEJitInfo::recordRelocation(void * location,
             {
                 INT64 offset = (INT64)targetAddr - (INT64)location;
 
-                INT32 lo12 = (offset << (64 - 12)) >> (64 - 12);
-                INT32 hi20 = INT32(offset - lo12);
-
-                if (INT64(hi20) + INT64(lo12) != offset)
+                if (!FitsInAuipcCombo(offset))
                     return false; // out of range
 
-                PutRiscV64AuipcCombo((UINT32 *)locationRW, lo12, hi20);
+                PutRiscV64AuipcCombo((UINT32 *)locationRW, offset);
                 LOG((LF_JIT, LL_INFO100000, "Fixed up an auipc + I-type relocation at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%08x\n",
                     DBG_ADDR(location), DBG_ADDR(targetAddr), offset));
                 return true;
@@ -12074,8 +12071,8 @@ void CEEJitInfo::recordRelocation(void * location,
             bool isJalr = ((((UINT32 *)locationRW)[1] & OpcodeMask) == OpcodeJalr);
             if (isJalr && !m_fJumpStubOverflow)
             {
-                BYTE* loAddr = (BYTE*)location - (1l << 31) - (1l << 11);
-                BYTE* hiAddr = (BYTE*)location + (1l << 31) - (1l << 11) - 1;
+                BYTE* loAddr = (BYTE*)location - (1ll << 31) - (1ll << 11);
+                BYTE* hiAddr = (BYTE*)location + (1ll << 31) - (1ll << 11) - 1;
 
                 // Check for the wrap around cases
                 if (loAddr > location)
