@@ -568,7 +568,7 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
                     relocationStream.Write(relocationEntry);
 
-                    // TODO: This is wrong, we need to point to a label (position of previous instruction)
+                    // TODO: This is wrong, LO12 needs to point to a label (previous instruction with HI20)
                     // if (symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PCREL_I or IMAGE_REL_BASED_RISCV64_PCREL_S)
                     // {
                     //     type = symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PCREL_I
