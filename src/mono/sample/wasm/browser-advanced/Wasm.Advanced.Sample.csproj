@@ -18,6 +18,7 @@
 
     <!-- Put "framework" (dotnet.js, dlls, etc) files directly into the AppBundle -->
     <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --dump-dependencies</_ExtraTrimmerArgs>
 
     <!-- 
