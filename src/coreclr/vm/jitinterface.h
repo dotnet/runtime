@@ -723,8 +723,6 @@ public:
 
     uint16_t getRelocTypeHint(void * target) override;
 
-    uint32_t getExpectedTargetArchitecture() override;
-
     void SetDebugInfo(PTR_BYTE pDebugInfo) override;
 
     void ResetForJitRetry() override
