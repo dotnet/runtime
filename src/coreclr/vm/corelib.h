@@ -1077,6 +1077,8 @@ DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinne
 DEFINE_METHOD(STUBHELPERS,          NEXT_CALL_RETURN_ADDRESS,           NextCallReturnAddress,          SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,           SM_SafeHandle_RefBool_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,          SM_SafeHandle_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          SET_NEXT_CALL_GENERIC_CONTEXT, SetNextCallGenericContext, NoSig)
+DEFINE_METHOD(STUBHELPERS,          SET_NEXT_CALL_ASYNC_CONTINUATION, SetNextCallAsyncContinuation, NoSig)
 
 #ifdef PROFILING_SUPPORTED
 DEFINE_METHOD(STUBHELPERS,          PROFILER_BEGIN_TRANSITION_CALLBACK, ProfilerBeginTransitionCallback, SM_PtrVoid_RetPtrVoid)

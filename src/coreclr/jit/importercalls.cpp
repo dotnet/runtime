@@ -96,8 +96,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool bIntrinsicImported = false;
 
     CORINFO_SIG_INFO calliSig;
-    GenTree*         varArgsCookie = nullptr;
-    GenTree*         instParam     = nullptr;
+    GenTree*         varArgsCookie     = nullptr;
+    GenTree*         instParam         = nullptr;
+    GenTree*         asyncContinuation = nullptr;
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
@@ -700,6 +701,15 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
     }
 
+    if (lvaNextCallAsyncContinuation != BAD_VAR_NUM)
+    {
+        asyncContinuation = gtNewLclVarNode(lvaNextCallAsyncContinuation);
+    }
+    else if (call->AsCall()->IsAsync())
+    {
+        asyncContinuation = gtNewNull();
+    }
+
     // Now create the argument list.
 
     //-------------------------------------------------------------------------
@@ -730,7 +740,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // We also set the exact type context associated with the call so we can
     // inline the call correctly later on.
 
-    if (sig->hasTypeArg())
+    if (lvaNextCallGenericContext != BAD_VAR_NUM)
+    {
+        instParam                 = gtNewLclVarNode(lvaNextCallGenericContext);
+        lvaNextCallGenericContext = BAD_VAR_NUM;
+    }
+    else if (sig->hasTypeArg())
     {
         assert(call->AsCall()->gtCallType == CT_USER_FUNC);
         if (clsHnd == nullptr)
@@ -867,7 +882,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     impPopCallArgs(sig, call->AsCall());
 
     // Extra args
-    if ((instParam != nullptr) || call->AsCall()->IsAsync() || (varArgsCookie != nullptr))
+    if ((instParam != nullptr) || (asyncContinuation != nullptr) || (varArgsCookie != nullptr))
     {
         if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
         {
@@ -877,11 +892,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                            .WellKnown(WellKnownArg::VarArgsCookie));
             }
 
-            // Add async continuation arg. For calli these are used for IL
-            // stubs and the VM inserts the arg itself.
-            if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
+            if (asyncContinuation != nullptr)
             {
-                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(asyncContinuation)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
             }
 
@@ -893,11 +906,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
         else
         {
-            // Add async continuation arg. For calli these are used for IL
-            // stubs and the VM inserts the arg itself.
-            if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
+            if (asyncContinuation != nullptr)
             {
-                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(asyncContinuation)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
             }
 
@@ -3302,6 +3313,24 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         // the return address of.
         info.compHasNextCallRetAddr = true;
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
+    }
+
+    if (ni == NI_System_StubHelpers_SetNextCallGenericContext)
+    {
+        lvaNextCallGenericContext                     = lvaGrabTemp(false DEBUGARG("Upcoming generic context"));
+        lvaGetDesc(lvaNextCallGenericContext)->lvType = TYP_I_IMPL;
+
+        GenTree* node = gtNewStoreLclVarNode(lvaNextCallGenericContext, impPopStack().val);
+        return node;
+    }
+
+    if (ni == NI_System_StubHelpers_SetNextCallAsyncContinuation)
+    {
+        lvaNextCallAsyncContinuation                     = lvaGrabTemp(false DEBUGARG("Upcoming async continuation"));
+        lvaGetDesc(lvaNextCallAsyncContinuation)->lvType = TYP_REF;
+
+        GenTree* node = gtNewStoreLclVarNode(lvaNextCallAsyncContinuation, impPopStack().val);
+        return node;
     }
 
     if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation)
@@ -11075,6 +11104,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "NextCallReturnAddress") == 0)
                         {
                             result = NI_System_StubHelpers_NextCallReturnAddress;
+                        }
+                        else if (strcmp(methodName, "SetNextCallGenericContext") == 0)
+                        {
+                            return NI_System_StubHelpers_SetNextCallGenericContext;
+                        }
+                        else if (strcmp(methodName, "SetNextCallAsyncContinuation") == 0)
+                        {
+                            return NI_System_StubHelpers_SetNextCallAsyncContinuation;
                         }
                     }
                 }

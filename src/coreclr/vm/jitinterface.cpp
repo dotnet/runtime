@@ -14576,24 +14576,14 @@ static Signature BuildResumptionStubSignature(LoaderAllocator* alloc, AllocMemTr
 
 static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* mt, LoaderAllocator* alloc, AllocMemTracker* pamTracker)
 {
-    unsigned numArgs = 0;
-    if (msig.HasGenericContextArg())
-    {
-        numArgs++;
-    }
-
-    numArgs++; // Continuation
-
-    numArgs += msig.NumFixedArgs();
-
     SigBuilder sigBuilder;
-    BYTE callConv = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+    BYTE callConv = IMAGE_CEE_CS_CALLCONV_ASYNC;
     if (msig.HasThis())
     {
         callConv |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
     }
     sigBuilder.AppendByte(callConv);
-    sigBuilder.AppendData(numArgs);
+    sigBuilder.AppendData(msig.NumFixedArgs());
 
     auto appendTypeHandle = [](SigBuilder& sigBuilder, TypeHandle th)
     {
@@ -14615,14 +14605,6 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     };
 
     appendTypeHandle(sigBuilder, msig.GetRetTypeHandleThrowing()); // return type
-#ifndef TARGET_X86
-    if (msig.HasGenericContextArg())
-    {
-        sigBuilder.AppendElementType(ELEMENT_TYPE_I);
-    }
-
-    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
-#endif
 
     msig.Reset();
     CorElementType ty;
@@ -14631,15 +14613,6 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
         TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
         appendTypeHandle(sigBuilder, tyHnd);
     }
-
-#ifdef TARGET_X86
-    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
-
-    if (msig.HasGenericContextArg())
-    {
-        sigBuilder.AppendElementType(ELEMENT_TYPE_I);
-    }
-#endif
 
     return AllocateSignature(alloc, sigBuilder, pamTracker);
 }
@@ -14667,6 +14640,15 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 
     ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
+    if (msig.HasGenericContextArg())
+    {
+        pCode->EmitLDC(0);
+        pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
+    }
+
+    pCode->EmitLDARG(0);
+    pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_ASYNC_CONTINUATION, 1, 0);
+
     int numArgs = 0;
 
     if (msig.HasThis())
@@ -14684,18 +14666,6 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         numArgs++;
     }
 
-#ifndef TARGET_X86
-    if (msig.HasGenericContextArg())
-    {
-        pCode->EmitLDC(0);
-        numArgs++;
-    }
-
-    // Continuation
-    pCode->EmitLDARG(0);
-    numArgs++;
-#endif
-
     msig.Reset();
     CorElementType ty;
     while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
@@ -14707,19 +14677,6 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         pCode->EmitLDLOC(loc);
         numArgs++;
     }
-
-#ifdef TARGET_X86
-    // Continuation
-    pCode->EmitLDARG(0);
-
-    if (msig.HasGenericContextArg())
-    {
-        pCode->EmitLDC(0);
-        numArgs++;
-    }
-
-    numArgs++;
-#endif
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Resumption stubs are uniquely coupled to the code version (since the

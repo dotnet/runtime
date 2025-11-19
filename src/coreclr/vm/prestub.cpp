@@ -1408,12 +1408,8 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
 
 // CreateDerivedTargetSigWithExtraParams:
 // This method is used to create the signature of the target of the ILStub for
-// instantiating and unboxing stubs, when/where we need to
-// introduce a generic context.
-// And since the generic contexts are hidden parameters,
-// we're creating a signature that looks like non-generic but with additional
-// parameters right after the thisptr
-void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder *stubSigBuilder)
+// instantiating and unboxing stubs.
+void MethodDesc::CreateDerivedTargetSig(MetaSig& msig, SigBuilder *stubSigBuilder)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1425,30 +1421,12 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     // CallingConvention
     stubSigBuilder->AppendByte(callingConvention);
 
-    unsigned numArgs = msig.NumFixedArgs();
-    if (msig.HasGenericContextArg())
-        numArgs++;
-    if (msig.HasAsyncContinuation())
-        numArgs++;
     // ParamCount
-    stubSigBuilder->AppendData(numArgs); // +1 is for context param
+    stubSigBuilder->AppendData(msig.NumFixedArgs());
 
     // Return type
     SigPointer pReturn = msig.GetReturnProps();
     pReturn.ConvertToInternalExactlyOne(msig.GetModule(), msig.GetSigTypeContext(), stubSigBuilder);
-
-#ifndef TARGET_X86
-    if (msig.HasGenericContextArg())
-    {
-        // The hidden context parameter
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
-    }
-
-    if (msig.HasAsyncContinuation())
-    {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
-    }
-#endif // !TARGET_X86
 
     // Copy rest of the arguments
     msig.NextArg();
@@ -1457,19 +1435,6 @@ void MethodDesc::CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder
     {
         pArgs.ConvertToInternalExactlyOne(msig.GetModule(), msig.GetSigTypeContext(), stubSigBuilder);
     }
-
-#ifdef TARGET_X86
-    if (msig.HasAsyncContinuation())
-    {
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_OBJECT);
-    }
-
-    if (msig.HasGenericContextArg())
-    {
-        // The hidden context parameter
-        stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
-    }
-#endif // TARGET_X86
 }
 
 Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
@@ -1498,7 +1463,7 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
 
     // Build the new signature
     SigBuilder stubSigBuilder;
-    MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
+    MethodDesc::CreateDerivedTargetSig(msig, &stubSigBuilder);
 
     // Emit the method body
     mdToken tokRawData = pCode->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
@@ -1509,18 +1474,11 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     pCode->EmitLoadThis();
     pCode->EmitLDFLDA(tokRawData);
 
-#ifdef TARGET_X86
     // Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
-
-    if (msig.HasAsyncContinuation())
-    {
-        pCode->EmitLDNULL();
-    }
-#endif
 
     if (pTargetMD->RequiresInstMethodTableArg())
     {
@@ -1531,20 +1489,8 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
         pCode->EmitLDC(Object::GetOffsetOfFirstField());
         pCode->EmitSUB();
         pCode->EmitLDIND_I();
+        pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_ASYNC_CONTINUATION, 1, 0);
     }
-
-#ifndef TARGET_X86
-    if (msig.HasAsyncContinuation())
-    {
-        pCode->EmitLDNULL();
-    }
-
-    // Push the rest of the arguments for not x86
-    for (unsigned i = 0; i < msig.NumFixedArgs();i++)
-    {
-        pCode->EmitLDARG(i);
-    }
-#endif
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
@@ -1618,7 +1564,7 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 
     // Build the new signature
     SigBuilder stubSigBuilder;
-    MethodDesc::CreateDerivedTargetSigWithExtraParams(msig, &stubSigBuilder);
+    MethodDesc::CreateDerivedTargetSig(msig, &stubSigBuilder);
 
     // Emit the method body
     if (msig.HasThis())
@@ -1627,37 +1573,13 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
         pCode->EmitLoadThis();
     }
 
-#ifdef TARGET_X86
-    // Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
 
-    if (msig.HasAsyncContinuation())
-    {
-        pCode->EmitLDNULL();
-    }
-
-    // Push the hidden context param
-    // InstantiatingStub
     pCode->EmitLDC((TADDR)pHiddenArg);
-#else
-    // Push the hidden context param
-    // InstantiatingStub
-    pCode->EmitLDC((TADDR)pHiddenArg);
-
-    if (msig.HasAsyncContinuation())
-    {
-        pCode->EmitLDNULL();
-    }
-
-    // Push the rest of the arguments for x86
-    for (unsigned i = 0; i < msig.NumFixedArgs();i++)
-    {
-        pCode->EmitLDARG(i);
-    }
-#endif
+    pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
