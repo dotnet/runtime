@@ -2716,6 +2716,7 @@ Function:
 Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
   serialize - allow only one thread to generate core dump
 
 (no return value)
@@ -2723,16 +2724,24 @@ Parameters:
 #ifdef HOST_ANDROID
 #include <minipal/log.h>
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
+    // Store context in a volatile variable to prevent optimization
+    volatile void* volatileContext = context;
+    (void)volatileContext;
+
     // TODO: Dump all managed threads callstacks into logcat and/or file?
     // TODO: Dump stress log into logcat and/or file when enabled?
     minipal_log_write_fatal("Aborting process.\n");
 }
 #else
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, bool serialize)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
 {
+    // Store context in a volatile variable to prevent optimization
+    volatile void* volatileContext = context;
+    (void)volatileContext;
+
     // If enabled, launch the create minidump utility and wait until it completes
     if (!g_argvCreateDump.empty())
     {
@@ -2821,7 +2830,7 @@ PROCAbort(int signal, siginfo_t* siginfo)
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal, siginfo, true);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, nullptr, true);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.
