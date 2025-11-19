@@ -2427,11 +2427,6 @@ void CallStubGenerator::TerminateCurrentRoutineIfNotOfNewType(RoutineType type, 
 
 void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
 {
-    if (sig.IsAsyncCall())
-    {
-        COMPlusThrow(kPlatformNotSupportedException);
-    }
-
     ArgIterator argIt(&sig);
     int32_t interpreterStackOffset = 0;
 
@@ -2465,12 +2460,24 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     if (argIt.HasParamType())
     {
 #if LOG_COMPUTE_CALL_STUB
-            printf("argIt.HasParamType\n");
+        printf("argIt.HasParamType\n");
 #endif
         // In the Interpreter calling convention the argument after the "this" pointer is the parameter type
         ArgLocDesc paramArgLocDesc;
         argIt.GetParamTypeLoc(&paramArgLocDesc);
         ProcessArgument(NULL, paramArgLocDesc, pRoutines);
+        interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
+    }
+
+    if (argIt.HasAsyncContinuation())
+    {
+#if LOG_COMPUTE_CALL_STUB
+        printf("argIt.HasAsyncContinuation\n");
+#endif
+        // In the Interpreter calling convention the argument after the param type is the async continuation
+        ArgLocDesc asyncContinuationLocDesc;
+        argIt.GetParamTypeLoc(&asyncContinuationLocDesc);
+        ProcessArgument(NULL, asyncContinuationLocDesc, pRoutines);
         interpreterStackOffset += INTERP_STACK_SLOT_SIZE;
     }
 

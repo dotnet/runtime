@@ -2565,6 +2565,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         return ObjectToOBJECTREF(m_continuation);
     }
+
+    PTR_PTR_Object GetContinuationPtr()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation));
+    }
 private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to
     // this InterpreterFrame.

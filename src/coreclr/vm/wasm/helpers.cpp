@@ -412,7 +412,7 @@ void _DacGlobals::Initialize()
 // Incorrectly typed temporary symbol to satisfy the linker.
 int g_pDebugger;
 
-void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet)
+void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet, PTR_PTR_Object pContinuationRet)
 {
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
@@ -429,7 +429,7 @@ void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
 }
 
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target)
+void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, PTR_PTR_Object pContinuationRet)
 {
     PORTABILITY_ASSERT("Attempted to execute non-interpreter code from interpreter on wasm, this is not yet implemented");
 }

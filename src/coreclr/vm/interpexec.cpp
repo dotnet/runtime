@@ -25,11 +25,11 @@
 #endif // !TARGET_WASM
 
 // Call invoker helpers provided by platform.
-void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target);
+void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, PTR_PTR_Object pContinuationRet);
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
-void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet);
+void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet, PTR_PTR_Object pContinuationRet);
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet);
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target);
+void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, PTR_PTR_Object pContinuationRet);
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
 // Filter to ignore SEH exceptions representing C++ exceptions.
@@ -95,7 +95,7 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
     {
         GCX_PREEMP_NO_DTOR();
         // WASM-TODO: Handle unmanaged calling conventions
-        InvokeManagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget);
+        InvokeManagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget, NULL);
         GCX_PREEMP_NO_DTOR_END();
     }
     PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
@@ -207,7 +207,7 @@ MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
     return NULL;
 }
 
-void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
+void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, PTR_PTR_Object pContinuationRet)
 {
     CONTRACTL
     {
@@ -245,15 +245,21 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
         }
     }
 
-    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
+    PTR_Object continuationUnused = NULL;
+    if (!pHeader->HasContinuationRet)
+    {
+        pContinuationRet = &continuationUnused;
+    }
+
+    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
-    InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget);
+    InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget, NULL);
 }
 
-void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target)
+void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, PTR_PTR_Object pContinuationRet)
 {
     CONTRACTL
     {
@@ -278,7 +284,14 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
     memcpy(actualCallStub, stubHeaderTemplate, templateSize);
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(target); // The method to call
-    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
+
+    PTR_Object continuationUnused = NULL;
+    if (!pHeader->HasContinuationRet)
+    {
+        pContinuationRet = &continuationUnused;
+    }
+
+    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
@@ -300,11 +313,12 @@ void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     memcpy(actualCallStub, stubHeaderTemplate, templateSize);
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(ftn); // The method to call
+    PTR_Object continuationUnused = NULL;
 
-    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
+    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, &continuationUnused);
 }
 
-void InvokeCalliStub(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
+void InvokeCalliStub(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet, PTR_PTR_Object pContinuationRet)
 {
     CONTRACTL
     {
@@ -323,7 +337,14 @@ void InvokeCalliStub(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     memcpy(actualCallStub, stubHeaderTemplate, templateSize);
     CallStubHeader *pHeader = (CallStubHeader*)actualCallStub;
     pHeader->SetTarget(ftn); // The method to call
-    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
+
+    PTR_Object continuationUnused = NULL;
+    if (!pHeader->HasContinuationRet)
+    {
+        pContinuationRet = &continuationUnused;
+    }
+
+    pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
 }
 
 void* GetCookieForCalliSig(MetaSig metaSig)
@@ -2612,7 +2633,7 @@ MAIN_LOOP:
                             goto CALL_INTERP_METHOD;
                         }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
-                        InvokeCalliStub(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress);
+                        InvokeCalliStub(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr());
                     }
 
                     break;
@@ -2765,7 +2786,7 @@ MAIN_LOOP:
                     // Save current execution state for when we return from called method
                     pFrame->ip = ip;
 
-                    InvokeDelegateInvokeMethod(targetMethod, callArgsAddress, returnValueAddress, targetAddress);
+                    InvokeDelegateInvokeMethod(targetMethod, callArgsAddress, returnValueAddress, targetAddress, pInterpreterFrame->GetContinuationPtr());
                     break;
                 }
 
@@ -2825,7 +2846,7 @@ CALL_INTERP_METHOD:
                         {
                             // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                             // Interpreter-FIXME: Implement tailcall via helpers, see https://github.com/dotnet/runtime/blob/main/docs/design/features/tailcalls-with-helpers.md
-                            InvokeManagedMethod(targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL);
+                            InvokeManagedMethod(targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL, pInterpreterFrame->GetContinuationPtr());
                             break;
                         }
                     }

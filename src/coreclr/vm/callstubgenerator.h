@@ -13,12 +13,13 @@ class AllocMemTracker;
 // stack, invokes the target method, and translates the return value back to the interpreter stack.
 struct CallStubHeader
 {
-    typedef void (*InvokeFunctionPtr)(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+    typedef void (*InvokeFunctionPtr)(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize, PTR_PTR_Object pContinuationRet);
 
     // Number of routines in the Routines array. The last one is the target method to call.
     int NumRoutines;
     // Total stack size used for the arguments.
     int TotalStackSize;
+    bool HasContinuationRet; // Indicates whether the stub supports returning a continuation
     // This is a pointer to a helper function that invokes the target method. There are several
     // versions of this function, depending on the return type of the target method.
     InvokeFunctionPtr Invoke;
