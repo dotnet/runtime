@@ -610,8 +610,8 @@ public:
                     BasicBlock*       transferBlock = nullptr;
 
                     // Note we can actually sink the control var store into pred if
-                    // pred has does not also have some other SCC header as a successor.
-                    // The assignment many end up partially dead, but likely avoiding a branch
+                    // pred does not also have some other SCC header as a successor.
+                    // The assignment may end up partially dead, but likely avoiding a branch
                     // is preferable; the assignment should be cheap.
                     //
                     // For now we just check if the pred has only this header as successor.
