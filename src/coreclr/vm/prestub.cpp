@@ -1468,18 +1468,6 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     // Emit the method body
     mdToken tokRawData = pCode->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
-    // Push the thisptr
-    // We need to skip over the MethodTable*
-    // The trick below will do that.
-    pCode->EmitLoadThis();
-    pCode->EmitLDFLDA(tokRawData);
-
-    // Push the rest of the arguments for x86
-    for (unsigned i = 0; i < msig.NumFixedArgs();i++)
-    {
-        pCode->EmitLDARG(i);
-    }
-
     if (pTargetMD->RequiresInstMethodTableArg())
     {
         // Push the hidden context param
@@ -1490,6 +1478,24 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
         pCode->EmitSUB();
         pCode->EmitLDIND_I();
         pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
+    }
+
+    if (msig.HasAsyncContinuation())
+    {
+        pCode->EmitLDNULL();
+        pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_ASYNC_CONTINUATION, 1, 0);
+    }
+
+    // Push the thisptr
+    // We need to skip over the MethodTable*
+    // The trick below will do that.
+    pCode->EmitLoadThis();
+    pCode->EmitLDFLDA(tokRawData);
+
+    // Push the rest of the arguments for x86
+    for (unsigned i = 0; i < msig.NumFixedArgs();i++)
+    {
+        pCode->EmitLDARG(i);
     }
 
     // Push the target address
@@ -1566,6 +1572,15 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     SigBuilder stubSigBuilder;
     MethodDesc::CreateDerivedTargetSig(msig, &stubSigBuilder);
 
+    pCode->EmitLDC((TADDR)pHiddenArg);
+    pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
+
+    if (msig.HasAsyncContinuation())
+    {
+        pCode->EmitLDNULL();
+        pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_ASYNC_CONTINUATION, 1, 0);
+    }
+
     // Emit the method body
     if (msig.HasThis())
     {
@@ -1577,9 +1592,6 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     {
         pCode->EmitLDARG(i);
     }
-
-    pCode->EmitLDC((TADDR)pHiddenArg);
-    pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
 
     // Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
