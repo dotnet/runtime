@@ -414,7 +414,6 @@ public:
             WasmSuccessorEnumerator successors(m_comp, block, /* useProfile */ true);
             for (BasicBlock* const succ : successors)
             {
-                unsigned const succNum = succ->bbPreorderNum;
                 JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
             }
         }
@@ -476,7 +475,6 @@ public:
                 WasmSuccessorEnumerator successors(m_comp, block, /* useProfile */ true);
                 for (BasicBlock* const succ : successors)
                 {
-                    unsigned const succNum = succ->bbPreorderNum;
                     JITDUMP(FMT_BB " -> " FMT_BB ";\n", block->bbNum, succ->bbNum);
                 }
             }
@@ -526,7 +524,7 @@ public:
     }
 
     //-----------------------------------------------------------------------------
-    // TransformViaSwichDispatch: modify Scc into a reducible loop
+    // TransformViaSwitchDispatch: modify Scc into a reducible loop
     //
     // Returns:
     //   true if any flow graph modifcations were done
@@ -534,15 +532,18 @@ public:
     // Notes:
     //
     //   A multi-entry Scc is modified as follows:
-    //   * each Scc header H is given an integer index H_i
-    //   * a new BBJ_SWITCH header block J is created
-    //   * a new control local K is allocated.
-    //   * each flow edge that targets one of the H is split
-    //   * In the split block K is assigned the value i
-    //   * Flow from the split block is modified to flow to J
-    //   * The switch in J transfers control to the headers H based on K
+    //   * each Scc header block (header) is given an integer index (header number)
+    //   * a new BBJ_SWITCH header block (dispatcher) is created
+    //   * a new control local (controlVarNum) is allocated.
+    //   * each flow edge that targets one of the headers is split(**)
+    //   * In the split block the control var is assigned the target header's number
+    //   * Flow from the split block is modified to flow to the dispatcher
+    //   * The switch in the dispatcher transfers control to the headers based on on the control var value.
     //
-    //   Optionally: if the source of an edge to a header is dominated by that header,
+    //   ** if we have an edge pred->header such that pred has no other successors
+    //      we hoist the assingnment into pred.
+    //
+    //   TODO: if the source of an edge to a header is dominated by that header,
     //   the edge can be left as is. (requires dominators)
     //
     bool TransformViaSwitchDispatch()
@@ -738,7 +739,7 @@ void FgWasm::WasmFindSccs(ArrayStack<Scc*>& sccs)
 //   subset  - bv describing the subgraph
 //   sccs    - [out] collection of Sccs found in this subgraph
 //   postorder - array of BasicBlock* in postorder
-//   postorderCount - size of hte array
+//   postorderCount - size of the array
 //
 // Notes:
 //   Uses Kosaraju's algorithm: we walk the reverse graph starting
@@ -749,7 +750,9 @@ void FgWasm::WasmFindSccsCore(BitVec& subset, ArrayStack<Scc*>& sccs, BasicBlock
     SccMap              map(Comp()->getAllocator(CMK_WasmSccTransform));
     BitVecTraits* const traits = GetTraits();
 
-    // proper rdfs? bv iter...?
+    // TODO: if we had a BV iter that worked from highest set
+    // bit to lowest, we could iterate the subset directly
+    // and avoid searching here.
     //
     for (unsigned i = 0; i < postorderCount; i++)
     {
@@ -787,6 +790,8 @@ void FgWasm::WasmFindSccsCore(BitVec& subset, ArrayStack<Scc*>& sccs, BasicBlock
 // Notes:
 //   Most blocks won't be in an Scc. So initially we map a block to a null entry in the map.
 //   If we then get a second block in that Scc, we allocate an Scc instance and add both blocks.
+//
+//   This does a reverse-graph walk. Consider expressing this non-recursively.
 //
 void FgWasm::AssignBlockToScc(BasicBlock* block, BasicBlock* root, BitVec& subset, ArrayStack<Scc*>& sccs, SccMap& map)
 {
@@ -844,7 +849,7 @@ void FgWasm::AssignBlockToScc(BasicBlock* block, BasicBlock* root, BitVec& subse
             sccs.Push(scc);
         }
 
-        JITDUMP("Adding " FMT_BB " to SCC with root " FMT_BB "\n", root->bbNum, block->bbNum);
+        JITDUMP("Adding " FMT_BB " to SCC with root " FMT_BB "\n", block->bbNum, root->bbNum);
         scc->Add(block);
     }
 
@@ -1130,6 +1135,9 @@ public:
 //
 // We then can use the properly ordered and nested intervals to track the control stack depth as we
 // traverse the blocks in loop-aware RPO order, and emit the proper Wasm control flow.
+//
+// In what follows we co-opt the bbPreorderNum slot of each block to instead hold the index of the
+// block in the loop-aware RPO.
 //
 // Still TODO
 // * Blocks only reachable via EH
