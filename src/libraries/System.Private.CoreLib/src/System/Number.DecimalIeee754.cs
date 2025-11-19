@@ -8,6 +8,28 @@ namespace System
 {
     internal static partial class Number
     {
+        /// <summary>
+        /// Encodes the given IEEE 754 decimal components into their binary IEEE 754
+        /// decimal interchange format (BID), handles rounding/infinitive cases, producing the final <typeparamref name="TValue"/> bit pattern.
+        /// </summary>
+        /// <param name="signed">
+        /// The sign of the value. <c>true</c> indicates a negative number; otherwise, <c>false</c>.
+        /// </param>
+        /// <param name="significand">
+        /// The fully decoded significand (coefficient):
+        /// - This is the complete integer coefficient with no packed BID encoding.
+        /// - It includes all significant digits (non-trailing).
+        /// - It has not been scaled by the exponent.
+        /// </param>
+        /// <param name="exponent">
+        /// The <b>unbiased</b> exponent (actual exponent as defined by IEEE 754).
+        /// This value has already been adjusted by subtracting the format's exponent bias,
+        /// and will be re-biased internally when constructing the BID bit pattern.
+        /// </param>
+        /// <returns>
+        /// The 32-bit or 64-bit or 128-bit IEEE 754 decimal BID encoding (depending on <typeparamref name="TValue"/>),
+        /// containing the sign bit, combination field, biased exponent, and coefficient continuation bits.
+        /// </returns>
         internal static TValue ConstructorToDecimalIeee754Bits<TDecimal, TValue>(bool signed, TValue significand, int exponent)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
@@ -22,7 +44,7 @@ namespace System
                 return ConstructorToDecimalIeee754BitsRounding(signed, significand, exponent);
             }
 
-            return DecimalIeee754BinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
 
             // This method adjusts the significand and exponent to ensure they fall within valid bounds.
             // It handles underflow and overflow of the exponent by trimming or padding digits accordingly,
@@ -80,7 +102,7 @@ namespace System
                     }
                 }
 
-                return DecimalIeee754BinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
+                return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(signed, significand, exponent);
             }
 
             static TValue RemoveDigitsAndRound(TValue significand, int numberDigitsRemove)
@@ -260,7 +282,7 @@ namespace System
                     {
                         int numberDigitsRemain = number.DigitsCount - numberDigitsRemove;
                         DecimalIeee754Rounding<TDecimal, TValue>(ref number, numberDigitsRemain, out significand, out exponent);
-                        return DecimalIeee754BinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
+                        return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
                     }
                     else
                     {
@@ -270,11 +292,11 @@ namespace System
 
                 significand = TDecimal.NumberToSignificand(ref number, number.DigitsCount);
             }
-            return DecimalIeee754BinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
+            return DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(number.IsNegative, significand, exponent);
         }
 
         /// <summary>
-        /// Encodes the given IEEE 754 decimal components into their binary IEEE 754
+        /// Encodes the given IEEE 754 decimal components into their finite number binary IEEE 754
         /// decimal interchange format (BID), producing the final <typeparamref name="TValue"/> bit pattern.
         /// </summary>
         /// <param name="signed">
@@ -295,7 +317,7 @@ namespace System
         /// The 32-bit or 64-bit or 128-bit IEEE 754 decimal BID encoding (depending on <typeparamref name="TValue"/>),
         /// containing the sign bit, combination field, biased exponent, and coefficient continuation bits.
         /// </returns>
-        private static TValue DecimalIeee754BinaryEncoding<TDecimal, TValue>(bool signed, TValue significand, int exponent)
+        private static TValue DecimalIeee754FiniteNumberBinaryEncoding<TDecimal, TValue>(bool signed, TValue significand, int exponent)
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
