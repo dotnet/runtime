@@ -6869,6 +6869,22 @@ struct GenTreeVecCon : public GenTree
                 break;
             }
 
+            case TYP_HALF:
+            {
+                if (arg->IsCnsFltOrDbl())
+                {
+                    simdVal.f16[argIdx] = static_cast<uint16_t>(arg->AsDblCon()->DconValue());
+                    return true;
+                }
+                else
+                {
+                    // We expect the constant to have been already zeroed
+                    // We check against the i16, rather than f16, to account for -0.0
+                    assert(simdVal.i16[argIdx] == 0);
+                }
+                break;
+            }
+
             case TYP_FLOAT:
             {
                 if (arg->IsCnsFltOrDbl())

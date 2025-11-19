@@ -1850,7 +1850,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
     regNumber      targetReg   = node->GetRegNum();
     var_types      baseType    = node->GetSimdBaseType();
 
-    assert((baseType >= TYP_BYTE) && (baseType <= TYP_DOUBLE));
+    assert((baseType >= TYP_BYTE) && (baseType <= TYP_HALF));
 
     GenTree* op1 = (node->GetOperandCount() >= 1) ? node->Op(1) : nullptr;
     GenTree* op2 = (node->GetOperandCount() >= 2) ? node->Op(2) : nullptr;
@@ -3733,17 +3733,6 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             }
 
             genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, op1Reg, op2Reg, op3, instOptions);
-            break;
-        }
-
-        case NI_AVX10v1_ConvertFloatToHalf:
-        case NI_AVX10v1_ConvertHalfToFloat:
-        {
-            assert(baseType == TYP_HALF || baseType == TYP_FLOAT);
-            emitAttr attr = emitTypeSize(targetType);
-
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
-            genHWIntrinsic_R_R_RM(node, ins, attr, instOptions);
             break;
         }
 
