@@ -3682,7 +3682,7 @@ bool ObjectAllocator::CloneOverlaps(CloneInfo* info)
 }
 
 //------------------------------------------------------------------------------
-// BlockIsCloneOrWasCloned: check if this block is a clone or was cloned for as 
+// BlockIsCloneOrWasCloned: check if this block is a clone or was cloned as 
 //    part of an conditional escape optimization
 //
 // Arguments:
@@ -3699,7 +3699,7 @@ bool ObjectAllocator::BlockIsCloneOrWasCloned(BasicBlock* block)
 {
     if (block->bbID >= m_initialMaxBlockID)
     {
-        JITDUMP("Block " FMT_BB " was cloned as part of conditional escape processing\n ", block->bbNum);
+        JITDUMP("Block " FMT_BB " was cloned as part of conditional escape processing\n", block->bbNum);
         return true;
     }
 
@@ -3724,7 +3724,7 @@ bool ObjectAllocator::BlockIsCloneOrWasCloned(BasicBlock* block)
 
         if (BitVecOps::IsMember(&traits, c->m_blocks, block->bbID))
         {
-            JITDUMP("Block " FMT_BB " was cloned as part of conditional escape processing\n ", block->bbNum);
+            JITDUMP("Block " FMT_BB " was cloned as part of conditional escape processing\n", block->bbNum);
             return true;
         }
     }

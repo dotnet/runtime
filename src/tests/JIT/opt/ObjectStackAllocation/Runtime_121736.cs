@@ -31,20 +31,20 @@ public class Runtime_121736
 
 public enum TestEnum
 {
-	One
+    One
 }
 
 public class Fake
 {
-	private readonly TestEnum src;
+    private readonly TestEnum src;
 
-	public Fake(TestEnum t)
-	{
-		src = t;
-	}
+    public Fake(TestEnum t)
+    {
+        src = t;
+    }
 
-	public object GetSourceItem()
-	{
-		return src;
-	}
+    public object GetSourceItem()
+    {
+        return src;
+    }
 }
