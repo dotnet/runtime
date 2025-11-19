@@ -134,7 +134,7 @@ public:
         return m_comp;
     }
 
-    unsigned GetSccNum()
+    unsigned GetNextSccNum()
     {
         return m_sccNum++;
     }

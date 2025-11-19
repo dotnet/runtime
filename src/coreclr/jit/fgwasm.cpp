@@ -223,7 +223,7 @@ public:
         , m_enclosingTryIndex(0)
         , m_enclosingHndIndex(0)
         , m_entryWeight(0)
-        , m_num(fgWasm->GetSccNum())
+        , m_num(fgWasm->GetNextSccNum())
     {
         m_blocks  = BitVecOps::MakeEmpty(m_traits);
         m_entries = BitVecOps::MakeEmpty(m_traits);
@@ -525,9 +525,6 @@ public:
 
     //-----------------------------------------------------------------------------
     // TransformViaSwitchDispatch: modify Scc into a reducible loop
-    //
-    // Returns:
-    //   true if any flow graph modifcations were done
     //
     // Notes:
     //
