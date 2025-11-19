@@ -422,8 +422,12 @@ namespace System
             DecodedDecimalIeee754<TValue> unpackDecimal = value.Unpack();
             number.IsNegative = unpackDecimal.Signed;
 
+            if (unpackDecimal.Significand == TValue.Zero)
+            {
+                return;
+            }
+
             string significand = TDecimal.ToDecStr(unpackDecimal.Significand);
-            int numberDigitsSignificand = significand.Length;
 
             for (int i = 0; i < significand.Length; i++)
             {
@@ -443,7 +447,7 @@ namespace System
             }
             else
             {
-                number.DigitsCount = numberDigitsSignificand;
+                number.DigitsCount = significand.Length;
             }
 
             number.Digits[number.DigitsCount] = (byte)'\0';

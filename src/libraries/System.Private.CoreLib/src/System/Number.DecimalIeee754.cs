@@ -164,14 +164,14 @@ namespace System
             {
                 if (!isOtherNegative)
                 {
-                    return -1;
+                    return currentDecimalBits == TDecimal.NegativeZero && otherDecimalBits == TDecimal.Zero ? 0 : -1;
                 }
                 current = UnpackDecimalIeee754<TDecimal, TValue>(otherDecimalBits);
                 other = UnpackDecimalIeee754<TDecimal, TValue>(currentDecimalBits);
             }
             else if (isOtherNegative)
             {
-                return 1;
+                return currentDecimalBits == TDecimal.Zero && otherDecimalBits == TDecimal.NegativeZero ? 0 : 1;
             }
             else
             {
