@@ -11,7 +11,7 @@
 //     Node enum
 //     |
 //     |                , GenTree struct flavor
-//     |                  |                  
+//     |                  |
 //     |                  |                  ,commutative
 //     |                  |                   |
 //     |                  |                   |,illegal as VN func
