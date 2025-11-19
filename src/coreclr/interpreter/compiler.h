@@ -544,6 +544,7 @@ class InterpCompiler
     friend class InterpIAllocator;
     friend class InterpGcSlotAllocator;
     friend class InterpILOpcodePeeps;
+    friend class InterpAsyncCallPeeps;
 
 private:
     CORINFO_METHOD_HANDLE m_methodHnd;
@@ -814,6 +815,8 @@ private:
     void ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type);
 
     // Opcode peeps
+    bool    FindAndApplyPeep(OpcodePeep* Peeps[]);
+
     bool    IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
     void    ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
@@ -826,6 +829,21 @@ private:
     bool    IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
     void    ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
+    enum class ContinuationContextHandling : uint8_t
+    {
+        ContinueOnCapturedContext,
+        ContinueOnThreadPool,
+        None
+    };
+    bool    IsRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallConfigureAwaitTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallConfigureAwaitValueTask(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+    bool    IsRuntimeAsyncCallConfigureAwaitValueTaskExactStLoc(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
+
+    void    ApplyRuntimeAsyncCall(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo) {}
+    ContinuationContextHandling m_currentContinuationContextHandling = ContinuationContextHandling::None;
+    CORINFO_RESOLVED_TOKEN m_resolvedAsyncCallToken;
+
     // Code emit
     void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);
     void    EmitLoadVar(int var);
@@ -835,7 +853,7 @@ private:
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
     void    EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool readonly, bool tailcall, bool newObj, bool isCalli);
-    void    EmitSuspend(const CORINFO_CALL_INFO &callInfo);
+    void    EmitSuspend(const CORINFO_CALL_INFO &callInfo, ContinuationContextHandling ContinuationContextHandling, InterpBasicBlock* pBB);
     void    EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig);
     bool    EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCall, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);

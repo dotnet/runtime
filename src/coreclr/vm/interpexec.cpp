@@ -3784,6 +3784,7 @@ do                                                                      \
                     THREADBASEREF threadBase = ((THREADBASEREF)GetThread()->GetExposedObject());
                     continuation = LOCAL_VAR(ip[2], CONTINUATIONREF);
                     SetObjectReference((OBJECTREF *)((uint8_t*)(OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext), threadBase->GetExecutionContext());
+                    continuation->SetFlags(pAsyncSuspendData->flags);
 
                     if (pAsyncSuspendData->flags & CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT)
                     {
@@ -3881,7 +3882,6 @@ do                                                                      \
                     
                     // copy locals that need to move to the continuation object
                     size_t continuationOffset = OFFSETOF__CORINFO_Continuation__data;
-                    continuation->SetFlags(pAsyncSuspendData->flags);
                     uint8_t *pContinuationDataStart = continuation->GetResultStorage();
                     uint8_t *pContinuationData = pContinuationDataStart;
                     size_t bytesTotal = 0;
