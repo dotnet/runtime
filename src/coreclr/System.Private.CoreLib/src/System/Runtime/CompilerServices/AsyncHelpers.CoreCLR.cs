@@ -556,11 +556,15 @@ namespace System.Runtime.CompilerServices
                 INotifyCompletion? notifier = state.Notifier;
                 IValueTaskSourceNotifier? vtsNotifier = state.ValueTaskSourceNotifier;
                 Task? taskNotifier = state.TaskNotifier;
+                ExecutionContext? execContext = state.ExecutionContext;
+                SynchronizationContext? syncContext = state.SynchronizationContext;
 
                 state.CriticalNotifier = null;
                 state.Notifier = null;
                 state.ValueTaskSourceNotifier = null;
                 state.TaskNotifier = null;
+                state.ExecutionContext = null;
+                state.SynchronizationContext = null;
 
                 Continuation sentinelContinuation = state.SentinelContinuation!;
                 Continuation headContinuation = sentinelContinuation.Next!;
@@ -580,7 +584,7 @@ namespace System.Runtime.CompilerServices
                 {
                     if (critNotifier != null)
                     {
-                        RestoreContexts(false, state.ExecutionContext, state.SynchronizationContext);
+                        RestoreContexts(false, execContext, syncContext);
                         critNotifier.UnsafeOnCompleted(TOps.GetContinuationAction(task));
                     }
                     else if (taskNotifier != null)
@@ -595,7 +599,7 @@ namespace System.Runtime.CompilerServices
                     }
                     else if (vtsNotifier != null)
                     {
-                        RestoreContexts(false, state.ExecutionContext, state.SynchronizationContext);
+                        RestoreContexts(false, execContext, syncContext);
 
                         // The awaiter must inform the ValueTaskSource source on whether the continuation
                         // wants to run on a context, although the source may decide to ignore the suggestion.
@@ -626,8 +630,7 @@ namespace System.Runtime.CompilerServices
                     {
                         Debug.Assert(notifier != null);
 
-                        RestoreContexts(false, state.ExecutionContext, state.SynchronizationContext);
-
+                        RestoreContexts(false, execContext, syncContext);
                         notifier.OnCompleted(TOps.GetContinuationAction(task));
                     }
                 }
