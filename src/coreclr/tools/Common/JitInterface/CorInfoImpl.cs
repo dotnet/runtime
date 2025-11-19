@@ -4121,12 +4121,18 @@ namespace Internal.JitInterface
                 }
                 case TargetArchitecture.RiscV64:
                 {
-                    const ushort IMAGE_REL_RISCV64_PC = 3;
+                    const ushort IMAGE_REL_RISCV64_CALL_PLT = 3;
+                    const ushort IMAGE_REL_RISCV64_PCREL_I = 4;
+                    const ushort IMAGE_REL_RISCV64_PCREL_S = 5;
 
                     switch (fRelocType)
                     {
-                        case IMAGE_REL_RISCV64_PC:
-                            return RelocType.IMAGE_REL_BASED_RISCV64_PC;
+                        case IMAGE_REL_RISCV64_CALL_PLT:
+                            return RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT;
+                        case IMAGE_REL_RISCV64_PCREL_I:
+                            return RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I;
+                        case IMAGE_REL_RISCV64_PCREL_S:
+                            return RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S;
                         default:
                             Debug.Fail("Invalid RelocType: " + fRelocType);
                             return 0;

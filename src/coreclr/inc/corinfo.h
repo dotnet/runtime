@@ -3423,7 +3423,9 @@ public:
 //
 // RISCV64 relocation types
 //
-#define IMAGE_REL_RISCV64_PC            0x0003
+#define IMAGE_REL_RISCV64_CALL_PLT      0x0003  // auipc + jalr
+#define IMAGE_REL_RISCV64_PCREL_I       0x0004  // auipc + I-type
+#define IMAGE_REL_RISCV64_PCREL_S       0x0005  // auipc + S-type
 
 /**********************************************************************************/
 #ifdef TARGET_64BIT

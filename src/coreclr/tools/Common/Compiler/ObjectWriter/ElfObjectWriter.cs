@@ -557,7 +557,9 @@ namespace ILCompiler.ObjectWriter
                         IMAGE_REL_BASED_DIR64 => R_RISCV_64,
                         IMAGE_REL_BASED_HIGHLOW => R_RISCV_32,
                         IMAGE_REL_BASED_RELPTR32 => R_RISCV_32_PCREL,
-                        IMAGE_REL_BASED_RISCV64_PC => R_RISCV_CALL_PLT,
+                        IMAGE_REL_BASED_RISCV64_CALL_PLT => R_RISCV_CALL_PLT,
+                        IMAGE_REL_BASED_RISCV64_PCREL_I => R_RISCV_PCREL_HI20,
+                        IMAGE_REL_BASED_RISCV64_PCREL_S => R_RISCV_PCREL_HI20,
                         _ => throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type)
                     };
 
@@ -565,6 +567,18 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
                     BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
                     relocationStream.Write(relocationEntry);
+
+                    // TODO: This is wrong, we need to point to a label (position of previous instruction)
+                    // if (symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PCREL_I or IMAGE_REL_BASED_RISCV64_PCREL_S)
+                    // {
+                    //     type = symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PCREL_I
+                    //         ? R_RISCV_PCREL_LO12_I
+                    //         : R_RISCV_PCREL_LO12_S;
+                    //     BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)relocationStream.Position);
+                    //     BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
+                    //     BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
+                    //     relocationStream.Write(relocationEntry);
+                    // }
                 }
             }
         }

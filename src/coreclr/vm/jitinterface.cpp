@@ -12041,7 +12041,9 @@ void CEEJitInfo::recordRelocation(void * location,
 
 
 #ifdef TARGET_RISCV64
-    case IMAGE_REL_RISCV64_PC:
+    case IMAGE_REL_RISCV64_CALL_PLT:
+    case IMAGE_REL_RISCV64_PCREL_I:
+    case IMAGE_REL_RISCV64_PCREL_S:
         {
             _ASSERTE(addlDelta == 0);
 
@@ -12063,13 +12065,7 @@ void CEEJitInfo::recordRelocation(void * location,
 
             // Target is out of 32-bit range
             // If we're fixing up a jump, try jumping through a stub
-            enum
-            {
-                OpcodeJalr = 0x67,
-                OpcodeMask = 0x7F,
-            };
-            bool isJalr = ((((UINT32 *)locationRW)[1] & OpcodeMask) == OpcodeJalr);
-            if (isJalr && !m_fJumpStubOverflow)
+            if ((fRelocType == IMAGE_REL_RISCV64_CALL_PLT) && !m_fJumpStubOverflow)
             {
                 BYTE* loAddr = (BYTE*)location - (1ll << 31) - (1ll << 11);
                 BYTE* hiAddr = (BYTE*)location + (1ll << 31) - (1ll << 11) - 1;

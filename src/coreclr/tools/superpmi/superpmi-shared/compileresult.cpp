@@ -913,7 +913,9 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
             switch (relocType)
             {
-                case IMAGE_REL_RISCV64_PC:
+                case IMAGE_REL_RISCV64_CALL_PLT:
+                case IMAGE_REL_RISCV64_PCREL_I:
+                case IMAGE_REL_RISCV64_PCREL_S:
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
