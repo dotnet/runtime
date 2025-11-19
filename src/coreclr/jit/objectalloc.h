@@ -288,7 +288,7 @@ private:
     void CloneAndSpecialize(CloneInfo* info);
     void CloneAndSpecialize();
 
-    bool BlockWasCloned(BasicBlock* block);
+    bool BlockIsCloneOrWasCloned(BasicBlock* block);
 
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 

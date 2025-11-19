@@ -1369,15 +1369,15 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
         return false;
     }
 
-    // Don't stack allocate allocation sites within cloned regions. These sites now violate
+    // Don't stack allocate at sites that were cloned or are clones. These sites now violate
     // the single assignment assumption used by the escape analysis.
     //
     // This is something we can fix by keeping track of which allocation sites are clones
     // of other sites, and just allocating one var to cover them all.
     //
-    if (BlockWasCloned(candidate.m_block))
+    if (BlockIsCloneOrWasCloned(candidate.m_block))
     {
-        candidate.m_onHeapReason = "[in cloned region]";
+        candidate.m_onHeapReason = "[allocation was cloned]";
         return false;
     }
 
@@ -3682,7 +3682,8 @@ bool ObjectAllocator::CloneOverlaps(CloneInfo* info)
 }
 
 //------------------------------------------------------------------------------
-// BlockWasCloned: check if this block was cloned for as part of an conditional escape optimization
+// BlockIsCloneOrWasCloned: check if this block is a clone or was cloned for as 
+//    part of an conditional escape optimization
 //
 // Arguments:
 //   block -- block in question
@@ -3690,7 +3691,11 @@ bool ObjectAllocator::CloneOverlaps(CloneInfo* info)
 // Returns:
 //   true if block was cloned
 //
-bool ObjectAllocator::BlockWasCloned(BasicBlock* block)
+// Notes:
+//   Such blocks are interesting when they contain ALLCOBJs that we can prove
+//   won't escape.
+//
+bool ObjectAllocator::BlockIsCloneOrWasCloned(BasicBlock* block)
 {
     if (block->bbID >= m_initialMaxBlockID)
     {
