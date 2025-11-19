@@ -12,9 +12,20 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static string BuildRID { get; }
         public static string Configuration { get; }
 
+        /// <summary>
+        /// The version of the Microsoft.NETCore.App packages.
+        /// </summary>
         public static string MicrosoftNETCoreAppVersion { get; }
-        public static string ProductVersionNoPrerelease => 
-            MicrosoftNETCoreAppVersion.Split('-')[0];
+
+        /// <summary>
+        /// The version of the Microsoft.NETCore.App packages without any prerelease suffix.
+        /// </summary>
+        public static string MicrosoftNETCoreAppVersionNoPrerelease {get;}
+
+        /// <summary>
+        /// The version of the framework exposed by RuntimeInformation.FrameworkDescription.
+        /// </summary>
+        public static string FrameworkVersion { get; }
         public static string Tfm { get; }
 
         public static string TestAssetsOutput { get; }
@@ -42,6 +53,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             Configuration = GetTestContextVariable("BUILD_CONFIGURATION");
 
             MicrosoftNETCoreAppVersion = GetTestContextVariable("MNA_VERSION");
+            MicrosoftNETCoreAppVersionNoPrerelease =  MicrosoftNETCoreAppVersion.Split('-')[0];
+            FrameworkVersion = GetTestContextVariable("MNA_FXVERSION");
             Tfm = GetTestContextVariable("MNA_TFM");
 
             TestAssetsOutput = ResolveTestContextPath(GetTestContextVariable("TEST_ASSETS_OUTPUT"));
