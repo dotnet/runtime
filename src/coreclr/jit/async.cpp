@@ -1364,7 +1364,7 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
                         DISPTREERANGE(LIR::AsRange(block), store);
                     }
 
-                    // Remove the store that was created by ReplaceWithLclVar above
+                    // Remove the local and store that were created by ReplaceWithLclVar above
                     assert(use.Def()->OperIs(GT_LCL_VAR));
                     LIR::AsRange(block).Remove(use.Def());
                     LIR::AsRange(block).Remove(use.User());
