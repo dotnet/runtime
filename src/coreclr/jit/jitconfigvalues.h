@@ -447,9 +447,9 @@ RELEASE_CONFIG_INTEGER(EnableApxZU,                 "EnableApxZU",              
 RELEASE_CONFIG_INTEGER(JitDisableSimdVN, "JitDisableSimdVN", 0)
 #endif
 
-// Default 0, enable the CSE of Constants, including nearby offsets. (only for ARM/ARM64)
+// Default 0, enable the CSE of Constants, including nearby offsets. (only for ARM/ARM64/RISCV64)
 // If 1, disable all the CSE of Constants
-// If 2, enable the CSE of Constants but don't combine with nearby offsets. (only for ARM/ARM64)
+// If 2, enable the CSE of Constants but don't combine with nearby offsets. (only for ARM/ARM64/RISCV64)
 // If 3, enable the CSE of Constants including nearby offsets. (all platforms)
 // If 4, enable the CSE of Constants but don't combine with nearby offsets. (all platforms)
 //
