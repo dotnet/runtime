@@ -1009,8 +1009,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (policyHandle != null)
-                        policyHandle.Dispose();
+                    policyHandle?.Dispose();
+                        
                     if (impersonated)
                         Utils.Revert();
                 }
