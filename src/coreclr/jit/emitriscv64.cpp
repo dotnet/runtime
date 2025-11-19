@@ -1461,7 +1461,6 @@ void emitter::emitIns_Jump(instruction ins, BasicBlock* dst, regNumber reg1, reg
 
 static inline constexpr unsigned WordMask(uint8_t bits);
 
-// namu
 int emitter::emitLoadImmediateLarge(emitAttr size, regNumber reg, ssize_t imm, bool doEmit = true)
 {
     /* The following algorithm works based on the following equation:
@@ -1538,7 +1537,6 @@ int emitter::emitLoadImmediateLarge(emitAttr size, regNumber reg, ssize_t imm, b
     int insCountLimit = prefMaxInsCount;
     // If we are currently generating prolog / epilog, we are currently not inside a method block, therefore, we should
     // not use the emitDataConst + emitIns_R_C combination.
-
     if (emitComp->compGeneratingProlog || emitComp->compGeneratingEpilog)
     {
         insCountLimit = absMaxInsCount;
