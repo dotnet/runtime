@@ -1489,7 +1489,7 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
         pCode->EmitLDC(Object::GetOffsetOfFirstField());
         pCode->EmitSUB();
         pCode->EmitLDIND_I();
-        pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_ASYNC_CONTINUATION, 1, 0);
+        pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
     }
 
     // Push the target address
