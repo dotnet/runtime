@@ -2056,7 +2056,7 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
     return frames.interpMethodContextFrame.pRetVal;
 }
 
-void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff)
+void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp)
 {
     // Copy arguments to the stack
     if (argSize > 0)
@@ -2068,10 +2068,11 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
     }
 
     TransitionBlock dummy{};
+    dummy.m_ReturnAddress = (TADDR)callerIp;
     (void)ExecuteInterpretedMethod(&dummy, (TADDR)targetIp, retBuff);
 }
 
-extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret)
+extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp)
 {
     _ASSERTE(pMD != NULL);
 
@@ -2086,7 +2087,7 @@ extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* a
         (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
         targetIp = pMD->GetInterpreterCode();
     }
-    (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret);
+    (void)ExecuteInterpretedMethodWithArgs((TADDR)targetIp, args, argSize, ret, callerIp);
 }
 #endif // FEATURE_INTERPRETER
 
