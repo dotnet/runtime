@@ -264,7 +264,7 @@ public:
 
             for (BasicBlock* pred : block->PredBlocks())
             {
-                if (pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET))
+                if (pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_EHFAULTRET))
                 {
                     // Ignore EHCATCHRET preds (requires exceptional flow)
                     continue;
@@ -395,7 +395,7 @@ public:
             {
                 for (BasicBlock* pred : block->PredBlocks())
                 {
-                    if (pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET))
+                    if (pred->KindIs(BBJ_EHCATCHRET, BBJ_EHFILTERRET, BBJ_EHFAULTRET))
                     {
                         // Ignore EHCATCHRET preds (requires exceptional flow)
                         continue;
