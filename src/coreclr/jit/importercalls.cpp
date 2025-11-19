@@ -4428,26 +4428,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     assert(op1->TypeGet() == TYP_HALF);
                     assert(op2->TypeGet() == TYP_HALF);
 
-                    NamedIntrinsic intrinsic;
-                    switch (ni)
-                    {
-                        case NI_System_Half_op_Addition:
-                            intrinsic = NI_AVX10v1_Add;
-                            break;
-                        case NI_System_Half_op_Subtraction:
-                            intrinsic = NI_AVX10v1_Subtract;
-                            break;
-                        case NI_System_Half_op_Multiply:
-                            intrinsic = NI_AVX10v1_Multiply;
-                            break;
-                        case NI_System_Half_op_Division:
-                            intrinsic = NI_AVX10v1_Divide;
-                            break;
-                        default:
-                            unreached();
-                    }
+                    NamedIntrinsic opId = lookupHalfIntrinsic(ni);
+                    assert(opId != NI_Illegal);
 
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_HALF, op1, op2, intrinsic, TYP_HALF, 16);
+                    op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, TYP_HALF, 16);
+                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, opId, TYP_HALF, 16);
+                    retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                 }
 #endif
                 break;
@@ -4461,29 +4448,58 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree* op1 = impPopStack().val;
                     assert(op1->TypeGet() == TYP_FLOAT || op1->TypeGet() == TYP_HALF);
 
-                    GenTree* op2 = gtNewDconNodeF(0.0f);
+                    var_types convertFromType = op1->TypeGet();
+                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), convertFromType, 16);
 
-                    if (op1->TypeGet() == TYP_FLOAT)
+                    if (convertFromType == TYP_FLOAT)
                     {
-                        // todo-half: these intrinsics follow the same size (though it is unused) as
-                        // AVX512_ConvertToUInt32
 
-                        retNode =
-                            gtNewSimdHWIntrinsicNode(TYP_HALF, op2, op1, NI_AVX10v1_ConvertFloatToHalf, TYP_FLOAT, 16);
-                        break;
+                        op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, convertFromType, 16);
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_AVX10v1_ConvertScalarToVector128Half , convertFromType, 16);
+                        retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                     }
                     else if (op1->TypeGet() == TYP_HALF)
                     {
-                        // todo-half: these intrinsics follow the same size (though it is unused) as
-                        // AVX512_ConvertToUInt32
-                        retNode =
-                            gtNewSimdHWIntrinsicNode(TYP_FLOAT, op2, op1, NI_AVX10v1_ConvertHalfToFloat, TYP_HALF, 16);
-                        break;
+                        op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, convertFromType, 16);
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_AVX10v1_ConvertScalarToVector128Single , convertFromType, 16);
+                        retNode = gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
                     }
+
+                    break;
                 }
 #endif
                 break;
             }
+
+/*
+            case NI_System_Half_op_GreaterThan:
+            case NI_System_Half_op_GreaterThanOrEqual:
+            case NI_System_Half_op_LessThan:
+            case NI_System_Half_op_LessThanOrEqual:
+            case NI_System_Half_op_Equality:
+            case NI_System_Half_op_Inequality:
+            {
+#ifdef TARGET_XARCH
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    NamedIntrinsic id = lookupHalfComparisonIntrinsic(ni);
+                    assert(id != NI_Illegal);
+
+                    GenTree* op2 = impPopStack().val;
+                    GenTree* op1 = impPopStack().val;
+
+                    assert(op1->TypeGet() == TYP_HALF);
+                    assert(op2->TypeGet() == TYP_HALF);
+
+                    int ival = lookupIval(id);    
+
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, id, TYP_HALF, 16);
+                    break;
+                }
+#endif
+                break;
+            }
+*/
 
             case NI_System_Math_Abs:
             case NI_System_Math_Acos:
@@ -10467,26 +10483,63 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 {
                     if (strcmp(className, "Half") == 0)
                     {
-                        if (strcmp(methodName, "op_Explicit") == 0)
-                        {
-                            result = NI_System_Half_op_Explicit;
-                        }
-                        else if (strcmp(methodName, "op_Addition") == 0)
+                        if (strcmp(methodName, "op_Addition") == 0)
                         {
                             result = NI_System_Half_op_Addition;
                         }
-                        else if (strcmp(methodName, "op_Subtraction") == 0)
+                        else if (strcmp(methodName, "op_Decrement") == 0)
                         {
-                            result = NI_System_Half_op_Subtraction;
-                        }
-                        else if (strcmp(methodName, "op_Multiply") == 0)
-                        {
-                            result = NI_System_Half_op_Multiply;
+                            result = NI_System_Half_op_Decrement;
                         }
                         else if (strcmp(methodName, "op_Division") == 0)
                         {
                             result = NI_System_Half_op_Division;
                         }
+                        else if (strcmp(methodName, "op_Equality") == 0)
+                        {
+                            result = NI_System_Half_op_Equality;
+                        }
+                        else if (strcmp(methodName, "op_Explicit") == 0)
+                        {
+                            result = NI_System_Half_op_Explicit;
+                        }
+                        else if (strcmp(methodName, "op_GreaterThan") == 0)
+                        {
+                            result = NI_System_Half_op_GreaterThan;
+                        }
+                        else if (strcmp(methodName, "op_GreaterThanOrEqual") == 0)
+                        {
+                            result = NI_System_Half_op_GreaterThanOrEqual;
+                        }
+                        else if (strcmp(methodName, "op_Increment") == 0)
+                        {
+                            result = NI_System_Half_op_Increment;
+                        }
+                        else if (strcmp(methodName, "op_LessThan") == 0)
+                        {
+                            result = NI_System_Half_op_LessThan;
+                        }
+                        else if (strcmp(methodName, "op_LessThanOrEqual") == 0)
+                        {
+                            result = NI_System_Half_op_LessThanOrEqual;
+                        }
+                        else if (strcmp(methodName, "op_Multiply") == 0)
+                        {
+                            result = NI_System_Half_op_Multiply;
+                        }
+                        else if (strcmp(methodName, "op_Subtraction") == 0)
+                        {
+                            result = NI_System_Half_op_Subtraction;
+                        }
+                        else if (strcmp(methodName, "op_UnaryNegation") == 0)
+                        {
+                            result = NI_System_Half_op_UnaryNegation;
+                        }
+                        else if (strcmp(methodName, "op_UnaryPlus") == 0)
+                        {
+                            result = NI_System_Half_op_UnaryPlus;
+                        }
+
                         break;
                     }
                     break;
@@ -12031,4 +12084,41 @@ GenTree* Compiler::impKeepAliveIntrinsic(GenTree* objToKeepAlive)
     }
 
     return gtNewKeepAliveNode(objToKeepAlive);
+}
+
+NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
+{
+#if defined(TARGET_XARCH)
+    assert(compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
+
+    switch(ni)
+    {
+        case NI_System_Half_op_Addition:
+            return NI_AVX10v1_AddScalar;
+        case NI_System_Half_op_Subtraction:
+            return NI_AVX10v1_SubtractScalar;
+        case NI_System_Half_op_Multiply:
+            return NI_AVX10v1_MultiplyScalar;
+        case NI_System_Half_op_Division:
+            return NI_AVX10v1_DivideScalar;
+
+        /*
+        case NI_System_Half_op_GreaterThan:
+            return NI_AVX10v1_CompareScalarGreaterThan;
+        case NI_System_Half_op_GreaterThanOrEqual:
+            return NI_AVX10v1_CompareScalarGreaterThanOrEqual;
+        case NI_System_Half_op_LessThan:
+            return NI_AVX10v1_CompareScalarLessThan;
+        case NI_System_Half_op_LessThanOrEqual:
+            return NI_AVX10v1_CompareScalarLessThanOrEqual;
+        case NI_System_Half_op_Equality:
+            return NI_AVX10v1_CompareScalarEqual;
+        case NI_System_Half_op_Inequality:
+            return NI_AVX10v1_CompareScalarNotEqual;
+        */
+        default:
+            break;
+    }
+#endif
+    return NI_Illegal;
 }

@@ -167,11 +167,33 @@ enum NamedIntrinsic : unsigned short
     NI_System_Numerics_Intrinsic,
     NI_System_Runtime_Intrinsics_Intrinsic,
 
+    
+    NI_System_Half_Abs,
+    NI_System_Half_FusedMultiplyAdd,
+    NI_System_Half_Max,
+    NI_System_Half_Min,
+    NI_System_Half_ReciprocalEstimate,
+    NI_System_Half_ReciprocalSqrtEstimate,
+    NI_System_Half_Round,
+    NI_System_Half_Sqrt,
+
     NI_System_Half_op_Addition,
-    NI_System_Half_op_Subtraction,
-    NI_System_Half_op_Multiply,
+    NI_System_Half_op_Decrement,
     NI_System_Half_op_Division,
+    NI_System_Half_op_Equality,
     NI_System_Half_op_Explicit,
+    NI_System_Half_op_GreaterThan,
+    NI_System_Half_op_GreaterThanOrEqual,
+    NI_System_Half_op_Increment,
+    NI_System_Half_op_Inequality,
+    NI_System_Half_op_LessThan,
+    NI_System_Half_op_LessThanOrEqual,
+    NI_System_Half_op_Multiply,
+    NI_System_Half_op_Subtraction,
+    NI_System_Half_op_UnaryNegation,
+    NI_System_Half_op_UnaryPlus,
+
+
 
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
