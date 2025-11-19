@@ -46,11 +46,7 @@ public class LinkContentToWwwroot : Task
                 wasmFiles.Add(new TaskItem(targetPath));
 
                 // Content: ContentRoot = Identity with TargetPath removed, TargetPath = wwwroot\TargetPath
-                string contentRoot = string.Empty;
-                if (!string.IsNullOrEmpty(identity) && !string.IsNullOrEmpty(targetPath))
-                {
-                    contentRoot = identity.Replace(targetPath, string.Empty, StringComparison.OrdinalIgnoreCase);
-                }
+                var contentRoot = Path.GetDirectoryName(identity);
 
                 var outItem = new TaskItem(identity, item.CloneCustomMetadata());
                 outItem.SetMetadata("ContentRoot", contentRoot);

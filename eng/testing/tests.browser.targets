@@ -170,7 +170,7 @@
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.LinkContentToWwwroot" AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
 
-  <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets">
+  <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true'">
     <LinkContentToWwwroot Content="@(Content)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
       <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
       <Output TaskParameter="ContentOut" ItemName="_LinkedContent" />
@@ -181,7 +181,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="LinkPublishContentToWwwroot" BeforeTargets="ComputeWasmVfs" DependsOnTargets="GetCopyToOutputDirectoryItems" Condition="'$(TargetOS)' == 'browser'">
+  <Target Name="LinkPublishContentToWwwroot" BeforeTargets="ComputeWasmVfs" DependsOnTargets="GetCopyToOutputDirectoryItems" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true'">
     <ItemGroup>
       <_WasmFilesForVfs Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
         TargetPath="%(WasmFilesToIncludeFromPublishDir.TargetDir)/%(WasmFilesToIncludeFromPublishDir.Identity)"
@@ -197,7 +197,6 @@
       <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
       <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
       <_WasmFilesForVfs Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and $([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.dll')) and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
-      <_WasmFilesForVfs Include="@(WasmAssembliesFinal)" Condition="'%(WasmAssembliesFinal.RelativePath)' == '$(AssemblyName).dll'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
