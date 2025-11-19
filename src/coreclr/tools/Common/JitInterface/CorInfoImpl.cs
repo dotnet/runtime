@@ -48,17 +48,6 @@ namespace Internal.JitInterface
         //
         // Global initialization and state
         //
-        private enum ImageFileMachine
-        {
-            I386 = 0x014c,
-            IA64 = 0x0200,
-            AMD64 = 0x8664,
-            ARM = 0x01c4,
-            ARM64 = 0xaa64,
-            LoongArch64 = 0x6264,
-            RiscV64 = 0x5064,
-        }
-
         internal const string JitLibrary = "clrjitilc";
 
 #if SUPPORT_JIT
@@ -4240,17 +4229,19 @@ namespace Internal.JitInterface
             switch (arch)
             {
                 case TargetArchitecture.X86:
-                    return (uint)ImageFileMachine.I386;
+                    return (uint)CorInfoArch.CORINFO_ARCH_X86;
                 case TargetArchitecture.X64:
-                    return (uint)ImageFileMachine.AMD64;
+                    return (uint)CorInfoArch.CORINFO_ARCH_X64;
                 case TargetArchitecture.ARM:
-                    return (uint)ImageFileMachine.ARM;
+                    return (uint)CorInfoArch.CORINFO_ARCH_ARM;
                 case TargetArchitecture.ARM64:
-                    return (uint)ImageFileMachine.ARM64;
+                    return (uint)CorInfoArch.CORINFO_ARCH_ARM64;
                 case TargetArchitecture.LoongArch64:
-                    return (uint)ImageFileMachine.LoongArch64;
+                    return (uint)CorInfoArch.CORINFO_ARCH_LOONGARCH64;
                 case TargetArchitecture.RiscV64:
-                    return (uint)ImageFileMachine.RiscV64;
+                    return (uint)CorInfoArch.CORINFO_ARCH_RISCV64;
+                case TargetArchitecture.Wasm32:
+                    return (uint)CorInfoArch.CORINFO_ARCH_WASM32;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }

@@ -295,6 +295,7 @@ set( JIT_WASM_SOURCES
   emitwasm.cpp
   lowerwasm.cpp
   regallocwasm.cpp
+  registeropswasm.cpp
   targetwasm.cpp
 )
 
@@ -471,6 +472,7 @@ set( JIT_RISCV64_HEADERS
 
 set( JIT_WASM_HEADERS
     regallocwasm.h
+    registeropswasm.h
     targetwasm.h
     emitwasm.h
     emitfmtswasm.h

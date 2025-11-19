@@ -31335,10 +31335,11 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
             resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // FA0 or FA1
         }
     }
+#endif
 
-#endif // TARGET_XXX
-
+#if HAS_FIXED_REGISTER_SET
     assert(resultReg != REG_NA);
+#endif
     return resultReg;
 }
 
