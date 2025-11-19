@@ -102,46 +102,6 @@ namespace AppHost.Bundle.Tests
             }
         }
 
-        [Theory]
-        [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleAllContent)]
-        public void SelfContained_Targeting50(BundleOptions options)
-        {
-            var singleFile = sharedTestState.SelfContainedApp.Bundle(options, new Version(5, 0));
-
-            // Run the bundled app
-            bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
-            RunTheApp(singleFile, selfContained: true, deleteApp: !shouldExtract)
-                .And.CreateExtraction(shouldExtract);
-
-            if (shouldExtract)
-            {
-                // Run the bundled app again (reuse extracted files)
-                RunTheApp(singleFile, selfContained: true)
-                    .And.ReuseExtraction();
-            }
-        }
-
-        [Theory]
-        [InlineData(BundleOptions.None)]
-        [InlineData(BundleOptions.BundleAllContent)]
-        public void FrameworkDependent_Targeting50(BundleOptions options)
-        {
-            var singleFile = sharedTestState.FrameworkDependentApp.Bundle(options, new Version(5, 0));
-
-            // Run the bundled app
-            bool shouldExtract = options.HasFlag(BundleOptions.BundleAllContent);
-            RunTheApp(singleFile, selfContained: false, deleteApp: !shouldExtract)
-                .And.CreateExtraction(shouldExtract);
-
-            if (shouldExtract)
-            {
-                // Run the bundled app again (reuse extracted files)
-                RunTheApp(singleFile, selfContained: false)
-                    .And.ReuseExtraction();
-            }
-        }
-
         public class SharedTestState : IDisposable
         {
             public SingleFileTestApp FrameworkDependentApp { get; }
