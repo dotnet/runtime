@@ -4568,7 +4568,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
                 GenTreeCast* cast = relopOp1->AsCast();
                 if ((cast->CastToType() == TYP_BYTE || cast->CastToType() == TYP_SHORT) && !cast->gtOverflow())
                 {
-                    op1Type             = cast->gtCastType;
+                    op1Type             = cast->CastToType();
                     GenTree* castOp     = cast->CastOp();
                     cond->AsOp()->gtOp1 = castOp;
                     castOp->ClearContained();
