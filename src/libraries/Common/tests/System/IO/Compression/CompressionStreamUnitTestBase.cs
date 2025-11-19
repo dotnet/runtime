@@ -65,7 +65,6 @@ namespace System.IO.Compression
             }
         }
 
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
         {
