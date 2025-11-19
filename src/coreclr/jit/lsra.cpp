@@ -1009,9 +1009,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
 
-    compiler->codeGen->intRegState.rsIsFloat   = false;
-    compiler->codeGen->floatRegState.rsIsFloat = true;
-
     // Block sequencing (the order in which we schedule).
     // Note that we don't initialize the bbVisitedSet until we do the first traversal
     // This is so that any blocks that are added during the first traversal are accounted for.
@@ -9065,23 +9062,27 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 
         if (lastNode->OperIs(GT_JTRUE, GT_JCMP, GT_JTEST))
         {
-            GenTree* op = lastNode->gtGetOp1();
-            consumedRegs |= genSingleTypeRegMask(op->GetRegNum());
+            assert(!lastNode->OperIs(GT_JTRUE) || !lastNode->gtGetOp1()->isContained());
+            if (!lastNode->gtGetOp1()->isContained())
+            {
+                GenTree* op = lastNode->gtGetOp1();
+                consumedRegs |= genSingleTypeRegMask(op->GetRegNum());
 
-            if (op->OperIs(GT_COPY))
-            {
-                GenTree* srcOp = op->gtGetOp1();
-                consumedRegs |= genSingleTypeRegMask(srcOp->GetRegNum());
-            }
-            else if (op->IsLocal())
-            {
-                GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
-                terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
+                if (op->OperIs(GT_COPY))
+                {
+                    GenTree* srcOp = op->gtGetOp1();
+                    consumedRegs |= genSingleTypeRegMask(srcOp->GetRegNum());
+                }
+                else if (op->IsLocal())
+                {
+                    GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
+                    terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
+                }
             }
 
             if (lastNode->OperIs(GT_JCMP, GT_JTEST) && !lastNode->gtGetOp2()->isContained())
             {
-                op = lastNode->gtGetOp2();
+                GenTree* op = lastNode->gtGetOp2();
                 consumedRegs |= genSingleTypeRegMask(op->GetRegNum());
 
                 if (op->OperIs(GT_COPY))

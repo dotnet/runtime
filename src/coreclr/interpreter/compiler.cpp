@@ -34,12 +34,13 @@ static const InterpType g_interpTypeFromStackType[] =
     InterpTypeVT,       // VT,
     InterpTypeByRef,    // MP,
     InterpTypeI,        // F
+    InterpTypeByRef,    // LocalVariableAddress, The result of ldloca or ldarga is a byref per spec, but is also permitted to be treated as a nint in some cases. Keep track of that here.
 };
 
 // Used by assertAbort
 thread_local ICorJitInfo* t_InterpJitInfoTls = nullptr;
 
-static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F " };
+static const char *g_stackTypeString[] = { "I4", "I8", "R4", "R8", "O ", "VT", "MP", "F ", "TP" };
 
 const char* CorInfoHelperToName(CorInfoHelpFunc helper);
 
@@ -461,7 +462,10 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         if (newCapacity > prevCapacity)
         {
             InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
-            memcpy(newa, from->ppOutBBs, from->outCount * sizeof(InterpBasicBlock*));
+            if (from->outCount != 0)
+            {
+                memcpy(newa, from->ppOutBBs, from->outCount * sizeof(InterpBasicBlock*));
+            }
             from->ppOutBBs = newa;
         }
         from->ppOutBBs [from->outCount] = to;
@@ -483,7 +487,9 @@ void InterpCompiler::LinkBBs(InterpBasicBlock *from, InterpBasicBlock *to)
         int newCapacity = GetBBLinksCapacity(to->inCount + 1);
         if (newCapacity > prevCapacity) {
             InterpBasicBlock **newa = (InterpBasicBlock**)AllocMemPool(newCapacity * sizeof(InterpBasicBlock*));
-            memcpy(newa, to->ppInBBs, to->inCount * sizeof(InterpBasicBlock*));
+            if (to->inCount != 0) {
+                memcpy(newa, to->ppInBBs, to->inCount * sizeof(InterpBasicBlock*));
+            }
             to->ppInBBs = newa;
         }
         to->ppInBBs [to->inCount] = from;
@@ -561,8 +567,43 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
         int dVar = pTargetBB->pStackState[i].var;
         if (sVar != dVar)
         {
-            InterpType interpType = m_pVars[sVar].interpType;
-            int32_t movOp = InterpGetMovForType(interpType, false);
+            InterpType interpType = g_interpTypeFromStackType[m_pStackBase[i].GetStackType()];
+            InterpType interpDestType = g_interpTypeFromStackType[pTargetBB->pStackState[i].GetStackType()];
+            int32_t movOp;
+            if (interpType != interpDestType)
+            {
+                if (interpType == InterpTypeR4 && interpDestType == InterpTypeR8)
+                {
+                    movOp = INTOP_CONV_R8_R4;
+                }
+                else if (interpType == InterpTypeR8 && interpDestType == InterpTypeR4)
+                {
+                    movOp = INTOP_CONV_R4_R8;
+                }
+                else if (interpType == InterpTypeI && interpDestType == InterpTypeByRef)
+                {
+                    movOp = InterpGetMovForType(interpDestType, false);
+                }
+#ifdef TARGET_64BIT
+                // nint and int32 can be used interchangeably. Add implicit conversions.
+                else if (interpType == InterpTypeI4 && interpDestType == InterpTypeI8)
+                {
+                    movOp = INTOP_CONV_I8_I4;
+                }
+                else if (interpType == InterpTypeI8 && interpDestType == InterpTypeI4)
+                {
+                    movOp = InterpGetMovForType(interpDestType, false);
+                }
+#endif // TARGET_64BIT
+                else
+                {
+                    BADCODE("Incompatible types on stack between basic blocks");
+                }
+            }
+            else
+            {
+                movOp = InterpGetMovForType(interpType, false);
+            }
 
             AddIns(movOp);
             m_pLastNewIns->SetSVar(sVar);
@@ -783,9 +824,9 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         {
             *ip++ = ins->info.pTargetBB->nativeOffset - brBaseOffset;
         }
-        else if (opcode == INTOP_BR && ins->info.pTargetBB == m_pCBB->pNextBB)
+        else if (opcode == INTOP_BR && ins->info.pTargetBB == m_pCBB->pNextBB && ins->info.pTargetBB->overlappingEHClauseCount == m_pCBB->overlappingEHClauseCount)
         {
-            // Ignore branch to the next basic block. Revert the added INTOP_BR.
+            // Ignore branch to the next basic block if it is on the same clause depth. Revert the added INTOP_BR.
             isReverted = true;
             ip--;
         }
@@ -954,6 +995,31 @@ int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Re
     return ip;
 }
 
+void ValidateEmittedSequenceTermination(InterpInst *lastIns)
+{
+    if (lastIns == NULL)
+        return;
+
+    if (InterpOpIsUncondBranch(lastIns->opcode) ||
+        (lastIns->opcode == INTOP_RET) ||
+        (lastIns->opcode == INTOP_RET_VOID) ||
+        (lastIns->opcode == INTOP_RET_VT) ||
+        (lastIns->opcode == INTOP_THROW) ||
+        (lastIns->opcode == INTOP_THROW_PNSE) ||
+        (lastIns->opcode == INTOP_CALL_TAIL) ||
+        (lastIns->opcode == INTOP_CALLI_TAIL) ||
+        (lastIns->opcode == INTOP_CALLVIRT_TAIL) ||
+        (lastIns->opcode == INTOP_RETHROW) ||
+        (lastIns->opcode == INTOP_LEAVE_FILTER) ||
+        (lastIns->opcode == INTOP_LEAVE_CATCH))
+    {
+        // Valid terminating instruction
+        return;
+    }
+
+    BADCODE("Emitted code sequence does not end with a terminating instruction");
+}
+
 void InterpCompiler::EmitCode()
 {
     TArray<Reloc*, MemPoolAllocator> relocs(GetMemPoolAllocator());
@@ -999,14 +1065,19 @@ void InterpCompiler::EmitCode()
     do
     {
         emittedBlock = false;
+        InterpInst *lastEmittedIns = NULL;
         for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
         {
             if (bb->overlappingEHClauseCount == clauseDepth)
             {
                 ip = EmitBBCode(ip, bb, &relocs);
+                lastEmittedIns = bb->pLastIns;
                 emittedBlock = true;
             }
         }
+
+        ValidateEmittedSequenceTermination(lastEmittedIns);
+
         clauseDepth++;
     }
     while (emittedBlock);
@@ -1445,7 +1516,7 @@ void InterpCompiler::GetNativeRangeForClause(uint32_t startILOffset, uint32_t en
     InterpBasicBlock* pEndBB = pStartBB;
     for (InterpBasicBlock* pBB = pStartBB->pNextBB; (pBB != NULL) && ((uint32_t)pBB->ilOffset < endILOffset); pBB = pBB->pNextBB)
     {
-        if ((pBB->clauseType == pStartBB->clauseType) && (pBB->overlappingEHClauseCount == pStartBB->overlappingEHClauseCount))
+        if (pBB->overlappingEHClauseCount == pStartBB->overlappingEHClauseCount)
         {
             pEndBB = pBB;
         }
@@ -1585,6 +1656,9 @@ void InterpCompiler::BuildEHInfo()
             nativeClause.Flags = (CORINFO_EH_CLAUSE_FLAGS)((int)nativeClause.Flags | COR_ILEXCEPTION_CLAUSE_SAMETRY);
         }
 
+        lastTryILOffset = clause.TryOffset;
+        lastTryILLength = clause.TryLength;
+
         m_compHnd->setEHinfo(nativeEHIndex++, &nativeClause);
 
         INTERP_DUMP("  try [IR_%04x(%x), IR_%04x(%x)) ", tryStartNativeOffset, clause.TryOffset, tryEndNativeOffset, clause.TryOffset + clause.TryLength);
@@ -1592,9 +1666,13 @@ void InterpCompiler::BuildEHInfo()
         {
             INTERP_DUMP("filter IR_%04x(%x), handler [IR_%04x(%x), IR_%04x(%x))%s\n", pFilterStartBB->nativeOffset, clause.FilterOffset, handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength, ((int)nativeClause.Flags & COR_ILEXCEPTION_CLAUSE_SAMETRY) ? " (same try)" : "");
         }
-        else if (nativeClause.Flags == CORINFO_EH_CLAUSE_FINALLY)
+        else if (clause.Flags == CORINFO_EH_CLAUSE_FINALLY)
         {
             INTERP_DUMP("finally handler [IR_%04x(%x), IR_%04x(%x))\n", handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength);
+        }
+        else if (clause.Flags == CORINFO_EH_CLAUSE_FAULT)
+        {
+            INTERP_DUMP("fault handler [IR_%04x(%x), IR_%04x(%x))\n", handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength);
         }
         else
         {
@@ -1835,6 +1913,13 @@ int32_t InterpCompiler::GetInterpTypeStackSize(CORINFO_CLASS_HANDLE clsHnd, Inte
         // All vars are stored at 8 byte aligned offsets
         if (align < INTERP_STACK_SLOT_SIZE)
             align = INTERP_STACK_SLOT_SIZE;
+
+        // We do not align beyond the stack alignment
+        // (This is relevant for structs with very high alignment requirements,
+        // where we align within struct layout, but the structs are not actually
+        // aligned on the stack)
+        if (align > INTERP_STACK_ALIGNMENT)
+            align = INTERP_STACK_ALIGNMENT;
     }
     else
     {
@@ -1983,69 +2068,104 @@ void InterpCompiler::CreateNextLocalVar(int iArgToSet, CORINFO_CLASS_HANDLE argC
 // Create finally call island basic blocks for all try regions with finally clauses that the leave exits.
 // That means when the leaveOffset is inside the try region and the target is outside of it.
 // These finally call island blocks are used for non-exceptional finally execution.
-// The linked list of finally call island blocks is stored in the pFinallyCallIslandBB field of the finally basic block.
-// The pFinallyCallIslandBB in the actual finally call island block points to the outer try region's finally call island block.
-void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB)
+// The linked list of finally and catch call island blocks is stored in the pLeaveChainIslandBB field of the finally / catch basic block.
+// The pLeaveChainIslandBB in the actual island block points to the outer try region's finally call island block / outer catch region's catch call island block.
+void InterpCompiler::CreateLeaveChainIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB)
 {
-    bool firstFinallyCallIsland = true;
-    InterpBasicBlock* pInnerFinallyCallIslandBB = NULL;
+    bool firstLeaveChainIsland = true;
+    InterpBasicBlock* pInnerLeaveChainIslandBB = NULL;
     for (unsigned int i = 0; i < getEHcount(methodInfo); i++)
     {
+        bool isFinallyCallIsland = false;
         CORINFO_EH_CLAUSE clause;
         getEHinfo(methodInfo, i, &clause);
-        if (clause.Flags != CORINFO_EH_CLAUSE_FINALLY)
+
+        // Check IL correctness for filter clauses
+        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER && (uint32_t)leaveOffset >= clause.FilterOffset && (uint32_t)leaveOffset < clause.HandlerOffset)
         {
+            if ((uint32_t)pLeaveTargetBB->ilOffset < clause.FilterOffset || (uint32_t)pLeaveTargetBB->ilOffset >= clause.HandlerOffset)
+            {
+                BADCODE("Leave out of filter clause is not allowed");
+            }
+        }
+
+        if (clause.Flags == CORINFO_EH_CLAUSE_FINALLY)
+        {
+            // Only try regions in which the leave instruction is located are considered.
+            if ((uint32_t)leaveOffset < clause.TryOffset || (uint32_t)leaveOffset >= (clause.TryOffset + clause.TryLength))
+            {
+                continue;
+            }
+
+            // If the leave target is inside the try region, we don't need to create a finally call island block.
+            if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset < (clause.TryOffset + clause.TryLength))
+            {
+                continue;
+            }
+
+            isFinallyCallIsland = true;
+        }
+        else if ((clause.Flags == CORINFO_EH_CLAUSE_NONE) || (clause.Flags & CORINFO_EH_CLAUSE_FILTER) != 0)
+        {
+            // This is a catch
+            // If the leave instruction is outside of this catch handler, there is nothing to do for this catch
+            if ((uint32_t)leaveOffset < clause.HandlerOffset || (uint32_t)leaveOffset >= (clause.HandlerOffset + clause.HandlerLength))
+            {
+                continue;
+            }
+
+            // If the leave target is inside the catch region, there is nothing more to do for this catch
+            if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.HandlerOffset && (uint32_t)pLeaveTargetBB->ilOffset < (clause.HandlerOffset + clause.HandlerLength))
+            {
+                continue;
+            }
+        }
+        else
+        {
+            assert(clause.Flags == CORINFO_EH_CLAUSE_FAULT);
             continue;
         }
 
-        // Only try regions in which the leave instruction is located are considered.
-        if ((uint32_t)leaveOffset < clause.TryOffset || (uint32_t)leaveOffset >= (clause.TryOffset + clause.TryLength))
-        {
-            continue;
-        }
-
-        // If the leave target is inside the try region, we don't need to create a finally call island block.
-        if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset < (clause.TryOffset + clause.TryLength))
-        {
-            continue;
-        }
+        // We have found a leave that goes out of a try region with a finally or out of a catch handler
 
         InterpBasicBlock* pHandlerBB = GetBB(clause.HandlerOffset);
-        InterpBasicBlock* pFinallyCallIslandBB = NULL;
+        InterpBasicBlock* pLeaveChainIslandBB = NULL;
 
-        InterpBasicBlock** ppLastBBNext = &pHandlerBB->pFinallyCallIslandBB;
+        InterpBasicBlock** ppLastBBNext = &pHandlerBB->pLeaveChainIslandBB;
         while (*ppLastBBNext != NULL)
         {
             if ((*ppLastBBNext)->pLeaveTargetBB == pLeaveTargetBB)
             {
                 // We already have finally call island block for the leave target
-                pFinallyCallIslandBB = (*ppLastBBNext);
+                pLeaveChainIslandBB = (*ppLastBBNext);
                 break;
             }
             ppLastBBNext = &((*ppLastBBNext)->pNextBB);
         }
 
-        if (pFinallyCallIslandBB == NULL)
+        if (pLeaveChainIslandBB == NULL)
         {
-            pFinallyCallIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
-            pFinallyCallIslandBB->pLeaveTargetBB = pLeaveTargetBB;
-            *ppLastBBNext = pFinallyCallIslandBB;
+            pLeaveChainIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
+            pLeaveChainIslandBB->pLeaveTargetBB = pLeaveTargetBB;
+            *ppLastBBNext = pLeaveChainIslandBB;
         }
 
-        if (pInnerFinallyCallIslandBB != NULL)
-        {
-            pInnerFinallyCallIslandBB->pFinallyCallIslandBB = pFinallyCallIslandBB;
-        }
-        pInnerFinallyCallIslandBB = pFinallyCallIslandBB;
+        pLeaveChainIslandBB->isFinallyCallIsland = isFinallyCallIsland;
 
-        if (firstFinallyCallIsland)
+        if (pInnerLeaveChainIslandBB != NULL)
+        {
+            pInnerLeaveChainIslandBB->pLeaveChainIslandBB = pLeaveChainIslandBB;
+        }
+        pInnerLeaveChainIslandBB = pLeaveChainIslandBB;
+
+        if (firstLeaveChainIsland)
         {
             // The leaves table entry points to the first finally call island block
-            firstFinallyCallIsland = false;
+            firstLeaveChainIsland = false;
 
             LeavesTableEntry leavesEntry;
             leavesEntry.ilOffset = leaveOffset;
-            leavesEntry.pFinallyCallIslandBB = pFinallyCallIslandBB;
+            leavesEntry.pLeaveChainIslandBB = pLeaveChainIslandBB;
             m_leavesTable.Add(leavesEntry);
         }
     }
@@ -2055,7 +2175,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
 {
     int32_t codeSize = getILCodeSize(methodInfo);
     uint8_t *codeStart = getILCode(methodInfo);
-    uint8_t *codeEnd = codeStart + codeSize;
+    const uint8_t *codeEnd = codeStart + codeSize;
     const uint8_t *ip = codeStart;
 
     m_ppOffsetToBB = (InterpBasicBlock**)AllocMemPool0(sizeof(InterpBasicBlock*) * (codeSize + 1));
@@ -2075,10 +2195,10 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             ip++;
             if (opcode == CEE_RET)
             {
-                if (m_isSynchronized && m_currentILOffset < m_ILCodeSizeFromILHeader)
+                if (m_isSynchronized && insOffset < m_ILCodeSizeFromILHeader)
                 {
                     // This is a ret instruction coming from the initial IL of a synchronized method.
-                    CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedPostFinallyOffset));
+                    CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, GetBB(m_synchronizedPostFinallyOffset));
                 }
             }
             break;
@@ -2106,7 +2226,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             pTargetBB = GetBB(target);
             if (opcode == CEE_LEAVE_S)
             {
-                CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
+                CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
             }
             ip += 2;
             GetBB((int32_t)(ip - codeStart));
@@ -2118,7 +2238,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             pTargetBB = GetBB(target);
             if (opcode == CEE_LEAVE)
             {
-                CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
+                CreateLeaveChainIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
             }
             ip += 5;
             GetBB((int32_t)(ip - codeStart));
@@ -2149,7 +2269,7 @@ void InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
         default:
             assert(0);
         }
-        if (opcode == CEE_THROW || opcode == CEE_ENDFINALLY || opcode == CEE_RETHROW)
+        if (opcode == CEE_THROW || opcode == CEE_ENDFINALLY || opcode == CEE_RETHROW || opcode == CEE_JMP)
             GetBB((int32_t)(ip - codeStart));
     }
 }
@@ -2177,16 +2297,6 @@ void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
                 (codeStart + clause.HandlerOffset + clause.HandlerLength) > codeEnd)
         {
             BADCODE("Invalid handler region in EH clause");
-        }
-
-        // Find and mark all basic blocks that are part of the try region.
-        for (uint32_t j = clause.TryOffset; j < (clause.TryOffset + clause.TryLength); j++)
-        {
-            InterpBasicBlock* pBB = m_ppOffsetToBB[j];
-            if (pBB != NULL && pBB->clauseType == BBClauseNone)
-            {
-                pBB->clauseType = BBClauseTry;
-            }
         }
 
         InterpBasicBlock* pHandlerBB = GetBB(clause.HandlerOffset);
@@ -2256,27 +2366,22 @@ void InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
         }
     }
 
-    // Now that we have classified all the basic blocks, we can set the clause type for the finally call island blocks.
-    // We set it to the same type as the basic block after the finally handler.
+    // Now that we have classified all the basic blocks, we can set the clause type for the finally call / catch leave island blocks.
+    // We set it to the same type as the basic block after the finally / catch handler.
     for (unsigned int i = 0; i < getEHcount(methodInfo); i++)
     {
         CORINFO_EH_CLAUSE clause;
         getEHinfo(methodInfo, i, &clause);
 
-        if (clause.Flags != CORINFO_EH_CLAUSE_FINALLY)
-        {
-            continue;
-        }
-
         InterpBasicBlock* pFinallyBB = GetBB(clause.HandlerOffset);
 
-        InterpBasicBlock* pFinallyCallIslandBB = pFinallyBB->pFinallyCallIslandBB;
-        while (pFinallyCallIslandBB != NULL)
+        InterpBasicBlock* pLeaveChainIslandBB = pFinallyBB->pLeaveChainIslandBB;
+        while (pLeaveChainIslandBB != NULL)
         {
             InterpBasicBlock* pAfterFinallyBB = m_ppOffsetToBB[clause.HandlerOffset + clause.HandlerLength];
             assert(pAfterFinallyBB != NULL);
-            pFinallyCallIslandBB->clauseType = pAfterFinallyBB->clauseType;
-            pFinallyCallIslandBB = pFinallyCallIslandBB->pNextBB;
+            pLeaveChainIslandBB->clauseType = pAfterFinallyBB->clauseType;
+            pLeaveChainIslandBB = pLeaveChainIslandBB->pNextBB;
         }
     }
 }
@@ -2311,7 +2416,7 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
 void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
     CHECK_STACK(1);
-    StackType argType = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].type;
+    StackType argType = (m_pStackPointer[-1].GetStackType() == StackTypeO || m_pStackPointer[-1].GetStackType() == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].GetStackType();
     // offset the opcode to obtain the type specific I4/I8/R4/R8 variant.
     InterpOpcode opcodeArgType = (InterpOpcode)(opcode + argType - StackTypeI4);
     m_pStackPointer--;
@@ -2329,8 +2434,8 @@ void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int
 void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
 {
     CHECK_STACK(2);
-    StackType argType1 = (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].type;
-    StackType argType2 = (m_pStackPointer[-2].type == StackTypeO || m_pStackPointer[-2].type == StackTypeByRef) ? StackTypeI : m_pStackPointer[-2].type;
+    StackType argType1 = (m_pStackPointer[-1].GetStackType() == StackTypeO || m_pStackPointer[-1].GetStackType() == StackTypeByRef) ? StackTypeI : m_pStackPointer[-1].GetStackType();
+    StackType argType2 = (m_pStackPointer[-2].GetStackType() == StackTypeO || m_pStackPointer[-2].GetStackType() == StackTypeByRef) ? StackTypeI : m_pStackPointer[-2].GetStackType();
 
     // Since branch opcodes only compare args of the same type, handle implicit conversions before
     // emitting the conditional branch
@@ -2423,12 +2528,12 @@ void InterpCompiler::EmitStoreVar(int32_t var)
 
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
-    if (m_pStackPointer[-1].type == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
+    if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
         EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
 #endif
-    if (m_pStackPointer[-1].type == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
+    if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
         EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
-    else if (m_pStackPointer[-1].type == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
+    else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
         EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
 
     m_pStackPointer--;
@@ -2464,7 +2569,7 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
             // from the building block, because the finally call islands share the same IL
             // offset with another block of original code in front of which it is injected.
             // The EmitBranch would to that block instead of the finally call island.
-            pTargetBB = m_leavesTable.Get(i).pFinallyCallIslandBB;
+            pTargetBB = m_leavesTable.Get(i).pLeaveChainIslandBB;
             break;
         }
     }
@@ -2476,24 +2581,32 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
 
     // The leave doesn't jump out of any try region with finally, so we can just emit a branch
     // to the target.
-    if (m_pCBB->clauseType == BBClauseCatch)
-    {
-        // leave out of catch is different from a leave out of finally. It
-        // exits the catch handler and returns the address of the finally
-        // call island as the continuation address to the EH code.
-        EmitBranchToBB(INTOP_LEAVE_CATCH, pTargetBB);
-    }
-    else
-    {
-        EmitBranchToBB(INTOP_BR, pTargetBB);
-    }
+    EmitBranchToBB(INTOP_BR, pTargetBB);
 }
 
 void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 {
     CHECK_STACK(2);
-    StackType type1 = m_pStackPointer[-2].type;
-    StackType type2 = m_pStackPointer[-1].type;
+    StackType type1 = m_pStackPointer[-2].GetStackType();
+    StackType type2 = m_pStackPointer[-1].GetStackType();
+
+    if (opBase == INTOP_SUB_I4 && type1 == StackTypeByRef && type2 == StackTypeByRef)
+    {
+        // This case (byref - byref) should not be converted to StackTypeI.
+    }
+    else
+    {
+        if (type1 == StackTypeByRef)
+        {
+            m_pStackPointer[-2].BashStackTypeToI_ForLocalVariableAddress();
+            type1 = m_pStackPointer[-2].GetStackType();
+        }
+        if (type2 == StackTypeByRef)
+        {
+            m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+            type2 = m_pStackPointer[-1].GetStackType();
+        }
+    }
 
     StackType typeRes;
 
@@ -2609,7 +2722,8 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
 void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
 {
     CHECK_STACK(1);
-    StackType stackType = m_pStackPointer[-1].type;
+    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+    StackType stackType = m_pStackPointer[-1].GetStackType();
     int32_t finalOpcode = opBase + (stackType - StackTypeI4);
 
     if (stackType == StackTypeByRef || stackType == StackTypeO)
@@ -2627,8 +2741,10 @@ void InterpCompiler::EmitUnaryArithmeticOp(int32_t opBase)
 void InterpCompiler::EmitShiftOp(int32_t opBase)
 {
     CHECK_STACK(2);
-    StackType stackType = m_pStackPointer[-2].type;
-    StackType shiftAmountType = m_pStackPointer[-1].type;
+    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+    m_pStackPointer[-2].BashStackTypeToI_ForLocalVariableAddress();
+    StackType stackType = m_pStackPointer[-2].GetStackType();
+    StackType shiftAmountType = m_pStackPointer[-1].GetStackType();
     int32_t typeOffset = stackType - StackTypeI4;
     int32_t finalOpcode = opBase + typeOffset;
 
@@ -2646,17 +2762,25 @@ void InterpCompiler::EmitShiftOp(int32_t opBase)
 void InterpCompiler::EmitCompareOp(int32_t opBase)
 {
     CHECK_STACK(2);
-    if (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeByRef)
+    if (m_pStackPointer[-1].GetStackType() == StackTypeO || m_pStackPointer[-1].GetStackType() == StackTypeByRef)
     {
         AddIns(opBase + StackTypeI - StackTypeI4);
     }
     else
     {
-        if (m_pStackPointer[-1].type == StackTypeR4 && m_pStackPointer[-2].type == StackTypeR8)
+        if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && m_pStackPointer[-2].GetStackType() == StackTypeR8)
             EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
-        if (m_pStackPointer[-1].type == StackTypeR8 && m_pStackPointer[-2].type == StackTypeR4)
+        if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && m_pStackPointer[-2].GetStackType() == StackTypeR4)
             EmitConv(m_pStackPointer - 2, StackTypeR8, INTOP_CONV_R8_R4);
-        AddIns(opBase + m_pStackPointer[-1].type - StackTypeI4);
+
+#ifdef TARGET_64BIT
+        // Support comparisons between I and I4 by inserting an implicit conversion to I8
+        if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && m_pStackPointer[-2].GetStackType() == StackTypeI8)
+            EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+        if (m_pStackPointer[-1].GetStackType() == StackTypeI8 && m_pStackPointer[-2].GetStackType() == StackTypeI4)
+            EmitConv(m_pStackPointer - 2, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+        AddIns(opBase + m_pStackPointer[-1].GetStackType() - StackTypeI4);
     }
     m_pStackPointer -= 2;
     m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
@@ -2761,16 +2885,16 @@ static bool DoesValueTypeContainGCRefs(COMP_HANDLE compHnd, CORINFO_CLASS_HANDLE
 
 void InterpCompiler::ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type)
 {
-    if (entry->type != type)
+    if (entry->GetStackType() != type)
     {
-        if (entry->type != StackTypeR4 && entry->type != StackTypeR8)
+        if (entry->GetStackType() != StackTypeR4 && entry->GetStackType() != StackTypeR8)
             NO_WAY("ConvertFloatingPointStackEntryToStackType: entry is not floating point");
 
-        if (type == StackTypeR8 && entry->type == StackTypeR4)
+        if (type == StackTypeR8 && entry->GetStackType() == StackTypeR4)
         {
             EmitConv(entry, StackTypeR8, INTOP_CONV_R8_R4);
         }
-        else if (type == StackTypeR4 && entry->type == StackTypeR8)
+        else if (type == StackTypeR4 && entry->GetStackType() == StackTypeR8)
         {
             EmitConv(entry, StackTypeR4, INTOP_CONV_R4_R8);
         }
@@ -3312,6 +3436,13 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             AddIns(INTOP_SAFEPOINT);
             return true;
 
+        case NI_System_Type_GetTypeFromHandle:
+        case NI_System_Type_op_Equality:
+        case NI_System_Type_op_Inequality:
+        case NI_System_Type_get_IsValueType:
+            // These intrinsics are handled in the il peeps path, and do not need to produce warnings here.
+            return false;
+
         default:
         {
             FAIL_TO_EXPAND_INTRINSIC:
@@ -3457,7 +3588,7 @@ void InterpCompiler::EmitPushUnboxAny(const CORINFO_GENERICHANDLE_RESULT& arg1, 
     PushStackType(resultStackType, clsHndStack);
     int resultVar = m_pStackPointer[-1].var;
 
-    PushStackType(StackTypeI, NULL);
+    PushStackType(StackTypeByRef, NULL);
     int32_t intermediateVar = m_pStackPointer[-1].var;
     m_pStackPointer--;
 
@@ -3670,6 +3801,24 @@ void InterpCompiler::EmitPushLdvirtftn(int thisVar, CORINFO_RESOLVED_TOKEN* pRes
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 }
 
+static bool DisallowTailCall(CORINFO_SIG_INFO* callerSig, CORINFO_SIG_INFO* calleeSig)
+{
+    // We allow only the return value types to differ between caller and callee as long as their stack types are the same.
+    // In principle we could allow more differences (e.g. I8 coercion to I4, or O to I) but for now we keep it simple.
+    if (callerSig->retType != calleeSig->retType)
+    {
+        if (g_stackTypeFromInterpType[GetInterpType(callerSig->retType)] != g_stackTypeFromInterpType[GetInterpType(calleeSig->retType)])
+        {
+            return true;
+        }
+    }
+    else if (callerSig->retType == CORINFO_TYPE_VALUECLASS && callerSig->retTypeClass != calleeSig->retTypeClass)
+    {
+        return true;
+    }
+    return false;
+}
+
 void InterpCompiler::EmitCalli(bool isTailCall, void* calliCookie, int callIFunctionPointerVar, CORINFO_SIG_INFO* callSiteSig)
 {
     AddIns(isTailCall ? INTOP_CALLI_TAIL : INTOP_CALLI);
@@ -3824,6 +3973,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 
     bool isVirtual = (*m_ip == CEE_CALLVIRT);
     bool isDelegateInvoke = false;
+    bool isJmp = (*m_ip == CEE_JMP);
 
     CORINFO_RESOLVED_TOKEN resolvedCallToken;
     CORINFO_CALL_INFO callInfo;
@@ -3843,6 +3993,10 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         resolvedCallToken.tokenScope   = m_methodInfo->scope;
 
         m_compHnd->findSig(m_methodInfo->scope, token, METHOD_BEING_COMPILED_CONTEXT(), &callInfo.sig);
+        if (callInfo.sig.isVarArg())
+        {
+            BADCODE("Vararg methods are not supported in interpreted code");
+        }
 
         callIFunctionPointerVar = m_pStackPointer[-1].var;
         m_pStackPointer--;
@@ -3857,6 +4011,21 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             flags = (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_CALLVIRT);
 
         m_compHnd->getCallInfo(&resolvedCallToken, pConstrainedToken, m_methodInfo->ftn, flags, &callInfo);
+
+        if (callInfo.sig.isVarArg())
+        {
+            BADCODE("Vararg methods are not supported in interpreted code");
+        }
+
+        if (isJmp)
+        {
+            if (callInfo.sig.numArgs != m_methodInfo->args.numArgs ||
+                callInfo.sig.retType != m_methodInfo->args.retType ||
+                callInfo.sig.callConv != m_methodInfo->args.callConv)
+            {
+                BADCODE("Incompatible target for CEE_JMP");
+            }
+        }
 
         // Inject call to callsite callout helper
         EmitCallsiteCallout(callInfo.accessAllowed, &callInfo.callsiteCalloutHelper);
@@ -3920,6 +4089,15 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
 #endif
     }
 
+    if (tailcall && DisallowTailCall(&m_methodInfo->args, &callInfo.sig))
+    {
+        if (isJmp)
+        {
+            BADCODE("Incompatible target for CEE_JMP tail call");
+        }
+        tailcall = false;
+    }
+
     if (newObj && (callInfo.classFlags & CORINFO_FLG_VAROBJSIZE))
     {
         // This is a variable size object which means "System.String".
@@ -3946,6 +4124,16 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     CORINFO_ARG_LIST_HANDLE args;
     args = callInfo.sig.args;
 
+    if (isJmp)
+    {
+        assert(tailcall);
+        // CEE_JMP is simulated as a tail call, so we need to load the current method's args
+        for (int i = 0; i < numArgsFromStack; i++)
+        {
+            EmitLoadVar(i);
+        }
+    }
+
     for (int iActualArg = 0, iLogicalArg = 0; iActualArg < numArgs; iActualArg++)
     {
         if (iActualArg == extraParamArgLocation)
@@ -3966,7 +4154,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 CORINFO_CLASS_HANDLE classHandle;
 
                 // Implement the implicit argument conversion rules of III.1.6
-                switch (m_pStackPointer[iCurrentStackArg].type)
+                switch (m_pStackPointer[iCurrentStackArg].GetStackType())
                 {
                 case StackTypeR4:
                     if (strip(m_compHnd->getArgType(&callInfo.sig, args, &classHandle)) == CORINFO_TYPE_DOUBLE)
@@ -4030,6 +4218,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     int32_t newObjDVar = -1;
     InterpType ctorType = InterpTypeO;
     int32_t vtsize = 0;
+    bool injectRet = false;
 
     if (newObjThisArgLocation != INT_MAX)
     {
@@ -4240,7 +4429,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             {
                 // Tail call target needs to be IL
                 if (tailcall && isPInvoke && !isMarshaledPInvoke)
+                {
                     tailcall = false;
+                    // We need to inject ret after a jmp when we can't use a tail call
+                    injectRet = isJmp;
+                }
 
                 // Normal call
                 InterpOpcode opcode;
@@ -4377,6 +4570,28 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
+    if (injectRet)
+    {
+        // Jmp to PInvoke was converted to normal pinvoke, so we need to inject a ret after the call
+        switch (GetInterpType(callInfo.sig.retType))
+        {
+            case InterpTypeVT:
+            {
+                AddIns(INTOP_RET_VT);
+                m_pLastNewIns->SetSVar(dVar);
+                m_pLastNewIns->data[0] = m_pVars[dVar].size;
+                break;
+            }
+            case InterpTypeVoid:
+                AddIns(INTOP_RET_VOID);
+                break;
+            default:
+                AddIns(INTOP_RET);
+                m_pLastNewIns->SetSVar(dVar);
+                break;
+        }
+    }
+
     m_ip += 5;
 }
 
@@ -4456,15 +4671,15 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
         stackIndexValue = -2;
     }
 
-    if (interpType == InterpTypeR4 && m_pStackPointer[stackIndexValue].type == StackTypeR8)
+    if (interpType == InterpTypeR4 && m_pStackPointer[stackIndexValue].GetStackType() == StackTypeR8)
     {
         EmitConv(m_pStackPointer + stackIndexValue, StackTypeR4, INTOP_CONV_R4_R8);
     }
-    else if (interpType == InterpTypeR8 && m_pStackPointer[stackIndexValue].type == StackTypeR4)
+    else if (interpType == InterpTypeR8 && m_pStackPointer[stackIndexValue].GetStackType() == StackTypeR4)
     {
         EmitConv(m_pStackPointer + stackIndexValue, StackTypeR8, INTOP_CONV_R8_R4);
     }
-    else if (enableImplicitArgConversionRules && interpType == InterpTypeI8 && m_pStackPointer[stackIndexValue].type == StackTypeI4) // This subtly differs from the published ECMA spec for section III.1.6, and is what is defined in the Ecma-335-Augments.md document
+    else if (enableImplicitArgConversionRules && interpType == InterpTypeI8 && m_pStackPointer[stackIndexValue].GetStackType() == StackTypeI4) // This subtly differs from the published ECMA spec for section III.1.6, and is what is defined in the Ecma-335-Augments.md document
     {
         EmitConv(m_pStackPointer + stackIndexValue, StackTypeI8, INTOP_CONV_I8_I4);
     }
@@ -4506,7 +4721,21 @@ void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 
 void InterpCompiler::EmitStelem(InterpType interpType)
 {
+    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+#ifdef TARGET_64BIT
+    // nint and int32 can be used interchangeably. Add implicit conversions.
+    if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
+        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+
+    // Handle floating point conversions
+    if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
+        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+    else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
     m_pStackPointer -= 3;
+
     int32_t opcode = GetStelemForType(interpType);
     AddIns(opcode);
     m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
@@ -4686,6 +4915,7 @@ void InterpCompiler::EmitLdLocA(int32_t var)
         m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
         m_pStackPointer--;
         PushInterpType(InterpTypeByRef, NULL);
+        m_pStackPointer[-1].SetAsLocalVariableAddress();
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
         return;
     }
@@ -4693,6 +4923,7 @@ void InterpCompiler::EmitLdLocA(int32_t var)
     AddIns(INTOP_LDLOCA);
     m_pLastNewIns->SetSVar(var);
     PushInterpType(InterpTypeByRef, NULL);
+    m_pStackPointer[-1].SetAsLocalVariableAddress();
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
 
@@ -4717,6 +4948,540 @@ constexpr uint8_t getLittleEndianByte(uint32_t value, int byteNum)
     return (value >> (byteNum * 8)) & 0xFF;
 }
 
+// Peeps
+static OpcodePeepElement peepTypeEqualityCheckOpcodes[] = {
+    { 0, CEE_LDTOKEN },
+    { 5, CEE_CALL },
+    { 10, CEE_LDTOKEN },
+    { 15, CEE_CALL },
+    { 20, CEE_CALL },
+    { 25, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc0[] = {
+    { 0, CEE_STLOC_0 },
+    { 1, CEE_LDLOC_0 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc1[] = {
+    { 0, CEE_STLOC_1 },
+    { 1, CEE_LDLOC_1 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc2[] = {
+    { 0, CEE_STLOC_2 },
+    { 1, CEE_LDLOC_2 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc3[] = {
+    { 0, CEE_STLOC_3 },
+    { 1, CEE_LDLOC_3 },
+    { 2, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc_S[] = {
+    { 0, CEE_STLOC_S },
+    { 2, CEE_LDLOC_S },
+    { 4, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepStLdLoc[] = {
+    { 0, CEE_STLOC },
+    { 5, CEE_LDLOC },
+    { 10, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxUnboxOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_UNBOX_ANY },
+    { 10, CEE_ILLEGAL } // End marker
+};
+
+OpcodePeepElement peepTypeValueTypeOpcodes[] = {
+    { 0, CEE_LDTOKEN },
+    { 5, CEE_CALL },
+    { 10, CEE_CALL },
+    { 15, CEE_ILLEGAL } // End marker
+};
+
+class InterpILOpcodePeeps
+{
+public:
+    OpcodePeep peepTypeEqualityCheck = { peepTypeEqualityCheckOpcodes, &InterpCompiler::IsTypeEqualityCheckPeep, &InterpCompiler::ApplyTypeEqualityCheckPeep, "TypeEqualityCheck" };
+    OpcodePeep peepStoreLoad0 = { peepStLdLoc0, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad0" };
+    OpcodePeep peepStoreLoad1 = { peepStLdLoc1, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad1" };
+    OpcodePeep peepStoreLoad2 = { peepStLdLoc2, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad2" };
+    OpcodePeep peepStoreLoad3 = { peepStLdLoc3, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad3" };
+    OpcodePeep peepStoreLoadS = { peepStLdLoc_S, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoadS" };
+    OpcodePeep peepStoreLoad = { peepStLdLoc, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad" };
+    OpcodePeep peepBoxUnbox = { peepBoxUnboxOpcodes, &InterpCompiler::IsBoxUnboxPeep, &InterpCompiler::ApplyBoxUnboxPeep, "BoxUnbox" };
+    OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
+
+public:
+    OpcodePeep* Peeps[10] = {
+        &peepTypeEqualityCheck,
+        &peepStoreLoad,
+        &peepStoreLoad1,
+        &peepStoreLoad2,
+        &peepStoreLoad3,
+        &peepStoreLoadS,
+        &peepStoreLoad0,
+        &peepBoxUnbox,
+        &peepTypeValueType,
+        NULL };
+
+    bool FindAndApplyPeep(InterpCompiler* compiler)
+    {
+        const uint8_t* ip = compiler->m_ip;
+
+        for (int i = 0; Peeps[i] != NULL; i++)
+        {
+            OpcodePeep *peep = Peeps[i];
+            bool skipToNextPeep = false;
+
+            // Check to see if peep applies to the current block just looking at the IL streams
+            // starting at the current ip.
+            for (int iPeepOpCode = 0; peep->pattern[iPeepOpCode].opcode != CEE_ILLEGAL; iPeepOpCode++)
+            {
+                const uint8_t *ipForOpcode = ip + peep->pattern[iPeepOpCode].offsetIntoPeep;
+                int32_t insOffset = (int32_t)(ipForOpcode - compiler->m_pILCode);
+
+                if (ipForOpcode >= compiler->m_pILCode + compiler->m_ILCodeSize)
+                {
+                    // Ran off the end of the IL code
+                    skipToNextPeep = true;
+                    break;
+                }
+                InterpBasicBlock *pNewBB = compiler->m_ppOffsetToBB[insOffset];
+                if (pNewBB != NULL && compiler->m_pCBB != pNewBB)
+                {
+                    // Ran into a different basic block
+                    skipToNextPeep = true;
+                    break;
+                }
+
+                if (peep->pattern[iPeepOpCode].opcode != CEEDecodeOpcode(&ipForOpcode))
+                {
+                    // Opcode does not match
+                    skipToNextPeep = true;
+                    break;
+                }
+            }
+            if (skipToNextPeep)
+                continue;
+
+            // The IL opcode pattern matches, now to check the more non-opcode conditions
+            void* computedInfo;
+            if ((compiler->*(peep->CheckIfTokensAllowPeepToBeUsedFunc))(ip, peep->pattern, &computedInfo))
+            {
+                INTERP_DUMP("Applying peep: %s\n", peep->Name);
+                // The peep applies, so apply it
+                (compiler->*(peep->ApplyPeepFunc))(ip, peep->pattern, computedInfo);
+                compiler->m_ip = ip + peep->GetPeepSize();
+                return true;
+            }
+        }
+        return false;
+    }
+} ILOpcodePeeps;
+
+bool InterpCompiler::IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    // We need to check that the two ldtokens are for the same type
+
+    CORINFO_RESOLVED_TOKEN firstResolvedToken;
+    assert(pattern[0].opcode == CEE_LDTOKEN);
+    ResolveToken(getU4LittleEndian(ip + pattern[0].offsetIntoPeep + 1), CORINFO_TOKENKIND_Ldtoken, &firstResolvedToken);
+
+    CORINFO_RESOLVED_TOKEN secondResolvedToken;
+    assert(pattern[2].opcode == CEE_LDTOKEN);
+    ResolveToken(getU4LittleEndian(ip + pattern[2].offsetIntoPeep + 1), CORINFO_TOKENKIND_Ldtoken, &secondResolvedToken);
+
+    if (firstResolvedToken.hField != NULL || secondResolvedToken.hField != NULL)
+    {
+        // We only handle type tokens
+        return false;
+    }
+    if (firstResolvedToken.hMethod != NULL || secondResolvedToken.hMethod != NULL)
+    {
+        // We only handle type tokens
+        return false;
+    }
+    TypeCompareState compareResult = m_compHnd->compareTypesForEquality(firstResolvedToken.hClass, secondResolvedToken.hClass);
+    if (compareResult == TypeCompareState::May)
+    {
+        // We can't optimize this if we can't prove the types are the same or different
+        return false;
+    }
+
+    // Check to see that the calls to System.Type System.Type::GetTypeFromHandle(valuetype System.RuntimeTypeHandle) are the expected ones
+    assert(pattern[1].opcode == CEE_CALL);
+    assert(pattern[3].opcode == CEE_CALL);
+    mdToken tkCallGetTypeFromHandleToken = getU4LittleEndian(ip + pattern[1].offsetIntoPeep + 1);
+    if (tkCallGetTypeFromHandleToken != getU4LittleEndian(ip + pattern[3].offsetIntoPeep + 1))
+    {
+        // GetTypeFromHandle calls are not the same
+        return false;
+    }
+    CORINFO_RESOLVED_TOKEN getTypeFromHandleResolvedToken;
+    ResolveToken(tkCallGetTypeFromHandleToken, CORINFO_TOKENKIND_Method, &getTypeFromHandleResolvedToken);
+    CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
+
+    CORINFO_CALL_INFO callInfo;
+    m_compHnd->getCallInfo(&getTypeFromHandleResolvedToken, NULL, m_methodInfo->ftn, flags, &callInfo);
+    if (!(callInfo.methodFlags & CORINFO_FLG_INTRINSIC))
+    {
+        // The call is not intrinsic, so we can't optimize it
+        return false;
+    }
+
+    NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+    if (ni != NI_System_Type_GetTypeFromHandle)
+    {
+        // The call is not System.Type::GetTypeFromHandle
+        return false;
+    }
+
+    CORINFO_RESOLVED_TOKEN typeEqualityCheckFunctionResolvedToken;
+    ResolveToken(getU4LittleEndian(ip + pattern[4].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &typeEqualityCheckFunctionResolvedToken);
+    m_compHnd->getCallInfo(&typeEqualityCheckFunctionResolvedToken, NULL, m_methodInfo->ftn, flags, &callInfo);
+    ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+
+    if ((ni != NI_System_Type_op_Equality) && (ni != NI_System_Type_op_Inequality))
+    {
+        // The call is not System.Type::op_Equality or System.Type::op_Inequality
+        return false;
+    }
+
+    if (compareResult == TypeCompareState::MustNot)
+    {
+        // The types are definitely not equal, so we can optimize this to a constant result
+        *ppComputedInfo = (void*)(size_t)((ni == NI_System_Type_op_Equality) ? 0 : 1);
+        return true;
+    }
+    else
+    {
+        assert(compareResult == TypeCompareState::Must);
+        // The types are definitely equal, so we can optimize this to a constant result
+        *ppComputedInfo = (void*)(size_t)((ni == NI_System_Type_op_Equality) ? 1 : 0);
+        return true;
+    }
+}
+
+void InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    int resultValue = (int)(size_t)computedInfo;
+
+    // We are going to replace the entire peep with a single ldc.i4 of the result value
+    int32_t peepSize = pattern[5].offsetIntoPeep; // Offset of end marker is the size of the peep
+    AddIns(INTOP_LDC_I4);
+    m_pLastNewIns->data[0] = resultValue;
+    PushInterpType(InterpTypeI4, NULL);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+}
+
+bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    int localVar = 0;
+
+    switch(pattern[0].opcode)
+    {
+        case CEE_STLOC_0: localVar = 0; break;
+        case CEE_STLOC_1: localVar = 1; break;
+        case CEE_STLOC_2: localVar = 2; break;
+        case CEE_STLOC_3: localVar = 3; break;
+        case CEE_STLOC_S: localVar = ip[1]; break;
+        case CEE_STLOC: localVar = getU2LittleEndian(ip + 1); break;
+        default:
+            assert(!"Unexpected opcode in store/load peep");
+            return false;
+    }
+
+    int secondLocalVar = 0;
+
+    switch(pattern[1].opcode)
+    {
+        case CEE_LDLOC_0: secondLocalVar = 0; break;
+        case CEE_LDLOC_1: secondLocalVar = 1; break;
+        case CEE_LDLOC_2: secondLocalVar = 2; break;
+        case CEE_LDLOC_3: secondLocalVar = 3; break;
+        case CEE_LDLOC_S: secondLocalVar = ip[pattern[1].offsetIntoPeep + 1]; break;
+        case CEE_LDLOC: secondLocalVar = getU2LittleEndian(ip + pattern[1].offsetIntoPeep + 1); break;
+        default:
+            assert(!"Unexpected opcode in store/load peep");
+            return false;
+    }
+
+    int numArgs = m_methodInfo->args.totalILArgs();
+    int varsArg = numArgs + localVar; // Adjust for args
+    InterpType interpType = m_pVars[varsArg].interpType;
+
+    if (m_pStackPointer[-1].GetStackType() != g_stackTypeFromInterpType[interpType])
+    {
+        switch (g_stackTypeFromInterpType[interpType])
+        {
+            case StackTypeO:
+            case StackTypeByRef:
+                return false; // We may be changing GC representation, so don't optimize this.
+
+#ifdef TARGET_64BIT
+            case StackTypeI8:
+                if (m_pStackPointer[-1].GetStackType() == StackTypeI4)
+                {
+                    // This is actually permitted due to implicit conversion rules
+                }
+                else
+                {
+                    if (m_pStackPointer[-1].IsLocalVariableAddress())
+                    {
+                        // Transient pointers can be treated as I
+                    }
+                    else
+                    {
+                        // We are changing GC representation, so don't optimize this.
+                        return false;
+                    }
+                }
+                break;
+            case StackTypeI4:
+                return false;
+#else
+            case StackTypeI8:
+                return false;
+            case StackTypeI4:
+                if (m_pStackPointer[-1].IsLocalVariableAddress())
+                {
+                    // Transient pointers can be treated as I
+                }
+                else
+                {
+                    // We are changing GC representation, so don't optimize this.
+                    return false;
+                }
+                break;
+#endif
+            case StackTypeR4:
+            case StackTypeR8:
+                switch (m_pStackPointer[-1].GetStackType())
+                {
+                    case StackTypeR4:
+                    case StackTypeR8:
+                        // Floating point conversions are ok
+                        break;
+                    default:
+                        return false; // We may be changing representation, so don't optimize this.
+                }
+                break;
+            default:
+                return false; // We may be changing representation, so don't optimize this.
+        }
+    }
+
+    *ppComputedInfo = (void*)(size_t)localVar;
+    return localVar == secondLocalVar;
+}
+
+void InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // We are going to replace the entire peep with just storing to the local variable, and possibly coercing the type if needed.
+    int localVar = (int)(size_t)computedInfo;
+    int numArgs = m_methodInfo->args.totalILArgs();
+    localVar = numArgs + localVar; // Adjust for args
+
+    InterpType interpType = m_pVars[localVar].interpType;
+
+    // Convert var on top of stack to the type of the local variable if needed
+#ifdef TARGET_64BIT
+    // nint and int32 can be used interchangeably. Add implicit conversions.
+    if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[interpType] == StackTypeI8)
+        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+
+    // Handle floating point conversions
+    if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[interpType] == StackTypeR8)
+        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+    else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[interpType] == StackTypeR4)
+        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
+    // stloc/ldloc is not a no-op if the InterpType is different as it may cause truncation/sign-extension for I1/U1/I2/U2 types
+    switch (interpType)
+    {
+        case InterpTypeI1:
+            EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I4);
+            break;
+        case InterpTypeU1:
+            EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I4);
+            break;
+        case InterpTypeI2:
+            EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I4);
+            break;
+        case InterpTypeU2:
+            EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I4);
+            break;
+        default:
+            // No zero/sign extension needed
+            break;
+    }
+
+    if (m_pStackPointer[-1].GetStackType() != g_stackTypeFromInterpType[interpType])
+    {
+        if (m_pStackPointer[-1].GetStackType() == StackTypeI && (interpType == InterpTypeByRef || interpType == InterpTypeO))
+        {
+            // Sometime we have a pointer instead of a ByRef or object reference. That's ok.
+        }
+        else if (m_pStackPointer[-1].GetStackType() == StackTypeByRef && g_stackTypeFromInterpType[interpType] == StackTypeI)
+        {
+            m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+            if (m_pStackPointer[-1].GetStackType() != StackTypeI)
+            {
+                // We should have been able to convert ByRef to I
+                BADCODE("Incompatible types in store/load peep");
+            }
+        }
+        else
+        {
+            // We should have handled all the legal cases above
+            BADCODE("Incompatible types in store/load peep");
+        }
+    }
+
+    StackInfo topOfStackInfo = m_pStackPointer[-1];
+    EmitStoreVar(localVar);
+
+    // Push the value back on the stack
+    EnsureStack(1);
+    *m_pStackPointer = topOfStackInfo;
+    m_pStackPointer++;
+}
+
+bool InterpCompiler::IsBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep + 1;
+    const uint8_t* ipForUnboxAny = ip + pattern[1].offsetIntoPeep + 1;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ip + pattern[0].offsetIntoPeep + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    CORINFO_RESOLVED_TOKEN unboxAnyResolvedToken;
+    assert(pattern[1].opcode == CEE_UNBOX_ANY);
+    ResolveToken(getU4LittleEndian(ip + pattern[1].offsetIntoPeep + 1), CORINFO_TOKENKIND_Class, &unboxAnyResolvedToken);
+
+    CORINFO_HELPER_DESC calloutHelper;
+    CorInfoIsAccessAllowedResult accessAllowed =
+        m_compHnd->canAccessClass(&boxResolvedToken, m_methodHnd, &calloutHelper);
+    if (accessAllowed != CORINFO_ACCESS_ALLOWED)
+    {
+        // We can't optimize this if we can't access the type
+        return false;
+    }
+
+    TypeCompareState compareResult = m_compHnd->compareTypesForEquality(boxResolvedToken.hClass, unboxAnyResolvedToken.hClass);
+    if (compareResult == TypeCompareState::Must)
+    {
+        // We optimize this if we can prove the types are the same
+        return true;
+    }
+
+    if (compareResult == TypeCompareState::May)
+    {
+        // We can't optimize this if we can't prove the types are the same or different
+        return false;
+    }
+
+    // An attempt to catch cases where we mix enums and primitives, e.g.:
+    //   (IntEnum)(object)myInt
+    //   (byte)(object)myByteEnum
+    //
+    CorInfoType typ = m_compHnd->getTypeForPrimitiveValueClass(boxResolvedToken.hClass);
+    if ((typ >= CORINFO_TYPE_BYTE) && (typ <= CORINFO_TYPE_ULONG) &&
+        (m_compHnd->getTypeForPrimitiveValueClass(unboxAnyResolvedToken.hClass) == typ))
+    {
+        return true;
+    }
+
+    // TODO: handle the Nullable cases that Compiler::impBoxPatternMatch handles for box/unbox.any scenario
+
+    return false;
+}
+
+void InterpCompiler::ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    AddIns(INTOP_NOP);
+}
+
+bool InterpCompiler::IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForLdtoken = ip + pattern[0].offsetIntoPeep + 1;
+
+    CORINFO_RESOLVED_TOKEN resolvedToken;
+    assert(pattern[0].opcode == CEE_LDTOKEN);
+    ResolveToken(getU4LittleEndian(ip + pattern[0].offsetIntoPeep + 1), CORINFO_TOKENKIND_Ldtoken, &resolvedToken);
+
+    if (resolvedToken.hField != NULL)
+    {
+        // We only handle type tokens
+        return false;
+    }
+    if (resolvedToken.hMethod != NULL)
+    {
+        // We only handle type tokens
+        return false;
+    }
+    bool isValueType = m_compHnd->isValueClass(resolvedToken.hClass);
+
+    // Check to see that the call to System.Type System.Type::GetTypeFromHandle(valuetype System.RuntimeTypeHandle) is the expected one
+    assert(pattern[1].opcode == CEE_CALL);
+    CORINFO_RESOLVED_TOKEN getTypeFromHandleResolvedToken;
+    ResolveToken(getU4LittleEndian(ip + pattern[1].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &getTypeFromHandleResolvedToken);
+    CORINFO_CALLINFO_FLAGS flags = (CORINFO_CALLINFO_FLAGS)(CORINFO_CALLINFO_ALLOWINSTPARAM | CORINFO_CALLINFO_SECURITYCHECKS | CORINFO_CALLINFO_DISALLOW_STUB);
+
+    CORINFO_CALL_INFO callInfo;
+    m_compHnd->getCallInfo(&getTypeFromHandleResolvedToken, NULL, m_methodInfo->ftn, flags, &callInfo);
+    if (!(callInfo.methodFlags & CORINFO_FLG_INTRINSIC))
+    {
+        // The call is not intrinsic, so we can't optimize it
+        return false;
+    }
+
+    NamedIntrinsic ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+    if (ni != NI_System_Type_GetTypeFromHandle)
+    {
+        // The call is not System.Type::GetTypeFromHandle
+        return false;
+    }
+
+    // We need to check that the call to System.Boolean System.Type::get_IsValueType() is the expected one
+    assert(pattern[2].opcode == CEE_CALL);
+    CORINFO_RESOLVED_TOKEN isValueTypeFunctionResolvedToken;
+    ResolveToken(getU4LittleEndian(ip + pattern[2].offsetIntoPeep + 1), CORINFO_TOKENKIND_Method, &isValueTypeFunctionResolvedToken);
+    m_compHnd->getCallInfo(&isValueTypeFunctionResolvedToken, NULL, m_methodInfo->ftn, flags, &callInfo);
+    ni = GetNamedIntrinsic(m_compHnd, m_methodHnd, callInfo.hMethod);
+    if (ni != NI_System_Type_get_IsValueType)
+    {
+        // The call is not System.Type::get_IsValueType
+        return false;
+    }
+    *ppComputedInfo = (void*)(size_t)(isValueType ? 1 : 0);
+    return true;
+}
+
+void InterpCompiler::ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    int resultValue = (int)(size_t)computedInfo;
+
+    // We are going to replace the entire peep with a single ldc.i4 of the result value
+    int32_t peepSize = pattern[3].offsetIntoPeep; // Offset of end marker is the size of the peep
+
+    AddIns(INTOP_LDC_I4);
+    m_pLastNewIns->data[0] = resultValue;
+    PushInterpType(InterpTypeI4, NULL);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+}
+
 void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
     bool readonly = false;
@@ -4725,7 +5490,7 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     CORINFO_RESOLVED_TOKEN* pConstrainedToken = NULL;
     CORINFO_RESOLVED_TOKEN constrainedToken;
     CORINFO_CALL_INFO callInfo;
-    uint8_t *codeEnd;
+    const uint8_t *codeEnd;
     int numArgs = m_methodInfo->args.hasThis() + m_methodInfo->args.numArgs;
     bool emittedBBlocks, linkBBlocks, needsRetryEmit;
     m_pILCode = methodInfo->ILCode;
@@ -4760,7 +5525,10 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         // We need to realloc the IL code buffer to hold the extra opcodes
 
         uint8_t* newILCode = (uint8_t*)AllocMemPool(newILCodeSize);
-        memcpy(newILCode, m_pILCode, m_ILCodeSize);
+        if (m_ILCodeSize != 0)
+        {
+            memcpy(newILCode, m_pILCode, m_ILCodeSize);
+        }
         memcpy(newILCode + m_synchronizedFinallyStartOffset, opCodesForSynchronizedMethodFinally, sizeof(opCodesForSynchronizedMethodFinally));
         memcpy(newILCode + m_synchronizedPostFinallyOffset, opCodesForSynchronizedMethodEpilog, sizeof(opCodesForSynchronizedMethodEpilog));
         m_pILCode = newILCode;
@@ -4945,6 +5713,20 @@ retry_emit:
                 assert (pNewBB->emitState == BBStateNotEmitted);
             }
 
+            InterpBasicBlock *pPrevBB = m_pCBB;
+            InterpBasicBlock *pPrevBB2 = m_pCBB;
+
+            pPrevBB = GenerateCodeForLeaveChainIslands(pNewBB, pPrevBB);
+
+            if (pPrevBB != pPrevBB2 && !pPrevBB->pNextBB)
+            {
+                INTERP_DUMP("Chaining generated BB%d -> BB%d\n" , pPrevBB->index, pNewBB->index);
+                pPrevBB->pNextBB = pNewBB;
+                assert(!linkBBlocks);
+            }
+
+            m_pCBB = pPrevBB;
+
             // We are starting a new basic block. Change cbb and link them together
             if (linkBBlocks)
             {
@@ -4958,7 +5740,10 @@ retry_emit:
                 {
                     MergeStackTypeInfo(m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight);
                     // This is relevant only for copying the vars associated with the values on the stack
-                    memcpy(m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    if (pNewBB->stackHeight != 0)
+                    {
+                        memcpy(m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    }
                     m_pStackPointer = m_pStackBase + pNewBB->stackHeight;
                 }
                 else
@@ -4973,7 +5758,10 @@ retry_emit:
                 if (pNewBB->stackHeight >= 0)
                 {
                     // This is relevant only for copying the vars associated with the values on the stack
-                    memcpy (m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    if (pNewBB->stackHeight != 0)
+                    {
+                        memcpy (m_pStackBase, pNewBB->pStackState, pNewBB->stackHeight * sizeof(StackInfo));
+                    }
                     m_pStackPointer = m_pStackBase + pNewBB->stackHeight;
                     pNewBB->emitState = BBStateEmitting;
                     emittedBBlocks = true;
@@ -4992,14 +5780,10 @@ retry_emit:
                 }
             }
 
-            InterpBasicBlock *pPrevBB = m_pCBB;
-
-            pPrevBB = GenerateCodeForFinallyCallIslands(pNewBB, pPrevBB);
-
-            if (!pPrevBB->pNextBB)
+            if (!m_pCBB->pNextBB)
             {
-                INTERP_DUMP("Chaining BB%d -> BB%d\n" , pPrevBB->index, pNewBB->index);
-                pPrevBB->pNextBB = pNewBB;
+                INTERP_DUMP("Chaining BB%d -> BB%d\n" , m_pCBB->index, pNewBB->index);
+                m_pCBB->pNextBB = pNewBB;
             }
 
             m_pCBB = pNewBB;
@@ -5007,6 +5791,23 @@ retry_emit:
             {
                 AddIns(INTOP_LOAD_EXCEPTION);
                 m_pLastNewIns->SetDVar(m_pCBB->clauseVarIndex);
+
+                // To allow filter clauses in generic methods to access the generic argument,
+                // we copy that argument variable from the parent frame to the filter's frame.
+                // The target variable offset is the same as the one in the parent frame.
+                if ((m_pCBB->clauseType == BBClauseFilter) && (m_paramArgIndex != -1))
+                {
+                    AddIns(INTOP_LOAD_FRAMEVAR);
+                    PushInterpType(InterpTypeI, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                    m_pStackPointer--;
+                    int32_t opcode = GetLdindForType(m_pVars[m_paramArgIndex].interpType);
+                    AddIns(opcode);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                    m_pLastNewIns->SetDVar(m_paramArgIndex);
+                    m_pLastNewIns->data[0] = m_pVars[m_paramArgIndex].offset;
+                }
             }
         }
 
@@ -5027,14 +5828,19 @@ retry_emit:
             printf("IL_%04x %-10s, sp %d, %s",
                 (int32_t)(m_ip - m_pILCode),
                 CEEOpName(CEEDecodeOpcode(&ip)), (int32_t)(m_pStackPointer - m_pStackBase),
-                m_pStackPointer > m_pStackBase ? g_stackTypeString[m_pStackPointer[-1].type] : "  ");
+                m_pStackPointer > m_pStackBase ? g_stackTypeString[m_pStackPointer[-1].GetStackType()] : "  ");
             if (m_pStackPointer > m_pStackBase &&
-                    (m_pStackPointer[-1].type == StackTypeO || m_pStackPointer[-1].type == StackTypeVT) &&
+                    (m_pStackPointer[-1].GetStackType() == StackTypeO || m_pStackPointer[-1].GetStackType() == StackTypeVT) &&
                     m_pStackPointer[-1].clsHnd != NULL)
                 PrintClassName(m_pStackPointer[-1].clsHnd);
             printf("\n");
         }
 #endif
+
+        // Check for IL opcode peephole optimizations
+
+        if (ILOpcodePeeps.FindAndApplyPeep(this))
+            continue;
 
         uint8_t opcode = *m_ip;
         switch (opcode)
@@ -5226,6 +6032,12 @@ retry_emit:
                 CORINFO_SIG_INFO sig = methodInfo->args;
                 InterpType retType = GetInterpType(sig.retType);
 
+                if ((retType != InterpTypeVoid) && (retType != InterpTypeByRef))
+                {
+                    CheckStackExact(1);
+                    m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
+                }
+
                 if (m_isSynchronized && m_currentILOffset < m_ILCodeSizeFromILHeader)
                 {
                     // We are in a synchronized method, but we need to go through the finally first
@@ -5250,6 +6062,7 @@ retry_emit:
                         CheckStackExact(0);
                     }
                     EmitLeave(ilOffset, target);
+                    linkBBlocks = false;
                     m_ip++;
                     break;
                 }
@@ -5271,11 +6084,49 @@ retry_emit:
                 else
                 {
                     CheckStackExact(1);
+
+#ifdef TARGET_64BIT
+                    // nint and int32 can be used interchangeably. Add implicit conversions.
+                    if (m_pStackPointer[-1].GetStackType() == StackTypeI4 && g_stackTypeFromInterpType[retType] == StackTypeI8)
+                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+#endif
+                    if (m_pStackPointer[-1].GetStackType() == StackTypeR4 && g_stackTypeFromInterpType[retType] == StackTypeR8)
+                        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+                    else if (m_pStackPointer[-1].GetStackType() == StackTypeR8 && g_stackTypeFromInterpType[retType] == StackTypeR4)
+                        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+
+                    if (m_pStackPointer[-1].GetStackType() != g_stackTypeFromInterpType[retType])
+                    {
+                        StackType retStackType = g_stackTypeFromInterpType[retType];
+                        StackType stackType = m_pStackPointer[-1].GetStackType();
+
+                        if (stackType == StackTypeI && (retStackType == StackTypeO || retStackType == StackTypeByRef))
+                        {
+                            // Allow implicit conversion from nint to ref or byref
+                        }
+                        else if (retStackType == StackTypeI && (stackType == StackTypeO || stackType == StackTypeByRef))
+                        {
+                            // Allow implicit conversion from ref or byref to nint
+                        }
+#ifdef TARGET_64BIT
+                        else if (retStackType == StackTypeI4 && stackType == StackTypeI8)
+                        {
+                            // nint and int32 can be used interchangeably. Add implicit conversions.
+                            // Allow implicit conversion from int64 to int32 which is just a truncation
+                        }
+#endif
+                        else
+                        {
+                            BADCODE("return type mismatch");
+                        }
+                    }
+
                     AddIns(INTOP_RET);
                     m_pStackPointer--;
                     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
                 }
                 m_ip++;
+                linkBBlocks = false;
                 break;
             }
 
@@ -5283,7 +6134,7 @@ retry_emit:
             {
                 CHECK_STACK(1);
                 int sVar = m_pStackPointer[-1].var;
-                StackType argType = m_pStackPointer[-1].type;
+                StackType argType = m_pStackPointer[-1].GetStackType();
                 switch (argType)
                 {
                     case StackTypeR4:
@@ -5306,7 +6157,8 @@ retry_emit:
 
             case CEE_CONV_U1:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_R4);
@@ -5321,13 +6173,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_I1:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_R4);
@@ -5342,13 +6195,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_U2:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_R4);
@@ -5363,13 +6217,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_I2:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_R4);
@@ -5384,13 +6239,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_U:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR8:
 #ifdef TARGET_64BIT
@@ -5421,13 +6277,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI, INTOP_MOV_8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_I:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR8:
 #ifdef TARGET_64BIT
@@ -5458,13 +6315,14 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_U4:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_U4_R4);
@@ -5481,13 +6339,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u4 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_I4:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_I4_R4);
@@ -5504,13 +6363,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_MOV_P);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i4 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_I8:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_R4);
@@ -5532,13 +6392,14 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.i8 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_R4:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR8:
                     EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
@@ -5552,13 +6413,14 @@ retry_emit:
                 case StackTypeR4:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_R8:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_I4);
@@ -5572,13 +6434,14 @@ retry_emit:
                 case StackTypeR8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_U8:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeI4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
@@ -5599,12 +6462,14 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.u8 operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_R_UN:
-                switch (m_pStackPointer[-1].type)
+                CHECK_STACK(1);
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
@@ -5618,13 +6483,15 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R_UN_I4);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.r8 operand must be R4, R8, I4 or I8");
+                    break;
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_I1:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R4);
@@ -5639,13 +6506,15 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i1 operand must be R4, R8, I4 or I8");
+                    break;
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_U1:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R4);
@@ -5660,13 +6529,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_I2:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R4);
@@ -5681,13 +6551,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_U2:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R4);
@@ -5702,13 +6573,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_I4:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R4);
@@ -5722,13 +6594,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_U4:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R4);
@@ -5743,13 +6616,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_I8:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R4);
@@ -5763,13 +6637,14 @@ retry_emit:
                 case StackTypeI8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_U8:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R4);
@@ -5784,13 +6659,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_I8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_I:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
@@ -5821,13 +6697,14 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_U:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
@@ -5858,7 +6735,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -5867,7 +6744,8 @@ retry_emit:
             //  does the equivalent by manually duplicating the conversions from the non-.un opcodes.
             case CEE_CONV_OVF_I1_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_R4);
@@ -5882,13 +6760,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I1_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_U1_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_R4);
@@ -5903,13 +6782,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U1_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u1 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_I2_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_R4);
@@ -5924,13 +6804,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I2_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_U2_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_R4);
@@ -5945,13 +6826,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U2_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u2 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_I4_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_R4);
@@ -5966,13 +6848,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_I4_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_U4_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_R4);
@@ -5986,13 +6869,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI4, INTOP_CONV_OVF_U4_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u4 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_I8_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_R4);
@@ -6007,13 +6891,14 @@ retry_emit:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_I8_U8);
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_U8_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
                     EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_OVF_U8_R4);
@@ -6027,13 +6912,14 @@ retry_emit:
                 case StackTypeI8:
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u8 operand must be R4, R8, I4 or I8");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_I_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
@@ -6064,13 +6950,14 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.i operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
             case CEE_CONV_OVF_U_UN:
                 CHECK_STACK(1);
-                switch (m_pStackPointer[-1].type)
+                m_pStackPointer[-1].BashStackTypeToI_ForConvert();
+                switch (m_pStackPointer[-1].GetStackType())
                 {
                 case StackTypeR4:
 #ifdef TARGET_64BIT
@@ -6099,7 +6986,7 @@ retry_emit:
 #endif
                     break;
                 default:
-                    assert(0);
+                    BADCODE("conv.ovf.u operand must be R4, R8, I4, I8, O or ByRef");
                 }
                 m_ip++;
                 break;
@@ -6108,13 +6995,11 @@ retry_emit:
                 m_ip++;
                 uint32_t n = getU4LittleEndian(m_ip);
                 // Format of switch instruction is opcode + srcVal + n + T1 + T2 + ... + Tn
-                AddInsExplicit(INTOP_SWITCH, n + 3);
-                m_pLastNewIns->data[0] = n;
                 m_ip += 4;
                 const uint8_t *nextIp = m_ip + n * 4;
                 m_pStackPointer--;
-                m_pLastNewIns->SetSVar(m_pStackPointer->var);
                 InterpBasicBlock **targetBBTable = (InterpBasicBlock**)AllocMemPool(sizeof (InterpBasicBlock*) * n);
+                uint32_t *targetOffsets = (uint32_t*)AllocMemPool(sizeof (uint32_t) * n);
 
                 for (uint32_t i = 0; i < n; i++)
                 {
@@ -6122,12 +7007,36 @@ retry_emit:
                     uint32_t target = (uint32_t)(nextIp - m_pILCode + offset);
                     InterpBasicBlock *targetBB = m_ppOffsetToBB[target];
                     assert(targetBB);
-
-                    InitBBStackState(targetBB);
+                    targetOffsets[i] = target;
                     targetBBTable[i] = targetBB;
-                    LinkBBs(m_pCBB, targetBB);
                     m_ip += 4;
                 }
+
+                // Sort the targetOffsets array so that we can easily skip duplicates
+                qsort(targetOffsets, n, sizeof(uint32_t), [](const void* a, const void* b) {
+                    uint32_t valA = *(const uint32_t*)a;
+                    uint32_t valB = *(const uint32_t*)b;
+                    return (valA < valB) ? -1 : (valA > valB) ? 1 : 0;
+                });
+
+                // Setup so that we can safely branch to each target
+                uint32_t lastOffset = UINT32_MAX;
+                for (uint32_t i = 0; i < n; i++)
+                {
+                    if (targetOffsets[i] != lastOffset)
+                    {
+                        lastOffset = targetOffsets[i];
+                        InterpBasicBlock *targetBB = m_ppOffsetToBB[targetOffsets[i]];
+                        assert(targetBB);
+                        EmitBBEndVarMoves(targetBB);
+                        InitBBStackState(targetBB);
+                        LinkBBs(m_pCBB, targetBB);
+                    }
+                }
+
+                AddInsExplicit(INTOP_SWITCH, n + 3);
+                m_pLastNewIns->data[0] = n;
+                m_pLastNewIns->SetSVar(m_pStackPointer->var);
                 m_pLastNewIns->info.ppTargetBBTable = targetBBTable;
                 break;
             }
@@ -6334,6 +7243,18 @@ retry_emit:
                 EmitUnaryArithmeticOp(INTOP_NOT_I4);
                 m_ip++;
                 break;
+            case CEE_JMP:
+            {
+                CHECK_STACK(0);
+                if (m_pCBB->clauseType != BBClauseNone)
+                {
+                    // CEE_JMP inside a funclet is not allowed
+                    BADCODE("CEE_JMP inside funclet");
+                }
+                EmitCall(pConstrainedToken, readonly, true /* tailcall */, false /*newObj*/, false /*isCalli*/);
+                linkBBlocks = false;
+                break;
+            }
             case CEE_CALLVIRT:
             case CEE_CALL:
                 EmitCall(pConstrainedToken, readonly, tailcall, false /*newObj*/, false /*isCalli*/);
@@ -6445,7 +7366,7 @@ retry_emit:
                     assert(fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE);
                     m_pStackPointer--;
                     int sizeDataIndexOffset = 0;
-                    if (m_pStackPointer[0].type == StackTypeVT)
+                    if (m_pStackPointer[0].GetStackType() == StackTypeVT)
                     {
                         sizeDataIndexOffset = 1;
                         AddIns(INTOP_MOV_SRC_OFF);
@@ -6654,6 +7575,7 @@ retry_emit:
             case CEE_STIND_R8:
             case CEE_STIND_REF:
             {
+                m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
                 InterpType interpType = InterpTypeVoid;
                 switch(opcode)
                 {
@@ -6893,14 +7815,19 @@ retry_emit:
                     }
                     case CEE_LOCALLOC:
                         CHECK_STACK(1);
+                        if (m_pCBB->clauseType != BBClauseNone)
+                        {
+                            // Localloc inside a funclet is not allowed
+                            BADCODE("CEE_LOCALLOC inside funclet");
+                        }
 #if TARGET_64BIT
                         // Length is natural unsigned int
-                        if (m_pStackPointer[-1].type == StackTypeI4)
+                        if (m_pStackPointer[-1].GetStackType() == StackTypeI4)
                         {
                             // The localloc instruction allocates size (type native unsigned int or U4) bytes from the local dynamic memory pool ...
                             // So the size is currently U4 and needs to be promoted to U8
                             EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_U8_U4);
-                            m_pStackPointer[-1].type = StackTypeI8;
+                            assert(m_pStackPointer[-1].GetStackType() == StackTypeI8);
                         }
 #endif
                         AddIns(INTOP_LOCALLOC);
@@ -6911,7 +7838,7 @@ retry_emit:
                         }
 
                         m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-                        PushStackType(StackTypeByRef, NULL);
+                        PushStackType(StackTypeI, NULL);
                         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                         m_ip++;
                         break;
@@ -7058,6 +7985,10 @@ DO_LDFTN:
 
             case CEE_ENDFINALLY:
             {
+                if (m_pCBB->clauseType != BBClauseFinally)
+                {
+                    BADCODE("endfinally not in a finally block");
+                }
                 AddIns(INTOP_RET_VOID);
                 m_ip++;
                 linkBBlocks = false;
@@ -7093,6 +8024,26 @@ DO_LDFTN:
 
                 if (m_compHnd->isValueClass(resolvedToken.hClass))
                 {
+                    CorInfoType asCorInfoType = m_compHnd->asCorInfoType(m_compHnd->getTypeForBox(resolvedToken.hClass));
+                    if (asCorInfoType == CORINFO_TYPE_FLOAT && m_pStackPointer[-1].GetStackType() == StackTypeR8)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+                    }
+                    else if (asCorInfoType == CORINFO_TYPE_DOUBLE && m_pStackPointer[-1].GetStackType() == StackTypeR4)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+                    }
+#ifdef TARGET_64BIT
+                    // nint and int32 can be used interchangeably. Add implicit conversions.
+                    else if (asCorInfoType == CORINFO_TYPE_NATIVEINT && m_pStackPointer[-1].GetStackType() == StackTypeI4)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+                    }
+                    else if (asCorInfoType == CORINFO_TYPE_NATIVEUINT && m_pStackPointer[-1].GetStackType() == StackTypeI4)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
+                    }
+#endif // TARGET_64BIT
                     CORINFO_GENERICHANDLE_RESULT embedInfo;
                     m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
                     m_pStackPointer -= 1;
@@ -7609,7 +8560,7 @@ DO_LDFTN:
                 m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
                 m_pStackPointer--;
                 DeclarePointerIsClass((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
-                EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[*m_ip == CEE_CASTCLASS ? InterpTypeO : InterpTypeI], NULL);
+                EmitPushHelperCall_2(castingHelper, embedInfo, m_pStackPointer[0].var, g_stackTypeFromInterpType[InterpTypeO], NULL);
                 m_ip += 5;
                 break;
             }
@@ -7662,39 +8613,46 @@ DO_LDFTN:
     UnlinkUnreachableBBlocks();
 }
 
-InterpBasicBlock *InterpCompiler::GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB)
+InterpBasicBlock *InterpCompiler::GenerateCodeForLeaveChainIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB)
 {
-    InterpBasicBlock *pFinallyCallIslandBB = pNewBB->pFinallyCallIslandBB;
+    InterpBasicBlock *pLeaveChainIslandBB = pNewBB->pLeaveChainIslandBB;
 
-    while (pFinallyCallIslandBB != NULL)
+    while (pLeaveChainIslandBB != NULL)
     {
-        INTERP_DUMP("Injecting finally call island BB%d\n", pFinallyCallIslandBB->index);
-        if (pFinallyCallIslandBB->emitState != BBStateEmitted)
+        INTERP_DUMP("Injecting %s island BB%d\n", pLeaveChainIslandBB->isFinallyCallIsland ? "finally call" : "catch leave", pLeaveChainIslandBB->index);
+        if (pLeaveChainIslandBB->emitState != BBStateEmitted)
         {
             // Set the finally call island BB as current so that the instructions are emitted into it
-            m_pCBB = pFinallyCallIslandBB;
+            m_pCBB = pLeaveChainIslandBB;
+            m_pStackPointer = m_pStackBase;
             InitBBStackState(m_pCBB);
-            EmitBranchToBB(INTOP_CALL_FINALLY, pNewBB); // The pNewBB is the finally BB
-            m_pLastNewIns->ilOffset = -1;
-            // Try to get the next finally call island block (for an outer try's finally)
-            if (pFinallyCallIslandBB->pFinallyCallIslandBB)
+            if (pLeaveChainIslandBB->isFinallyCallIsland)
+            {
+                EmitBranchToBB(INTOP_CALL_FINALLY, pNewBB); // The pNewBB is the finally BB
+                m_pLastNewIns->ilOffset = -1;
+            }
+
+            InterpOpcode branchOpcode = pLeaveChainIslandBB->isFinallyCallIsland ? INTOP_BR : INTOP_LEAVE_CATCH;
+
+            // Try to get the next finally call (for an outer try's finally) / catch leave island block (for an outer catch)
+            if (pLeaveChainIslandBB->pLeaveChainIslandBB)
             {
                 // Branch to the next finally call island (at an outer try block)
-                EmitBranchToBB(INTOP_BR, pFinallyCallIslandBB->pFinallyCallIslandBB);
+                EmitBranchToBB(branchOpcode, pLeaveChainIslandBB->pLeaveChainIslandBB);
             }
             else
             {
-                // This is the last finally call island, so we need to emit a branch to the leave target
-                EmitBranchToBB(INTOP_BR, pFinallyCallIslandBB->pLeaveTargetBB);
+                // This is the last finally call / catch leave island, so we need to emit a branch to the leave target
+                EmitBranchToBB(branchOpcode, pLeaveChainIslandBB->pLeaveTargetBB);
             }
             m_pLastNewIns->ilOffset = -1;
             m_pCBB->emitState = BBStateEmitted;
-            INTERP_DUMP("Chaining BB%d -> BB%d\n", pPrevBB->index, pFinallyCallIslandBB->index);
+            INTERP_DUMP("Chaining BB%d -> BB%d\n", pPrevBB->index, pLeaveChainIslandBB->index);
         }
-        assert(pPrevBB->pNextBB == NULL || pPrevBB->pNextBB == pFinallyCallIslandBB);
-        pPrevBB->pNextBB = pFinallyCallIslandBB;
-        pPrevBB = pFinallyCallIslandBB;
-        pFinallyCallIslandBB = pFinallyCallIslandBB->pNextBB;
+        assert(pPrevBB->pNextBB == NULL || pPrevBB->pNextBB == pLeaveChainIslandBB);
+        pPrevBB->pNextBB = pLeaveChainIslandBB;
+        pPrevBB = pLeaveChainIslandBB;
+        pLeaveChainIslandBB = pLeaveChainIslandBB->pNextBB;
     }
 
     return pPrevBB;
@@ -8142,6 +9100,10 @@ extern "C" void assertAbort(const char* why, const char* file, unsigned line)
 #ifdef _MSC_VER
     __debugbreak();
 #else // _MSC_VER
+#ifdef TARGET_APPLE
+    __builtin_debugtrap();
+#else // TARGET_APPLE
     __builtin_trap();
+#endif // TARGET_APPLE
 #endif // _MSC_VER
 }

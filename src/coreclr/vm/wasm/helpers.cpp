@@ -3,6 +3,8 @@
 //
 
 #include <interpretershared.h>
+#include <interpexec.h>
+#include "callhelpers.hpp"
 #include "shash.h"
 
 extern "C" void STDCALL CallCountingStubCode()
@@ -415,6 +417,7 @@ void InvokeCalliStub(PCODE ftn, void* cookie, int8_t *pArgs, int8_t *pRet)
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
 
+    // WASM-TODO: Reconcile calling conventions for managed calli.
     PCODE actualFtn = (PCODE)PortableEntryPoint::GetActualCode(ftn);
     ((void(*)(PCODE, int8_t*, int8_t*))cookie)(actualFtn, pArgs, pRet);
 }
@@ -423,8 +426,6 @@ void InvokeUnmanagedCalli(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
 {
     _ASSERTE(ftn != (PCODE)NULL);
     _ASSERTE(cookie != NULL);
-
-    // WASM-TODO: Reconcile calling conventions.
     ((void(*)(PCODE, int8_t*, int8_t*))cookie)(ftn, pArgs, pRet);
 }
 
@@ -435,211 +436,6 @@ void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, in
 
 namespace
 {
-// Arguments are passed on the stack with each argument aligned to INTERP_STACK_SLOT_SIZE.
-#define ARG_ADDR(i) (pArgs + (i * INTERP_STACK_SLOT_SIZE))
-#define ARG_IND(i) ((int32_t)((int32_t*)ARG_ADDR(i)))
-#define ARG_I32(i) (*(int32_t*)ARG_ADDR(i))
-#define ARG_I64(i) (*(int64_t*)ARG_ADDR(i))
-#define ARG_F64(i) (*(double*)ARG_ADDR(i))
-
-    void CallFunc_Void_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(void) = (void (*)(void))pcode;
-        (*fptr)();
-    }
-
-    void CallFunc_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t) = (void (*)(int32_t))pcode;
-        (*fptr)(ARG_I32(0));
-    }
-
-    void CallFunc_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t) = (void (*)(int32_t, int32_t))pcode;
-        (*fptr)(ARG_I32(0), ARG_I32(1));
-    }
-
-    void CallFunc_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2));
-    }
-
-    void CallFunc_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3));
-    }
-
-    void CallFunc_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4));
-    }
-
-    void CallFunc_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5));
-    }
-
-    void CallFunc_Void_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(void) = (int32_t (*)(void))pcode;
-        *(int32_t*)pRet = (*fptr)();
-    }
-
-    void CallFunc_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t) = (int32_t (*)(int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_I32(0));
-    }
-
-    void CallFunc_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t) = (int32_t (*)(int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I32(1));
-    }
-
-    void CallFunc_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2));
-    }
-
-    void CallFunc_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3));
-    }
-
-    void CallFunc_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4));
-    }
-
-    void CallFunc_I32IND_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t) = (void (*)(int32_t))pcode;
-        (*fptr)(ARG_IND(0));
-    }
-
-    void CallFunc_I32IND_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t) = (void (*)(int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG_I32(1));
-    }
-
-    void CallFunc_I32IND_I32IND_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t) = (void (*)(int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG_IND(1));
-    }
-
-    void CallFunc_I32IND_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2));
-    }
-
-    void CallFunc_I32IND_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3));
-    }
-
-    void CallFunc_I32IND_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4));
-    }
-
-    void CallFunc_I32IND_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5));
-    }
-
-    void CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        void (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (void (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5), ARG_I32(6));
-    }
-
-    void CallFunc_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t) = (int32_t (*)(int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG_I32(1));
-    }
-
-    void CallFunc_I32IND_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2));
-    }
-
-    void CallFunc_I32IND_I32_I32IND_I32IND_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG_I32(1), ARG_IND(2), ARG_IND(3));
-    }
-
-    void CallFunc_I32_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2));
-    }
-
-    void CallFunc_I32_I32IND_I32_I32IND_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_IND(1), ARG_I32(2), ARG_IND(3), ARG_I32(4));
-    }
-
-    void CallFunc_I32IND_I32_I32_I32_I32_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t) = (int32_t (*)(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_IND(0), ARG_I32(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I32(5));
-    }
-
-    void CallFunc_I32_I64_I32_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int64_t, int32_t) = (int32_t (*)(int32_t, int64_t, int32_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I64(1), ARG_I32(2));
-    }
-
-    void CallFunc_I32_I64_I32_I32_I32_I64_RetI32(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int32_t (*fptr)(int32_t, int64_t, int32_t, int32_t, int32_t, int64_t) = (int32_t (*)(int32_t, int64_t, int32_t, int32_t, int32_t, int64_t))pcode;
-        *(int32_t*)pRet = (*fptr)(ARG_I32(0), ARG_I64(1), ARG_I32(2), ARG_I32(3), ARG_I32(4), ARG_I64(5));
-    }
-
-    void CallFunc_F64_RetF64(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        double (*fptr)(double) = (double (*)(double))pcode;
-        *(double*)pRet = (*fptr)(ARG_F64(0));
-    }
-
-    void CallFunc_I32_RetI64(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int64_t (*fptr)(int32_t) = (int64_t (*)(int32_t))pcode;
-        *(int64_t*)pRet = (*fptr)(ARG_I32(0));
-    }
-
-    void CallFunc_I32_I64_I32_RetI64(PCODE pcode, int8_t *pArgs, int8_t *pRet)
-    {
-        int64_t (*fptr)(int32_t, int64_t, int32_t) = (int64_t (*)(int32_t, int64_t, int32_t))pcode;
-        *(int64_t*)pRet = (*fptr)(ARG_I32(0), ARG_I64(1), ARG_I32(2));
-    }
-
-#undef ARG_ADDR
-#undef ARG_IND
-#undef ARG_I32
-#undef ARG_I64
-#undef ARG_F64
-
     enum class ConvertType
     {
         NotConvertible,
@@ -762,61 +558,14 @@ namespace
         return true;
     }
 
-    struct StringToWasmSigThunk
-    {
-        const char* key;
-        void*       value;
-    };
-
-    StringToWasmSigThunk wasmThunks[] = {
-        { "v", (void*)&CallFunc_Void_RetVoid },
-        { "vi", (void*)&CallFunc_I32_RetVoid },
-        { "vii", (void*)&CallFunc_I32_I32_RetVoid },
-        { "viii", (void*)&CallFunc_I32_I32_I32_RetVoid },
-        { "viiii", (void*)&CallFunc_I32_I32_I32_I32_RetVoid },
-        { "viiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_RetVoid },
-        { "viiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_I32_RetVoid },
-
-        { "vn", (void*)&CallFunc_I32IND_RetVoid },
-        { "vni", (void*)&CallFunc_I32IND_I32_RetVoid },
-        { "vnii", (void*)&CallFunc_I32IND_I32_I32_RetVoid },
-        { "vniii", (void*)&CallFunc_I32IND_I32_I32_I32_RetVoid },
-        { "vniiii", (void*)&CallFunc_I32IND_I32_I32_I32_I32_RetVoid },
-        { "vniiiii", (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_RetVoid },
-        { "vniiiiii", (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_I32_RetVoid },
-        { "vnn", (void*)&CallFunc_I32IND_I32IND_RetVoid },
-
-        { "i", (void*)&CallFunc_Void_RetI32 },
-        { "ii", (void*)&CallFunc_I32_RetI32 },
-        { "iii", (void*)&CallFunc_I32_I32_RetI32 },
-        { "iiii", (void*)&CallFunc_I32_I32_I32_RetI32 },
-        { "iiiii", (void*)&CallFunc_I32_I32_I32_I32_RetI32 },
-        { "iiiiii", (void*)&CallFunc_I32_I32_I32_I32_I32_RetI32 },
-
-        { "ini",  (void*)&CallFunc_I32IND_I32_RetI32 },
-        { "inii",  (void*)&CallFunc_I32IND_I32_I32_RetI32 },
-        { "ininn", (void*)&CallFunc_I32IND_I32_I32IND_I32IND_RetI32 },
-        { "iini",  (void*)&CallFunc_I32_I32IND_I32_RetI32 },
-        { "iinini", (void*)&CallFunc_I32_I32IND_I32_I32IND_I32_RetI32 },
-        { "iniiiii", (void*)&CallFunc_I32IND_I32_I32_I32_I32_I32_RetI32 },
-
-        { "iili", (void*)&CallFunc_I32_I64_I32_RetI32 },
-        { "iiliiil", (void*)&CallFunc_I32_I64_I32_I32_I32_I64_RetI32 },
-
-        { "dd", (void*)&CallFunc_F64_RetF64 },
-
-        { "li", (void*)&CallFunc_I32_RetI64 },
-        { "lili", (void*)&CallFunc_I32_I64_I32_RetI64 },
-    };
-
-    class StringWasmThunkSHashTraits : public MapSHashTraits<const char*, void*>
+    class StringThunkSHashTraits : public MapSHashTraits<const char*, void*>
     {
     public:
         static BOOL Equals(const char* s1, const char* s2) { return strcmp(s1, s2) == 0; }
         static count_t Hash(const char* key) { return HashStringA(key); }
     };
 
-    typedef MapSHash<const char*, void*, NoRemoveSHashTraits<StringWasmThunkSHashTraits>> StringToWasmSigThunkHash;
+    typedef MapSHash<const char*, void*, NoRemoveSHashTraits<StringThunkSHashTraits>> StringToWasmSigThunkHash;
     static StringToWasmSigThunkHash* thunkCache = nullptr;
 
     void* LookupThunk(const char* key)
@@ -825,8 +574,11 @@ namespace
         if (table == nullptr)
         {
             StringToWasmSigThunkHash* newTable = new StringToWasmSigThunkHash();
-            for (const StringToWasmSigThunk& thunk : wasmThunks)
-                newTable->Add(thunk.key, thunk.value);
+            newTable->Reallocate(g_wasmThunksCount * StringToWasmSigThunkHash::s_density_factor_denominator / StringToWasmSigThunkHash::s_density_factor_numerator + 1);
+            for (size_t i = 0; i < g_wasmThunksCount; i++)
+            {
+                newTable->Add(g_wasmThunks[i].key, g_wasmThunks[i].value);
+            }
 
             if (InterlockedCompareExchangeT(&thunkCache, newTable, nullptr) != nullptr)
             {
@@ -868,9 +620,56 @@ namespace
 
         return LookupThunk(keyBuffer);
     }
+
+    // TODO: This hashing function should be replaced.
+    ULONG CreateKey(MethodDesc* pMD)
+    {
+        _ASSERTE(pMD != nullptr);
+
+        // Get the fully qualified name hash of the method as the key.
+        // Example: 'MyAssembly, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
+        SString strAssemblyName;
+        pMD->GetAssembly()->GetDisplayName(strAssemblyName);
+
+        // Get the member def token for the method.
+        mdMethodDef token = pMD->GetMemberDef();
+
+        // Combine the two to create a reasonably unique key.
+        return strAssemblyName.Hash() ^ token;
+    }
+
+    typedef MapSHash<ULONG, const ReverseThunkMapValue*> HashToReverseThunkHash;
+    HashToReverseThunkHash* reverseThunkCache = nullptr;
+
+    const ReverseThunkMapValue* LookupThunk(MethodDesc* pMD)
+    {
+        HashToReverseThunkHash* table = VolatileLoad(&reverseThunkCache);
+        if (table == nullptr)
+        {
+            HashToReverseThunkHash* newTable = new HashToReverseThunkHash();
+            newTable->Reallocate(g_ReverseThunksCount * HashToReverseThunkHash::s_density_factor_denominator / HashToReverseThunkHash::s_density_factor_numerator + 1);
+            for (size_t i = 0; i < g_ReverseThunksCount; i++)
+            {
+                newTable->Add(g_ReverseThunks[i].key, &g_ReverseThunks[i].value);
+            }
+
+            if (InterlockedCompareExchangeT(&reverseThunkCache, newTable, nullptr) != nullptr)
+            {
+                // Another thread won the race, discard ours
+                delete newTable;
+            }
+            table = reverseThunkCache;
+        }
+
+        ULONG key = CreateKey(pMD);
+
+        const ReverseThunkMapValue* thunk;
+        bool success = table->Lookup(key, &thunk);
+        return success ? thunk : nullptr;
+    }
 }
 
-LPVOID GetCookieForCalliSig(MetaSig metaSig)
+void* GetCookieForCalliSig(MetaSig metaSig)
 {
     STANDARD_VM_CONTRACT;
 
@@ -881,6 +680,29 @@ LPVOID GetCookieForCalliSig(MetaSig metaSig)
     }
 
     return thunk;
+}
+
+void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pMD != NULL);
+    _ASSERTE(pMD->HasUnmanagedCallersOnlyAttribute());
+
+    const ReverseThunkMapValue* value = LookupThunk(pMD);
+    if (value == NULL)
+    {
+        PORTABILITY_ASSERT("GetUnmanagedCallersOnlyThunk: unknown thunk for unmanaged callers only method");
+        return NULL;
+    }
+
+    // Update the target method if not already set.
+    _ASSERTE(value->Target != NULL);
+    if (NULL == (*value->Target))
+        *value->Target = pMD;
+
+    _ASSERTE((*value->Target) == pMD);
+    _ASSERTE(value->EntryPoint != NULL);
+    return value->EntryPoint;
 }
 
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)

@@ -673,7 +673,8 @@ enum CorInfoCallConv
     CORINFO_CALLCONV_HASTHIS    = 0x20,
     CORINFO_CALLCONV_EXPLICITTHIS=0x40,
     CORINFO_CALLCONV_PARAMTYPE  = 0x80,     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
-    CORINFO_CALLCONV_ASYNCCALL  = 0x100,    // Is this a call to an async function?
+    CORINFO_CALLCONV_ASYNCCALL  = 0x100,    // Is this a call with async calling convention?
+
 };
 
 // Represents the calling conventions supported with the extensible calling convention syntax
@@ -721,6 +722,7 @@ enum CorInfoOptions
                                                CORINFO_GENERICS_CTXT_FROM_METHODDESC |
                                                CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
     CORINFO_GENERICS_CTXT_KEEP_ALIVE        = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
+    CORINFO_ASYNC_SAVE_CONTEXTS             = 0x00000200, // Runtime async method must save and restore contexts
 };
 
 //
@@ -807,6 +809,7 @@ enum CORINFO_ACCESS_FLAGS
     CORINFO_ACCESS_NONNULL    = 0x0004, // Instance is guaranteed non-null
 
     CORINFO_ACCESS_LDFTN      = 0x0010, // Accessed via ldftn
+    CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE = 0x0020, // Method might be attributed with UnmanagedCallersOnlyAttribute.
 
     // Field access flags
     CORINFO_ACCESS_GET        = 0x0100, // Field get (ldfld)
@@ -1698,29 +1701,34 @@ struct CORINFO_EE_INFO
     CORINFO_OS  osType;
 };
 
+// Keep in sync with ContinuationFlags enum in BCL sources
 enum CorInfoContinuationFlags
 {
-    // Whether or not the continuation expects the result to be boxed and
-    // placed in the GCData array at index 0. Not set if the callee is void.
-    CORINFO_CONTINUATION_RESULT_IN_GCDATA = 1,
-    // If this bit is set the continuation resumes inside a try block and thus
-    // if an exception is being propagated, needs to be resumed. The exception
-    // should be placed at index 0 or 1 depending on whether the continuation
-    // also expects a result.
-    CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
-    // If this bit is set the continuation has the IL offset that inspired the
-    // OSR method saved in the beginning of 'Data', or -1 if the continuation
-    // belongs to a tier 0 method.
-    CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
+    // Note: the following 'Has' members determine the members present at
+    // the beginning of the continuation's data chunk. Each field is
+    // pointer sized when present, apart from the result that has variable
+    // size.
+
+    // Whether or not the continuation starts with an OSR IL offset.
+    CORINFO_CONTINUATION_HAS_OSR_ILOFFSET = 1,
+    // If this bit is set the continuation resumes inside a try block and
+    // thus if an exception is being propagated, needs to be resumed.
+    CORINFO_CONTINUATION_HAS_EXCEPTION = 2,
+    // If this bit is set the continuation has space for a continuation
+    // context.
+    CORINFO_CONTINUATION_HAS_CONTINUATION_CONTEXT = 4,
+    // If this bit is set the continuation has space to store a result
+    // returned by the callee.
+    CORINFO_CONTINUATION_HAS_RESULT = 8,
     // If this bit is set the continuation should continue on the thread
     // pool.
-    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 8,
-    // If this bit is set the continuation has a SynchronizationContext
-    // that we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 16,
-    // If this bit is set the continuation has a TaskScheduler
-    // that we should continue on.
-    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 32,
+    CORINFO_CONTINUATION_CONTINUE_ON_THREAD_POOL = 16,
+    // If this bit is set the continuation context is a
+    // SynchronizationContext that we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_SYNCHRONIZATION_CONTEXT = 32,
+    // If this bit is set the continuation context is a TaskScheduler that
+    // we should continue on.
+    CORINFO_CONTINUATION_CONTINUE_ON_CAPTURED_TASK_SCHEDULER = 64,
 };
 
 struct CORINFO_ASYNC_INFO
@@ -1729,19 +1737,12 @@ struct CORINFO_ASYNC_INFO
     CORINFO_CLASS_HANDLE continuationClsHnd;
     // 'Next' field
     CORINFO_FIELD_HANDLE continuationNextFldHnd;
-    // 'Resume' field
-    CORINFO_FIELD_HANDLE continuationResumeFldHnd;
+    // 'ResumeInfo' field
+    CORINFO_FIELD_HANDLE continuationResumeInfoFldHnd;
     // 'State' field
     CORINFO_FIELD_HANDLE continuationStateFldHnd;
     // 'Flags' field
     CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
-    // 'Data' field
-    CORINFO_FIELD_HANDLE continuationDataFldHnd;
-    // 'GCData' field
-    CORINFO_FIELD_HANDLE continuationGCDataFldHnd;
-    // Whether or not the continuation needs to be allocated through the
-    // helper that also takes a method handle
-    bool continuationsNeedMethodHandle;
     // Method handle for AsyncHelpers.CaptureExecutionContext
     CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
     // Method handle for AsyncHelpers.RestoreExecutionContext
@@ -1959,6 +1960,8 @@ struct CORINFO_FPSTRUCT_LOWERING
 
 #define OFFSETOF__CORINFO_Span__reference                 0
 #define OFFSETOF__CORINFO_Span__length                    TARGET_POINTER_SIZE
+
+#define OFFSETOF__CORINFO_Continuation__data              (SIZEOF__CORINFO_Object + TARGET_POINTER_SIZE /* Next */ + TARGET_POINTER_SIZE /* Resume */ + 8 /* Flags + State */)
 
 
 /* data to optimize delegate construction */
@@ -2912,6 +2915,16 @@ public:
             uint32_t                          numMappings         // [IN] Number of rich mappings
             ) = 0;
 
+    // Report async debug information to EE.
+    // The arrays are expected to be allocated with allocateArray
+    // and ownership is transferred to the EE with this call.
+    virtual void reportAsyncDebugInfo(
+            ICorDebugInfo::AsyncInfo*             asyncInfo,         // [IN] Async method information
+            ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,  // [IN] Array of async suspension points, indexed by state number
+            ICorDebugInfo::AsyncContinuationVarInfo* vars,           // [IN] Array of async continuation variable info
+            uint32_t                              numVars            // [IN] Number of entries in the async vars array
+            ) = 0;
+
     // Report back some metadata about the compilation to the EE -- for
     // example, metrics about the compilation.
     virtual void reportMetadata(
@@ -3340,7 +3353,13 @@ public:
             CORINFO_TAILCALL_HELPERS* pResult
             ) = 0;
 
-    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() = 0;
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub(void** entryPoint) = 0;
+
+    virtual CORINFO_CLASS_HANDLE getContinuationType(
+        size_t dataSize,
+        bool* objRefs,
+        size_t objRefsSize
+        ) = 0;
 
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
     virtual bool convertPInvokeCalliToCall(

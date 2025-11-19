@@ -156,6 +156,27 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_GT:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
+        case GT_AND:
+        {
+            IntegralRange leftRange  = IntegralRange::ForNode(node->gtGetOp1(), compiler);
+            IntegralRange rightRange = IntegralRange::ForNode(node->gtGetOp2(), compiler);
+            if (leftRange.IsNonNegative() && rightRange.IsNonNegative())
+            {
+                // If both sides are known to be non-negative, the result is non-negative.
+                // Further, the top end of the range cannot exceed the min of the two upper bounds.
+                return {SymbolicIntegerValue::Zero, min(leftRange.GetUpperBound(), rightRange.GetUpperBound())};
+            }
+
+            if (leftRange.IsNonNegative() || rightRange.IsNonNegative())
+            {
+                // If only one side is known to be non-negative, however it is harder to
+                // reason about the upper bound.
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
+            break;
+        }
+
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
@@ -215,11 +236,20 @@ bool IntegralRange::Contains(int64_t value) const
         }
 
         case GT_CNS_INT:
+        {
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
             }
+
+            int64_t constValue = node->AsIntCon()->IntegralValue();
+            if (constValue >= 0)
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
             break;
+        }
 
         case GT_QMARK:
             return Union(ForNode(node->AsQmark()->ThenNode(), compiler),
@@ -5407,21 +5437,38 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             {
                 return dropBoundsCheck(INDEBUG("a[*] followed by a[0]"));
             }
-            // Do we have two constant indexes?
-            else if (vnStore->IsVNConstant(curAssertion->op1.bnd.vnIdx) && vnStore->IsVNConstant(vnCurIdx))
+            else
             {
-                // Make sure the types match.
-                var_types type1 = vnStore->TypeOfVN(curAssertion->op1.bnd.vnIdx);
-                var_types type2 = vnStore->TypeOfVN(vnCurIdx);
+                // index1 doesn't have to be a constant, it can be a Phi each predecessor of which is a constant.
+                // The smallest of those is what we can rely on. Example:
+                //
+                //  arr[cond ? 10 : 5] = 0;  // arr is at least 6 elements long
+                //  arr[2] = 0;              // arr must be at least 3 elements long
+                //
+                // or even:
+                //
+                //  arr[cond ? 10 : 5] = 0; // arr is at least 6 elements long
+                //  arr[cond ? 1 : 2] = 0;  // arr must be at least 3 elements long
+                //
+                auto tryGetMaxOrMinConst = [this](ValueNum vn, bool getMin, int* index) -> bool {
+                    *index = getMin ? INT_MAX : INT_MIN;
+                    return vnStore->VNVisitReachingVNs(vn,
+                                                       [this, index, getMin](ValueNum vn) -> ValueNumStore::VNVisit {
+                        int cns = 0;
+                        if (vnStore->IsVNIntegralConstant(vn, &cns))
+                        {
+                            *index = getMin ? min(*index, cns) : max(*index, cns);
+                            return ValueNumStore::VNVisit::Continue;
+                        }
+                        return ValueNumStore::VNVisit::Abort;
+                    }) == ValueNumStore::VNVisit::Continue;
+                };
 
-                if (type1 == type2 && type1 == TYP_INT)
+                int index1;
+                int index2;
+                if (tryGetMaxOrMinConst(curAssertion->op1.bnd.vnIdx, /*min*/ true, &index1) &&
+                    tryGetMaxOrMinConst(vnCurIdx, /*max*/ false, &index2))
                 {
-                    int index1 = vnStore->ConstantValue<int>(curAssertion->op1.bnd.vnIdx);
-                    int index2 = vnStore->ConstantValue<int>(vnCurIdx);
-
-                    // the case where index1 == index2 should have been handled above
-                    assert(index1 != index2);
-
                     // It can always be considered as redundant with any previous higher constant value
                     //       a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2
                     if (index2 >= 0 && index1 >= index2)
@@ -5776,6 +5823,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 
 void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
 {
+    assert(!optLocalAssertionProp);
+
     if (BitVecOps::IsEmpty(apTraits, activeAssertions))
     {
         return;
@@ -5804,31 +5853,25 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
         {
             AssertionDsc* impAssertion = optGetAssertion(impIndex);
 
-            //  The impAssertion must be different from the chkAssertion
+            // The impAssertion must be different from the chkAssertion
             if (impIndex == chkAssertionIndex)
             {
                 continue;
             }
 
-            // impAssertion must be a Non Null assertion on lclNum
-            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || (impAssertion->op1.kind != O1K_LCLVAR) ||
-                (impAssertion->op2.kind != O2K_CONST_INT) || (impAssertion->op1.vn != chkAssertion->op1.vn))
+            // impAssertion must be a Non Null assertion on op1.vn
+            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || !impAssertion->CanPropNonNull() ||
+                (impAssertion->op1.vn != chkAssertion->op1.vn))
             {
                 continue;
             }
 
             // The bit may already be in the result set
-            if (!BitVecOps::IsMember(apTraits, activeAssertions, impIndex - 1))
+            if (BitVecOps::TryAddElemD(apTraits, activeAssertions, impIndex - 1))
             {
-                BitVecOps::AddElemD(apTraits, activeAssertions, impIndex - 1);
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
-                           (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
-                           impIndex);
-                }
-#endif
+                JITDUMP("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
+                        (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
+                        impIndex);
             }
 
             // There is at most one non-null assertion that is implied by the current chkIndex assertion

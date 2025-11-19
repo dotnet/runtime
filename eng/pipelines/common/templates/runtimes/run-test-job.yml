@@ -332,7 +332,23 @@ jobs:
           msbuildParallelism: '/maxcpucount:55'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
-          ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+          ${{ if and(eq(parameters.runInterpreter, 'true'),eq(variables['Build.Reason'], 'PullRequest')) }}:
+            scenarios:
+            - interpmode3_no_tiered_compilation
+            - interpmode2_no_tiered_compilation
+            - interpmode1_no_tiered_compilation
+            - no_tiered_compilation
+          ${{ elseif eq(parameters.runInterpreter, 'true') }}:
+            scenarios:
+            - interpmode3_no_tiered_compilation
+            - interpmode3
+            - interpmode2_no_tiered_compilation
+            - interpmode2
+            - normal
+            - no_tiered_compilation
+            - interpmode1_no_tiered_compilation
+            - interpmode1
+          ${{ elseif eq(parameters.runtimeFlavor, 'mono') }}:
             # tiered compilation isn't done on mono yet
             scenarios:
             - normal
@@ -576,7 +592,7 @@ jobs:
           condition: always()
 
         # Ensure the Python azure-storage-blob package is installed before doing the upload.
-        - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.5.0 --force-reinstall && $(PipScript) install azure.identity==1.16.1 --force-reinstall
+        - script: $(PipScript) install --upgrade pip && $(PipScript) install azure.storage.blob==12.27.0 --force-reinstall && $(PipScript) install azure.identity==1.25.1 --force-reinstall
           displayName: Upgrade Pip to latest and install azure-storage-blob and azure-identity Python packages
           condition: always()
 
