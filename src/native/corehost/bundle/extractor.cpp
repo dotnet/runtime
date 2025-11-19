@@ -170,8 +170,8 @@ void extractor_t::extract(const file_entry_t &entry, reader_t &reader)
 
         CompressionNative_InflateEnd(&zStream);
 #else
-    trace::error(_X("Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost."));
-    throw StatusCode::BundleExtractionIOError;
+        trace::error(_X("Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost."));
+        throw StatusCode::BundleExtractionIOError;
 #endif
     }
     else
