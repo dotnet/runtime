@@ -5334,11 +5334,6 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     // - if there is a captured exec context, call the restoration function. 
     AddIns(INTOP_HANDLE_CONTINUATION_RESUME);
     m_pLastNewIns->data[0] = suspendDataIndex;
-    m_pLastNewIns->data[1] = GetDataForHelperFtn(CORINFO_HELP_THROWEXACT);
-
-    PushStackType(StackTypeI4, NULL);
-    m_pStackPointer--;
-    m_pLastNewIns->SetDVar(m_pStackPointer[0].var);
 
     // Once we've resumed, if the return type is a primitive integral type which
     // isn't an I4/U4 but is represented as such on the evaluation stack, sign/zero

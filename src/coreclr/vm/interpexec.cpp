@@ -3875,7 +3875,7 @@ do                                                                      \
                     if (continuation == NULL)
                     {
                         // No continuation to handle.
-                        ip += 3 + 4; // (3 for this opcode + 4 for the continuation resume which follows)
+                        ip += 3 + 2; // (3 for this opcode + 2 for the continuation resume which follows)
                         break;
                     }
                     ip += 3;
@@ -3933,7 +3933,7 @@ do                                                                      \
 
                 case INTOP_HANDLE_CONTINUATION_RESUME:
                 {
-                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[2]];
+                    InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[1]];
                     CONTINUATIONREF continuation = (CONTINUATIONREF)ObjectToOBJECTREF(*(Object**)(stack + pAsyncSuspendData->continuationArgOffset));
                     _ASSERTE(pInterpreterFrame->GetContinuation() == NULL);
 
@@ -3964,9 +3964,7 @@ do                                                                      \
                         }
                     }
 
-                    // No exception needed. Do nothing.
-                    LOCAL_VAR(ip[1], void*) = NULL;
-                    ip += 4;
+                    ip += 2;
                     break;
                 }
 
@@ -3984,9 +3982,9 @@ do                                                                      \
                         // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
                         assert(*ip == INTOP_HANDLE_CONTINUATION_RESUME);
                         assert(*(ip-3) == INTOP_HANDLE_CONTINUATION_SUSPEND);
-                        InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[2]];
+                        InterpAsyncSuspendData *pAsyncSuspendData = (InterpAsyncSuspendData*)pMethod->pDataItems[ip[1]];
 
-                        returnOffset = pMethod->allocaSize - INTERP_STACK_SLOT_SIZE;
+                        returnOffset = pMethod->allocaSize;
                         callArgsOffset = pMethod->allocaSize;
 
                         OBJECTREF execContext = ObjectToOBJECTREF(*(Object**)(((uint8_t*)OBJECTREFToObject(continuation)) + pAsyncSuspendData->offsetIntoContinuationTypeForExecutionContext));
