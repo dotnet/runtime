@@ -4566,11 +4566,12 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             if (relopOp1->OperIs(GT_CAST))
             {
                 GenTreeCast* cast = relopOp1->AsCast();
-                if ((cast->gtCastType == TYP_BYTE || cast->gtCastType == TYP_SHORT) && !cast->gtOverflow())
+                if ((cast->CastToType() == TYP_BYTE || cast->CastToType() == TYP_SHORT) && !cast->gtOverflow())
                 {
-                    op1Type             = cast->gtCastType;
+                    op1Type             = cast->CastToType();
                     GenTree* castOp     = cast->CastOp();
                     cond->AsOp()->gtOp1 = castOp;
+                    castOp->ClearContained();
                     BlockRange().Remove(cast);
                     relopOp1 = castOp;
                 }

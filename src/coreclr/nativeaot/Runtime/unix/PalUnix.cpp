@@ -1088,6 +1088,11 @@ HijackFunc* PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 
 void PalHijack(Thread* pThreadToHijack)
 {
+    if (pThreadToHijack->IsActivationPending())
+    {
+        return;
+    }
+
     pThreadToHijack->SetActivationPending(true);
 
     int status = pthread_kill(pThreadToHijack->GetOSThreadHandle(), INJECT_ACTIVATION_SIGNAL);
