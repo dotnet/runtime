@@ -262,18 +262,29 @@ internal sealed class CodeDirectoryBlob : IBlob
             return false;
 
         if (_identifier != other._identifier)
+        {
+            Debug.WriteLine($"Identifiers differ: '{_identifier}' vs '{other._identifier}'");
+            Debug.WriteLine($"Expected (codesign):\n{other.ToCodesignString()}");
+            Debug.WriteLine($"Actual (managed):\n{ToCodesignString()}");
             return false;
+        }
 
         CodeDirectoryHeader thisHeader = _cdHeader;
         CodeDirectoryHeader otherHeader = other._cdHeader;
         if (!CodeDirectoryHeader.AreEqual(thisHeader, otherHeader))
         {
+            Debug.WriteLine("CodeDirectory headers differ");
+            Debug.WriteLine($"Expected (codesign):\n{other.ToCodesignString()}");
+            Debug.WriteLine($"Actual (managed):\n{ToCodesignString()}");
             return false;
         }
         for (int i = 0; i < _specialSlotHashes.Length; i++)
         {
             if (!_specialSlotHashes[i].SequenceEqual(other._specialSlotHashes[i]))
             {
+                Debug.WriteLine($"Special slot hash {-(int)SpecialSlotCount + i} differs");
+                Debug.WriteLine($"Expected (codesign):\n{other.ToCodesignString()}");
+                Debug.WriteLine($"Actual (managed):\n{ToCodesignString()}");
                 return false;
             }
         }
@@ -282,6 +293,9 @@ internal sealed class CodeDirectoryBlob : IBlob
         {
             if (!_codeHashes[i].SequenceEqual(other._codeHashes[i]))
             {
+                Debug.WriteLine($"Code hash {i} differs");
+                Debug.WriteLine($"Expected (codesign):\n{other.ToCodesignString()}");
+                Debug.WriteLine($"Actual (managed):\n{ToCodesignString()}");
                 return false;
             }
         }
@@ -327,5 +341,44 @@ internal sealed class CodeDirectoryBlob : IBlob
             }
         }
         return (int)Size;
+    }
+
+    /// <summary>
+    /// Formats the CodeDirectory information in a style similar to codesign's output
+    /// </summary>
+    internal string ToCodesignString()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"Identifier={_identifier}");
+        sb.AppendLine($"CodeDirectory v={(uint)_cdHeader.Version:X} size={Size} flags=0x{(uint)_cdHeader.Flags:X}({_cdHeader.Flags.ToString().ToLower(System.Globalization.CultureInfo.InvariantCulture)}) hashes={CodeSlotCount}+{SpecialSlotCount} location=embedded");
+        sb.AppendLine($"Hash type={_cdHeader.HashType.ToString().ToLower(System.Globalization.CultureInfo.InvariantCulture)} size={HashSize}");
+        sb.AppendLine($"Executable Segment base={_cdHeader.ExecSegmentBase}");
+        sb.AppendLine($"Executable Segment limit={_cdHeader.ExecSegmentLimit}");
+        sb.AppendLine($"Executable Segment flags=0x{(ulong)_cdHeader.ExecSegmentFlags:X}");
+        sb.AppendLine($"Page size={(1 << _cdHeader.Log2PageSize)}");
+
+        // Print special slot hashes (numbered from -SpecialSlotCount to -1)
+        for (int i = 0; i < SpecialSlotCount; i++)
+        {
+            int slotNumber = -(int)SpecialSlotCount + i;
+            sb.AppendLine($"    {slotNumber,3}={ToHexStringLower(_specialSlotHashes[i])}");
+        }
+
+        // Print code hashes (numbered from 0 to CodeSlotCount-1)
+        for (int i = 0; i < CodeSlotCount; i++)
+        {
+            sb.AppendLine($"    {i,3}={ToHexStringLower(_codeHashes[i])}");
+        }
+
+        return sb.ToString();
+    }
+
+    private static string ToHexStringLower(byte[] bytes)
+    {
+#if NET
+        return Convert.ToHexStringLower(bytes);
+#else
+        return BitConverter.ToString(bytes).Replace("-", "").ToLower(System.Globalization.CultureInfo.InvariantCulture);
+#endif
     }
 }
