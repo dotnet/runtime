@@ -172,6 +172,7 @@
 
   <Target Name="UpdateWasmNativeAssetOriginalItemSpec">
     <ItemGroup>
+      <!-- WasmNativeAsset OriginalItemSpec points to the .csproj it was built for, whereas we expect it to point to the file itself later in WasmSDK -->
       <WasmNativeAsset Update="@(WasmNativeAsset)">
         <OriginalItemSpec>%(Identity)</OriginalItemSpec>
       </WasmNativeAsset>
@@ -181,6 +182,8 @@
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.LinkContentToWwwroot" AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
 
   <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true'">
+    <!-- StaticWebAssetsSDK expects all "files accessible from web" to be in wwwroot folder -->
+    <!-- Here we are adding Link/TargetPath for all Content items and adding them to WasmFilesToIncludeInFileSystem -->
     <LinkContentToWwwroot Content="@(Content)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
       <Output TaskParameter="WasmFilesToIncludeInFileSystem" ItemName="WasmFilesToIncludeInFileSystem" />
       <Output TaskParameter="ContentOut" ItemName="_LinkedContent" />
@@ -192,6 +195,8 @@
   </Target>
 
   <Target Name="LinkPublishContentToWwwroot" BeforeTargets="ComputeWasmVfs" DependsOnTargets="GetCopyToOutputDirectoryItems" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true'">
+    <!-- StaticWebAssetsSDK doesn't have support for adding generated files during publish as "files accessible from web" -->
+    <!-- Here we are adding Link/TargetPath for various files generated during publish, adding them to WasmFilesToIncludeInFileSystem and defining them as StaticWebAsset with StaticWebAssetEndpoint -->
     <ItemGroup>
       <_WasmFilesForVfs Include="$(PublishDir)%(WasmFilesToIncludeFromPublishDir.Identity)"
         TargetPath="%(WasmFilesToIncludeFromPublishDir.TargetDir)/%(WasmFilesToIncludeFromPublishDir.Identity)"
