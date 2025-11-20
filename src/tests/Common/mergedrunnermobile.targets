@@ -2,7 +2,7 @@
 <!-- Build infrastructure support to enable running merged test runner assemblies like regular tests on mobile platforms. -->
   <PropertyGroup>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
+    <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(TestBuildMode)' != 'nativeaot'">$(AssemblyName).dll</MainLibraryFileName>
     <WasmMainAssemblyFileName>$(AssemblyName).dll</WasmMainAssemblyFileName>
     <TestFramework>GeneratedRunner</TestFramework>
     <!-- Don't treat linker warnings as errors for our tests. -->
@@ -37,6 +37,16 @@
     </ItemGroup>
     <WriteLinesToFile File="@(_PlaceholderExclusionList)"
                       Lines=""
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <!-- Write ExpectedExitCode to a file so helixpublishwitharcade.proj can read it back -->
+    <ItemGroup Condition="'$(ExpectedExitCode)' != ''">
+      <_ExpectedExitCodeFile Include="$(IntermediateOutputPath)/ExpectedExitCode.txt" />
+      <Content Include="@(_ExpectedExitCodeFile)" TargetPath="ExpectedExitCode.txt" CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+    <WriteLinesToFile Condition="'$(ExpectedExitCode)' != ''"
+                      File="@(_ExpectedExitCodeFile)"
+                      Lines="$(ExpectedExitCode)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
   </Target>

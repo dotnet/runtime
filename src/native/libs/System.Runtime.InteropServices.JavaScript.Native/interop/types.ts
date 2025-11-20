@@ -19,4 +19,8 @@ export interface JSMarshalerArgument extends NativePointer {
     __brand: "JSMarshalerArgument"
 }
 
+export type WeakRefInternal<T extends object> = WeakRef<T> & {
+    dispose?: () => void
+}
+
 export * from "../types";

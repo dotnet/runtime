@@ -346,6 +346,19 @@ CreateCrashDump(
 
 #endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
 
+// Helper function to prevent compiler from optimizing away a variable
+#if defined(__llvm__)
+__attribute__((noinline, optnone))
+#else
+__attribute__((noinline, optimize("O0")))
+#endif
+static void DoNotOptimize(const void* p)
+{
+    // This function takes the address of a variable to ensure
+    // it's preserved and available in crash dumps
+    (void)p;
+}
+
 /*++
 Function:
   PalCreateCrashDumpIfEnabled
@@ -355,13 +368,17 @@ Function:
 Parameters:
     signal - POSIX signal number or 0
     siginfo - signal info or nullptr
+    context - signal context or nullptr
     exceptionRecord - address of exception record or nullptr
 
 (no return value)
 --*/
 void
-PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* exceptionRecord)
+PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void* exceptionRecord)
 {
+    // Preserve context pointer to prevent optimization
+    DoNotOptimize(&context);
+
 #if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
     // If enabled, launch the create minidump utility and wait until it completes
     if (g_argvCreateDump[0] != nullptr)
@@ -454,13 +471,13 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* exceptionRecor
 void
 PalCreateCrashDumpIfEnabled()
 {
-    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, nullptr);
+    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, nullptr, nullptr);
 }
 
 void
 PalCreateCrashDumpIfEnabled(void* pExceptionRecord)
 {
-    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, pExceptionRecord);
+    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, nullptr, pExceptionRecord);
 }
 
 /*++

@@ -1512,24 +1512,6 @@ private:
             }
         }
 
-        if ((callUser != nullptr) && callUser->IsAsync() && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
-        {
-            CallArg* suspendedArg = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
-            if ((suspendedArg != nullptr) && (val.Node() == suspendedArg->GetNode()))
-            {
-                INDEBUG(varDsc->SetDefinedViaAddress(true));
-                escapeAddr = false;
-                defFlag    = GTF_VAR_DEF;
-
-                if ((val.Offset() != 0) || (varDsc->lvExactSize() != 1))
-                {
-                    defFlag |= GTF_VAR_USEASG;
-                }
-
-                callUser->asyncInfo->HasSuspensionIndicatorDef = true;
-            }
-        }
-
         if (escapeAddr)
         {
             unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;

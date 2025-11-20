@@ -4,6 +4,8 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- Native varargs not supported on ARM -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel'">true</CLRTestTargetUnsupported>
+    <!-- Native varargs are not supported with Interpreter. See https://github.com/dotnet/runtime/issues/118965 -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <CopyDebugCRTDllsToOutputDirectory>true</CopyDebugCRTDllsToOutputDirectory>

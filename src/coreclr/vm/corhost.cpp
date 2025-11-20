@@ -694,8 +694,9 @@ HRESULT CorHost2::CreateDelegate(
     EMPTY_STRING_TO_NULL(wszClassName);
     EMPTY_STRING_TO_NULL(wszMethodName);
 
-    if (fnPtr == 0)
+    if (fnPtr == NULL)
        return E_POINTER;
+
     *fnPtr = 0;
 
     if(wszAssemblyName == NULL)
@@ -714,10 +715,6 @@ HRESULT CorHost2::CreateDelegate(
     HRESULT hr = S_OK;
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
 
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    hr = E_NOTIMPL;
-
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
     GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
     MAKE_UTF8PTR_FROMWIDE(szClassName, wszClassName);
@@ -754,15 +751,19 @@ HRESULT CorHost2::CreateDelegate(
 
         if (pMD->HasUnmanagedCallersOnlyAttribute())
         {
-            *fnPtr = pMD->GetMultiCallableAddrOfCode();
+            pMD->PrepareForUseAsAFunctionPointer();
+            *fnPtr = pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE);
         }
         else
         {
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            ThrowHR(COR_E_NOTSUPPORTED);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
             UMEntryThunkData* pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
             *fnPtr = (INT_PTR)pUMEntryThunk->GetCode();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
         }
     }
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     END_EXTERNAL_ENTRYPOINT;
 

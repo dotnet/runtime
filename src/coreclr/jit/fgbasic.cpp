@@ -4840,11 +4840,34 @@ BasicBlock* Compiler::fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node)
             }
         }
 
-        curr->bbCodeOffsEnd = max(curr->bbCodeOffs, splitPointILOffset);
+        if (splitPointILOffset == BAD_IL_OFFSET)
+        {
+            // Try to look forwards in the next block
+            for (GenTree* node : LIR::AsRange(newBlock))
+            {
+                if (node->OperIs(GT_IL_OFFSET))
+                {
+                    GenTreeILOffset* ilOffset = node->AsILOffset();
+                    DebugInfo        rootDI   = ilOffset->gtStmtDI.GetRoot();
+                    if (rootDI.IsValid())
+                    {
+                        splitPointILOffset = rootDI.GetLocation().GetOffset();
+                        break;
+                    }
+                }
+            }
+        }
 
-        // Also use this as the beginning offset of the next block. Presumably we could/should
-        // look to see if the first node is a GT_IL_OFFSET node, and use that instead.
-        newBlock->bbCodeOffs = min(splitPointILOffset, newBlock->bbCodeOffsEnd);
+        if (splitPointILOffset == BAD_IL_OFFSET)
+        {
+            // If we found no IL_OFFSET in the block then we cannot do anything
+            // but guess. Let's make the old block (upper part) contain
+            // everything if we have an end, and otherwise nothing.
+            splitPointILOffset = curr->bbCodeOffsEnd == BAD_IL_OFFSET ? curr->bbCodeOffs : curr->bbCodeOffsEnd;
+        }
+
+        curr->bbCodeOffsEnd  = splitPointILOffset;
+        newBlock->bbCodeOffs = splitPointILOffset;
     }
     else
     {

@@ -12,7 +12,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
     [SkipKeptItemsValidation]
-    [IgnoreTestCase("NativeAOT doesn't support runtime async yet", IgnoredBy = Tool.NativeAot)]
     [SetupCompileArgument("/features:runtime-async=on")]
     [SetupCompileArgument("/nowarn:SYSLIB5007")]
     public class RuntimeAsyncMethods

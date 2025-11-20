@@ -126,7 +126,7 @@ steps:
   # Build iOS sample app
   - ${{ if eq(parameters.osGroup, 'ios') }}:
     - ${{ if eq(parameters.nameSuffix, 'iOSMono') }}:
-      # Mono FullAOT (no LLVM) build 
+      # Mono FullAOT (no LLVM) build
       - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 USE_MONO_RUNTIME=true BUILD_CONFIG=Release AOT=True INTERP=false USE_LLVM=False DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true
         env:
           DevTeamProvisioning: '-'
@@ -176,7 +176,7 @@ steps:
 
     - ${{ if eq(parameters.runtimeType, 'coreclr') }}:
       # CoreCLR Interpreter build
-      - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 USE_MONO_RUNTIME=false BUILD_CONFIG=Checked AOT=false DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true
+      - script: make build-appbundle TARGET_OS=ios TARGET_ARCH=arm64 USE_MONO_RUNTIME=false BUILD_CONFIG=Release AOT=false DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true
         env:
           DevTeamProvisioning: '-'
         workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
@@ -189,7 +189,7 @@ steps:
           artifactName:  iOSCoreCLRInterpreterArm64StripSymbolsBuildLog
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
-          rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Debug-iphoneos/HelloiOS.app
+          rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/Bundle/HelloiOS/Release-iphoneos/HelloiOS.app
           includeRootFolder: true
           displayName: iOS Sample App CoreCLR Interpreter NoSymbols
           artifactName: iOSSampleAppCoreCLRInterpreterNoSymbols

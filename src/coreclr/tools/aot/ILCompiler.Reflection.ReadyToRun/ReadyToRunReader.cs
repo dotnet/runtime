@@ -132,10 +132,10 @@ namespace ILCompiler.Reflection.ReadyToRun
         private string _compilerIdentifier;
 
         /// <summary>
-        /// Underlying PE image reader is used to access raw PE structures like header
-        /// or section list.
+        /// Underlying binary image reader is used to access raw structures like headers
+        /// and sections. This can be either a PE or MachO image.
         /// </summary>
-        public PEReader CompositeReader { get; private set; }
+        public IBinaryImageReader CompositeReader { get; private set; }
 
         /// <summary>
         /// Byte array containing the ReadyToRun image
@@ -394,7 +394,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         public ReadyToRunReader(IAssemblyResolver assemblyResolver, IAssemblyMetadata metadata, PEReader peReader, string filename)
         {
             _assemblyResolver = assemblyResolver;
-            CompositeReader = peReader;
+            CompositeReader = new PEImageReader(peReader);
             Filename = filename;
             Initialize(metadata);
         }
@@ -410,7 +410,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         public ReadyToRunReader(IAssemblyResolver assemblyResolver, IAssemblyMetadata metadata, PEReader peReader, string filename, ReadOnlyMemory<byte> content)
         {
             _assemblyResolver = assemblyResolver;
-            CompositeReader = peReader;
+            CompositeReader = new PEImageReader(peReader);
             Filename = filename;
             Image = ConvertToArray(content);
             ImageReader = new NativeReader(new MemoryStream(Image));
@@ -421,7 +421,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Minimally initializes the R2R reader.
         /// </summary>
         /// <param name="assemblyResolver">Assembly resolver</param>
-        /// <param name="filename">PE file name</param>
+        /// <param name="filename">Binary image file name</param>
         public unsafe ReadyToRunReader(IAssemblyResolver assemblyResolver, string filename)
         {
             _assemblyResolver = assemblyResolver;
@@ -433,8 +433,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Minimally initializes the R2R reader.
         /// </summary>
         /// <param name="assemblyResolver">Assembly resolver</param>
-        /// <param name="filename">PE file name</param>
-        /// <param name="content">PE image content</param>
+        /// <param name="filename">Binary image file name</param>
+        /// <param name="content">Binary image content</param>
         public unsafe ReadyToRunReader(IAssemblyResolver assemblyResolver, string filename, ReadOnlyMemory<byte> content)
         {
             _assemblyResolver = assemblyResolver;
@@ -497,47 +497,37 @@ namespace ILCompiler.Reflection.ReadyToRun
                     ImageReader = new NativeReader(new MemoryStream(Image));
                     byte[] image = Image;
                     ImagePin = new PinningReference(image);
-                    CompositeReader = new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image));
+                    if (MachO.MachObjectFile.IsMachOImage(Filename))
+                    {
+                        CompositeReader = new MachO.MachOImageReader(image);
+                    }
+                    else
+                    {
+                        CompositeReader = new PEImageReader(new PEReader(Unsafe.As<byte[], ImmutableArray<byte>>(ref image)));
+                    }
                 }
                 else
                 {
-                    ImmutableArray<byte> content = CompositeReader.GetEntireImage().GetContent();
+                    ImmutableArray<byte> content = CompositeReader.GetEntireImage();
                     Image = Unsafe.As<ImmutableArray<byte>, byte[]>(ref content);
                     ImageReader = new NativeReader(new MemoryStream(Image));
                     ImagePin = new PinningReference(Image);
                 }
 
-                if (metadata == null && CompositeReader.HasMetadata)
+                if (metadata == null)
                 {
-                    metadata = new StandaloneAssemblyMetadata(CompositeReader);
+                    metadata = CompositeReader.GetStandaloneAssemblyMetadata();
                 }
 
-                if (metadata != null)
+                if (!CompositeReader.TryGetReadyToRunHeader(out _readyToRunHeaderRVA, out _composite))
                 {
-                    if ((CompositeReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) == 0)
-                    {
-                        if (!TryLocateNativeReadyToRunHeader())
-                        {
-                            DumpImageInformation();
-
-                            throw new BadImageFormatException("The file is not a ReadyToRun image");
-                        }
-
-                        Debug.Assert(Composite);
-                    }
-                    else
-                    {
-                        _assemblyCache.Add(metadata);
-
-                        DirectoryEntry r2rHeaderDirectory = CompositeReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
-                        _readyToRunHeaderRVA = r2rHeaderDirectory.RelativeVirtualAddress;
-                        Debug.Assert(!Composite);
-                    }
-
+                    throw new BadImageFormatException("The file is not a ReadyToRun image");
                 }
-                else if (!TryLocateNativeReadyToRunHeader())
+
+                Debug.Assert(metadata != null || _composite);
+                if (metadata != null && !_composite)
                 {
-                    throw new BadImageFormatException($"ECMA metadata / RTR_HEADER not found in file '{Filename}'");
+                    _assemblyCache.Add(metadata);
                 }
             }
             catch (BadImageFormatException)
@@ -554,26 +544,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 Console.Error.WriteLine($"Image file '{Filename}' information:");
                 Console.Error.WriteLine($"Size: {Image.Length} byte(s)");
-                Console.Error.WriteLine($"MetadataSize: {CompositeReader.PEHeaders.MetadataSize} byte(s)");
-
-                if (CompositeReader.PEHeaders.PEHeader is PEHeader header)
-                {
-                    Console.Error.WriteLine($"SizeOfImage: {header.SizeOfImage} byte(s)");
-                    Console.Error.WriteLine($"ImageBase: 0x{header.ImageBase:X}");
-                    Console.Error.WriteLine($"FileAlignment: 0x{header.FileAlignment:X}");
-                    Console.Error.WriteLine($"SectionAlignment: 0x{header.SectionAlignment:X}");
-                }
-                else
-                    Console.Error.WriteLine("No PEHeader");
-
-                Console.Error.WriteLine($"CorHeader.Flags: {CompositeReader.PEHeaders.CorHeader?.Flags}");
-
-                Console.Error.WriteLine("Sections:");
-                foreach (var section in CompositeReader.PEHeaders.SectionHeaders)
-                    Console.Error.WriteLine($"  {section.Name} {section.VirtualAddress} - {(section.VirtualAddress + section.VirtualSize)}");
-
-                var exportTable = CompositeReader.GetExportTable();
-                exportTable.DumpToConsoleError();
+                CompositeReader.DumpImageInformation(Console.Error);
             }
             catch (Exception exc)
             {
@@ -665,12 +636,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             return customMethods;
         }
 
-        private bool TryLocateNativeReadyToRunHeader()
-        {
-            _composite = CompositeReader.TryGetCompositeReadyToRunHeader(out _readyToRunHeaderRVA);
 
-            return _composite;
-        }
 
         private IAssemblyMetadata GetSystemModuleMetadataReader()
         {
@@ -702,21 +668,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 return;
             }
-            uint machine = (uint)CompositeReader.PEHeaders.CoffHeader.Machine;
-            _operatingSystem = OperatingSystem.Unknown;
-            foreach (OperatingSystem os in Enum.GetValues(typeof(OperatingSystem)))
-            {
-                _machine = (Machine)(machine ^ (uint)os);
-                if (Enum.IsDefined(typeof(Machine), _machine))
-                {
-                    _operatingSystem = os;
-                    break;
-                }
-            }
-            if (_operatingSystem == OperatingSystem.Unknown)
-            {
-                throw new BadImageFormatException($"Invalid Machine: {machine}");
-            }
+
+            _machine = CompositeReader.Machine;
+            _operatingSystem = CompositeReader.OperatingSystem;
 
             switch (_machine)
             {
@@ -738,7 +692,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     throw new NotImplementedException(Machine.ToString());
             }
 
-            _imageBase = CompositeReader.PEHeaders.PEHeader.ImageBase;
+            _imageBase = CompositeReader.ImageBase;
 
             // Initialize R2RHeader
             Debug.Assert(_readyToRunHeaderRVA != 0);
@@ -797,7 +751,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                 fixed (byte* image = Image)
                 {
                     _manifestReader = new MetadataReader(image + GetOffset(manifestMetadata.RelativeVirtualAddress), manifestMetadata.Size);
-                    _manifestAssemblyMetadata = new ManifestAssemblyMetadata(CompositeReader, _manifestReader);
+                    _manifestAssemblyMetadata = CompositeReader.GetManifestAssemblyMetadata(_manifestReader);
+
                     int assemblyRefCount = _manifestReader.GetTableRowCount(TableIndex.AssemblyRef);
                     for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
                     {

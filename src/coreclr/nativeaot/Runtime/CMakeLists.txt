@@ -1,5 +1,4 @@
 set(GC_DIR ../../gc)
-set(RUNTIME_DIR ../../runtime)
 
 set(COMMON_RUNTIME_SOURCES
     allocheap.cpp

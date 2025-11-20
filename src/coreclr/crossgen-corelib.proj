@@ -17,16 +17,33 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <BuildDll>true</BuildDll>
-    <BuildDll Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</BuildDll>
+    <CrossgenTargetName>InvokeCrossgen2</CrossgenTargetName>
+
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
+    <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
+    <!-- TODO-WASM: we will have WASM R2R after https://github.com/dotnet/runtime/issues/121257 -->
+    <PublishReadyToRun Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</PublishReadyToRun>
+
+    <CrossgenTargetName Condition="!$(PublishReadyToRun)">CopyILCoreLib</CrossgenTargetName>
 
     <BuildPdb>false</BuildPdb>
-    <BuildPdb Condition="$(BuildDll) and '$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'windows'">true</BuildPdb>
+    <BuildPdb Condition="'$(OS)' == 'Windows_NT' and '$(TargetOS)' == 'windows'">true</BuildPdb>
 
     <BuildPerfMap>false</BuildPerfMap>
-    <BuildPerfMap Condition="$(BuildDll) and '$(TargetOS)' == 'linux'">true</BuildPerfMap>
+    <BuildPerfMap Condition="'$(TargetOS)' == 'linux'">true</BuildPerfMap>
 
     <_MergeMibcFilesCacheFile>$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/merge_mibc_files.cache</_MergeMibcFilesCacheFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and $(PublishReadyToRun)">
+    <PublishReadyToRunContainerFormat>macho</PublishReadyToRunContainerFormat>
+    <UseComposite>true</UseComposite>
+    <CrossgenTargetName>$(CrossgenTargetName);LinkCoreLibMachO</CrossgenTargetName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseComposite)' == 'true'">
+    <CrossgenTargetName>$(CrossgenTargetName);CopyR2RComponentCoreLib</CrossgenTargetName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,11 +53,23 @@
   <PropertyGroup>
     <CoreLibAssemblyName>System.Private.CoreLib</CoreLibAssemblyName>
     <CoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dll'))</CoreLibOutputPath>
+    <CrossgenCoreLibOutputPath>$(CoreLibOutputPath)</CrossgenCoreLibOutputPath>
+    <CrossgenCoreLibComponentOutputPath></CrossgenCoreLibComponentOutputPath>
     <CoreLibNiPdbPath></CoreLibNiPdbPath>
     <CoreLibPerfMapPath></CoreLibPerfMapPath>
     <CoreLibNiPdbPath Condition="$(BuildPdb)">$([MSBuild]::NormalizePath('$(BinDir)', 'PDB', '$(CoreLibAssemblyName).ni.pdb'))</CoreLibNiPdbPath>
     <CoreLibPerfMapPath Condition="$(BuildPerfMap)">$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).ni.r2rmap'))</CoreLibPerfMapPath>
     <MergedMibcPath>$([MSBuild]::NormalizePath('$(BinDir)', 'StandardOptimizationData.mibc'))</MergedMibcPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PublishReadyToRunContainerFormat)' == 'macho'">
+    <CoreLibObjOutputPath>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', '$(CoreLibAssemblyName).o'))</CoreLibObjOutputPath>
+    <CrossgenCoreLibOutputPath>$(CoreLibObjOutputPath)</CrossgenCoreLibOutputPath>
+    <CoreLibDylibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).dylib'))</CoreLibDylibOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseComposite)' == 'true'">
+    <CrossgenCoreLibComponentOutputPath>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', '$(CoreLibAssemblyName).dll'))</CrossgenCoreLibComponentOutputPath>
   </PropertyGroup>
 
   <!-- Creates a hash file that changes whenever the input mibc file modification times change.
@@ -88,7 +117,7 @@
   <Target Name="CreateMergedMibcFile"
           DependsOnTargets="ResolveProjectReferences;MergeMibcFiles" />
 
-  <Target Name="PrepareInvokeCrossgen" DependsOnTargets="ResolveProjectReferences;CreateMergedMibcFile">
+  <Target Name="PrepareInvokeCrossgen2" DependsOnTargets="ResolveProjectReferences;CreateMergedMibcFile">
     <ItemGroup>
       <Crossgen2Inputs Include="@(CoreLib)" />
       <Crossgen2Inputs Include="$(MergedMibcPath)" />
@@ -96,22 +125,17 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="InvokeCrossgenBrowser"
-          DependsOnTargets="PrepareInvokeCrossgen"
-          Inputs="@(Crossgen2Inputs)"
-          Outputs="$(CoreLibOutputPath)"
-          Condition="'$(TargetOS)' == 'browser'"
-          AfterTargets="Build">
-    <!-- TODO-WASM: we will have WASM R2R later, for now we just need to copy the file into expected location -->
+  <Target Name="CopyILCoreLib"
+          DependsOnTargets="ResolveProjectReferences"
+          Inputs="@(CoreLib)"
+          Outputs="$(CoreLibOutputPath)">
     <Copy SourceFiles="@(CoreLib)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
   </Target>
 
-  <Target Name="InvokeCrossgen"
-          DependsOnTargets="PrepareInvokeCrossgen;CreateMergedMibcFile"
+  <Target Name="InvokeCrossgen2"
+          DependsOnTargets="PrepareInvokeCrossgen2;CreateMergedMibcFile"
           Inputs="@(Crossgen2Inputs)"
-          Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath)"
-          Condition="'$(TargetOS)' != 'browser'"
-          AfterTargets="Build">
+          Outputs="$(CoreLibOutputPath);$(CoreLibNiPdbPath);$(CoreLibPerfMapPath);$(CrossgenCoreLibOutputPath);$(CrossgenCoreLibComponentOutputPath)">
 
     <MakeDir
       Directories="$(BinDir);$(IntermediatesDir);$(LogsDir)" />
@@ -121,9 +145,11 @@
 
     <PropertyGroup>
       <CrossGenDllCmd>@(Crossgen2Files->Metadata('OutputPath')->WithMetadataValue('Filename','crossgen2')->WithMetadataValue('Extension','$(ExeSuffix)'))</CrossGenDllCmd>
-      <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CoreLibOutputPath)</CrossGenDllCmd>
+      <CrossGenDllCmd>$(CrossGenDllCmd) -o:$(CrossgenCoreLibOutputPath)</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) -r:$([MSBuild]::NormalizePath('$(BinDir)', 'IL', '*.dll'))</CrossGenDllCmd>
       <CrossGenDllCmd>$(CrossGenDllCmd) --targetarch:$(TargetArchitecture)</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(PublishReadyToRunContainerFormat)' != ''">$(CrossGenDllCmd) --obj-format:$(PublishReadyToRunContainerFormat)</CrossGenDllCmd>
+      <CrossGenDllCmd Condition="'$(UseComposite)' == 'true'">$(CrossGenDllCmd) --composite</CrossGenDllCmd>
       <CrossGenDllCmd Condition="'$(TargetsAndroid)' != 'true'">$(CrossGenDllCmd) --targetos:$(TargetOS)</CrossGenDllCmd>
       <!-- Unless and until Android requires R2R specific customizations, we're just dealing with another linux -->
       <CrossGenDllCmd Condition="'$(TargetsAndroid)' == 'true'">$(CrossGenDllCmd) --targetos:linux</CrossGenDllCmd>
@@ -145,21 +171,119 @@
       <CrossGenDllCmd>$(CrossGenDllCmd) --perfmap --perfmap-path:$(BinDir)</CrossGenDllCmd>
     </PropertyGroup>
 
-    <Message Condition="$(BuildDll)" Importance="High" Text="$(CrossGenDllCmd)" />
+    <Message Importance="High" Text="$(CrossGenDllCmd)" />
 
-    <Exec Condition="$(BuildDll)" Command="$(CrossGenDllCmd)" />
-
-    <Message Condition="$(BuildPdb)" Importance="High" Text="$(CrossGenPdbCmd)" />
-
-    <Exec Condition="$(BuildPdb) and '$(CrossGenPdbCmd)' != ''" Command="$(CrossGenPdbCmd)" />
-
-    <Message Condition="$(BuildPerfMap)" Importance="High" Text="$(CrossGenPerfMapCmd)" />
-
-    <Exec Condition="$(BuildPerfMap) and '$(CrossGenPerfMapCmd)' != ''" Command="$(CrossGenPerfMapCmd)" />
-
-    <Copy Condition="!$(BuildDll)" SourceFiles="@(CoreLib)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
+    <Exec Command="$(CrossGenDllCmd)" />
 
     <Message Importance="High" Text="Crossgenning of System.Private.CoreLib succeeded." />
     <Message Importance="High" Text="Product binaries are available at $(BinDir)" />
   </Target>
+
+  <Target Name="CopyR2RComponentCoreLib"
+          DependsOnTargets="InvokeCrossgen2"
+          Inputs="$(CrossgenCoreLibComponentOutputPath)"
+          Outputs="$(CoreLibOutputPath)">
+    <Copy SourceFiles="$(CrossgenCoreLibComponentOutputPath)" DestinationFiles="$(CoreLibOutputPath)" UseHardlinksIfPossible="true" />
+  </Target>
+
+  <Target
+    Name="LinkCoreLibMachO"
+    Inputs="$(CoreLibObjOutputPath)"
+    Outputs="$(CoreLibDylibOutputPath)">
+    <PropertyGroup>
+      <_AppleTargetArchitecture Condition="'$(TargetArchitecture)' == 'x64'">x86_64</_AppleTargetArchitecture>
+      <_AppleTargetArchitecture Condition="'$(TargetArchitecture)' == 'arm64'">arm64</_AppleTargetArchitecture>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'osx'">12.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(TargetOS)' == 'maccatalyst'">15.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(TargetOS.StartsWith('ios')) or $(TargetOS.StartsWith('tvos')))">12.2</AppleMinOSVersion>
+
+      <_AppleSdkName Condition="'$(TargetOS)' == 'ios'">iphoneos</_AppleSdkName>
+      <_AppleSdkName Condition="'$(TargetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
+      <_AppleSdkName Condition="'$(TargetOS)' == 'tvos'">appletvos</_AppleSdkName>
+      <_AppleSdkName Condition="'$(TargetOS)' == 'tvossimulator'">appletvsimulator</_AppleSdkName>
+      <_AppleSdkName Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'osx'">macosx</_AppleSdkName>
+
+      <_AppleTripleOS Condition="'$(TargetOS)' == 'osx'">macos</_AppleTripleOS>
+      <_AppleTripleOS Condition="'$(TargetOS)' == 'maccatalyst' or $(TargetOS.StartsWith('ios'))">ios</_AppleTripleOS>
+      <_AppleTripleOS Condition="$(TargetOS.StartsWith('tvos'))">tvos</_AppleTripleOS>
+
+      <_AppleTripleAbi Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">macho</_AppleTripleAbi>
+      <_AppleTripleAbi Condition="'$(TargetOS)' == 'maccatalyst'">macabi</_AppleTripleAbi>
+      <_AppleTripleAbi Condition="$(TargetOS.EndsWith('simulator'))">simulator</_AppleTripleAbi>
+
+      <TargetTriple Condition="'$(_AppleTripleAbi)' == ''">$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)</TargetTriple>
+      <TargetTriple Condition="'$(_AppleTripleAbi)' != ''">$(_AppleTargetArchitecture)-apple-$(_AppleTripleOS)$(AppleMinOSVersion)-$(_AppleTripleAbi)</TargetTriple>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <Xcrun Condition="'$(Xcrun)' == ''">xcrun</Xcrun>
+      <_WhereXcrun>0</_WhereXcrun>
+    </PropertyGroup>
+
+    <Exec Command="command -v &quot;$(Xcrun)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ExitCode" PropertyName="_WhereXcrun" />
+    </Exec>
+    <Error Condition="'$(_WhereXcrun)' != '0'"
+      Text="'$(Xcrun)' not found in PATH. Make sure '$(Xcrun)' is available in PATH." />
+
+    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --show-sdk-path" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="SysRoot" />
+    </Exec>
+
+    <Error Condition="!Exists('$(SysRoot)')"
+      Text="Apple SDK was not found in: '$(SysRoot)'" />
+
+    <Exec Command="&quot;$(Xcrun)&quot; --sdk $(_AppleSdkName) --find clang" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_AppleClang" />
+    </Exec>
+
+    <Error Condition="!Exists('$(_AppleClang)')"
+      Text="Apple Clang was not found at: '$(_AppleClang)'" />
+
+    <ItemGroup>
+      <_MachLinkerArg Include="-gz=zlib" />
+      <_MachLinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" />
+      <_MachLinkerArg Include="--target=$(TargetTriple)" />
+      <_MachLinkerArg Include="-g" />
+      <_MachLinkerArg Include="-dynamiclib" />
+      <_MachLinkerArg Include="-Wl,-dead_strip" />
+    </ItemGroup>
+
+    <Exec Command="&quot;$(_AppleClang)&quot; --version" IgnoreExitCode="true" StandardOutputImportance="Low" IgnoreStandardErrorWarningFormat="true" ConsoleToMSBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_XcodeVersionStringExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_XcodeVersionString" />
+    </Exec>
+
+    <PropertyGroup Condition="('$(_XcodeVersionStringExitCode)' == '0' or '$(_XcodeVersionStringExitCode)' == '1') and '$(_XcodeVersionString)' != ''">
+      <_XcodeVersion>$([System.Text.RegularExpressions.Regex]::Match($(_XcodeVersionString), '[1-9]\d*'))</_XcodeVersion>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false'">
+      <_MachLinkerArg Condition="'$(UseLdClassicXCodeLinker)' == 'true' or '$(_XcodeVersion)' == '15' or '$(_XcodeVersion)' == '16'" Include="-ld_classic" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(UseLdClassicXCodeLinker)' != 'false'">
+      <!-- Xcode 16 warns on -ld_classic -->
+      <_IgnoreLinkerWarnings Condition="'$(_XcodeVersion)' == '16'">true</_IgnoreLinkerWarnings>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MachLinkerArg Include="-Wl,-install_name,&quot;@rpath/$(CoreLibAssemblyName).dylib&quot;" />
+      <_MachLinkerArg Include="$(CoreLibObjOutputPath)" />
+      <_MachLinkerArg Include="-o $(CoreLibDylibOutputPath)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(CoreLibDylibOutputPath)))" />
+
+    <Exec Command="&quot;$(_AppleClang)&quot; @(_MachLinkerArg, ' ')"
+          IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)"/>
+
+    <!-- remove executable flag -->
+    <Exec Command="chmod 644 &quot;$(CoreLibDylibOutputPath)&quot;" />
+  </Target>
+
+  <Target Name="CrossgenCoreLib" DependsOnTargets="$(CrossgenTargetName)" AfterTargets="CoreBuild" />
 </Project>

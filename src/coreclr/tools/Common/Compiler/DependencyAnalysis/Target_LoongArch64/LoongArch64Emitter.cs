@@ -92,6 +92,16 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
             Builder.EmitUInt((uint)(0x28c00000 | (uint)((offset & 0xfff) << 10) | ((uint)regSrc << 5) | (uint)regDst));
         }
 
+        public void EmitLD(Register regDst, ISymbolNode symbol)
+        {
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_LOONGARCH64_PC);
+            // pcalau12i  reg, off-hi-20bits
+            EmitPCALAU12I(regDst);
+
+            // ld_d  reg, reg, off-lo-12bits
+            EmitLD(regDst, regDst, 0);
+        }
+
         public void EmitRET()
         {
             // jirl R0,R1,0
@@ -107,26 +117,10 @@ namespace ILCompiler.DependencyAnalysis.LoongArch64
         {
             if (symbol.RepresentsIndirectionCell)
             {
-                Builder.RequireInitialPointerAlignment();
-
-                if (Builder.CountBytes % Builder.TargetPointerSize != 0)
-                {
-                    // Emit a NOP instruction to align the 64-bit reloc below.
-                    EmitNOP();
-                }
-
-                // pcaddi R21, 0
-                EmitPCADDI(Register.R21);
-
-                EmitLD(Register.R21, Register.R21, 0x10);
-
-                // ld_d R21, R21, 0
-                EmitLD(Register.R21, Register.R21, 0);
+                EmitLD(Register.R21, symbol);
 
                 // jirl R0,R21,0
                 EmitJMP(Register.R21);
-
-                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_DIR64);
             }
             else
             {

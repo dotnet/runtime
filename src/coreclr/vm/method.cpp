@@ -2104,12 +2104,13 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR);
     }
 
+#ifdef _DEBUG
     if (accessFlags & CORINFO_ACCESS_LDFTN)
     {
         // Whenever we use LDFTN on shared-generic-code-which-requires-an-extra-parameter
-        // we need to give out the address of an instantiating stub.  This is why we give
-        // out GetStableEntryPoint() for the IsInstantiatingStub() case: this is
-        // safe.  But first we assert that we only use GetMultiCallableAddrOfCode on
+        // we need to give out the address of an instantiating stub. This is why we give
+        // out GetStableEntryPoint() for IsInstantiatingStub() via the IsWrapperStub() case: this is
+        // safe. But first we assert that we only use GetMultiCallableAddrOfCode on
         // the instantiating stubs and not on the shared code itself.
         _ASSERTE(!RequiresInstArg());
         _ASSERTE(!IsSharedByGenericMethodInstantiations());
@@ -2118,8 +2119,26 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         _ASSERTE((accessFlags & ~CORINFO_ACCESS_LDFTN) == 0);
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    // If HasUnmanagedCallersOnlyAttribute() is true, then CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE must be set.
+    // We only validate this on non portable entrypoints because HasUnmanagedCallersOnlyAttribute()
+    // is an unnecessary cost, even in non-Release builds, on portable entrypoint platforms.
+    if (HasUnmanagedCallersOnlyAttribute())
+    {
+        _ASSERTE((accessFlags & CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE) != 0);
+    }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#endif // _DEBUG
+
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    return GetPortableEntryPoint();
+    PCODE entryPoint = GetPortableEntryPoint();
+    if (accessFlags & CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE
+        && PortableEntryPoint::ToPortableEntryPoint(entryPoint)->HasUnmanagedCallersOnlyAttribute())
+    {
+        entryPoint = (PCODE)PortableEntryPoint::GetActualCode(entryPoint);
+    }
+
+    return entryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
     if (RequiresStableEntryPoint() && !HasStableEntryPoint())

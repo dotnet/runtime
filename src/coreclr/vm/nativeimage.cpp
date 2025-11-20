@@ -8,6 +8,7 @@
 
 #include "common.h"
 #include "nativeimage.h"
+#include "hostinformation.h"
 
 // --------------------------------------------------------------------------------
 // Headers
@@ -108,11 +109,122 @@ NativeImage::~NativeImage()
 }
 
 #ifndef DACCESS_COMPILE
+namespace
+{
+    ReadyToRunLoadedImage* OpenR2RFromPE(const SString& componentModulePath, LPCUTF8 nativeImageFileName, READYTORUN_HEADER** header)
+    {
+        SString path{ componentModulePath };
+        SString::Iterator lastPathSeparatorIter = path.End();
+        size_t pathDirLength = 0;
+        if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
+        {
+            pathDirLength = (lastPathSeparatorIter - path.Begin()) + 1;
+        }
+
+        SString compositeImageFileName(SString::Utf8, nativeImageFileName);
+        SString fullPath;
+        fullPath.Set(path, path.Begin(), (COUNT_T)pathDirLength);
+        fullPath.Append(compositeImageFileName);
+        LPWSTR searchPathsConfig;
+        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NativeImageSearchPaths, &searchPathsConfig));
+
+        PEImageLayoutHolder peLoadedImage;
+
+        ProbeExtensionResult probeExtensionResult = AssemblyProbeExtension::Probe(fullPath, /*pathIsBundleRelative */ true);
+        if (probeExtensionResult.IsValid())
+        {
+            // No need to use cache for this PE image.
+            // Composite r2r PE image is not a part of anyone's identity.
+            // We only need it to obtain the native image, which will be cached at AppDomain level.
+            PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_NoCache, probeExtensionResult);
+            PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
+            // We will let pImage instance be freed after exiting this scope, but we will keep the layout,
+            // thus the layout needs an AddRef, or it will be gone together with pImage.
+            loaded->AddRef();
+            peLoadedImage = loaded;
+        }
+
+        if (peLoadedImage.IsNull())
+        {
+            EX_TRY
+            {
+                peLoadedImage = PEImageLayout::LoadNative(fullPath);
+            }
+            EX_CATCH
+            {
+                SString searchPaths(searchPathsConfig);
+                SString::CIterator start = searchPaths.Begin();
+                while (start != searchPaths.End())
+                {
+                    SString::CIterator end = start;
+                    if (!searchPaths.Find(end, PATH_SEPARATOR_CHAR_W))
+                    {
+                        end = searchPaths.End();
+                    }
+                    fullPath.Set(searchPaths, start, (COUNT_T)(end - start));
+
+                    if (end != searchPaths.End())
+                    {
+                        // Skip path separator character
+                        ++end;
+                    }
+                    start = end;
+
+                    if (fullPath.GetCount() == 0)
+                    {
+                        continue;
+                    }
+
+                    fullPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
+                    fullPath.Append(compositeImageFileName);
+
+                    EX_TRY
+                    {
+                        peLoadedImage = PEImageLayout::LoadNative(fullPath);
+                        break;
+                    }
+                    EX_CATCH
+                    {
+                    }
+                    EX_END_CATCH
+                }
+            }
+            EX_END_CATCH
+
+            if (peLoadedImage.IsNull())
+            {
+                // Failed to locate the native composite R2R image
+#ifdef LOGGING
+                SString searchPaths(searchPathsConfig != nullptr ? searchPathsConfig : W("<use DOTNET_NativeImageSearchPaths to set>"));
+                LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%s' using search paths: '%s'\n",
+                    nativeImageFileName,
+                    path.GetUTF8(),
+                    searchPaths.GetUTF8()));
+#endif // LOGGING
+                RaiseFailFastException(nullptr, nullptr, 0);
+            }
+        }
+
+        *header = (READYTORUN_HEADER *)peLoadedImage->GetExport("RTR_HEADER");
+        if (*header == NULL)
+        {
+            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        }
+
+        return new ReadyToRunLoadedImage(
+            (TADDR)peLoadedImage->GetBase(),
+            peLoadedImage->GetVirtualSize(),
+            peLoadedImage.Extract(),
+            [](void* img) { delete (PEImageLayout*)img; });
+    }
+}
+
 NativeImage *NativeImage::Open(
-    Module *componentModule,
+    const SString& componentModulePath,
     LPCUTF8 nativeImageFileName,
     AssemblyBinder *pAssemblyBinder,
     LoaderAllocator *pLoaderAllocator,
+    bool isPlatformNative,
     /* out */ bool *isNewNativeImage)
 {
     STANDARD_VM_CONTRACT;
@@ -131,103 +243,39 @@ NativeImage *NativeImage::Open(
         }
     }
 
-    SString path{ componentModule->GetPath() };
-    SString::Iterator lastPathSeparatorIter = path.End();
-    size_t pathDirLength = 0;
-    if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
+    READYTORUN_HEADER *pHeader = nullptr;
+    NewHolder<ReadyToRunLoadedImage> loadedImageHolder;
+    if (isPlatformNative)
     {
-        pathDirLength = (lastPathSeparatorIter - path.Begin()) + 1;
-    }
-
-    SString compositeImageFileName(SString::Utf8, nativeImageFileName);
-    SString fullPath;
-    fullPath.Set(path, path.Begin(), (COUNT_T)pathDirLength);
-    fullPath.Append(compositeImageFileName);
-    LPWSTR searchPathsConfig;
-    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NativeImageSearchPaths, &searchPathsConfig));
-
-    PEImageLayoutHolder peLoadedImage;
-
-    ProbeExtensionResult probeExtensionResult = AssemblyProbeExtension::Probe(fullPath, /*pathIsBundleRelative */ true);
-    if (probeExtensionResult.IsValid())
-    {
-        // No need to use cache for this PE image.
-        // Composite r2r PE image is not a part of anyone's identity.
-        // We only need it to obtain the native image, which will be cached at AppDomain level.
-        PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_NoCache, probeExtensionResult);
-        PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
-        // We will let pImage instance be freed after exiting this scope, but we will keep the layout,
-        // thus the layout needs an AddRef, or it will be gone together with pImage.
-        loaded->AddRef();
-        peLoadedImage = loaded;
-    }
-
-    if (peLoadedImage.IsNull())
-    {
-        EX_TRY
+        // Call into the host to load the composite native image
+        size_t image_size;
+        void* image_base;
+        if (HostInformation::GetNativeCodeData(componentModulePath, nativeImageFileName, reinterpret_cast<void**>(&pHeader), &image_size, &image_base))
         {
-            peLoadedImage = PEImageLayout::LoadNative(fullPath);
+            loadedImageHolder = new ReadyToRunLoadedImage((TADDR)image_base, (uint32_t)image_size);
         }
-        EX_CATCH
+        else
         {
-            SString searchPaths(searchPathsConfig);
-            SString::CIterator start = searchPaths.Begin();
-            while (start != searchPaths.End())
-            {
-                SString::CIterator end = start;
-                if (!searchPaths.Find(end, PATH_SEPARATOR_CHAR_W))
-                {
-                    end = searchPaths.End();
-                }
-                fullPath.Set(searchPaths, start, (COUNT_T)(end - start));
-
-                if (end != searchPaths.End())
-                {
-                    // Skip path separator character
-                    ++end;
-                }
-                start = end;
-
-                if (fullPath.GetCount() == 0)
-                {
-                    continue;
-                }
-
-                fullPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
-                fullPath.Append(compositeImageFileName);
-
-                EX_TRY
-                {
-                    peLoadedImage = PEImageLayout::LoadNative(fullPath);
-                    break;
-                }
-                EX_CATCH
-                {
-                }
-                EX_END_CATCH
-            }
-        }
-        EX_END_CATCH
-
-        if (peLoadedImage.IsNull())
-        {
-            // Failed to locate the native composite R2R image
+#ifdef TARGET_WINDOWS
+            // For platform-native on Windows, fall back to runtime loading the PE
+            loadedImageHolder = OpenR2RFromPE(componentModulePath, nativeImageFileName, &pHeader);
+#else
+            // Match failure behaviour for failing to load from PE
 #ifdef LOGGING
-            SString searchPaths(searchPathsConfig != nullptr ? searchPathsConfig : W("<use DOTNET_NativeImageSearchPaths to set>"));
-            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load native image '%s' for component assembly '%s' using search paths: '%s'\n",
+            SString path { componentModulePath };
+            LOG((LF_LOADER, LL_ALWAYS, "LOADER: failed to load platform-native image '%s' for component assembly '%s' using host callback\n",
                 nativeImageFileName,
-                path.GetUTF8(),
-                searchPaths.GetUTF8()));
+                path.GetUTF8()));
 #endif // LOGGING
             RaiseFailFastException(nullptr, nullptr, 0);
+#endif
         }
     }
-
-    READYTORUN_HEADER *pHeader = (READYTORUN_HEADER *)peLoadedImage->GetExport("RTR_HEADER");
-    if (pHeader == NULL)
+    else
     {
-        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+        loadedImageHolder = OpenR2RFromPE(componentModulePath, nativeImageFileName, &pHeader);
     }
+
     if (pHeader->Signature != READYTORUN_SIGNATURE)
     {
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
@@ -237,13 +285,7 @@ NativeImage *NativeImage::Open(
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
-    NewHolder<ReadyToRunLoadedImage> peLoadedImageHolder = new ReadyToRunLoadedImage(
-        (TADDR)peLoadedImage->GetBase(),
-        peLoadedImage->GetVirtualSize(),
-        peLoadedImage.Extract(),
-        [](void* img) { delete (PEImageLayout*)img; });
-
-    NewHolder<NativeImage> image = new NativeImage(pAssemblyBinder, peLoadedImageHolder.Extract(), nativeImageFileName);
+    NewHolder<NativeImage> image = new NativeImage(pAssemblyBinder, loadedImageHolder.Extract(), nativeImageFileName);
     AllocMemTracker amTracker;
     image->Initialize(pHeader, pLoaderAllocator, &amTracker);
     pExistingImage = AppDomain::GetCurrentDomain()->SetNativeImage(nativeImageFileName, image);

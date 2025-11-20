@@ -8,6 +8,9 @@
 // Debug: Prints 1 line(s)
 // Release: Prints 0 line(s)
 
+
+namespace Runtime_116125;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;

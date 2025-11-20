@@ -324,7 +324,7 @@ void InvokeCalliStub(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet)
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
 
-LPVOID GetCookieForCalliSig(MetaSig metaSig)
+void* GetCookieForCalliSig(MetaSig metaSig)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1247,6 +1247,15 @@ MAIN_LOOP:
                 case INTOP_SAFEPOINT:
                     if (g_TrapReturningThreads)
                     {
+                        Thread *pThread = GetThread();
+                        if (pThread->IsAbortRequested())
+                        {
+                            CallWithSEHWrapper(
+                            [&pThread]() {
+                                pThread->HandleThreadAbort();
+                                return 0;
+                            });
+                        }
                         // Transition into preemptive mode to allow the GC to suspend us
                         GCX_PREEMP();
                     }
@@ -3609,6 +3618,15 @@ do                                                                      \
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
 
         pInterpreterFrame->SetIsFaulting(false);
+
+        Thread *pThread = GetThread();
+        if (pThread->IsAbortRequested())
+        {
+            // Record the resume IP in the pFrame so that the exception handling unwinds from there
+            pFrame->ip = ip;
+            DispatchManagedException(kThreadAbortException);
+        }
+
         goto MAIN_LOOP;
     }
 

@@ -11,6 +11,9 @@
 //     File: D:\a\_work\1\s\src\coreclr\jit\gentree.cpp Line: 20819
 //
 
+
+namespace Runtime_117605;
+
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -20,33 +23,30 @@ public class Runtime_117605
 {
     static Vector<uint>[] s_2;
 
-    [Fact]
+    [ConditionalFact(typeof(Avx2), nameof(Avx2.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx2.IsSupported)
-        {
-            M0();
-        }
+        M0();
     }
 
     private static void M0()
     {
-        var vr3 = Vector256.Create(0, 7424648407429701945UL, 0, 0);
-        var vr6 = Vector256.Create<ulong>(0);
-        var vr7 = Vector128.CreateScalar(9831122154695836571UL);
-        var vr4 = Avx2.InsertVector128(vr6, vr7, 0);
-        var vr8 = Vector256.CreateScalar(1497050855019840058UL);
-        var vr2 = Avx2.BlendVariable(vr3, vr4, vr8);
-        C0 vr9 = new C0();
-        var vr1 = vr9.M3(ref s_2, vr2);
+    var vr3 = Vector256.Create(0, 7424648407429701945UL, 0, 0);
+    var vr6 = Vector256.Create<ulong>(0);
+    var vr7 = Vector128.CreateScalar(9831122154695836571UL);
+    var vr4 = Avx2.InsertVector128(vr6, vr7, 0);
+    var vr8 = Vector256.CreateScalar(1497050855019840058UL);
+    var vr2 = Avx2.BlendVariable(vr3, vr4, vr8);
+    C0 vr9 = new C0();
+    var vr1 = vr9.M3(ref s_2, vr2);
     }
 
     class C0
     {
-        public short M3(ref Vector<uint>[] arg0, Vector256<ulong> arg1)
-        {
-            var vr5 = Vector128.Create(0, -1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0);
-            return (short)Sse2.MoveMask(vr5);
-        }
+    public short M3(ref Vector<uint>[] arg0, Vector256<ulong> arg1)
+    {
+        var vr5 = Vector128.Create(0, -1, 0, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, 0);
+        return (short)Sse2.MoveMask(vr5);
+    }
     }
 }

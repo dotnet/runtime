@@ -423,6 +423,16 @@ namespace ILCompiler
                         Array.Empty<object>());
                 }
 
+                // TODO: (async) https://github.com/dotnet/runtime/issues/121781
+                if (_targetMethod.IsAsyncCall())
+                {
+                    ILEmitter e = new ILEmitter();
+                    ILCodeStream c = e.NewCodeStream();
+
+                    c.EmitCallThrowHelper(e, Context.GetCoreLibEntryPoint("System.Runtime"u8, "InternalCalls"u8, "RhpFallbackFailFast"u8, null));
+                    return e.Link(this);
+                }
+
                 // Generate the unboxing stub. This loosely corresponds to following C#:
                 // return BoxedValue.InstanceMethod(this.m_pEEType, [rest of parameters])
 
@@ -518,6 +528,16 @@ namespace ILCompiler
                         new byte[] { (byte)ILOpcode.ldnull, (byte)ILOpcode.throw_ },
                         Array.Empty<LocalVariableDefinition>(),
                         Array.Empty<object>());
+                }
+
+                // TODO: (async) https://github.com/dotnet/runtime/issues/121781
+                if (_targetMethod.IsAsyncCall())
+                {
+                    ILEmitter e = new ILEmitter();
+                    ILCodeStream c = e.NewCodeStream();
+
+                    c.EmitCallThrowHelper(e, Context.GetCoreLibEntryPoint("System.Runtime"u8, "InternalCalls"u8, "RhpFallbackFailFast"u8, null));
+                    return e.Link(this);
                 }
 
                 // Generate the unboxing stub. This loosely corresponds to following C#:

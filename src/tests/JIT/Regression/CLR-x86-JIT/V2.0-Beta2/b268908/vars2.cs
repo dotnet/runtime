@@ -6,6 +6,9 @@
 
 // The JIT32 only supports up to 32767 variables
 
+
+namespace b268908;
+
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
@@ -16,6 +19,7 @@ using Xunit;
 public class Test_vars2
 {
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

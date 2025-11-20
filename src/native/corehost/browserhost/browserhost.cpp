@@ -68,11 +68,11 @@ static const void* pinvoke_override(const char* library_name, const char* entry_
     {
         return SystemResolveDllImport(entry_point_name);
     }
-    if (strcmp(library_name, "libSystem.JavaScript") == 0)
+    if (strcmp(library_name, "libSystem.JavaScript.Native") == 0)
     {
         return SystemJSResolveDllImport(entry_point_name);
     }
-    if (strcmp(library_name, "libSystem.Runtime.InteropServices.JavaScript") == 0)
+    if (strcmp(library_name, "libSystem.Runtime.InteropServices.JavaScript.Native") == 0)
     {
         return SystemJSInteropResolveDllImport(entry_point_name);
     }

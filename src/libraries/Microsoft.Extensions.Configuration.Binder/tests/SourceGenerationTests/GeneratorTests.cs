@@ -294,6 +294,38 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(emittedAssemblyImage);
         }
 
+        [Fact]
+        public async Task BindingToCollectionOnlyTest()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        var settingsSection = config.GetSection("Settings");
+
+                        IDictionary<string, string> options = settingsSection.Get<IDictionary<string, string>>()!;
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // Ensure the generated code can be compiled.
+            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
+            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
+            Assert.NotNull(emittedAssemblyImage);
+        }
+
         /// <summary>
         /// We binding the type "SslClientAuthenticationOptions" which has a property "CipherSuitesPolicy" of type "CipherSuitesPolicy". We can't bind this type.
         /// This test is to ensure not including the property "CipherSuitesPolicy" in the generated code caused a build break.

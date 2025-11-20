@@ -77,4 +77,14 @@ namespace Internal.Runtime
         // TARGET_X86 and FEATURE_OBJCMARSHAL used at the same time.
         public const int IsStdcall = 0x8;
     }
+
+    internal static class RuntimeMethodHandleConstants
+    {
+        public const int IsAsyncVariant = unchecked((int)0x80000000);
+    }
+
+    internal static class GenericMethodsHashtableConstants
+    {
+        public const int IsAsyncVariant = unchecked((int)0x80000000);
+    }
 }

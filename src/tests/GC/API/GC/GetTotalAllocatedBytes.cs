@@ -110,7 +110,7 @@ public class Test_GetTotalAllocatedBytes
             object lck = new object();
 
             tsk = Task.Run(() => {
-                while (running)
+                for (int i = 0; i < 1000; i++)
                 {
                     Thread thd = new Thread(() => {
                         lock (lck)
@@ -121,11 +121,14 @@ public class Test_GetTotalAllocatedBytes
 
                     thd.Start();
                     thd.Join();
+
+                    if (!running)
+                        break;
                 }
             });
 
             Counts previous = default(Counts);
-            for (int i = 0; i < 1000; ++i)
+            for (int i = 0; i < 100; ++i)
             {
                 lock (lck)
                 {

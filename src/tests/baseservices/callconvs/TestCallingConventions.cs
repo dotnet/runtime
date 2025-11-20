@@ -170,7 +170,11 @@ public unsafe class Program
         try
         {
             BlittableFunctionPointers();
-            NonblittableFunctionPointers();
+            // This requires pinvoke marshalling which is not currently supported by the interpreter. See https://github.com/dotnet/runtime/issues/118965
+            if (!TestLibrary.Utilities.IsCoreClrInterpreter)
+            {
+                NonblittableFunctionPointers();
+            }
         }
         catch (Exception e)
         {

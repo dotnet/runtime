@@ -4739,18 +4739,36 @@ void Compiler::fgDebugCheckFlowGraphAnnotations()
 
     auto visitEdge = [](BasicBlock* block, BasicBlock* succ) {};
 
+    jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_DepthFirstSearch));
+
+    entryBlocks.push_back(fgFirstBB);
+
+    if (fgEntryBB != nullptr)
+    {
+        // OSR methods will early on create flow that looks like it goes to the
+        // patchpoint, but during morph we may transform to something that
+        // requires the original entry (fgEntryBB).
+        assert(opts.IsOSR());
+        entryBlocks.push_back(fgEntryBB);
+    }
+
+    if ((genReturnBB != nullptr) && !fgGlobalMorphDone)
+    {
+        // We introduce the merged return BB before morph and will redirect
+        // other returns to it as part of morph; keep it reachable.
+        entryBlocks.push_back(genReturnBB);
+    }
+
     unsigned count;
     if (m_dfsTree->IsProfileAware())
     {
-        count = fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), true>(visitPreorder,
-                                                                                                       visitPostorder,
-                                                                                                       visitEdge);
+        count = fgRunDfs<AllSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                         true>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
     }
     else
     {
-        count = fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), false>(visitPreorder,
-                                                                                                        visitPostorder,
-                                                                                                        visitEdge);
+        count = fgRunDfs<AllSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                         false>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
     }
 
     assert(m_dfsTree->GetPostOrderCount() == count);

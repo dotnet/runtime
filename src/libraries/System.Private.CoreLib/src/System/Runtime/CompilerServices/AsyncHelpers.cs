@@ -13,7 +13,7 @@ namespace System.Runtime.CompilerServices
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public static partial class AsyncHelpers
     {
-#if CORECLR
+#if CORECLR || NATIVEAOT
         // "BypassReadyToRun" is until AOT/R2R typesystem has support for MethodImpl.Async
         // Must be NoInlining because we use AsyncSuspend to manufacture an explicit suspension point.
         // It will not capture/restore any local state that is live across it.
@@ -220,35 +220,10 @@ namespace System.Runtime.CompilerServices
         public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { throw new NotImplementedException(); }
         [RequiresPreviewFeatures]
         public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { throw new NotImplementedException(); }
-#if NATIVEAOT
-        [RequiresPreviewFeatures]
-        public static void Await(System.Threading.Tasks.Task task)
-        {
-            TaskAwaiter awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
-            {
-                throw new NotImplementedException();
-            }
-
-            awaiter.GetResult();
-        }
-        [RequiresPreviewFeatures]
-        public static T Await<T>(System.Threading.Tasks.Task<T> task)
-        {
-            TaskAwaiter<T> awaiter = task.GetAwaiter();
-            if (!awaiter.IsCompleted)
-            {
-                throw new NotImplementedException();
-            }
-
-            return awaiter.GetResult();
-        }
-#else
         [RequiresPreviewFeatures]
         public static void Await(System.Threading.Tasks.Task task) { throw new NotImplementedException(); }
         [RequiresPreviewFeatures]
         public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw new NotImplementedException(); }
-#endif
         [RequiresPreviewFeatures]
         public static void Await(System.Threading.Tasks.ValueTask task) { throw new NotImplementedException(); }
         [RequiresPreviewFeatures]

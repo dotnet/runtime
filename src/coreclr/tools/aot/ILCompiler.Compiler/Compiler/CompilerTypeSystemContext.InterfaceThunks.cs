@@ -217,6 +217,16 @@ namespace ILCompiler
 
             public override MethodIL EmitIL()
             {
+                // TODO: (async) https://github.com/dotnet/runtime/issues/121781
+                if (_targetMethod.IsAsyncCall())
+                {
+                    ILEmitter e = new ILEmitter();
+                    ILCodeStream c = e.NewCodeStream();
+
+                    c.EmitCallThrowHelper(e, Context.GetCoreLibEntryPoint("System.Runtime"u8, "InternalCalls"u8, "RhpFallbackFailFast"u8, null));
+                    return e.Link(this);
+                }
+
                 // Generate the instantiating stub. This loosely corresponds to following C#:
                 // return Interface.Method(this, GetOrdinalInterface(this.m_pEEType, Index), [rest of parameters])
 

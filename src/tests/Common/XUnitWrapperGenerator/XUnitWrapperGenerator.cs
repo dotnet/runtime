@@ -933,7 +933,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.TailcallStress))
         {
-            conditions.Add($"!{ConditionClass}.IsTailcallStress");
+            conditions.Add($"!{ConditionClass}.IsTailCallStress");
         }
         if (skippedTestModes.HasFlag(Xunit.RuntimeTestModes.TieredCompilation))
         {

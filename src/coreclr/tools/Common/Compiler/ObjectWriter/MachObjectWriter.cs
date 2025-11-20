@@ -65,9 +65,15 @@ namespace ILCompiler.ObjectWriter
         private readonly Dictionary<string, uint> _symbolNameToIndex = new();
         private readonly List<MachSymbol> _symbolTable = new();
         private readonly MachDynamicLinkEditSymbolTable _dySymbolTable = new();
+        private readonly Dictionary<string, (string StartNode, string EndNode, int Size)> _rangeSymbols = new();
 
-        public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options)
-            : base(factory, options)
+        /// <summary>
+        /// Base symbol to use for <see cref="RelocType.IMAGE_REL_BASED_ADDR32NB"/> relocations.
+        /// </summary>
+        private readonly string _baseSymbolName;
+
+        public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder = null)
+            : base(factory, options, outputInfoBuilder)
         {
             switch (factory.Target.Architecture)
             {
@@ -90,6 +96,12 @@ namespace ILCompiler.ObjectWriter
             }
 
             _targetOS = factory.Target.OperatingSystem;
+        }
+
+        public MachObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder, string baseSymbolName)
+            : this(factory, options, outputInfoBuilder)
+        {
+            _baseSymbolName = baseSymbolName;
         }
 
         private protected override bool UsesSubsectionsViaSymbols => true;
@@ -372,6 +384,16 @@ namespace ILCompiler.ObjectWriter
             machSection.Log2Alignment = Math.Max(machSection.Log2Alignment, (uint)BitOperations.Log2((uint)alignment));
         }
 
+        private protected override void EmitSymbolRangeDefinition(string rangeNodeName, string startSymbolName, string endSymbolName, SymbolDefinition endSymbol)
+        {
+            // Mach has a few characteristics that make range symbols more difficult to emit:
+            // - Emitting two symbols in the same location is not well supported by the Apple linker.
+            // - Mach-O makes it more difficult to preserve symbol layout in the way we like.
+            // However, it also has one thing that makes it easier:
+            // - Mach-O natively supports a relocation type that can represents the distance between two symbols.
+            _rangeSymbols.Add(rangeNodeName, (startSymbolName, endSymbolName, endSymbol.Size));
+        }
+
         protected internal override unsafe void EmitRelocation(
             int sectionIndex,
             long offset,
@@ -380,6 +402,24 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long addend)
         {
+            // We don't emit the range node name into the image as it overlaps with another symbol.
+            // For relocs to it, instead target the start symbol.
+            // For the "symbol size" reloc, we'll handle it later when we emit relocations in the Mach format.
+            if (_rangeSymbols.TryGetValue(symbolName, out (string StartNode, string, int Size) range))
+            {
+                if (relocType == RelocType.IMAGE_REL_SYMBOL_SIZE)
+                {
+                    // In this case, we will later emit the reloc as a pair of SUBTRACTOR + UNSIGNED relocs.
+                    // However, we need to adjust for the size of the end symbol here.
+                    BinaryPrimitives.WriteUInt32LittleEndian(data, (uint)addend + (uint)range.Size);
+                }
+                else
+                {
+                    // Otherwise, point relocs to the range as a reloc to the start symbol (as these locations are identical).
+                    symbolName = range.StartNode;
+                }
+            }
+
             // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
             if (relocType is IMAGE_REL_BASED_DIR64 or IMAGE_REL_BASED_HIGHLOW &&
                 _sections[sectionIndex].IsDwarfSection)
@@ -502,6 +542,13 @@ namespace ILCompiler.ObjectWriter
             _dySymbolTable.ExternalSymbolsCount = (uint)definedSymbols.Count;
 
             uint savedSymbolIndex = symbolIndex;
+
+            // Add the base symbol as an undefined symbol.
+            if (_baseSymbolName is not null)
+            {
+                undefinedSymbols.Add(_baseSymbolName);
+            }
+
             foreach (string externSymbol in undefinedSymbols)
             {
                 if (!_symbolNameToIndex.ContainsKey(externSymbol))
@@ -549,6 +596,36 @@ namespace ILCompiler.ObjectWriter
             relocationList.Reverse();
             foreach (SymbolicRelocation symbolicRelocation in relocationList)
             {
+                if (symbolicRelocation.Type == RelocType.IMAGE_REL_SYMBOL_SIZE
+                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (string, string, int) range))
+                {
+                    // Represent as X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED.
+                    (string StartNode, string EndNode, int Size) = range;
+                    uint startSymbolIndex = _symbolNameToIndex[StartNode];
+                    uint endSymbolIndex = _symbolNameToIndex[EndNode];
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = startSymbolIndex,
+                            Length = 4,
+                            RelocationType = X86_64_RELOC_SUBTRACTOR,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = endSymbolIndex,
+                            Length = 4,
+                            RelocationType = X86_64_RELOC_UNSIGNED,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                    continue;
+                }
+
                 uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
 
                 if (symbolicRelocation.Type == IMAGE_REL_BASED_DIR64)
@@ -601,6 +678,37 @@ namespace ILCompiler.ObjectWriter
                             IsPCRelative = true,
                         });
                 }
+                else if (symbolicRelocation.Type == IMAGE_REL_BASED_ADDR32NB)
+                {
+                    if (_baseSymbolName is null)
+                    {
+                        throw new NotSupportedException("A base symbol name must be provided for IMAGE_REL_BASED_ADDR32NB relocations.");
+                    }
+
+                    Debug.Assert(_symbolNameToIndex.ContainsKey(_baseSymbolName));
+
+                    // Represent as X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED against the base symbol.
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName],
+                            Length = 4,
+                            RelocationType = X86_64_RELOC_SUBTRACTOR,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = (uint)symbolIndex,
+                            Length = 4,
+                            RelocationType = X86_64_RELOC_UNSIGNED,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                }
                 else
                 {
                     throw new NotSupportedException("Unknown relocation type: " + symbolicRelocation.Type);
@@ -615,6 +723,36 @@ namespace ILCompiler.ObjectWriter
             relocationList.Reverse();
             foreach (SymbolicRelocation symbolicRelocation in relocationList)
             {
+                if (symbolicRelocation.Type == RelocType.IMAGE_REL_SYMBOL_SIZE
+                    && _rangeSymbols.TryGetValue(symbolicRelocation.SymbolName, out (string, string, int) range))
+                {
+                    // Represent as ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED.
+                    (string StartNode, string EndNode, _) = range;
+                    uint startSymbolIndex = _symbolNameToIndex[StartNode];
+                    uint endSymbolIndex = _symbolNameToIndex[EndNode];
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = startSymbolIndex,
+                            Length = 4,
+                            RelocationType = ARM64_RELOC_SUBTRACTOR,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = endSymbolIndex,
+                            Length = 4,
+                            RelocationType = ARM64_RELOC_UNSIGNED,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                    continue;
+                }
+
                 uint symbolIndex = _symbolNameToIndex[symbolicRelocation.SymbolName];
 
                 if (symbolicRelocation.Type == IMAGE_REL_BASED_ARM64_BRANCH26)
@@ -697,6 +835,37 @@ namespace ILCompiler.ObjectWriter
                         {
                             Address = (int)symbolicRelocation.Offset,
                             SymbolOrSectionIndex = symbolIndex,
+                            Length = 4,
+                            RelocationType = ARM64_RELOC_UNSIGNED,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                }
+                else if (symbolicRelocation.Type == IMAGE_REL_BASED_ADDR32NB)
+                {
+                    if (_baseSymbolName is null)
+                    {
+                        throw new NotSupportedException("A base symbol name must be provided for IMAGE_REL_BASED_ADDR32NB relocations.");
+                    }
+
+                    Debug.Assert(_symbolNameToIndex.ContainsKey(_baseSymbolName));
+
+                    // Represent as ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED against the base symbol.
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = _symbolNameToIndex[_baseSymbolName],
+                            Length = 4,
+                            RelocationType = ARM64_RELOC_SUBTRACTOR,
+                            IsExternal = true,
+                            IsPCRelative = false,
+                        });
+                    sectionRelocations.Add(
+                        new MachRelocation
+                        {
+                            Address = (int)symbolicRelocation.Offset,
+                            SymbolOrSectionIndex = (uint)symbolIndex,
                             Length = 4,
                             RelocationType = ARM64_RELOC_UNSIGNED,
                             IsExternal = true,

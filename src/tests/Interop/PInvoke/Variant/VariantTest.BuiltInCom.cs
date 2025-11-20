@@ -30,6 +30,7 @@ public partial class Test_VariantTest
             TestOut();
             TestFieldByValue(!builtInComDisabled);
             TestFieldByRef(!builtInComDisabled);
+            TestBSTRWithTrailingByte();
         }
         catch (Exception e)
         {

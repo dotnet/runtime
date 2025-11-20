@@ -115,24 +115,28 @@ public class InstUnBoxThunks
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void NoArgGenericUnbox()
     {
         Assert.Equal("System.String", CallStruct1M0().Result);
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void ManyArgGenericUnbox()
     {
         Assert.Equal("System.String", CallStruct1M1().Result);
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void NoArgGenericInstantiating()
     {
         Assert.Equal("System.String", CallStruct1M0b().Result);
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void ManyArgGenericInstantiating()
     {
         Assert.Equal("System.String", CallStruct1M1b().Result);
@@ -182,5 +186,49 @@ public class InstUnBoxThunks
     public static void ManyArgGVM()
     {
         Assert.Equal("System.String", CallClass2M1().Result);
+    }
+
+    interface I3<T>
+    {
+        async Task<string> M0()
+        {
+            await Task.Yield();
+            return typeof(T).ToString();
+        }
+
+        async Task<string> M1(object a0, object a1, object a2, object a3, object a4, object a5, object a6, object a7, object a8)
+        {
+            await Task.Yield();
+            return typeof(T).ToString();
+        }
+    }
+
+    class Class3 : I3<string>;
+
+    static I3<string> o3;
+    static async Task<string> CallClass3M0()
+    {
+        o3 = new Class3();
+        return await o3.M0();
+    }
+
+    static async Task<string> CallClass3M1()
+    {
+        o3 = new Class3();
+        return await o3.M1(default, default, default, default, default, default, default, default, default);
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void NoArgDefaultMethod()
+    {
+        Assert.Equal("System.String", CallClass3M0().Result);
+    }
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/121781", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void ManyArgDefaultMethod()
+    {
+        Assert.Equal("System.String", CallClass3M1().Result);
     }
 }

@@ -38,6 +38,8 @@ internal unsafe partial class MachObjectFile
 
     internal EmbeddedSignatureBlob? EmbeddedSignatureBlob => _codeSignatureBlob;
 
+    internal MachHeader Header => _header;
+
     private MachObjectFile(
         MachHeader header,
         (LinkEditLoadCommand Command, long FileOffset) codeSignatureLC,
@@ -189,19 +191,6 @@ internal unsafe partial class MachObjectFile
         return (MachMagic)magic is MachMagic.MachHeaderCurrentEndian or MachMagic.MachHeaderOppositeEndian
             or MachMagic.MachHeader64CurrentEndian or MachMagic.MachHeader64OppositeEndian
             or MachMagic.FatMagicCurrentEndian or MachMagic.FatMagicOppositeEndian;
-    }
-
-    public static bool IsMachOImage(string filePath)
-    {
-        using (BinaryReader reader = new BinaryReader(File.OpenRead(filePath)))
-        {
-            if (reader.BaseStream.Length < 256) // Header size
-            {
-                return false;
-            }
-            uint magic = reader.ReadUInt32();
-            return Enum.IsDefined(typeof(MachMagic), magic);
-        }
     }
 
     /// <summary>

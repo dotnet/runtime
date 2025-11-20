@@ -67,7 +67,7 @@ target_link_libraries(clrinterpreter
         ${INTERPRETER_LINK_LIBRARIES}
     )
 
-if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_TARGET_MACCATALYST)
+if (FEATURE_STATICALLY_LINKED)
     install_clr(TARGETS clrinterpreter DESTINATIONS . COMPONENT runtime OPTIONAL)
 else()
     install_clr(TARGETS clrinterpreter DESTINATIONS . sharedFramework COMPONENT runtime OPTIONAL)

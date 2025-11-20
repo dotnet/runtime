@@ -153,5 +153,12 @@ namespace ILCompiler
             }
             return false;
         }
+
+        /// <summary>
+        /// Determines whether a method uses the async calling convention.
+        /// Returns true for async variants (compiler-generated wrappers around Task-returning methods)
+        /// and for special async intrinsics that don't return Task/ValueTask but use async calling convention.
+        /// </summary>
+        public static bool IsAsyncCall(this MethodDesc method) => method.IsAsync && (method.IsAsyncVariant() || !method.Signature.ReturnsTaskOrValueTask());
     }
 }

@@ -142,22 +142,10 @@ namespace AppHost.Bundle.Tests
             }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/54234")]
-        // NOTE: when enabling this test take a look at commented code marked by "ACTIVE ISSUE:" in SharedTestState
-        public void SelfContained_R2R_Composite()
-        {
-            var singleFile = sharedTestState.SelfContainedCompositeApp.Bundle(BundleOptions.None);
-
-            // Run the app
-            RunTheApp(singleFile, selfContained: true);
-        }
-
         public class SharedTestState : IDisposable
         {
             public SingleFileTestApp FrameworkDependentApp { get; }
             public SingleFileTestApp SelfContainedApp { get; }
-            public SingleFileTestApp SelfContainedCompositeApp { get; }
 
             public SharedTestState()
             {
@@ -166,18 +154,12 @@ namespace AppHost.Bundle.Tests
 
                 SelfContainedApp = SingleFileTestApp.CreateSelfContained("AppWithSubDirs");
                 AddLongNameContent(SelfContainedApp.NonBundledLocation);
-
-                // ACTIVE ISSUE: https://github.com/dotnet/runtime/issues/54234
-                //               This should be an app built with the equivalent of PublishReadyToRun=true and PublishReadyToRunComposite=true
-                SelfContainedCompositeApp = SingleFileTestApp.CreateSelfContained("AppWithSubDirs");
-                AddLongNameContent(SelfContainedCompositeApp.NonBundledLocation);
             }
 
             public void Dispose()
             {
                 FrameworkDependentApp.Dispose();
                 SelfContainedApp.Dispose();
-                SelfContainedCompositeApp.Dispose();
             }
 
             public static void AddLongNameContent(string directory)

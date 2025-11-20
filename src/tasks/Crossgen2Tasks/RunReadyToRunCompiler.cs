@@ -24,6 +24,7 @@ namespace Microsoft.NET.Build.Tasks
         public bool UseCrossgen2 { get; set; }
         public string Crossgen2ExtraCommandLineArgs { get; set; }
         public ITaskItem[] Crossgen2PgoFiles { get; set; }
+        public string Crossgen2ContainerFormat { get; set; }
 
         [Output]
         public bool WarningsDetected { get; set; }
@@ -340,6 +341,11 @@ namespace Microsoft.NET.Build.Tasks
                 {
                     result.AppendLine($"-m:\"{mibc.ItemSpec}\"");
                 }
+            }
+
+            if (!string.IsNullOrEmpty(Crossgen2ContainerFormat))
+            {
+                result.AppendLine($"--obj-format:{Crossgen2ContainerFormat}");
             }
 
             if (!string.IsNullOrEmpty(Crossgen2ExtraCommandLineArgs))

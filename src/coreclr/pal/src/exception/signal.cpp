@@ -422,7 +422,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         if (signalRestarts)
         {
             // This signal mustn't be ignored because it will be restarted.
-            PROCAbort(code, siginfo);
+            PROCAbort(code, siginfo, context);
         }
         return;
     }
@@ -433,7 +433,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
             // Shutdown and create the core dump before we restore the signal to the default handler.
             PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-            PROCCreateCrashDumpIfEnabled(code, siginfo, true);
+            PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
 
             // Restore the original and restart h/w exception.
             restore_signal(code, action);
@@ -444,7 +444,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
         {
             // We can't invoke the original handler because returning from the
             // handler doesn't restart the exception.
-            PROCAbort(code, siginfo);
+            PROCAbort(code, siginfo, context);
         }
     }
     else if (IsSaSigInfo(action))
@@ -462,7 +462,7 @@ static void invoke_previous_action(struct sigaction* action, int code, siginfo_t
 
     PROCNotifyProcessShutdown(IsRunningOnAlternateStack(context));
 
-    PROCCreateCrashDumpIfEnabled(code, siginfo, true);
+    PROCCreateCrashDumpIfEnabled(code, siginfo, context, true);
 }
 
 /*++
@@ -655,7 +655,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
             {
 #if defined(TARGET_TVOS)
                 (void)!write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                PROCAbort(SIGSEGV, siginfo);
+                PROCAbort(SIGSEGV, siginfo, context);
 #else // TARGET_TVOS
                 size_t handlerStackTop = __sync_val_compare_and_swap((size_t*)&g_stackOverflowHandlerStack, (size_t)g_stackOverflowHandlerStack, 0);
                 if (handlerStackTop == 0)
@@ -682,7 +682,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 
                 if (SwitchStackAndExecuteHandler(code | StackOverflowFlag, siginfo, context, (size_t)handlerStackTop))
                 {
-                    PROCAbort(SIGSEGV, siginfo);
+                    PROCAbort(SIGSEGV, siginfo, context);
                 }
                 (void)!write(STDERR_FILENO, StackOverflowHandlerReturnedMessage, sizeof(StackOverflowHandlerReturnedMessage) - 1);
 #endif // TARGET_TVOS
@@ -851,7 +851,7 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         DWORD val = 0;
         if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
         {
-            PROCCreateCrashDumpIfEnabled(code, siginfo, false);
+            PROCCreateCrashDumpIfEnabled(code, siginfo, context, false);
         }
     }
 

@@ -76,6 +76,10 @@ enum instruction : uint32_t
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
+#elif defined(TARGET_WASM)
+    #define INST(id, nm, info, opcode) INS_##id,
+    #include "instrs.h"
+
 #else
 #error Unsupported target architecture
 #endif
@@ -312,7 +316,7 @@ enum insOpts: unsigned
 
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
@@ -563,7 +567,11 @@ enum insBarrier : unsigned
 {
     INS_BARRIER_FULL  =  0x33,
 };
-
+#elif defined(TARGET_WASM)
+enum insOpts : unsigned
+{
+    INS_OPTS_NONE,
+};
 #endif
 
 #if defined(TARGET_XARCH)

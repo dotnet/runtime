@@ -33,7 +33,7 @@ namespace ILCompiler
             if (!_genericsOnly || method.HasInstantiation || method.OwningType.HasInstantiation)
                 return true;
 
-            if (method.GetTypicalMethodDefinition() is ValueTypeGetFieldHelperMethodOverride)
+            if (method.GetTypicalMethodDefinition() is GetFieldHelperMethodOverride)
                 return true;
 
             return false;

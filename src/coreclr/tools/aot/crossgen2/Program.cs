@@ -401,6 +401,12 @@ namespace ILCompiler
                         throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
                     }
 
+                    ReadyToRunContainerFormat format = Get(_command.OutputFormat);
+                    if (!composite && format != ReadyToRunContainerFormat.PE)
+                    {
+                        throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
+                    }
+
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
@@ -616,7 +622,7 @@ namespace ILCompiler
                         .UseHotColdSplitting(Get(_command.HotColdSplitting))
                         .GenerateOutputFile(outFile)
                         .UseImageBase(_imageBase)
-                        .UseContainerFormat(Get(_command.OutputFormat))
+                        .UseContainerFormat(format)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(Get(_command.CodegenOptions))
                         .UseLogger(logger)

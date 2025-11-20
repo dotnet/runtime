@@ -123,6 +123,7 @@ const char* varTypeName(var_types vt)
     return varTypeNames[vt];
 }
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************
  *
  *  Return the name of the given register.
@@ -147,6 +148,7 @@ const char* getRegName(regNumber reg)
     assert(reg < ArrLen(regNames));
     return regNames[reg];
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 const char* getRegName(unsigned reg) // this is for gcencode.cpp and disasm.cpp that dont use the regNumber type
 {
@@ -283,6 +285,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
  */
 const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regNumber regFirst, regNumber regLast)
 {
+#if HAS_FIXED_REGISTER_SET
 #ifdef FEATURE_MASKED_HW_INTRINSICS
     assert(((regFirst == REG_INT_FIRST) && (regLast == REG_INT_LAST)) ||
            ((regFirst == REG_FP_FIRST) && (regLast == REG_FP_LAST)) ||
@@ -419,6 +422,7 @@ const char* dspRegRange(regMaskTP regMask, size_t& minSiz, const char* sep, regN
         regPrev = regNum;
     }
 
+#endif // HAS_FIXED_REGISTER_SET
     return sep;
 }
 

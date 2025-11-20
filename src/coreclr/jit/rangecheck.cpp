@@ -301,6 +301,15 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             {
                 arrSize = arrLength.lLimit.GetConstant();
             }
+            else
+            {
+                // Fast path didn't find anything - do the slow SSA-based search.
+                arrLength = GetRangeWorker(block, bndsChk->GetArrayLength(), false DEBUGARG(0));
+                if (arrLength.lLimit.IsConstant())
+                {
+                    arrSize = arrLength.lLimit.GetConstant();
+                }
+            }
         }
     }
 

@@ -14,6 +14,10 @@
 #define COMPLUS_PREFIX W("COMPlus_")
 #define LEN_OF_COMPLUS_PREFIX STRING_LENGTH(COMPLUS_PREFIX_A)
 
+#define CORECLR_PREFIX_A "CORECLR_"
+#define CORECLR_PREFIX W("CORECLR_")
+#define LEN_OF_CORECLR_PREFIX STRING_LENGTH(CORECLR_PREFIX_A)
+
 #define DOTNET_PREFIX_A "DOTNET_"
 #define DOTNET_PREFIX W("DOTNET_")
 #define LEN_OF_DOTNET_PREFIX STRING_LENGTH(DOTNET_PREFIX_A)
@@ -52,7 +56,11 @@ public:
         return fSuccess;
     }
 
-    static CLRConfigNoCache Get(LPCSTR cfg, bool noPrefix = false, char*(*getEnvFptr)(const char*) = nullptr)
+    static CLRConfigNoCache Get(
+        LPCSTR cfg, 
+        bool noPrefix = false, 
+        char*(*getEnvFptr)(const char*) = nullptr,  
+        bool coreclrFallbackPrefix = false)
     {
         char nameBuffer[64];
         const char* fallbackPrefix = NULL;
@@ -71,16 +79,17 @@ public:
         else
         {
             bool dotnetValid = namelen < (size_t)(STRING_LENGTH(nameBuffer) - LEN_OF_DOTNET_PREFIX);
+            bool coreclrValid = namelen < (size_t)(STRING_LENGTH(nameBuffer) - LEN_OF_CORECLR_PREFIX);
             bool complusValid = namelen < (size_t)(STRING_LENGTH(nameBuffer) - LEN_OF_COMPLUS_PREFIX);
-            if (!dotnetValid || !complusValid)
+            if (!dotnetValid || !coreclrValid || !complusValid)
             {
                 _ASSERTE(!"Environment variable name too long.");
                 return {};
             }
 
-            // Priority order is DOTNET_ and then COMPlus_.
+            // Priority order is DOTNET_, then (CORECLR_ or COMPlus_).
             strcpy_s(nameBuffer, ARRAY_SIZE(nameBuffer), DOTNET_PREFIX_A);
-            fallbackPrefix = COMPLUS_PREFIX_A;
+            fallbackPrefix = coreclrFallbackPrefix ? CORECLR_PREFIX_A : COMPLUS_PREFIX_A;
         }
 
         strcat_s(nameBuffer, ARRAY_SIZE(nameBuffer), cfg);

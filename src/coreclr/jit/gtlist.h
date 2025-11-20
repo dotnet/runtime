@@ -39,6 +39,7 @@ GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump 
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
 GTNODE(GCPOLL           , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)
+GTNODE(ASYNC_RESUME_INFO, GenTreeVal         ,0,0,GTK_LEAF)             // Address of async resume info for a state
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -358,6 +359,7 @@ GTNODE(SWAP             , GenTreeOp          ,0,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTH
 GTNODE(COPY             , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)              // Copies a variable from its current location to a register that satisfies
 GTNODE(RELOAD           , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)              // code generation constraints. The operand is the actual lclVar node.
 GTNODE(IL_OFFSET        , GenTreeILOffset    ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // marks an IL offset for debugging purposes
+GTNODE(RECORD_ASYNC_RESUME, GenTreeVal       ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // record native offset for async resumption info
 
 /*****************************************************************************/
 #undef  GTNODE

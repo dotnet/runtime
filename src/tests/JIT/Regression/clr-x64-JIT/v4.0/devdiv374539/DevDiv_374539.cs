@@ -227,6 +227,7 @@ public class Test_DevDiv_374539
         Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy(); Dummy();
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

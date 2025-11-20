@@ -1084,7 +1084,7 @@ namespace System.Threading
             // Has the desire for logging changed since the last time we entered?
             workQueue.RefreshLoggingEnabled();
 
-            object? threadLocalCompletionCountObject = tl.threadLocalCompletionCountObject;
+            ThreadInt64PersistentCounter.ThreadLocalNode? threadLocalCompletionCountNode = tl.threadLocalCompletionCountNode;
             Thread currentThread = tl.currentThread;
 
             // Start on clean ExecutionContext and SynchronizationContext
@@ -1170,7 +1170,7 @@ namespace System.Threading
                 // us to return the thread to the pool or not.
                 //
                 int currentTickCount = Environment.TickCount;
-                if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject!, currentTickCount))
+                if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountNode!, currentTickCount))
                 {
                     // This thread is being parked and may remain inactive for a while. Transfer any thread-local work items
                     // to ensure that they would not be heavily delayed. Tell the caller that this thread was requested to stop
@@ -1276,7 +1276,7 @@ namespace System.Threading
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
         public readonly Thread currentThread;
-        public readonly object? threadLocalCompletionCountObject;
+        public readonly ThreadInt64PersistentCounter.ThreadLocalNode? threadLocalCompletionCountNode;
         public readonly Random.XoshiroImpl random = new Random.XoshiroImpl();
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
@@ -1286,7 +1286,7 @@ namespace System.Threading
             workStealingQueue = new ThreadPoolWorkQueue.WorkStealingQueue();
             ThreadPoolWorkQueue.WorkStealingQueueList.Add(workStealingQueue);
             currentThread = Thread.CurrentThread;
-            threadLocalCompletionCountObject = ThreadPool.GetOrCreateThreadLocalCompletionCountObject();
+            threadLocalCompletionCountNode = ThreadPool.GetOrCreateThreadLocalCompletionCountNode();
         }
 
         public void TransferLocalWork()
@@ -1411,8 +1411,7 @@ namespace System.Threading
                 if (stageBeforeUpdate == QueueProcessingStage.Determining)
                 {
                     // Discount a work item here to avoid counting this queue processing work item
-                    ThreadInt64PersistentCounter.Decrement(
-                        ThreadPoolWorkQueueThreadLocals.threadLocals!.threadLocalCompletionCountObject!);
+                    ThreadPoolWorkQueueThreadLocals.threadLocals!.threadLocalCompletionCountNode!.Decrement();
                     return;
                 }
             }
@@ -1455,7 +1454,7 @@ namespace System.Threading
             // Discount a work item here to avoid counting this queue processing work item
             if (completedCount > 1)
             {
-                ThreadInt64PersistentCounter.Add(tl.threadLocalCompletionCountObject!, completedCount - 1);
+                tl.threadLocalCompletionCountNode!.Add(completedCount - 1);
             }
         }
     }

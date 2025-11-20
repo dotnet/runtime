@@ -432,4 +432,7 @@
   <data name="InvalidOutputFormat" xml:space="preserve">
     <value>Format must be PE</value>
   </data>
+  <data name="ErrorContainerFormatRequiresComposite" xml:space="preserve">
+    <value>Error: Producing ReadyToRun output in the {0} format is only supported for Composite ReadyToRun images.</value>
+  </data>
 </root>
