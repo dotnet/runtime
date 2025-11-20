@@ -2315,10 +2315,12 @@ bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk)
         mdToken tkTypeDef;
         Module* pModuleOfTypeDef;
 
-        ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef);
-        if (pModuleOfTypeDef->IsSystem())
+        if (ClassLoader::ResolveTokenToTypeDefThrowing(pModule, tk, &pModuleOfTypeDef, &tkTypeDef))
         {
-            return true;
+            if (pModuleOfTypeDef->IsSystem())
+            {
+                return true;
+            }
         }
     }
 
