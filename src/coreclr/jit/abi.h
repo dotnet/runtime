@@ -333,6 +333,8 @@ public:
 
 class WasmClassifier
 {
+    unsigned m_localIndex = 0;
+
 public:
     WasmClassifier(const ClassifierInfo& info);
 

@@ -6,9 +6,130 @@
 #pragma hdrstop
 #endif
 
+#include "fgwasm.h"
 #include "algorithm.h"
 
 //------------------------------------------------------------------------
+//  WasmSuccessorEnumerator: Construct an instance of the enumerator.
+//
+//  Arguments:
+//     comp       - Compiler instance
+//     block      - The block whose successors are to be iterated
+//     useProfile - If true, determines the order of successors visited using profile data
+//
+WasmSuccessorEnumerator::WasmSuccessorEnumerator(Compiler* comp, BasicBlock* block, const bool useProfile /* = false */)
+    : m_block(block)
+{
+    m_numSuccs = 0;
+    VisitWasmSuccs(
+        comp, block,
+        [this](BasicBlock* succ) {
+        if (m_numSuccs < ArrLen(m_successors))
+        {
+            m_successors[m_numSuccs] = succ;
+        }
+
+        m_numSuccs++;
+        return BasicBlockVisit::Continue;
+    },
+        useProfile);
+
+    if (m_numSuccs > ArrLen(m_successors))
+    {
+        m_pSuccessors = new (comp, CMK_WasmCfgLowering) BasicBlock*[m_numSuccs];
+
+        unsigned numSuccs = 0;
+        VisitWasmSuccs(
+            comp, block,
+            [this, &numSuccs](BasicBlock* succ) {
+            assert(numSuccs < m_numSuccs);
+            m_pSuccessors[numSuccs++] = succ;
+            return BasicBlockVisit::Continue;
+        },
+            useProfile);
+
+        assert(numSuccs == m_numSuccs);
+    }
+}
+
+//------------------------------------------------------------------------
+// FgWasmDfs: run depth first search for wasm control flow codegen
+//
+// Returns:
+//   dfs tree
+//
+// Notes:
+//   Does not follow exceptional or "runtime" flow. Funclets are
+//   all considered reachable and are disjoint regions in the tree.
+//
+//   Invalidates any existing DFS, because we use the numbering
+//   slots on BasicBlocks.
+//
+FlowGraphDfsTree* Compiler::fgWasmDfs()
+{
+    fgInvalidateDfsTree();
+
+    BasicBlock** postOrder = new (this, CMK_WasmCfgLowering) BasicBlock*[fgBBcount];
+    bool         hasCycle  = false;
+
+    auto visitPreorder = [](BasicBlock* block, unsigned preorderNum) {
+        block->bbPreorderNum  = preorderNum;
+        block->bbPostorderNum = UINT_MAX;
+    };
+
+    auto visitPostorder = [=](BasicBlock* block, unsigned postorderNum) {
+        block->bbPostorderNum = postorderNum;
+        assert(postorderNum < fgBBcount);
+        postOrder[postorderNum] = block;
+    };
+
+    auto visitEdge = [&hasCycle](BasicBlock* block, BasicBlock* succ) {
+        // Check if block -> succ is a backedge, in which case the flow
+        // graph has a cycle.
+        if ((succ->bbPreorderNum <= block->bbPreorderNum) && (succ->bbPostorderNum == UINT_MAX))
+        {
+            hasCycle = true;
+        }
+    };
+
+    jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_WasmCfgLowering));
+
+    // We can ignore OSR/genReturnBB "entries"
+    //
+    assert(fgEntryBB == nullptr);
+    assert(fgGlobalMorphDone);
+
+    // All funclets are entries. For now we assume finallys are funclets.
+    //
+    for (EHblkDsc* const ehDsc : EHClauses(this))
+    {
+        entryBlocks.push_back(ehDsc->ebdHndBeg);
+        if (ehDsc->HasFilter())
+        {
+            entryBlocks.push_back(ehDsc->ebdFilter);
+        }
+    }
+
+    // Main entry is an entry. We add it last so it ends up first in the RPO.
+    //
+    entryBlocks.push_back(fgFirstBB);
+
+    JITDUMP("Running Wasm DFS\n");
+    JITDUMP("Entry blocks: ");
+    for (BasicBlock* const entry : entryBlocks)
+    {
+        JITDUMP(" " FMT_BB, entry->bbNum);
+    }
+    JITDUMP("\n");
+
+    unsigned numBlocks =
+        fgRunDfs<WasmSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                 /* useProfile */ true>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
+
+    return new (this, CMK_WasmCfgLowering)
+        FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, /* useProfile */ true, /* forWasm */ true);
+}
+
 // WasmInterval
 //
 // Represents a Wasm BLOCK/END or LOOP/END
@@ -178,9 +299,7 @@ public:
 //
 // Still TODO
 //
-// * proper DFS/Loop finding
 // * handling irreducible loops
-// * handling funclets
 // * proper handling of BR_TABLE defaults
 // * branch inversion
 // * actual block reordering
@@ -196,20 +315,16 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // -----------------------------------------------
     // (1) Build loop-aware RPO layout
     //
-    if (m_dfsTree == nullptr)
-    {
-        m_dfsTree = fgComputeDfs</* useProfile */ true>();
-        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-    }
-    else
-    {
-        assert(m_loops != nullptr);
-    }
+    // We don't install our DFS tree as "the" DFS tree as it is non-standard.
+    //
+    FlowGraphDfsTree* const dfsTree = fgWasmDfs();
+    assert(dfsTree->IsForWasm());
+    FlowGraphNaturalLoops* const loops = FlowGraphNaturalLoops::Find(dfsTree);
 
     // Bail out for now if there is any irreducible flow.
     // TODO: run the irreducible flow fixing before this.
     //
-    if (m_loops->ImproperLoopHeaders() > 0)
+    if (loops->ImproperLoopHeaders() > 0)
     {
         JITDUMP("\nThere are irreducible loops here, bailing\n");
         return PhaseStatus::MODIFIED_NOTHING;
@@ -218,41 +333,32 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Our interval ends are at the starts of blocks, so we need a block that
     // comes after all existing blocks. So allocate one extra slot.
     //
-    JITDUMP("\nCreating loop-aware RPO\n");
-    BasicBlock** const initialLayout = new (this, CMK_WasmCfgLowering) BasicBlock*[m_dfsTree->GetPostOrderCount() + 1];
+    const unsigned dfsCount = dfsTree->GetPostOrderCount();
+    JITDUMP("\nCreating loop-aware RPO (%u blocks)\n", dfsCount);
 
-    // TODO: extend this to cover all the funclets as well.
+    BasicBlock** const initialLayout = new (this, CMK_WasmCfgLowering) BasicBlock*[dfsCount + 1];
+
+    // Note this DFS includes funclets, they should each be contiguous and appear after
+    // the main method in the order.
     //
-    // The "DFS" we run above should skip from CALLFINALLY to CALLFINALLYRET, treat all funclet returns
-    // as having no successor, and add each funclet entry as a DFS seed. This will give us a disjoint DFS
-    // tree for the main method and each funclet, and the layout below will properly transform them all into
-    // Wasm control flow.
-    //
-    unsigned numHotBlocks  = 0;
-    auto     addToSequence = [initialLayout, &numHotBlocks](BasicBlock* block) {
-        // Skip funclets for now
-        //
-        if (block->hasHndIndex())
-        {
-            return;
-        }
-
-        JITDUMP("%03u " FMT_BB "\n", numHotBlocks, block->bbNum);
-
+    unsigned numBlocks     = 0;
+    auto     addToSequence = [initialLayout, &numBlocks](BasicBlock* block) {
+        JITDUMP("%03u " FMT_BB "\n", numBlocks, block->bbNum);
         // Set the block's ordinal.
-        block->bbPreorderNum          = numHotBlocks;
-        initialLayout[numHotBlocks++] = block;
+        block->bbPreorderNum       = numBlocks;
+        initialLayout[numBlocks++] = block;
     };
 
-    fgVisitBlocksInLoopAwareRPO(m_dfsTree, m_loops, addToSequence);
+    fgVisitBlocksInLoopAwareRPO(dfsTree, loops, addToSequence);
+    assert(numBlocks == dfsCount);
 
     // Splice in a fake BB0
     //
     BasicBlock bb0;
     INDEBUG(bb0.bbNum = 0;);
-    bb0.bbPreorderNum           = numHotBlocks;
-    bb0.bbPostorderNum          = m_dfsTree->GetPostOrderCount();
-    initialLayout[numHotBlocks] = &bb0;
+    bb0.bbPreorderNum        = numBlocks;
+    bb0.bbPostorderNum       = dfsTree->GetPostOrderCount();
+    initialLayout[numBlocks] = &bb0;
 
     // -----------------------------------------------
     // (2) Build the intervals
@@ -261,15 +367,15 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // block intervals that end at a certain point.
     //
     jitstd::vector<WasmInterval*> intervals(getAllocator(CMK_WasmCfgLowering));
-    jitstd::vector<WasmInterval*> scratch(numHotBlocks, nullptr, getAllocator(CMK_WasmCfgLowering));
+    jitstd::vector<WasmInterval*> scratch(numBlocks, nullptr, getAllocator(CMK_WasmCfgLowering));
 
-    for (unsigned int cursor = 0; cursor < numHotBlocks; cursor++)
+    for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
     {
         BasicBlock* const block = initialLayout[cursor];
 
         // See if we entered any loops
         //
-        FlowGraphNaturalLoop* const loop = m_loops->GetLoopByHeader(block);
+        FlowGraphNaturalLoop* const loop = loops->GetLoopByHeader(block);
 
         if (loop != nullptr)
         {
@@ -279,7 +385,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
             // Note that cursor may end up pointing at BB0
             //
             unsigned endCursor = cursor;
-            while ((endCursor < numHotBlocks) && loop->ContainsBlock(initialLayout[endCursor]))
+            while ((endCursor < numBlocks) && loop->ContainsBlock(initialLayout[endCursor]))
             {
                 endCursor++;
             }
@@ -293,15 +399,8 @@ PhaseStatus Compiler::fgWasmControlFlow()
 
         // Now see where block branches to...
         //
-        if (block->KindIs(BBJ_CALLFINALLY))
-        {
-            // We ignore these and treat them as if they fall through to the tail (if there is a tail).
-            // Since the tail cannot be a join we don't need a block.
-            //
-            continue;
-        }
-
-        for (BasicBlock* const succ : block->Succs())
+        WasmSuccessorEnumerator successors(this, block, /* useProfile */ true);
+        for (BasicBlock* const succ : successors)
         {
             unsigned const succNum = succ->bbPreorderNum;
 
@@ -316,7 +415,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 //
                 // Note we currently bail out way above if there are any irreducible loops.
                 //
-                assert(m_loops->GetLoopByHeader(succ) != nullptr);
+                assert(loops->GetLoopByHeader(succ) != nullptr);
                 continue;
             }
 
@@ -331,7 +430,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
             // Branch to cold block needs no block (presumably something EH related).
             // Eventually we need to case these out and handle them better.
             //
-            if (succNum >= numHotBlocks)
+            if (succNum >= numBlocks)
             {
                 continue;
             }
@@ -519,7 +618,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     ArrayStack<WasmInterval*> activeIntervals(getAllocator(CMK_WasmCfgLowering));
     unsigned                  wasmCursor = 0;
 
-    for (unsigned int cursor = 0; cursor < numHotBlocks; cursor++)
+    for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
     {
         BasicBlock* const block = initialLayout[cursor];
 
@@ -605,6 +704,8 @@ PhaseStatus Compiler::fgWasmControlFlow()
             return ~0;
         };
 
+        // This somewhat duplicates the logic in WasmSuccessorEnumerator.
+        //
         switch (block->GetKind())
         {
             case BBJ_RETURN:
@@ -643,7 +744,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 {
                     JITDUMP("FALLTHROUGH\n");
                 }
-                else if (succNum < numHotBlocks)
+                else if (succNum < numBlocks)
                 {
                     bool const isBackedge = succNum <= cursor;
                     unsigned   blockNum   = 0;
@@ -681,7 +782,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
                     //
                     JITDUMP("FALLTHROUGH-inv\n");
                 }
-                else if (trueNum < numHotBlocks)
+                else if (trueNum < numBlocks)
                 {
                     bool const isBackedge = trueNum <= cursor;
                     unsigned   blockNum   = 0;
@@ -693,7 +794,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 {
                     JITDUMP("FALLTHROUGH\n");
                 }
-                else if (falseNum < numHotBlocks)
+                else if (falseNum < numBlocks)
                 {
                     bool const isBackedge = falseNum <= cursor;
                     unsigned   blockNum   = 0;
@@ -731,7 +832,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
                     BasicBlock* const caseTarget    = desc->GetCase(caseNum)->getDestinationBlock();
                     unsigned const    caseTargetNum = caseTarget->bbPreorderNum;
 
-                    if (caseTargetNum < numHotBlocks)
+                    if (caseTargetNum < numBlocks)
                     {
                         bool const isBackedge = caseTargetNum <= cursor;
                         unsigned   blockNum   = 0;
@@ -772,7 +873,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
         wasmCursor = 0;
         JITDUMP("\ndigraph WASM {\n");
 
-        for (unsigned int cursor = 0; cursor < numHotBlocks; cursor++)
+        for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
         {
             BasicBlock* const block = initialLayout[cursor];
 
@@ -830,8 +931,8 @@ PhaseStatus Compiler::fgWasmControlFlow()
         }
 
         // Now list all the branches
-
-        for (unsigned int cursor = 0; cursor < numHotBlocks; cursor++)
+        //
+        for (unsigned int cursor = 0; cursor < numBlocks; cursor++)
         {
             BasicBlock* const block = initialLayout[cursor];
 
