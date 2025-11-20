@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -24,6 +25,9 @@ namespace System.IO
 
         // We don't want to allocate on every TextWriter creation, so cache the char array.
         private static readonly char[] s_coreNewLine = Environment.NewLineConst.ToCharArray();
+
+        // s_coreNewLine will be ['\r', '\n'] on Windows and ['\n'] on Unix. This is the opposite, lazily created/cached.
+        private static char[]? s_otherCoreNewLine;
 
         /// <summary>
         /// This is the 'NewLine' property expressed as a char[].
@@ -112,8 +116,17 @@ namespace System.IO
             {
                 value ??= Environment.NewLineConst;
 
-                CoreNewLineStr = value;
-                CoreNewLine = value.ToCharArray();
+                if (CoreNewLineStr != value)
+                {
+                    CoreNewLineStr = value;
+                    CoreNewLine =
+                        value == Environment.NewLineConst ? s_coreNewLine : // current OS default
+                        Environment.NewLineConst == "\r\n" && value == "\n" ? (s_otherCoreNewLine ??= ['\n']) : // other OS default
+                        Environment.NewLineConst == "\n" && value == "\r\n" ? (s_otherCoreNewLine ??= ['\r', '\n']) : // other OS default
+                        value.ToCharArray(); // unknown
+                }
+
+                Debug.Assert(CoreNewLineStr == new string(CoreNewLine));
             }
         }
 

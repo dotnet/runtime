@@ -811,6 +811,16 @@ namespace Internal.JitInterface
         public CORINFO_HELPER_ARG args3;
     }
 
+    public enum CorInfoArch
+    {
+        CORINFO_ARCH_X86,
+        CORINFO_ARCH_X64,
+        CORINFO_ARCH_ARM,
+        CORINFO_ARCH_ARM64,
+        CORINFO_ARCH_LOONGARCH64,
+        CORINFO_ARCH_RISCV64,
+        CORINFO_ARCH_WASM32,
+    }
 
     public enum CORINFO_OS
     {

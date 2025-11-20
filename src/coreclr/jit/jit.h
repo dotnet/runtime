@@ -302,31 +302,6 @@
 #endif
 #endif
 
-// --------------------------------------------------------------------------------
-// IMAGE_FILE_MACHINE_TARGET
-// --------------------------------------------------------------------------------
-
-#if defined(TARGET_X86)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_I386
-#elif defined(TARGET_AMD64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_AMD64
-#elif defined(TARGET_ARM)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARMNT
-#elif defined(TARGET_ARM64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARM64 // 0xAA64
-#elif defined(TARGET_LOONGARCH64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_LOONGARCH64 // 0x6264
-#elif defined(TARGET_RISCV64)
-#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_RISCV64 // 0x5064
-#elif defined(TARGET_WASM32)
-// TODO-WASM: refactor the Jit-EE interface (getExpectedTargetArchitecture) to stop relying on constants from the PE
-// spec for this.
-// TODO-Cleanup: move the defines to target<name>.h files.
-#define IMAGE_FILE_MACHINE_TARGET 0
-#else
-#error Unsupported or unset target architecture
-#endif
-
 typedef ptrdiff_t ssize_t;
 
 // Include the AMD64 unwind codes when appropriate.
