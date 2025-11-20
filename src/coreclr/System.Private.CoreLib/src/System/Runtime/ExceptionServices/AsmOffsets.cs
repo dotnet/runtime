@@ -204,7 +204,6 @@ class AsmOffsets
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x108;
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0xb8;
 #elif TARGET_WASM
-    // offset to dummy field
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__IP = 0x10;
     public const int OFFSETOF__PAL_LIMITED_CONTEXT__FP = 0x0c;
 #endif

@@ -942,7 +942,7 @@ RaiseException(IN DWORD dwExceptionCode,
 
     // We have to unwind one level to get the actual context user code could be resumed at.
     PAL_VirtualUnwind(contextRecord, NULL);
-#endif
+#endif // TARGET_WASM
 
     exceptionRecord->ExceptionAddress = (void *)CONTEXTGetPC(contextRecord);
 
