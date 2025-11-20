@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { type LoadBootResourceCallback, type JsModuleExports, type JsAsset, type AssemblyAsset, type PdbAsset, type WasmAsset, type IcuAsset, type EmscriptenModuleInternal, type LoaderConfig, type DotnetHostBuilder, GlobalizationMode } from "./types";
-
+import type { LoadBootResourceCallback, JsModuleExports, JsAsset, AssemblyAsset, PdbAsset, WasmAsset, IcuAsset, EmscriptenModuleInternal, LoaderConfig, DotnetHostBuilder } from "./types";
+import { GlobalizationMode } from "./types";
 import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals } from "./cross-module";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB } from "./per-module";
 import { getLoaderConfig } from "./config";
