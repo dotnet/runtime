@@ -47,6 +47,21 @@ namespace ILCompiler
             ILCodeStream ilStream = ilEmitter.NewCodeStream();
 
             // Ported from jitinterface.cpp CEEJitInfo::getAsyncResumptionStub
+
+            if (_targetMethod.RequiresInstArg())
+            {
+                MethodDesc setNextCallGenericContext = Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8)
+                    .GetKnownMethod("SetNextCallGenericContext"u8, null);
+                ilStream.EmitLdc(0);
+                ilStream.Emit(ILOpcode.conv_i);
+                ilStream.Emit(ILOpcode.call, ilEmitter.NewToken(setNextCallGenericContext));
+            }
+
+            MethodDesc setNextCallAsyncContinuation = Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "RuntimeHelpers"u8)
+                .GetKnownMethod("SetNextCallAsyncContinuation"u8, null);
+            ilStream.EmitLdArg(0);
+            ilStream.Emit(ILOpcode.call, ilEmitter.NewToken(setNextCallAsyncContinuation));
+
             if (!_targetMethod.Signature.IsStatic)
             {
                 if (_targetMethod.OwningType.IsValueType)
@@ -60,32 +75,12 @@ namespace ILCompiler
                 }
             }
 
-            if (Context.Target.Architecture != TargetArchitecture.X86)
-            {
-                if (_targetMethod.RequiresInstArg())
-                {
-                    ilStream.EmitLdc(0);
-                    ilStream.Emit(ILOpcode.conv_i);
-                }
-                ilStream.EmitLdArg(0);
-            }
-
             foreach (var param in _targetMethod.Signature)
             {
                 var local = ilEmitter.NewLocal(param);
                 ilStream.EmitLdLoca(local);
                 ilStream.Emit(ILOpcode.initobj, ilEmitter.NewToken(param));
                 ilStream.EmitLdLoc(local);
-            }
-
-            if (Context.Target.Architecture == TargetArchitecture.X86)
-            {
-                ilStream.EmitLdArg(0);
-                if (_targetMethod.RequiresInstArg())
-                {
-                    ilStream.EmitLdc(0);
-                    ilStream.Emit(ILOpcode.conv_i);
-                }
             }
 
             MethodDesc resumingMethod = new ExplicitContinuationAsyncMethod(_targetMethod);
@@ -147,43 +142,14 @@ namespace ILCompiler
         /// </summary>
         private MethodSignature InitializeSignature()
         {
-            // Async methods have an implicit Continuation parameter
-            // The order of parameters depends on the architecture
-            // non-x86: this?, genericCtx?, continuation, params...
-            // x86: this?, params, continuation, genericCtx?
-            // To make the jit pass arguments in this order, we can add the continuation parameter
-            // at the end for x86 and at the beginning for other architectures.
-            // The 'this' parameter and generic context parameter (if any) can be handled by the jit.
+            var parameters = new TypeDesc[_wrappedMethod.Signature.Length];
 
-            var parameters = new TypeDesc[_wrappedMethod.Signature.Length + 1 + (_wrappedMethod.RequiresInstArg() ? 1 : 0)];
+            int i = 0;
+            foreach (var param in _wrappedMethod.Signature)
+            {
+                parameters[i++] = param;
+            }
 
-            TypeDesc continuation = Context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
-            if (Context.Target.Architecture == TargetArchitecture.X86)
-            {
-                int i = 0;
-                for (; i < _wrappedMethod.Signature.Length; i++)
-                {
-                    parameters[i] = _wrappedMethod.Signature[i];
-                }
-                parameters[i++] = continuation;
-                if (_wrappedMethod.RequiresInstArg())
-                {
-                    parameters[i] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
-                }
-            }
-            else
-            {
-                int i = 0;
-                if (_wrappedMethod.RequiresInstArg())
-                {
-                    parameters[i++] = Context.GetWellKnownType(WellKnownType.Void).MakePointerType();
-                }
-                parameters[i++] = continuation;
-                foreach (var param in _wrappedMethod.Signature)
-                {
-                    parameters[i++] = param;
-                }
-            }
             // Get the return type from the Task-returning variant
             TypeDesc returnType;
             if (_wrappedMethod is AsyncMethodVariant variant)
