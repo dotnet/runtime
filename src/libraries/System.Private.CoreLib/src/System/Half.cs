@@ -1675,6 +1675,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        [Intrinsic]
         public static Half Max(Half x, Half y) => (Half)float.Max((float)x, (float)y);
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
@@ -1703,6 +1704,7 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        [Intrinsic]
         public static Half Min(Half x, Half y) => (Half)float.Min((float)x, (float)y);
 
         /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
@@ -2206,6 +2208,7 @@ namespace System
         public static Half RootN(Half x, int n) => (Half)float.RootN((float)x, n);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        [Intrinsic]
         public static Half Sqrt(Half x) => (Half)MathF.Sqrt((float)x);
 
         //

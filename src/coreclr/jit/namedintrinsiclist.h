@@ -167,13 +167,13 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_Intrinsics_Intrinsic,
 
     
-    NI_System_Half_Abs,
     NI_System_Half_FusedMultiplyAdd,
     NI_System_Half_Max,
     NI_System_Half_Min,
     NI_System_Half_ReciprocalEstimate,
     NI_System_Half_ReciprocalSqrtEstimate,
     NI_System_Half_Round,
+
     NI_System_Half_Sqrt,
 
     NI_System_Half_op_Addition,
