@@ -2479,6 +2479,50 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_X86Base_BigMul:
+            case NI_X86Base_X64_BigMul:
+            {
+                assert(numArgs == 2);
+                assert(dstCount == 2);
+                assert(isRMW);
+                assert(!op1->isContained());
+
+                if ((baseType == TYP_ULONG || baseType == TYP_UINT) &&
+                    compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    isRMW = false;
+
+                    SingleTypeRegSet apxAwareRegCandidates =
+                        ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    // mulx, place op1 in implicit EDX register since op2 might be contained
+                    srcCount = BuildOperandUses(op1, SRBM_EDX);
+                    srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
+
+                    // result in any register
+                    SingleTypeRegSet apxAwareDestCandidates =
+                        ForceLowGprForApxIfNeeded(intrinsicTree, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    BuildDef(intrinsicTree, apxAwareDestCandidates, 0);
+                    BuildDef(intrinsicTree, apxAwareDestCandidates, 1);
+                }
+                else // Signed multiply or normal unsigned multiply in one operand form
+                {
+                    SingleTypeRegSet apxAwareRegCandidates =
+                        ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
+
+                    // mulEAX always use EAX, if one operand is contained, specify other op with fixed EAX register
+                    // otherwise dont force any register, we might get the second parameter in EAX
+                    srcCount = BuildOperandUses(op1, op2->isContained() ? SRBM_EAX : apxAwareRegCandidates);
+                    srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
+
+                    // result put in EAX and EDX
+                    BuildDef(intrinsicTree, SRBM_EAX, 0);
+                    BuildDef(intrinsicTree, SRBM_EDX, 1);
+                }
+
+                buildUses = false;
+                break;
+            }
+
             case NI_AVX2_MultiplyNoFlags:
             case NI_AVX2_X64_MultiplyNoFlags:
             {
@@ -3011,9 +3055,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // Currently dstCount = 2 is only used for DivRem, which has special constraints and is handled above
+        // Currently dstCount = 2 is only used for DivRem and BigMul, which has special constraints and is handled
+        // above
         assert((dstCount == 0) ||
-               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))));
+               ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
+                                    (intrinsicId == NI_X86Base_BigMul) || (intrinsicId == NI_X86Base_X64_BigMul))));
     }
 
     *pDstCount = dstCount;
