@@ -122,8 +122,8 @@ namespace ILCompiler
     /// <summary>
     /// A dummy method used to tell the jit that we want to explicitly pass the hidden Continuation parameter
     /// as well as the generic context parameter (if any) for async resumption methods.
-    /// This method should be marked IsAsync=false and HasInstantiation=false. These are defaults
-    /// for MethodDesc and so aren't explicitly set in the code below.
+    /// This method should be marked HasInstantiation=false. This is the default
+    /// for MethodDesc and so isn't explicitly set in the code below.
     /// </summary>
     internal sealed partial class ExplicitContinuationAsyncMethod : MethodDesc
     {
@@ -134,6 +134,8 @@ namespace ILCompiler
         {
             _wrappedMethod = target;
         }
+
+        public override bool IsAsync => true;
 
         public MethodDesc Target => _wrappedMethod;
 
