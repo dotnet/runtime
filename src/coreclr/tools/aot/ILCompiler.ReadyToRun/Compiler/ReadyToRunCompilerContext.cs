@@ -11,6 +11,8 @@ namespace ILCompiler
 {
     partial class CompilerTypeSystemContext
     {
+        private readonly MetadataVirtualMethodAlgorithm _virtualMethodAlgorithm = new MetadataVirtualMethodAlgorithm();
+
         public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details)
         {

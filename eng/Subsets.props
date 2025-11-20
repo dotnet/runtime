@@ -111,7 +111,7 @@
     <DefaultCoreClrSubsets Condition="'$(TargetRid)' == 'linux-armel'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAndroid)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
-    <DefaultCoreClrSubsets Condition="'$(TargetsBrowser)' == 'true'">mono.emsdk+clr.native+clr.corelib+clr.tools+clr.packages+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets Condition="'$(TargetsBrowser)' == 'true'">mono.emsdk+clr.native+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
     <!-- Even on platforms that do not support the CoreCLR runtime, we still want to build ilasm/ildasm. -->
     <DefaultCoreClrSubsets Condition="'$(RuntimeFlavor)' != 'CoreCLR'">clr.iltools+clr.packages</DefaultCoreClrSubsets>
 
@@ -219,6 +219,7 @@
     <SubsetName Include="Clr.PalTestList" OnDemand="true" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
     <SubsetName Include="Clr.Hosts" Description="The CoreCLR corerun test host." />
     <SubsetName Include="Clr.Jit" Description="The JIT for the CoreCLR .NET runtime." />
+    <SubsetName Include="Clr.WasmJit" Description="The cross-targeting WebAssembly JIT compiler for the CoreCLR .NET runtime." />
     <SubsetName Include="Clr.AllJits" Description="All of the cross-targeting JIT compilers for the CoreCLR .NET runtime." />
     <SubsetName Include="Clr.AllJitsCommunity" Description="All of the cross-targeting JIT compilers for the CoreCLR .NET runtime, including community targets." />
     <SubsetName Include="Clr.Spmi" Description="SuperPMI, a tool for CoreCLR JIT testing." />
@@ -320,6 +321,10 @@
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.jit+'))">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrJitSubset=true</ClrRuntimeBuildSubsets>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(_subset.Contains('+clr.wasmjit+'))">
+    <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrWasmJitSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(_subset.Contains('+clr.paltests+'))">
@@ -671,8 +676,6 @@
             <_BuildMonoRuntimePack Condition="'$(RuntimeFlavor)' == 'Mono' and '$(MonoSupported)' == 'true'">true</_BuildMonoRuntimePack>
             <_BuildHostPack Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildHostPack>
             <_BuildCdacPack Condition="'$(_CDacToolsBuilt)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' and ('$(TargetOS)' == 'windows' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'linux')">true</_BuildCdacPack>
-            <!-- Some configurations need to work out packaging errors before they can be enabled -->
-            <_BuildCdacPack Condition="'$(TargetArchitecture)' == 'loongarch64'">false</_BuildCdacPack>
             <_BuildBundle Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">true</_BuildBundle>
           </PropertyGroup>
 

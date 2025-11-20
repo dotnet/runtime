@@ -29,12 +29,21 @@ namespace JIT.HardwareIntrinsics.Arm
             return new Vector<T>(arr);
         }
 
+        public static T[] ConvertVectorToMask<T>(T[] vector) where T : IBinaryInteger<T>
+        {
+            T[] result = new T[vector.Length];
+            for (int i = 0; i < vector.Length; i++)
+            {
+                result[i] = vector[i] == T.Zero ? T.Zero : T.One;
+            }
+            return result;
+        }
+
         public static T[] CreateMaskForFirstActiveElement<T>(T[] mask, T[] srcMask)
             where T : unmanaged, IBinaryInteger<T>
         {
             int count = srcMask.Length;
-            T[] result = new T[count];
-            Array.Copy(srcMask, result, count);
+            T[] result = ConvertVectorToMask(srcMask);
 
             for (int i = 0; i < count; i++)
             {
@@ -1580,19 +1589,51 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long FusedAddHalving(long op1, long op2)
         {
             long sum = op1 + op2;
-            bool carry = sum < op1;
-            return (sum >> 1) + (carry ? 1L << 63 : 0);
+
+            if (op1 > 0 && op2 > 0 && sum < 0)
+            {
+                // Addition overflows into the sign bit, which simulates an
+                // unsigned 64-bit addition. We need to perform a logical shift
+                // to make sure the sign-bit is clear on the half value.
+                return (long)((ulong)sum >>> 1);
+            }
+            else if (op1 < 0 && op2 < 0 && sum > 0)
+            {
+                // Addition of negative values overflows beyond the sign-bit into
+                // the positive range. The halved value will be OK but we need to
+                // reinstate the sign bit which was lost.
+                return (long)((ulong)(sum >> 1) | (1UL << 63));
+            }
+            else
+            {
+                // No overflow, simply halve preserving sign-bit.
+                return sum >> 1;
+            }
         }
 
         public static long FusedSubtractHalving(long op1, long op2)
         {
-            ulong uop1 = (ulong)op1;
-            ulong uop2 = (ulong)op2;
+            long diff = op1 - op2;
 
-            ulong udiff = uop1 - uop2;
-            long sdiff = unchecked((long)udiff);
-
-            return sdiff >> 1;
+            if (op1 > 0 && op2 < 0 && diff < 0)
+            {
+                // Subtract of negative value overflows into the sign bit We need
+                // to perform a logical shift to make sure the sign-bit is clear
+                // on the half value.
+                return (long)((ulong)diff >>> 1);
+            }
+            else if (op1 < 0 && op2 > 0 && diff > 0)
+            {
+                // Subtraction of positive value overflows beyond the sign-bit into
+                // the positive range. The halved value will be OK but we need to
+                // reinstate the sign bit which was lost.
+                return (long)((ulong)(diff >> 1) | (1UL << 63));
+            }
+            else
+            {
+                // No overflow, simply halve preserving sign-bit.
+                return diff >> 1;
+            }
         }
 
         public static ulong FusedSubtractHalving(ulong op1, ulong op2)
@@ -1601,7 +1642,6 @@ namespace JIT.HardwareIntrinsics.Arm
             bool overflow = op1 < op2;
             return (diff >> 1) + (overflow ? 1UL << 63 : 0);
         }
-
 
         public static uint FusedAddRoundedHalving(uint op1, uint op2) => (uint)((ulong)((ulong)op1 + (ulong)op2 + 1) >> 1);
 
@@ -2942,7 +2982,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {
                     if (shiftOvf)
                     {
-                        result = op2 < 0 ? sbyte.MinValue : sbyte.MaxValue;
+                        return op1 > 0 ? sbyte.MaxValue : sbyte.MinValue;
                     }
                 }
             }
@@ -3140,8 +3180,19 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte AddSaturate(sbyte op1, sbyte op2)
         {
-            var (result, ovf) = AddOvf(op1, op2);
-            return ovf ? (result > 0 ? sbyte.MinValue : sbyte.MaxValue) : result;
+            int result = op1 + op2;
+            if (result > sbyte.MaxValue)
+            {
+                return sbyte.MaxValue;
+            }
+            else if (result < sbyte.MinValue)
+            {
+                return sbyte.MinValue;
+            }
+            else
+            {
+                return (sbyte)result;
+            }
         }
 
         public static sbyte AddSaturate(sbyte op1, byte op2)
@@ -4328,41 +4379,53 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float AbsoluteDifference(float op1, float op2) => MathF.Abs(op1 - op2);
 
+        private static float ConvertToSingleRoundToOdd(double val)
+        {
+            float f = (float)val;
+
+            // If val is NaN or Inf there’s nothing else to do
+            if (double.IsNaN(val) || double.IsInfinity(val))
+                return f;
+
+            // Detect the cases where the default cast rounded away from zero
+            if ((val > 0 && (double)f > val) ||
+                (val < 0 && (double)f < val))
+            {
+                // Move toward zero to get truncate() behaviour.
+                int bits = BitConverter.SingleToInt32Bits(f);
+                bits += (val > 0) ? -1 : +1;
+                f = BitConverter.Int32BitsToSingle(bits);
+            }
+
+            // Round to odd, force the last bit of the mantissa to 1 if the conversion was inexact
+            if (val != (double)f)
+            {
+                int bits = BitConverter.SingleToInt32Bits(f);
+                bits |= 0x1;
+                f = BitConverter.Int32BitsToSingle(bits);
+            }
+
+            return f;
+        }
+
         public static float ConvertToSingleEvenRoundToOdd(double[] value, int i)
         {
             if (i % 2 == 0)
             {
-                double val = value[i / 2];
-                float floatVal = (float)val;
-
-                float f = (float)val;
-
-                // If val is NaN or Inf there’s nothing else to do
-                if (double.IsNaN(val) || double.IsInfinity(val))
-                    return f;
-
-                // Detect the cases where the default cast rounded away from zero
-                if ((val > 0 && (double)f > val) ||
-                    (val < 0 && (double)f < val))
-                {
-                    // Move toward zero to get truncate() behaviour.
-                    int bits = BitConverter.SingleToInt32Bits(f);
-                    bits += (val > 0) ? -1 : +1;
-                    f = BitConverter.Int32BitsToSingle(bits);
-                }
-
-                // Round to odd, force the last bit of the mantissa to 1 if the conversion was inexact
-                if (val != (double)f)
-                {
-                    int bits = BitConverter.SingleToInt32Bits(f);
-                    bits |= 0x1;
-                    f = BitConverter.Int32BitsToSingle(bits);
-                }
-
-                return f;
+                return ConvertToSingleRoundToOdd(value[i / 2]);
             }
 
             return 0f;
+        }
+
+        public static float ConvertToSingleOddRoundToOdd(float[] even, double[] op, int i)
+        {
+            if (i % 2 != 0)
+            {
+                return ConvertToSingleRoundToOdd(op[(i - 1) / 2]);
+            }
+
+            return even[i];
         }
 
         public static float FusedMultiplyAdd(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(op2, op3, op1);
@@ -5872,6 +5935,16 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return result;
+        }
+
+        public static float ConvertToSingleOdd(float[] even, double[] op, int i)
+        {
+            if (i % 2 == 0)
+            {
+                return even[i];
+            }
+
+            return (float)op[(i - 1) / 2];
         }
 
         public static float ConvertToSingleUpper(float[] op1, double[] op2, int i) => i < op1.Length ? op1[i] : ConvertToSingle(op2[i - op1.Length]);
@@ -7517,7 +7590,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (LastActive(mask, op1) != T.Zero)
             {
-                Array.Copy(op2, result, count);
+                result = ConvertVectorToMask(op2);
             }
 
             return result;
@@ -7854,25 +7927,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte SveShiftArithmeticRounded(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static sbyte SveShiftArithmeticSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static sbyte SveShiftArithmeticSaturate(sbyte op1, sbyte op2) => ArithmeticShift<sbyte, sbyte>(op1, (int)ShiftSat(-op2, 8), saturate: true);
 
         public static sbyte SveShiftArithmeticRoundedSaturate(sbyte op1, sbyte op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
         public static short SveShiftArithmeticRounded(short op1, short op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static short SveShiftArithmeticSaturate(short op1, short op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static short SveShiftArithmeticSaturate(short op1, short op2) => ArithmeticShift<short, short>(op1, (int)ShiftSat(-op2, 16), saturate: true);
 
         public static short SveShiftArithmeticRoundedSaturate(short op1, short op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
         public static int SveShiftArithmeticRounded(int op1, int op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static int SveShiftArithmeticSaturate(int op1, int op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static int SveShiftArithmeticSaturate(int op1, int op2) => ArithmeticShift<int, int>(op1, (int)ShiftSat(-op2, 32), saturate: true);
 
         public static int SveShiftArithmeticRoundedSaturate(int op1, int op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
         public static long SveShiftArithmeticRounded(long op1, long op2) => SignedShift(op1, op2, rounding: true, shiftSat: true);
 
-        public static long SveShiftArithmeticSaturate(long op1, long op2) => SignedShift(op1, op2, saturating: true, shiftSat: true);
+        public static long SveShiftArithmeticSaturate(long op1, long op2) => ArithmeticShift<long, long>(op1, (int)ShiftSat(-op2, 64), saturate: true);
 
         public static long SveShiftArithmeticRoundedSaturate(long op1, long op2) => SignedShift(op1, op2, rounding: true, saturating: true, shiftSat: true);
 
@@ -8185,7 +8258,34 @@ namespace JIT.HardwareIntrinsics.Arm
             return Odd<N>(even, SubtractRoundedHighNarrowing<W, N>(op1, op2), i);
         }
 
-        public static long FusedAddRoundedHalving(long op1, long op2) => (long)((ulong)(op1 + op2 + 1) >> 1);
+        public static long FusedAddRoundedHalving(long op1, long op2)
+        {
+            bool overflow = false;
+            long sum = 0;
+            try
+            {
+                sum = checked(op1 + op2 + 1);
+            }
+            catch (OverflowException)
+            {
+                overflow = true;
+                sum = op1 + op2 + 1;
+            }
+
+            // See FusedAddHalving for description of cases.
+            if (op1 > 0 && op2 > 0 && overflow)
+            {
+                return (long)((ulong)sum >>> 1);
+            }
+            else if (op1 < 0 && op2 < 0 && overflow)
+            {
+                return (long)((ulong)(sum >> 1) | (1UL << 63));
+            }
+            else
+            {
+                return sum >> 1;
+            }
+        }
 
         public static ulong FusedAddRoundedHalving(ulong op1, ulong op2)
         {
