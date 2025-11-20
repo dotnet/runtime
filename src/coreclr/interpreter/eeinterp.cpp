@@ -126,6 +126,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         *(InterpMethod**)args.hotCodeBlockRW = pMethod;
         memcpy ((uint8_t*)args.hotCodeBlockRW + sizeof(InterpMethod*), pIRCode, IRCodeSize * sizeof(int32_t));
 
+        compiler.UpdateWithFinalMethodByteCodeAddress((InterpByteCodeStart*)args.hotCodeBlock);
         *entryAddress = (uint8_t*)args.hotCodeBlock;
         *nativeSizeOfCode = sizeOfCode;
 

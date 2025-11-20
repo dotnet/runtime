@@ -1760,6 +1760,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     , m_hiddenArgumentVar(-1)
     , m_leavesTable(this)
     , m_dataItems(this)
+    , m_asyncSuspendDataItems(this)
     , m_globalVarsWithRefsStackTop(0)
     , m_varIntervalMaps(this)
 #ifdef DEBUG
@@ -5142,6 +5143,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     }
 
     InterpAsyncSuspendData* suspendData = (InterpAsyncSuspendData*)AllocMethodData(sizeof(InterpAsyncSuspendData));
+    m_asyncSuspendDataItems.Add(suspendData);
     CORINFO_ASYNC_INFO asyncInfo;
     m_compHnd->getAsyncInfo(&asyncInfo);
     
@@ -5180,6 +5182,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     suspendData->pRestoreContextsMethod = asyncInfo.restoreContextsMethHnd;
     suspendData->resumeFuncPtr = m_asyncResumeFuncPtr;
     suspendData->DiagnosticIP = NULL;
+    // TODO! Register methodStartIP to be filled in as needed.
     suspendData->methodStartIP = 0;
     suspendData->continuationArgOffset = m_pVars[m_continuationArgIndex].offset;
     suspendData->asyncMethodReturnType = NULL;
@@ -9883,6 +9886,14 @@ void InterpCompiler::UnlinkUnreachableBBlocks()
             prevBB = nextBB;
             nextBB = nextBB->pNextBB;
         }
+    }
+}
+
+void InterpCompiler::UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *pByteCodeStart)
+{
+    for (int32_t i = 0; i < m_asyncSuspendDataItems.GetSize(); i++)
+    {
+        m_asyncSuspendDataItems.Get(i)->methodStartIP = pByteCodeStart;
     }
 }
 

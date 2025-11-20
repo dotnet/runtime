@@ -614,6 +614,8 @@ private:
     // from the interpreter code header during execution.
     TArray<void*, MemPoolAllocator> m_dataItems;
 
+    TArray<InterpAsyncSuspendData*, MemPoolAllocator> m_asyncSuspendDataItems;
+
     InterpDataItemIndexMap m_genericLookupToDataItemIndex;
     int32_t GetDataItemIndex(void* data)
     {
@@ -952,6 +954,7 @@ public:
     InterpMethod* CompileMethod();
     void BuildGCInfo(InterpMethod *pInterpMethod);
     void BuildEHInfo();
+    void UpdateWithFinalMethodByteCodeAddress(InterpByteCodeStart *pByteCodeStart);
 
     int32_t* GetCode(int32_t *pCodeSize);
 };

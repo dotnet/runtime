@@ -3921,11 +3921,7 @@ do                                                                      \
                     }
 
                     continuation->SetState((int32_t)((uint8_t*)ip - (uint8_t*)pFrame->startIp));
-                    if (pAsyncSuspendData->methodStartIP == 0)
-                    {
-                        // TODO! Do this at compile time instead of here
-                        VolatileStore(&pAsyncSuspendData->methodStartIP, pFrame->startIp);
-                    }
+                    assert(pAsyncSuspendData->methodStartIP != 0);
                     continuation->SetResumeInfo(&pAsyncSuspendData->resumeFuncPtr);
                     pInterpreterFrame->SetContinuation(continuation);
                     goto EXIT_FRAME;
