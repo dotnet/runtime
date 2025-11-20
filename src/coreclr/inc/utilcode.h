@@ -3407,6 +3407,11 @@ inline bool FitsInRel28(INT64 val64)
 //*****************************************************************************
 inline bool FitsInRiscV64AuipcCombo(INT64 val64)
 {
+    // A PC relative load/store/jalr/addi is 2 instructions, e.g.:
+    //     auipc reg,      offset_hi20  # range: [0x80000000, 0x7FFFF000]
+    //     ld    reg, reg, offset_lo12  # range: [0xFFFFF800, 0x000007FF]
+    // Both hi20 and lo12 immediates are sign-extended and combined with a 64-bit adder,
+    // which shifts the total 32-bit range into the negative by half of the 12-bit immediate range.
     return (val64 >= -(1ll << 31) - (1ll << 11)) && (val64 < (1ll << 31) - (1ll << 11));
 }
 
