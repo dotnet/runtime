@@ -4741,7 +4741,7 @@ void InterpCompiler::EmitNintIndexCheck(StackInfo *spArray, StackInfo *spIndex)
 void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 {
     // handle nint index case
-    if (m_pStackPointer[1].GetStackType() == StackTypeI8)
+    if (m_pStackPointer[-1].GetStackType() == StackTypeI8)
     {
         EmitNintIndexCheck(m_pStackPointer - 2, m_pStackPointer - 1);
     }
