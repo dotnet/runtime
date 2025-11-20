@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using ILCompiler.DependencyAnalysis;
 using Internal.IL;
@@ -58,7 +59,7 @@ namespace ILCompiler
             }
 
             private readonly Dictionary<TypeDesc, TypeDesc> _associatedTypeMap = [];
-            private readonly Dictionary<string, (TypeDesc type, TypeDesc trimmingTarget)> _externalTypeMap = [];
+            private readonly Dictionary<string, (TypeDesc type, List<TypeDesc> trimmingTargets)> _externalTypeMap = [];
             private ThrowingMethodStub _externalTypeMapExceptionStub;
             private ThrowingMethodStub _associatedTypeMapExceptionStub;
 
@@ -78,9 +79,21 @@ namespace ILCompiler
             }
             public void AddExternalTypeMapEntry(string typeName, TypeDesc type, TypeDesc trimmingTarget)
             {
-                if (!_externalTypeMap.TryAdd(typeName, (type, trimmingTarget)))
+                if (_externalTypeMap.TryGetValue(typeName, out var currentValue))
                 {
-                    ThrowHelper.ThrowBadImageFormatException();
+                    if (currentValue.type != type)
+                    {
+                        // Conflicting type map entry
+                        ThrowHelper.ThrowBadImageFormatException();
+                    }
+                    else
+                    {
+                        currentValue.trimmingTargets.Add(trimmingTarget);
+                    }
+                }
+                else
+                {
+                    _externalTypeMap[typeName] = (type, [trimmingTarget]);
                 }
             }
 
