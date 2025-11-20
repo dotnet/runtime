@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
-namespace Test
+namespace b52593
 {
     using System;
     public class App
     {
         private static void Method1(TypedReference param1, object obj) { }
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

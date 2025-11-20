@@ -210,7 +210,7 @@ inline TADDR GetSP(const CONTEXT * context) {
     return (TADDR)(context->Esp);
 }
 
-EXTERN_C LPVOID STDCALL GetCurrentSP();
+EXTERN_C void* GetCurrentSP();
 
 inline void SetSP(CONTEXT *context, TADDR esp) {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -367,7 +367,7 @@ inline BOOL isCallRegisterIndirect(const BYTE *pRetAddr)
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -385,36 +385,15 @@ inline void emitJumpInd(LPBYTE pBuffer, LPVOID target)
 }
 
 //------------------------------------------------------------------------
-//  Given the same pBuffer that was used by emitJump this method
+//  Given the same pBuffer that was used by emitBackToBackJump this method
 //  decodes the instructions and returns the jump target
-inline PCODE decodeJump(PCODE pCode)
+inline PCODE decodeBackToBackJump(PCODE pCode)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     CONSISTENCY_CHECK(*PTR_BYTE(pCode) == X86_INSTR_JMP_REL32);
     return rel32Decode(pCode+1);
 }
 
-//
-// On IA64 back to back jumps should be separated by a nop bundle to get
-// the best performance from the hardware's branch prediction logic.
-// For all other platforms back to back jumps don't require anything special
-// That is why we have these two wrapper functions that call emitJump and decodeJump
-//
-
-//------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return decodeJump(pBuffer);
-}
 
 EXTERN_C void __stdcall setFPReturn(int fpSize, INT64 retVal);
 EXTERN_C void __stdcall getFPReturn(int fpSize, INT64 *pretval);
