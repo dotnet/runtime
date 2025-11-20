@@ -74,11 +74,11 @@ extends:
 
       # We use a CentOS Stream 9 image here to test building from source on CentOS Stream 9.
       SourceBuild_centos_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-9-amd64
 
       # AlmaLinux 8 is a RHEL 8 rebuild, so we use it to test building from source on RHEL 8.
       SourceBuild_linux_x64:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-8-source-build
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:almalinux-9-source-build-amd64
 
       linux_s390x:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net8.0-cross-s390x
@@ -99,7 +99,7 @@ extends:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-gcc13-amd64
 
       linux_x64_llvmaot:
-        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9
+        image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream-9-amd64
 
       browser_wasm:
         image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net8.0-webassembly-amd64
