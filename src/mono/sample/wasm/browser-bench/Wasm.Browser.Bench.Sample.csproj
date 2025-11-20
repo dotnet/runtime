@@ -9,6 +9,7 @@
     <PublishTrimmed Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</PublishTrimmed>
     <RunAOTCompilation Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</RunAOTCompilation>
     <WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
   </PropertyGroup>
 
   <!-- NativeAOT (needs configuration of additional feeds to properly restore packages) -->
