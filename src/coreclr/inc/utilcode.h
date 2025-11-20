@@ -3405,7 +3405,7 @@ inline bool FitsInRel28(INT64 val64)
 //*****************************************************************************
 // Returns whether the offset fits into a RISC-V auipc + I-type or S-type instruction combo
 //*****************************************************************************
-inline bool FitsInAuipcCombo(INT64 val64)
+inline bool FitsInRiscV64AuipcCombo(INT64 val64)
 {
     return (val64 >= -(1ll << 31) - (1ll << 11)) && (val64 < (1ll << 31) - (1ll << 11));
 }

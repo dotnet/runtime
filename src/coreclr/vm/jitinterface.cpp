@@ -12049,7 +12049,7 @@ void CEEJitInfo::recordRelocation(void * location,
             _ASSERTE(addlDelta == 0);
             delta = (INT64)target - (INT64)location;
 
-            if (!FitsInAuipcCombo(delta))
+            if (!FitsInRiscV64AuipcCombo(delta))
             {
                 // Target is out of 32-bit range
                 // If we're fixing up a jump, try jumping through a stub
@@ -12081,7 +12081,7 @@ void CEEJitInfo::recordRelocation(void * location,
                 }
 
                 delta = (INT64)jumpStubAddr - (INT64)location;
-                if (!FitsInAuipcCombo(delta))
+                if (!FitsInRiscV64AuipcCombo(delta))
                 {
                     _ASSERTE(!"jump stub was not in expected range");
                     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
