@@ -4471,7 +4471,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
-/*
             case NI_System_Half_op_GreaterThan:
             case NI_System_Half_op_GreaterThanOrEqual:
             case NI_System_Half_op_LessThan:
@@ -4482,7 +4481,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #ifdef TARGET_XARCH
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                 {
-                    NamedIntrinsic id = lookupHalfComparisonIntrinsic(ni);
+                    NamedIntrinsic id = lookupHalfIntrinsic(ni);
                     assert(id != NI_Illegal);
 
                     GenTree* op2 = impPopStack().val;
@@ -4491,15 +4490,15 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     assert(op1->TypeGet() == TYP_HALF);
                     assert(op2->TypeGet() == TYP_HALF);
 
-                    int ival = lookupIval(id);    
+                    op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, TYP_HALF, 16);
+                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
 
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, id, TYP_HALF, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, op2, id, TYP_HALF, 16);
                     break;
                 }
 #endif
                 break;
             }
-*/
 
             case NI_System_Math_Abs:
             case NI_System_Math_Acos:
@@ -10511,6 +10510,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_Half_op_GreaterThanOrEqual;
                         }
+                        else if (strcmp(methodName, "op_Inequality") == 0)
+                        {
+                            result = NI_System_Half_op_Inequality;
+                        }
                         else if (strcmp(methodName, "op_Increment") == 0)
                         {
                             result = NI_System_Half_op_Increment;
@@ -12101,21 +12104,18 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
             return NI_AVX10v1_MultiplyScalar;
         case NI_System_Half_op_Division:
             return NI_AVX10v1_DivideScalar;
-
-        /*
         case NI_System_Half_op_GreaterThan:
-            return NI_AVX10v1_CompareScalarGreaterThan;
+            return NI_AVX10v1_CompareScalarOrderedGreaterThan;
         case NI_System_Half_op_GreaterThanOrEqual:
-            return NI_AVX10v1_CompareScalarGreaterThanOrEqual;
+            return NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual;
         case NI_System_Half_op_LessThan:
-            return NI_AVX10v1_CompareScalarLessThan;
+            return NI_AVX10v1_CompareScalarOrderedLessThan;
         case NI_System_Half_op_LessThanOrEqual:
-            return NI_AVX10v1_CompareScalarLessThanOrEqual;
+            return NI_AVX10v1_CompareScalarOrderedLessThanOrEqual;
         case NI_System_Half_op_Equality:
-            return NI_AVX10v1_CompareScalarEqual;
+            return NI_AVX10v1_CompareScalarOrderedEqual;
         case NI_System_Half_op_Inequality:
-            return NI_AVX10v1_CompareScalarNotEqual;
-        */
+            return NI_AVX10v1_CompareScalarOrderedNotEqual;
         default:
             break;
     }

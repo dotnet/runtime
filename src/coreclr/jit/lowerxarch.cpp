@@ -1247,6 +1247,8 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
     {
         case NI_X86Base_COMIS:
         case NI_X86Base_UCOMIS:
+        case NI_AVX10v1_VCOMISH:
+        case NI_AVX10v1_VUCOMISH:
             // In some cases we can generate better code if we swap the operands:
             //   - If the condition is not one of the "preferred" floating point conditions we can swap
             //     the operands and change the condition to avoid generating an extra JP/JNP branch.
@@ -2600,6 +2602,45 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             return LowerHWIntrinsicTernaryLogic(node);
         }
+
+        case NI_AVX10v1_CompareScalarOrderedEqual:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FEQ);
+            break;
+        case NI_AVX10v1_CompareScalarOrderedNotEqual:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FNEU);
+            break;
+        case NI_AVX10v1_CompareScalarOrderedLessThan:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FLT);
+            break;
+        case NI_AVX10v1_CompareScalarOrderedLessThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FLE);
+            break;
+        case NI_AVX10v1_CompareScalarOrderedGreaterThan:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FGT);
+            break;
+        case NI_AVX10v1_CompareScalarOrderedGreaterThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VCOMISH, GenCondition::FGE);
+            break;
+
+        case NI_AVX10v1_CompareScalarUnorderedEqual:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FEQ);
+            break;
+        case NI_AVX10v1_CompareScalarUnorderedNotEqual:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FNEU);
+            break;
+        case NI_AVX10v1_CompareScalarUnorderedLessThan:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FLT);
+            break;
+        case NI_AVX10v1_CompareScalarUnorderedLessThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FLE);
+            break;
+        case NI_AVX10v1_CompareScalarUnorderedGreaterThan:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FGT);
+            break;
+        case NI_AVX10v1_CompareScalarUnorderedGreaterThanOrEqual:
+            LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FGE);
+            break;
+
 
         default:
             break;
