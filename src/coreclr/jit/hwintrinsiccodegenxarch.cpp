@@ -767,7 +767,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                         emitSwCase);
                     }
                 }
-                else if (node->TypeIs(TYP_VOID))
+                else if (node->TypeIs(TYP_VOID) || node->TypeIs(TYP_INT))
                 {
                     genHWIntrinsic_R_RM(node, ins, simdSize, op1Reg, op2, instOptions);
                 }
