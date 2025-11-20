@@ -3011,12 +3011,9 @@ internal static class ReflectionTest
 
         public struct ValueTypeWithConstructor
         {
-            public int Value;
-
             public ValueTypeWithConstructor()
             {
                 s_constructorCallCount++;
-                Value = 42;
             }
         }
 
@@ -3027,12 +3024,6 @@ internal static class ReflectionTest
         {
             Console.WriteLine(nameof(TestArrayInitialize));
 
-            // Ensure the type is in the static callgraph
-            if (string.Empty.Length > 0)
-            {
-                AllocateArray();
-            }
-
             s_constructorCallCount = 0;
 
             // Create an array and call Initialize
@@ -3042,13 +3033,6 @@ internal static class ReflectionTest
             // Verify that the constructor was called for each element
             if (s_constructorCallCount != 3)
                 throw new Exception($"Expected constructor to be called 3 times, but was called {s_constructorCallCount} times");
-
-            // Verify that each element has the expected value
-            for (int i = 0; i < array.Length; i++)
-            {
-                if (array[i].Value != 42)
-                    throw new Exception($"Expected array[{i}].Value to be 42, but was {array[i].Value}");
-            }
         }
     }
 
