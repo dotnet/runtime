@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+<!-- TODO change to pri1 -->
+    <CLRTestPriority>0</CLRTestPriority>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test121791.il" />
+  </ItemGroup>
+</Project>
