@@ -3315,7 +3315,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    if (ni == NI_System_StubHelpers_SetNextCallGenericContext)
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext)
     {
         lvaNextCallGenericContext                     = lvaGrabTemp(false DEBUGARG("Upcoming generic context"));
         lvaGetDesc(lvaNextCallGenericContext)->lvType = TYP_I_IMPL;
@@ -3324,7 +3324,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return node;
     }
 
-    if (ni == NI_System_StubHelpers_SetNextCallAsyncContinuation)
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation)
     {
         lvaNextCallAsyncContinuation                     = lvaGrabTemp(false DEBUGARG("Upcoming async continuation"));
         lvaGetDesc(lvaNextCallAsyncContinuation)->lvType = TYP_REF;
@@ -10833,6 +10833,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                             }
+                            else if (strcmp(methodName, "SetNextCallGenericContext") == 0)
+                            {
+                                return NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext;
+                            }
+                            else if (strcmp(methodName, "SetNextCallAsyncContinuation") == 0)
+                            {
+                                return NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation;
+                            }
                         }
                         else if (strcmp(className, "AsyncHelpers") == 0)
                         {
@@ -11104,14 +11112,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "NextCallReturnAddress") == 0)
                         {
                             result = NI_System_StubHelpers_NextCallReturnAddress;
-                        }
-                        else if (strcmp(methodName, "SetNextCallGenericContext") == 0)
-                        {
-                            return NI_System_StubHelpers_SetNextCallGenericContext;
-                        }
-                        else if (strcmp(methodName, "SetNextCallAsyncContinuation") == 0)
-                        {
-                            return NI_System_StubHelpers_SetNextCallAsyncContinuation;
                         }
                     }
                 }

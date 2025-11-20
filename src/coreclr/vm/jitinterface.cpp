@@ -14643,11 +14643,11 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     if (msig.HasGenericContextArg())
     {
         pCode->EmitLDC(0);
-        pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
+        pCode->EmitCALL(METHOD__RUNTIME_HELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
     }
 
     pCode->EmitLDARG(0);
-    pCode->EmitCALL(METHOD__STUBHELPERS__SET_NEXT_CALL_ASYNC_CONTINUATION, 1, 0);
+    pCode->EmitCALL(METHOD__RUNTIME_HELPERS__SET_NEXT_CALL_ASYNC_CONTINUATION, 1, 0);
 
     int numArgs = 0;
 
