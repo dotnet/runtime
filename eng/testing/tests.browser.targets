@@ -263,35 +263,10 @@
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
-      <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
-      <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
-      <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />
-
-      <WasmFilesToIncludeInFileSystem Include="@(_SatelliteAssemblies)" />
-    </ItemGroup>
-
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" Condition="'$(BuildAOTTestsOnHelix)' == 'true'" />
       <WasmAssembliesToBundle Condition="'%(WasmAssembliesToBundle.FileName)' == 'WasmSymbolicator'" AOT_InternalForceToInterpret="true" />
-
-      <_CopyLocalPaths
-              Include="@(PublishItemsOutputGroupOutputs)"
-              Condition="'%(PublishItemsOutputGroupOutputs.BuildReference)' == 'true' and
-                         !$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.resources.dll'))" />
-
-      <_CopyLocalPaths TargetPath="%(_CopyLocalPaths.RelativePath)" Condition="'%(_CopyLocalPaths.RelativePath)' != ''" />
-      <_CopyLocalPaths TargetPath="%(FileName)%(Extension)"         Condition="'%(_CopyLocalPaths.RelativePath)' == ''" />
-      <WasmFilesToIncludeInFileSystem Include="@(_CopyLocalPaths)" />
-
-      <!-- Include files specified by test projects from publish dir -->
-      <WasmFilesToIncludeInFileSystem
-              Include="%(WasmFilesToIncludeFromPublishDir.Identity)"
-              TargetPath="%(WasmFilesToIncludeFromPublishDir.TargetDir)/%(WasmFilesToIncludeFromPublishDir.Identity)"
-              Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
-
-    <WriteLinesToFile File="$(WasmMainHtmlPath)" Lines="&lt;html&gt;&lt;body&gt;&lt;script type='module' src='$(WasmMainJSFileName)'&gt;&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;" Overwrite="True" Condition="!Exists('$(WasmMainHtmlPath)')"/>
 
     <ForceMSBuildGC />
   </Target>
