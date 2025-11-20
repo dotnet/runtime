@@ -84,6 +84,7 @@ namespace ILCompiler
             }
 
             MethodDesc resumingMethod = new ExplicitContinuationAsyncMethod(_targetMethod);
+            // TODO: Can be direct call?
             ilStream.Emit(ILOpcode.call, ilEmitter.NewToken(resumingMethod));
 
             bool returnsVoid = resumingMethod.Signature.ReturnType.IsVoid;
