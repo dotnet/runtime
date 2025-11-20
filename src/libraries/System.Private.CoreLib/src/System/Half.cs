@@ -156,6 +156,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator <(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -178,12 +179,14 @@ namespace System
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator >(Half left, Half right)
         {
             return right < left;
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator <=(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -206,12 +209,14 @@ namespace System
         }
 
         /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator >=(Half left, Half right)
         {
             return right <= left;
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator ==(Half left, Half right)
         {
             if (IsNaN(left) || IsNaN(right))
@@ -225,6 +230,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
+        [Intrinsic]
         public static bool operator !=(Half left, Half right)
         {
             return !(left == right);
