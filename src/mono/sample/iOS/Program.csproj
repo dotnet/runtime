@@ -35,14 +35,6 @@
     <RuntimeComponents Condition="'$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(UseMonoRuntime)' != 'true'">
-    <EnvironmentVariables Include="DOTNET_Interpreter=%2A%21%2A" />
-    <EnvironmentVariables Condition="'$(PublishReadyToRun)' == 'true'" Include="DOTNET_InterpMode=1" />
-    <EnvironmentVariables Condition="'$(PublishReadyToRun)' == 'true'" Include="DOTNET_ReadyToRun=1" />
-    <EnvironmentVariables Condition="'$(PublishReadyToRun)' != 'true'" Include="DOTNET_InterpMode=3" />
-    <EnvironmentVariables Condition="'$(PublishReadyToRun)' != 'true'" Include="DOTNET_ReadyToRun=0" />
-  </ItemGroup>
-
   <!-- Use the repo's CrossGen props/targets.
        This can be removed once we upstream Mach-O support in the targets to the SDK -->
   <Import Project="$(Crossgen2SdkOverridePropsPath)" Condition="'$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverridePropsPath)' != ''" />
