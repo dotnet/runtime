@@ -109,6 +109,8 @@ size_t get_image_size(void* base_address)
 
         return image_size;
     }
+
+    return 0;
 }
 
 bool get_native_code_data(const struct host_runtime_contract_native_code_context* context, struct host_runtime_contract_native_code_data* data)
@@ -128,7 +130,6 @@ bool get_native_code_data(const struct host_runtime_contract_native_code_context
     if (written <= 0 || (size_t)written >= sizeof(r2r_path) - dir_len)
         return false;
 
-    // TODO: store and dlclose the handles after the app runs
     void* handle = dlopen(r2r_path, RTLD_LAZY | RTLD_LOCAL);
     if (handle == NULL)
         return false;
@@ -191,6 +192,7 @@ mono_ios_runtime_init (void)
 #endif
     assert (res > 0);
 
+    // Contract lasts the lifetime of the app. The app exists before the end of this function.
     struct host_runtime_contract host_contract = {
         .size = sizeof(struct host_runtime_contract),
         .pinvoke_override = &pinvoke_override,
