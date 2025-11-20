@@ -3018,7 +3018,7 @@ internal static class ReflectionTest
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static Array AllocateArray() => new ValueTypeWithConstructor[5];
+        static Array AllocateArray() => new ValueTypeWithConstructor[3];
 
         public static void Run()
         {
