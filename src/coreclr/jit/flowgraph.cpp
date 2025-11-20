@@ -4441,10 +4441,29 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         }
     };
 
+    jitstd::vector<BasicBlock*> entryBlocks(getAllocator(CMK_DepthFirstSearch));
+
+    entryBlocks.push_back(fgFirstBB);
+
+    if (fgEntryBB != nullptr)
+    {
+        // OSR methods will early on create flow that looks like it goes to the
+        // patchpoint, but during morph we may transform to something that
+        // requires the original entry (fgEntryBB).
+        assert(opts.IsOSR());
+        entryBlocks.push_back(fgEntryBB);
+    }
+
+    if ((genReturnBB != nullptr) && !fgGlobalMorphDone)
+    {
+        // We introduce the merged return BB before morph and will redirect
+        // other returns to it as part of morph; keep it reachable.
+        entryBlocks.push_back(genReturnBB);
+    }
+
     unsigned numBlocks =
-        fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder,
-                                                                                                     visitPostorder,
-                                                                                                     visitEdge);
+        fgRunDfs<AllSuccessorEnumerator, decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge),
+                 useProfile>(visitPreorder, visitPostorder, visitEdge, entryBlocks);
     return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, useProfile);
 }
 
@@ -4865,7 +4884,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         BitVecTraits loopTraits = loop->LoopBlockTraits();
         loop->m_blocks          = BitVecOps::MakeEmpty(&loopTraits);
 
-        if (!FindNaturalLoopBlocks(loop, worklist) || !IsLoopCanonicalizable(loop))
+        if (!loops->FindNaturalLoopBlocks(loop, worklist) || !IsLoopCanonicalizable(loop))
         {
             loops->m_improperLoopHeaders++;
 
@@ -5035,12 +5054,31 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, Ar
     {
         BasicBlock* const loopBlock = worklist.Pop();
 
+        // For wasm, a callfinallyret pred is the callfinally
+        //
+        if (IsForWasm() && loopBlock->isBBCallFinallyPairTail())
+        {
+            BasicBlock* const callfinally = loopBlock->Prev();
+            if (BitVecOps::TryAddElemD(&loopTraits, loop->m_blocks, loop->LoopBlockBitVecIndex(callfinally)))
+            {
+                worklist.Push(callfinally);
+            }
+            continue;
+        }
+
         for (FlowEdge* predEdge = comp->BlockPredsWithEH(loopBlock); predEdge != nullptr;
              predEdge           = predEdge->getNextPredEdge())
         {
             BasicBlock* const predBlock = predEdge->getSourceBlock();
 
             if (!dfsTree->Contains(predBlock))
+            {
+                continue;
+            }
+
+            // For wasm ignore any preds that are funclet returns... (loops will not flow through funclets)
+            //
+            if (IsForWasm() && predBlock->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET))
             {
                 continue;
             }
