@@ -36,7 +36,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       That is, the destination register is one of the sources.  In this case, we must not use the same register for
       the non-RMW operand as for the destination.
 
-  Overview (doLinearScan):
+  Overview (doRegisterAllocation):
     - Walk all blocks, building intervals and RefPositions (buildIntervals)
     - Allocate registers (allocateRegisters)
     - Annotate nodes with register assignments (resolveRegisters)
@@ -824,7 +824,7 @@ void LinearScan::dumpOutVarToRegMap(BasicBlock* block)
 
 #endif // DEBUG
 
-LinearScanInterface* getLinearScanAllocator(Compiler* comp)
+RegAllocInterface* GetRegisterAllocator(Compiler* comp)
 {
     return new (comp, CMK_LSRA) LinearScan(comp);
 }
@@ -1008,9 +1008,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // TARGET_XARCH
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
-
-    compiler->codeGen->intRegState.rsIsFloat   = false;
-    compiler->codeGen->floatRegState.rsIsFloat = true;
 
     // Block sequencing (the order in which we schedule).
     // Note that we don't initialize the bbVisitedSet until we do the first traversal
@@ -1317,7 +1314,7 @@ BasicBlock* LinearScan::getNextBlock()
 }
 
 //------------------------------------------------------------------------
-// doLinearScan: The main method for register allocation.
+// doRegisterAllocation: The main method for register allocation.
 //
 // Arguments:
 //    None
@@ -1325,7 +1322,7 @@ BasicBlock* LinearScan::getNextBlock()
 // Return Value:
 //    Suitable phase status
 //
-PhaseStatus LinearScan::doLinearScan()
+PhaseStatus LinearScan::doRegisterAllocation()
 {
     // Check to see whether we have any local variables to enregister.
     // We initialize this in the constructor based on opt settings,

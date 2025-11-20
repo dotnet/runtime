@@ -144,13 +144,6 @@ add_executable_clr(paltests
   c_runtime/_wcsicmp/test1/test1.cpp
   c_runtime/_wcslwr_s/test1/test1.cpp
   c_runtime/_wcsnicmp/test1/test1.cpp
-  c_runtime/_wfopen/test1/test1.cpp
-  c_runtime/_wfopen/test2/test2.cpp
-  c_runtime/_wfopen/test3/test3.cpp
-  c_runtime/_wfopen/test4/test4.cpp
-  c_runtime/_wfopen/test5/test5.cpp
-  c_runtime/_wfopen/test6/test6.cpp
-  c_runtime/_wfopen/test7/test7.cpp
   c_runtime/_wtoi/test1/test1.cpp
   #debug_api/DebugBreak/test1/test1.cpp
   debug_api/OutputDebugStringA/test1/helper.cpp

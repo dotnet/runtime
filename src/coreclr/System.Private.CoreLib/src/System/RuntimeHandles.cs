@@ -1338,6 +1338,9 @@ namespace System
         internal static extern bool IsConstructor(RuntimeMethodHandleInternal method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsAsyncMethod(RuntimeMethodHandleInternal method);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern LoaderAllocator GetLoaderAllocatorInternal(RuntimeMethodHandleInternal method);
 
         internal static LoaderAllocator GetLoaderAllocator(RuntimeMethodHandleInternal method)
