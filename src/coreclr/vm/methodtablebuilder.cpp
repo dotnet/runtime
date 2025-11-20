@@ -3872,7 +3872,11 @@ CorElementType MethodTableBuilder::GetCorElementTypeOfTypeDefOrRefForStaticField
     Module *pModuleOfTypeDef;
     mdTypeDef tkTypeDef;
 
-    ClassLoader::ResolveTokenToTypeDefThrowing(module, typeDefOrRef, &pModuleOfTypeDef, &tkTypeDef);
+    if (!ClassLoader::ResolveTokenToTypeDefThrowing(module, typeDefOrRef, &pModuleOfTypeDef, &tkTypeDef))
+    {
+        // This will be fully resolved and exception thrown later.
+        return ELEMENT_TYPE_VALUETYPE;
+    }
 
     // First check to see if the type is byref-like
     if (pModuleOfTypeDef->GetCustomAttribute(tkTypeDef,
@@ -3907,11 +3911,12 @@ CorElementType MethodTableBuilder::GetCorElementTypeOfTypeDefOrRefForStaticField
             Module *pModuleOfSystemEnumType;
             mdTypeDef tkTypeDefOfSystemEnumType;
 
-            ClassLoader::ResolveTokenToTypeDefThrowing(pModuleOfTypeDef, tkTypeDefExtends, &pModuleOfSystemEnumType, &tkTypeDefOfSystemEnumType);
-
-            if (pModuleOfSystemEnumType != NULL && pModuleOfSystemEnumType->IsSystem())
+            if (ClassLoader::ResolveTokenToTypeDefThrowing(pModuleOfTypeDef, tkTypeDefExtends, &pModuleOfSystemEnumType, &tkTypeDefOfSystemEnumType))
             {
-                thisIsAnEnum = true;
+                if (pModuleOfSystemEnumType != NULL && pModuleOfSystemEnumType->IsSystem())
+                {
+                    thisIsAnEnum = true;
+                }
             }
         }
     }
