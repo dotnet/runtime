@@ -99,6 +99,8 @@ public class DataDescriptorModel
         private readonly Dictionary<string, GlobalBuilder> _globals = new();
         private readonly Dictionary<string, GlobalBuilder> _subDescriptors = new();
         private readonly Dictionary<string, ContractBuilder> _contracts = new();
+        private DataDescriptorModel? _baselineModel;
+
         public Builder(string baselinesDir)
         {
             _baseline = string.Empty;
@@ -190,20 +192,54 @@ public class DataDescriptorModel
 
         private void ParseBaseline()
         {
-            if (_baseline != "empty")
+            // Load the baseline file to check if it's empty
+            var baselinePath = Path.Combine(_baselinesDir, _baseline + ".jsonc");
+            if (!File.Exists(baselinePath))
             {
-                throw new InvalidOperationException("TODO: [cdac] - implement baseline parsing");
+                baselinePath = Path.Combine(_baselinesDir, _baseline + ".json");
+                if (!File.Exists(baselinePath))
+                {
+                    throw new InvalidOperationException($"Baseline file not found: {_baseline}.json or {_baseline}.jsonc in {_baselinesDir}");
+                }
             }
+
+            var json = File.ReadAllText(baselinePath);
+
+            // Check if this is an empty baseline (version 0 with no data)
+            using var doc = JsonDocument.Parse(json, new JsonDocumentOptions
+            {
+                CommentHandling = JsonCommentHandling.Skip,
+                AllowTrailingCommas = true
+            });
+
+            if (doc.RootElement.TryGetProperty("version", out var versionProp) &&
+                versionProp.GetInt32() == 0)
+            {
+                // Empty baseline - no types, globals, or contracts to load
+                _baselineModel = null;
+                return;
+            }
+
+            // TODO: [cdac] - implement non-empty baseline parsing
+            // For now, we only support empty baselines (version 0) which contain no data
+            // Future work: Add proper JSON deserialization for non-empty baselines
+            // This would require custom JsonConverters for the compact array format used
+            // in baseline files (e.g., "Field1": [0, "uint32"] instead of expanded objects)
+            throw new InvalidOperationException($"Non-empty baseline parsing is not yet implemented for baseline '{_baseline}'. Only empty baselines (version 0) are currently supported.");
         }
 
         public DataDescriptorModel Build()
         {
             var types = new Dictionary<string, TypeModel>();
+            var globals = new Dictionary<string, GlobalModel>();
+            var subDescriptors = new Dictionary<string, GlobalModel>();
+            var contracts = new Dictionary<string, int>();
+
+            // Build current model
             foreach (var (typeName, typeBuilder) in _types)
             {
                 types[typeName] = typeBuilder.Build(typeName);
             }
-            var globals = new Dictionary<string, GlobalModel>();
             foreach (var (globalName, globalBuilder) in _globals)
             {
                 GlobalValue? v = globalBuilder.Value;
@@ -213,7 +249,6 @@ public class DataDescriptorModel
                 }
                 globals[globalName] = new GlobalModel { Type = globalBuilder.Type, Value = v.Value };
             }
-            var subDescriptors = new Dictionary<string, GlobalModel>();
             foreach (var (subDescriptorName, subDescriptorBuilder) in _subDescriptors)
             {
                 GlobalValue? v = subDescriptorBuilder.Value;
@@ -223,12 +258,117 @@ public class DataDescriptorModel
                 }
                 subDescriptors[subDescriptorName] = new GlobalModel { Type = subDescriptorBuilder.Type, Value = v.Value };
             }
-            var contracts = new Dictionary<string, int>();
             foreach (var (contractName, contractBuilder) in _contracts)
             {
                 contracts[contractName] = contractBuilder.Build();
             }
+
+            // If we have a baseline model loaded, only include differences
+            // Note: Empty baselines (version 0) set _baselineModel to null, so they result in full model output
+            if (_baselineModel is not null)
+            {
+                types = ComputeTypeDifferences(types, _baselineModel.Types);
+                globals = ComputeGlobalDifferences(globals, _baselineModel.Globals);
+                subDescriptors = ComputeGlobalDifferences(subDescriptors, _baselineModel.SubDescriptors);
+                contracts = ComputeContractDifferences(contracts, _baselineModel.Contracts);
+            }
+
             return new DataDescriptorModel(_baseline, types, globals, subDescriptors, contracts, PlatformFlags);
+        }
+
+        private static Dictionary<string, TypeModel> ComputeTypeDifferences(
+            IReadOnlyDictionary<string, TypeModel> current,
+            IReadOnlyDictionary<string, TypeModel> baseline)
+        {
+            var differences = new Dictionary<string, TypeModel>();
+
+            foreach (var (typeName, currentType) in current)
+            {
+                if (!baseline.TryGetValue(typeName, out var baselineType))
+                {
+                    // New type not in baseline
+                    differences[typeName] = currentType;
+                    continue;
+                }
+
+                // Check if type has differences
+                if (!TypesEqual(currentType, baselineType))
+                {
+                    differences[typeName] = currentType;
+                }
+            }
+
+            return differences;
+        }
+
+        private static bool TypesEqual(TypeModel a, TypeModel b)
+        {
+            if (a.Size != b.Size)
+                return false;
+
+            if (a.Fields.Count != b.Fields.Count)
+                return false;
+
+            foreach (var (fieldName, fieldA) in a.Fields)
+            {
+                if (!b.Fields.TryGetValue(fieldName, out var fieldB))
+                    return false;
+
+                if (fieldA.Type != fieldB.Type || fieldA.Offset != fieldB.Offset)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static Dictionary<string, GlobalModel> ComputeGlobalDifferences(
+            IReadOnlyDictionary<string, GlobalModel> current,
+            IReadOnlyDictionary<string, GlobalModel> baseline)
+        {
+            var differences = new Dictionary<string, GlobalModel>();
+
+            foreach (var (globalName, currentGlobal) in current)
+            {
+                if (!baseline.TryGetValue(globalName, out var baselineGlobal))
+                {
+                    // New global not in baseline
+                    differences[globalName] = currentGlobal;
+                    continue;
+                }
+
+                // Check if global has differences
+                if (currentGlobal.Type != baselineGlobal.Type || currentGlobal.Value != baselineGlobal.Value)
+                {
+                    differences[globalName] = currentGlobal;
+                }
+            }
+
+            return differences;
+        }
+
+        private static Dictionary<string, int> ComputeContractDifferences(
+            IReadOnlyDictionary<string, int> current,
+            IReadOnlyDictionary<string, int> baseline)
+        {
+            var differences = new Dictionary<string, int>();
+
+            foreach (var (contractName, currentVersion) in current)
+            {
+                if (!baseline.TryGetValue(contractName, out var baselineVersion))
+                {
+                    // New contract not in baseline
+                    differences[contractName] = currentVersion;
+                    continue;
+                }
+
+                // Check if version has changed
+                if (currentVersion != baselineVersion)
+                {
+                    differences[contractName] = currentVersion;
+                }
+            }
+
+            return differences;
         }
     }
 
