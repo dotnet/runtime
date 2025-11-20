@@ -4419,6 +4419,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Half_op_Subtraction:
             case NI_System_Half_op_Multiply:
             case NI_System_Half_op_Division:
+            case NI_System_Half_Max:
+            case NI_System_Half_Min:
             {
 #ifdef TARGET_XARCH
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
@@ -4439,6 +4441,26 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif
                 break;
             }
+
+            case NI_System_Half_Sqrt:
+            {
+#ifdef TARGET_XARCH
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    GenTree* op1 = impPopStack().val;
+                    assert(op1->TypeGet() == TYP_HALF);
+
+                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_FLOAT, 16);
+                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_AVX10v1_SqrtScalar , TYP_HALF, 16);
+                    retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
+                }
+#endif
+
+                break;
+            }
+
+
 
             case NI_System_Half_op_Increment:
             {
@@ -10566,6 +10588,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_System_Half_op_LessThanOrEqual;
                         }
+                        else if (strcmp(methodName, "Max") == 0)
+                        {
+                            result = NI_System_Half_Max;
+                        }
+                        else if (strcmp(methodName, "Min") == 0)
+                        {
+                            result = NI_System_Half_Min;
+                        }
                         else if (strcmp(methodName, "op_Multiply") == 0)
                         {
                             result = NI_System_Half_op_Multiply;
@@ -10573,6 +10603,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "op_Subtraction") == 0)
                         {
                             result = NI_System_Half_op_Subtraction;
+                        }
+                        else if (strcmp(methodName, "Sqrt") == 0)
+                        {
+                            result = NI_System_Half_Sqrt;
                         }
                         else if (strcmp(methodName, "op_UnaryNegation") == 0)
                         {
@@ -12140,6 +12174,12 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
             return NI_AVX10v1_AddScalar;
         case NI_System_Half_op_Subtraction:
             return NI_AVX10v1_SubtractScalar;
+        case NI_System_Half_Sqrt:
+            return NI_AVX10v1_SqrtScalar;
+        case NI_System_Half_Max:
+            return NI_AVX10v1_MaxScalar;
+        case NI_System_Half_Min:
+            return NI_AVX10v1_MinScalar;
         case NI_System_Half_op_Multiply:
             return NI_AVX10v1_MultiplyScalar;
         case NI_System_Half_op_Division:
