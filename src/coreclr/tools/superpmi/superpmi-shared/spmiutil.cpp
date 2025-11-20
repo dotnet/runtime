@@ -466,7 +466,7 @@ void PutArm32MovtConstant(UINT32* p, unsigned con)
 //*****************************************************************************
 //  Extract the PC-Relative offset from auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-INT64 GetRiscV64AuipcCombo(UINT32 * pCode, BOOL isStype)
+INT64 GetRiscV64AuipcCombo(UINT32 * pCode, bool isStype)
 {
     enum
     {
@@ -510,7 +510,7 @@ INT64 GetRiscV64AuipcCombo(UINT32 * pCode, BOOL isStype)
 //*****************************************************************************
 //  Deposit the PC-Relative offset into auipc + I-type or S-type adder (addi/load/store/jalr)
 //*****************************************************************************
-void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, BOOL isStype)
+void PutRiscV64AuipcCombo(UINT32 * pCode, INT64 offset, bool isStype)
 {
     INT32 lo12 = (offset << (64 - 12)) >> (64 - 12);
     INT32 hi20 = INT32(offset - lo12);

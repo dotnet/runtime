@@ -925,7 +925,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         INT64 offset = (INT64)tmp.target;
                         INT32 lo12 = (offset << (64 - 12)) >> (64 - 12);
                         INT32 hi20 = INT32(offset - lo12);
-                        BOOL isStype = (relocType == IMAGE_REL_RISCV64_PCREL_S);
+                        bool isStype = (relocType == IMAGE_REL_RISCV64_PCREL_S);
                         PutRiscV64AuipcCombo((UINT32*)address, INT64(lo12) + INT64(hi20), isStype);
                     }
                     wasRelocHandled = true;
