@@ -10317,6 +10317,7 @@ void emitter::emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count)
 
 void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callInstrSize, unsigned count)
 {
+#if EMIT_GENERATE_GCINFO
     assert(emitIssuing);
 
     unsigned argStkCnt;
@@ -10421,6 +10422,7 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
     regPtrNext->rpdArg           = true;
     regPtrNext->rpdArgType       = (unsigned short)GCInfo::rpdARG_POP;
     regPtrNext->rpdPtrArg        = argRecCnt.Value();
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************

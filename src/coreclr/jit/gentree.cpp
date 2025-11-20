@@ -11924,6 +11924,10 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
                 ilName = "LocAllocSP";
             }
 #endif // JIT32_GCENCODER
+            else if (lclNum == lvaAsyncContinuationArg)
+            {
+                ilName = "AsyncCont";
+            }
             else
             {
                 ilKind = "tmp";
@@ -11943,10 +11947,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
         if (ilNum == 0 && !info.compIsStatic)
         {
             ilName = "this";
-        }
-        else if (lclNum == lvaAsyncContinuationArg)
-        {
-            ilName = "AsyncCont";
         }
         else
         {
@@ -31335,10 +31335,11 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx, CorInfoCallConvExtension
             resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // FA0 or FA1
         }
     }
+#endif
 
-#endif // TARGET_XXX
-
+#if HAS_FIXED_REGISTER_SET
     assert(resultReg != REG_NA);
+#endif
     return resultReg;
 }
 
