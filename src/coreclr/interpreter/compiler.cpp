@@ -1049,11 +1049,6 @@ void InterpCompiler::EmitCode()
         getEHinfo(m_methodInfo, i, &clause);
         for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
         {
-            if (clause.TryOffset <= (uint32_t)bb->ilOffset && (clause.TryOffset + clause.TryLength) > (uint32_t)bb->ilOffset)
-            {
-                bb->enclosingTryBlockCount++;
-            }
-
             if (clause.HandlerOffset <= (uint32_t)bb->ilOffset && (clause.HandlerOffset + clause.HandlerLength) > (uint32_t)bb->ilOffset)
             {
                 bb->overlappingEHClauseCount++;
@@ -4921,6 +4916,21 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
 
     bool needsKeepAlive = kindForAllocationContinuation.needsRuntimeLookup;
 
+    // Compute the number of EH clauses that overlap with this BB.
+    if (pBB->enclosingTryBlockCount == -1)
+    {
+        int32_t enclosingTryBlockCount = 0;
+        for (unsigned int i = 0; i < getEHcount(m_methodInfo); i++)
+        {
+            CORINFO_EH_CLAUSE clause;
+            getEHinfo(m_methodInfo, i, &clause);
+            if (clause.TryOffset <= (uint32_t)pBB->ilOffset && (clause.TryOffset + clause.TryLength) > (uint32_t)pBB->ilOffset)
+            {
+                enclosingTryBlockCount++;
+            }
+        }
+        pBB->enclosingTryBlockCount = enclosingTryBlockCount;
+    }
     bool needsEHHandling = pBB->enclosingTryBlockCount > (m_isAsyncMethodWithContextSaveRestore ? 1 : 0);
 
     bool captureContinuationContext = ContinuationContextHandling == ContinuationContextHandling::ContinueOnCapturedContext;

@@ -774,26 +774,12 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
     // InterpMethodContextFrame. This is important for the stack walking code.
     struct Frames
     {
-        // Since the address of this Frame is below that of the InterpreterFrame, we need to make sure to run its
-        // constructor AFTER interpreterFrame is constructed, and its destructor BEFORE interpreterFrame is destructed.
-        char retValProtectData[sizeof(ProtectValueClassFrame)];
         InterpMethodContextFrame interpMethodContextFrame = {0};
         InterpreterFrame interpreterFrame;
 
         Frames(TransitionBlock* pTransitionBlock)
         : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
         {
-            new (retValProtectData) ProtectValueClassFrame();
-        }
-
-        ~Frames()
-        {
-            ((ProtectValueClassFrame*)retValProtectData)->~ProtectValueClassFrame();
-        }
-
-        ProtectValueClassFrame& retValProtect()
-        {
-            return *(ProtectValueClassFrame*)retValProtectData;
         }
     }
     frames(NULL);
@@ -828,12 +814,6 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
     
     void* returnValueLocation = alloca(returnValueSize < sizeof(StackVal) ? sizeof(StackVal) : returnValueSize);
     memset(returnValueLocation, 0, returnValueSize);
-    ValueClassInfo returnValueInfo(returnValueLocation, pSuspendData->asyncMethodReturnType, NULL);
-
-    if (pSuspendData->asyncMethodReturnType != NULL)
-    {
-        *frames.retValProtect().GetValueClassInfoList() = &returnValueInfo;
-    }
 
     frames.interpMethodContextFrame.pRetVal = (int8_t*)returnValueLocation;
 
@@ -857,7 +837,6 @@ void AsyncHelpers_ResumeInterpreterContinuation(QCall::ObjectHandleOnStack cont,
     }
 
     cont.Set(frames.interpreterFrame.GetContinuation());
-    frames.retValProtect().Pop();
     frames.interpreterFrame.Pop();
 
     END_QCALL;
@@ -3978,22 +3957,10 @@ do                                                                      \
 
                         if (exception != NULL)
                         {
-                            MethodDesc *pILTargetMethod = NULL;
-                            HELPER_FTN_P_P helperFtn = GetPossiblyIndirectHelper<HELPER_FTN_P_P>(pMethod, ip[3], &pILTargetMethod);
-                            if (pILTargetMethod != NULL)
-                            {
-                                returnOffset = ip[1];
-                                callArgsOffset = pMethod->allocaSize;
-
-                                // Pass argument to the target method
-                                LOCAL_VAR(callArgsOffset, OBJECTREF) = pInterpreterFrame->GetContinuation();
-
-                                targetMethod = pILTargetMethod;
-                                ip += 4;
-                                goto CALL_INTERP_METHOD;
-                            }
-                            LOCAL_VAR(ip[1], void*) = helperFtn(OBJECTREFToObject(exception));
-                            ip += 4;
+                            GetThread()->GetExceptionState()->SetRaisingForeignException();
+                            pInterpreterFrame->SetIsFaulting(true);
+                            DispatchManagedException(exception);
+                            UNREACHABLE();
                         }
                     }
 
@@ -4087,6 +4054,9 @@ do                                                                      \
     }
 
 EXIT_FRAME:
+
+    // Exit the current frame, MAKE CERTAIN not to trigger any GC between here and the return, since the interpreter
+    // async resumption logic depends on not triggering a GC here for correctness.
 
     // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
     pThreadContext->frameDataAllocator.PopInfo(pFrame);

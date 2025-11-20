@@ -370,6 +370,7 @@ struct InterpBasicBlock
         isFinallyCallIsland = false;
         clauseVarIndex = -1;
         overlappingEHClauseCount = 0;
+        enclosingTryBlockCount = -1;
     }
 };
 
