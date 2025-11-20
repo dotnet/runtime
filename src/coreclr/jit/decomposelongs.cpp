@@ -592,8 +592,8 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
         NamedIntrinsic intrinsicId      = NI_Illegal;
         GenTree*       srcOp            = cast->CastOp();
         var_types      dstType          = cast->CastToType();
-        CorInfoType    baseFloatingType = (dstType == TYP_FLOAT) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_DOUBLE;
-        CorInfoType    baseIntegralType = cast->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG;
+        var_types      baseFloatingType = (dstType == TYP_FLOAT) ? TYP_FLOAT : TYP_DOUBLE;
+        var_types      baseIntegralType = cast->IsUnsigned() ? TYP_ULONG : TYP_LONG;
 
         assert(!cast->gtOverflow());
         assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512));
@@ -1874,9 +1874,8 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     // Create:
     //      loResult = GT_HWINTRINSIC{GetElement}[int](tmp_simd_var, tmp_index_times_two)
 
-    GenTreeHWIntrinsic* loResult =
-        m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwo, node->GetHWIntrinsicId(),
-                                             CORINFO_TYPE_INT, simdSize);
+    GenTreeHWIntrinsic* loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwo,
+                                                                        node->GetHWIntrinsicId(), TYP_INT, simdSize);
     Range().InsertBefore(node, loResult);
 
     simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
@@ -1905,9 +1904,8 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
         Range().InsertBefore(node, indexTimesTwo, one, indexTimesTwoPlusOne);
     }
 
-    GenTreeHWIntrinsic* hiResult =
-        m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwoPlusOne, node->GetHWIntrinsicId(),
-                                             CORINFO_TYPE_INT, simdSize);
+    GenTreeHWIntrinsic* hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, indexTimesTwoPlusOne,
+                                                                        node->GetHWIntrinsicId(), TYP_INT, simdSize);
     Range().InsertBefore(node, hiResult);
 
     // Done with the original tree; remove it.
@@ -1954,14 +1952,14 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
     JITDUMP("[DecomposeHWIntrinsicToScalar]: Saving op1 tree to a temp var:\n");
     DISPTREERANGE(Range(), simdTmpVar);
 
-    GenTree* loResult = m_compiler->gtNewSimdToScalarNode(TYP_INT, simdTmpVar, CORINFO_TYPE_INT, simdSize);
+    GenTree* loResult = m_compiler->gtNewSimdToScalarNode(TYP_INT, simdTmpVar, TYP_INT, simdSize);
     Range().InsertAfter(simdTmpVar, loResult);
 
     simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
     Range().InsertAfter(loResult, simdTmpVar);
 
     GenTree* one      = m_compiler->gtNewIconNode(1);
-    GenTree* hiResult = m_compiler->gtNewSimdGetElementNode(TYP_INT, simdTmpVar, one, CORINFO_TYPE_INT, simdSize);
+    GenTree* hiResult = m_compiler->gtNewSimdGetElementNode(TYP_INT, simdTmpVar, one, TYP_INT, simdSize);
 
     Range().InsertAfter(simdTmpVar, one, hiResult);
     Range().Remove(node);
@@ -2001,10 +1999,9 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
     assert(varTypeIsLong(node));
     assert(node->GetHWIntrinsicId() == NI_AVX512_MoveMask);
 
-    GenTree*    op1             = node->Op(1);
-    CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-    var_types   simdBaseType    = node->GetSimdBaseType();
-    unsigned    simdSize        = node->GetSimdSize();
+    GenTree*  op1          = node->Op(1);
+    var_types simdBaseType = node->GetSimdBaseType();
+    unsigned  simdSize     = node->GetSimdSize();
 
     assert(varTypeIsArithmetic(simdBaseType));
     assert(op1->TypeIs(TYP_MASK));
@@ -2029,7 +2026,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
         // Create:
         //      loResult  = GT_HWINTRINSIC{MoveMask}(simdTmpVar)
 
-        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_AVX512_MoveMask, simdBaseJitType, 32);
+        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_AVX512_MoveMask, simdBaseType, 32);
         Range().InsertBefore(node, loResult);
 
         simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
@@ -2043,10 +2040,10 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
         Range().InsertBefore(node, shiftIcon);
 
         simdTmpVar = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, simdTmpVar, shiftIcon, NI_AVX512_ShiftRightMask,
-                                                          simdBaseJitType, 64);
+                                                          simdBaseType, 64);
         Range().InsertBefore(node, simdTmpVar);
 
-        hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_AVX512_MoveMask, simdBaseJitType, 32);
+        hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_AVX512_MoveMask, simdBaseType, 32);
         Range().InsertBefore(node, hiResult);
     }
     else
@@ -2054,7 +2051,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
         // Create:
         //      loResult  = GT_HWINTRINSIC{MoveMask}(op1)
 
-        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, op1, NI_AVX512_MoveMask, simdBaseJitType, simdSize);
+        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, op1, NI_AVX512_MoveMask, simdBaseType, simdSize);
         Range().InsertBefore(node, loResult);
 
         // Create:
