@@ -81,6 +81,20 @@ unsigned UnpackWasmReg(regNumber reg, WasmValueType* pType)
     return regValue & ~WASM_REG_TYPE_MASK;
 }
 
+//------------------------------------------------------------------------
+// UnpackWasmReg: Extract the WASM local's index out of a register
+//
+// Arguments:
+//    reg   - The register number representing '(index, type)'
+//
+// Return Value:
+//    The index represented by 'reg'.
+//
+unsigned WasmRegToIndex(regNumber reg)
+{
+    return UnpackWasmReg(reg);
+}
+
 bool genIsValidReg(regNumber reg)
 {
     WasmValueType wasmType;

@@ -1264,12 +1264,7 @@ protected:
             _idCodeSize = sz;
         }
 #elif defined(TARGET_WASM)
-        unsigned idCodeSize() const
-        {
-            // TODO-WASM: return an accurate number here based on instruction format/opcode like ARM64 above.
-            NYI_WASM("isCodeSize");
-            return 0;
-        }
+        unsigned idCodeSize() const;
 #endif
 
         emitAttr idOpSize() const
@@ -2460,8 +2455,8 @@ protected:
     static bool          HasApxPpx(instruction ins);
 #endif // TARGET_XARCH
 
-    cnsval_ssize_t emitGetInsSC(const instrDesc* id) const;
-    unsigned       emitInsCount;
+    NOT_ARM(static) cnsval_ssize_t emitGetInsSC(const instrDesc* id);
+    unsigned emitInsCount;
 
     /************************************************************************/
     /*           A few routines used for debug display purposes             */

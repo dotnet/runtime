@@ -19,4 +19,5 @@ enum class WasmValueType : unsigned
 
 regNumber MakeWasmReg(unsigned index, var_types type);
 unsigned  UnpackWasmReg(regNumber reg, WasmValueType* pType = nullptr);
+unsigned  WasmRegToIndex(regNumber reg);
 bool      genIsValidReg(regNumber reg);

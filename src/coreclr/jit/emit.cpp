@@ -10098,7 +10098,7 @@ void emitter::emitRemoveLastInstruction()
  *  emitGetInsSC: Get the instruction's constant value.
  */
 
-cnsval_ssize_t emitter::emitGetInsSC(const instrDesc* id) const
+cnsval_ssize_t emitter::emitGetInsSC(const instrDesc* id)
 {
 #ifdef TARGET_ARM // should it be TARGET_ARMARCH? Why do we need this? Note that on ARM64 we store scaled immediates
                   // for some formats
