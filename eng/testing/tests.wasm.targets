@@ -90,8 +90,6 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(_UseWasmSymbolicator)' == 'true'">
-    <WasmExtraFilesToDeploy Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />
-    <WasmExtraFilesToDeploy Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppPrevious)\WasmSymbolicator.dll" />
     <Content Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" Link="wwwroot\wasm-symbol-patterns.txt" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppPrevious)\WasmSymbolicator.dll" Link="wwwroot\WasmSymbolicator.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

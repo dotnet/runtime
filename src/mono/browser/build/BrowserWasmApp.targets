@@ -137,8 +137,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmExtraFilesToDeploy Include="$(WasmMainHTMLPath)" Condition="'$(WasmMainHTMLPath)' != ''" />
-      <WasmExtraFilesToDeploy Include="$(WasmMainJSPath)" Condition="'$(WasmMainJSPath)' != ''" />
       <WasmEnvironmentVariable Include="DOTNET_DiagnosticPorts" Value="$(DiagnosticPorts)" Condition="'$(DiagnosticPorts)' != ''"/>
     </ItemGroup>
 
