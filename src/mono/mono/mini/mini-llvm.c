@@ -10449,20 +10449,29 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_WASM_SIMD_SWIZZLE: {
+			LLVMValueRef bidx = LLVMBuildBitCast (builder, rhs, LLVMVectorType (i1_t, 16), "");
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
-			if (nelems == 16) {
-				LLVMValueRef args [] = { lhs, rhs };
-				values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
-				break;
+			if (nelems < 16) {
+				int shift = nelems == 8 ? 1 : (nelems == 4 ? 2 : 3);
+				LLVMValueRef fill = LLVMConstNull (LLVMVectorType (i1_t, 16));
+				LLVMValueRef offset = LLVMConstNull (LLVMVectorType (i1_t, 16));
+				int stride = 16 / nelems;
+				for (int i = 0; i < nelems; ++i) {
+					for (int j = 0; j < stride; ++j) {
+						offset = LLVMBuildInsertElement (builder, offset, const_int8 (j), const_int8 (i * stride + j), "");
+						fill = LLVMBuildInsertElement (builder, fill, const_int8 (i * stride), const_int8 (i * stride + j), "");
+					}
+				}
+				LLVMValueRef shiftv = create_shift_vector (ctx, bidx, const_int32 (shift));
+				bidx  = LLVMBuildShl (builder, bidx, shiftv, "");
+				LLVMValueRef args [] = { bidx, fill };
+				bidx = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+				bidx = LLVMBuildAdd (builder, bidx, offset, "");
 			}
-
-			LLVMValueRef indexes [16];
-			for (int i = 0; i < nelems; ++i)
-				indexes [i] = LLVMBuildExtractElement (builder, rhs, const_int32 (i), "");
-			LLVMValueRef shuffle_val = LLVMConstNull (LLVMVectorType (i4_t, nelems));
-			for (int i = 0; i < nelems; ++i)
-				shuffle_val = LLVMBuildInsertElement (builder, shuffle_val, convert (ctx, indexes [i], i4_t), const_int32 (i), "");
-			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (LLVMTypeOf (lhs)), shuffle_val, "");
+			LLVMValueRef lhs_b = LLVMBuildBitCast (builder, lhs, LLVMVectorType (i1_t, 16), "");
+			LLVMValueRef args [] = { lhs_b, bidx };
+			LLVMValueRef result_b = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+			values [ins->dreg] = LLVMBuildBitCast (builder, result_b, LLVMTypeOf (lhs), "");
 			break;
 		}
 		case OP_WASM_EXTRACT_NARROW: {
