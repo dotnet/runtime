@@ -4,7 +4,7 @@
 import { type LoadBootResourceCallback, type JsModuleExports, type JsAsset, type AssemblyAsset, type PdbAsset, type WasmAsset, type IcuAsset, type EmscriptenModuleInternal, type LoaderConfig, type DotnetHostBuilder, GlobalizationMode } from "./types";
 
 import { dotnetAssert, dotnetGetInternals, dotnetBrowserHostExports, dotnetUpdateInternals } from "./cross-module";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB } from "./per-module";
 import { getLoaderConfig } from "./config";
 import { BrowserHost_InitializeCoreCLR } from "./run";
 import { createPromiseCompletionSource } from "./promise-completion-source";
@@ -80,7 +80,7 @@ async function fetchIcu(asset: IcuAsset): Promise<void> {
 
 function getIcuResourceName(config: LoaderConfig): string | null {
     if (config.resources?.icu && config.globalizationMode != GlobalizationMode.Invariant) {
-        const culture = config.applicationCulture;
+        const culture = config.applicationCulture || (ENVIRONMENT_IS_WEB ? (globalThis.navigator && globalThis.navigator.languages && globalThis.navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
         if (!config.applicationCulture) {
             config.applicationCulture = culture;
         }
