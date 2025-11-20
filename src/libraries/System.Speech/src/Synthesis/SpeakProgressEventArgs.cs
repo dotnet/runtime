@@ -40,7 +40,7 @@ namespace System.Speech.Synthesis
                 _cWordLen = value;
             }
         }
-        public string Text
+        public string? Text
         {
             get
             {
@@ -59,7 +59,7 @@ namespace System.Speech.Synthesis
         private TimeSpan _audioPosition;
         private int _iWordPos;
         private int _cWordLen;
-        private string _word;
+        private string? _word;
 
         #endregion
     }

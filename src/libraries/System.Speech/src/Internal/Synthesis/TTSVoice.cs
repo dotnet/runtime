@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Speech.Synthesis;
 
@@ -24,10 +25,9 @@ namespace System.Speech.Internal.Synthesis
         /// <summary>
         /// Tests whether two objects are equivalent
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            TTSVoice voice = obj as TTSVoice;
-            return voice != null && (_voiceId.Equals(voice.VoiceInfo));
+            return obj is TTSVoice voice && (_voiceId.Equals(voice.VoiceInfo));
         }
 
         /// <summary>
@@ -68,13 +68,13 @@ namespace System.Speech.Internal.Synthesis
             }
         }
 
-        internal byte[] WaveFormat(byte[] targetWaveFormat)
+        internal byte[] WaveFormat(byte[]? targetWaveFormat)
         {
             // Get the Wave header if it has not been set by the user
             if (targetWaveFormat == null && _waveFormat == null)
             {
                 // The registry values contains a default rate
-                if (VoiceInfo.SupportedAudioFormats.Count > 0)
+                if (VoiceInfo.SupportedAudioFormats?.Count > 0)
                 {
                     // Create the array of bytes containing the format
                     targetWaveFormat = VoiceInfo.SupportedAudioFormats[0].WaveFormat;
@@ -151,7 +151,7 @@ namespace System.Speech.Internal.Synthesis
         private ITtsEngineProxy _engine;
         private VoiceInfo _voiceId;
         private List<LexiconEntry> _lexicons = new();
-        private byte[] _waveFormat;
+        private byte[]? _waveFormat;
 
         #endregion
     }

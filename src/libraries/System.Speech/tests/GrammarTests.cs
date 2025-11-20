@@ -57,7 +57,7 @@ namespace SampleSynthesisTests
             Assert.True(ms.Position > 0);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public void CompileStronglyTypedGrammarToDllFromPath()
         {
             SrgsDocument srgsDoc = CreateSrgsDocument();
