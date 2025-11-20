@@ -70,12 +70,6 @@
     </CreateProperty>
   </Target>
 
-  <Target Name="_LinkWasmMainJSPathToWwwroot" DependsOnTargets="_ComputeMainJSFileName" BeforeTargets="ResolveProjectStaticWebAssets">
-    <ItemGroup Condition="'$(WasmMainJSPath)' != ''">
-      <Content Include="$(WasmMainJSPath)" Link="wwwroot\$(_WasmMainJSFileName)" CopyToOutputDirectory="PreserveNewest" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="_ComputeMainJSFileName">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
     <PropertyGroup>
