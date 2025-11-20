@@ -248,9 +248,9 @@ namespace System.Runtime.CompilerServices
             else
             {
                 state.ValueTaskSourceNotifier = (IValueTaskSourceNotifier)o;
-                state.CaptureContexts();
             }
 
+            state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
 
@@ -552,12 +552,12 @@ namespace System.Runtime.CompilerServices
             {
                 ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
 
+                RestoreContextsOnSuspension(false, state.ExecutionContext, state.SynchronizationContext);
+
                 ICriticalNotifyCompletion? critNotifier = state.CriticalNotifier;
                 INotifyCompletion? notifier = state.Notifier;
                 IValueTaskSourceNotifier? vtsNotifier = state.ValueTaskSourceNotifier;
                 Task? taskNotifier = state.TaskNotifier;
-                ExecutionContext? execContext = state.ExecutionContext;
-                SynchronizationContext? syncContext = state.SynchronizationContext;
 
                 state.CriticalNotifier = null;
                 state.Notifier = null;
@@ -584,7 +584,6 @@ namespace System.Runtime.CompilerServices
                 {
                     if (critNotifier != null)
                     {
-                        RestoreContexts(false, execContext, syncContext);
                         critNotifier.UnsafeOnCompleted(TOps.GetContinuationAction(task));
                     }
                     else if (taskNotifier != null)
@@ -599,8 +598,6 @@ namespace System.Runtime.CompilerServices
                     }
                     else if (vtsNotifier != null)
                     {
-                        RestoreContexts(false, execContext, syncContext);
-
                         // The awaiter must inform the ValueTaskSource source on whether the continuation
                         // wants to run on a context, although the source may decide to ignore the suggestion.
                         // Since the behavior of the source takes precedence, we clear the context flags of
@@ -629,8 +626,6 @@ namespace System.Runtime.CompilerServices
                     else
                     {
                         Debug.Assert(notifier != null);
-
-                        RestoreContexts(false, execContext, syncContext);
                         notifier.OnCompleted(TOps.GetContinuationAction(task));
                     }
                 }
@@ -810,6 +805,28 @@ namespace System.Runtime.CompilerServices
                 if (previousExecCtx != currentExecCtx)
                 {
                     ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
+                }
+            }
+        }
+
+        // Restore contexts onto current Thread as we unwind during suspension. We control the code that runs
+        // during suspension and we do not need to raise ExecutionContext notifications -- we know that it is
+        // not going to be accessed and that DispatchContinuations will return it back to the leaf's context
+        // before calling user code, and restore the original contexts with appropriate notifications before
+        // returning.
+        private static void RestoreContextsOnSuspension(bool resumed, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        {
+            if (!resumed)
+            {
+                Thread thread = Thread.CurrentThreadAssumedInitialized;
+                if (previousSyncCtx != thread._synchronizationContext)
+                {
+                    thread._synchronizationContext = previousSyncCtx;
+                }
+
+                if (previousExecCtx != thread._executionContext)
+                {
+                    thread._executionContext = previousExecCtx;
                 }
             }
         }
