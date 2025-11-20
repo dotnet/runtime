@@ -626,7 +626,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
                         ECDsaAlgorithm.CreateP256(HashAlgorithmName.SHA256),
-                        [.."COMPSIG-MLDSA65-P256-SHA512"u8],
+                        [.."COMPSIG-MLDSA65-ECDSA-P256-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 },
                 {
@@ -634,7 +634,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
                         ECDsaAlgorithm.CreateP384(HashAlgorithmName.SHA384),
-                        [.."COMPSIG-MLDSA65-P384-SHA512"u8],
+                        [.."COMPSIG-MLDSA65-ECDSA-P384-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 },
                 {
@@ -642,7 +642,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa65,
                         ECDsaAlgorithm.CreateBrainpoolP256r1(HashAlgorithmName.SHA256),
-                        [.."COMPSIG-MLDSA65-BP256-SHA512"u8],
+                        [.."COMPSIG-MLDSA65-ECDSA-BP256-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 },
                 {
@@ -658,7 +658,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
                         ECDsaAlgorithm.CreateP384(HashAlgorithmName.SHA384),
-                        [.."COMPSIG-MLDSA87-P384-SHA512"u8],
+                        [.."COMPSIG-MLDSA87-ECDSA-P384-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 },
                 {
@@ -666,7 +666,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
                         ECDsaAlgorithm.CreateBrainpoolP384r1(HashAlgorithmName.SHA384),
-                        [.."COMPSIG-MLDSA87-BP384-SHA512"u8],
+                        [.."COMPSIG-MLDSA87-ECDSA-BP384-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 },
                 {
@@ -698,7 +698,7 @@ namespace System.Security.Cryptography
                     new AlgorithmMetadata(
                         MLDsaAlgorithm.MLDsa87,
                         ECDsaAlgorithm.CreateP521(HashAlgorithmName.SHA512),
-                        [.."COMPSIG-MLDSA87-P521-SHA512"u8],
+                        [.."COMPSIG-MLDSA87-ECDSA-P521-SHA512"u8],
                         HashAlgorithmName.SHA512)
                 }
             };

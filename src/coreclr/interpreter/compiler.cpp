@@ -567,8 +567,43 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
         int dVar = pTargetBB->pStackState[i].var;
         if (sVar != dVar)
         {
-            InterpType interpType = m_pVars[sVar].interpType;
-            int32_t movOp = InterpGetMovForType(interpType, false);
+            InterpType interpType = g_interpTypeFromStackType[m_pStackBase[i].GetStackType()];
+            InterpType interpDestType = g_interpTypeFromStackType[pTargetBB->pStackState[i].GetStackType()];
+            int32_t movOp;
+            if (interpType != interpDestType)
+            {
+                if (interpType == InterpTypeR4 && interpDestType == InterpTypeR8)
+                {
+                    movOp = INTOP_CONV_R8_R4;
+                }
+                else if (interpType == InterpTypeR8 && interpDestType == InterpTypeR4)
+                {
+                    movOp = INTOP_CONV_R4_R8;
+                }
+                else if (interpType == InterpTypeI && interpDestType == InterpTypeByRef)
+                {
+                    movOp = InterpGetMovForType(interpDestType, false);
+                }
+#ifdef TARGET_64BIT
+                // nint and int32 can be used interchangeably. Add implicit conversions.
+                else if (interpType == InterpTypeI4 && interpDestType == InterpTypeI8)
+                {
+                    movOp = INTOP_CONV_I8_I4;
+                }
+                else if (interpType == InterpTypeI8 && interpDestType == InterpTypeI4)
+                {
+                    movOp = InterpGetMovForType(interpDestType, false);
+                }
+#endif // TARGET_64BIT
+                else
+                {
+                    BADCODE("Incompatible types on stack between basic blocks");
+                }
+            }
+            else
+            {
+                movOp = InterpGetMovForType(interpType, false);
+            }
 
             AddIns(movOp);
             m_pLastNewIns->SetSVar(sVar);
@@ -4183,6 +4218,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     int32_t newObjDVar = -1;
     InterpType ctorType = InterpTypeO;
     int32_t vtsize = 0;
+    bool injectRet = false;
 
     if (newObjThisArgLocation != INT_MAX)
     {
@@ -4393,7 +4429,11 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             {
                 // Tail call target needs to be IL
                 if (tailcall && isPInvoke && !isMarshaledPInvoke)
+                {
                     tailcall = false;
+                    // We need to inject ret after a jmp when we can't use a tail call
+                    injectRet = isJmp;
+                }
 
                 // Normal call
                 InterpOpcode opcode;
@@ -4529,6 +4569,28 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->flags |= INTERP_INST_FLAG_CALL;
     m_pLastNewIns->info.pCallInfo = (InterpCallInfo*)AllocMemPool0(sizeof (InterpCallInfo));
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
+
+    if (injectRet)
+    {
+        // Jmp to PInvoke was converted to normal pinvoke, so we need to inject a ret after the call
+        switch (GetInterpType(callInfo.sig.retType))
+        {
+            case InterpTypeVT:
+            {
+                AddIns(INTOP_RET_VT);
+                m_pLastNewIns->SetSVar(dVar);
+                m_pLastNewIns->data[0] = m_pVars[dVar].size;
+                break;
+            }
+            case InterpTypeVoid:
+                AddIns(INTOP_RET_VOID);
+                break;
+            default:
+                AddIns(INTOP_RET);
+                m_pLastNewIns->SetSVar(dVar);
+                break;
+        }
+    }
 
     m_ip += 5;
 }
@@ -5729,6 +5791,23 @@ retry_emit:
             {
                 AddIns(INTOP_LOAD_EXCEPTION);
                 m_pLastNewIns->SetDVar(m_pCBB->clauseVarIndex);
+
+                // To allow filter clauses in generic methods to access the generic argument,
+                // we copy that argument variable from the parent frame to the filter's frame.
+                // The target variable offset is the same as the one in the parent frame.
+                if ((m_pCBB->clauseType == BBClauseFilter) && (m_paramArgIndex != -1))
+                {
+                    AddIns(INTOP_LOAD_FRAMEVAR);
+                    PushInterpType(InterpTypeI, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                    m_pStackPointer--;
+                    int32_t opcode = GetLdindForType(m_pVars[m_paramArgIndex].interpType);
+                    AddIns(opcode);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                    m_pLastNewIns->SetDVar(m_paramArgIndex);
+                    m_pLastNewIns->data[0] = m_pVars[m_paramArgIndex].offset;
+                }
             }
         }
 
@@ -7945,6 +8024,26 @@ DO_LDFTN:
 
                 if (m_compHnd->isValueClass(resolvedToken.hClass))
                 {
+                    CorInfoType asCorInfoType = m_compHnd->asCorInfoType(m_compHnd->getTypeForBox(resolvedToken.hClass));
+                    if (asCorInfoType == CORINFO_TYPE_FLOAT && m_pStackPointer[-1].GetStackType() == StackTypeR8)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+                    }
+                    else if (asCorInfoType == CORINFO_TYPE_DOUBLE && m_pStackPointer[-1].GetStackType() == StackTypeR4)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+                    }
+#ifdef TARGET_64BIT
+                    // nint and int32 can be used interchangeably. Add implicit conversions.
+                    else if (asCorInfoType == CORINFO_TYPE_NATIVEINT && m_pStackPointer[-1].GetStackType() == StackTypeI4)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+                    }
+                    else if (asCorInfoType == CORINFO_TYPE_NATIVEUINT && m_pStackPointer[-1].GetStackType() == StackTypeI4)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
+                    }
+#endif // TARGET_64BIT
                     CORINFO_GENERICHANDLE_RESULT embedInfo;
                     m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
                     m_pStackPointer -= 1;
