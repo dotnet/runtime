@@ -118,6 +118,9 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandling))]
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandlingWithAttributeOnType))]
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandlingWithoutPopulateAttribute))]
+    // TODO: Should these cases also be tested (L121 - L129) for IReadOnlySet?
+    // This goes for here, and JsonCreationHandlingTests.Enumerable.cs as well.
+    // The tests ABOVE these tests in JsonCreationHandlingTests.Enumerable.cs are for ISet, which I thought are more relevant, so I didn't add them here yet.
     [JsonSerializable(typeof(StructWithWritablePropertyStructSetOfInt))]
     [JsonSerializable(typeof(StructWithWritablePropertyStructSetOfIntWithAttributeOnType))]
     [JsonSerializable(typeof(StructWithWritablePropertyStructSetOfIntWithoutPopulateAttribute))]
@@ -127,7 +130,6 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithWritableFieldNullableStructSetOfInt))]
     [JsonSerializable(typeof(StructWithWritableFieldNullableStructSetOfIntWithAttributeOnType))]
     [JsonSerializable(typeof(StructWithWritableFieldNullableStructSetOfIntWithoutPopulateAttribute))]
-
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyDictionaryOfStringToInt))]
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyDictionaryOfStringToIntWithAttributeOnType))]
     [JsonSerializable(typeof(ClassWithReadOnlyPropertyDictionaryOfStringToIntWithoutPopulateAttribute))]
@@ -222,6 +224,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithWritableProperty<ConcurrentStack<int>>))]
     [JsonSerializable(typeof(ClassWithWritableProperty<ICollection<int>>))]
     [JsonSerializable(typeof(ClassWithWritableProperty<ISet<int>>))]
+
+#if NET
+    [JsonSerializable(typeof(ClassWithWritableProperty<IReadOnlySet<int>>))]
+#endif
+
     [JsonSerializable(typeof(ClassWithWritableProperty<Dictionary<string, int>>))]
     [JsonSerializable(typeof(ClassWithWritableProperty<IDictionary<string, int>>))]
     [JsonSerializable(typeof(ClassWithWritableProperty<IDictionary>))]
@@ -230,6 +237,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithWritableProperty<StructList<int>?>))]
     [JsonSerializable(typeof(ClassWithWritableProperty<StructCollection<int>?>))]
     [JsonSerializable(typeof(ClassWithWritableProperty<StructSet<int>?>))]
+
+#if NET
+    [JsonSerializable(typeof(ClassWithWritableProperty<StructReadOnlySet<int>?>))]
+#endif
+
     [JsonSerializable(typeof(ClassWithWritableProperty<StructDictionary<string, int>?>))]
     [JsonSerializable(typeof(ClassWithWritableProperty<Stack<int>>))]
     [JsonSerializable(typeof(ClassWithWritableProperty<Stack>))]
@@ -248,6 +260,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<ConcurrentStack<int>>))]
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<ICollection<int>>))]
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<ISet<int>>))]
+
+#if NET
+    [JsonSerializable(typeof(ClassWithReadOnlyProperty<IReadOnlySet<int>>))]
+#endif
+
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<Dictionary<string, int>>))]
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<IDictionary<string, int>>))]
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<IDictionary>))]
@@ -259,9 +276,14 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<StructCollection<int>?>))]
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<StructSet<int>>))]
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<StructSet<int>?>))]
+
+#if NET
+    [JsonSerializable(typeof(ClassWithReadOnlyProperty<StructReadOnlySet<int>>))]
+    [JsonSerializable(typeof(ClassWithReadOnlyProperty<StructReadOnlySet<int>?>))]
+#endif
+
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<StructDictionary<string, int>>))]
     [JsonSerializable(typeof(ClassWithReadOnlyProperty<StructDictionary<string, int>?>))]
-
     [JsonSerializable(typeof(ClassWithReadOnlyInitializedField<SimpleClass>))]
     [JsonSerializable(typeof(ClassWithInitializedField<SimpleClass>))]
     [JsonSerializable(typeof(ClassWithReadOnlyInitializedProperty<SimpleClass>))]
