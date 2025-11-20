@@ -4402,7 +4402,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
         numArgs++;
     }
 
-    if (callInfo.sig.isAsyncCall())
+    if (callInfo.sig.isAsyncCall() && !isCalli) // Calli signatures for now are only used for async calls in IL stubs where the continuation argument is already passed explicitly
     {
         continuationArgLocation = callInfo.sig.hasTypeArg() ? extraParamArgLocation + 1 : (callInfo.sig.hasThis() ? 1 : 0);
         numArgs++;

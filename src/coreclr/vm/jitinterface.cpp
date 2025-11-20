@@ -11318,7 +11318,7 @@ LPVOID CEEInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 #ifdef FEATURE_INTERPRETER
 
 // Forward declare the function for mapping MetaSig to a cookie.
-void* GetCookieForCalliSig(MetaSig metaSig);
+void* GetCookieForCalliSig(MetaSig metaSig, bool hasContinuationRet);
 
 LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
@@ -11331,7 +11331,14 @@ LPVOID CInterpreterJitInfo::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* sz
     Module* mod = GetModule(szMetaSig->scope);
 
     MetaSig sig(szMetaSig->pSig, szMetaSig->cbSig, mod, &typeContext);
-    result = GetCookieForCalliSig(sig);
+
+    if (!isCallConv(*szMetaSig->pSig, IMAGE_CEE_CS_CALLCONV_ASYNC) && szMetaSig->isAsyncCall())
+    {
+        // This is a jit generated calli for an async method call. Set the async flag on the MetaSig.
+        sig.SetIsAsyncCall();
+    }
+
+    result = GetCookieForCalliSig(sig, szMetaSig->isAsyncCall());
 
     EE_TO_JIT_TRANSITION();
     return result;

@@ -669,9 +669,14 @@ namespace
     }
 }
 
-void* GetCookieForCalliSig(MetaSig metaSig)
+void* GetCookieForCalliSig(MetaSig metaSig, bool hasContinuationRet)
 {
     STANDARD_VM_CONTRACT;
+
+    if (hasContinuationRet)
+    {
+        PORTABILITY_ASSERT("GetCookieForCalliSig: signatures with continuation return are not supported on wasm");
+    }
 
     void* thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)
@@ -708,7 +713,7 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target)
 {
     MetaSig sig(pMD);
-    void* cookie = GetCookieForCalliSig(sig);
+    void* cookie = GetCookieForCalliSig(sig, false);
 
     _ASSERTE(cookie != NULL);
 

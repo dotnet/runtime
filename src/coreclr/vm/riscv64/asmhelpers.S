@@ -1066,21 +1066,31 @@ Load_Ref A7, a7
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetVoid, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a4, 16(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 16(fp)
+    sd a2, 0(a4)
     EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 16
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetVoid, _TEXT
 
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -16
+    PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
+    sd a4, 16(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
@@ -1088,20 +1098,30 @@ NESTED_ENTRY CallJittedMethodRetBuff, _TEXT, NoHandler
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 16(fp)
+    sd a2, 0(a4)
     EPILOG_STACK_RESTORE
-    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 16
+    EPILOG_RESTORE_REG_PAIR_INDEXED fp, ra, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetBuff, _TEXT
 
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     sd a0, 0(a2)
     EPILOG_STACK_RESTORE
@@ -1109,15 +1129,23 @@ NESTED_ENTRY CallJittedMethodRetI8, _TEXT, NoHandler
     EPILOG_RETURN
 NESTED_END CallJittedMethodRetI8, _TEXT
 
+// a0 - routines array
+// a1 - interpreter stack args location
+// a2 - interpreter stack return value location
+// a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetDouble, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     fsd fa0, 0(a2)
     EPILOG_STACK_RESTORE
@@ -1129,15 +1157,19 @@ NESTED_END CallJittedMethodRetDouble, _TEXT
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2I8, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     sd a0, 0(a2)
     sd a1, 8(a2)
@@ -1150,15 +1182,19 @@ NESTED_END CallJittedMethodRet2I8, _TEXT
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRet2Double, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     fsd fa0, 0(a2)
     fsd fa1, 8(a2)
@@ -1171,15 +1207,19 @@ NESTED_END CallJittedMethodRet2Double, _TEXT
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetFloatInt, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     fsd fa0, 0(a2)
     sd a0, 8(a2)
@@ -1192,15 +1232,19 @@ NESTED_END CallJittedMethodRetFloatInt, _TEXT
 // a1 - interpreter stack args location
 // a2 - interpreter stack return value location
 // a3 - stack arguments size (properly aligned)
+// a4 - address of continuation return value
 NESTED_ENTRY CallJittedMethodRetIntFloat, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED fp, ra, -32
     sd a2, 16(fp)
+    sd a4, 24(fp)
     sub sp, sp, a3
     mv t2, a0
     mv t3, a1
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    ld a4, 24(fp)
+    sd a2, 0(a4)
     ld a2, 16(fp)
     sd a0, 0(a2)
     fsd fa0, 8(a2)
@@ -1225,7 +1269,7 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     bnez t4, LOCAL_LABEL(HaveInterpThreadContext)
 
 LOCAL_LABEL(NoManagedThreadOrCallStub):
-    addi a0, sp, __PWTB_TransitionBlock + 16
+    addi a0, sp, __PWTB_TransitionBlock
     mv a1, t6
     call C_FUNC(GetInterpThreadContextWithPossiblyMissingThreadOrCallStub)
     mv t4, a0
@@ -1245,6 +1289,8 @@ LOCAL_LABEL(HaveInterpThreadContext):
     ld t4, 0(t2)
     addi t2, t2, 8
     jalr t4
+    // Fill in the ContinuationContext register
+    ld a2, (__PWTB_ArgumentRegisters+16)(sp)
 
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 

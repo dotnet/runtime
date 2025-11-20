@@ -347,12 +347,12 @@ void InvokeCalliStub(PCODE ftn, void *cookie, int8_t *pArgs, int8_t *pRet, PTR_P
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, pContinuationRet);
 }
 
-void* GetCookieForCalliSig(MetaSig metaSig)
+void* GetCookieForCalliSig(MetaSig metaSig, bool hasContinuationRet)
 {
     STANDARD_VM_CONTRACT;
 
     CallStubGenerator callStubGenerator;
-    return callStubGenerator.GenerateCallStubForSig(metaSig);
+    return callStubGenerator.GenerateCallStubForSig(metaSig, hasContinuationRet);
 }
 
 // Create call stub for calling interpreted methods from JITted/AOTed code.

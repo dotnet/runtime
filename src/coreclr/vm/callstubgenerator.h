@@ -26,13 +26,14 @@ struct CallStubHeader
     // This is an array of routines that translate the arguments from the interpreter stack to the CPU registers and native stack.
     PCODE Routines[0];
 
-    CallStubHeader(int numRoutines, PCODE *pRoutines, int totalStackSize, InvokeFunctionPtr pInvokeFunction)
+    CallStubHeader(int numRoutines, PCODE *pRoutines, int totalStackSize, bool hasContinuationRet, InvokeFunctionPtr pInvokeFunction)
     {
         LIMITED_METHOD_CONTRACT;
 
         NumRoutines = numRoutines;
         TotalStackSize = totalStackSize;
         Invoke = pInvokeFunction;
+        HasContinuationRet = hasContinuationRet;
 
         memcpy(Routines, pRoutines, NumRoutines * sizeof(PCODE));
     }
@@ -168,7 +169,7 @@ class CallStubGenerator
 public:
     // Generate the call stub for the given method.
     CallStubHeader *GenerateCallStub(MethodDesc *pMD, AllocMemTracker *pamTracker, bool interpreterToNative);
-    CallStubHeader *GenerateCallStubForSig(MetaSig &sig);
+    CallStubHeader *GenerateCallStubForSig(MetaSig &sig, bool hasContinuationRet);
 
 private:
     static size_t ComputeTempStorageSize(const MetaSig& sig)
