@@ -25,10 +25,10 @@ DBG_DebugBreak()
 /* context */
 
 extern "C" void
-RtlCaptureContext(OUT PCONTEXT ContextRecord)
+RtlCaptureContext(OUT PCONTEXT pContextRecord)
 {
     // we cannot implement this function for wasm because there is no way to capture the current execution context
-    memset(ContextRecord, 0, sizeof(CONTEXT));
+    memset(pContextRecord, 0, sizeof(*pContextRecord));
 }
 
 extern "C" void
