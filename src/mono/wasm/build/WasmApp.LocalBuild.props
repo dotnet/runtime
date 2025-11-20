@@ -22,7 +22,7 @@
   <Import Project="$(_WasmTargetsDir)$(_TargetsBaseName).props" />
 
   <PropertyGroup>
-    <_NetCoreAppToolCurrent>net10.0</_NetCoreAppToolCurrent>
+    <_NetCoreAppToolCurrent>net11.0</_NetCoreAppToolCurrent>
     <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
     <SelfContained>true</SelfContained>
   </PropertyGroup>

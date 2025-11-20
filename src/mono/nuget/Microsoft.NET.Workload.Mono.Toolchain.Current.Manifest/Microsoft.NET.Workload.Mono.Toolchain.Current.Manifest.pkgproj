@@ -45,7 +45,7 @@
 
     <ItemGroup>
       <!-- When changing 'NetVersion', also change Microsoft.NET.Runtime.WebAssembly.Templates.csproj 'PackageId' -->
-      <_WorkloadManifestValues Include="NetVersion" Value="net10" /> <!-- NetCurrent -->
+      <_WorkloadManifestValues Include="NetVersion" Value="net11" /> <!-- NetCurrent -->
       <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
       <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
       <_WorkloadManifestValues Include="PackageVersionNet9" Value="$(PackageVersionNet9)"  Condition="'$(PackageVersionNet9)' != ''" />
