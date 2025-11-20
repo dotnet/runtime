@@ -69,7 +69,9 @@ internal sealed class CodeDirectoryBlob : IBlob
         HashType hashType,
         ExecutableSegmentFlags execSegmentFlags,
         byte[][] specialSlotHashes,
-        byte[][] codeHashes)
+        byte[][] codeHashes,
+        ulong execSegmentBase = 0,
+        ulong execSegmentLimit = 0)
     {
         // Always assume the executable length is the entire file size / signature start.
         _cdHeader = new CodeDirectoryHeader(
@@ -80,8 +82,8 @@ internal sealed class CodeDirectoryBlob : IBlob
             hashType.GetHashSize(),
             hashType,
             signatureStart,
-            0,
-            signatureStart,
+            execSegmentBase,
+            execSegmentLimit,
             execSegmentFlags);
         _identifier = identifier;
         _specialSlotHashes = specialSlotHashes;
@@ -120,9 +122,15 @@ internal sealed class CodeDirectoryBlob : IBlob
         string identifier,
         RequirementsBlob requirementsBlob,
         HashType hashType = HashType.SHA256,
-        uint pageSize = MachObjectFile.DefaultPageSize)
+        uint pageSize = MachObjectFile.DefaultPageSize,
+        ulong execSegmentBase = 0,
+        ulong execSegmentLimit = 0,
+        ulong textSegmentFileEnd = 0)
     {
-        uint codeSlotCount = GetCodeSlotCount((uint)signatureStart, pageSize);
+        // When textSegmentFileEnd is provided, we only hash the __TEXT segment (macOS 26+ behavior).
+        // Otherwise, we hash the entire file up to the signature start (legacy behavior).
+        long hashLimit = textSegmentFileEnd > 0 ? (long)textSegmentFileEnd : signatureStart;
+        uint codeSlotCount = GetCodeSlotCount((uint)hashLimit, pageSize);
         uint specialCodeSlotCount = (uint)CodeDirectorySpecialSlot.Requirements;
 
         var specialSlotHashes = new byte[specialCodeSlotCount][];
@@ -150,7 +158,8 @@ internal sealed class CodeDirectoryBlob : IBlob
         Array.Reverse(specialSlotHashes);
 
         // 0 - N are Code hashes
-        long remaining = signatureStart;
+        // Hash up to the hash limit (either __TEXT segment end or signature start)
+        long remaining = hashLimit;
         long buffptr = 0;
         int cdIndex = 0;
         byte[] pageBuffer = new byte[pageSize];
@@ -171,7 +180,9 @@ internal sealed class CodeDirectoryBlob : IBlob
             hashType,
             ExecutableSegmentFlags.MainBinary,
             specialSlotHashes,
-            codeHashes);
+            codeHashes,
+            execSegmentBase,
+            execSegmentLimit);
     }
 
     [StructLayout(LayoutKind.Sequential)]
