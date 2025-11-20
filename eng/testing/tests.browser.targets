@@ -15,10 +15,6 @@
     <BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' == 'false' and '$(WasmIncludeFullIcuData)' == 'true'">true</BlazorWebAssemblyLoadAllGlobalizationData>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
 
-    <!-- <GenerateBuildWasmBootJsonDependsOn>
-      $(GenerateBuildWasmBootJsonDependsOn);
-      WasmTriggerPublishApp
-    </GenerateBuildWasmBootJsonDependsOn> -->
     <ResolveWasmOutputsDependsOn>
       $(ResolveWasmOutputsDependsOn);
       WasmTriggerPublishApp;
