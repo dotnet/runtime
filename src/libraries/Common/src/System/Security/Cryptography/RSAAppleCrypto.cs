@@ -397,6 +397,8 @@ namespace System.Security.Cryptography
                 ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
                 ArgumentNullException.ThrowIfNull(padding);
 
+                ValidatePaddingParameters(hashAlgorithm, padding);
+
                 ThrowIfDisposed();
 
                 Interop.AppleCrypto.PAL_SignatureAlgorithm signatureAlgorithm = padding.Mode switch
@@ -454,7 +456,7 @@ namespace System.Security.Cryptography
 
                 byte[] rented = CryptoPool.Rent(rsaSize);
                 Span<byte> buf = new Span<byte>(rented, 0, rsaSize);
-                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, keySize);
+                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, keySize, hash.Length);
 
                 try
                 {
@@ -464,6 +466,17 @@ namespace System.Security.Cryptography
                 {
                     CryptographicOperations.ZeroMemory(buf);
                     CryptoPool.Return(rented, clearSize: 0);
+                }
+            }
+
+            private static void ValidatePaddingParameters(HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+            {
+                // Apple does not support custom salt length for the PSS padding
+                if (padding.Mode == RSASignaturePaddingMode.Pss &&
+                    (padding.PssSaltLength != RSASignaturePadding.PssSaltLengthIsHashLength &&
+                    padding.PssSaltLength != RsaPaddingProcessor.HashLength(hashAlgorithm)))
+                {
+                    throw new CryptographicException(SR.Cryptography_CustomPssSaltLengthNotSupported);
                 }
             }
 
@@ -483,6 +496,8 @@ namespace System.Security.Cryptography
             {
                 ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
                 ArgumentNullException.ThrowIfNull(padding);
+
+                ValidatePaddingParameters(hashAlgorithm, padding);
 
                 ThrowIfDisposed();
 
@@ -537,9 +552,9 @@ namespace System.Security.Cryptography
                         Debug.Fail($"TryRsaVerificationPrimitive with a pre-allocated buffer");
                         throw new CryptographicException();
                     }
-
                     Debug.Assert(bytesWritten == rsaSize);
-                    return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, keySize);
+                    int saltLength = RsaPaddingProcessor.CalculatePssSaltLength(padding.PssSaltLength, KeySize, hashAlgorithm);
+                    return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, keySize, saltLength);
                 }
                 finally
                 {
