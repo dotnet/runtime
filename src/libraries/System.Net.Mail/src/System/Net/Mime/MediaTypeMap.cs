@@ -66,6 +66,7 @@ namespace System.Net.Mime
             [".cab"] = "application/vnd.ms-cab-compressed",
             [".calx"] = "application/vnd.ms-office.calx",
             [".cat"] = "application/vnd.ms-pki.seccat",
+            [".cbor"] = "application/cbor",
             [".cda"] = "application/x-cdf",
             [".cdf"] = "application/x-cdf",
             [".chm"] = "application/octet-stream",
@@ -453,6 +454,7 @@ namespace System.Net.Mime
         {
             ["application/atom+xml"] = ".atom",
             ["application/brotli"] = ".br",
+            ["application/cbor"] = ".cbor",
             ["application/dash+xml"] = ".mpd",
             ["application/envoy"] = ".evy",
             ["application/epub+zip"] = ".epub",
