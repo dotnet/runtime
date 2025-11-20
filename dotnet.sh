@@ -16,7 +16,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 export DOTNET_MULTILEVEL_LOOKUP=0
 
 # Disable first run since we want to control all package sources
-export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+export DOTNET_NOLOGO=1
 
 source $scriptroot/eng/common/tools.sh
 
