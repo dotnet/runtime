@@ -1,6 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace System.IO.Compression
 {
     internal sealed class ZipCryptoStream : Stream
@@ -31,7 +35,18 @@ namespace System.IO.Compression
             return table;
         }
 
-        // Decryption constructor
+        // Private constructor for async factory method
+        private ZipCryptoStream(Stream baseStream, bool encrypting, bool leaveOpen = false, ushort verifierLow2Bytes = 0, uint? crc32ForHeader = null)
+        {
+            _base = baseStream ?? throw new ArgumentNullException(nameof(baseStream));
+            _encrypting = encrypting;
+            _leaveOpen = leaveOpen;
+            _verifierLow2Bytes = verifierLow2Bytes;
+            _crc32ForHeader = crc32ForHeader;
+            _position = 0;
+        }
+
+        // Synchronous decryption constructor (existing)
         public ZipCryptoStream(Stream baseStream, ReadOnlyMemory<char> password, byte expectedCheckByte)
         {
             _base = baseStream ?? throw new ArgumentNullException(nameof(baseStream));
@@ -41,7 +56,7 @@ namespace System.IO.Compression
             _position = 0;
         }
 
-        // Encryption constructor
+        // Synchronous encryption constructor (existing)
         public ZipCryptoStream(Stream baseStream,
                                ReadOnlyMemory<char> password,
                                ushort passwordVerifierLow2Bytes,
@@ -57,6 +72,40 @@ namespace System.IO.Compression
             InitKeysFromBytes(password.Span);
         }
 
+        // Async factory method for decryption
+        public static async Task<ZipCryptoStream> CreateForDecryptionAsync(
+            Stream baseStream,
+            ReadOnlyMemory<char> password,
+            byte expectedCheckByte,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(baseStream);
+
+            var stream = new ZipCryptoStream(baseStream, encrypting: false);
+            stream.InitKeysFromBytes(password.Span);
+            await stream.ValidateHeaderAsync(expectedCheckByte, cancellationToken).ConfigureAwait(false);
+            return stream;
+        }
+
+        // Async factory method for encryption
+        public static Task<ZipCryptoStream> CreateForEncryptionAsync(
+            Stream baseStream,
+            ReadOnlyMemory<char> password,
+            ushort passwordVerifierLow2Bytes,
+            uint? crc32 = null,
+            bool leaveOpen = false,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(baseStream);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var stream = new ZipCryptoStream(baseStream, encrypting: true, leaveOpen, passwordVerifierLow2Bytes, crc32);
+            stream.InitKeysFromBytes(password.Span);
+
+            // No async work needed for encryption constructor
+            return Task.FromResult(stream);
+        }
+
         private void EnsureHeader()
         {
             if (!_encrypting || _headerWritten) return;
@@ -64,9 +113,7 @@ namespace System.IO.Compression
             Span<byte> hdrPlain = stackalloc byte[12];
 
             // bytes 0..9 are random
-            // TODO: change to actual random data later
-            for (int i = 0; i < 10; i++)
-                hdrPlain[i] = 0;
+            RandomNumberGenerator.Fill(hdrPlain.Slice(0, 10));
 
             // bytes 10..11: check bytes (CRC-based if crc32 provided; else DOS time low word)
             if (_crc32ForHeader.HasValue)
@@ -96,6 +143,43 @@ namespace System.IO.Compression
             _position += 12;
         }
 
+        private async ValueTask EnsureHeaderAsync(CancellationToken cancellationToken)
+        {
+            if (!_encrypting || _headerWritten) return;
+
+            byte[] hdrPlain = new byte[12];
+
+            // bytes 0..9 are random
+            RandomNumberGenerator.Fill(hdrPlain.AsSpan(0, 10));
+
+            // bytes 10..11: check bytes (CRC-based if crc32 provided; else DOS time low word)
+            if (_crc32ForHeader.HasValue)
+            {
+                uint crc = _crc32ForHeader.Value;
+                hdrPlain[10] = (byte)((crc >> 16) & 0xFF);
+                hdrPlain[11] = (byte)((crc >> 24) & 0xFF);
+            }
+            else
+            {
+                hdrPlain[10] = (byte)(_verifierLow2Bytes & 0xFF);
+                hdrPlain[11] = (byte)((_verifierLow2Bytes >> 8) & 0xFF);
+            }
+
+            // Encrypt & write; update keys with PLAINTEXT per spec
+            byte[] hdrCiph = new byte[12];
+            for (int i = 0; i < 12; i++)
+            {
+                byte ks = DecipherByte();
+                byte p = hdrPlain[i];
+                hdrCiph[i] = (byte)(p ^ ks);
+                UpdateKeys(p);
+            }
+
+            await _base.WriteAsync(hdrCiph.AsMemory(0, 12), cancellationToken).ConfigureAwait(false);
+            _headerWritten = true;
+            _position += 12;
+        }
+
         private void InitKeysFromBytes(ReadOnlySpan<char> password)
         {
             _key0 = 305419896;
@@ -115,6 +199,24 @@ namespace System.IO.Compression
             while (read < hdr.Length)
             {
                 int n = _base.Read(hdr, read, hdr.Length - read);
+                if (n <= 0) throw new InvalidDataException("Truncated ZipCrypto header.");
+                read += n;
+            }
+
+            for (int i = 0; i < hdr.Length; i++)
+                hdr[i] = DecryptByte(hdr[i]);
+
+            if (hdr[11] != expectedCheckByte)
+                throw new InvalidDataException("Invalid password for encrypted ZIP entry.");
+        }
+
+        private async ValueTask ValidateHeaderAsync(byte expectedCheckByte, CancellationToken cancellationToken)
+        {
+            byte[] hdr = new byte[12];
+            int read = 0;
+            while (read < hdr.Length)
+            {
+                int n = await _base.ReadAsync(hdr.AsMemory(read, hdr.Length - read), cancellationToken).ConfigureAwait(false);
                 if (n <= 0) throw new InvalidDataException("Truncated ZipCrypto header.");
                 read += n;
             }
@@ -163,19 +265,8 @@ namespace System.IO.Compression
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (!_encrypting)
-            {
-                ArgumentNullException.ThrowIfNull(buffer);
-                if ((uint)offset > buffer.Length || (uint)count > buffer.Length - offset)
-                    throw new ArgumentOutOfRangeException();
-
-                int n = _base.Read(buffer, offset, count);
-                for (int i = 0; i < n; i++)
-                    buffer[offset + i] = DecryptByte(buffer[offset + i]);
-                _position += n;
-                return n;
-            }
-            throw new NotSupportedException("Stream is in encryption (write-only) mode.");
+            ValidateBufferArguments(buffer, offset, count);
+            return Read(buffer.AsSpan(offset, count));
         }
 
         public override int Read(Span<byte> destination)
@@ -196,24 +287,7 @@ namespace System.IO.Compression
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (!_encrypting) throw new NotSupportedException("Stream is in decryption (read-only) mode.");
-            ArgumentNullException.ThrowIfNull(buffer);
-            if ((uint)offset > (uint)buffer.Length || (uint)count > (uint)(buffer.Length - offset))
-                throw new ArgumentOutOfRangeException();
-
-            EnsureHeader();
-
-            // Simple buffer; optimize with ArrayPool if needed later
-            byte[] tmp = new byte[count];
-            for (int i = 0; i < count; i++)
-            {
-                byte ks = DecipherByte();
-                byte p = buffer[offset + i];
-                tmp[i] = (byte)(p ^ ks);
-                UpdateKeys(p);
-            }
-            _base.Write(tmp, 0, count);
-            _position += count;
+            Write(buffer.AsSpan(offset, count));
         }
 
         public override void Write(ReadOnlySpan<byte> buffer)
@@ -246,6 +320,73 @@ namespace System.IO.Compression
                     _base.Dispose();
             }
             base.Dispose(disposing);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (!_encrypting)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                int n = await _base.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                Span<byte> span = buffer.Span;
+                for (int i = 0; i < n; i++)
+                    span[i] = DecryptByte(span[i]);
+                _position += n;
+                return n;
+            }
+            throw new NotSupportedException("Stream is in encryption (write-only) mode.");
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            return WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+        }
+
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (!_encrypting) throw new NotSupportedException("Stream is in decryption (read-only) mode.");
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            EnsureHeader();
+
+            byte[] tmp = new byte[buffer.Length];
+            ReadOnlySpan<byte> span = buffer.Span;
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                byte ks = DecipherByte();
+                byte p = span[i];
+                tmp[i] = (byte)(p ^ ks);
+                UpdateKeys(p);
+            }
+
+            await _base.WriteAsync(tmp, cancellationToken).ConfigureAwait(false);
+            _position += tmp.Length;
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            return _base.FlushAsync(cancellationToken);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            // If encrypted empty entry (no payload written), still must emit 12-byte header:
+            if (_encrypting && !_headerWritten)
+                EnsureHeader();
+
+            if (!_leaveOpen)
+                await _base.DisposeAsync().ConfigureAwait(false);
+
+            await base.DisposeAsync().ConfigureAwait(false);
         }
 
         private static uint Crc32Update(uint crc, byte b)
