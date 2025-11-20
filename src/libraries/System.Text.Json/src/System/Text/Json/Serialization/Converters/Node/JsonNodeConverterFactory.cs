@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         private static readonly JsonArrayConverter s_arrayConverter = new JsonArrayConverter();
         private static readonly JsonObjectConverter s_objectConverter = new JsonObjectConverter();
-        private static readonly JsonValueConverter s_valueConverter = new JsonValueConverter();
+        private static readonly JsonValueConverter<JsonValue> s_valueConverter = new JsonValueConverter<JsonValue>();
 
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {

@@ -10,9 +10,9 @@ namespace System.Text.Json.Nodes
     /// <summary>
     /// A JsonValue encapsulating a primitive value using a built-in converter for the type.
     /// </summary>
-    internal sealed class JsonValuePrimitive<TValue> : JsonValue<TValue>
+    internal class JsonValuePrimitive<TValue> : JsonValue<TValue>
     {
-        private readonly JsonConverter<TValue> _converter;
+        private protected readonly JsonConverter<TValue> _converter;
         private readonly JsonValueKind _valueKind;
 
         public JsonValuePrimitive(TValue value, JsonConverter<TValue> converter, JsonNodeOptions? options) : base(value, options)
