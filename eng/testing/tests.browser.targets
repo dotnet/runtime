@@ -11,6 +11,7 @@
     <CompressionEnabled>false</CompressionEnabled>
     <DisableBuildCompression>true</DisableBuildCompression>
     <PublishTrimmed>false</PublishTrimmed>
+    <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true'">true</PublishTrimmed>
     <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
     <BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' == 'false' and '$(WasmIncludeFullIcuData)' == 'true'">true</BlazorWebAssemblyLoadAllGlobalizationData>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
