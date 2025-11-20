@@ -3992,7 +3992,7 @@ do                                                                      \
                         // We need to call the RestoreExecutionContext helper method
                         LOCAL_VAR(callArgsOffset, OBJECTREF) = execContext;
 
-                        targetMethod = pAsyncSuspendData->pMDRestoreExecutionContext;
+                        targetMethod = pAsyncSuspendData->pRestoreExecutionContextMethod;
                         goto CALL_INTERP_METHOD;
                     }
                     ip += 3;

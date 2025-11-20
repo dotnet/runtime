@@ -5176,7 +5176,7 @@ void InterpCompiler::EmitSuspend(const CORINFO_CALL_INFO &callInfo, Continuation
     suspendData->offsetIntoContinuationTypeForExecutionContext = execContextOffset + OFFSETOF__CORINFO_Continuation__data;
     suspendData->keepAliveOffset = keepAliveOffset + OFFSETOF__CORINFO_Continuation__data;
     suspendData->pCaptureSyncContextMethod = asyncInfo.captureContinuationContextMethHnd;
-    suspendData->pMDRestoreExecutionContext = asyncInfo.restoreExecutionContextMethHnd;
+    suspendData->pRestoreExecutionContextMethod = asyncInfo.restoreExecutionContextMethHnd;
     suspendData->pRestoreContextsMethod = asyncInfo.restoreContextsMethHnd;
     suspendData->resumeFuncPtr = m_asyncResumeFuncPtr;
     suspendData->DiagnosticIP = NULL;

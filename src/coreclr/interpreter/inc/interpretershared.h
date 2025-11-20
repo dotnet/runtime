@@ -197,37 +197,15 @@ struct InterpIntervalMapEntry
 
 struct InterpAsyncSuspendData
 {
+// ResumeInfo . Keep in sync with dataAsyncResumeInfo in the JIT and System.Runtime.CompilerServices.ResumeInfo
+    void* resumeFuncPtr; // Pointer to the resume function
+    void* DiagnosticIP; // IP to report in diagnostic scenarios
+
 #ifdef INTERPRETER_COMPILER_INTERNAL
     CORINFO_CLASS_HANDLE ContinuationTypeHnd;
 #else
     DPTR(MethodTable) ContinuationTypeHnd;
 #endif
-#ifdef INTERPRETER_COMPILER_INTERNAL
-    CORINFO_METHOD_HANDLE pCaptureSyncContextMethod;
-#else
-    DPTR(MethodDesc) pCaptureSyncContextMethod;
-#endif
-#ifdef INTERPRETER_COMPILER_INTERNAL
-    CORINFO_METHOD_HANDLE pMDRestoreExecutionContext;
-#else
-    DPTR(MethodDesc) pMDRestoreExecutionContext;
-#endif
-#ifdef INTERPRETER_COMPILER_INTERNAL
-    CORINFO_METHOD_HANDLE pRestoreContextsMethod;
-#else
-    DPTR(MethodDesc) pRestoreContextsMethod;
-#endif
-
-#ifdef INTERPRETER_COMPILER_INTERNAL
-    CORINFO_CLASS_HANDLE asyncMethodReturnType;
-#else
-    DPTR(MethodTable) asyncMethodReturnType;
-#endif
-    int32_t asyncMethodReturnTypePrimitiveSize; // 0 if not primitive, otherwise size in bytes
-
-    // ResumeInfo . Keep in sync with dataAsyncResumeInfo in the JIT and System.Runtime.CompilerServices.ResumeInfo
-    void* resumeFuncPtr; // Pointer to the resume function
-    void* DiagnosticIP; // IP to report in diagnostic scenarios
 
     InterpIntervalMapEntry* zeroedLocalsIntervals; // This will be used for the locals we need to keep live.
     InterpIntervalMapEntry* liveLocalsIntervals; // Following the end of this struct is the array of InterpIntervalMapEntry for live locals
@@ -235,11 +213,29 @@ struct InterpAsyncSuspendData
     int32_t offsetIntoContinuationTypeForExecutionContext;
     int32_t keepAliveOffset; // Only needed if we have a generic context to keep alive
     InterpByteCodeStart* methodStartIP;
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_CLASS_HANDLE asyncMethodReturnType;
+#else
+    DPTR(MethodTable) asyncMethodReturnType;
+#endif
+    int32_t asyncMethodReturnTypePrimitiveSize; // 0 if not primitive, otherwise size in bytes
     int32_t continuationArgOffset;
-    // The continuation argument is implicit and stored in an OBJECTREF in the interpreter frame.
-    // svar 0 for this the suspend opcode will be the return value from the call opcode
-    // svar 1 for this the suspend opcode will pass the generic context if needed.
-    // dvar will be the actual return
+
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_METHOD_HANDLE pCaptureSyncContextMethod;
+#else
+    DPTR(MethodDesc) pCaptureSyncContextMethod;
+#endif
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_METHOD_HANDLE pRestoreExecutionContextMethod;
+#else
+    DPTR(MethodDesc) pRestoreExecutionContextMethod;
+#endif
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_METHOD_HANDLE pRestoreContextsMethod;
+#else
+    DPTR(MethodDesc) pRestoreContextsMethod;
+#endif
 };
 
 #endif
