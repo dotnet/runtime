@@ -3,7 +3,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <_WasiNeedsHttp>true</_WasiNeedsHttp>
     <_WasiNeedsSocket>true</_WasiNeedsSocket>
-    <!-- 
+    <!--
     <WasmSingleFileBundle>true</WasmSingleFileBundle>
     <InvariantGlobalization>true</InvariantGlobalization>
     -->

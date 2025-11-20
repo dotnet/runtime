@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- SYSLIB0003: CAS is obsolete, but we still have tests referencing it -->
     <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
