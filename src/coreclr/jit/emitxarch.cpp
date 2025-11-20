@@ -21408,7 +21408,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
             // todo-xarch-half: hacking an exit on the unhandled ins to make prototyping easier
             if (ins == INS_vcvtss2sh || ins == INS_vcvtsh2ss || ins == INS_vaddsh || ins == INS_vsubsh ||
-                ins == INS_vmulsh || ins == INS_vdivsh || ins == INS_vcomish)
+                ins == INS_vmulsh || ins == INS_vdivsh || ins == INS_vcomish || ins == INS_vsqrtsh ||
+                ins == INS_vmaxsh || ins == INS_vminsh)
             {
                 result.insLatency    = PERFSCORE_LATENCY_1C;
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
