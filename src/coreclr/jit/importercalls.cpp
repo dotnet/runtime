@@ -4421,6 +4421,46 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Half_op_Increment:
+            {
+#ifdef TARGET_XARCH
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    GenTree* op1 = impPopStack().val;
+                    assert(op1->TypeGet() == TYP_HALF);
+
+                    GenTree* onevec = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(1.0f), TYP_FLOAT, 16);
+                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_FLOAT, 16);
+                    onevec = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, onevec, NI_AVX10v1_ConvertScalarToVector128Half , TYP_FLOAT, 16);
+
+                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, onevec, NI_AVX10v1_AddScalar , TYP_HALF, 16);
+                    retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
+                }
+#endif
+                break;
+            }
+
+            case NI_System_Half_op_Decrement:
+            {
+#ifdef TARGET_XARCH
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                {
+                    GenTree* op1 = impPopStack().val;
+                    assert(op1->TypeGet() == TYP_HALF);
+
+                    GenTree* onevec = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(1.0f), TYP_FLOAT, 16);
+                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_FLOAT, 16);
+                    onevec = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, onevec, NI_AVX10v1_ConvertScalarToVector128Half , TYP_FLOAT, 16);
+
+                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, onevec, NI_AVX10v1_SubtractScalar , TYP_HALF, 16);
+                    retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
+                }
+#endif
+                break;
+            }
+
             case NI_System_Half_op_Explicit:
             {
 #ifdef TARGET_XARCH

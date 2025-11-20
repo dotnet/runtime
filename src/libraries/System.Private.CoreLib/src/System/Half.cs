@@ -1275,6 +1275,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        [Intrinsic]
         public static Half operator --(Half value)
         {
             var tmp = (float)value;
@@ -1591,6 +1592,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        [Intrinsic]
         public static Half operator ++(Half value)
         {
             var tmp = (float)value;
