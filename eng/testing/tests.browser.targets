@@ -15,10 +15,15 @@
     <BlazorWebAssemblyLoadAllGlobalizationData Condition="'$(InvariantGlobalization)' == 'false' and '$(WasmIncludeFullIcuData)' == 'true'">true</BlazorWebAssemblyLoadAllGlobalizationData>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
 
-    <GenerateBuildWasmBootJsonDependsOn>
+    <!-- <GenerateBuildWasmBootJsonDependsOn>
       $(GenerateBuildWasmBootJsonDependsOn);
       WasmTriggerPublishApp
-    </GenerateBuildWasmBootJsonDependsOn>
+    </GenerateBuildWasmBootJsonDependsOn> -->
+    <ResolveWasmOutputsDependsOn>
+      $(ResolveWasmOutputsDependsOn);
+      WasmTriggerPublishApp;
+      UpdateWasmNativeAssetOriginalItemSpec
+    </ResolveWasmOutputsDependsOn>
 
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'emsdk'))</EMSDK_PATH>
@@ -167,6 +172,14 @@
     <PublishTestAsSelfContainedDependsOn />
     <WasmNestedPublishAppDependsOn>PrepareForWasmBuildApp;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
   </PropertyGroup>
+
+  <Target Name="UpdateWasmNativeAssetOriginalItemSpec">
+    <ItemGroup>
+      <WasmNativeAsset Update="@(WasmNativeAsset)">
+        <OriginalItemSpec>%(Identity)</OriginalItemSpec>
+      </WasmNativeAsset>
+    </ItemGroup>
+  </Target>
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.LinkContentToWwwroot" AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
 

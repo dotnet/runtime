@@ -233,7 +233,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Warning Text="Custom Blazor cache has been removed and setting 'BlazorCacheBootResources' has no effect." Condition="'$(_BlazorCacheBootResources)' != 'false' and '$(_TargetingNET100OrLater)' == 'true'" />
   </Target>
 
-  <Target Name="ResolveWasmOutputs" DependsOnTargets="_ResolveWasmOutputs" />
+  <Target Name="ResolveWasmOutputs" DependsOnTargets="$(ResolveWasmOutputsDependsOn);_ResolveWasmOutputs" />
 
   <Target Name="ComputeWasmVfs">
     <ItemGroup>
