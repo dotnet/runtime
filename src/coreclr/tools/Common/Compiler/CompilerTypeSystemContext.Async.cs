@@ -202,7 +202,6 @@ namespace ILCompiler
         private sealed class ContinuationTypeHashtable : LockFreeReaderHashtable<GCPointerMap, AsyncContinuationType>
         {
             private readonly CompilerTypeSystemContext _parent;
-            private MetadataType _continuationType;
 
             public ContinuationTypeHashtable(CompilerTypeSystemContext parent)
                 => _parent = parent;
@@ -214,10 +213,22 @@ namespace ILCompiler
                 => value1.PointerMap.Equals(value2.PointerMap);
             protected override AsyncContinuationType CreateValueFromKey(GCPointerMap key)
             {
-                _continuationType ??= _parent.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
-                return new AsyncContinuationType(_continuationType, key);
+                return new AsyncContinuationType(_parent.ContinuationType, key);
             }
         }
         private ContinuationTypeHashtable _continuationTypeHashtable;
+
+        private MetadataType _continuationType;
+
+        /// <summary>
+        /// Gets the base type for async continuations.
+        /// </summary>
+        public MetadataType ContinuationType
+        {
+            get
+            {
+                return _continuationType ??= SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "Continuation"u8);
+            }
+        }
     }
 }
