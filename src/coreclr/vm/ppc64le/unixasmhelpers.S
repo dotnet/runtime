@@ -95,9 +95,18 @@ NESTED_END OnHijackTripThread, _TEXT
 #endif // FEATURE_HIJACK
 
 LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-// NOT YET IMPLEMENTED
-	bl abort
-	nop
+    cmpd %r3, 0
+    beq LOCAL_LABEL(NullObject)
+
+    ld %r12, DelegateObject___methodPtr(%r3)
+    ld %r3, DelegateObject___target(%r3)
+
+    mtctr %r12
+    bctr
+
+LOCAL_LABEL(NullObject):
+    li %r3, CORINFO_NullReferenceException_ASM
+    b C_FUNC(JIT_InternalThrow)
 LEAF_END SinglecastDelegateInvokeStub, _TEXT
 
 #ifdef FEATURE_TIERED_COMPILATION

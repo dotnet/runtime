@@ -2015,6 +2015,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     return argOfs;
 #elif defined(TARGET_POWERPC64)
 
+    int gRegs = 0;
     int cFPRegs = 0;
 
     switch (argType)
@@ -2032,19 +2033,21 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 	case ELEMENT_TYPE_VALUETYPE:
 	    // If the size is bigger than 8, or if the size is NOT a power of 2, then
 	    // the argument is passed by reference.
-	    if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE || (argSize & (argSize-1)) != 0)
+	    if (argSize > 0 && argSize <= ENREGISTERED_PARAMTYPE_MAXSIZE)
 	    {
-		argSize = sizeof(TADDR);
+		gRegs = argSize/sizeof(TADDR);
+		if(argSize % sizeof(TADDR) != 0) gRegs++;
 	    }
 	    // Single-element aggregates with float/double element are passed in FPRs.
 	    else if ((argSize == 4 && thValueType.GetHFAType() == CORINFO_HFA_ELEM_FLOAT)
 	        || (argSize == 8 && thValueType.GetHFAType() == CORINFO_HFA_ELEM_DOUBLE))
 	    {
-		cFPRegs = 1;
+                _ASSERTE("FLOAT REGISTER DETECTED in GetNextOffset()");
 	    }
 	    break;
 
 	default:
+	    gRegs = 1;
     	    break;
     }
 
@@ -2062,7 +2065,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 	if (m_idxGenReg < 8)
 	{
 	    int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-	    m_idxGenReg += 1;
+	    m_idxGenReg += gRegs;
 	    return argOfs;
 	}
     }

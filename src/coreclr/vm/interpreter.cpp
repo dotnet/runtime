@@ -402,14 +402,6 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                     if (size < 8 && !((it.IsStruct() || it.IsNativeValueType()) && (size & (size-1)) != 0))
                         m_argDescs[k].m_nativeOffset += 8 - size;
                 }
-#elif defined(HOST_POWERPC64)
-		//TODO POWERPC64 - copied from s390x, need to check offset and size
-		if (!(TransitionBlock::IsFloatArgumentRegisterOffset(m_argDescs[k].m_nativeOffset)))
-		{
-		    size_t size = it.Size(comp);
-		    if (size < 8 && !((it.IsStruct() || it.IsNativeValueType()) && (size & (size-1)) != 0))
-			m_argDescs[k].m_nativeOffset += 8 - size;
-		}
 #endif
                 // When invoking the interpreter directly, large value types are always passed by reference.
                 if (it.IsLargeStruct(comp))
@@ -1408,7 +1400,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 	    // TODO TARGET_POWERPC64 check here offset on StubLinkerCPU::EmitProlog
             unsigned       intRegArgBaseOffset = 0;
 	    unsigned       floatRegArgBaseOffset = intRegArgBaseOffset + (8 * sizeof(void*));
-            unsigned short stackArgBaseOffset = 496;
+            unsigned short stackArgBaseOffset = 496 + (8 * sizeof(void*));
 #else
 #error unsupported platform
 #endif
@@ -1462,7 +1454,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_RISCV64)
                     argState.argOffsets[k] += intRegArgBaseOffset;
 #elif defined(HOST_POWERPC64)
-		    argState.argOffsets[k] = intRegArgBaseOffset + (kk * sizeof(void*));
+		    argState.argOffsets[k] += intRegArgBaseOffset;
 #else
 #error unsupported platform
 #endif
@@ -1492,11 +1484,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #endif
                 else if (argState.argIsReg[k] == ArgState::ARS_NotReg)
                 {
-#if defined(HOST_POWERPC64)
-                    argState.argOffsets[k] = stackArgBaseOffset + (kk * sizeof(void*));
-#else
                     argState.argOffsets[k] += stackArgBaseOffset;
-#endif
                 }
                 // So far, x86 doesn't have any FP reg args, and ARM and ARM64 puts them at offset 0, so no
                 // adjustment is necessary (yet) for arguments passed in those registers.

@@ -1143,15 +1143,6 @@ private:
                     return *reinterpret_cast<BYTE**>(&m_ilArgs[m_methInfo->m_argDescs[argNum].m_nativeOffset]);
                 }
             }
-#elif defined(HOST_POWERPC64)
-            if (GetArgType(argNum).IsStruct() || GetArgType(argNum).IsNativeValueType())
-            {
-                size_t size = GetArgType(argNum).Size(&m_interpCeeInfo);
-                if (size > 8 || (size & (size-1)) != 0)
-                {
-                    return *reinterpret_cast<BYTE**>(&m_ilArgs[m_methInfo->m_argDescs[argNum].m_nativeOffset]);
-                }
-            }
 #endif
             return &m_ilArgs[m_methInfo->m_argDescs[argNum].m_nativeOffset];
         }

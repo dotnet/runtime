@@ -61,11 +61,11 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 
 #endif
 
-#define           OFFSETOF__DelegateObject___methodPtr      0x18
-ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _methodPtr);
+#define DelegateObject___methodPtr      0x18
+ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtr == offsetof(DelegateObject, _methodPtr));
 
-#define           OFFSETOF__DelegateObject___target         0x08
-ASMCONSTANT_OFFSETOF_ASSERT(DelegateObject, _target);
+#define DelegateObject___target         0x08
+ASMCONSTANTS_C_ASSERT(DelegateObject___target == offsetof(DelegateObject, _target));
 
 #define                  CORINFO_NullReferenceException_ASM 0
 // TODO VIKAS
