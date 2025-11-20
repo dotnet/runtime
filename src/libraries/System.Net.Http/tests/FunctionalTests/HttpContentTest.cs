@@ -596,6 +596,32 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [Fact]
+        public async Task GetAsync_WithCustomHandlerReturningStringContent_PreCanceledToken_ThrowsTaskCanceledException()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/121996
+            // Ensures that when using a custom handler that returns pre-buffered content (StringContent),
+            // calling GetAsync with a pre-canceled token properly throws TaskCanceledException
+            using var handler = new CustomHandler();
+            using var httpClient = new HttpClient(handler);
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsAsync<TaskCanceledException>(() =>
+                httpClient.GetAsync("https://example.com", cts.Token));
+        }
+
+        private sealed class CustomHandler : HttpMessageHandler
+        {
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                return Task.FromResult(new HttpResponseMessage()
+                {
+                    Content = new StringContent("Hello from CustomHandler")
+                });
+            }
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
