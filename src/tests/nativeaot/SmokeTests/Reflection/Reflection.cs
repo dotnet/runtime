@@ -3021,11 +3021,7 @@ internal static class ReflectionTest
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void AllocateArray()
-        {
-            // Create an array to trigger the reflectability of the type
-            var array = new ValueTypeWithConstructor[5];
-        }
+        static Array AllocateArray() => new ValueTypeWithConstructor[5];
 
         public static void Run()
         {
@@ -3040,7 +3036,7 @@ internal static class ReflectionTest
             s_constructorCallCount = 0;
 
             // Create an array and call Initialize
-            var array = new ValueTypeWithConstructor[3];
+            var array = AllocateArray();
             array.Initialize();
 
             // Verify that the constructor was called for each element
