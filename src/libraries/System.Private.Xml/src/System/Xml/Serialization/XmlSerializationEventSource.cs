@@ -5,16 +5,9 @@ using System.Diagnostics.Tracing;
 
 namespace System.Xml.Serialization
 {
-    [EventSource(Name = XmlSerializationEventSourceName)]
-    internal sealed class XmlSerializationEventSource : EventSource
+    [EventSource(Name = "System.Xml.Serialzation.XmlSerialization")]
+    internal sealed partial class XmlSerializationEventSource : EventSource
     {
-        private const string XmlSerializationEventSourceName = "System.Xml.Serialzation.XmlSerialization";
-
-        public XmlSerializationEventSource()
-            : base(XmlSerializationEventSourceName, EventSourceSettings.EtwManifestEventFormat)
-        {
-        }
-
         internal static readonly XmlSerializationEventSource Log = new XmlSerializationEventSource();
 
         [Event(EventIds.XmlSerializerExpired, Level = EventLevel.Informational)]
