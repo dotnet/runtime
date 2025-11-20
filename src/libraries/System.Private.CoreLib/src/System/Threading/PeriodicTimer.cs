@@ -125,8 +125,15 @@ namespace System.Threading
         /// A <see cref="CancellationToken"/> to use to cancel the asynchronous wait. If cancellation is requested, it affects only the single wait operation;
         /// the underlying timer continues firing.
         /// </param>
-        /// <returns>A task that will be completed due to the timer firing, <see cref="Dispose"/> being called to stop the timer, or cancellation being requested.</returns>
+        /// <returns>A <see cref="ValueTask" /> that will be completed due to the timer firing, <see cref="Dispose"/> being called to stop the timer, or cancellation being requested.</returns>
         /// <remarks>
+        /// <para>
+        /// The value of the Result property of the returned <see cref="ValueTask" /> is <see langword="true"/> when it's completed due to the timer firing, and
+        /// <see langword="false"/> when the timer is disposed or stopped.
+        /// The task enters the Canceled state when cancellation is requested.
+        /// If the <see cref="CancellationToken"/> was already cancelled when <see cref="WaitForNextAsync"/> was called,
+        /// the returned task is created in the Canceled state.
+        /// </para>
         /// The <see cref="PeriodicTimer"/> behaves like an auto-reset event, in that multiple ticks are coalesced into a single tick if they occur between
         /// calls to <see cref="WaitForNextTickAsync"/>.  Similarly, a call to <see cref="Dispose"/> will void any tick not yet consumed. <see cref="WaitForNextTickAsync"/>
         /// may only be used by one consumer at a time, and may be used concurrently with a single call to <see cref="Dispose"/>.
