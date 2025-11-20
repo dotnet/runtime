@@ -20977,7 +20977,7 @@ GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types              ty
 GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeGet() == type);
@@ -21070,7 +21070,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -21784,7 +21784,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 GenTree* Compiler::gtNewSimdCeilNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -21864,7 +21864,7 @@ GenTree* Compiler::gtNewSimdCvtNode(var_types   type,
                                     unsigned    simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
 
@@ -22000,7 +22000,7 @@ GenTree* Compiler::gtNewSimdCvtNativeNode(var_types   type,
                                           unsigned    simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
 
@@ -22252,7 +22252,7 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -22541,12 +22541,11 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
     genTreeOps op, var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(type == TYP_INT);
-
-    var_types simdType = getSIMDTypeForSize(simdSize);
-    assert(varTypeIsSIMD(simdType));
-
     assert(op1 != nullptr);
-    assert(op1->TypeIs(simdType));
+
+    var_types simdType = op1->TypeGet();
+    assert(varTypeIsSIMD(simdType));
+    assert(genTypeSize(simdType) == simdSize);
 
     assert(op2 != nullptr);
     assert(op2->TypeIs(simdType));
@@ -22676,11 +22675,10 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
 {
     assert(type == TYP_INT);
 
-    var_types simdType = getSIMDTypeForSize(simdSize);
-    assert(varTypeIsSIMD(simdType));
-
     assert(op1 != nullptr);
-    assert(op1->TypeIs(simdType));
+    var_types simdType = op1->TypeGet();
+    assert(varTypeIsSIMD(simdType));
+    assert(genTypeSize(simdType) == simdSize);
 
     assert(op2 != nullptr);
     assert(op2->TypeIs(simdType));
@@ -22806,7 +22804,7 @@ GenTree* Compiler::gtNewSimdCndSelNode(
     var_types type, GenTree* op1, GenTree* op2, GenTree* op3, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -23231,7 +23229,7 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
     // is constant than there isn't any real optimization we can do and we need the full computation.
 
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -23402,14 +23400,14 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
 GenTree* Compiler::gtNewSimdDotProdNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    var_types simdType = getSIMDTypeForSize(simdSize);
-    assert(varTypeIsSIMD(simdType));
+    assert(varTypeIsSIMD(type));
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
-    assert(op1->TypeIs(simdType));
+    assert(op1->TypeIs(type));
 
     assert(op2 != nullptr);
-    assert(op2->TypeIs(simdType));
+    assert(op2->TypeIs(type));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsSIMD(type));
@@ -23443,7 +23441,7 @@ GenTree* Compiler::gtNewSimdDotProdNode(
 GenTree* Compiler::gtNewSimdFloorNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -23488,7 +23486,7 @@ GenTree* Compiler::gtNewSimdFmaNode(
     var_types type, GenTree* op1, GenTree* op2, GenTree* op3, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -23603,7 +23601,7 @@ GenTree* Compiler::gtNewSimdGetElementNode(
 GenTree* Compiler::gtNewSimdGetIndicesNode(var_types type, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -23756,7 +23754,7 @@ GenTree* Compiler::gtNewSimdIsEvenIntegerNode(var_types   type,
                                               unsigned    simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -23783,7 +23781,7 @@ GenTree* Compiler::gtNewSimdIsEvenIntegerNode(var_types   type,
 GenTree* Compiler::gtNewSimdIsFiniteNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -23834,7 +23832,7 @@ GenTree* Compiler::gtNewSimdIsFiniteNode(var_types type, GenTree* op1, CorInfoTy
 GenTree* Compiler::gtNewSimdIsInfinityNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -23865,7 +23863,7 @@ GenTree* Compiler::gtNewSimdIsInfinityNode(var_types type, GenTree* op1, CorInfo
 GenTree* Compiler::gtNewSimdIsIntegerNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -23905,7 +23903,7 @@ GenTree* Compiler::gtNewSimdIsIntegerNode(var_types type, GenTree* op1, CorInfoT
 GenTree* Compiler::gtNewSimdIsNaNNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -23936,7 +23934,7 @@ GenTree* Compiler::gtNewSimdIsNaNNode(var_types type, GenTree* op1, CorInfoType 
 GenTree* Compiler::gtNewSimdIsNegativeNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -23978,7 +23976,7 @@ GenTree* Compiler::gtNewSimdIsNegativeInfinityNode(var_types   type,
                                                    unsigned    simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -24026,7 +24024,7 @@ GenTree* Compiler::gtNewSimdIsNegativeInfinityNode(var_types   type,
 GenTree* Compiler::gtNewSimdIsNormalNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -24089,7 +24087,7 @@ GenTree* Compiler::gtNewSimdIsOddIntegerNode(var_types   type,
                                              unsigned    simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -24116,7 +24114,7 @@ GenTree* Compiler::gtNewSimdIsOddIntegerNode(var_types   type,
 GenTree* Compiler::gtNewSimdIsPositiveNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -24158,7 +24156,7 @@ GenTree* Compiler::gtNewSimdIsPositiveInfinityNode(var_types   type,
                                                    unsigned    simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -24209,7 +24207,7 @@ GenTree* Compiler::gtNewSimdIsSubnormalNode(var_types   type,
                                             unsigned    simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -24266,7 +24264,7 @@ GenTree* Compiler::gtNewSimdIsSubnormalNode(var_types   type,
 GenTree* Compiler::gtNewSimdIsZeroNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -24292,7 +24290,7 @@ GenTree* Compiler::gtNewSimdIsZeroNode(var_types type, GenTree* op1, CorInfoType
 GenTree* Compiler::gtNewSimdLoadNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
 
@@ -24487,7 +24485,7 @@ GenTree* Compiler::gtNewSimdMinMaxNode(var_types   type,
     else if (!varTypeIsLong(simdBaseType))
     {
         assert(varTypeIsSIMD(type));
-        assert(getSIMDTypeForSize(simdSize) == type);
+        assert(genTypeSize(type) == simdSize);
     }
 
     NamedIntrinsic intrinsic = NI_Illegal;
@@ -25129,7 +25127,7 @@ GenTree* Compiler::gtNewSimdMinMaxNativeNode(
     else
     {
         assert(varTypeIsSIMD(type));
-        assert(getSIMDTypeForSize(simdSize) == type);
+        assert(genTypeSize(type) == simdSize);
     }
 
     NamedIntrinsic intrinsic = NI_Illegal;
@@ -25242,7 +25240,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -25714,7 +25712,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 GenTree* Compiler::gtNewSimdRoundNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -25775,7 +25773,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isShuffleNative)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -26378,7 +26376,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
     var_types type, GenTree* op1, GenTree* op2, CorInfoType simdBaseJitType, unsigned simdSize, bool isShuffleNative)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -26961,7 +26959,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(
 GenTree* Compiler::gtNewSimdSqrtNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -27019,7 +27017,7 @@ GenTree* Compiler::gtNewSimdStoreNode(GenTree* op1, GenTree* op2, CorInfoType si
     assert(op2 != nullptr);
 
     assert(varTypeIsSIMD(op2));
-    assert(getSIMDTypeForSize(simdSize) == op2->TypeGet());
+    assert(genTypeSize(op2->TypeGet()) == simdSize);
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -27136,11 +27134,10 @@ GenTree* Compiler::gtNewSimdStoreNonTemporalNode(GenTree*    op1,
 
 GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    var_types simdType = getSIMDTypeForSize(simdSize);
-    assert(varTypeIsSIMD(simdType));
-
     assert(op1 != nullptr);
-    assert(op1->TypeIs(simdType));
+    var_types simdType = op1->TypeGet();
+    assert(varTypeIsSIMD(simdType));
+    assert(genTypeSize(simdType) == simdSize);
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -27468,7 +27465,7 @@ GenTree* Compiler::gtNewSimdToScalarNode(var_types type, GenTree* op1, CorInfoTy
 GenTree* Compiler::gtNewSimdTruncNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -27513,7 +27510,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(
     genTreeOps op, var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -27608,7 +27605,7 @@ GenTree* Compiler::gtNewSimdUnOpNode(
 GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -27804,7 +27801,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(var_types type, GenTree* op1, CorInfo
 GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize)
 {
     assert(varTypeIsSIMD(type));
-    assert(getSIMDTypeForSize(simdSize) == type);
+    assert(genTypeSize(type) == simdSize);
 
     assert(op1 != nullptr);
     assert(op1->TypeIs(type));
@@ -28130,15 +28127,15 @@ GenTreeFieldList* Compiler::gtConvertParamOpToFieldList(GenTree* op, unsigned fi
     unsigned             fieldSize = opVarDsc->lvExactSize() / fieldCount;
     GenTreeFieldList*    fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
     int                  offset    = 0;
-    unsigned             sizeBytes = 0;
     CORINFO_CLASS_HANDLE structType;
 
     for (unsigned fieldId = 0; fieldId < fieldCount; fieldId++)
     {
         CORINFO_FIELD_HANDLE fieldHandle = info.compCompHnd->getFieldInClass(clsHnd, fieldId);
         JitType2PreciseVarType(info.compCompHnd->getFieldType(fieldHandle, &structType));
-        getBaseJitTypeAndSizeOfSIMDType(structType, &sizeBytes);
-        var_types simdType = getSIMDTypeForSize(sizeBytes);
+
+        unsigned int size     = info.compCompHnd->getClassSize(structType);
+        var_types    simdType = getSIMDTypeForSize(size);
 
         GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, simdType, offset);
         fieldList->AddField(this, fldNode, offset, simdType);
@@ -29678,10 +29675,8 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
 NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
     Compiler* comp, genTreeOps oper, GenTree* op1, var_types simdBaseType, unsigned simdSize, bool isScalar)
 {
-    var_types simdType = comp->getSIMDTypeForSize(simdSize);
 
     assert(varTypeIsArithmetic(simdBaseType));
-    assert(varTypeIsSIMD(simdType));
 
 #if defined(TARGET_XARCH)
     if ((simdSize == 64) || (simdSize == 32))
@@ -29699,7 +29694,9 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForUnOp(
     }
 
     assert(op1 != nullptr);
-    assert(op1->TypeIs(simdType));
+    var_types simdType = op1->TypeGet();
+    assert(varTypeIsSIMD(simdType));
+    assert(genTypeSize(simdType) == simdSize);
 
     NamedIntrinsic id = NI_Illegal;
 
@@ -29772,13 +29769,12 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
                                                             unsigned   simdSize,
                                                             bool       isScalar)
 {
-    var_types simdType = comp->getSIMDTypeForSize(simdSize);
-
     assert(varTypeIsArithmetic(simdBaseType));
-    assert(varTypeIsSIMD(simdType));
 
     assert(op1 != nullptr);
-    assert(op1->TypeIs(simdType));
+    var_types simdType = op1->TypeGet();
+    assert(varTypeIsSIMD(simdType));
+    assert(genTypeSize(simdType) == simdSize);
     assert(op2 != nullptr);
 
 #if defined(TARGET_XARCH)
@@ -30345,15 +30341,13 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
                                                             bool       isScalar,
                                                             bool       reverseCond)
 {
-    var_types simdType = comp->getSIMDTypeForSize(simdSize);
+    assert(op1 != nullptr);
+    assert(op2 != nullptr);
+    var_types simdType = op1->TypeGet();
+    assert(genTypeSize(simdType) == simdSize);
     assert(varTypeIsMask(type) || (type == simdType));
-
     assert(varTypeIsArithmetic(simdBaseType));
     assert(varTypeIsSIMD(simdType));
-
-    assert(op1 != nullptr);
-    assert(op1->TypeIs(simdType));
-    assert(op2 != nullptr);
 
 #if defined(TARGET_XARCH)
     if (varTypeIsMask(type))
@@ -30686,11 +30680,8 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 var_types GenTreeHWIntrinsic::GetLookupTypeForCmpOp(
     Compiler* comp, genTreeOps oper, var_types type, var_types simdBaseType, unsigned simdSize, bool reverseCond)
 {
-    var_types simdType = comp->getSIMDTypeForSize(simdSize);
-    assert(varTypeIsMask(type) || (type == simdType));
-
+    assert(varTypeIsMask(type) || (varTypeIsSIMD(type) && (genTypeSize(type) == simdSize)));
     assert(varTypeIsArithmetic(simdBaseType));
-    assert(varTypeIsSIMD(simdType));
 
     var_types lookupType = type;
 
@@ -32534,8 +32525,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 case NI_Vector512_ToScalar:
 #endif
                 {
-                    var_types simdType = getSIMDTypeForSize(simdSize);
-
                     if (varTypeIsFloating(retType))
                     {
                         double result = cnsNode->AsVecCon()->ToScalarFloating(simdBaseType);
@@ -32794,8 +32783,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             // Nothing to fold for out of range indexes
                             break;
                         }
-
-                        var_types simdType = getSIMDTypeForSize(simdSize);
 
                         if (varTypeIsFloating(retType))
                         {
@@ -33738,8 +33725,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     // Nothing to fold for out of range indexes
                     break;
                 }
-
-                var_types simdType = getSIMDTypeForSize(simdSize);
 
                 if (varTypeIsFloating(simdBaseType))
                 {
