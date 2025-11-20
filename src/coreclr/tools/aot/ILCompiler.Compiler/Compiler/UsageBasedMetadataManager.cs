@@ -315,7 +315,7 @@ namespace ILCompiler
             {
                 // Array.Initialize needs the default constructor of the element type to be reflectable
                 // for value types with a public parameterless constructor.
-                TypeDesc elementType = ((ArrayType)type).ParameterType;
+                TypeDesc elementType = ((ArrayType)type).ElementType;
                 if (elementType.IsValueType)
                 {
                     MethodDesc defaultConstructor = elementType.GetDefaultConstructor();
