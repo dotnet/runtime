@@ -671,11 +671,11 @@ namespace System.IO.Compression
             return TrySkipBlockFinalize(stream, blockBytes, bytesRead);
         }
 
-        public static bool TrySkipBlockAESAware(Stream stream, out byte? aesStrength, out ushort? originalCompressionMethod)
+        public static bool TrySkipBlockAESAware(Stream stream, out byte? aesStrength, out ushort? originalCompressionMethod, out ushort? aesVersion)
         {
             aesStrength = null;
             originalCompressionMethod = null;
-
+            aesVersion = null;
             BinaryReader reader = new BinaryReader(stream);
 
             // Read the first 4 bytes (local file header signature)
@@ -708,7 +708,7 @@ namespace System.IO.Compression
                 {
                     // AES extra field structure:
                     // Vendor version (2) + Vendor ID (2) + AES strength (1) + Original compression (2)
-                    reader.ReadBytes(2);
+                    aesVersion = reader.ReadUInt16();
                     reader.ReadBytes(2); // Vendor ID
                     aesStrength = reader.ReadByte(); // 1, 2, or 3
                     originalCompressionMethod = reader.ReadUInt16();

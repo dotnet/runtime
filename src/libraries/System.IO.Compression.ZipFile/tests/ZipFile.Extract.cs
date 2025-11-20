@@ -1334,9 +1334,9 @@ namespace System.IO.Compression.Tests
         //}
 
         [Fact]
-        public void OpenAESEncryptedTxtFile_ShouldReturnPlaintext()
+        public void OpenAESEncryptedTxtFile_ShouldReturnPlaintextWinZip()
         {
-            string zipPath = Path.Join(DownloadsDir, "plainwr.zip");
+            string zipPath = Path.Join(DownloadsDir, "source_plain_winzip.zip");
             using var archive = ZipFile.OpenRead(zipPath);
 
             var entry = archive.Entries.First(e => e.FullName.EndsWith("source_plain.txt"));
@@ -1345,6 +1345,59 @@ namespace System.IO.Compression.Tests
             string content = reader.ReadToEnd();
 
             Assert.Equal("this is plain", content);
+        }
+
+        [Fact]
+        public void OpenAESEncryptedTxtFile_ShouldReturnPlaintextWinRar()
+        {
+            string zipPath = Path.Join(DownloadsDir, "source_plain.zip");
+            using var archive = ZipFile.OpenRead(zipPath);
+
+            var entry = archive.Entries.First(e => e.FullName.EndsWith("source_plain.txt"));
+            using var stream = entry.Open("123456789");
+            using var reader = new StreamReader(stream);
+            string content = reader.ReadToEnd();
+
+            Assert.Equal("this is plain", content);
+        }
+
+        [Fact]
+        public void OpenAESEncryptedTxtFile_ShouldReturnPlaintext7zip()
+        {
+            string zipPath = Path.Join(DownloadsDir, "source_plain7z.zip");
+            using var archive = ZipFile.OpenRead(zipPath);
+
+            var entry = archive.Entries.First(e => e.FullName.EndsWith("source_plain.txt"));
+            using var stream = entry.Open("123456789");
+            using var reader = new StreamReader(stream);
+            string content = reader.ReadToEnd();
+
+            Assert.Equal("this is plain", content);
+        }
+
+        [Fact]
+        public void OpenMultipleAESEncryptedEntries_ShouldReturnCorrectContent()
+        {
+            string zipPath = Path.Join(DownloadsDir, "multiple_entries_aes.zip");
+            using var archive = ZipFile.OpenRead(zipPath);
+
+            // Test first entry
+            var entry1 = archive.Entries.First(e => e.FullName.EndsWith("source_plain.txt"));
+            using (var stream1 = entry1.Open("123456789"))
+            using (var reader1 = new StreamReader(stream1))
+            {
+                string content1 = reader1.ReadToEnd();
+                Assert.Equal("this is plain", content1);
+            }
+
+            // Test second entry
+            var entry2 = archive.Entries.First(e => e.FullName.EndsWith("source_plain_2.txt"));
+            using (var stream2 = entry2.Open("123456789"))
+            using (var reader2 = new StreamReader(stream2))
+            {
+                string content2 = reader2.ReadToEnd();
+                Assert.Equal("this is plain", content2);
+            }
         }
 
     }

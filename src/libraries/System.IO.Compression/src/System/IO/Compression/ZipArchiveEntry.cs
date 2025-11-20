@@ -49,6 +49,8 @@ namespace System.IO.Compression
         private byte[] _fileComment;
         private EncryptionMethod _encryptionMethod;
         private readonly CompressionLevel _compressionLevel;
+        private CompressionMethodValues _aesCompressionLevel;
+        private ushort? _aeVersion;
 
         // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
@@ -424,7 +426,7 @@ namespace System.IO.Compression
 
         internal bool EverOpenedForWrite => _everOpenedForWrite;
 
-        internal long GetOffsetOfCompressedData(EncryptionMethod encryptionMethod = EncryptionMethod.None)
+        internal long GetOffsetOfCompressedData()
         {
             if (_storedOffsetOfCompressedData == null)
             {
@@ -444,21 +446,11 @@ namespace System.IO.Compression
                 else
                 {
                     // AES case
-                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out _, out _))
+                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out _, out _, out _))
                         throw new InvalidDataException(SR.LocalFileHeaderCorrupt);
 
                     baseOffset = _archive.ArchiveStream.Position;
 
-                    // Adjust for AES salt + password verifier using _encryptionMethod
-                    int saltSize = encryptionMethod switch
-                    {
-                        EncryptionMethod.Aes128 => 8,
-                        EncryptionMethod.Aes192 => 12,
-                        EncryptionMethod.Aes256 => 16,
-                        _ => throw new InvalidDataException("Unknown AES encryption method")
-                    };
-
-                    baseOffset += saltSize + 2; // salt + password verifier
                 }
 
                 _storedOffsetOfCompressedData = baseOffset;
@@ -841,7 +833,7 @@ namespace System.IO.Compression
         private bool IsAesEncrypted()
         {
             // Compression method 99 indicates AES encryption
-            return _storedCompressionMethod == CompressionMethodValues.Aes;
+            return _aesCompressionLevel == CompressionMethodValues.Aes;
         }
 
         private Stream GetDataDecompressor(Stream compressedStreamToRead)
@@ -856,11 +848,15 @@ namespace System.IO.Compression
                     uncompressedStream = new DeflateManagedStream(compressedStreamToRead, CompressionMethodValues.Deflate64, _uncompressedSize);
                     break;
                 case CompressionMethodValues.Stored:
+                    uncompressedStream = compressedStreamToRead;
+                    break;
                 default:
-                    // we can assume that only deflate/deflate64/stored are allowed because we assume that
-                    // IsOpenable is checked before this function is called
-                    Debug.Assert(CompressionMethod == CompressionMethodValues.Stored);
+                    // We should not get here with Aes as CompressionMethod anymore
+                    // as it should have been replaced with the actual compression method
+                    Debug.Assert(CompressionMethod != CompressionMethodValues.Aes,
+                        "AES compression method should have been replaced with actual compression method");
 
+                    // Fallback to stored if we somehow get here
                     uncompressedStream = compressedStreamToRead;
                     break;
             }
@@ -893,9 +889,24 @@ namespace System.IO.Compression
                 if (password.IsEmpty)
                     throw new InvalidDataException("Password required for AES-encrypted ZIP entry.");
 
+                int keySizeBits = _encryptionMethod switch
+                {
+                    EncryptionMethod.Aes128 => 128,
+                    EncryptionMethod.Aes192 => 192,
+                    EncryptionMethod.Aes256 => 256,
+                    _ => 256 // Default to AES-256
+                };
+
                 // AES implementation placeholder as indicated in the original code
                 // When AES is implemented, create the appropriate decryption stream here
-                throw new NotSupportedException("AES encryption is not yet supported.");
+                streamToDecompress = new WinZipAesStream(
+                    baseStream: compressedStream,
+                    password: password,
+                    encrypting: false,      // false for decryption
+                    keySizeBits: keySizeBits,
+                    ae2: _aeVersion == 2,             // AE-2 format (standard)
+                    crc32: null,
+                    totalStreamSize: _compressedSize);
             }
             return GetDataDecompressor(streamToDecompress);
         }
@@ -980,6 +991,7 @@ namespace System.IO.Compression
                 {
                     return false;
                 }
+
                 if (!IsEncrypted && !ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveStream))
                 {
                     message = SR.LocalFileHeaderCorrupt;
@@ -988,11 +1000,11 @@ namespace System.IO.Compression
                 else if (IsEncrypted && CompressionMethod == CompressionMethodValues.Aes)
                 {
                     _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
-
+                    _aesCompressionLevel = CompressionMethodValues.Aes;
                     byte? aesStrength;
                     ushort? originalCompressionMethod;
-
-                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out aesStrength, out originalCompressionMethod))
+                    ushort? aeVersion;
+                    if (!ZipLocalFileHeader.TrySkipBlockAESAware(_archive.ArchiveStream, out aesStrength, out originalCompressionMethod, out aeVersion))
                     {
                         message = SR.LocalFileHeaderCorrupt;
                         return false;
@@ -1000,22 +1012,35 @@ namespace System.IO.Compression
 
                     if (aesStrength.HasValue)
                     {
-                        _ = aesStrength switch
+                        EncryptionMethod detectedEncryption = aesStrength switch
                         {
                             1 => EncryptionMethod.Aes128,
                             2 => EncryptionMethod.Aes192,
                             3 => EncryptionMethod.Aes256,
                             _ => throw new InvalidDataException("Unknown AES strength")
                         };
+
+                        // Store the detected encryption method
+                        _encryptionMethod = detectedEncryption;
+                    }
+                    if (aeVersion.HasValue)
+                    {
+                        _aeVersion = aeVersion.Value;
                     }
 
+                    // CRITICAL: Store the actual compression method that will be used after decryption
+                    // This is needed for GetDataDecompressor to work correctly
                     if (originalCompressionMethod.HasValue)
                     {
-                        _storedCompressionMethod = (CompressionMethodValues)originalCompressionMethod.Value;
+                        // Temporarily set the compression method to the actual method for decompression
+                        // Note: We're modifying _storedCompressionMethod, not the property
+                        CompressionMethod = (CompressionMethodValues)originalCompressionMethod.Value;
                     }
                 }
-                // when this property gets called, some duplicated work
+
+                // Pass the detected encryption method to GetOffsetOfCompressedData
                 long offsetOfCompressedData = GetOffsetOfCompressedData();
+
                 if (!IsOpenableFinalVerifications(needToLoadIntoMemory, offsetOfCompressedData, out message))
                 {
                     return false;
