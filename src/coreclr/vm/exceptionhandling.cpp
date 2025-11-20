@@ -3295,9 +3295,9 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
 #ifdef TARGET_WASM
             // wasm cannot unwind frames, so we let C++ exception handling do all the work
             PropagateExceptionThroughNativeFrames(OBJECTREFToObject(throwable));
-#else
+#else // !TARGET_WASM
             ExecuteFunctionBelowContext((PCODE)PropagateExceptionThroughNativeFrames, pvRegDisplay->pCurrentContext, targetSSP, (size_t)OBJECTREFToObject(throwable));
-#endif
+#endif // TARGET_WASM
         }
 #undef FIRST_ARG_REG
     }

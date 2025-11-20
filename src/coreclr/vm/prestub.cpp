@@ -2067,9 +2067,9 @@ void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSi
         memcpy(sp, args, argSize);
     }
 
-    TransitionBlock dummy{};
-    dummy.m_ReturnAddress = (TADDR)callerIp;
-    (void)ExecuteInterpretedMethod(&dummy, (TADDR)targetIp, retBuff);
+    TransitionBlock block{};
+    block.m_ReturnAddress = (TADDR)callerIp;
+    (void)ExecuteInterpretedMethod(&block, (TADDR)targetIp, retBuff);
 }
 
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp)
