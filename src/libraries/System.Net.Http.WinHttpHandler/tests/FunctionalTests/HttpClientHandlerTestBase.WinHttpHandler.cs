@@ -41,8 +41,12 @@ namespace System.Net.Http.Functional.Tests
         {
             return useVersion.Major switch
             {
+                1 => Http11LoopbackServerFactory.Singleton,
                 2 => Http2LoopbackServerFactory.Singleton,
-                _ => Http11LoopbackServerFactory.Singleton
+#if NET
+                3 => Http3LoopbackServerFactory.Singleton,
+#endif
+                _ => throw new InvalidOperationException($"Unexpected HTTP version: {useVersion}")
             };
         }
 
