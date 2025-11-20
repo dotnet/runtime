@@ -1121,6 +1121,11 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
             inf.Alignment = genTypeAlignments[dsc->TypeGet()];
             inf.Size      = genTypeSize(dsc);
         }
+
+        // Saving/storing of longs here may be the first place we introduce
+        // long IR. We need to potentially decompose this on x86, so indicate
+        // that to the backend.
+        m_comp->compLongUsed |= dsc->TypeIs(TYP_LONG);
     }
 
     jitstd::sort(liveLocals.begin(), liveLocals.end(), [=](const LiveLocalInfo& lhs, const LiveLocalInfo& rhs) {
@@ -1342,7 +1347,34 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
             bool     gotUse = LIR::AsRange(block).TryGetUse(call, &use);
             assert(gotUse);
 
-            use.ReplaceWithLclVar(m_comp);
+            unsigned newLclNum = use.ReplaceWithLclVar(m_comp);
+
+            // In some cases we may have been assigning a multireg promoted local from the call.
+            // That's not supported with a LCL_VAR source. We need to decompose.
+            if (call->IsMultiRegCall() && use.User()->OperIs(GT_STORE_LCL_VAR))
+            {
+                LclVarDsc* dsc = m_comp->lvaGetDesc(use.User()->AsLclVar());
+                if (m_comp->lvaGetPromotionType(dsc) == Compiler::PROMOTION_TYPE_INDEPENDENT)
+                {
+                    m_comp->lvaSetVarDoNotEnregister(newLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                    JITDUMP("  Call is multi-reg stored to an independently promoted local; decomposing store\n");
+                    for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+                    {
+                        unsigned   fieldLclNum = dsc->lvFieldLclStart + i;
+                        LclVarDsc* fieldDsc    = m_comp->lvaGetDesc(fieldLclNum);
+
+                        GenTree* value = m_comp->gtNewLclFldNode(newLclNum, fieldDsc->TypeGet(), fieldDsc->lvFldOffset);
+                        GenTree* store = m_comp->gtNewStoreLclVarNode(fieldLclNum, value);
+                        LIR::AsRange(block).InsertBefore(use.User(), value, store);
+                        DISPTREERANGE(LIR::AsRange(block), store);
+                    }
+
+                    // Remove the local and store that were created by ReplaceWithLclVar above
+                    assert(use.Def()->OperIs(GT_LCL_VAR));
+                    LIR::AsRange(block).Remove(use.Def());
+                    LIR::AsRange(block).Remove(use.User());
+                }
+            }
         }
         else
         {

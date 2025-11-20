@@ -12107,13 +12107,6 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
     return (WORD)-1;
 }
 
-uint32_t CEEJitInfo::getExpectedTargetArchitecture()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return IMAGE_FILE_MACHINE_NATIVE;
-}
-
 void CEEInfo::JitProcessShutdownWork()
 {
     LIMITED_METHOD_CONTRACT;
@@ -14974,8 +14967,24 @@ WORD CEEInfo::getRelocTypeHint(void * target)
 uint32_t CEEInfo::getExpectedTargetArchitecture()
 {
     LIMITED_METHOD_CONTRACT;
-
-    return IMAGE_FILE_MACHINE_NATIVE;
+#if defined(TARGET_X86)
+    return CORINFO_ARCH_X86;
+#elif defined(TARGET_AMD64)
+    return CORINFO_ARCH_X64;
+#elif defined(TARGET_ARM)
+    return CORINFO_ARCH_ARM;
+#elif defined(TARGET_ARM64)
+    return CORINFO_ARCH_ARM64;
+#elif defined(TARGET_LOONGARCH64)
+    return CORINFO_ARCH_LOONGARCH64;
+#elif defined(TARGET_RISCV64)
+    return CORINFO_ARCH_RISCV64;
+#elif defined(TARGET_WASM32)
+    return CORINFO_ARCH_WASM32;
+#else
+    PORTABILITY_ASSERT("NYI: CEEInfo::getExpectedTargetArchitecture");
+    return -1;
+#endif
 }
 
 void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
