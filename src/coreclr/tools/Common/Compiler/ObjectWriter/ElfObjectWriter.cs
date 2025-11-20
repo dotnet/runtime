@@ -246,8 +246,23 @@ namespace ILCompiler.ObjectWriter
                 }
             }
 
+            if (relocType is IMAGE_REL_BASED_RISCV64_PCREL_I or IMAGE_REL_BASED_RISCV64_PCREL_S)
+            {
+                // Native RISC-V ELF for a PC-relative load/store/addi is 2 instructions and 2 relocations, e.g.:
+                //
+                // .Lpcrel_hi:
+                //     auipc reg,      pcrel_hi20(symbol)
+                //     ld    reg, reg, pcrel_lo12(.Lpcrel_hi)    # note that this points at the label for 'auipc'
+                //
+                // Add a symbol for the auipc instruction so it can be pointed at by the LO12 relocation
+                string name = GetRiscV64SymbolNameForPcrelRelocation(sectionIndex, offset);
+                EmitSymbolDefinition(sectionIndex, name, offset, 2 * 4);
+            }
+
             base.EmitRelocation(sectionIndex, offset, data, relocType, symbolName, addend);
         }
+
+        private static string GetRiscV64SymbolNameForPcrelRelocation(int sectionIndex, long offset) => $".Lpcrel_hi{sectionIndex}_{offset:x}";
 
         private protected override void EmitSymbolTable(
             IDictionary<string, SymbolDefinition> definedSymbols,
@@ -568,17 +583,20 @@ namespace ILCompiler.ObjectWriter
                     BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
                     relocationStream.Write(relocationEntry);
 
-                    // TODO: This is wrong, LO12 needs to point to a label (previous instruction with HI20)
-                    // if (symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PCREL_I or IMAGE_REL_BASED_RISCV64_PCREL_S)
-                    // {
-                    //     type = symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PCREL_I
-                    //         ? R_RISCV_PCREL_LO12_I
-                    //         : R_RISCV_PCREL_LO12_S;
-                    //     BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)relocationStream.Position);
-                    //     BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
-                    //     BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), symbolicRelocation.Addend);
-                    //     relocationStream.Write(relocationEntry);
-                    // }
+                    if (symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PCREL_I or IMAGE_REL_BASED_RISCV64_PCREL_S)
+                    {
+                        // Emit another relocation which points at the previous instruction
+                        string symbolName = GetRiscV64SymbolNameForPcrelRelocation(sectionIndex, symbolicRelocation.Offset);
+                        symbolIndex = _symbolNameToIndex[symbolName];
+                        type = symbolicRelocation.Type is IMAGE_REL_BASED_RISCV64_PCREL_I
+                            ? R_RISCV_PCREL_LO12_I
+                            : R_RISCV_PCREL_LO12_S;
+
+                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry, (ulong)symbolicRelocation.Offset + 4);
+                        BinaryPrimitives.WriteUInt64LittleEndian(relocationEntry.Slice(8), ((ulong)symbolIndex << 32) | type);
+                        BinaryPrimitives.WriteInt64LittleEndian(relocationEntry.Slice(16), 0);
+                        relocationStream.Write(relocationEntry);
+                    }
                 }
             }
         }
