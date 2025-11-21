@@ -28,6 +28,11 @@ inline DebuggerPatchKind DebuggerControllerPatch::GetKind()
     return kind;
 }
 
+inline void DebuggerControllerPatch::SetKind(DebuggerPatchKind newKind)
+{
+    kind = newKind;
+}
+
 inline BOOL DebuggerControllerPatch::IsILPrimaryPatch()
 {
     LIMITED_METHOD_CONTRACT;
