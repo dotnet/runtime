@@ -33,9 +33,29 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBl
 // Filter to ignore SEH exceptions representing C++ exceptions.
 LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 {
-    return (pExceptionInfo->ExceptionRecord->ExceptionCode == EXCEPTION_MSVC)
-        ? EXCEPTION_CONTINUE_SEARCH
-        : EXCEPTION_EXECUTE_HANDLER;
+    DWORD exceptionCode = pExceptionInfo->ExceptionRecord->ExceptionCode;
+
+    if (exceptionCode == EXCEPTION_MSVC)
+    {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    if (exceptionCode == STATUS_BREAKPOINT)
+    {
+        Thread *pThread = GetThread();
+        if (pThread != NULL && g_pDebugInterface != NULL)
+        {
+            g_pDebugInterface->FirstChanceNativeException(
+                pExceptionInfo->ExceptionRecord,
+                pExceptionInfo->ContextRecord,
+                exceptionCode,
+                pThread);
+            return EXCEPTION_EXECUTE_HANDLER;
+        }
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    return EXCEPTION_EXECUTE_HANDLER;
 }
 
 template<typename Function>
@@ -432,10 +452,16 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
     return GenericHandleWorkerCore(pMD, pMT, signature, 0xFFFFFFFF, NULL);
 }
 
-#ifdef DEBUG
-static void InterpBreakpoint()
+#if defined(DEBUG) || defined(DEBUGGING_SUPPORTED)
+static void InterpBreakpoint(const int32_t *ip, InterpMethodContextFrame *pFrame, int8_t *stack)
 {
+    const ULONG_PTR info[3] = {
+        (const ULONG_PTR)ip,        // Bytecode address
+        (const ULONG_PTR)pFrame,    // Interpreter frame pointer
+        (const ULONG_PTR)stack      // Stack pointer
+    };
 
+    RaiseException(STATUS_BREAKPOINT, 0, 3, info);
 }
 #endif
 
@@ -800,8 +826,23 @@ MAIN_LOOP:
             {
 #ifdef DEBUG
                 case INTOP_BREAKPOINT:
-                    InterpBreakpoint();
-                    ip++;
+                    struct BreakpointParam
+                    {
+                        const int32_t *ip;
+                        InterpMethodContextFrame *pFrame;
+                        int8_t *stack;
+                    };
+                    BreakpointParam bpParam = { ip, pFrame, stack };
+
+                    PAL_TRY(BreakpointParam *, pBpParam, &bpParam)
+                    {
+                        InterpBreakpoint(pBpParam->ip, pBpParam->pFrame, pBpParam->stack);
+                    }
+                    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+                    {
+                        // The filter should have handled the breakpoint
+                    }
+                    PAL_ENDTRY
                     break;
 #endif
                 case INTOP_INITLOCALS:
