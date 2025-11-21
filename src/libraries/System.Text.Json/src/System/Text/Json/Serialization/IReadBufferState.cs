@@ -12,7 +12,10 @@ namespace System.Text.Json.Serialization
     {
         public abstract bool IsFinalBlock { get; }
 
+#if DEBUG
+        // Used for Debug.Assert's
         public abstract ReadOnlySequence<byte> Bytes { get; }
+#endif
 
         public abstract ValueTask<TReadBufferState> ReadAsync(
             TStream utf8Json,
@@ -22,5 +25,10 @@ namespace System.Text.Json.Serialization
         public abstract void Read(TStream utf8Json);
 
         public abstract void Advance(long bytesConsumed);
+
+        // This would normally be implemented as returning a Utf8JsonReader, but this pattern hits a limitation
+        // in mono aot that is not trivial to fix. For now use the alternative pattern of returning via an out
+        // argument. Tracking issue: https://github.com/dotnet/runtime/issues/118697
+        public abstract void GetReader(JsonReaderState jsonReaderState, out Utf8JsonReader reader);
     }
 }

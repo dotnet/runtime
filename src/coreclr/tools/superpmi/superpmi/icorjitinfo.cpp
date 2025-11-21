@@ -465,13 +465,13 @@ void MyICJI::LongLifetimeFree(void* obj)
     DebugBreakorAV(33);
 }
 
-size_t MyICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* MyICJI::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getClassThreadStaticDynamicInfo");
     return jitInstance->mc->repGetClassThreadStaticDynamicInfo(cls);
 }
 
-size_t MyICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
+void* MyICJI::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getClassStaticDynamicInfo");
     return jitInstance->mc->repGetClassStaticDynamicInfo(cls);
@@ -1052,9 +1052,21 @@ void MyICJI::reportRichMappings(
     uint32_t                          numMappings)
 {
     jitInstance->mc->cr->AddCall("reportRichMappings");
-    // TODO: record these mappings
+    // Compile output that we do not currently save
     freeArray(inlineTreeNodes);
     freeArray(mappings);
+}
+
+void MyICJI::reportAsyncDebugInfo(
+    ICorDebugInfo::AsyncInfo*             asyncInfo,
+    ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+    ICorDebugInfo::AsyncContinuationVarInfo* vars,
+    uint32_t                              numVars)
+{
+    jitInstance->mc->cr->AddCall("reportAsyncDebugInfo");
+    // Compile output that we do not currently save
+    freeArray(suspensionPoints);
+    freeArray(vars);
 }
 
 void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
@@ -1378,14 +1390,6 @@ LPVOID MyICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** p
     return jitInstance->mc->repGetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
 }
 
-// returns true if a VM cookie can be generated for it (might be false due to cross-module
-// inlining, in which case the inlining should be aborted)
-bool MyICJI::canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-{
-    jitInstance->mc->cr->AddCall("canGetCookieForPInvokeCalliSig");
-    return jitInstance->mc->repCanGetCookieForPInvokeCalliSig(szMetaSig);
-}
-
 // Generate a cookie based on the signature to pass to INTOP_CALLI
 LPVOID MyICJI::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {
@@ -1456,18 +1460,10 @@ CORINFO_CLASS_HANDLE MyICJI::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fie
 }
 
 // registers a vararg sig & returns a VM cookie for it (which can contain other stuff)
-CORINFO_VARARGS_HANDLE MyICJI::getVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection)
+CORINFO_VARARGS_HANDLE MyICJI::getVarArgsHandle(CORINFO_SIG_INFO* pSig, CORINFO_METHOD_HANDLE methHnd, void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("getVarArgsHandle");
-    return jitInstance->mc->repGetVarArgsHandle(pSig, ppIndirection);
-}
-
-// returns true if a VM cookie can be generated for it (might be false due to cross-module
-// inlining, in which case the inlining should be aborted)
-bool MyICJI::canGetVarArgsHandle(CORINFO_SIG_INFO* pSig)
-{
-    jitInstance->mc->cr->AddCall("canGetVarArgsHandle");
-    return jitInstance->mc->repCanGetVarArgsHandle(pSig);
+    return jitInstance->mc->repGetVarArgsHandle(pSig, methHnd, ppIndirection);
 }
 
 // Allocate a string literal on the heap and return a handle to it
@@ -1518,10 +1514,17 @@ bool MyICJI::getTailCallHelpers(
     return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
 }
 
-CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub(void** entryPoint)
 {
     jitInstance->mc->cr->AddCall("getAsyncResumptionStub");
-    return jitInstance->mc->repGetAsyncResumptionStub();;
+    return jitInstance->mc->repGetAsyncResumptionStub(entryPoint);
+}
+
+CORINFO_CLASS_HANDLE MyICJI::getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize)
+{
+    jitInstance->mc->cr->AddCall("getContinuationType");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetContinuationType(dataSize, objRefs, objRefsSize);
+    return result;
 }
 
 bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)

@@ -266,8 +266,8 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Update");
 
-            Debug.Assert(p.fakePrincipal == false);
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.fakePrincipal);
+            Debug.Assert(!p.unpersisted);
             Debug.Assert(p.UnderlyingObject != null);
             Debug.Assert(p.UnderlyingObject is DirectoryEntry);
 
@@ -294,10 +294,10 @@ namespace System.DirectoryServices.AccountManagement
         internal override void Delete(Principal p)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Delete");
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             // Principal.Delete() shouldn't be calling us on an unpersisted Principal.
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
             Debug.Assert(p.UnderlyingObject != null);
 
             Debug.Assert(p.UnderlyingObject is DirectoryEntry);
@@ -382,9 +382,9 @@ namespace System.DirectoryServices.AccountManagement
 
         internal override bool IsLockedOut(AuthenticablePrincipal p)
         {
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
 
             DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
             Debug.Assert(de != null);
@@ -408,9 +408,9 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "UnlockAccount");
 
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
 
             // Computer accounts are never locked out, so nothing to do
             if (p is ComputerPrincipal)
@@ -450,12 +450,12 @@ namespace System.DirectoryServices.AccountManagement
         // methods for manipulating passwords
         internal override void SetPassword(AuthenticablePrincipal p, string newPassword)
         {
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             Debug.Assert(p is UserPrincipal || p is ComputerPrincipal);
 
             // Shouldn't be being called if this is the case
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
 
             // ********** In SAM, computer accounts don't have a set password method
             if (p is ComputerPrincipal)
@@ -475,12 +475,12 @@ namespace System.DirectoryServices.AccountManagement
 
         internal override void ChangePassword(AuthenticablePrincipal p, string oldPassword, string newPassword)
         {
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             Debug.Assert(p is UserPrincipal || p is ComputerPrincipal);
 
             // Shouldn't be being called if this is the case
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
 
             // ********** In SAM, computer accounts don't have a change password method
             if (p is ComputerPrincipal)
@@ -501,7 +501,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal override void ExpirePassword(AuthenticablePrincipal p)
         {
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             // ********** In SAM, computer accounts don't have a password-expired property
             if (p is ComputerPrincipal)
@@ -515,7 +515,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal override void UnexpirePassword(AuthenticablePrincipal p)
         {
-            Debug.Assert(p.fakePrincipal == false);
+            Debug.Assert(!p.fakePrincipal);
 
             // ********** In SAM, computer accounts don't have a password-expired property
             if (p is ComputerPrincipal)
@@ -608,7 +608,7 @@ namespace System.DirectoryServices.AccountManagement
         internal override ResultSet GetGroupsMemberOf(Principal p)
         {
             // Enforced by the methods that call us
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
 
             if (!p.fakePrincipal)
             {
@@ -711,7 +711,7 @@ namespace System.DirectoryServices.AccountManagement
         internal override ResultSet GetGroupsMemberOfAZ(Principal p)
         {
             // Enforced by the methods that call us
-            Debug.Assert(p.unpersisted == false);
+            Debug.Assert(!p.unpersisted);
             Debug.Assert(p is UserPrincipal);
 
             // Get the user SID that AuthZ will use.
@@ -746,7 +746,7 @@ namespace System.DirectoryServices.AccountManagement
         internal override BookmarkableResultSet GetGroupMembership(GroupPrincipal g, bool recursive)
         {
             // Enforced by the methods that call us
-            Debug.Assert(g.unpersisted == false);
+            Debug.Assert(!g.unpersisted);
 
             // Fake groups are a member of other groups, but they themselves have no members
             // (they don't even exist in the store)

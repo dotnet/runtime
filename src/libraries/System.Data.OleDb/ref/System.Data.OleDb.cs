@@ -8,6 +8,9 @@ namespace System.Data.OleDb
 {
     [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.OleDbCommandDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ToolboxItemAttribute(true)]
+#if NET
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("OleDbConnection is not AOT-compatible.")]
+#endif
     public sealed partial class OleDbCommand : System.Data.Common.DbCommand, System.Data.IDbCommand, System.ICloneable, System.IDisposable
     {
         public OleDbCommand() { }
@@ -81,6 +84,9 @@ namespace System.Data.OleDb
         public string UnquoteIdentifier(string quotedIdentifier, System.Data.OleDb.OleDbConnection? connection) { throw null; }
     }
     [System.ComponentModel.DefaultEventAttribute("InfoMessage")]
+#if NET
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("OleDbConnection is not AOT-compatible.")]
+#endif
     public sealed partial class OleDbConnection : System.Data.Common.DbConnection, System.Data.IDbConnection, System.ICloneable, System.IDisposable
     {
         public OleDbConnection() { }
@@ -127,6 +133,9 @@ namespace System.Data.OleDb
     }
     [System.ComponentModel.DefaultPropertyAttribute("Provider")]
     [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
+#if NET
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("OleDbConnection is not AOT-compatible.")]
+#endif
     public sealed partial class OleDbConnectionStringBuilder : System.Data.Common.DbConnectionStringBuilder
     {
         public OleDbConnectionStringBuilder() { }
@@ -151,6 +160,9 @@ namespace System.Data.OleDb
     }
     [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.OleDbDataAdapterDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ToolboxItemAttribute("Microsoft.VSDesigner.Data.VS.OleDbDataAdapterToolboxItem, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+#if NET
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("OleDbConnection is not AOT-compatible.")]
+#endif
     public sealed partial class OleDbDataAdapter : System.Data.Common.DbDataAdapter, System.Data.IDataAdapter, System.Data.IDbDataAdapter, System.ICloneable
     {
         public OleDbDataAdapter() { }
@@ -183,6 +195,9 @@ namespace System.Data.OleDb
         protected override void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
         object System.ICloneable.Clone() { throw null; }
     }
+#if NET
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("OleDbConnection is not AOT-compatible.")]
+#endif
     public sealed partial class OleDbDataReader : System.Data.Common.DbDataReader
     {
         internal OleDbDataReader() { }
@@ -229,8 +244,17 @@ namespace System.Data.OleDb
     public sealed partial class OleDbEnumerator
     {
         public OleDbEnumerator() { }
+#if NET
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("OleDbConnection is not AOT-compatible.")]
+#endif
         public System.Data.DataTable GetElements() { throw null; }
+#if NET
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("OleDbConnection is not AOT-compatible.")]
+#endif
         public static System.Data.OleDb.OleDbDataReader GetEnumerator(System.Type type) { throw null; }
+#if NET
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("OleDbConnection is not AOT-compatible.")]
+#endif
         public static System.Data.OleDb.OleDbDataReader GetRootEnumerator() { throw null; }
     }
     public sealed partial class OleDbError
@@ -265,6 +289,9 @@ namespace System.Data.OleDb
 #endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
     }
+#if NET
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("OleDbConnection is not AOT-compatible.")]
+#endif
     public sealed partial class OleDbFactory : System.Data.Common.DbProviderFactory
     {
         internal OleDbFactory() { }
@@ -477,6 +504,9 @@ namespace System.Data.OleDb
         public static readonly System.Guid View_Table_Usage;
         public OleDbSchemaGuid() { }
     }
+#if NET
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("OleDbConnection is not AOT-compatible.")]
+#endif
     public sealed partial class OleDbTransaction : System.Data.Common.DbTransaction
     {
         internal OleDbTransaction() { }

@@ -663,35 +663,35 @@ protected:
     private:
 // The assembly instruction
 #if defined(TARGET_XARCH)
-        static_assert_no_msg(INS_count <= 2048);
+        static_assert(INS_count <= 2048);
         instruction _idIns : 11;
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
 #define INSTR_ENCODED_SIZE 4
-        static_assert_no_msg(INS_count <= 2048);
+        static_assert(INS_count <= 2048);
         instruction _idIns : 11;
 #elif defined(TARGET_LOONGARCH64)
         // TODO-LoongArch64: not include SIMD-vector.
-        static_assert_no_msg(INS_count <= 512);
+        static_assert(INS_count <= 512);
         instruction _idIns : 9;
 #else
-        static_assert_no_msg(INS_count <= 256);
+        static_assert(INS_count <= 256);
         instruction _idIns : 8;
 #endif // !(defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
 
 // The format for the instruction
 #if defined(TARGET_XARCH)
-        static_assert_no_msg(IF_COUNT <= 128);
+        static_assert(IF_COUNT <= 128);
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
         unsigned _idCodeSize : 5; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_RISCV64)
         unsigned _idCodeSize : 6; // the instruction(s) size of this instrDesc described.
 #elif defined(TARGET_ARM64)
-        static_assert_no_msg(IF_COUNT <= 1024);
+        static_assert(IF_COUNT <= 1024);
         insFormat _idInsFmt : 10;
 #else
-        static_assert_no_msg(IF_COUNT <= 256);
+        static_assert(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
 #endif
 
@@ -758,6 +758,7 @@ protected:
         // arm64:       21 bits
         // loongarch64: 14 bits
         // risc-v:      14 bits
+        // wasm:        16 bits (TODO-WASM-TP: shrink the format field)
 
     private:
 #if defined(TARGET_XARCH)
@@ -806,6 +807,7 @@ protected:
         // arm64:       46 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
+        // wasm:        20 bits (TODO-WASM-TP: remove the reg fields)
 
         unsigned _idSmallDsc : 1; // is this a "small" descriptor?
         unsigned _idLargeCns : 1; // does a large constant     follow? (or if large call descriptor used)
@@ -898,6 +900,7 @@ protected:
         // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
+        // wasm:        28 bits
 
         //
         // How many bits have been used beyond the first 32?
@@ -914,6 +917,8 @@ protected:
 #define ID_EXTRA_BITFIELD_BITS (18)
 #elif defined(TARGET_AMD64)
 #define ID_EXTRA_BITFIELD_BITS (20)
+#elif defined(TARGET_WASM)
+#define ID_EXTRA_BITFIELD_BITS (-4)
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -953,12 +958,17 @@ protected:
         // arm64:       62/57 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
+        // wasm:        35/30 bits
 
 #define ID_EXTRA_BITS (ID_EXTRA_RELOC_BITS + ID_EXTRA_BITFIELD_BITS + ID_EXTRA_PREV_OFFSET_BITS)
 
         /* Use whatever bits are left over for small constants */
 
+#if ID_EXTRA_BITS <= 0
+#define ID_BIT_SMALL_CNS 30 // Not 32 or 31 here to avoid breaking the math below.
+#else
 #define ID_BIT_SMALL_CNS (32 - ID_EXTRA_BITS)
+#endif
 
         ////////////////////////////////////////////////////////////////////////
         // Small constant size (with/without prev offset, assuming host==target):
@@ -968,6 +978,7 @@ protected:
         // arm64:        2/7 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
+        // wasm:        32 bits
 
 #define ID_ADJ_SMALL_CNS (int)(1 << (ID_BIT_SMALL_CNS - 1))
 #define ID_CNT_SMALL_CNS (int)(1 << ID_BIT_SMALL_CNS)
@@ -1251,6 +1262,13 @@ protected:
             // e.g. the `emitter::emitLoadImmediate` for emitting the immediates.
             assert(sz <= 32);
             _idCodeSize = sz;
+        }
+#elif defined(TARGET_WASM)
+        unsigned idCodeSize() const
+        {
+            // TODO-WASM: return an accurate number here based on instruction format/opcode like ARM64 above.
+            NYI_WASM("isCodeSize");
+            return 0;
         }
 #endif
 
@@ -2138,7 +2156,28 @@ protected:
 #define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
 #define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
 
-#endif // TARGET_XXX
+#elif defined(TARGET_WASM)
+// Latencies for an "average" physical target.
+//
+// a read,write or modify from stack location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_STACK         PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_STACK         PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_STACK      PERFSCORE_LATENCY_3C
+
+// a read, write or modify from constant location, possible def to use latency from L0 cache
+#define PERFSCORE_LATENCY_RD_CONST_ADDR    PERFSCORE_LATENCY_3C
+#define PERFSCORE_LATENCY_WR_CONST_ADDR    PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_CONST_ADDR PERFSCORE_LATENCY_3C
+
+// a read, write or modify from memory location, possible def to use latency from L0 or L1 cache
+// plus an extra cost  (of 1.0) for a increased chance  of a cache miss
+#define PERFSCORE_LATENCY_RD_GENERAL       PERFSCORE_LATENCY_4C
+#define PERFSCORE_LATENCY_WR_GENERAL       PERFSCORE_LATENCY_1C
+#define PERFSCORE_LATENCY_RD_WR_GENERAL    PERFSCORE_LATENCY_4C
+
+#else
+#error Unknown TARGET
+#endif
 
 // Make this an enum:
 //
@@ -2370,8 +2409,8 @@ protected:
             : idDebugInfo(nullptr)
             , idStorage()
         {
-            static_assert_no_msg((offsetof(inlineInstrDesc<T>, idStorage) - sizeof(instrDescDebugInfo*)) ==
-                                 offsetof(inlineInstrDesc<T>, idDebugInfo));
+            static_assert((offsetof(inlineInstrDesc<T>, idStorage) - sizeof(instrDescDebugInfo*)) ==
+                          offsetof(inlineInstrDesc<T>, idDebugInfo));
         }
 
         T* id()
@@ -2636,9 +2675,9 @@ public:
 #endif // defined(TARGET_X86)
 #endif // !defined(HOST_64BIT)
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64)
     unsigned int emitCounts_INS_OPTS_J;
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_LOONGARCH64
 
     instrDesc* emitFirstInstrDesc(BYTE* idData) const;
     void       emitAdvanceInstrDesc(instrDesc** id, size_t idSize) const;
@@ -3304,6 +3343,9 @@ private:
 
     int emitSyncThisObjOffs; // what is the offset of "this" for synchronized methods?
 
+    CORINFO_METHOD_HANDLE emitAsyncResumeStub           = NO_METHOD_HANDLE;
+    void*                 emitAsyncResumeStubEntryPoint = nullptr;
+
 public:
     void emitSetFrameRangeGCRs(int offsLo, int offsHi);
     void emitSetFrameRangeLcls(int offsLo, int offsHi);
@@ -3465,6 +3507,17 @@ public:
     /*      The following logic keeps track of initialized data sections    */
     /************************************************************************/
 
+    // Note: Keep synchronized with AsyncHelpers.ResumeInfo
+    struct dataAsyncResumeInfo
+    {
+        // delegate*<Continuation, ref byte, Continuation>
+        target_size_t Resume;
+        // Pointer in main code for diagnostics. See comments on
+        // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and
+        // ResumeInfo.DiagnosticIP in SPC.
+        target_size_t DiagnosticIP;
+    };
+
     /* One of these is allocated for every blob of initialized data */
 
     struct dataSection
@@ -3479,7 +3532,8 @@ public:
         {
             data,
             blockAbsoluteAddr,
-            blockRelative32
+            blockRelative32,
+            asyncResumeInfo,
         };
 
         dataSection*   dsNext;
@@ -3487,8 +3541,9 @@ public:
         sectionType    dsType;
         var_types      dsDataType;
 
-        // variable-sized array used to store the constant data
-        // or BasicBlock* array in the block cases.
+        // variable-sized array used to store the constant data, BasicBlock*
+        // array in the block cases, or emitLocation for the asyncResumeInfo
+        // case.
         BYTE dsCont[0];
     };
 
@@ -3516,6 +3571,7 @@ public:
 
     void emitOutputDataSec(dataSecDsc* sec, BYTE* dst);
     void emitDispDataSec(dataSecDsc* section, BYTE* dst);
+    void emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataOffset, dataSection** dataSection);
 
     /************************************************************************/
     /*              Handles to the current class and method.                */
@@ -3745,7 +3801,7 @@ public:
 
 inline void emitter::instrDesc::checkSizes()
 {
-    C_ASSERT(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
+    static_assert(SMALL_IDSC_SIZE == offsetof(instrDesc, _idAddrUnion));
 }
 
 /*****************************************************************************
@@ -4309,6 +4365,7 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id, bool ignoreEmbeddedBroadcast) 
 
 #endif // TARGET_XARCH
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************
  *
  *  Returns true if the given register contains a live GC ref.
@@ -4331,6 +4388,7 @@ inline GCtype emitter::emitRegGCtype(regNumber reg)
         return GCT_NONE;
     }
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 #ifdef DEBUG
 

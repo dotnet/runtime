@@ -15,6 +15,7 @@
     <Compile Include="System\ComponentModel\ByteConverter.cs" />
     <Compile Include="System\ComponentModel\CharConverter.cs" />
     <Compile Include="System\ComponentModel\CollectionConverter.cs" />
+    <Compile Include="System\ComponentModel\CollectibleKeyConcurrentHashtable.cs" />
     <Compile Include="System\ComponentModel\DateOnlyConverter.cs" />
     <Compile Include="System\ComponentModel\DateTimeConverter.cs" />
     <Compile Include="System\ComponentModel\DateTimeOffsetConverter.cs" />
@@ -44,6 +45,7 @@
     <Compile Include="System\ComponentModel\UInt64Converter.cs" />
     <Compile Include="System\ComponentModel\UriTypeConverter.cs" />
     <Compile Include="System\ComponentModel\VersionConverter.cs" />
+    <Compile Include="System\ComponentModel\CollectibleKeyHashtable.cs" />
     <Compile Include="System\Timers\ElapsedEventArgs.cs" />
     <Compile Include="System\Timers\ElapsedEventHandler.cs" />
     <Compile Include="System\Timers\Timer.cs">

@@ -10,22 +10,6 @@ namespace System.IO.Compression;
 
 internal static partial class ZipHelper
 {
-    /// <summary>
-    /// Asynchronously reads exactly bytesToRead out of stream, unless it is out of bytes.
-    /// </summary>
-    internal static async Task<int> ReadBytesAsync(Stream stream, Memory<byte> buffer, int bytesToRead, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        int bytesRead = await stream.ReadAtLeastAsync(buffer, bytesToRead, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-
-        if (bytesRead < bytesToRead)
-        {
-            throw new IOException(SR.UnexpectedEndOfStream);
-        }
-        return bytesRead;
-    }
-
     // Asynchronously assumes all bytes of signatureToFind are non zero, looks backwards from current position in stream,
     // assumes maxBytesToRead is positive, ensures to not read beyond the provided max number of bytes,
     // if the signature is found then returns true and positions stream at first byte of signature
@@ -114,14 +98,14 @@ internal static partial class ZipHelper
         {
             Debug.Assert(overlap <= buffer.Length);
             stream.Seek(-(buffer.Length - overlap), SeekOrigin.Current);
-            bytesRead = await ReadBytesAsync(stream, buffer, buffer.Length, cancellationToken).ConfigureAwait(false);
+            bytesRead = await stream.ReadAtLeastAsync(buffer, buffer.Length, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
             stream.Seek(-buffer.Length, SeekOrigin.Current);
         }
         else
         {
             int bytesToRead = (int)stream.Position;
             stream.Seek(0, SeekOrigin.Begin);
-            bytesRead = await ReadBytesAsync(stream, buffer, bytesToRead, cancellationToken).ConfigureAwait(false);
+            bytesRead = await stream.ReadAtLeastAsync(buffer, bytesToRead, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
             stream.Seek(0, SeekOrigin.Begin);
         }
 

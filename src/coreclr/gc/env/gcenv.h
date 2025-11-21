@@ -90,8 +90,6 @@
 
 #define LOGALWAYS(msg)
 
-#define static_assert_no_msg( cond ) static_assert( cond, #cond )
-
 enum LogFacility
 {
     LF_GC       = 0x00000001,
@@ -173,7 +171,7 @@ struct StressLogMsg
     template<typename T>
     static void* ConvertArgument(T arg)
     {
-        static_assert_no_msg(sizeof(T) <= sizeof(void*));
+        static_assert(sizeof(T) <= sizeof(void*));
         return (void*)(size_t)arg;
     }
 
@@ -187,7 +185,7 @@ struct StressLogMsg
         , m_format(format)
         , m_args{ ConvertArgument(args)... }
     {
-        static_assert_no_msg(sizeof...(args) <= ARRAY_SIZE(m_args));
+        static_assert(sizeof...(args) <= ARRAY_SIZE(m_args));
     }
 };
 

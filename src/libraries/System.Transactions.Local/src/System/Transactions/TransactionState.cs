@@ -2577,11 +2577,8 @@ namespace System.Transactions
         {
             CommonEnterState(tx);
 
-            if (tx._committableTransaction != null)
-            {
-                // If we have a committable transaction then mark it as complete.
-                tx._committableTransaction._complete = true;
-            }
+            // If we have a committable transaction then mark it as complete.
+            tx._committableTransaction?._complete = true;
 
             // If at this point there are phase1 dependent clones abort the transaction
             if (tx._phase1Volatiles._dependentClones != 0)

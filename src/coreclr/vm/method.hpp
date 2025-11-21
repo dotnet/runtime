@@ -69,7 +69,7 @@ enum class AsyncMethodKind
 
     // Regular methods that return Task/ValueTask
     // Such method has its actual IL body and there also a synthetic variant that is an
-    // Async-callable think. (AsyncVariantThunk)
+    // Async-callable thunk. (AsyncVariantThunk)
     TaskReturning,
 
     // Task-returning methods marked as MethodImpl::Async in metadata.
@@ -234,7 +234,9 @@ enum MethodDescFlags
 // Used for storing additional items related to native code
 struct MethodDescCodeData final
 {
+#ifdef FEATURE_CODE_VERSIONING
     PTR_MethodDescVersioningState VersioningState;
+#endif // FEATURE_CODE_VERSIONING
     PCODE TemporaryEntryPoint;
 #ifdef FEATURE_INTERPRETER
     CallStubHeader *CallStub;
@@ -376,9 +378,14 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        return FALSE;
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
         return (m_wFlags3AndTokenRemainder & enum_flag3_HasPrecode) != 0;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     inline Precode* GetPrecode()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -388,6 +395,7 @@ public:
         _ASSERTE(pPrecode != NULL);
         return pPrecode;
     }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     inline bool MayHavePrecode()
     {
@@ -412,13 +420,12 @@ public:
         return result;
     }
 
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     Precode* GetOrCreatePrecode();
-    void MarkPrecodeAsStableEntrypoint();
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
+    void MarkStableEntryPoint();
 
-
-    // Given a code address return back the MethodDesc whenever possible
-    //
-    static MethodDesc *  GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative = FALSE);
+    static MethodDesc *  GetMethodDescFromPrecode(PCODE addr, BOOL fSpeculative = FALSE);
 
 
     DWORD GetAttrs() const;
@@ -479,11 +486,8 @@ public:
     // This method can be called on a non-restored method desc
     BOOL IsTypicalMethodDefinition() const;
 
-    // Force a load of the (typical) constraints on the type parameters of a typical method definition,
-    // detecting cyclic bounds on class and method type parameters.
-    void LoadConstraintsForTypicalMethodDefinition(BOOL *pfHasCircularClassConstraints,
-                                                   BOOL *pfHasCircularMethodConstraints,
-                                                   ClassLoadLevel level = CLASS_LOADED);
+    // Validate accessibility and usage of variant generic parameters and check for cycles in the method constraints
+    void CheckConstraintMetadataValidity(BOOL *pfHasCircularMethodConstraints);
 
     DWORD IsClassConstructor()
     {
@@ -597,6 +601,8 @@ public:
 #endif
 
     MethodDescBackpatchInfoTracker* GetBackpatchInfoTracker();
+
+    bool IsCollectible();
 
     PTR_LoaderAllocator GetLoaderAllocator();
 
@@ -726,6 +732,8 @@ public:
     inline bool IsILStub();
     inline bool IsLCGMethod();
 
+    inline bool IsDiagnosticsHidden();
+    
     inline DWORD IsPInvoke()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -742,14 +750,14 @@ public:
     BOOL ShouldSuppressGCTransition();
 
 #ifdef FEATURE_COMINTEROP
-    inline DWORD IsCLRToCOMCall()
+    inline DWORD IsCLRToCOMCall() const
     {
         WRAPPER_NO_CONTRACT;
         return mcComInterop == GetClassification();
     }
 #else // !FEATURE_COMINTEROP
      // hardcoded to return FALSE to improve code readability
-    inline DWORD IsCLRToCOMCall()
+    inline DWORD IsCLRToCOMCall() const
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
@@ -1165,7 +1173,7 @@ public:
     // the table.
     void SetChunkIndex(MethodDescChunk *pChunk);
 
-    BOOL IsPointingToPrestub();
+    BOOL ShouldCallPrestub();
 
 public:
 
@@ -1413,9 +1421,13 @@ private:
     bool TryBackpatchEntryPointSlots(PCODE entryPoint, bool isPrestubEntryPoint, bool onlyFromPrestubEntryPoint);
 
 public:
+#ifdef FEATURE_CODE_VERSIONING
     void TrySetInitialCodeEntryPointForVersionableMethod(PCODE entryPoint, bool mayHaveEntryPointSlotsToBackpatch);
+#endif // FEATURE_CODE_VERSIONING
     void SetCodeEntryPoint(PCODE entryPoint);
+#ifdef FEATURE_TIERED_COMPILATION
     void ResetCodeEntryPoint();
+#endif // FEATURE_TIERED_COMPILATION
     void ResetCodeEntryPointForEnC();
 
 
@@ -1444,20 +1456,7 @@ public:
         return !IsVersionable() && !InEnCEnabledModule();
     }
 
-    //Is this method currently pointing to native code that will never change?
-    BOOL IsPointingToStableNativeCode()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        if (!IsNativeCodeStableAfterInit())
-            return FALSE;
-
-        return IsPointingToNativeCode();
-    }
-
-    // Note: We are skipping the prestub based on addition information from the JIT.
-    // (e.g. that the call is on same this ptr or that the this ptr is not null).
-    // Thus we can end up with a running NGENed method for which IsPointingToNativeCode is false!
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
     BOOL IsPointingToNativeCode()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1470,6 +1469,18 @@ public:
 
         return GetPrecode()->IsPointingToNativeCode(GetNativeCode());
     }
+
+    //Is this method currently pointing to native code that will never change?
+    BOOL IsPointingToStableNativeCode()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        if (!IsNativeCodeStableAfterInit())
+            return FALSE;
+
+        return IsPointingToNativeCode();
+    }
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 
     // Be careful about races with profiler when using this method. The profiler can
     // replace preimplemented code of the method with jitted code.
@@ -1576,6 +1587,13 @@ public:
     // pamTracker must be NULL for a MethodDesc which cannot be freed by an external AllocMemTracker
     // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
     void EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker);
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Ensure that the portable entrypoint is allocated, and the slot is filled
+    void EnsurePortableEntryPoint();
+
+    PCODE GetPortableEntryPoint();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     //*******************************************************************************
     // Returns the address of the native code.
@@ -1718,14 +1736,14 @@ public:
     // Running the Prestub preparation step.
 
     // The stub produced by prestub requires method desc to be passed
-    // in dedicated register. Used to implement stubs shared between
-    // MethodDescs (e.g. PInvoke stubs)
-    BOOL RequiresMethodDescCallingConvention(BOOL fEstimateForChunk = FALSE);
+    // in dedicated register.
+    // See HasMDContextArg() for the related stub version.
+    BOOL RequiresMDContextArg();
 
     // Returns true if the method has to have stable entrypoint always.
-    BOOL RequiresStableEntryPoint(BOOL fEstimateForChunk = FALSE);
+    BOOL RequiresStableEntryPoint();
 private:
-    BOOL RequiresStableEntryPointCore(BOOL fEstimateForChunk);
+    BOOL RequiresStableEntryPointCore();
 public:
 
     //
@@ -1740,7 +1758,7 @@ public:
     // Return value:
     //     stable entry point (code:MethodDesc::GetStableEntryPoint())
     //
-    PCODE DoBackpatch(MethodTable * pMT, MethodTable * pDispatchingMT, BOOL fFullBackPatch);
+    PCODE DoBackpatch(MethodTable * pMT, MethodTable * pDispatchingMT, bool fFullBackPatch);
 
     PCODE DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode = CallerGCMode::Unknown);
 
@@ -1769,15 +1787,17 @@ private:
     // The actual data stored in a MethodDesc follows.
 
 protected:
-    enum {
+    enum
+    {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
         // have a fairly strong justification for existence.
         enum_flag3_TokenRemainderMask                       = 0x0FFF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
                                                                       // for this method.
-        // enum_flag3_HasPrecode implies that enum_flag3_HasStableEntryPoint is set.
+        // enum_flag3_HasPrecode implies that enum_flag3_HasStableEntryPoint is set in non-portable entrypoint scenarios.
         enum_flag3_HasStableEntryPoint                      = 0x1000,   // The method entrypoint is stable (either precode or actual code)
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
         enum_flag3_HasPrecode                               = 0x2000,   // Precode has been allocated for this method
-
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
         enum_flag3_IsUnboxingStub                           = 0x4000,
         enum_flag3_IsEligibleForTieredCompilation           = 0x8000,
     };
@@ -1799,17 +1819,41 @@ protected:
     WORD m_wFlags; // See MethodDescFlags
     PTR_MethodDescCodeData m_codeData;
 #ifdef FEATURE_INTERPRETER
+#define INTERPRETER_CODE_POISON 1
     PTR_InterpByteCodeStart m_interpreterCode;
 public:
     const PTR_InterpByteCodeStart GetInterpreterCode() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_interpreterCode;
+        PTR_InterpByteCodeStart interpreterCode = VolatileLoadWithoutBarrier(&m_interpreterCode);
+        if (dac_cast<TADDR>(interpreterCode) == INTERPRETER_CODE_POISON)
+            return NULL;
+        return interpreterCode;
     }
     void SetInterpreterCode(PTR_InterpByteCodeStart interpreterCode)
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(dac_cast<TADDR>(m_interpreterCode) != INTERPRETER_CODE_POISON);
         VolatileStore(&m_interpreterCode, interpreterCode);
+    }
+
+    // Call this if the m_interpreterCode will never be set to a valid value
+    void PoisonInterpreterCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&m_interpreterCode, dac_cast<PTR_InterpByteCodeStart>((TADDR)INTERPRETER_CODE_POISON));
+    }
+
+    bool IsInterpreterCodePoisoned() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return dac_cast<TADDR>(VolatileLoadWithoutBarrier(&m_interpreterCode)) == INTERPRETER_CODE_POISON;
+    }
+
+    void ClearInterpreterCodePointer()
+    {
+        LIMITED_METHOD_CONTRACT;
+        VolatileStore(&m_interpreterCode, dac_cast<PTR_InterpByteCodeStart>((TADDR)NULL));
     }
 #endif // FEATURE_INTERPRETER
 
@@ -1836,16 +1880,19 @@ public:
     // pamTracker must be NULL for a MethodDesc which cannot be freed by an external AllocMemTracker
     // OR must be set to point to the same AllocMemTracker that controls allocation of the MethodDesc
     HRESULT EnsureCodeDataExists(AllocMemTracker *pamTracker);
-
-    HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
-#ifdef FEATURE_INTERPRETER
-    bool SetCallStub(CallStubHeader *pHeader);
-    CallStubHeader *GetCallStub();
-#endif // FEATURE_INTERPRETER
-
 #endif //!DACCESS_COMPILE
 
+#if defined(FEATURE_INTERPRETER) && !defined(DACCESS_COMPILE)
+    bool SetCallStub(CallStubHeader *pHeader);
+    CallStubHeader *GetCallStub();
+#endif // FEATURE_INTERPRETER && !DACCESS_COMPILE
+
+#ifdef FEATURE_CODE_VERSIONING
+#ifndef DACCESS_COMPILE
+    HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+#endif // !DACCESS_COMPILE
     PTR_MethodDescVersioningState GetMethodDescVersionState();
+#endif // FEATURE_CODE_VERSIONING
 
 public:
     inline DWORD GetClassification() const
@@ -1921,19 +1968,6 @@ public:
             asyncKind == AsyncMethodKind::TaskReturning;
     }
 
-    inline bool IsStructMethodOperatingOnCopy()
-    {
-        if (!GetMethodTable()->IsValueType() || IsStatic())
-            return false;
-
-        if (!HasAsyncMethodData())
-            return false;
-
-        // Only async methods backed by actual user code operate on copies.
-        // Thunks with runtime-supplied implementation do not.
-        return GetAddrOfAsyncMethodData()->kind == AsyncMethodKind::AsyncVariantImpl;
-    }
-
     inline bool HasAsyncMethodData() const
     {
         return (m_wFlags & mdfHasAsyncMethodData) != 0;
@@ -1943,6 +1977,17 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_wFlags |= mdfHasAsyncMethodData;
+    }
+
+    // Returns true if this is an async method that requires save and restore
+    // of async contexts. Regular user implemented runtime async methods
+    // require this behavior, but thunks should be transparent and should not
+    // come with this behavior.
+    inline bool RequiresAsyncContextSaveAndRestore() const
+    {
+        if (!HasAsyncMethodData())
+            return false;
+        return GetAddrOfAsyncMethodData()->kind == AsyncMethodKind::AsyncVariantImpl;
     }
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -2093,9 +2138,9 @@ private:
     void EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
     void EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
     SigPointer GetAsyncThunkResultTypeSig();
+    bool IsValueTaskAsyncThunk();
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
-    int GetTokenForAwaitAwaiterInstantiatedOverTaskAwaiterType(ILCodeStream* pCode, TypeHandle taskAwaiterType);
 public:
     static void CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder* stubSigBuilder);
     bool TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
@@ -2545,7 +2590,7 @@ private:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE((tokenRange & ~enum_flag_TokenRangeMask) == 0);
-        static_assert_no_msg(enum_flag_TokenRangeMask == METHOD_TOKEN_RANGE_MASK);
+        static_assert(enum_flag_TokenRangeMask == METHOD_TOKEN_RANGE_MASK);
         m_flagsAndTokenRange = (m_flagsAndTokenRange & ~enum_flag_TokenRangeMask) | tokenRange;
     }
 
@@ -2700,21 +2745,28 @@ protected:
     PTR_DynamicResolver m_pResolver;
 
 public:
+
+#if defined(FEATURE_INTERPRETER) && !defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    // Cached InterpreterPrecode instance for dynamic methods to avoid repeated allocations.
+    DPTR(struct InterpreterPrecode) m_interpreterPrecode;
+#endif
+
     enum ILStubType : DWORD
     {
         StubNotSet = 0,
-        StubCLRToNativeInterop,
+        StubPInvoke,
+        StubPInvokeDelegate,
+        StubPInvokeCalli,
+        StubPInvokeVarArg,
+        StubReversePInvoke,
         StubCLRToCOMInterop,
-        StubNativeToCLRInterop,
         StubCOMToCLRInterop,
         StubStructMarshalInterop,
         StubArrayOp,
         StubMulticastDelegate,
         StubWrapperDelegate,
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
         StubUnboxingIL,
         StubInstantiating,
-#endif
         StubTailCallStoreArgs,
         StubTailCallCallTarget,
 
@@ -2738,14 +2790,14 @@ public:
         FlagRequiresCOM         = 0x00002000,
         FlagIsLCGMethod         = 0x00004000,
         FlagIsILStub            = 0x00008000,
-        FlagIsDelegate          = 0x00010000,
-        FlagIsCALLI             = 0x00020000,
+        // unused               = 0x00010000,
+        // unused               = 0x00020000,
         FlagMask                = 0x0003f800,
         StackArgSizeMask        = 0xfffc0000, // native stack arg size for IL stubs
         ILStubTypeMask          = ~(FlagMask | StackArgSizeMask)
     };
-    static_assert_no_msg((FlagMask & StubLast) == 0);
-    static_assert_no_msg((StackArgSizeMask & FlagMask) == 0);
+    static_assert((FlagMask & StubLast) == 0);
+    static_assert((StackArgSizeMask & FlagMask) == 0);
 
     // MethodDesc memory is acquired in an uninitialized state.
     // The first step should be to explicitly set the entire
@@ -2828,12 +2880,12 @@ public:
         m_dwExtendedFlags = (m_dwExtendedFlags & ~StackArgSizeMask) | ((DWORD)cbArgSize << 16);
     }
 
-    bool IsReverseStub() const
+    bool IsReversePInvokeStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         ILStubType type = GetILStubType();
-        return type == StubCOMToCLRInterop || type == StubNativeToCLRInterop;
+        return type == StubReversePInvoke;
     }
 
     bool IsStepThroughStub() const
@@ -2843,10 +2895,8 @@ public:
 
         bool isStepThrough = false;
 
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
         ILStubType type = GetILStubType();
         isStepThrough = type == StubUnboxingIL || type == StubInstantiating;
-#endif // FEATURE_INSTANTIATINGSTUB_AS_IL
 
         return isStepThrough;
     }
@@ -2855,21 +2905,37 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return !HasFlags(FlagStatic) && GetILStubType() == StubCLRToCOMInterop;
+        return GetILStubType() == StubCLRToCOMInterop;
     }
     bool IsCOMToCLRStub() const
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return !HasFlags(FlagStatic) && GetILStubType() == StubCOMToCLRInterop;
+        return GetILStubType() == StubCOMToCLRInterop;
     }
     bool IsPInvokeStub() const
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsILStub());
-        return HasFlags(FlagStatic)
-            && !HasFlags(FlagIsCALLI)
-            && GetILStubType() == StubCLRToNativeInterop;
+        return GetILStubType() == StubPInvoke;
+    }
+    bool IsPInvokeDelegateStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == StubPInvokeDelegate;
+    }
+    bool IsPInvokeCalliStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == StubPInvokeCalli;
+    }
+    bool IsPInvokeVarArgStub() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return GetILStubType() == StubPInvokeVarArg;
     }
 
     bool IsMulticastStub() const
@@ -2890,14 +2956,12 @@ public:
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubWrapperDelegate;
     }
-#ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
     bool IsUnboxingILStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubUnboxingIL;
     }
-#endif
     bool IsDelegateShuffleThunk() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2906,10 +2970,11 @@ public:
     }
 
     // Whether the stub takes a context argument that is an interop MethodDesc.
+    // See RequiresMDContextArg() for the non-stub version.
     bool HasMDContextArg() const
     {
         LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub() || (IsPInvokeStub() && !HasFlags(FlagIsDelegate));
+        return IsCLRToCOMStub() || IsPInvokeVarArgStub();
     }
 
     //
@@ -3204,7 +3269,11 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
+#ifdef HAS_PINVOKE_IMPORT_PRECODE
         return m_pImportThunkGlue;
+#else
+        return &m_ImportThunkGlue;
+#endif // HAS_PINVOKE_IMPORT_PRECODE
     }
 
     LPVOID GetPInvokeTarget()
@@ -3224,7 +3293,7 @@ public:
 
         _ASSERTE(IsPInvoke());
 
-        return (GetPInvokeTarget() == GetPInvokeImportThunkGlue()->GetEntrypoint());
+        return (GetPInvokeTarget() == GetPInvokeImportThunkGlue()->GetEntryPoint());
     }
 #endif // !DACCESS_COMPILE
 
@@ -3711,7 +3780,7 @@ inline mdMethodDef MethodDesc::GetMemberDef() const
     UINT16   tokrange = pChunk->GetTokRange();
 
     UINT16 tokremainder = m_wFlags3AndTokenRemainder & enum_flag3_TokenRemainderMask;
-    static_assert_no_msg(enum_flag3_TokenRemainderMask == METHOD_TOKEN_REMAINDER_MASK);
+    static_assert(enum_flag3_TokenRemainderMask == METHOD_TOKEN_REMAINDER_MASK);
 
     return MergeToken(tokrange, tokremainder);
 }

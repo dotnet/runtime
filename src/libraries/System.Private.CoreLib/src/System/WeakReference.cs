@@ -107,7 +107,7 @@ namespace System
 
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 if ((th & ComAwareBit) != 0)
-                    return ComAwareWeakReference.GetWeakHandle(th);
+                    return ComAwareWeakReference.GetFromTaggedReference(th).WeakHandle;
 #endif
                 return th & ~HandleTagBits;
             }
@@ -166,7 +166,9 @@ namespace System
 #if FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
                 if ((th & ComAwareBit) != 0)
                 {
-                    target = ComAwareWeakReference.GetTarget(th);
+                    ComAwareWeakReference cwr = ComAwareWeakReference.GetFromTaggedReference(th);
+
+                    target = cwr.Target ?? cwr.RehydrateTarget<object>();
 
                     // must keep the instance alive as long as we use the handle.
                     GC.KeepAlive(this);

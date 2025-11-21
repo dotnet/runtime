@@ -202,8 +202,7 @@ namespace System
                 if (hasUnicode)
                 {
                     // Iri'ze and then normalize relative uris
-                    _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length,
-                                                (UriComponents)0);
+                    _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length, isQuery: false);
                 }
             }
             else
@@ -602,11 +601,7 @@ namespace System
             // We may throw for very large inputs (when growing the ValueStringBuilder).
             vsb.EnsureCapacity(charsToUnescape.Length - indexOfFirstToUnescape);
 
-            UriHelper.UnescapeString(
-                charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb,
-                c_DummyChar, c_DummyChar, c_DummyChar,
-                UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
-                syntax: null, isQuery: false);
+            UriHelper.Unescape(charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb);
 
             string result = string.Concat(charsToUnescape.Slice(0, indexOfFirstToUnescape), vsb.AsSpan());
             vsb.Dispose();
@@ -652,11 +647,7 @@ namespace System
                 vsb = new ValueStringBuilder(destination.Slice(indexOfFirstToUnescape));
             }
 
-            UriHelper.UnescapeString(
-                charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb,
-                c_DummyChar, c_DummyChar, c_DummyChar,
-                UnescapeMode.Unescape | UnescapeMode.UnescapeAll,
-                syntax: null, isQuery: false);
+            UriHelper.Unescape(charsToUnescape.Slice(indexOfFirstToUnescape), ref vsb);
 
             int newLength = indexOfFirstToUnescape + vsb.Length;
             Debug.Assert(newLength <= charsToUnescape.Length);
@@ -721,11 +712,11 @@ namespace System
         // b) Bidi chars are stripped
         //
         // should be called only if IRI parsing is switched on
-        internal unsafe string EscapeUnescapeIri(string input, int start, int end, UriComponents component)
+        internal unsafe string EscapeUnescapeIri(string input, int start, int end, bool isQuery)
         {
             fixed (char* pInput = input)
             {
-                return IriHelper.EscapeUnescapeIri(pInput, start, end, component);
+                return IriHelper.EscapeUnescapeIri(pInput, start, end, isQuery);
             }
         }
 
@@ -1028,17 +1019,7 @@ namespace System
             string self = GetParts(ComponentsToCompare, UriFormat.SafeUnescaped);
             string other = uriLink.GetParts(ComponentsToCompare, UriFormat.SafeUnescaped);
 
-            unsafe
-            {
-                fixed (char* selfPtr = self)
-                {
-                    fixed (char* otherPtr = other)
-                    {
-                        return UriHelper.TestForSubPath(selfPtr, self.Length, otherPtr, other.Length,
-                            IsUncOrDosPath || uriLink.IsUncOrDosPath);
-                    }
-                }
-            }
+            return UriHelper.TestForSubPath(self, other, IsUncOrDosPath || uriLink.IsUncOrDosPath);
         }
 
         //

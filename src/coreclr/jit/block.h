@@ -1159,8 +1159,8 @@ public:
         bbFlags = flags;
     }
 
-    static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
-    static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_GAINED) == 0);
+    static_assert((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
+    static_assert((BBF_SPLIT_NONEXIST & BBF_SPLIT_GAINED) == 0);
 
     unsigned bbNum; // the block's number
 

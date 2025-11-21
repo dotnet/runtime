@@ -67,6 +67,16 @@ struct TLSIndex
 // Used to store access to TLS data for a single index when the TLS is accessed while the class constructor is running
 struct InFlightTLSData;
 typedef DPTR(InFlightTLSData) PTR_InFlightTLSData;
+struct InFlightTLSData
+{
+#ifndef DACCESS_COMPILE
+    InFlightTLSData(TLSIndex index);
+    ~InFlightTLSData();
+#endif // !DACCESS_COMPILE
+    PTR_InFlightTLSData pNext; // Points at the next in-flight TLS data
+    TLSIndex tlsIndex; // The TLS index for the static
+    OBJECTHANDLE hTLSData; // The TLS data for the static
+};
 
 #define EXTENDED_DIRECT_THREAD_LOCAL_SIZE 48
 
@@ -78,8 +88,8 @@ struct ThreadLocalData
     PTR_Object pNonCollectibleTlsArrayData;
     DPTR(OBJECTHANDLE) pCollectibleTlsArrayData; // Points at the Thread local array data.
     PTR_Thread pThread; // This starts the region of ThreadLocalData which is referenceable by TLSIndexType::DirectOnThreadLocalData
+    uint32_t managedThreadId;
     PTR_InFlightTLSData pInFlightData; // Points at the in-flight TLS data (TLS data that exists before the class constructor finishes running)
-    TADDR ThreadBlockingInfo_First; // System.Threading.ThreadBlockingInfo.t_first
     BYTE ExtendedDirectThreadLocalTLSData[EXTENDED_DIRECT_THREAD_LOCAL_SIZE];
 };
 

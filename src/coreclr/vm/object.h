@@ -15,7 +15,6 @@
 #include "util.hpp"
 #include "syncblk.h"
 #include "gcdesc.h"
-#include "specialstatics.h"
 #include "sstring.h"
 #include "daccess.h"
 #include "fcall.h"
@@ -271,87 +270,6 @@ class Object
     INT32 GetHashCodeEx();
 #endif // #ifndef DACCESS_COMPILE
 
-    // Synchronization
-#ifndef DACCESS_COMPILE
-
-    void EnterObjMonitor()
-    {
-        WRAPPER_NO_CONTRACT;
-        GetHeader()->EnterObjMonitor();
-    }
-
-    BOOL TryEnterObjMonitor(INT32 timeOut = 0)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->TryEnterObjMonitor(timeOut);
-    }
-
-    bool TryEnterObjMonitorSpinHelper();
-
-    FORCEINLINE AwareLock::EnterHelperResult EnterObjMonitorHelper(Thread* pCurThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->EnterObjMonitorHelper(pCurThread);
-    }
-
-    FORCEINLINE AwareLock::EnterHelperResult EnterObjMonitorHelperSpin(Thread* pCurThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->EnterObjMonitorHelperSpin(pCurThread);
-    }
-
-    BOOL LeaveObjMonitor()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->LeaveObjMonitor();
-    }
-
-    // should be called only from unwind code; used in the
-    // case where EnterObjMonitor failed to allocate the
-    // sync-object.
-    BOOL LeaveObjMonitorAtException()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->LeaveObjMonitorAtException();
-    }
-
-    FORCEINLINE AwareLock::LeaveHelperAction LeaveObjMonitorHelper(Thread* pCurThread)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->LeaveObjMonitorHelper(pCurThread);
-    }
-
-    // Returns TRUE if the lock is owned and FALSE otherwise
-    // threadId is set to the ID (Thread::GetThreadId()) of the thread which owns the lock
-    // acquisitionCount is set to the number of times the lock needs to be released before
-    // it is unowned
-    BOOL GetThreadOwningMonitorLock(DWORD *pThreadId, DWORD *pAcquisitionCount)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-        return GetHeader()->GetThreadOwningMonitorLock(pThreadId, pAcquisitionCount);
-    }
-
-#endif // #ifndef DACCESS_COMPILE
-
-    BOOL Wait(INT32 timeOut)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->Wait(timeOut);
-    }
-
-    void Pulse()
-    {
-        WRAPPER_NO_CONTRACT;
-        GetHeader()->Pulse();
-    }
-
-    void PulseAll()
-    {
-        WRAPPER_NO_CONTRACT;
-        GetHeader()->PulseAll();
-    }
-
    PTR_VOID UnBox();      // if it is a value class, get the pointer to the first field
 
     PTR_BYTE   GetData(void)
@@ -534,7 +452,6 @@ class ArrayBase : public Object
     friend class Object;
     friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags);
     friend OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend struct _DacGlobals;
@@ -555,6 +472,14 @@ private:
     // INT32      lowerBounds[rank];  Valid indexes are lowerBounds[i] <= index[i] < lowerBounds[i] + bounds[i]
 
 public:
+#ifndef DACCESS_COMPILE
+    void SetNumComponents(INT32 length)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_NumComponents = length;
+    }
+#endif // !DACCESS_COMPILE
+
     // Get the element type for the array, this works whether the element
     // type is stored in the array or not
     inline TypeHandle GetArrayElementTypeHandle() const;
@@ -690,7 +615,6 @@ class PtrArray : public ArrayBase
 {
     friend class GCHeap;
     friend class ClrDataAccess;
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, DWORD flags);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 
@@ -908,7 +832,6 @@ class StringObject : public Object
     // characters and the null terminator you should pass in 5 and NOT 6.
     //========================================================================
     static STRINGREF NewString(int length);
-    static STRINGREF NewString(int length, BOOL bHasTrailByte);
     static STRINGREF NewString(const WCHAR *pwsz);
     static STRINGREF NewString(const WCHAR *pwsz, int length);
     static STRINGREF NewString(LPCUTF8 psz);
@@ -918,10 +841,6 @@ class StringObject : public Object
     static STRINGREF* GetEmptyStringRefPtr(void** pinnedString);
 
     static STRINGREF* InitEmptyStringRefPtr();
-
-    BOOL HasTrailByte();
-    BOOL GetTrailByte(BYTE *bTrailByte);
-    BOOL SetTrailByte(BYTE bTrailByte);
 
     /*=================RefInterpretGetStringValuesDangerousForGC======================
     **N.B.: This performs no range checking and relies on the caller to have done this.

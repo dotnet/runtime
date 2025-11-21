@@ -250,9 +250,17 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeThreadStaticIndexNode(type, null);
             });
 
-            _GCStaticEETypes = new NodeCache<(GCPointerMap, bool), GCStaticEETypeNode>(((GCPointerMap gcMap, bool requiresAlign8) key) =>
+            _GCStaticEETypes = new NodeCache<(GCPointerMap, bool), DataOnlyEETypeNode>(((GCPointerMap gcMap, bool requiresAlign8) key) =>
             {
-                return new GCStaticEETypeNode(Target, key.gcMap, key.requiresAlign8);
+                // Base type: System.Object. This allows storing an instance of this type in an array of objects,
+                // or finding associated module from BulkType event source events.
+                DefType baseType = _context.GetWellKnownType(WellKnownType.Object);
+                return new DataOnlyEETypeNode("GCStaticEEType", key.gcMap, baseType, key.requiresAlign8);
+            });
+
+            _asyncContinuationEETypes = new NodeCache<AsyncContinuationType, AsyncContinuationEETypeNode>((AsyncContinuationType key) =>
+            {
+                return new AsyncContinuationEETypeNode(key);
             });
 
             _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
@@ -297,9 +305,9 @@ namespace ILCompiler.DependencyAnalysis
                     tentative.RealBody : (IMethodBodyNode)entrypoint);
             });
 
-            _tentativeMethods = new NodeCache<MethodDesc, TentativeInstanceMethodNode>(method =>
+            _tentativeMethods = new NodeCache<IMethodBodyNode, TentativeInstanceMethodNode>(method =>
             {
-                return new TentativeInstanceMethodNode((IMethodBodyNode)MethodEntrypoint(method));
+                return new TentativeInstanceMethodNode(method);
             });
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
@@ -604,6 +612,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new ProxyTypeMapRequestNode(type);
             });
 
+            _analysisCharacteristics = new NodeCache<string, AnalysisCharacteristicNode>(c =>
+            {
+                return new AnalysisCharacteristicNode(c);
+            });
+
             NativeLayout = new NativeLayoutHelper(this);
         }
 
@@ -708,6 +721,7 @@ namespace ILCompiler.DependencyAnalysis
             protected override IEETypeNode CreateValueFromKey(TypeDesc key) => _factory.CreateNecessaryTypeNode(key);
         }
 
+        private NodeCache<AsyncContinuationType, AsyncContinuationEETypeNode> _asyncContinuationEETypes;
         private NecessaryTypeSymbolHashtable _typeSymbols;
 
         public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
@@ -720,6 +734,11 @@ namespace ILCompiler.DependencyAnalysis
             if (_compilationModuleGroup.ShouldPromoteToFullType(type))
             {
                 return ConstructedTypeSymbol(type);
+            }
+
+            if (type is AsyncContinuationType continuation)
+            {
+                return _asyncContinuationEETypes.GetOrAdd(continuation);
             }
 
             Debug.Assert(!TypeCannotHaveEEType(type));
@@ -747,6 +766,9 @@ namespace ILCompiler.DependencyAnalysis
                 return ConstructedTypeSymbol(type);
             }
 
+            // Generating typeof of a continuation type is not supported; we'd need a full MethodTable.
+            Debug.Assert(type is not AsyncContinuationType);
+
             Debug.Assert(!TypeCannotHaveEEType(type));
 
             return _metadataTypeSymbols.GetOrCreateValue(type);
@@ -765,6 +787,11 @@ namespace ILCompiler.DependencyAnalysis
             if (_compilationModuleGroup.ShouldReferenceThroughImportTable(type))
             {
                 return ImportedEETypeSymbol(type);
+            }
+
+            if (type is AsyncContinuationType continuation)
+            {
+                return _asyncContinuationEETypes.GetOrAdd(continuation);
             }
 
             Debug.Assert(!TypeCannotHaveEEType(type));
@@ -888,7 +915,7 @@ namespace ILCompiler.DependencyAnalysis
             return _embeddedTrimmingDescriptors.GetOrAdd(module);
         }
 
-        private NodeCache<(GCPointerMap, bool), GCStaticEETypeNode> _GCStaticEETypes;
+        private NodeCache<(GCPointerMap, bool), DataOnlyEETypeNode> _GCStaticEETypes;
 
         public ISymbolNode GCStaticEEType(GCPointerMap gcMap, bool requiredAlign8)
         {
@@ -1079,14 +1106,14 @@ namespace ILCompiler.DependencyAnalysis
             return _tentativeMethodEntrypoints.GetOrAdd(method);
         }
 
-        private NodeCache<MethodDesc, TentativeInstanceMethodNode> _tentativeMethods;
+        private NodeCache<IMethodBodyNode, TentativeInstanceMethodNode> _tentativeMethods;
         public IMethodNode MethodEntrypointOrTentativeMethod(MethodDesc method, bool unboxingStub = false)
         {
             // We might be able to optimize the method body away if the owning type was never seen as allocated.
             if (method.NotCallableWithoutOwningEEType() && CompilationModuleGroup.AllowInstanceMethodOptimization(method))
             {
                 Debug.Assert(!unboxingStub);
-                return _tentativeMethods.GetOrAdd(method);
+                return _tentativeMethods.GetOrAdd((IMethodBodyNode)MethodEntrypoint(method, unboxingStub));
             }
 
             return MethodEntrypoint(method, unboxingStub);
@@ -1287,8 +1314,8 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var entry = s_helperEntrypointNames[index];
 
-                var type = _context.SystemModule.GetKnownType(entry[0], entry[1]);
-                var method = type.GetKnownMethod(entry[2], null);
+                var type = _context.SystemModule.GetKnownType(Encoding.UTF8.GetBytes(entry[0]), Encoding.UTF8.GetBytes(entry[1]));
+                var method = type.GetKnownMethod(Encoding.UTF8.GetBytes(entry[2]), null);
 
                 symbol = MethodEntrypoint(method);
 
@@ -1302,7 +1329,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                return _systemArrayOfTClass ??= _context.SystemModule.GetKnownType("System", "Array`1");
+                return _systemArrayOfTClass ??= _context.SystemModule.GetKnownType("System"u8, "Array`1"u8);
             }
         }
 
@@ -1313,7 +1340,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // This helper is optional, but it's fine for this cache to be ineffective if that happens.
                 // Those scenarios are rare and typically deal with small compilations.
-                return _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowInstanceBodyRemoved");
+                return _instanceMethodRemovedHelper ??= TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers"u8, "ThrowInstanceBodyRemoved"u8);
             }
         }
 
@@ -1524,6 +1551,12 @@ namespace ILCompiler.DependencyAnalysis
         public ProxyTypeMapRequestNode ProxyTypeMapRequest(TypeDesc type)
         {
             return _proxyTypeMapRequests.GetOrAdd(type);
+        }
+
+        private NodeCache<string, AnalysisCharacteristicNode> _analysisCharacteristics;
+        public AnalysisCharacteristicNode AnalysisCharacteristic(string ch)
+        {
+            return _analysisCharacteristics.GetOrAdd(ch);
         }
 
         /// <summary>

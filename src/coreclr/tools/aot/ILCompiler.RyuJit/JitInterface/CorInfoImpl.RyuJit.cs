@@ -33,6 +33,7 @@ namespace Internal.JitInterface
 
         private RyuJitCompilation _compilation;
         private MethodDebugInformation _debugInfo;
+        private MethodDesc _asyncResumptionStub;
         private MethodCodeNode _methodCodeNode;
         private DebugLocInfo[] _debugLocInfos;
         private DebugVarInfo[] _debugVarInfos;
@@ -286,10 +287,10 @@ namespace Internal.JitInterface
                     }
 
                     lookup.runtimeLookup.indirections = (ushort)genericLookup.NumberOfIndirections;
-                    lookup.runtimeLookup.offset0 = (IntPtr)genericLookup[0];
+                    lookup.runtimeLookup.offset0 = genericLookup[0];
                     if (genericLookup.NumberOfIndirections > 1)
                     {
-                        lookup.runtimeLookup.offset1 = (IntPtr)genericLookup[1];
+                        lookup.runtimeLookup.offset1 = genericLookup[1];
                     }
                     lookup.runtimeLookup.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
                     lookup.runtimeLookup.testForNull = false;
@@ -465,6 +466,7 @@ namespace Internal.JitInterface
             switch (ftnNum)
             {
                 case CorInfoHelpFunc.CORINFO_HELP_THROW:
+                case CorInfoHelpFunc.CORINFO_HELP_THROWEXACT: // TODO: (async): THROWEXACT
                     id = ReadyToRunHelper.Throw;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_RETHROW:
@@ -758,10 +760,13 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.MonitorExit;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION:
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8, null));
+
                 case CorInfoHelpFunc.CORINFO_HELP_GETSYNCFROMCLASSHANDLE:
-                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers", "GetSyncFromClassHandle"));
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Threading"u8, "Monitor"u8, "GetSyncObjectFromClassHandle"u8, null));
                 case CorInfoHelpFunc.CORINFO_HELP_GETCLASSFROMMETHODPARAM:
-                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetHelperEntryPoint("SynchronizedMethodHelpers", "GetClassFromMethodParam"));
+                    return _compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Threading"u8, "Monitor"u8, "GetClassHandleFromMethodParam"u8, null));
 
                 case CorInfoHelpFunc.CORINFO_HELP_GVMLOOKUP_FOR_SLOT:
                     id = ReadyToRunHelper.GVMLookupForSlot;
@@ -829,7 +834,7 @@ namespace Internal.JitInterface
                 MethodDesc caller = HandleToObject(callerHnd);
 
                 if (caller.OwningType is EcmaType ecmaOwningType
-                    && ecmaOwningType.EcmaModule.EntryPoint == caller)
+                    && ecmaOwningType.Module.EntryPoint == caller)
                 {
                     // Do not tailcall from the application entrypoint.
                     // We want Main to be visible in stack traces.
@@ -1735,7 +1740,7 @@ namespace Internal.JitInterface
                     helperId = ReadyToRunHelperId.MethodHandle;
                 else
                 {
-                    Debug.Assert(pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Method);
+                    Debug.Assert((pResolvedToken.tokenType & CorInfoTokenKind.CORINFO_TOKENKIND_Method) != 0);
                     helperId = ReadyToRunHelperId.MethodDictionary;
                 }
 
@@ -1876,7 +1881,7 @@ namespace Internal.JitInterface
 
             pResult.compileTimeHandle = null;
 
-            switch (method.Name)
+            switch (method.GetName())
             {
                 case "Of":
                     ComputeLookup(ref pResolvedToken, method.Instantiation[0], ReadyToRunHelperId.TypeHandle, HandleToObject(callerHandle), ref pResult.lookup);
@@ -2026,9 +2031,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
-        { throw new NotImplementedException("canGetCookieForPInvokeCalliSig"); }
-
 #pragma warning disable CA1822 // Mark members as static
         private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
 #pragma warning restore CA1822 // Mark members as static
@@ -2176,7 +2178,7 @@ namespace Internal.JitInterface
                             ((target.OperatingSystem == TargetOS.Linux) &&
                             (target.Architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)))
                         {
-                            ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex((MetadataType)field.OwningType);
+                            ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex(field.OwningType);
                             if (index is TypeThreadStaticIndexNode ti)
                             {
                                 if (ti.IsInlined)
@@ -2200,12 +2202,12 @@ namespace Internal.JitInterface
                         if (field.HasGCStaticBase)
                         {
                             pResult->fieldLookup.accessType = InfoAccessType.IAT_PVALUE;
-                            baseAddr = _compilation.NodeFactory.TypeGCStaticsSymbol((MetadataType)field.OwningType);
+                            baseAddr = _compilation.NodeFactory.TypeGCStaticsSymbol(field.OwningType);
                         }
                         else
                         {
                             pResult->fieldLookup.accessType = InfoAccessType.IAT_VALUE;
-                            baseAddr = _compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType);
+                            baseAddr = _compilation.NodeFactory.TypeNonGCStaticsSymbol(field.OwningType);
                         }
                         pResult->fieldLookup.addr = (void*)ObjectToHandle(baseAddr);
                     }

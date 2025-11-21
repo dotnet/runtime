@@ -2535,6 +2535,16 @@ void LinearScan::buildIntervals()
             currentLoc += 2;
         }
 
+        if (compiler->getNeedsGSSecurityCookie() && block->KindIs(BBJ_RETURN))
+        {
+            // The cookie check will kill some registers that it is using.
+            // Model this to ensure values that are kept live throughout the
+            // method are properly made available.
+            bool isTailCall = block->HasFlag(BBF_HAS_JMP);
+            addKillForRegs(compiler->codeGen->genGetGSCookieTempRegs(isTailCall), currentLoc + 1);
+            currentLoc += 2;
+        }
+
         if (localVarsEnregistered)
         {
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -4164,22 +4174,6 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
         {
             BuildUse(op1, RBM_NONE, i);
         }
-#if defined(FEATURE_SIMD) && defined(TARGET_X86)
-        if (TargetOS::IsWindows && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE42))
-        {
-            if (varTypeIsSIMD(storeLoc) && op1->IsCall())
-            {
-                // Need an additional register to create a SIMD8 from EAX/EDX without SSE4.1.
-                buildInternalFloatRegisterDefForNode(storeLoc, allSIMDRegs());
-
-                if (isCandidateVar(varDsc))
-                {
-                    // This internal register must be different from the target register.
-                    setInternalRegsDelayFree = true;
-                }
-            }
-        }
-#endif // FEATURE_SIMD && TARGET_X86
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {

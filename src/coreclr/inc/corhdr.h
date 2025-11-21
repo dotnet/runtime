@@ -288,6 +288,7 @@ typedef enum CorTypeAttr
     tdAutoLayout            =   0x00000000,     // Class fields are auto-laid out
     tdSequentialLayout      =   0x00000008,     // Class fields are laid out sequentially
     tdExplicitLayout        =   0x00000010,     // Layout is supplied explicitly
+    tdExtendedLayout        =   0x00000018,     // Layout is supplied via the System.Runtime.InteropServices.ExtendedLayoutAttribute
     // end layout mask
 
     // Use this mask to retrieve class semantics information.
@@ -325,6 +326,10 @@ typedef enum CorTypeAttr
     tdHasSecurity           =   0x00040000,     // Class has security associate with it.
 } CorTypeAttr;
 
+enum class CorExtendedLayoutKind
+{
+    CStruct = 0, // C-style struct
+};
 
 // Macros for accessing the members of the CorTypeAttr.
 #define IsTdNotPublic(x)                    (((x) & tdVisibilityMask) == tdNotPublic)
@@ -340,6 +345,7 @@ typedef enum CorTypeAttr
 #define IsTdAutoLayout(x)                   (((x) & tdLayoutMask) == tdAutoLayout)
 #define IsTdSequentialLayout(x)             (((x) & tdLayoutMask) == tdSequentialLayout)
 #define IsTdExplicitLayout(x)               (((x) & tdLayoutMask) == tdExplicitLayout)
+#define IsTdExtendedLayout(x)               (((x) & tdLayoutMask) == tdExtendedLayout)
 
 #define IsTdClass(x)                        (((x) & tdClassSemanticsMask) == tdClass)
 #define IsTdInterface(x)                    (((x) & tdClassSemanticsMask) == tdInterface)
@@ -975,7 +981,8 @@ typedef enum CorCallingConvention
     IMAGE_CEE_CS_CALLCONV_UNMANAGED     = 0x9,  // Unmanaged calling convention encoded as modopts
     IMAGE_CEE_CS_CALLCONV_GENERICINST   = 0xa,  // generic method instantiation
     IMAGE_CEE_CS_CALLCONV_NATIVEVARARG  = 0xb,  // used ONLY for 64bit vararg PInvoke calls
-    IMAGE_CEE_CS_CALLCONV_MAX           = 0xc,  // first invalid calling convention
+    IMAGE_CEE_CS_CALLCONV_ASYNC         = 0xc,  // used for calli in IL stubs
+    IMAGE_CEE_CS_CALLCONV_MAX           = 0xd,  // first invalid calling convention
 
 
         // The high bits of the calling convention convey additional info

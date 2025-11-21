@@ -90,7 +90,7 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 GenTree* Compiler::impExpandHalfConstEquals(
     GenTreeLclVarCommon* data, WCHAR* cns, int charLen, int dataOffset, StringComparison cmpMode)
 {
-    static_assert_no_msg(sizeof(WCHAR) == 2);
+    static_assert(sizeof(WCHAR) == 2);
     assert((charLen > 0) && (charLen <= MaxPossibleUnrollSize));
 
     // A gtNewOperNode which can handle SIMD operands (used for bitwise operations):

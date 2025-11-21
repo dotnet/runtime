@@ -227,7 +227,7 @@ struct ALIGNED_(64) internal_state {
 #   define max_insert_length  max_lazy_match
     /* Insert new strings in the hash table only if the match length is not
      * greater than this length. This saves time but degrades compression.
-     * max_insert_length is used only for compression levels <= 3.
+     * max_insert_length is used only for compression levels <= 6.
      */
 
     update_hash_cb          update_hash;

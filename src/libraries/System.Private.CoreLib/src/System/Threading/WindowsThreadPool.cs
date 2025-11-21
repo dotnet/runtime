@@ -53,24 +53,24 @@ namespace System.Threading
         private static readonly ThreadInt64PersistentCounter s_completedWorkItemCounter = new ThreadInt64PersistentCounter();
 
         [ThreadStatic]
-        private static object? t_completionCountObject;
+        private static ThreadInt64PersistentCounter.ThreadLocalNode? t_completionCountNode;
 
         internal static void InitializeForThreadPoolThread() => t_threadCountHolder = new ThreadCountHolder();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void IncrementCompletedWorkItemCount() => ThreadInt64PersistentCounter.Increment(GetOrCreateThreadLocalCompletionCountObject());
+        internal static void IncrementCompletedWorkItemCount() => GetOrCreateThreadLocalCompletionCountNode().Increment();
 
-        internal static object GetOrCreateThreadLocalCompletionCountObject() =>
-            t_completionCountObject ?? CreateThreadLocalCompletionCountObject();
+        internal static ThreadInt64PersistentCounter.ThreadLocalNode GetOrCreateThreadLocalCompletionCountNode() =>
+            t_completionCountNode ?? CreateThreadLocalCompletionCountNode();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static object CreateThreadLocalCompletionCountObject()
+        private static ThreadInt64PersistentCounter.ThreadLocalNode CreateThreadLocalCompletionCountNode()
         {
-            Debug.Assert(t_completionCountObject == null);
+            Debug.Assert(t_completionCountNode == null);
 
-            object threadLocalCompletionCountObject = s_completedWorkItemCounter.CreateThreadLocalCountObject();
-            t_completionCountObject = threadLocalCompletionCountObject;
-            return threadLocalCompletionCountObject;
+            ThreadInt64PersistentCounter.ThreadLocalNode threadLocalCompletionCountNode = s_completedWorkItemCounter.CreateThreadLocalCountObject();
+            t_completionCountNode = threadLocalCompletionCountNode;
+            return threadLocalCompletionCountNode;
         }
 
 #pragma warning disable IDE0060 // Remove unused parameter
@@ -132,9 +132,9 @@ namespace System.Threading
         internal static void NotifyWorkItemProgress() => IncrementCompletedWorkItemCount();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object threadLocalCompletionCountObject, int _ /*currentTimeMs*/)
+        internal static bool NotifyWorkItemComplete(ThreadInt64PersistentCounter.ThreadLocalNode threadLocalCompletionCountNode, int _ /*currentTimeMs*/)
         {
-            ThreadInt64PersistentCounter.Increment(threadLocalCompletionCountObject);
+            threadLocalCompletionCountNode.Increment();
             return true;
         }
 

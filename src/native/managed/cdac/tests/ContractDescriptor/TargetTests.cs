@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests.ContractDescriptor;
 
-public unsafe class TargetTests
+public unsafe partial class TargetTests
 {
     private static readonly Dictionary<DataType, Target.TypeInfo> TestTypes = new()
     {
@@ -45,28 +45,15 @@ public unsafe class TargetTests
     {
         TargetTestHelpers targetTestHelpers = new(arch);
         ContractDescriptorBuilder builder = new(targetTestHelpers);
-        builder.SetTypes(TestTypes)
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetTypes(TestTypes)
             .SetGlobals(Array.Empty<(string, ulong, string?)>())
             .SetContracts(Array.Empty<string>());
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        bool success = builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target);
         Assert.True(success);
 
-        foreach ((DataType type, Target.TypeInfo info) in TestTypes)
-        {
-            {
-                // By known type
-                Target.TypeInfo actual = target.GetTypeInfo(type);
-                Assert.Equal(info.Size, actual.Size);
-                Assert.Equal(info.Fields, actual.Fields);
-            }
-            {
-                // By name
-                Target.TypeInfo actual = target.GetTypeInfo(type.ToString());
-                Assert.Equal(info.Size, actual.Size);
-                Assert.Equal(info.Fields, actual.Fields);
-            }
-        }
+        ValidateTypes(target, TestTypes);
     }
 
     private static readonly (string Name, ulong Value, string? Type)[] TestGlobals =
@@ -91,11 +78,12 @@ public unsafe class TargetTests
     {
         TargetTestHelpers targetTestHelpers = new(arch);
         ContractDescriptorBuilder builder = new(targetTestHelpers);
-        builder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
             .SetGlobals(TestGlobals)
             .SetContracts([]);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        bool success = builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target);
         Assert.True(success);
 
         ValidateGlobals(target, TestGlobals);
@@ -107,12 +95,13 @@ public unsafe class TargetTests
     {
         TargetTestHelpers targetTestHelpers = new(arch);
         ContractDescriptorBuilder builder = new(targetTestHelpers);
-        builder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
             .SetContracts([])
             .SetGlobals(TestGlobals.Select(MakeGlobalToIndirect).ToArray(),
                         TestGlobals.Select((g) => g.Value).ToArray());
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        bool success = builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target);
         Assert.True(success);
 
         // Indirect values are pointer-sized, so max 32-bits for a 32-bit target
@@ -146,11 +135,12 @@ public unsafe class TargetTests
     {
         TargetTestHelpers targetTestHelpers = new(arch);
         ContractDescriptorBuilder builder = new(targetTestHelpers);
-        builder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder.SetTypes(new Dictionary<DataType, Target.TypeInfo>())
             .SetContracts([])
             .SetGlobals(GlobalStringyValues.Select(MakeGlobalsToStrings).ToArray());
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        bool success = builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target);
         Assert.True(success);
 
         ValidateGlobalStrings(target, GlobalStringyValues);
@@ -176,7 +166,7 @@ public unsafe class TargetTests
         fragment.Data[^1] = 0;
         builder.AddHeapFragment(fragment);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        bool success = builder.TryCreateTarget(new(builder), out ContractDescriptorTarget? target);
         Assert.True(success);
 
         string actual = target.ReadUtf8String(addr);
@@ -195,10 +185,9 @@ public unsafe class TargetTests
         MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[4] };
         builder.AddHeapFragment(fragment);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        bool success = builder.TryCreateTarget(new(builder), out ContractDescriptorTarget? target);
         Assert.True(success);
-        bool writeSuccess = target.Write<uint>(addr, expected);
-        Assert.True(writeSuccess);
+        target.Write<uint>(addr, expected);
         Assert.Equal(expected, target.Read<uint>(addr));
     }
 
@@ -214,7 +203,7 @@ public unsafe class TargetTests
         MockMemorySpace.HeapFragment fragment = new() { Address = addr, Data = new byte[4] };
         builder.AddHeapFragment(fragment);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        bool success = builder.TryCreateTarget(new(builder), out ContractDescriptorTarget? target);
         Assert.True(success);
         target.WriteBuffer(addr, expected);
         Span<byte> data = stackalloc byte[4];
@@ -237,7 +226,7 @@ public unsafe class TargetTests
         targetTestHelpers.WriteUtf16String(fragment.Data, expected);
         builder.AddHeapFragment(fragment);
 
-        bool success = builder.TryCreateTarget(out ContractDescriptorTarget? target);
+        bool success = builder.TryCreateTarget(new(builder), out ContractDescriptorTarget? target);
         Assert.True(success);
 
         string actual = target.ReadUtf16String(addr);
@@ -376,4 +365,27 @@ public unsafe class TargetTests
         }
     }
 
+    private static void ValidateTypes(
+        ContractDescriptorTarget target,
+        Dictionary<DataType, Target.TypeInfo> types,
+        [CallerMemberName] string caller = "",
+        [CallerFilePath] string filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        foreach ((DataType type, Target.TypeInfo info) in types)
+        {
+            {
+                // By known type
+                Target.TypeInfo actual = target.GetTypeInfo(type);
+                Assert.Equal(info.Size, actual.Size);
+                Assert.Equal(info.Fields, actual.Fields);
+            }
+            {
+                // By name
+                Target.TypeInfo actual = target.GetTypeInfo(type.ToString());
+                Assert.Equal(info.Size, actual.Size);
+                Assert.Equal(info.Fields, actual.Fields);
+            }
+        }
+    }
 }

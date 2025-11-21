@@ -26,11 +26,11 @@ namespace Internal.TypeSystem.Interop
             get;
         }
 
-        public override string Name
+        public override ReadOnlySpan<byte> Name
         {
             get
             {
-                return "PInvokeDelegateWrapper__" + DelegateType.Name;
+                return "PInvokeDelegateWrapper__"u8.Append(DelegateType.Name);
             }
         }
 
@@ -42,11 +42,11 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override string Namespace
+        public override ReadOnlySpan<byte> Namespace
         {
             get
             {
-                return "Internal.CompilerGenerated";
+                return "Internal.CompilerGenerated"u8;
             }
         }
 
@@ -82,6 +82,22 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override bool IsExtendedLayout
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public override bool IsAutoLayout
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         public override bool IsBeforeFieldInit
         {
             get
@@ -90,15 +106,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override MetadataType MetadataBaseType
-        {
-            get
-            {
-                return InteropTypes.GetNativeFunctionPointerWrapper(Context);
-            }
-        }
-
-        public override DefType BaseType
+        public override MetadataType BaseType
         {
             get
             {
@@ -122,7 +130,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override DefType ContainingType
+        public override MetadataType ContainingType
         {
             get
             {
@@ -182,33 +190,25 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MethodImplRecord>();
         }
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name)
         {
             return Array.Empty<MethodImplRecord>();
         }
 
         private int _hashCode;
 
-        private void InitializeHashCode()
+        private int InitializeHashCode()
         {
-            var hashCodeBuilder = new Internal.NativeFormat.TypeHashingAlgorithms.HashCodeBuilder(Namespace);
-
-            if (Namespace.Length > 0)
-            {
-                hashCodeBuilder.Append(".");
-            }
-
-            hashCodeBuilder.Append(Name);
-            _hashCode = hashCodeBuilder.ToHashCode();
+            return _hashCode = VersionResilientHashCode.NameHashCode(Namespace, Name);
         }
 
         public override int GetHashCode()
         {
-            if (_hashCode == 0)
+            if (_hashCode != 0)
             {
-                InitializeHashCode();
+                return _hashCode;
             }
-            return _hashCode;
+            return InitializeHashCode();
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
@@ -229,12 +229,6 @@ namespace Internal.TypeSystem.Interop
             flags |= TypeFlags.AttributeCacheComputed;
 
             return flags;
-        }
-
-        public override int GetInlineArrayLength()
-        {
-            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-            throw new InvalidOperationException();
         }
 
         private MethodDesc[] _methods;

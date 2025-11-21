@@ -168,7 +168,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
         {
-            return RuntimeImports.RhGetRuntimeHelperForType(type.ToMethodTable(), RuntimeHelperKind.AllocateObject);
+            return RuntimeImports.RhGetNewObjectHelper(type.ToMethodTable());
         }
 
         public static IntPtr GetFallbackDefaultConstructor()

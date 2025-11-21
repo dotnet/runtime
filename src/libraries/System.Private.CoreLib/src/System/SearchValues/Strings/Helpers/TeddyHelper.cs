@@ -207,8 +207,12 @@ namespace System.Buffers
             return (result, match0, match1);
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector128&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector128&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
@@ -233,8 +237,12 @@ namespace System.Buffers
             }
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // Characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector256&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector256&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         public static Vector256<byte> LoadAndPack32AsciiChars(ref char source)
@@ -247,8 +255,12 @@ namespace System.Buffers
             return PackedSpanHelpers.FixUpPackedVector256Result(packed);
         }
 
-        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
-        // Characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// <summary>
+        /// Read two <see cref="Vector512&lt;UInt16&gt;" /> and concatenate their lower bytes together into a single <see cref="Vector512&lt;Byte&gt;" />.
+        /// </summary>
+        /// <remarks>
+        /// On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
+        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         public static Vector512<byte> LoadAndPack64AsciiChars(ref char source)

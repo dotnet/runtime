@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -62,21 +63,21 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct NetworkFrameworkError
+        internal unsafe struct NetworkFrameworkError
         {
             public int ErrorCode;
             public int ErrorDomain;
-            public IntPtr ErrorMessage; // C string of NULL
+            public byte* ErrorMessage; // C string of NULL
         }
 
-        internal static Exception CreateExceptionForNetworkFrameworkError(in NetworkFrameworkError error)
+        internal static unsafe Exception CreateExceptionForNetworkFrameworkError(in NetworkFrameworkError error)
         {
             string? message = null;
             NetworkFrameworkErrorDomain domain = (NetworkFrameworkErrorDomain)error.ErrorDomain;
 
-            if (error.ErrorMessage != IntPtr.Zero)
+            if (error.ErrorMessage != null)
             {
-                message = Marshal.PtrToStringUTF8(error.ErrorMessage);
+                message = Utf8StringMarshaller.ConvertToManaged(error.ErrorMessage);
             }
 
             return new NetworkFrameworkException(error.ErrorCode, domain, message);

@@ -34,8 +34,13 @@
           BeforeTargets="GetPackageFiles"
           Condition="'$(PackageTargetRuntime)' != ''">
 
+    <PropertyGroup>
+        <_ILCompilerFilesRoot>$(CoreCLRILCompilerDir)</_ILCompilerFilesRoot>
+        <_ILCompilerFilesRoot Condition="'$(PackHostILCompiler)' == 'true'">$(CoreCLRCrossILCompilerDir)</_ILCompilerFilesRoot>
+    </PropertyGroup>
+
     <ItemGroup>
-      <File Include="$(CoreCLRCrossILCompilerDir)*" TargetPath="tools" />
+      <File Include="$(_ILCompilerFilesRoot)*" TargetPath="tools" Exclude="$(_ILCompilerFilesRoot)netstandard\*" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'linux'">

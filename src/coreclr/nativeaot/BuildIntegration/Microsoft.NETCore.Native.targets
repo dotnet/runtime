@@ -71,6 +71,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' == 'win' and '$(NativeLib)' == 'Static'">.lib</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win' and '$(NativeLib)' == 'Static'">.a</NativeBinaryExt>
 
+    <NativeBinaryPrefix Condition="'$(_UseNativeLibPrefix)' == 'true' and '$(IsNativeExecutable)' != 'true' and '$(_targetOS)' != 'win'">lib</NativeBinaryPrefix>
+
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == '' and '$(_IsApplePlatform)' == 'true'">.dSYM</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == '' and '$(_targetOS)' == 'win'">.pdb</NativeSymbolExt>
     <NativeSymbolExt Condition="'$(NativeSymbolExt)' == ''">.dbg</NativeSymbolExt>
@@ -79,7 +81,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ExportsFileExt Condition="'$(_targetOS)' != 'win'">.exports</ExportsFileExt>
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
-    <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
+    <NativeBinary>$(NativeOutputPath)$(NativeBinaryPrefix)$(TargetName)$(NativeBinaryExt)</NativeBinary>
     <IlcExportUnmanagedEntrypoints Condition="'$(IlcExportUnmanagedEntrypoints)' == '' and '$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
     <ExportsFile Condition="$(ExportsFile) == '' and '$(BuildingFrameworkLibrary)' != 'true'">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 

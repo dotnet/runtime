@@ -5,6 +5,7 @@ include(CheckSymbolExists)
 check_include_files("windows.h;bcrypt.h" HAVE_BCRYPT_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_include_files("asm/hwprobe.h" HAVE_HWPROBE_H)
+check_include_files("sys/resource.h" HAVE_RESOURCE_H)
 
 check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 check_function_exists(fsync HAVE_FSYNC)

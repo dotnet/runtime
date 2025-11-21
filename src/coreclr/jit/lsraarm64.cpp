@@ -356,7 +356,7 @@ SingleTypeRegSet LinearScan::filterConsecutiveCandidatesForSpill(SingleTypeRegSe
                 shouldCheckForRounding = (regAvailableStartIndex >= 61);
                 break;
             default:
-                assert("Unsupported registersNeeded\n");
+                assert(!"Unsupported registersNeeded\n");
                 break;
         }
 
@@ -1710,6 +1710,8 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
+                case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
                 case NI_Sve2_DotProductRotateComplexBySelectedIndex:
                     // This API has two immediates, one of which is used to index pairs of floats in a vector.
                     // For a vector width of 128 bits, this means the index's range is [0, 1],
@@ -1735,6 +1737,8 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplex:
+                case NI_Sve2_MultiplyAddRotateComplex:
+                case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplex:
                 case NI_Sve2_DotProductRotateComplex:
                     needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
                     break;
@@ -2168,6 +2172,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
             case NI_Sve2_DotProductRotateComplexBySelectedIndex:
             case NI_Sve2_MultiplyAddBySelectedScalar:
+            case NI_Sve2_MultiplyAddRotateComplexBySelectedScalar:
             case NI_Sve2_MultiplyBySelectedScalarWideningEvenAndAdd:
             case NI_Sve2_MultiplyBySelectedScalarWideningOddAndAdd:
             case NI_Sve2_MultiplySubtractBySelectedScalar:
@@ -2179,6 +2184,7 @@ SingleTypeRegSet LinearScan::getOperandCandidates(GenTreeHWIntrinsic* intrinsicT
             case NI_Sve2_MultiplyDoublingWideningBySelectedScalarAndSubtractSaturateOdd:
             case NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndAddHigh:
             case NI_Sve2_MultiplyRoundedDoublingSaturateBySelectedScalarAndSubtractHigh:
+            case NI_Sve2_MultiplyAddRoundedDoublingSaturateHighRotateComplexBySelectedScalar:
                 isLowVectorOpNum = (opNum == 3);
                 break;
             case NI_Sve_MultiplyBySelectedScalar:

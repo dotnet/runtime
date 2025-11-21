@@ -361,6 +361,11 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 cur->SetFlags(BBF_REMOVED);
                 removedBlks++;
 
+                if (cur->KindIs(BBJ_RETURN))
+                {
+                    fgReturnCount--;
+                }
+
                 // Drop the block from the list.
                 //
                 // We rely on the fact that this does not clear out

@@ -486,13 +486,8 @@ namespace System
         /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
         static nuint IBinaryNumber<nuint>.AllBitsSet
         {
-#if TARGET_64BIT
             [NonVersionable]
-            get => unchecked((nuint)0xFFFF_FFFF_FFFF_FFFF);
-#else
-            [NonVersionable]
-            get => (nuint)0xFFFF_FFFF;
-#endif
+            get => unchecked((nuint)nuint_t.MaxValue);
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />

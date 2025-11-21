@@ -101,7 +101,7 @@ namespace System.Threading
                 stackSize = RuntimeImports.RhGetDefaultStackSize();
             }
 
-            if (!Interop.Sys.CreateThread(stackSize, &ThreadEntryPoint, GCHandle<Thread>.ToIntPtr(thisThreadHandle)))
+            if (!Interop.Sys.CreateThread(stackSize, RuntimeImports.RhGetThreadEntryPointAddress(), GCHandle<Thread>.ToIntPtr(thisThreadHandle)))
             {
                 return false;
             }
@@ -115,7 +115,7 @@ namespace System.Threading
         /// <summary>
         /// This is an entry point for managed threads created by application
         /// </summary>
-        [UnmanagedCallersOnly]
+        [UnmanagedCallersOnly(EntryPoint = "ThreadEntryPoint")]
         private static IntPtr ThreadEntryPoint(IntPtr parameter)
         {
             StartThread(parameter);

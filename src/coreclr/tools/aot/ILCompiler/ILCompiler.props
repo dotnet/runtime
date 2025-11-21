@@ -67,6 +67,7 @@
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
+      Condition="'$(TargetsWasm)' != 'true'"
       />
 
     <Content Include="$(CoreCLRArtifactsPath)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)"

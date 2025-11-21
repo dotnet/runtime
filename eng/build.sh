@@ -159,6 +159,7 @@ extraargs=()
 crossBuild=0
 portableBuild=1
 bootstrap=0
+bootstrapConfig='Debug'
 
 source $scriptroot/common/native/init-os-and-arch.sh
 
@@ -169,7 +170,7 @@ declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "pu
 actInt=($(comm -12 <(printf '%s\n' "${actions[@]/#/-}" | sort) <(printf '%s\n' "${@/#--/-}" | sort)))
 firstArgumentChecked=0
 
-while [[ $# > 0 ]]; do
+while [[ $# -gt 0 ]]; do
   opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
 
   if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
@@ -241,6 +242,7 @@ while [[ $# > 0 ]]; do
           exit 1
           ;;
       esac
+      bootstrapConfig=$val
       arguments+=("-configuration" "$val")
       shift 2
       ;;
@@ -571,6 +573,8 @@ fi
 
 # disable terminal logger for now: https://github.com/dotnet/runtime/issues/97211
 arguments+=("-tl:false")
+# disable line wrapping so that C&P from the console works well
+arguments+=("-clp:ForceNoAlign")
 
 initDistroRid "$os" "$arch" "$crossBuild"
 
@@ -598,7 +602,7 @@ if [[ "$bootstrap" == "1" ]]; then
       bootstrapArguments+=("$argument")
     fi
   done
-  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/bootstrap.binlog
+  "$scriptroot/common/build.sh" ${bootstrapArguments[@]+"${bootstrapArguments[@]}"} /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/$bootstrapConfig/bootstrap.binlog
 
   # Remove artifacts from the bootstrap build so the product build is a "clean" build.
   echo "Cleaning up artifacts from bootstrap build..."

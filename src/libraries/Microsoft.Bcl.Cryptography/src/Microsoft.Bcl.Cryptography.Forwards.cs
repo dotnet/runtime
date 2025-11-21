@@ -14,6 +14,7 @@
 #if NET10_0_OR_GREATER
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.CompositeMLDsa))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.CompositeMLDsaAlgorithm))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.CompositeMLDsaCng))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.MLDsa))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.MLDsaAlgorithm))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Cryptography.MLDsaCng))]

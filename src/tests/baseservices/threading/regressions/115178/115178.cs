@@ -164,10 +164,10 @@ public class Test_wait_interrupted_user_apc
             stopwatch.Stop();
 
             long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-            if (elapsedMilliseconds < 1980)
+            if (elapsedMilliseconds < 1970)
             {
-                // Wait uses low resolution timer, test includes a margin of 20ms to account for timer resolution differences.
-                Console.WriteLine($"Error waiting on event, wait returned too early. Waited {elapsedMilliseconds} ms, expected at least 1980 ms.");
+                // Wait uses low resolution timer, test includes a margin of 30ms to account for timer resolution differences.
+                Console.WriteLine($"Error waiting on event, wait returned too early. Waited {elapsedMilliseconds} ms, expected at least 1970 ms.");
                 result = 5;
             }
 
@@ -288,12 +288,7 @@ public class Test_wait_interrupted_user_apc
     {
         RunTestUsingInfiniteWait();
         RunTestUsingTimedWait();
-
-        // Thread.Interrupt is not implemented on NativeAOT - https://github.com/dotnet/runtime/issues/69919
-        if (!TestLibrary.Utilities.IsNativeAot)
-        {
-            RunTestInterruptInfiniteWait();
-        }
+        RunTestInterruptInfiniteWait();
 
         return result;
     }

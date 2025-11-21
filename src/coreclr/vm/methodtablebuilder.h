@@ -189,7 +189,6 @@ private:
     void SetIsComClassInterface() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetIsComClassInterface(); }
 #endif // FEATURE_COMINTEROP
     BOOL IsEnum() { WRAPPER_NO_CONTRACT; return bmtProp->fIsEnum; }
-    BOOL HasNonPublicFields() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasNonPublicFields(); }
     BOOL IsValueClass() { WRAPPER_NO_CONTRACT; return bmtProp->fIsValueClass; }
     BOOL IsUnsafeValueClass() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsUnsafeValueClass(); }
     BOOL IsAbstract() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsAbstract(); }
@@ -222,7 +221,7 @@ private:
     // we create that object.</NICE>
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
-    void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
+    void SetHasRVAStaticFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasRVAStaticFields(); }
     void SetNumHandleRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleRegularStatics(x); }
     void SetNumHandleThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumHandleThreadStatics(x); }
     void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); }
@@ -480,7 +479,7 @@ private:
         bmtTypeHandle(
             bmtRTType * pRTType)
             : m_handle(HandleFromRTType(pRTType))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTType = pRTType;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTType = pRTType;) }
 
         //-----------------------------------------------------------------------------------------
         // Creates a type handle for a bmtMDType pointer. For ease of use, this conversion
@@ -488,7 +487,7 @@ private:
         bmtTypeHandle(
             bmtMDType * pMDType)
             : m_handle(HandleFromMDType(pMDType))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDType = pMDType;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtTypeHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDType = pMDType;) }
 
         //-----------------------------------------------------------------------------------------
         // Copy constructor.
@@ -1127,14 +1126,14 @@ private:
         bmtMethodHandle(
             bmtRTMethod * pRTMethod)
             : m_handle(HandleFromRTMethod(pRTMethod))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTMethod = pRTMethod;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsRTMethod = pRTMethod;) }
 
         //-----------------------------------------------------------------------------------------
         // Constructor taking a bmtMDMethod*.
         bmtMethodHandle(
             bmtMDMethod * pMDMethod)
             : m_handle(HandleFromMDMethod(pMDMethod))
-            { NOT_DEBUG(static_assert_no_msg(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDMethod = pMDMethod;) }
+            { NOT_DEBUG(static_assert(sizeof(bmtMethodHandle) == sizeof(UINT_PTR));) INDEBUG(m_pAsMDMethod = pMDMethod;) }
 
         //-----------------------------------------------------------------------------------------
         // Copy constructor.
@@ -2091,7 +2090,6 @@ private:
         bool  fIsAllGCPointers;
         bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;
-        bool  fHasSelfReferencingStaticValueTypeField_WithRVA;
 
         // These data members are specific to regular statics
         DWORD RegularStaticFieldStart[MAX_LOG2_PRIMITIVE_FIELD_SIZE+1];            // Byte offset where to start placing fields of this size
@@ -2671,10 +2669,9 @@ private:
         unsigned * totalDeclaredSize);
 
     // --------------------------------------------------------------------------------------------
-    // Verify self-referencing static ValueType fields with RVA (when the size of the ValueType is known).
-    void
-    VerifySelfReferencingStaticValueTypeFields_WithRVA(
-        MethodTable ** pByValueClassCache);
+    // Returns the CorElementType for the type referenced by typeDefOrRef, which must not be
+    // byreflike, and must be a valuetype of some form (enum or valuetype)
+    CorElementType GetCorElementTypeOfTypeDefOrRefForStaticField(Module* module, mdToken typeDefOrRef);
 
     // --------------------------------------------------------------------------------------------
     // Returns TRUE if dwByValueClassToken refers to the type being built; otherwise returns FALSE.
@@ -3000,6 +2997,9 @@ private:
         bmtFieldLayoutTag* pFieldLayout);
 
     VOID    HandleGCForExplicitLayout();
+
+    VOID HandleCStructLayout(
+        MethodTable **);
 
     VOID    CheckForHFA(MethodTable ** pByValueClassCache);
 

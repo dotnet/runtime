@@ -49,6 +49,93 @@ namespace System.Runtime.Intrinsics
             get => IsHardwareAccelerated;
         }
 
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector128<T>)
+            where T : IFloatingPointConstants<T>
+        {
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointConstants{TSelf}.E" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> E
+            {
+                [Intrinsic]
+                get => Create(T.E);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointConstants{TSelf}.Pi" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> Pi
+            {
+                [Intrinsic]
+                get => Create(T.Pi);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointConstants{TSelf}.Tau" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> Tau
+            {
+                [Intrinsic]
+                get => Create(T.Tau);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector128<T>)
+            where T : IFloatingPointIeee754<T>
+        {
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointIeee754{TSelf}.Epsilon" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> Epsilon
+            {
+                [Intrinsic]
+                get => Create(T.Epsilon);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointIeee754{TSelf}.NaN" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> NaN
+            {
+                [Intrinsic]
+                get => Create(T.NaN);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointIeee754{TSelf}.NegativeInfinity" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> NegativeInfinity
+            {
+                [Intrinsic]
+                get => Create(T.NegativeInfinity);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointIeee754{TSelf}.NegativeZero" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> NegativeZero
+            {
+                [Intrinsic]
+                get => Create(T.NegativeZero);
+            }
+
+            /// <summary>Gets a new vector with all elements initialized to <see cref="IFloatingPointIeee754{TSelf}.PositiveInfinity" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> PositiveInfinity
+            {
+                [Intrinsic]
+                get => Create(T.PositiveInfinity);
+            }
+        }
+
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        extension<T>(Vector128<T>)
+            where T : ISignedNumber<T>
+        {
+            /// <summary>Gets a new vector with all elements initialized to <see cref="ISignedNumber{TSelf}.NegativeOne" />.</summary>
+            /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+            public static Vector128<T> NegativeOne
+            {
+                [Intrinsic]
+                get => Create(T.NegativeOne);
+            }
+        }
+
         /// <summary>Computes the absolute value of each element in a vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector that will have its absolute value computed.</param>
@@ -1970,11 +2057,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return Equals(vector, Create(float.NegativeInfinity).As<float, T>());
+                return Equals(vector, Vector128<float>.NegativeInfinity.As<float, T>());
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Create(double.NegativeInfinity).As<double, T>());
+                return Equals(vector, Vector128<double>.NegativeInfinity.As<double, T>());
             }
             return Vector128<T>.Zero;
         }
@@ -2045,11 +2132,11 @@ namespace System.Runtime.Intrinsics
         {
             if (typeof(T) == typeof(float))
             {
-                return Equals(vector, Create(float.PositiveInfinity).As<float, T>());
+                return Equals(vector, Vector128<float>.PositiveInfinity.As<float, T>());
             }
             else if (typeof(T) == typeof(double))
             {
-                return Equals(vector, Create(double.PositiveInfinity).As<double, T>());
+                return Equals(vector, Vector128<double>.PositiveInfinity.As<double, T>());
             }
             return Vector128<T>.Zero;
         }

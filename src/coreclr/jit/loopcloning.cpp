@@ -177,12 +177,13 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
         case IndirOfLocal:
         {
             GenTree* addr = comp->gtNewLclvNode(lclNum, TYP_REF);
-            if (indirOffs != 0)
+            if (indirOffs == 0)
             {
-                addr = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
-                                           comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
+                return comp->gtNewMethodTableLookup(addr);
             }
 
+            addr                 = comp->gtNewOperNode(GT_ADD, TYP_BYREF, addr,
+                                                       comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
             GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr, GTF_IND_INVARIANT);
             return indir;
         }
@@ -1207,7 +1208,7 @@ bool Compiler::optDeriveLoopCloningConditions(FlowGraphNaturalLoop* loop, LoopCl
     // is beyond the limit.
     int stride = abs(iterInfo->IterConst());
 
-    static_assert_no_msg(INT32_MAX >= CORINFO_Array_MaxLength);
+    static_assert(INT32_MAX >= CORINFO_Array_MaxLength);
     if (stride >= (INT32_MAX - (CORINFO_Array_MaxLength - 1) + 1))
     {
         // Array.MaxLength can have maximum of 0x7fffffc7 elements, so make sure

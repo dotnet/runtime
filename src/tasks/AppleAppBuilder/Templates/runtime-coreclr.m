@@ -13,7 +13,7 @@
 
 #import "util.h"
 
-#define APPLE_RUNTIME_IDENTIFIER "iossimulator-arm64"
+#define APPLE_RUNTIME_IDENTIFIER "//%APPLE_RUNTIME_IDENTIFIER%"
 
 const char *
 get_bundle_path (void)
@@ -75,6 +75,7 @@ pinvoke_override (const char *libraryName, const char *entrypointName)
     {
         return dlsym (RTLD_DEFAULT, entrypointName);
     }
+
     return NULL;
 }
 

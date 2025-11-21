@@ -56,6 +56,9 @@ namespace System.Threading
             }
 
             int result;
+
+            Thread.CheckForPendingInterrupt();
+
             while (true)
             {
 #if NATIVEAOT
@@ -75,8 +78,10 @@ namespace System.Threading
                 if (result != Interop.Kernel32.WAIT_IO_COMPLETION)
                     break;
 
+                Thread.CheckForPendingInterrupt();
+
                 // Handle APC completion by adjusting timeout and retrying
-                if (millisecondsTimeout != -1)
+                if (millisecondsTimeout != Timeout.Infinite)
                 {
                     long currentTime = Environment.TickCount64;
                     long elapsed = currentTime - startTime;
@@ -89,6 +94,7 @@ namespace System.Threading
                     startTime = currentTime;
                 }
             }
+
             currentThread.ClearWaitSleepJoinState();
 
             if (result == Interop.Kernel32.WAIT_FAILED)
@@ -134,12 +140,16 @@ namespace System.Threading
                 startTime = Environment.TickCount64;
             }
 
+            Thread.CheckForPendingInterrupt();
+
             // Signal the object and wait for the first time
             int ret = (int)Interop.Kernel32.SignalObjectAndWait(handleToSignal, handleToWaitOn, (uint)millisecondsTimeout, Interop.BOOL.TRUE);
 
             // Handle APC completion by retrying with WaitForSingleObjectEx (without signaling again)
             while (ret == Interop.Kernel32.WAIT_IO_COMPLETION)
             {
+                Thread.CheckForPendingInterrupt();
+
                 if (millisecondsTimeout != -1)
                 {
                     long currentTime = Environment.TickCount64;

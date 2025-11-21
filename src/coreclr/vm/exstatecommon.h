@@ -8,9 +8,10 @@
 #define __ExStateCommon_h__
 
 #include "stackframe.h"
+#include "cdacdata.h"
 
 class ExceptionFlags;
-
+struct ExInfo;
 #ifdef DEBUGGING_SUPPORTED
 //---------------------------------------------------------------------------------------
 //
@@ -431,6 +432,9 @@ private:
 typedef DPTR(class EHWatsonBucketTracker) PTR_EHWatsonBucketTracker;
 class EHWatsonBucketTracker
 {
+    friend struct ::cdac_data<ExInfo>;
+    friend struct ::cdac_data<Thread>;
+
 private:
     struct
     {

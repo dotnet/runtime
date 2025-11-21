@@ -85,7 +85,7 @@ extends:
             # Build libs.sfx subset first so that Roslyn analyzer tests can use live ref pack
             buildArgs: -s libs.sfx -c $(_BuildConfig)
             postBuildSteps:
-            - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s tools.illinktests -test -c $(_BuildConfig) $(crossArg) $(_officialBuildParameter)
+            - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch $(archType) $(_osParameter) -s tools.illinktests -test -c $(_BuildConfig) $(crossArg) $(_officialBuildParameter)
               displayName: Run ILLink Tests
 
       #

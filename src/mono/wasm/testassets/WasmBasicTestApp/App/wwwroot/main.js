@@ -223,8 +223,16 @@ try {
         case "LibraryInitializerTest":
             exit(0);
             break;
+        case "ZipArchiveInteropTest":
+            exports.ZipArchiveInteropTest.Run();
+            exit(0);
+            break;
         case "AppSettingsTest":
             exports.AppSettingsTest.Run();
+            exit(0);
+            break;
+        case "FilesToIncludeInFileSystemTest":
+            exports.FilesToIncludeInFileSystemTest.Run();
             exit(0);
             break;
         case "DownloadResourceProgressTest":

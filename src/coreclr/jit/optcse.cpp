@@ -56,14 +56,14 @@ const size_t Compiler::s_optCSEhashBucketSize   = 4;
 // For other architecture and platforms these values dynamically change
 // based upon the number of callee saved and callee scratch registers.
 //
-#define CNT_AGGRESSIVE_ENREG ((CNT_CALLEE_ENREG * 3) / 2)
-#define CNT_MODERATE_ENREG   ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2))
+#define CNT_AGGRESSIVE_ENREG ((CNT_CALLEE_ENREG_FOR_CSE * 3) / 2)
+#define CNT_MODERATE_ENREG   ((CNT_CALLEE_ENREG_FOR_CSE * 3) + (CNT_CALLEE_TRASH_FOR_CSE * 2))
 
-#define CNT_AGGRESSIVE_ENREG_FLT ((CNT_CALLEE_ENREG_FLOAT * 3) / 2)
-#define CNT_MODERATE_ENREG_FLT   ((CNT_CALLEE_ENREG_FLOAT * 3) + (CNT_CALLEE_TRASH_FLOAT * 2))
+#define CNT_AGGRESSIVE_ENREG_FLT ((CNT_CALLEE_ENREG_FLOAT_FOR_CSE * 3) / 2)
+#define CNT_MODERATE_ENREG_FLT   ((CNT_CALLEE_ENREG_FLOAT_FOR_CSE * 3) + (CNT_CALLEE_TRASH_FLOAT_FOR_CSE * 2))
 
-#define CNT_AGGRESSIVE_ENREG_MSK ((CNT_CALLEE_ENREG_MASK * 3) / 2)
-#define CNT_MODERATE_ENREG_MSK   ((CNT_CALLEE_ENREG_MASK * 3) + (CNT_CALLEE_TRASH_MASK * 2))
+#define CNT_AGGRESSIVE_ENREG_MSK ((CNT_CALLEE_ENREG_MASK_FOR_CSE * 3) / 2)
+#define CNT_MODERATE_ENREG_MSK   ((CNT_CALLEE_ENREG_MASK_FOR_CSE * 3) + (CNT_CALLEE_TRASH_MASK_FOR_CSE * 2))
 
 /*****************************************************************************
  *
@@ -806,7 +806,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             return 0;
         }
 
-        C_ASSERT((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
+        static_assert((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
 
         unsigned CSEindex = ++optCSECandidateCount;
 
@@ -2021,6 +2021,10 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             break;
 
         case GT_COMMA:
+            if (tree->gtEffectiveVal()->OperIs(GT_FIELD_LIST))
+            {
+                return false;
+            }
             break;
 
         case GT_COLON:
@@ -2322,7 +2326,7 @@ CSE_HeuristicParameterized::CSE_HeuristicParameterized(Compiler* pCompiler)
 
     // Stopping "parameter"
     //
-    m_registerPressure = CNT_CALLEE_TRASH + CNT_CALLEE_SAVED;
+    m_registerPressure = CNT_CALLEE_TRASH_FOR_CSE + CNT_CALLEE_SAVED_FOR_CSE;
 
     // Verbose
     //
@@ -4663,11 +4667,11 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
 
             if (varTypeUsesIntReg(candidate->Expr()))
             {
-                assert(CNT_CALLEE_SAVED != 0);
+                assert(CNT_CALLEE_SAVED_FOR_CSE != 0);
             }
             else if (varTypeUsesMaskReg(candidate->Expr()))
             {
-                if (CNT_CALLEE_SAVED_MASK == 0)
+                if (CNT_CALLEE_SAVED_MASK_FOR_CSE == 0)
                 {
                     hasRequiredSpill = true;
                 }
@@ -4676,7 +4680,7 @@ bool CSE_Heuristic::PromotionCheck(CSE_Candidate* candidate)
             {
                 assert(varTypeUsesFloatReg(candidate->Expr()));
 
-                if (CNT_CALLEE_SAVED_FLOAT == 0)
+                if (CNT_CALLEE_SAVED_FLOAT_FOR_CSE == 0)
                 {
                     hasRequiredSpill = true;
                 }

@@ -10,4 +10,22 @@ public static class ICodeVersionsExtensions
         ILCodeVersionHandle ilCodeVersionHandle = cv.GetActiveILCodeVersion(methodDesc);
         return cv.GetActiveNativeCodeVersionForILCodeVersion(methodDesc, ilCodeVersionHandle);
     }
+
+    public static TargetCodePointer GetNativeCodeAnyVersion(this ICodeVersions cv, TargetPointer methodDesc)
+    {
+        foreach (ILCodeVersionHandle ilCodeVersionHandle in cv.GetILCodeVersions(methodDesc))
+        {
+            foreach (NativeCodeVersionHandle nativeCodeVersionHandle in cv.GetNativeCodeVersions(methodDesc, ilCodeVersionHandle))
+            {
+                if (cv.GetNativeCode(nativeCodeVersionHandle) != TargetCodePointer.Null)
+                {
+                    return cv.GetNativeCode(nativeCodeVersionHandle);
+                }
+            }
+        }
+        return TargetCodePointer.Null;
+    }
+
+    public static bool HasNativeCodeAnyVersion(this ICodeVersions cv, TargetPointer methodDesc)
+        => cv.GetNativeCodeAnyVersion(methodDesc) != TargetCodePointer.Null;
 }

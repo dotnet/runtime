@@ -293,14 +293,15 @@ class FileLoadLock : public ListLockEntry
 {
 private:
     FileLoadLevel   m_level;
-    Assembly*       m_pAssembly;
+    Assembly*       m_pAssembly;    // Will be null until FILE_LOAD_ALLOCATE is completed successfully
     HRESULT         m_cachedHR;
 
 public:
-    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, Assembly *pAssembly);
+    static FileLoadLock* Create(PEFileListLock* pLock, PEAssembly* pPEAssembly);
 
     ~FileLoadLock();
     Assembly *GetAssembly();
+    PEAssembly* GetPEAssembly();
     FileLoadLevel GetLoadLevel();
 
     // CanAcquire will return FALSE if Acquire will definitely not take the lock due
@@ -320,6 +321,9 @@ public:
     // returns TRUE if it updated load level, FALSE if the level was set already
     BOOL CompleteLoadLevel(FileLoadLevel level, BOOL success);
 
+    // Associate an Assembly with this lock
+    void SetAssembly(Assembly* pAssembly);
+
     void SetError(Exception *ex);
 
     void AddRef();
@@ -327,7 +331,7 @@ public:
 
 private:
 
-    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, Assembly *pAssembly);
+    FileLoadLock(PEFileListLock* pLock, PEAssembly* pPEAssembly);
 
     static void HolderLeave(FileLoadLock *pThis);
 
@@ -1098,7 +1102,7 @@ private:
 
     Assembly *LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel);
 
-    void TryIncrementalLoad(Assembly *pFile, FileLoadLevel workLevel, FileLoadLockHolder &lockHolder);
+    void TryIncrementalLoad(FileLoadLevel workLevel, FileLoadLockHolder& lockHolder);
 
 #ifndef DACCESS_COMPILE // needs AssemblySpec
 public:
@@ -1135,7 +1139,6 @@ public:
 
     //****************************************************************************************
     LPCWSTR GetFriendlyName();
-    LPCWSTR GetFriendlyNameForDebugger();
     void SetFriendlyName(LPCWSTR pwzFriendlyName);
 
     PEAssembly * BindAssemblySpec(
@@ -1549,8 +1552,6 @@ public:
 
 #endif
 
-#if defined(FEATURE_TIERED_COMPILATION)
-
 public:
     TieredCompilationManager * GetTieredCompilationManager()
     {
@@ -1560,8 +1561,6 @@ public:
 
 private:
     TieredCompilationManager m_tieredCompilationManager;
-
-#endif
 
     friend struct cdac_data<AppDomain>;
 };  // class AppDomain

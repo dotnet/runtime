@@ -268,7 +268,7 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
+        UpdateFloatingPointRegisters(pRD, GetSP());
         _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE
@@ -678,14 +678,6 @@ int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
     return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-
-#ifdef DACCESS_COMPILE
-BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
-{
-    _ASSERTE(!"LOONGARCH64:NYI");
-    return FALSE;
-}
-#endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 // ----------------------------------------------------------------

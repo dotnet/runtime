@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
@@ -373,16 +372,6 @@ namespace System.Security.Cryptography
                 {
                     key = CngKey.Import(pkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
                 }
-                catch (CryptographicException)
-                {
-                    // TODO: Once Windows moves to new PKCS#8 format, we can remove this conversion.
-                    byte[] newPkcs8Source = MLDsaPkcs8.ConvertToOldChoicelessFormat(pkcs8Source);
-
-                    using (PinAndClear.Track(newPkcs8Source))
-                    {
-                        key = CngKey.Import(newPkcs8Source, CngKeyBlobFormat.Pkcs8PrivateBlob);
-                    }
-                }
                 catch (AsnContentException e)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
@@ -490,13 +479,6 @@ namespace System.Security.Cryptography
                 try
                 {
                     mldsaPrivateKeyAsn = MLDsaPrivateKeyAsn.Decode(privateKey, AsnEncodingRules.BER);
-                }
-                catch (CryptographicException)
-                {
-                    // TODO: Once Windows moves to new PKCS#8 format, we can remove this conversion.
-                    newPkcs8 = MLDsaPkcs8.ConvertFromOldChoicelessFormat(pkcs8);
-                    ReadOnlyMemory<byte> newPrivateKey = KeyFormatHelper.ReadPkcs8(KnownOids, newPkcs8, out _);
-                    mldsaPrivateKeyAsn = MLDsaPrivateKeyAsn.Decode(newPrivateKey, AsnEncodingRules.BER);
                 }
                 catch (AsnContentException e)
                 {

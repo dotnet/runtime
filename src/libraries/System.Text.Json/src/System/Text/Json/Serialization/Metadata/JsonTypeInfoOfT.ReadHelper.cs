@@ -136,29 +136,17 @@ namespace System.Text.Json.Serialization.Metadata
             out T? value)
             where TReadBufferState : struct, IReadBufferState<TReadBufferState, TStream>
         {
-            Utf8JsonReader reader;
-            if (bufferState.Bytes.IsSingleSegment)
-            {
-                reader = new Utf8JsonReader(
-#if NET
-                    bufferState.Bytes.FirstSpan,
-#else
-                    bufferState.Bytes.First.Span,
-#endif
-                    bufferState.IsFinalBlock, jsonReaderState);
-            }
-            else
-            {
-                reader = new Utf8JsonReader(bufferState.Bytes, bufferState.IsFinalBlock, jsonReaderState);
-            }
+            bufferState.GetReader(jsonReaderState, out Utf8JsonReader reader);
 
             try
             {
                 bool success = EffectiveConverter.ReadCore(ref reader, out value, Options, ref readStack);
 
+#if DEBUG
                 Debug.Assert(reader.BytesConsumed <= bufferState.Bytes.Length);
                 Debug.Assert(!bufferState.IsFinalBlock || reader.AllowMultipleValues || reader.BytesConsumed == bufferState.Bytes.Length,
                     "The reader should have thrown if we have remaining bytes.");
+#endif
 
                 jsonReaderState = reader.CurrentState;
                 return success;

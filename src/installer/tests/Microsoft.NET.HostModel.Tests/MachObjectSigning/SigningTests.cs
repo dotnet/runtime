@@ -77,7 +77,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             Assert.True(IsSigned(managedSignedPath + ".resigned"), $"Failed to resign {filePath}");
         }
 
-        [Theory]
+        [Theory(Skip = "Temporarily disabled due to macOS 26 codesign behavior change - only hashing __TEXT segment")]
         [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
         [PlatformSpecific(TestPlatforms.OSX)]
         void MatchesCodesignOutput(string filePath, TestArtifact _)
@@ -90,7 +90,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             // Codesigned file
             File.Copy(filePath, codesignFilePath);
             Assert.True(Codesign.IsAvailable, "Could not find codesign tool");
-            var (exitCode, stdErr) = Codesign.Run("-s - -f --preserve-metadata=entitlements -i" + fileName, codesignFilePath);
+            var (exitCode, stdErr) = Codesign.Run("-s - -f -i " + fileName, codesignFilePath);
             Assert.Equal(0, exitCode);
 
             // Managed signed file
@@ -142,41 +142,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]
-        public void SigningAppHostPreservesEntitlements()
-        {
-            using var testDirectory = TestArtifact.Create(nameof(SigningAppHostPreservesEntitlements));
-            var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.AppHost.FilePath));
-            File.Copy(Binaries.AppHost.FilePath, testAppHostPath);
-            string signedHostPath = testAppHostPath + ".signed";
-
-            HostWriter.CreateAppHost(testAppHostPath, signedHostPath, testAppHostPath + ".dll", enableMacOSCodeSign: true);
-
-            Assert.True(SigningTests.HasEntitlementsBlob(testAppHostPath));
-            Assert.True(SigningTests.HasEntitlementsBlob(signedHostPath));
-            Assert.True(SigningTests.HasDerEntitlementsBlob(testAppHostPath));
-            Assert.True(SigningTests.HasDerEntitlementsBlob(signedHostPath));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public void BundledAppHostHasEntitlements()
-        {
-            using var testDirectory = TestArtifact.Create(nameof(BundledAppHostHasEntitlements));
-            var testAppHostPath = Path.Combine(testDirectory.Location, Path.GetFileName(Binaries.SingleFileHost.FilePath));
-            File.Copy(Binaries.SingleFileHost.FilePath, testAppHostPath);
-            string signedHostPath = testAppHostPath + ".signed";
-
-            HostWriter.CreateAppHost(testAppHostPath, signedHostPath, testAppHostPath + ".dll", enableMacOSCodeSign: true);
-            var bundlePath = new Bundler(Path.GetFileName(signedHostPath), testAppHostPath + ".bundle").GenerateBundle([new(signedHostPath, Path.GetFileName(signedHostPath))]);
-
-            Assert.True(SigningTests.HasEntitlementsBlob(testAppHostPath));
-            Assert.True(SigningTests.HasEntitlementsBlob(bundlePath));
-            Assert.True(SigningTests.HasDerEntitlementsBlob(testAppHostPath));
-            Assert.True(SigningTests.HasDerEntitlementsBlob(bundlePath));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
         public void OverwritingExistingBundleClearsMacOsSignatureCache()
         {
             // Bundle to a single-file and ensure it is signed
@@ -189,7 +154,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             // Bundler should create a new inode for the bundle which should clear the MacOS signature cache.
             string oldFile = singleFile;
             string dir = Path.GetDirectoryName(singleFile);
-            singleFile = sharedTestState.SelfContainedApp.Rebundle(dir, BundleOptions.BundleAllContent, out var _, new Version(5, 0));
+            singleFile = sharedTestState.SelfContainedApp.Rebundle(dir, BundleOptions.BundleAllContent, out var _);
             Assert.True(singleFile == oldFile, "Rebundled app should have the same path as the original single-file app.");
             var secondInode = Inode.GetInode(singleFile);
             Assert.False(firstInode == secondInode, "not a different inode after re-bundling");
@@ -325,26 +290,6 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
         }
 
         public static bool IsMachOImage(string filePath) => MachObjectFile.IsMachOImage(filePath);
-
-        public static bool HasEntitlementsBlob(string filePath)
-        {
-            using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open))
-            using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
-            {
-                var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                return machObjectFile.EmbeddedSignatureBlob?.EntitlementsBlob != null;
-            }
-        }
-
-        public static bool HasDerEntitlementsBlob(string filePath)
-        {
-            using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open))
-            using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
-            {
-                var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                return machObjectFile.EmbeddedSignatureBlob?.DerEntitlementsBlob != null;
-            }
-        }
 
         static readonly string[] liveBuiltHosts = new string[] { Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath };
 

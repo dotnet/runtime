@@ -145,18 +145,18 @@ public:
 #endif // !DACCESS_COMPILE
 };
 
-#ifndef DACCESS_COMPILE
 // A special layout that is used to load standalone composite r2r files.
 // This layout is not owned by a PEImage and created by simply loading the file
 // at the given path.
 class NativeImageLayout : public PEImageLayout
 {
     VPTR_VTABLE_CLASS(NativeImageLayout, PEImageLayout)
-
-public:
+    
+    public:
+#ifndef DACCESS_COMPILE
     NativeImageLayout(LPCWSTR fullPath);
-};
 #endif
+};
 
 #endif  // PEIMAGELAYOUT_H_
 

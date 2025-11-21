@@ -195,7 +195,7 @@ uint64_t PalGetCurrentOSThreadId()
     return GetCurrentThreadId();
 }
 
-#if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
+#if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 UInt32_BOOL PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
 {
 #ifdef XBOX_ONE
@@ -235,7 +235,7 @@ UInt32_BOOL PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSi
     return UnmapViewOfFile(pBaseAddress);
 #endif
 }
-#endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
+#endif // !FEATURE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
 UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
@@ -1039,11 +1039,6 @@ UInt32_BOOL PalCloseHandle(HANDLE arg1)
     return ::CloseHandle(arg1);
 }
 
-void PalFlushProcessWriteBuffers()
-{
-    ::FlushProcessWriteBuffers();
-}
-
 uint32_t PalGetCurrentProcessId()
 {
     return static_cast<uint32_t>(::GetCurrentProcessId());
@@ -1067,9 +1062,4 @@ UInt32_BOOL PalSetEvent(HANDLE arg1)
 uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3)
 {
     return ::WaitForSingleObjectEx(arg1, arg2, arg3);
-}
-
-void PalGetSystemTimeAsFileTime(FILETIME * arg1)
-{
-    ::GetSystemTimeAsFileTime(arg1);
 }
