@@ -697,6 +697,14 @@ int32_t SystemNative_MkDir(const char* path, int32_t mode)
 {
     int32_t result;
     while ((result = mkdir(path, (mode_t)mode)) < 0 && errno == EINTR);
+    
+    // Workaround for potential errno corruption: if mkdir failed but errno is 0,
+    // set it to EIO to avoid "Success" error messages
+    if (result < 0 && errno == 0)
+    {
+        errno = EIO;
+    }
+    
     return result;
 }
 
