@@ -7,6 +7,7 @@
  *          id          -- the enum name for the instruction
  *          nm          -- textual name (for assembly display)
  *          info        -- miscellaneous instruction info
+ *          fmt         -- instruction format
  *          opcode      -- encoding (modulo operands)
  *
  ******************************************************************************/
