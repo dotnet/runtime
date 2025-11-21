@@ -189,8 +189,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Half_op_LessThanOrEqual,
     NI_System_Half_op_Multiply,
     NI_System_Half_op_Subtraction,
-    NI_System_Half_op_UnaryNegation,
-    NI_System_Half_op_UnaryPlus,
 
 
 

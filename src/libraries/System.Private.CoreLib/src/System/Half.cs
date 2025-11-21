@@ -1332,6 +1332,7 @@ namespace System
         public static Half Floor(Half x) => (Half)MathF.Floor((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        [Intrinsic]
         public static Half Round(Half x) => (Half)MathF.Round((float)x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
@@ -1517,6 +1518,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
         public static Half FusedMultiplyAdd(Half left, Half right, Half addend) => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
@@ -1554,9 +1556,11 @@ namespace System
         public static Half Lerp(Half value1, Half value2, Half amount) => (Half)float.Lerp((float)value1, (float)value2, (float)amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        [Intrinsic]
         public static Half ReciprocalEstimate(Half x) => (Half)MathF.ReciprocalEstimate((float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        [Intrinsic]
         public static Half ReciprocalSqrtEstimate(Half x) => (Half)MathF.ReciprocalSqrtEstimate((float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ScaleB(TSelf, int)" />

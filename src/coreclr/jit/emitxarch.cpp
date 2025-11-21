@@ -128,7 +128,8 @@ bool emitter::Is3OpRmwInstruction(instruction ins)
         {
             return ((ins >= FIRST_FMA_INSTRUCTION) && (ins <= LAST_FMA_INSTRUCTION)) ||
                    (IsAVXVNNIFamilyInstruction(ins)) ||
-                   ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION));
+                   ((ins >= FIRST_AVXIFMA_INSTRUCTION) && (ins <= LAST_AVXIFMA_INSTRUCTION) ||
+                   ((ins >= FIRST_AVX10V1_FMA_INSTR) && (ins <= LAST_AVX10V1_FMA_INSTR)));
         }
     }
 }
@@ -2994,7 +2995,7 @@ emitter::code_t emitter::emitExtractEvexPrefix(instruction ins, code_t& code) co
         if (sizePrefix == 0)
         {
             // no simd prefix for EVEX2 - AVX10.2 and above
-            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2) ||
+            assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v1) ||
                    emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT) ||
                    emitComp->compIsaSupportedDebugOnly(InstructionSet_AVXVNNIINT_V512));
         }
@@ -21409,7 +21410,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             // todo-xarch-half: hacking an exit on the unhandled ins to make prototyping easier
             if (ins == INS_vcvtss2sh || ins == INS_vcvtsh2ss || ins == INS_vaddsh || ins == INS_vsubsh ||
                 ins == INS_vmulsh || ins == INS_vdivsh || ins == INS_vcomish || ins == INS_vsqrtsh ||
-                ins == INS_vmaxsh || ins == INS_vminsh)
+                ins == INS_vmaxsh || ins == INS_vminsh || ins == INS_vrcpsh || ins == INS_vrsqrtsh ||
+                ins == INS_vrndscalesh || ins == INS_vfmadd213sh)
             {
                 result.insLatency    = PERFSCORE_LATENCY_1C;
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
