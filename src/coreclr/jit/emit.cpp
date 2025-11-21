@@ -1357,10 +1357,6 @@ void emitter::emitBegFN(bool hasFramePtr
     ig->igPrev          = nullptr;
 #endif
 
-#ifdef DEBUG
-    emitScratchSigInfo = nullptr;
-#endif // DEBUG
-
     /* Append another group, to start generating the method body */
 
     emitNewIG();

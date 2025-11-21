@@ -3623,12 +3623,6 @@ public:
                             CORINFO_SIG_INFO*     callSig,       /* IN */
                             CORINFO_METHOD_HANDLE methodHandle); /* IN */
 
-#ifdef DEBUG
-    // This is a scratch buffer used to minimize the number of sig info structs
-    // we have to allocate for recordCallSite.
-    CORINFO_SIG_INFO* emitScratchSigInfo;
-#endif // DEBUG
-
     /************************************************************************/
     /*               Logic to collect and display statistics                */
     /************************************************************************/
