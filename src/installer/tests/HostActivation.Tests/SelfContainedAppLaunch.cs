@@ -37,15 +37,12 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.FrameworkVersion);
 
             if (OperatingSystem.IsWindows())
             {
                 // App sets FileVersion to NETCoreApp version. On Windows, this should be copied to app resources.
-                string expectedVersion = TestContext.MicrosoftNETCoreAppVersion.Contains('-')
-                    ? TestContext.MicrosoftNETCoreAppVersion[..TestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
-                    : TestContext.MicrosoftNETCoreAppVersion;
-                Assert.Equal(expectedVersion, System.Diagnostics.FileVersionInfo.GetVersionInfo(appExe).FileVersion);
+                Assert.Equal(TestContext.MicrosoftNETCoreAppVersionNoPrerelease, System.Diagnostics.FileVersionInfo.GetVersionInfo(appExe).FileVersion);
             }
         }
 
@@ -62,7 +59,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.FrameworkVersion);
         }
 
         [Fact]
@@ -80,7 +77,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 // Note that this is an exact match - we don't expect any output from the host itself
-                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {TestContext.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
+                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {TestContext.FrameworkVersion}{Environment.NewLine}")
                 .And.NotHaveStdErr();
 
             // Make sure tracing indicates there is no runtime config and no deps json
@@ -88,7 +85,7 @@ namespace HostActivation.Tests
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {TestContext.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
+                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {TestContext.FrameworkVersion}{Environment.NewLine}")
                 .And.HaveStdErrContaining($"Runtime config does not exist at [{app.RuntimeConfigJson}]")
                 .And.HaveStdErrContaining($"Dependencies manifest does not exist at [{app.DepsJson}]");
         }
@@ -107,7 +104,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.FrameworkVersion);
         }
 
         [Fact]
@@ -134,7 +131,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.FrameworkVersion);
         }
 
         [Fact]
@@ -171,7 +168,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.FrameworkVersion);
 
             appExe = $@"\\.\{sharedTestState.App.AppExe}";
             Command.Create(appExe)
@@ -180,7 +177,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion);
+                .And.HaveStdOutContaining(TestContext.FrameworkVersion);
         }
 
         [Fact]
@@ -224,7 +221,7 @@ namespace HostActivation.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.MicrosoftNETCoreAppVersion)
+                .And.HaveStdOutContaining(TestContext.FrameworkVersion)
                 .And.HaveStdErrContaining($"CoreCLR path = '{Path.Join(app.Location, subdirectory, Binaries.CoreClr.FileName)}'");
         }
 
