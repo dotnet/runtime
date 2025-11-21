@@ -386,6 +386,16 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
+
+                const bool needsFatPointerHandling =
+                    (sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
+                if (needsFatPointerHandling)
+                {
+                    // NativeAOT generic virtual method: need to handle potential fat function pointers
+                    // Spill any side-effecting arguments before we do the LDVIRTFTN
+                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("fat pointer arg spill"));
+                }
+
                 // OK, We've been told to call via LDVIRTFTN, so just
                 // take the call now....
                 call = gtNewIndCallNode(nullptr, callRetTyp, di);
@@ -418,17 +428,14 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
 
                 // Now make an indirect call through the function pointer
-
-                unsigned lclNum = lvaGrabTemp(true DEBUGARG("VirtualCall through function pointer"));
-                impStoreToTemp(lclNum, fptr, CHECK_SPILL_ALL);
-                fptr = gtNewLclvNode(lclNum, TYP_I_IMPL);
-
                 call->AsCall()->gtCallAddr = fptr;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
-                if ((sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+                if (needsFatPointerHandling)
                 {
-                    // NativeAOT generic virtual method: need to handle potential fat function pointers
+                    const unsigned fptrLclNum = lvaGrabTemp(true DEBUGARG("fat pointer temp"));
+                    impStoreToTemp(fptrLclNum, fptr, CHECK_SPILL_ALL);
+                    call->AsCall()->gtCallAddr = gtNewLclvNode(fptrLclNum, genActualType(fptr->TypeGet()));
                     addFatPointerCandidate(call->AsCall());
                 }
 #ifdef FEATURE_READYTORUN
@@ -6947,6 +6954,7 @@ private:
 void Compiler::addFatPointerCandidate(GenTreeCall* call)
 {
     JITDUMP("Marking call [%06u] as fat pointer candidate\n", dspTreeID(call));
+
     setMethodHasFatPointer();
     call->SetFatPointerCandidate();
     SpillRetExprHelper helper(this);
@@ -7562,7 +7570,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
                 }
 
                 addGuardedDevirtualizationCandidate(call, exactMethod, exactCls, exactContext, exactMethodAttrs,
-                                                    clsAttrs, likelyHood, dvInfo.wasArrayInterfaceDevirt,
+                                                    clsAttrs, likelyHood, dvInfo.needsMethodContext,
                                                     dvInfo.isInstantiatingStub, baseMethod, originalContext);
             }
 
@@ -7635,7 +7643,7 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
 
             likelyContext     = dvInfo.exactContext;
             likelyMethod      = dvInfo.devirtualizedMethod;
-            arrayInterface    = dvInfo.wasArrayInterfaceDevirt;
+            arrayInterface    = dvInfo.needsMethodContext;
             instantiatingStub = dvInfo.isInstantiatingStub;
         }
         else
@@ -8726,14 +8734,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
         if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
         {
-            assert(!dvInfo.wasArrayInterfaceDevirt);
+            assert(!dvInfo.needsMethodContext);
             derivedClass = (CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
         }
         else
         {
             // Array interface devirt can return a nonvirtual generic method of the non-generic SZArrayHelper class.
             //
-            assert(dvInfo.wasArrayInterfaceDevirt);
+            assert(dvInfo.needsMethodContext);
             assert(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD);
             derivedClass = info.compCompHnd->getMethodClass(derivedMethod);
         }
@@ -8754,9 +8762,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     if (dvInfo.isInstantiatingStub)
     {
-        // We should only end up with generic methods for array interface devirt.
+        // We should only end up with generic methods that needs a method context (eg. array interface).
         //
-        assert(dvInfo.wasArrayInterfaceDevirt);
+        assert(dvInfo.needsMethodContext);
 
         // We don't expect NAOT to end up here, since it has Array<T>
         // and normal devirtualization.
@@ -8879,14 +8887,6 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
     JITDUMP("    %s; can devirtualize\n", note);
 
-    // Make the updates.
-    call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
-    call->gtFlags &= ~GTF_CALL_VIRT_STUB;
-    call->gtCallMethHnd = derivedMethod;
-    call->gtCallType    = CT_USER_FUNC;
-    call->gtControlExpr = nullptr;
-    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
-
     if (dvInfo.isInstantiatingStub)
     {
         // Pass the instantiating stub method desc as the inst param arg.
@@ -8897,6 +8897,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
         call->gtArgs.InsertInstParam(this, instParam);
     }
+
+    // Make the updates.
+    call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
+    call->gtFlags &= ~GTF_CALL_VIRT_STUB;
+    call->gtCallMethHnd = derivedMethod;
+    call->gtCallType    = CT_USER_FUNC;
+    call->gtControlExpr = nullptr;
+    INDEBUG(call->gtCallDebugFlags |= GTF_CALL_MD_DEVIRTUALIZED);
 
     // Virtual calls include an implicit null check, which we may
     // now need to make explicit.
