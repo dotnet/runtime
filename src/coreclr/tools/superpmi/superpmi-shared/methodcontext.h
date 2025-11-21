@@ -863,9 +863,9 @@ public:
         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
         CORINFO_TAILCALL_HELPERS* pResult);
 
-    void recGetAsyncResumptionStub(CORINFO_METHOD_HANDLE hnd);
-    void dmpGetAsyncResumptionStub(DWORD key, DWORDLONG handle);
-    CORINFO_METHOD_HANDLE repGetAsyncResumptionStub();
+    void recGetAsyncResumptionStub(CORINFO_METHOD_HANDLE hnd, void* entryPoint);
+    void dmpGetAsyncResumptionStub(DWORD key, const DLDL& value);
+    CORINFO_METHOD_HANDLE repGetAsyncResumptionStub(void** entryPoint);
 
     void recGetContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize, CORINFO_CLASS_HANDLE result);
     void dmpGetContinuationType(const Agnostic_GetContinuationTypeIn& key, DWORDLONG value);

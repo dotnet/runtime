@@ -67,7 +67,7 @@ namespace System.Threading.Tests
         public static void RunSemaphoreSlimTest1_Wait_NegativeCases()
         {
             // Invalid timeout
-            RunSemaphoreSlimTest1_Wait_Helper(10, 10, -10, true, typeof(ArgumentOutOfRangeException));
+            RunSemaphoreSlimTest1_Wait_Helper(10, 10, -10, false, typeof(ArgumentOutOfRangeException));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

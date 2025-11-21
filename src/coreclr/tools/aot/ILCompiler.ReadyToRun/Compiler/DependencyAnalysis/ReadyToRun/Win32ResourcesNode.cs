@@ -21,7 +21,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            return ObjectNodeSection.Win32ResourcesSection;
+            // Don't emit Win32 resources into a special section unless we're producing PEs.
+            // The PE writer knows how to hook up the lookup for these resources, but other
+            // formats don't need the cost of an additional section.
+            return factory.Format switch
+            {
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.Win32ResourcesSection,
+                _ => ObjectNodeSection.ReadOnlyDataSection
+            };
         }
 
         public override bool IsShareable => false;
