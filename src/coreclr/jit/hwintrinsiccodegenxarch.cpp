@@ -1807,6 +1807,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
         case NI_AVX512_FusedMultiplySubtractNegated:
         case NI_AVX512_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512_FusedMultiplySubtractScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
         {
             // For FMA intrinsics, since it is not possible to get any contained operand in this case: embedded rounding
             // is limited in register-to-register form, and the control byte is dynamic, we don't need to do any swap.
