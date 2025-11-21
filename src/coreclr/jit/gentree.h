@@ -2070,7 +2070,7 @@ public:
 
     bool SupportsSettingZeroFlag();
 
-    bool SupportsSettingResultFlags();
+    bool SupportsSettingFlagsAsCompareToZero();
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily
