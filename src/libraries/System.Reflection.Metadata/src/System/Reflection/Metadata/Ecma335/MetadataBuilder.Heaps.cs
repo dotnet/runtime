@@ -256,11 +256,9 @@ namespace System.Reflection.Metadata.Ecma335
                 return GetOrAddBlobUTF16(str);
             }
 
-            var builder = PooledBlobBuilder.GetInstance();
-            builder.WriteConstant(value);
-            var result = GetOrAddBlob(builder);
-            builder.Free();
-            return result;
+            Span<byte> buffer = stackalloc byte[sizeof(ulong)];
+            int length = BlobWriterImpl.WriteScalarConstant(buffer, value);
+            return GetOrAddBlob(buffer.Slice(0, length));
         }
 
         /// <summary>
