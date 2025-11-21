@@ -77,7 +77,8 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             Assert.True(IsSigned(managedSignedPath + ".resigned"), $"Failed to resign {filePath}");
         }
 
-        [Theory]
+        [Theory(Skip = "Temporarily disabled due to macOS 26 codesign behavior change - only hashing __TEXT segment")]
+        [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
         [PlatformSpecific(TestPlatforms.OSX)]
         [MemberData(nameof(GetTestFilePaths), nameof(MatchesCodesignOutput))]
         public void MatchesCodesignOutput(string filePath, TestArtifact _)
@@ -154,7 +155,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             // Bundler should create a new inode for the bundle which should clear the MacOS signature cache.
             string oldFile = singleFile;
             string dir = Path.GetDirectoryName(singleFile);
-            singleFile = sharedTestState.SelfContainedApp.Rebundle(dir, BundleOptions.BundleAllContent, out var _, new Version(5, 0));
+            singleFile = sharedTestState.SelfContainedApp.Rebundle(dir, BundleOptions.BundleAllContent, out var _);
             Assert.True(singleFile == oldFile, "Rebundled app should have the same path as the original single-file app.");
             var secondInode = Inode.GetInode(singleFile);
             Assert.False(firstInode == secondInode, "not a different inode after re-bundling");
