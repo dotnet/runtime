@@ -277,7 +277,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
     <PropertyGroup>
-      <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
+      <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');@(WasmAssembliesFinal->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
+      <_WasmIntermediateAssemblyFileNames>;@(IntermediateAssembly->'%(FileName)%(Extension)');</_WasmIntermediateAssemblyFileNames>
     </PropertyGroup>
 
     <ItemGroup>
@@ -285,6 +286,12 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$(_WasmNativeAssetFileNames.Contains(';%(FileName)%(Extension);'))" />
+      <_WasmProjectAssemblyBuild Include="@(WasmAssembliesFinal)" Condition="$(_WasmIntermediateAssemblyFileNames.Contains(';%(FileName)%(Extension);'))" />
+      <_WasmProjectAssemblyBuild Include="@(IntermediateAssembly)" Condition="@(_WasmProjectAssemblyBuild->Count()) == 0" />
+      <_WasmBuildAssetCandidates Include="@(ReferenceCopyLocalPaths)" />
+      <_WasmBuildAssetCandidates Include="@(WasmNativeAsset)" />
+      <_WasmBuildAssetCandidates Include="@(WasmAssembliesFinal)" />
+      <_WasmBuildAssetCandidates Remove="@(_WasmProjectAssemblyBuild)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -293,9 +300,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
 
     <ComputeWasmBuildAssets
-      Candidates="@(ReferenceCopyLocalPaths->Distinct());@(WasmNativeAsset)"
+      Candidates="@(_WasmBuildAssetCandidates->Distinct())"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
-      ProjectAssembly="@(IntermediateAssembly)"
+      ProjectAssembly="@(_WasmProjectAssemblyBuild)"
       ProjectDebugSymbols="@(_DebugSymbolsIntermediatePath)"
       SatelliteAssemblies="@(ReferenceSatellitePaths)"
       ProjectSatelliteAssemblies="@(IntermediateSatelliteAssembliesWithTargetPath)"
