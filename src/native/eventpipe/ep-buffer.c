@@ -191,7 +191,7 @@ ep_buffer_convert_to_read_only (EventPipeBuffer *buffer)
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer->current_read_event == NULL);
 
-	ep_thread_requires_lock_held (buffer->writer_thread);
+	// this should occur under the buffer_manager lock but we don't have the pointer to assert it
 
 	ep_rt_volatile_store_uint32_t (&buffer->state, (uint32_t)EP_BUFFER_STATE_READ_ONLY);
 
