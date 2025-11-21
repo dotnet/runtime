@@ -2583,6 +2583,20 @@ namespace System.Runtime.InteropServices.Marshalling
         }
     }
     [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.ReadOnlySpan<char>),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.SpanOfCharAsUtf8StringMarshaller.ManagedToUnmanagedIn))]
+    public static unsafe class SpanOfCharAsUtf8StringMarshaller
+    {
+        public ref struct ManagedToUnmanagedIn
+        {
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(System.ReadOnlySpan<char> managed, System.Span<byte> buffer) { throw null; }
+            public byte* ToUnmanaged() { throw null; }
+            public void Free() { throw null; }
+        }
+    }
+    [System.CLSCompliant(false)]
     [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
         System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
         typeof(System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller))]

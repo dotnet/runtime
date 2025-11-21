@@ -11,12 +11,12 @@ namespace System.Runtime.InteropServices.Marshalling
     /// </summary>
     [CLSCompliant(false)]
     [CustomMarshaller(typeof(ReadOnlySpan<char>), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanagedIn))]
-    internal static unsafe class SpanOfCharAsUtf8StringMarshaller
+    public static unsafe class SpanOfCharAsUtf8StringMarshaller
     {
         /// <summary>
         /// Custom marshaller to marshal a ReadOnlySpan&lt;char&gt; as a UTF-8 unmanaged string.
         /// </summary>
-        internal ref struct ManagedToUnmanagedIn
+        public ref struct ManagedToUnmanagedIn
         {
             /// <summary>
             /// Gets the requested buffer size for optimized marshalling.
