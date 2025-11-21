@@ -300,24 +300,18 @@ namespace System.IO
             }
 
             Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-            if (errorInfo.Error == Interop.Error.EEXIST)
+            if (errorInfo.Error == Interop.Error.EEXIST && DirectoryExists(fullPath))
             {
-                if (DirectoryExists(fullPath))
-                {
-                    return; // Path already exists and it's a directory.
-                }
-                // If we reach here, the path exists but is not a directory.
-                // We need to throw, but DirectoryExists may have overwritten the last error.
-                // Since we know the error was EEXIST, recreate the ErrorInfo.
-                errorInfo = Interop.Error.EEXIST.Info();
+                return; // Path already exists and it's a directory.
             }
             else if (errorInfo.Error == Interop.Error.ENOENT) // Some parts of the path don't exist yet.
             {
                 CreateParentsAndDirectory(fullPath, unixCreateMode);
-                return;
             }
-
-            throw Interop.GetExceptionForIoErrno(errorInfo, fullPath);
+            else
+            {
+                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath);
+            }
         }
 
         private static void CreateParentsAndDirectory(string fullPath, UnixFileMode unixCreateMode)
@@ -393,10 +387,6 @@ namespace System.IO
                         {
                             return;
                         }
-                        // If we reach here, the path exists but is not a directory.
-                        // We need to throw, but DirectoryExists may have overwritten the last error.
-                        // Since we know the error was EEXIST, recreate the ErrorInfo.
-                        errorInfo = Interop.Error.EEXIST.Info();
                     }
 
                     throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath.ToString());
