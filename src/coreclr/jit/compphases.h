@@ -122,6 +122,8 @@ CompPhaseNameMacro(PHASE_RATIONALIZE,                "Rationalize IR",          
 CompPhaseNameMacro(PHASE_REPAIR_PROFILE_POST_MORPH,  "Repair profile post-morph",      false, -1, false)
 CompPhaseNameMacro(PHASE_REPAIR_PROFILE_PRE_LAYOUT,  "Repair profile pre-layout",      false, -1, false)
 
+CompPhaseNameMacro(PHASE_WASM_CONTROL_FLOW,          "Wasm control flow",              false, -1, false)
+
 CompPhaseNameMacro(PHASE_ASYNC,                      "Transform async",                false, -1, true)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS,             "Local var liveness",             true,  -1, false)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS_INIT,        "Local var liveness init",        false, PHASE_LCLVARLIVENESS, false)

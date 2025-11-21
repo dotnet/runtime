@@ -7,13 +7,9 @@ using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
-    [EventSource(Name = NetEventSourceName)]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Sockets")]
     internal sealed partial class NetEventSource
     {
-        private const string NetEventSourceName = "Private.InternalDiagnostics.System.Net.Sockets";
-
-        public NetEventSource() : base(NetEventSourceName, EventSourceSettings.EtwManifestEventFormat) { }
-
         private const int AcceptedId = NextAvailableEventId;
         private const int ConnectedId = AcceptedId + 1;
         private const int ConnectedAsyncDnsId = ConnectedId + 1;
