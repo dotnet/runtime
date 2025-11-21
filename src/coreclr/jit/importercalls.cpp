@@ -4411,9 +4411,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     GenTree* op3 = impPopStack().val;
                     GenTree* op2 = impPopStack().val;
                     GenTree* op1 = impPopStack().val;
-                    assert(op1->TypeGet() == TYP_HALF && 
-                           op2->TypeGet() == TYP_HALF && 
-                           op3->TypeGet() == TYP_HALF);
+                    assert(op1->TypeGet() == TYP_HALF && op2->TypeGet() == TYP_HALF && op3->TypeGet() == TYP_HALF);
 
                     op3 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op3, TYP_HALF, 16);
                     op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, TYP_HALF, 16);
@@ -4447,8 +4445,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
 
-                    op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, TYP_HALF, 16);
-                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
+                    op2     = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, TYP_HALF, 16);
+                    op1     = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, opId, TYP_HALF, 16);
                     retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                 }
@@ -4470,9 +4468,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     assert(opId != NI_Illegal);
 
                     GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_FLOAT, 16);
-                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, opId , TYP_HALF, 16);
-                    retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
+                    op1          = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
+                    retNode      = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, opId, TYP_HALF, 16);
+                    retNode      = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                 }
 #endif
                 break;
@@ -4490,9 +4488,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         assert(op1->TypeGet() == TYP_HALF);
 
                         GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_FLOAT, 16);
-                        op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
+                        op1          = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
 
-                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, gtNewIconNode(0x04), NI_AVX10v1_RoundScaleScalar , TYP_HALF, 16);
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, gtNewIconNode(0x04),
+                                                           NI_AVX10v1_RoundScaleScalar, TYP_HALF, 16);
                         retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                     }
                 }
@@ -4509,11 +4508,12 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     assert(op1->TypeGet() == TYP_HALF);
 
                     GenTree* onevec = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(1.0f), TYP_FLOAT, 16);
-                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_FLOAT, 16);
-                    onevec = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, onevec, NI_AVX10v1_ConvertScalarToVector128Half , TYP_FLOAT, 16);
+                    GenTree* op2    = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_FLOAT, 16);
+                    onevec = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, onevec, NI_AVX10v1_ConvertScalarToVector128Half,
+                                                      TYP_FLOAT, 16);
 
-                    op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, onevec, NI_AVX10v1_AddScalar , TYP_HALF, 16);
+                    op1     = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, onevec, NI_AVX10v1_AddScalar, TYP_HALF, 16);
                     retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                 }
 #endif
@@ -4529,11 +4529,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     assert(op1->TypeGet() == TYP_HALF);
 
                     GenTree* onevec = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(1.0f), TYP_FLOAT, 16);
-                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_FLOAT, 16);
-                    onevec = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, onevec, NI_AVX10v1_ConvertScalarToVector128Half , TYP_FLOAT, 16);
+                    GenTree* op2    = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), TYP_FLOAT, 16);
+                    onevec = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, onevec, NI_AVX10v1_ConvertScalarToVector128Half,
+                                                      TYP_FLOAT, 16);
 
                     op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, TYP_HALF, 16);
-                    retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, onevec, NI_AVX10v1_SubtractScalar , TYP_HALF, 16);
+                    retNode =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, onevec, NI_AVX10v1_SubtractScalar, TYP_HALF, 16);
                     retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                 }
 #endif
@@ -4549,19 +4551,24 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     assert(op1->TypeGet() == TYP_FLOAT || op1->TypeGet() == TYP_HALF);
 
                     var_types convertFromType = op1->TypeGet();
-                    GenTree* op2 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), convertFromType, 16);
+                    GenTree*  op2 =
+                        gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, gtNewDconNodeF(0.0f), convertFromType, 16);
 
                     if (convertFromType == TYP_FLOAT)
                     {
 
                         op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, convertFromType, 16);
-                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_AVX10v1_ConvertScalarToVector128Half , convertFromType, 16);
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_AVX10v1_ConvertScalarToVector128Half,
+                                                     convertFromType, 16);
                         retNode = gtNewSimdToScalarNode(TYP_HALF, retNode, TYP_HALF, 16);
                     }
                     else if (op1->TypeGet() == TYP_HALF)
                     {
                         op1 = gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op1, convertFromType, 16);
-                        retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_AVX10v1_ConvertScalarToVector128Single , convertFromType, 16);
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, NI_AVX10v1_ConvertScalarToVector128Single,
+                                                     convertFromType, 16);
                         retNode = gtNewSimdToScalarNode(TYP_FLOAT, retNode, TYP_FLOAT, 16);
                     }
 
@@ -12209,7 +12216,7 @@ NamedIntrinsic Compiler::lookupHalfIntrinsic(NamedIntrinsic ni)
 #if defined(TARGET_XARCH)
     assert(compOpportunisticallyDependsOn(InstructionSet_AVX10v1));
 
-    switch(ni)
+    switch (ni)
     {
         case NI_System_Half_op_Addition:
             return NI_AVX10v1_AddScalar;
