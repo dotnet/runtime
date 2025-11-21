@@ -79,13 +79,13 @@
     <value>Found truncated data while decoding.</value>
   </data>
   <data name="ZstandardStream_Decompress_InvalidData" xml:space="preserve">
-    <value>Decoder ran into invalid data.</value>
+    <value>Decoder encountered invalid data.</value>
   </data>
   <data name="ZstandardStream_Decompress_InvalidStream" xml:space="preserve">
     <value>ZstandardStream.BaseStream returned more bytes than requested in Read.</value>
   </data>
   <data name="ZstandardStream_Compress_InvalidData" xml:space="preserve">
-    <value>Encoder ran into invalid data.</value>
+    <value>Encoder encountered invalid data.</value>
   </data>
   <data name="ZstandardStream_ConcurrentRWOperation" xml:space="preserve">
     <value>Only one pending read/write operation is supported.</value>

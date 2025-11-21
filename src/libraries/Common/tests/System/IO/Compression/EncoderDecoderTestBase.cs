@@ -244,7 +244,7 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void TryDecompress_WithEmptyDestination_ReturnsDestinationTooSmall()
+        public void TryDecompress_WithEmptyDestination_ReturnsFalse()
         {
             Span<byte> destination = Span<byte>.Empty;
             Span<byte> source = new byte[100];
@@ -256,6 +256,23 @@ namespace System.IO.Compression
             Assert.Equal(0, bytesWritten);
         }
 
+        [Theory]
+        [MemberData(nameof(BooleanTestData))]
+        public void TryDecompress_RandomData_ReturnsFalse(bool useDictionary)
+        {
+            if (useDictionary && !SupportsDictionaries)
+                return;
+
+            Span<byte> source = new byte[100];
+            Span<byte> destination = new byte[5 * source.Length];
+
+            // deterministic random data that should not match any valid compressed format
+            Random rng = new Random(42);
+            rng.NextBytes(source);
+
+            Assert.False(TryDecompress(source, destination, out int bytesWritten), "TryDecompress completed successfully but should have failed");
+            Assert.Equal(0, bytesWritten);
+        }
 
         [Theory]
         [MemberData(nameof(BooleanTestData))]
