@@ -666,6 +666,9 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_PreferredVectorBitWidth,      W("PreferredV
 #if defined(TARGET_LOONGARCH64)
 //TODO: should implement LoongArch64's features.
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         0, "Allows Base+ hardware intrinsics to be disabled")
+#elif defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_MACCATALYST)
+// Always disabled on Apple mobile
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         0, "Allows Base+ hardware intrinsics to be disabled")
 #else
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         1, "Allows Base+ hardware intrinsics to be disabled")
 #endif // defined(TARGET_LOONGARCH64)
