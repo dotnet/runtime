@@ -32,8 +32,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 const char* CodeGen::genInsName(instruction ins)
 {
     // clang-format off
-    static
-    const char * const insNames[] =
+    static const char * const insNames[] =
     {
 #if defined(TARGET_XARCH)
         #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) nm,
@@ -84,6 +83,10 @@ const char* CodeGen::genInsName(instruction ins)
 
 #elif defined(TARGET_RISCV64)
         #define INST(id, nm, ldst, e1) nm,
+        #include "instrs.h"
+
+#elif defined(TARGET_WASM)
+        #define INST(id, nm, info, opcode) nm,
         #include "instrs.h"
 
 #else
@@ -2093,6 +2096,7 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
  */
 instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*/)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
     if (varTypeUsesIntReg(srcType))
     {
         instruction ins = INS_invalid;
@@ -2248,6 +2252,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     }
 #else
     NYI("ins_Load");
+    return INS_none;
 #endif
 }
 
@@ -2260,6 +2265,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
  */
 instruction CodeGen::ins_Copy(var_types dstType)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
     assert(emitTypeActSz[dstType] != 0);
 
     if (varTypeUsesIntReg(dstType))
@@ -2325,6 +2331,7 @@ instruction CodeGen::ins_Copy(var_types dstType)
     }
 #else
     NYI("ins_Copy");
+    return INS_none;
 #endif
 }
 
@@ -2342,6 +2349,7 @@ instruction CodeGen::ins_Copy(var_types dstType)
 //
 instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
     assert(srcReg != REG_NA);
 
     if (varTypeUsesIntReg(dstType))
@@ -2455,6 +2463,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
     }
 #else
     NYI("ins_Copy");
+    return INS_none;
 #endif
 }
 
@@ -2469,6 +2478,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
  */
 instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false*/)
 {
+    // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
     if (varTypeUsesIntReg(dstType))
     {
         instruction ins = INS_invalid;
@@ -2572,6 +2582,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     }
 #else
     NYI("ins_Store");
+    return INS_none;
 #endif
 }
 
@@ -2970,6 +2981,8 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
 #elif defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
+#elif defined(TARGET_WASM)
+    NYI_WASM("instGen_Set_Reg_To_Zero");
 #else
 #error "Unknown TARGET"
 #endif
