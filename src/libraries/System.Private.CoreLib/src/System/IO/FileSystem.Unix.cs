@@ -316,7 +316,7 @@ namespace System.IO
                 CreateParentsAndDirectory(fullPath, unixCreateMode);
                 return;
             }
-            
+
             throw Interop.GetExceptionForIoErrno(errorInfo, fullPath);
         }
 
