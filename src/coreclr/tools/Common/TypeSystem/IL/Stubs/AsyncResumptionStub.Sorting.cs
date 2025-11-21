@@ -12,7 +12,17 @@ namespace ILCompiler
 
         protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
-            return comparer.Compare(_owningMethod, ((AsyncResumptionStub)other)._owningMethod);
+            return comparer.Compare(_targetMethod, ((AsyncResumptionStub)other)._targetMethod);
+        }
+    }
+
+    internal sealed partial class ExplicitContinuationAsyncMethod : MethodDesc
+    {
+        protected override int ClassCode => 0xd076659;
+
+        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        {
+            return comparer.Compare(_wrappedMethod, ((ExplicitContinuationAsyncMethod)other)._wrappedMethod);
         }
     }
 }

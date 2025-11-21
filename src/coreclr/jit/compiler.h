@@ -886,6 +886,7 @@ public:
         return lvIsRegCandidate() && (GetRegNum() != REG_STK);
     }
 
+#if HAS_FIXED_REGISTER_SET
     regMaskTP lvRegMask() const
     {
         if (GetRegNum() != REG_STK)
@@ -913,6 +914,7 @@ public:
             return RBM_NONE;
         }
     }
+#endif // HAS_FIXED_REGISTER_SET
 
     //-----------------------------------------------------------------------------
     // AllFieldDeathFlags: Get a bitset of flags that represents all fields dying.
@@ -1360,11 +1362,11 @@ enum class PhaseStatus : unsigned
                          // the main jit data strutures.
 };
 
-// interface to hide linearscan implementation from rest of compiler
-class LinearScanInterface
+// Interface to hide the RA implementation from the rest of the compiler.
+class RegAllocInterface
 {
 public:
-    virtual PhaseStatus doLinearScan()                                = 0;
+    virtual PhaseStatus doRegisterAllocation()                        = 0;
     virtual void        recordVarLocationsAtStartOfBB(BasicBlock* bb) = 0;
     virtual bool        willEnregisterLocalVars() const               = 0;
 #if TRACK_LSRA_STATS
@@ -1373,7 +1375,7 @@ public:
 #endif // TRACK_LSRA_STATS
 };
 
-LinearScanInterface* getLinearScanAllocator(Compiler* comp);
+RegAllocInterface* GetRegisterAllocator(Compiler* comp);
 
 // This enumeration names the phases into which we divide compilation.  The phases should completely
 // partition a compilation.
@@ -1796,13 +1798,17 @@ class FlowGraphDfsTree
     // Whether the DFS that produced the tree used edge likelihoods to influence successor visitation order.
     bool m_profileAware;
 
+    // Whether the DFS reflects Wasm control flow rules.
+    bool m_forWasm;
+
 public:
-    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle, bool profileAware)
+    FlowGraphDfsTree(Compiler* comp, BasicBlock** postOrder, unsigned postOrderCount, bool hasCycle, bool profileAware, bool forWasm = false)
         : m_comp(comp)
         , m_postOrder(postOrder)
         , m_postOrderCount(postOrderCount)
         , m_hasCycle(hasCycle)
         , m_profileAware(profileAware)
+        , m_forWasm(forWasm)
     {
     }
 
@@ -1840,6 +1846,11 @@ public:
     bool IsProfileAware() const
     {
         return m_profileAware;
+    }
+
+    bool IsForWasm() const
+    {
+        return m_forWasm;
     }
 
 #ifdef DEBUG
@@ -2135,7 +2146,7 @@ class FlowGraphNaturalLoops
 
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
-    static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
+    bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
     static bool IsLoopCanonicalizable(FlowGraphNaturalLoop* loop);
 
 public:
@@ -2154,6 +2165,8 @@ public:
 
     bool IsLoopBackEdge(FlowEdge* edge);
     bool IsLoopExitEdge(FlowEdge* edge);
+
+    bool IsForWasm() { return m_dfsTree->IsForWasm(); }
 
     class LoopsPostOrderIter
     {
@@ -3744,7 +3757,6 @@ public:
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
     GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
-    GenTreeLclVarCommon* gtCallGetDefinedAsyncSuspendedIndicatorLclAddr(GenTreeCall* call);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
@@ -3965,6 +3977,11 @@ public:
     unsigned lvaReversePInvokeFrameVar = BAD_VAR_NUM; // variable representing the reverse PInvoke frame
     unsigned lvaMonAcquired = BAD_VAR_NUM; // boolean variable introduced into in synchronized methods
                              // that tracks whether the lock has been taken
+
+    unsigned lvaAsyncExecutionContextVar = BAD_VAR_NUM;       // ExecutionContext local for async methods
+    unsigned lvaAsyncSynchronizationContextVar = BAD_VAR_NUM; // SynchronizationContext local for async methods
+
+    unsigned short asyncContextRestoreEHID = USHRT_MAX;
 
     unsigned lvaArg0Var = BAD_VAR_NUM; // The lclNum of arg0. Normally this will be info.compThisArg.
                          // However, if there is a "ldarga 0" or "starg 0" in the IL,
@@ -4603,7 +4620,7 @@ protected:
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
 
-    void impSetupAndSpillForAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
+    void impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI);
 
     void impInsertAsyncContinuationForLdvirtftnCall(GenTreeCall* call);
 
@@ -5553,9 +5570,8 @@ public:
 #endif
 
     PhaseStatus SaveAsyncContexts();
-    BasicBlock* InsertTryFinallyForContextRestore(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
-    void ValidateNoAsyncSavesNecessary();
-    void ValidateNoAsyncSavesNecessaryInStatement(Statement* stmt);
+    void AddContextArgsToAsyncCalls(BasicBlock* block);
+    BasicBlock* CreateReturnBB(unsigned* mergedReturnLcl);
     PhaseStatus TransformAsync();
 
     // This field keep the R2R helper call that would be inserted to trigger the constructor
@@ -5572,7 +5588,7 @@ public:
 
     bool backendRequiresLocalVarLifetimes()
     {
-        return !opts.MinOpts() || m_pLinearScan->willEnregisterLocalVars();
+        return !opts.MinOpts() || m_regAlloc->willEnregisterLocalVars();
     }
 
     void fgLocalVarLiveness();
@@ -6232,14 +6248,17 @@ public:
 
     PhaseStatus fgFindOperOrder();
 
+    FlowGraphDfsTree* fgWasmDfs();
+    PhaseStatus fgWasmControlFlow();
+
     // method that returns if you should split here
     typedef bool(fgSplitPredicate)(GenTree* tree, GenTree* parent, fgWalkData* data);
 
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
 
-    template <typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile = false>
-    unsigned fgRunDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge);
+    template <typename SuccessorEnumerator, typename VisitPreorder, typename VisitPostorder, typename VisitEdge, const bool useProfile = false>
+    unsigned fgRunDfs(VisitPreorder assignPreorder, VisitPostorder assignPostorder, VisitEdge visitEdge, jitstd::vector<BasicBlock*>& entries);
 
     template <const bool useProfile = false>
     FlowGraphDfsTree* fgComputeDfs();
@@ -8230,8 +8249,8 @@ protected:
     bool rpMustCreateEBPFrame(INDEBUG(const char** wbReason));
 
 private:
-    Lowering*            m_pLowering = nullptr; // Lowering; needed to Lower IR that's added or modified after Lowering.
-    LinearScanInterface* m_pLinearScan = nullptr; // Linear Scan allocator
+    Lowering*          m_pLowering = nullptr; // Lowering; needed to Lower IR that's added or modified after Lowering.
+    RegAllocInterface* m_regAlloc  = nullptr; // Register allocator
 
 public:
     ArrayStack<ParameterRegisterLocalMapping>* m_paramRegLocalMappings = nullptr;
@@ -8413,6 +8432,9 @@ public:
 #elif defined(TARGET_RISCV64)
             reg     = REG_T5;
             regMask = RBM_T5;
+#elif defined(TARGET_WASM)
+            reg     = REG_NA;
+            regMask = RBM_NONE;
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -9837,7 +9859,6 @@ public:
     bool compSuppressedZeroInit       = false; // There are vars with lvSuppressedZeroInit set
     bool compMaskConvertUsed          = false; // Does the method have Convert Mask To Vector nodes.
     bool compUsesThrowHelper          = false; // There is a call to a THROW_HELPER for the compiled method.
-    bool compMustSaveAsyncContexts    = false; // There is an async call that needs capture/restore of async contexts.
 
     // NOTE: These values are only reliable after
     //       the importing is completely finished.
@@ -10850,20 +10871,16 @@ public:
 
     unsigned compLclFrameSize; // secObject+lclBlk+locals+temps
 
+#if HAS_FIXED_REGISTER_SET
     // Count of callee-saved regs we pushed in the prolog.
     // Does not include EBP for isFramePointerUsed() and double-aligned frames.
     // In case of Amd64 this doesn't include float regs saved on stack.
     unsigned compCalleeRegsPushed;
+#endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_XARCH)
     // Mask of callee saved float regs on stack.
     regMaskTP compCalleeFPRegsSavedMask;
-#endif
-#ifdef TARGET_AMD64
-// Quirk for VS debug-launch scenario to work:
-// Bytes of padding between save-reg area and locals.
-#define VSQUIRK_STACK_PAD (2 * REGSIZE_BYTES)
-    unsigned compVSQuirkStackPaddingNeeded;
 #endif
 
     unsigned compMapILargNum(unsigned ILargNum);      // map accounting for hidden args
@@ -12411,6 +12428,10 @@ const instruction INS_SQRT       = INS_fsqrt_d; // NOTE: default is double.
 #ifdef TARGET_RISCV64
 const instruction INS_BREAKPOINT = INS_ebreak;
 #endif // TARGET_RISCV64
+
+#ifdef TARGET_WASM
+const instruction INS_BREAKPOINT = INS_unreachable;
+#endif
 
 /*****************************************************************************/
 

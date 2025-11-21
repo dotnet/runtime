@@ -305,9 +305,9 @@ namespace ILCompiler.DependencyAnalysis
                     tentative.RealBody : (IMethodBodyNode)entrypoint);
             });
 
-            _tentativeMethods = new NodeCache<MethodDesc, TentativeInstanceMethodNode>(method =>
+            _tentativeMethods = new NodeCache<IMethodBodyNode, TentativeInstanceMethodNode>(method =>
             {
-                return new TentativeInstanceMethodNode((IMethodBodyNode)MethodEntrypoint(method));
+                return new TentativeInstanceMethodNode(method);
             });
 
             _unboxingStubs = new NodeCache<MethodDesc, IMethodNode>(CreateUnboxingStubNode);
@@ -1106,14 +1106,14 @@ namespace ILCompiler.DependencyAnalysis
             return _tentativeMethodEntrypoints.GetOrAdd(method);
         }
 
-        private NodeCache<MethodDesc, TentativeInstanceMethodNode> _tentativeMethods;
+        private NodeCache<IMethodBodyNode, TentativeInstanceMethodNode> _tentativeMethods;
         public IMethodNode MethodEntrypointOrTentativeMethod(MethodDesc method, bool unboxingStub = false)
         {
             // We might be able to optimize the method body away if the owning type was never seen as allocated.
             if (method.NotCallableWithoutOwningEEType() && CompilationModuleGroup.AllowInstanceMethodOptimization(method))
             {
                 Debug.Assert(!unboxingStub);
-                return _tentativeMethods.GetOrAdd(method);
+                return _tentativeMethods.GetOrAdd((IMethodBodyNode)MethodEntrypoint(method, unboxingStub));
             }
 
             return MethodEntrypoint(method, unboxingStub);
