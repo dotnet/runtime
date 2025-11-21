@@ -2641,7 +2641,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerHWIntrinsicCC(node, NI_AVX10v1_VUCOMISH, GenCondition::FGE);
             break;
 
-
         default:
             break;
     }
