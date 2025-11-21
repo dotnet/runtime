@@ -680,8 +680,8 @@ namespace System.IO
             string? linkTarget = Interop.Sys.ReadLink(linkPath);
             if (linkTarget == null)
             {
-                sb.Dispose();
                 Interop.Error error = Interop.Sys.GetLastError();
+                sb.Dispose();
                 // Not a link, return null
                 if (error == Interop.Error.EINVAL)
                 {
