@@ -615,6 +615,8 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 #error Unsupported or unset target architecture
 #endif
 
+#include "targetcommon.h"
+
 #ifdef TARGET_XARCH
 
   #define JMP_DIST_SMALL_MAX_NEG  (-128)
