@@ -1039,6 +1039,58 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Linux, "Not supported on Linux.")]
+        public static void PolicyConstraints_AnyPolicyInhibited_Success()
+        {
+            X509Extension[] intermediate1Extensions = new[]
+            {
+                BasicConstraintsCA,
+                BuildPolicyMappings(("1.2.3.5", "1.2.3.6")),
+            };
+
+            X509Extension[] intermediate2Extensions = new[]
+            {
+                BasicConstraintsCA,
+                BuildPolicyMappings(("1.2.3.7", "1.2.3.8")),
+            };
+
+            X509Extension[] endEntityExtensions = new[]
+            {
+                BasicConstraintsEndEntity,
+                BuildPolicyByIdentifiers("1.2.3.4"),
+            };
+
+            TestDataGenerator.MakeTestChain4(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert1,
+                out X509Certificate2 intermediateCert2,
+                out X509Certificate2 rootCert,
+                endEntityExtensions,
+                intermediate1Extensions,
+                intermediate2Extensions,
+                rootExtensions: null);
+
+            using (endEntityCert)
+            using (intermediateCert1)
+            using (intermediateCert2)
+            using (rootCert)
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert1);
+                chain.ChainPolicy.ExtraStore.Add(intermediateCert2);
+                chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.CertificatePolicy.Add(new Oid("1.2.3.4"));
+
+                bool result = chain.Build(endEntityCert);
+                AssertExtensions.TrueExpression(result);
+            }
+        }
+
         public enum BuildChainWithNotSignatureValidTest : int
         {
             TrustedRoot,
@@ -1343,6 +1395,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             return new X509Extension("2.5.29.33", writer.Encode(), critical: true);
+        }
+
+        private static X509Extension BuildInhibitAnyPolicy(int skipCerts)
+        {
+            // InhibitAnyPolicy ::= SkipCerts
+            // SkipCerts ::= INTEGER (0..MAX)
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteInteger(skipCerts);
+            return new X509Extension("2.5.29.54", writer.Encode(), critical: true);
         }
 
         private static void TestChain3(

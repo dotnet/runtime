@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
                 else
                 {
-                    inhibitAnyPolicyDepth--;
+                    inhibitPolicyMappingDepth--;
                 }
 
                 if (explicitPolicyDepth <= 0)
