@@ -127,5 +127,33 @@ HELPER(READYTORUN_HELPER_StackProbe,                CORINFO_HELP_STACK_PROBE,   
 
 HELPER(READYTORUN_HELPER_GetCurrentManagedThreadId, CORINFO_HELP_GETCURRENTMANAGEDTHREADID,         )
 
+// AsyncHelpers methods
+HELPER(READYTORUN_HELPER_AsyncHelpers_AsyncCallContinuation,           CORINFO_HELP_ASYNCHELPERS_ASYNCCALLCONTINUATION,             )
+HELPER(READYTORUN_HELPER_AsyncHelpers_TaskFromException,               CORINFO_HELP_ASYNCHELPERS_TASKFROMEXCEPTION,             )
+HELPER(READYTORUN_HELPER_AsyncHelpers_ValueTaskFromException,          CORINFO_HELP_ASYNCHELPERS_VALUETASKFROMEXCEPTION,             )
+HELPER(READYTORUN_HELPER_AsyncHelpers_FinalizeTaskReturningThunk,      CORINFO_HELP_ASYNCHELPERS_FINALIZETASKRETURNINGTHUNK,             )
+HELPER(READYTORUN_HELPER_AsyncHelpers_FinalizeValueTaskReturningThunk, CORINFO_HELP_ASYNCHELPERS_FINALIZEVALUETASKRETURNINGTHUNK,             )
+HELPER(READYTORUN_HELPER_AsyncHelpers_TransparentAwait,                CORINFO_HELP_ASYNCHELPERS_TRANSPARENTAWAIT,             )
+HELPER(READYTORUN_HELPER_AsyncHelpers_CompletedTask,                   CORINFO_HELP_ASYNCHELPERS_COMPLETEDTASK,             )
+HELPER(READYTORUN_HELPER_AsyncHelpers_CompletedTaskResult,             CORINFO_HELP_ASYNCHELPERS_COMPLETEDTASKRESULT,             )
+
+// ExecutionAndSyncBlockStore methods
+HELPER(READYTORUN_HELPER_ExecutionAndSyncBlockStore_Push,              CORINFO_HELP_EXECUTIONANDSYNCBLOCKSTORE_PUSH,             )
+HELPER(READYTORUN_HELPER_ExecutionAndSyncBlockStore_Pop,               CORINFO_HELP_EXECUTIONANDSYNCBLOCKSTORE_POP,             )
+
+// Task methods
+HELPER(READYTORUN_HELPER_Task_FromResultT,                             CORINFO_HELP_TASK_FROMRESULT_T,             )
+HELPER(READYTORUN_HELPER_Task_get_CompletedTask,                       CORINFO_HELP_TASK_GET_COMPLETEDTASK,             )
+HELPER(READYTORUN_HELPER_Task_get_IsCompleted,                         CORINFO_HELP_TASK_GET_ISCOMPLETED,             )
+HELPER(READYTORUN_HELPER_Task_get_Result,                              CORINFO_HELP_TASK_GET_RESULT,             )
+
+// ValueTask methods
+HELPER(READYTORUN_HELPER_ValueTask_FromResultT,                        CORINFO_HELP_VALUETASK_FROMRESULT_T,             )
+HELPER(READYTORUN_HELPER_ValueTask_get_CompletedTask,                  CORINFO_HELP_VALUETASK_GET_COMPLETEDTASK,             )
+HELPER(READYTORUN_HELPER_ValueTask_get_IsCompleted,                    CORINFO_HELP_VALUETASK_GET_ISCOMPLETED,             )
+HELPER(READYTORUN_HELPER_ValueTask_ThrowIfCompletedUnsuccessfully,     CORINFO_HELP_VALUETASK_THROWIFCOMPLETEDUNSUCCESSFULLY,             )
+HELPER(READYTORUN_HELPER_ValueTask_AsTaskOrNotifier,                   CORINFO_HELP_VALUETASK_ASTASKORNOTIFIER,             )
+HELPER(READYTORUN_HELPER_ValueTask_get_Result,                         CORINFO_HELP_VALUETASK_GET_RESULT,             )
+
 #undef HELPER
 #undef OPTIMIZEFORSPEED

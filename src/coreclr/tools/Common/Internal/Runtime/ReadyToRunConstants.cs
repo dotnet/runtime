@@ -384,6 +384,34 @@ namespace Internal.ReadyToRunConstants
         TypeHandleToRuntimeType,
         GetRefAny,
         TypeHandleToRuntimeTypeHandle,
+
+        // AsyncHelpers methods
+        AsyncHelpers_AsyncCallContinuation,
+        AsyncHelpers_TaskFromException,
+        AsyncHelpers_ValueTaskFromException,
+        AsyncHelpers_FinalizeTaskReturningThunk,
+        AsyncHelpers_FinalizeValueTaskReturningThunk,
+        AsyncHelpers_TransparentAwait,
+        AsyncHelpers_CompletedTask,
+        AsyncHelpers_CompletedTaskResult,
+
+        // ExecutionAndSyncBlockStore methods
+        ExecutionAndSyncBlockStore_Push,
+        ExecutionAndSyncBlockStore_Pop,
+
+        // Task methods
+        Task_FromResult,
+        Task_get_CompletedTask,
+        Task_get_IsCompleted,
+        Task_get_Result,
+
+        // ValueTask methods
+        ValueTask_FromResult,
+        ValueTask_get_CompletedTask,
+        ValueTask_get_IsCompleted,
+        ValueTask_ThrowIfCompletedUnsuccessfully,
+        ValueTask_AsTaskOrNotifier,
+        ValueTask_get_Result,
     }
 
     // Enum used for HFA type recognition.

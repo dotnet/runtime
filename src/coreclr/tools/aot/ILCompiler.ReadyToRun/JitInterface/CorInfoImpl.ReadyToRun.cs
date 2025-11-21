@@ -756,12 +756,6 @@ namespace Internal.JitInterface
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it has an non version resilient signature.");
                     return;
                 }
-                if (MethodBeingCompiled.IsAsyncVariant())
-                {
-                    if (logger.IsVerbose)
-                        logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because async variants are not supported yet.");
-                    return;
-                }
                 MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
                 if (methodIL == null)
                 {
@@ -1411,6 +1405,8 @@ namespace Internal.JitInterface
                 {
                     if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
                         resultMethod = rawPinvoke.Target;
+                    if (resultMethod is AsyncMethodVariant asyncVariant)
+                        resultMethod = asyncVariant.Target;
 
                     // It's okay to strip the instantiation away because we don't need a MethodSpec
                     // token - SignatureBuilder will generate the generic method signature
