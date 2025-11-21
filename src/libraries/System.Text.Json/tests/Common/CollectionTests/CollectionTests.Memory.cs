@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -136,6 +138,40 @@ namespace System.Text.Json.Serialization.Tests
 
             MemoryOfTClass<byte> memoryOfByteClass = await Serializer.DeserializeWrapper<MemoryOfTClass<byte>>(json);
             AssertExtensions.SequenceEqual<byte>(s_testData.AsSpan(), memoryOfByteClass.Memory.Span);
+        }
+
+        [Fact]
+        public async Task DeserializeReadOnlyMemoryFromStreamWithManyNulls()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/118346
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
+            // Create an array of ~200 null elements to force resumptions with smallest buffer size
+            string json = $"[{string.Join(",", Enumerable.Repeat("null", 200))}]";
+            using var stream = new Utf8MemoryStream(json);
+            ReadOnlyMemory<string?> result = await StreamingSerializer.DeserializeWrapper<ReadOnlyMemory<string?>>(stream);
+
+            Assert.Equal(200, result.Length);
+        }
+
+        [Fact]
+        public async Task DeserializeMemoryFromStreamWithManyNulls()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/118346
+            if (StreamingSerializer is null)
+            {
+                return;
+            }
+
+            // Create an array of ~200 null elements to force resumptions with smallest buffer size
+            string json = $"[{string.Join(",", Enumerable.Repeat("null", 200))}]";
+            using var stream = new Utf8MemoryStream(json);
+            Memory<string?> result = await StreamingSerializer.DeserializeWrapper<Memory<string?>>(stream);
+
+            Assert.Equal(200, result.Length);
         }
     }
 }

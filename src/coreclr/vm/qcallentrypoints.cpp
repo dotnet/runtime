@@ -398,10 +398,7 @@ static const Entry s_QCall[] =
     DllImportEntry(MngdSafeArrayMarshaler_ClearNative)
     DllImportEntry(Variant_ConvertValueTypeToRecord)
 #endif // FEATURE_COMINTEROP
-    DllImportEntry(NativeLibrary_LoadFromPath)
     DllImportEntry(NativeLibrary_LoadByName)
-    DllImportEntry(NativeLibrary_FreeLib)
-    DllImportEntry(NativeLibrary_GetSymbol)
     DllImportEntry(GetTypeLoadExceptionMessage)
     DllImportEntry(GetFileLoadExceptionMessage)
     DllImportEntry(FileLoadException_GetMessageForHR)
@@ -505,7 +502,6 @@ static const Entry s_QCall[] =
     DllImportEntry(X86BaseCpuId)
 #endif
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
-    DllImportEntry(StubHelpers_SetStringTrailByte)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
     DllImportEntry(StubHelpers_MarshalToManagedVaList)
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)

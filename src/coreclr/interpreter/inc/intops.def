@@ -7,6 +7,10 @@
 // we should add compact opcodes where all data is in uint16_t slots.
 
 OPDEF(INTOP_RET, "ret", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_I1, "ret.i1", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_U1, "ret.u1", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_I2, "ret.i2", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_U2, "ret.u2", 2, 0, 1, InterpOpNoArgs)
 OPDEF(INTOP_RET_VT, "ret.vt", 3, 0, 1, InterpOpInt)
 OPDEF(INTOP_RET_VOID, "ret.void", 1, 0, 0, InterpOpNoArgs)
 
@@ -55,6 +59,8 @@ OPDEF(INTOP_STELEM_VT_NOREF, "stelem.vt.noref", 5, 0, 3, InterpOpInt)
 OPDEF(INTOP_LDELEMA, "ldelema", 5, 1, 2, InterpOpInt)
 OPDEF(INTOP_LDELEMA_REF, "ldelema.ref", 5, 1, 2, InterpOpClassHandle)
 OPDEF(INTOP_LDELEMA_REF_GENERIC, "ldelema.ref.generic", 6, 1, 3, InterpOpGenericLookup)
+
+OPDEF(INTOP_CONV_NI, "conv.ni", 4, 1, 2, InterpOpNoArgs)
 
 OPDEF(INTOP_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, InterpOpNoArgs)
