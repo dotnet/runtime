@@ -1256,10 +1256,6 @@ void DebuggerJitInfo::Init(TADDR newAddress)
     if (this->m_nativeCodeVersion.GetOptimizationTier() != NativeCodeVersion::OptimizationTierInterpreted)
     {
         this->m_codeRegionInfo.InitializeFromStartAddress(PINSTRToPCODE((TADDR)this->m_addrOfCode));
-
-#if defined(FEATURE_EH_FUNCLETS)
-        this->InitFuncletAddress();
-#endif // FEATURE_EH_FUNCLETS
     }
     else
     {
