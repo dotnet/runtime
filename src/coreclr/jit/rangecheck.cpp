@@ -1143,6 +1143,11 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
             Compiler::dspTreeID(op), m_pCompiler->vnStore->VNConservativeNormalValue(op->gtVNPair));
     ASSERT_TP assertions = BitVecOps::UninitVal();
 
+    if (m_pCompiler->GetAssertionCount() < 1)
+    {
+        return;
+    }
+
     // If we have a phi arg, we can get to the block from it and use its assertion out.
     if (op->OperIs(GT_PHI_ARG))
     {
@@ -1158,9 +1163,64 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
     else if (op->IsLocal())
     {
         assertions = block->bbAssertionIn;
+
+        // bbAssertionIn is a bit conservative and will not include intra-block assertions.
+        // e.g. created by GT_BOUNDS_CHECK nodes prior to the 'op' in the current block.
+        // For that, we walk the trees in the block until we find "op" and collect assertions
+        // along the way. It doesn't seem to be profitable for anything other than bounds checks
+        // (ArrBnds assertions), so we limit the search to only those blocks that may have bounds
+        // checks. It also helps reduce the cost of this search as it's not cheap.
+        //
+        // TODO-Review: EH successor/predecessor iteration seems broken.
+        if ((block->bbCatchTyp != BBCT_FAULT) && block->HasFlag(BBF_MAY_HAVE_BOUNDS_CHECKS))
+        {
+            // We're going to be adding to 'assertions', so make a copy first.
+            assertions = BitVecOps::MakeCopy(m_pCompiler->apTraits, assertions);
+
+            // JIT-TP: Limit the search budget to avoid spending too much time here.
+            int budget = 50;
+
+            bool opFound = false;
+            for (Statement* stmt : block->Statements())
+            {
+                struct WalkData
+                {
+                    int*       budget;
+                    GenTree*   op;
+                    ASSERT_TP* assertions;
+                };
+
+                auto visitor = [](GenTree** ppTree, Compiler::fgWalkData* walkData) {
+                    auto* data = static_cast<WalkData*>(walkData->pCallbackData);
+                    if ((*ppTree == data->op) || (--(*(data->budget)) <= 0))
+                    {
+                        // We've found the op or run out of budget - abort the walk.
+                        return Compiler::fgWalkResult::WALK_ABORT;
+                    }
+                    if ((*ppTree)->GeneratesAssertion())
+                    {
+                        AssertionInfo info = (*ppTree)->GetAssertionInfo();
+                        // Normally, we extend the assertions by calling optImpliedAssertions, but that
+                        // doesn't seem to improve anything here, so we just add the assertion directly.
+                        BitVecOps::AddElemD(walkData->compiler->apTraits, *data->assertions,
+                                            info.GetAssertionIndex() - 1);
+                    }
+                    return Compiler::fgWalkResult::WALK_CONTINUE;
+                };
+
+                auto data = WalkData{&budget, op, &assertions};
+                if (m_pCompiler->fgWalkTreePost(stmt->GetRootNodePointer(), visitor, &data) !=
+                    Compiler::fgWalkResult::WALK_CONTINUE)
+                {
+                    opFound = true;
+                    break;
+                }
+            }
+            assert(opFound && "Failed to find op in block statements");
+        }
     }
 
-    if (!BitVecOps::MayBeUninit(assertions) && (m_pCompiler->GetAssertionCount() > 0))
+    if (!BitVecOps::MayBeUninit(assertions))
     {
         // Perform the merge step to fine tune the range value.
         MergeEdgeAssertions(op->AsLclVarCommon(), assertions, pRange);
