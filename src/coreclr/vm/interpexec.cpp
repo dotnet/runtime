@@ -824,8 +824,9 @@ MAIN_LOOP:
 
             switch (*ip)
             {
-#ifdef DEBUG
+#if defined(DEBUG) || defined(DEBUGGING_SUPPORTED)
                 case INTOP_BREAKPOINT:
+                {
                     struct BreakpointParam
                     {
                         const int32_t *ip;
@@ -844,7 +845,8 @@ MAIN_LOOP:
                     }
                     PAL_ENDTRY
                     break;
-#endif
+                }
+#endif // DEBUG || DEBUGGING_SUPPORTED
                 case INTOP_INITLOCALS:
                     memset(LOCAL_VAR_ADDR(ip[1], void), 0, ip[2]);
                     ip += 3;
