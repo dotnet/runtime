@@ -236,14 +236,14 @@ namespace System.IO.Compression
                 {
                     var input = new Interop.Zstd.ZstdInBuffer
                     {
-                        src = (IntPtr)inBytes,
+                        src = inBytes,
                         size = (nuint)source.Length,
                         pos = 0
                     };
 
                     var output = new Interop.Zstd.ZstdOutBuffer
                     {
-                        dst = (IntPtr)outBytes,
+                        dst = outBytes,
                         size = (nuint)destination.Length,
                         pos = 0
                     };
@@ -366,7 +366,7 @@ namespace System.IO.Compression
                 fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
                 fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                 {
-                    nuint result = Interop.Zstd.ZSTD_compress2(ctx, (IntPtr)outBytes, (nuint)destination.Length, (IntPtr)inBytes, (nuint)source.Length, quality);
+                    nuint result = Interop.Zstd.ZSTD_compress2(ctx, outBytes, (nuint)destination.Length, inBytes, (nuint)source.Length, quality);
 
                     if (ZstandardUtils.IsError(result))
                     {

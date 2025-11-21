@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -47,9 +48,7 @@ namespace System.IO.Compression
             {
                 fixed (byte* dictPtr = data)
                 {
-                    IntPtr dictData = (IntPtr)dictPtr;
-
-                    SafeZstdCDictHandle compressionDict = Interop.Zstd.ZSTD_createCDict_byReference(dictData, (nuint)data.Length, quality);
+                    SafeZstdCDictHandle compressionDict = Interop.Zstd.ZSTD_createCDict_byReference(dictPtr, (nuint)data.Length, quality);
 
                     if (compressionDict.IsInvalid)
                     {
@@ -57,7 +56,7 @@ namespace System.IO.Compression
                     }
                     compressionDict._pinnedData = new PinnedGCHandle<byte[]>(data);
 
-                    SafeZstdDDictHandle decompressionDict = Interop.Zstd.ZSTD_createDDict_byReference(dictData, (nuint)data.Length);
+                    SafeZstdDDictHandle decompressionDict = Interop.Zstd.ZSTD_createDDict_byReference(dictPtr, (nuint)data.Length);
 
                     if (decompressionDict.IsInvalid)
                     {
@@ -98,6 +97,12 @@ namespace System.IO.Compression
             long totalLength = 0;
             foreach (long length in sampleLengths)
             {
+                // since array sizes must fit into int, we can safely assume that sample lengths larger than int.MaxValue are invalid
+                if (length >= int.MaxValue)
+                {
+                    throw new ArgumentException(SR.ZstandardDictionary_SampleLengthsMismatch, nameof(sampleLengths));
+                }
+
                 totalLength += length;
             }
             if (totalLength != samples.Length)
@@ -109,23 +114,55 @@ namespace System.IO.Compression
 
             byte[] dictionaryBuffer = new byte[maxDictionarySize];
 
+            nuint dictSize;
+
             unsafe
             {
-                fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
-                fixed (long* lengthsPtr = &MemoryMarshal.GetReference(sampleLengths))
-                fixed (byte* dictPtr = dictionaryBuffer)
+                if (sizeof(nuint) == sizeof(long))
                 {
-                    nuint dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
-                        (IntPtr)dictPtr, (nuint)maxDictionarySize,
-                        (IntPtr)samplesPtr, (IntPtr)lengthsPtr, (uint)sampleLengths.Length);
+                    ReadOnlySpan<nuint> lengthsAsNuint = MemoryMarshal.Cast<long, nuint>(sampleLengths);
 
-                    if (ZstandardUtils.IsError(dictSize))
+                    fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
+                    fixed (byte* dictPtr = dictionaryBuffer)
+                    fixed (nuint* lengthsAsNuintPtr = &MemoryMarshal.GetReference(lengthsAsNuint))
                     {
-                        throw new IOException(SR.ZstandardDictionary_Train_Failure, ZstandardUtils.CreateExceptionForError(dictSize));
+                        dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
+                                dictPtr, (nuint)maxDictionarySize,
+                                samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
+                    }
+                }
+                else
+                {
+                    // on 32-bit platforms, we need to convert longs to nuints
+                    const int maxStackAlloc = 1024; // 4 kB
+                    Span<nuint> lengthsAsNuint = sampleLengths.Length <= maxStackAlloc ? stackalloc nuint[maxStackAlloc] : new nuint[sampleLengths.Length];
+
+                    for (int i = 0; i < sampleLengths.Length; i++)
+                    {
+                        // can't fail as this would've failed earlier when checking total length
+                        Debug.Assert((ulong)sampleLengths[i] <= (ulong)nuint.MaxValue);
+
+                        lengthsAsNuint[i] = (nuint)sampleLengths[i];
                     }
 
-                    return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
+                    lengthsAsNuint = lengthsAsNuint.Slice(0, sampleLengths.Length);
+
+                    fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
+                    fixed (byte* dictPtr = dictionaryBuffer)
+                    fixed (nuint* lengthsAsNuintPtr = &MemoryMarshal.GetReference(lengthsAsNuint))
+                    {
+                        dictSize = Interop.Zstd.ZDICT_trainFromBuffer(
+                                dictPtr, (nuint)maxDictionarySize,
+                                samplesPtr, lengthsAsNuintPtr, (uint)sampleLengths.Length);
+                    }
                 }
+
+                if (ZstandardUtils.IsError(dictSize))
+                {
+                    throw new IOException(SR.ZstandardDictionary_Train_Failure, ZstandardUtils.CreateExceptionForError(dictSize));
+                }
+
+                return Create(dictionaryBuffer.AsSpan(0, (int)dictSize));
             }
         }
 

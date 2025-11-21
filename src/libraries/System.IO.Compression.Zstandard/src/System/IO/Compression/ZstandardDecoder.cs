@@ -143,14 +143,14 @@ namespace System.IO.Compression
                 {
                     var input = new Interop.Zstd.ZstdInBuffer
                     {
-                        src = (IntPtr)sourcePtr,
+                        src = sourcePtr,
                         size = (nuint)source.Length,
                         pos = 0
                     };
 
                     var output = new Interop.Zstd.ZstdOutBuffer
                     {
-                        dst = (IntPtr)destPtr,
+                        dst = destPtr,
                         size = (nuint)destination.Length,
                         pos = 0
                     };
@@ -198,7 +198,7 @@ namespace System.IO.Compression
             {
                 fixed (byte* dataPtr = &MemoryMarshal.GetReference(data))
                 {
-                    ulong frameContentSize = Interop.Zstd.ZSTD_decompressBound((IntPtr)dataPtr, (nuint)data.Length);
+                    ulong frameContentSize = Interop.Zstd.ZSTD_decompressBound(dataPtr, (nuint)data.Length);
 
                     const ulong ZSTD_CONTENTSIZE_UNKNOWN = unchecked(0UL - 1);
                     const ulong ZSTD_CONTENTSIZE_ERROR = unchecked(0UL - 2);
@@ -235,8 +235,8 @@ namespace System.IO.Compression
                 fixed (byte* destPtr = &MemoryMarshal.GetReference(destination))
                 {
                     nuint result = Interop.Zstd.ZSTD_decompress(
-                        (IntPtr)destPtr, (nuint)destination.Length,
-                        (IntPtr)sourcePtr, (nuint)source.Length);
+                        destPtr, (nuint)destination.Length,
+                        sourcePtr, (nuint)source.Length);
 
                     if (ZstandardUtils.IsError(result))
                     {
@@ -281,8 +281,8 @@ namespace System.IO.Compression
                 fixed (byte* destPtr = &MemoryMarshal.GetReference(destination))
                 {
                     nuint result = Interop.Zstd.ZSTD_decompress_usingDDict(
-                        dctx, (IntPtr)destPtr, (nuint)destination.Length,
-                        (IntPtr)sourcePtr, (nuint)source.Length, dictionary.DecompressionDictionary);
+                        dctx, destPtr, (nuint)destination.Length,
+                        sourcePtr, (nuint)source.Length, dictionary.DecompressionDictionary);
 
                     if (ZstandardUtils.IsError(result))
                     {

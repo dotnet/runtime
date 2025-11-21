@@ -61,7 +61,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             MemoryHandle handle = prefix.Pin();
 
-            nuint result = Interop.Zstd.ZSTD_CCtx_refPrefix(this, (IntPtr)handle.Pointer, (nuint)prefix.Length);
+            nuint result = Interop.Zstd.ZSTD_CCtx_refPrefix(this, (byte*)handle.Pointer, (nuint)prefix.Length);
 
             if (Interop.Zstd.ZSTD_isError(result) != 0)
             {
@@ -147,7 +147,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             MemoryHandle handle = prefix.Pin();
 
-            nuint result = Interop.Zstd.ZSTD_DCtx_refPrefix(this, (IntPtr)handle.Pointer, (nuint)prefix.Length);
+            nuint result = Interop.Zstd.ZSTD_DCtx_refPrefix(this, (byte*)handle.Pointer, (nuint)prefix.Length);
 
             if (Interop.Zstd.ZSTD_isError(result) != 0)
             {
