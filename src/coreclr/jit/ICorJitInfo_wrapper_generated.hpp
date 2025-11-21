@@ -1067,6 +1067,17 @@ void WrapICorJitInfo::reportRichMappings(
     API_LEAVE(reportRichMappings);
 }
 
+void WrapICorJitInfo::reportAsyncDebugInfo(
+          ICorDebugInfo::AsyncInfo* asyncInfo,
+          ICorDebugInfo::AsyncSuspensionPoint* suspensionPoints,
+          ICorDebugInfo::AsyncContinuationVarInfo* vars,
+          uint32_t numVars)
+{
+    API_ENTER(reportAsyncDebugInfo);
+    wrapHnd->reportAsyncDebugInfo(asyncInfo, suspensionPoints, vars, numVars);
+    API_LEAVE(reportAsyncDebugInfo);
+}
+
 void WrapICorJitInfo::reportMetadata(
           const char* key,
           const void* value,
@@ -1536,10 +1547,22 @@ bool WrapICorJitInfo::getTailCallHelpers(
     return temp;
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncResumptionStub()
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getContinuationType(
+          size_t dataSize,
+          bool* objRefs,
+          size_t objRefsSize)
+{
+    API_ENTER(getContinuationType);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getContinuationType(dataSize, objRefs, objRefsSize);
+    API_LEAVE(getContinuationType);
+    return temp;
+}
+
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncResumptionStub(
+          void** entryPoint)
 {
     API_ENTER(getAsyncResumptionStub);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->getAsyncResumptionStub();
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAsyncResumptionStub(entryPoint);
     API_LEAVE(getAsyncResumptionStub);
     return temp;
 }

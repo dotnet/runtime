@@ -939,6 +939,7 @@ public:
     PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!IsContinuation());
         return m_pModule;
     }
 
@@ -2805,6 +2806,8 @@ public:
         _ASSERTE(GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ValueType);
         SetFlag(enum_flag_Category_Nullable);
     }
+
+    inline BOOL IsContinuation();
 
     // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType()

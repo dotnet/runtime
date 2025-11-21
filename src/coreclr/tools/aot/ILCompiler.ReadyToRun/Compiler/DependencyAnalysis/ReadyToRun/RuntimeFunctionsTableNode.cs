@@ -23,6 +23,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _nodeFactory = nodeFactory;
         }
 
+        public override ObjectNodeSection GetSection(NodeFactory factory)
+        {
+            // This table is always in the Windows UnwindInfo format.
+            // As a result, we can't put it in the PData section for non-PE formats.
+            return factory.Format switch
+            {
+                ReadyToRunContainerFormat.PE => ObjectNodeSection.PDataSection,
+                _ => ObjectNodeSection.ReadOnlyDataSection
+            };
+        }
+
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);

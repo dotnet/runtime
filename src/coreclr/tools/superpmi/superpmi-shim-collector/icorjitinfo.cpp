@@ -1229,8 +1229,18 @@ void interceptor_ICJI::reportRichMappings(ICorDebugInfo::InlineTreeNode*    inli
                                           uint32_t                          numMappings)
 {
     mc->cr->AddCall("reportRichMappings");
-    // TODO: record these mappings
+    // Compile output that we do not currently save
     original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+}
+
+void interceptor_ICJI::reportAsyncDebugInfo(ICorDebugInfo::AsyncInfo*             asyncInfo,
+                                            ICorDebugInfo::AsyncSuspensionPoint*  suspensionPoints,
+                                            ICorDebugInfo::AsyncContinuationVarInfo* vars,
+                                            uint32_t                              numVars)
+{
+    mc->cr->AddCall("reportAsyncDebugInfo");
+    // Compile output that we do not currently save
+    original_ICorJitInfo->reportAsyncDebugInfo(asyncInfo, suspensionPoints, vars, numVars);
 }
 
 void interceptor_ICJI::reportMetadata(const char* key, const void* value, size_t length)
@@ -1774,12 +1784,20 @@ bool interceptor_ICJI::getTailCallHelpers(
     return result;
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub(void** entryPoint)
 {
     mc->cr->AddCall("getAsyncResumptionStub");
-    CORINFO_METHOD_HANDLE stub = original_ICorJitInfo->getAsyncResumptionStub();
-    mc->recGetAsyncResumptionStub(stub);
+    CORINFO_METHOD_HANDLE stub = original_ICorJitInfo->getAsyncResumptionStub(entryPoint);
+    mc->recGetAsyncResumptionStub(stub, *entryPoint);
     return stub;
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getContinuationType(size_t dataSize, bool* objRefs, size_t objRefsSize)
+{
+    mc->cr->AddCall("getContinuationType");
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getContinuationType(dataSize, objRefs, objRefsSize);
+    mc->recGetContinuationType(dataSize, objRefs, objRefsSize, result);
+    return result;
 }
 
 void interceptor_ICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)

@@ -23,7 +23,7 @@ namespace System.Collections.Generic
     /// Operations on the collection have algorithmic complexities that are similar to that of the <see cref="List{T}"/>
     /// class, except with lookups by key similar in complexity to that of <see cref="Dictionary{TKey, TValue}"/>.
     /// </remarks>
-    [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>))]
+    [DebuggerTypeProxy(typeof(OrderedDictionaryDebugView<,>))]
     [DebuggerDisplay("Count = {Count}")]
 #if SYSTEM_COLLECTIONS
     public

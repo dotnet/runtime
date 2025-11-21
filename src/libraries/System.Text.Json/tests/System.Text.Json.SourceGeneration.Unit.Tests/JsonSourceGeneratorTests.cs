@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Tests;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
@@ -965,5 +966,51 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.NotEmpty(result.NewCompilation.GetDiagnostics().Where(d => d.Id == "EXP001"));
         }
 #endif
+
+        [Fact]
+        public void NegativeJsonPropertyOrderGeneratesValidCode()
+        {
+            // Test for https://github.com/dotnet/runtime/issues/121277
+            // Verify that negative JsonPropertyOrder values generate compilable code
+            // even on locales that use non-ASCII minus signs (e.g., fi_FI uses U+2212)
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace Test
+                {
+                    public class MyClass
+                    {
+                        [JsonPropertyOrder(-1)]
+                        public int FirstProperty { get; set; }
+
+                        [JsonPropertyOrder(0)]
+                        public int SecondProperty { get; set; }
+
+                        [JsonPropertyOrder(-100)]
+                        public int ThirdProperty { get; set; }
+                    }
+
+                    [JsonSerializable(typeof(MyClass))]
+                    public partial class MyContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            // Test with fi_FI culture which uses U+2212 minus sign for negative numbers
+            using (new ThreadCultureChange("fi-FI"))
+            {
+                Compilation compilation = CompilationHelper.CreateCompilation(source);
+                JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+
+                // The generated code should compile without errors
+                // If the bug exists, we'd see CS1525, CS1002, CS1056, or CS0201 errors
+                var errors = result.NewCompilation.GetDiagnostics()
+                    .Where(d => d.Severity == DiagnosticSeverity.Error)
+                    .ToList();
+
+                Assert.Empty(errors);
+            }
+        }
     }
 }
