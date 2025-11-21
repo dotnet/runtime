@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -733,25 +734,6 @@ namespace System
         [CLSCompliant(false)]
         public static implicit operator UInt128(nuint value) => new UInt128(0, value);
 
-        private void WriteLittleEndianUnsafe(Span<byte> destination)
-        {
-            Debug.Assert(destination.Length >= Size);
-
-            ulong lower = _lower;
-            ulong upper = _upper;
-
-            if (!BitConverter.IsLittleEndian)
-            {
-                lower = BinaryPrimitives.ReverseEndianness(lower);
-                upper = BinaryPrimitives.ReverseEndianness(upper);
-            }
-
-            ref byte address = ref MemoryMarshal.GetReference(destination);
-
-            Unsafe.WriteUnaligned(ref address, lower);
-            Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), upper);
-        }
-
         //
         // IAdditionOperators
         //
@@ -964,46 +946,27 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
         bool IBinaryInteger<UInt128>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= Size)
+            if (BinaryPrimitives.TryWriteUInt128BigEndian(destination, this))
             {
-                ulong lower = _lower;
-                ulong upper = _upper;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    lower = BinaryPrimitives.ReverseEndianness(lower);
-                    upper = BinaryPrimitives.ReverseEndianness(upper);
-                }
-
-                ref byte address = ref MemoryMarshal.GetReference(destination);
-
-                Unsafe.WriteUnaligned(ref address, upper);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), lower);
-
                 bytesWritten = Size;
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<UInt128>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= Size)
+            if (BinaryPrimitives.TryWriteUInt128LittleEndian(destination, this))
             {
-                WriteLittleEndianUnsafe(destination);
                 bytesWritten = Size;
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         //
@@ -1102,6 +1065,20 @@ namespace System
                 {
                     // left and right are both uint64
                     return left._lower / right._lower;
+                }
+                else if (X86Base.X64.IsSupported)
+                {
+                    ulong highRes = 0ul;
+                    ulong remainder = left._upper;
+
+#pragma warning disable SYSLIB5004 // DivRem is marked as [Experimental], partly because it does not get optmized by the JIT for constant inputs
+                    if (remainder >= right._lower)
+                    {
+                        (highRes, remainder) = X86Base.X64.DivRem(left._upper, 0, right._lower);
+                    }
+
+                    return new UInt128(highRes, X86Base.X64.DivRem(left._lower, remainder, right._lower).Quotient);
+#pragma warning restore SYSLIB5004 // DivRem is marked as [Experimental]
                 }
             }
 
@@ -1388,7 +1365,12 @@ namespace System
             return lower;
         }
 
-        internal static UInt128 BigMul(UInt128 left, UInt128 right, out UInt128 lower)
+        /// <summary>Produces the full product of two unsigned native integers.</summary>
+        /// <param name="left">The integer to multiply with <paramref name="right" />.</param>
+        /// <param name="right">The integer to multiply with <paramref name="left" />.</param>
+        /// <param name="lower">The lower half of the full product.</param>
+        /// <returns>The upper half of the full product.</returns>
+        public static UInt128 BigMul(UInt128 left, UInt128 right, out UInt128 lower)
         {
             // Adaptation of algorithm for multiplication
             // of 32-bit unsigned integers described

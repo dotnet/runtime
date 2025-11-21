@@ -771,7 +771,7 @@ namespace System.Buffers.Text
                     break;
                 }
 
-                Vector256<sbyte> hiNibbles = Avx2.And(Avx2.ShiftRightLogical(str.AsInt32(), 4).AsSByte(), maskSlashOrUnderscore);
+                Vector256<sbyte> hiNibbles = ((str.AsInt32()) >>> 4).AsSByte() & maskSlashOrUnderscore;
 
                 if (!decoder.TryDecode256Core(str, hiNibbles, maskSlashOrUnderscore, lutLo, lutHi, lutShift, shiftForUnderscore, out str))
                 {
@@ -827,16 +827,14 @@ namespace System.Buffers.Text
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
 
-            if (AdvSimd.Arm64.IsSupported)
+            if (Ssse3.IsSupported)
             {
-                right &= mask8F;
+                return Ssse3.Shuffle(left, right);
             }
-
-#if NET9_0_OR_GREATER
-            return Vector128.ShuffleUnsafe(left, right);
-#else
-            return Base64Helper.ShuffleUnsafe(left, right);
-#endif
+            else
+            {
+                return AdvSimd.Arm64.VectorTableLookup(left, right & mask8F);
+            }
         }
 
 #if NET9_0_OR_GREATER
@@ -1071,7 +1069,7 @@ namespace System.Buffers.Text
             Vector128<sbyte> packBytesMask = Vector128.Create(0x06000102, 0x090A0405, 0x0C0D0E08, 0xffffffff).AsSByte();
             Vector128<byte> mergeConstant0 = Vector128.Create(0x01400140).AsByte();
             Vector128<short> mergeConstant1 = Vector128.Create(0x00011000).AsInt16();
-            Vector128<byte> one = Vector128.Create((byte)1);
+            Vector128<byte> one = Vector128<byte>.One;
             Vector128<byte> mask2F = Vector128.Create(decoder.MaskSlashOrUnderscore);
             Vector128<byte> mask8F = Vector128.Create((byte)0x8F);
             Vector128<byte> shiftForUnderscore = Vector128.Create((byte)33);
@@ -1105,11 +1103,17 @@ namespace System.Buffers.Text
                 {
                     merge_ab_and_bc = Ssse3.MultiplyAddAdjacent(str.AsByte(), mergeConstant0.AsSByte());
                 }
-                else
+                else if (AdvSimd.Arm64.IsSupported)
                 {
                     Vector128<ushort> evens = AdvSimd.ShiftLeftLogicalWideningLower(AdvSimd.Arm64.UnzipEven(str, one).GetLower(), 6);
                     Vector128<ushort> odds = AdvSimd.Arm64.TransposeOdd(str, Vector128<byte>.Zero).AsUInt16();
                     merge_ab_and_bc = Vector128.Add(evens, odds).AsInt16();
+                }
+                else
+                {
+                    // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                    ThrowUnreachableException();
+                    merge_ab_and_bc = default;
                 }
                 // 0000kkkk LLllllll 0000JJJJ JJjjKKKK
                 // 0000hhhh IIiiiiii 0000GGGG GGggHHHH
@@ -1121,11 +1125,17 @@ namespace System.Buffers.Text
                 {
                     output = Sse2.MultiplyAddAdjacent(merge_ab_and_bc, mergeConstant1);
                 }
-                else
+                else if (AdvSimd.Arm64.IsSupported)
                 {
                     Vector128<int> ievens = AdvSimd.ShiftLeftLogicalWideningLower(AdvSimd.Arm64.UnzipEven(merge_ab_and_bc, one.AsInt16()).GetLower(), 12);
                     Vector128<int> iodds = AdvSimd.Arm64.TransposeOdd(merge_ab_and_bc, Vector128<short>.Zero).AsInt32();
                     output = Vector128.Add(ievens, iodds).AsInt32();
+                }
+                else
+                {
+                    // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
+                    ThrowUnreachableException();
+                    output = default;
                 }
                 // 00000000 JJJJJJjj KKKKkkkk LLllllll
                 // 00000000 GGGGGGgg HHHHhhhh IIiiiiii
@@ -1315,20 +1325,20 @@ namespace System.Buffers.Text
                 Vector256<sbyte> _,
                 out Vector256<sbyte> result)
             {
-                Vector256<sbyte> loNibbles = Avx2.And(str, maskSlashOrUnderscore);
+                Vector256<sbyte> loNibbles = str & maskSlashOrUnderscore;
                 Vector256<sbyte> hi = Avx2.Shuffle(lutHigh, hiNibbles);
                 Vector256<sbyte> lo = Avx2.Shuffle(lutLow, loNibbles);
 
-                if (!Avx.TestZ(lo, hi))
+                if ((lo & hi) != Vector256<sbyte>.Zero)
                 {
                     result = default;
                     return false;
                 }
 
                 Vector256<sbyte> eq2F = Avx2.CompareEqual(str, maskSlashOrUnderscore);
-                Vector256<sbyte> shift = Avx2.Shuffle(lutShift, Avx2.Add(eq2F, hiNibbles));
+                Vector256<sbyte> shift = Avx2.Shuffle(lutShift, eq2F + hiNibbles);
 
-                result = Avx2.Add(str, shift);
+                result = str + shift;
 
                 return true;
             }

@@ -35,6 +35,8 @@ namespace System.SpanTests
                 "abcd",
                 "aeio",
                 "aeiou",
+                "Aabc",
+                "Aabcd",
                 "abceiou",
                 "123456789",
                 "123456789123",
@@ -82,6 +84,11 @@ namespace System.SpanTests
             {
                 yield return Pair(value);
                 yield return Pair('a' + value);
+                yield return Pair('\0' + value);
+                yield return Pair('\u0001' + value);
+                yield return Pair('\u00FE' + value);
+                yield return Pair('\u00FF' + value);
+                yield return Pair('\uFF00' + value);
 
                 // Test some more duplicates
                 if (value.Length > 0)
@@ -458,7 +465,7 @@ namespace System.SpanTests
                     s_randomLatin1Chars[i] = (char)rng.Next(0, 256);
                 }
 
-                rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars));
+                rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars.AsSpan()));
 
                 s_randomAsciiBytes = Encoding.ASCII.GetBytes(s_randomAsciiChars);
 

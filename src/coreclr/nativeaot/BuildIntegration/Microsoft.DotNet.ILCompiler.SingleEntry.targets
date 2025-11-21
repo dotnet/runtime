@@ -24,11 +24,14 @@
     <_hostPackageName Condition="'$(_targetsNonPortableSdkRid)' == 'true'">runtime.$(RuntimeIdentifier).Microsoft.DotNet.ILCompiler</_hostPackageName>
     <_targetPackageName>runtime.$(_originalTargetOS)-$(_targetArchitecture).Microsoft.DotNet.ILCompiler</_targetPackageName>
     <_targetPackageName Condition="'$(_targetsNonPortableSdkRid)' == 'true'">runtime.$(RuntimeIdentifier).Microsoft.DotNet.ILCompiler</_targetPackageName>
+    <_targetRuntimePackName>Microsoft.NETCore.App.Runtime.NativeAOT.$(_originalTargetOS)-$(_targetArchitecture)</_targetRuntimePackName>
+    <_targetRuntimePackName Condition="'$(_targetsNonPortableSdkRid)' == 'true'">Microsoft.NETCore.App.Runtime.NativeAOT.$(RuntimeIdentifier)</_targetRuntimePackName>
 
     <!-- Treat linux-musl and linux-bionic etc. as linux -->
     <_targetOS>$(_originalTargetOS)</_targetOS>
     <_linuxToken>linux-</_linuxToken>
     <_linuxLibcFlavor Condition="$(_targetOS.StartsWith($(_linuxToken)))">$(_targetOS.SubString($(_linuxToken.Length)))</_linuxLibcFlavor>
+    <_linuxLibcFlavor Condition="'$(_targetOS)' == 'android'">bionic</_linuxLibcFlavor>
     <_targetOS Condition="$(_targetOS.StartsWith($(_linuxToken)))">linux</_targetOS>
 
     <!-- linux-bionic on ARM uses armel (softfp) ABI -->
@@ -64,8 +67,8 @@
 
     <PropertyGroup>
       <IlcHostPackagePath Condition="'@(ResolvedILCompilerPack)' == '$(_hostPackageName)'">@(ResolvedILCompilerPack->'%(PackageDirectory)')</IlcHostPackagePath>
-      <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == '$(_targetPackageName)'">@(ResolvedTargetILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
       <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' == ''">@(ResolvedILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
+      <RuntimePackagePath Condition="'@(ResolvedTargetILCompilerPack)' != ''">@(ResolvedTargetILCompilerPack->'%(PackageDirectory)')</RuntimePackagePath>
     </PropertyGroup>
 
   </Target>

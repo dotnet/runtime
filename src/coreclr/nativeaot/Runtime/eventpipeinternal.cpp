@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#include "PalRedhawk.h"
+#include "Pal.h"
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-config.h>
@@ -13,6 +13,7 @@
 #include <eventpipe/ep-metadata-generator.h>
 #include <eventpipe/ep-event-payload.h>
 #include <eventpipe/ep-buffer-manager.h>
+#include "minipal/time.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -66,12 +67,16 @@ EXTERN_C uint64_t QCALLTYPE EventPipeInternal_Enable(
 
     if (configProviders) {
         for (uint32_t i = 0; i < numProviders; ++i) {
+            ep_char8_t *providerName = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pProviderName));
+            ep_char8_t *filterData = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pFilterData));
             ep_provider_config_init (
                 &configProviders[i],
-                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pProviderName)),
+                providerName,
                 nativeProviders[i].keywords,
                 static_cast<EventPipeEventLevel>(nativeProviders[i].loggingLevel),
-                ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(nativeProviders[i].pFilterData)));
+                filterData);
+            ep_rt_utf8_string_free (providerName);
+            ep_rt_utf8_string_free (filterData);
         }
     }
 
@@ -94,10 +99,8 @@ EXTERN_C uint64_t QCALLTYPE EventPipeInternal_Enable(
     ep_start_streaming(result);
 
     if (configProviders) {
-        for (uint32_t i = 0; i < numProviders; ++i) {
-            ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&configProviders[i]));
-            ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&configProviders[i]));
-        }
+        for (uint32_t i = 0; i < numProviders; ++i)
+            ep_provider_config_fini (&configProviders[i]);
         free(configProviders);
     }
 
@@ -161,7 +164,7 @@ EXTERN_C void QCALLTYPE EventPipeInternal_DeleteProvider(intptr_t provHandle)
     }
 }
 
-// All the runtime redefine this enum, should move to commmon code.
+// All the runtime redefine this enum, should move to common code.
 // https://github.com/dotnet/runtime/issues/87069
 enum class ActivityControlCode
 {
@@ -198,7 +201,7 @@ EXTERN_C int QCALLTYPE EventPipeInternal_EventActivityIdControl(uint32_t control
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_ID:
 
-            ep_rt_create_activity_id(reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_thread_create_activity_id(reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
             break;
 
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_GET_SET_ID:
@@ -212,7 +215,7 @@ EXTERN_C int QCALLTYPE EventPipeInternal_EventActivityIdControl(uint32_t control
         case ActivityControlCode::EVENT_ACTIVITY_CONTROL_CREATE_SET_ID:
 
             ep_rt_thread_get_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(pActivityId), EP_ACTIVITY_ID_SIZE);
-            ep_rt_create_activity_id(reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
+            ep_thread_create_activity_id(reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
             ep_rt_thread_set_activity_id (activityIdHandle, reinterpret_cast<uint8_t *>(&currentActivityId), EP_ACTIVITY_ID_SIZE);
             break;
 
@@ -246,7 +249,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(uint64_t session
         {
             pSessionInfo->StartTimeAsUTCFileTime = ep_session_get_session_start_time (pSession);
             pSessionInfo->StartTimeStamp = ep_session_get_session_start_timestamp(pSession);
-            pSessionInfo->TimeStampFrequency = PalQueryPerformanceFrequency();
+            pSessionInfo->TimeStampFrequency = minipal_hires_tick_frequency();
             retVal = true;
         }
     }

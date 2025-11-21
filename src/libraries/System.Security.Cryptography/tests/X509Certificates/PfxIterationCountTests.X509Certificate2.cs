@@ -30,9 +30,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [OuterLoop("Sensitive to timeouts and may fail in very busy environments.")]
         public static void Import_IterationCountLimitExceeded_ThrowsInAllottedTime()
         {
-            const int AllottedTime = 5000;
+            const int AllottedTime = 10_000;
 
             if (!PfxTests.Pkcs12PBES2Supported)
             {

@@ -6,8 +6,8 @@ import BuildConfiguration from "consts:configuration";
 import WasmEnableJsInteropByValue from "consts:wasmEnableJsInteropByValue";
 
 import cwraps from "./cwraps";
-import { _lookup_js_owned_object, mono_wasm_get_js_handle, mono_wasm_get_jsobj_from_js_handle, mono_wasm_release_cs_owned_object, register_with_jsv_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
-import { Module, loaderHelpers, mono_assert } from "./globals";
+import { _lookup_js_owned_object, mono_wasm_get_js_handle, mono_wasm_get_jsobj_from_js_handle, SystemInteropJS_ReleaseCSOwnedObject, register_with_jsv_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
+import { loaderHelpers, mono_assert } from "./globals";
 import {
     ManagedObject, ManagedError,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,
@@ -20,7 +20,7 @@ import { monoStringToString, utf16ToString } from "./strings";
 import { GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToJs, MarshalerType, JSHandle } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { get_marshaler_to_cs_by_type, jsinteropDoc, marshal_exception_to_cs } from "./marshal-to-cs";
-import { localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
+import { fixupPointer, free, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { call_delegate } from "./managed-exports";
 import { mono_log_debug } from "./logging";
 import { invoke_later_when_on_ui_thread_async } from "./invoke-js";
@@ -271,7 +271,7 @@ export function end_marshal_task_to_js (args: JSMarshalerArguments, res_converte
 
     // otherwise drop the eagerPromise's handle
     const js_handle = mono_wasm_get_js_handle(eagerPromise);
-    mono_wasm_release_cs_owned_object(js_handle);
+    SystemInteropJS_ReleaseCSOwnedObject(js_handle);
 
     // get the synchronous result
     const promise = try_marshal_sync_task_to_js(res, type, res_converter);
@@ -331,20 +331,21 @@ function create_task_holder (res_converter?: MarshalerToJs) {
         } else {
             mono_assert(false, () => `Unexpected type ${type}`);
         }
-        mono_wasm_release_cs_owned_object(js_handle);
+        SystemInteropJS_ReleaseCSOwnedObject(js_handle);
     });
     return holder;
 }
 
-export function mono_wasm_resolve_or_reject_promise (args: JSMarshalerArguments): void {
-    // rejection/resolution should not arrive earlier than the promise created by marshaling in mono_wasm_invoke_jsimport_MT
-    invoke_later_when_on_ui_thread_async(() => mono_wasm_resolve_or_reject_promise_impl(args));
+export function SystemInteropJS_ResolveOrRejectPromise (args: JSMarshalerArguments): void {
+    // rejection/resolution should not arrive earlier than the promise created by marshaling in SystemInteropJS_InvokeJSImportSync
+    invoke_later_when_on_ui_thread_async(() => SystemInteropJS_ResolveOrRejectPromiseImpl(args));
 }
-export function mono_wasm_resolve_or_reject_promise_impl (args: JSMarshalerArguments): void {
+export function SystemInteropJS_ResolveOrRejectPromiseImpl (args: JSMarshalerArguments): void {
     if (!loaderHelpers.is_runtime_running()) {
         mono_log_debug("This promise resolution/rejection can't be propagated to managed code, mono runtime already exited.");
         return;
     }
+    args = fixupPointer(args, 0);
     const exc = get_arg(args, 0);
     const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
     try {
@@ -363,7 +364,7 @@ export function mono_wasm_resolve_or_reject_promise_impl (args: JSMarshalerArgum
         holder.resolve_or_reject(type, js_handle, arg_value);
         if (receiver_should_free) {
             // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
-            Module._free(args as any);
+            free(args as any);
         } else {
             set_arg_type(res, MarshalerType.Void);
             set_arg_type(exc, MarshalerType.None);
@@ -386,7 +387,7 @@ export function marshal_string_to_js (arg: JSMarshalerArgument): string | null {
         const buffer = get_arg_intptr(arg);
         const len = get_arg_length(arg) * 2;
         const value = utf16ToString(<any>buffer, <any>buffer + len);
-        Module._free(buffer as any);
+        free(buffer as any);
         return value;
     } else {
         mono_assert(!WasmEnableThreads, "Marshaling strings by reference is not supported in multithreaded mode");
@@ -505,7 +506,7 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
         }
         if (!WasmEnableJsInteropByValue) {
             mono_assert(!WasmEnableThreads, "Marshaling string by reference is not supported in multithreaded mode");
-            cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
+            cwraps.SystemInteropJS_UnregisterGCRoot(<any>buffer_ptr);
         }
     } else if (element_type == MarshalerType.Object) {
         result = new Array(length);
@@ -515,7 +516,7 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
         }
         if (!WasmEnableJsInteropByValue) {
             mono_assert(!WasmEnableThreads, "Marshaling objects by reference is not supported in multithreaded mode");
-            cwraps.mono_wasm_deregister_root(<any>buffer_ptr);
+            cwraps.SystemInteropJS_UnregisterGCRoot(<any>buffer_ptr);
         }
     } else if (element_type == MarshalerType.JSObject) {
         result = new Array(length);
@@ -524,18 +525,21 @@ function _marshal_array_to_js_impl (arg: JSMarshalerArgument, element_type: Mars
             result[index] = _marshal_js_object_to_js(element_arg);
         }
     } else if (element_type == MarshalerType.Byte) {
-        const sourceView = localHeapViewU8().subarray(<any>buffer_ptr, buffer_ptr + length);
+        const bufferOffset = fixupPointer(buffer_ptr, 0);
+        const sourceView = localHeapViewU8().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
     } else if (element_type == MarshalerType.Int32) {
-        const sourceView = localHeapViewI32().subarray(buffer_ptr >> 2, (buffer_ptr >> 2) + length);
+        const bufferOffset = fixupPointer(buffer_ptr, 2);
+        const sourceView = localHeapViewI32().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
     } else if (element_type == MarshalerType.Double) {
-        const sourceView = localHeapViewF64().subarray(buffer_ptr >> 3, (buffer_ptr >> 3) + length);
+        const bufferOffset = fixupPointer(buffer_ptr, 3);
+        const sourceView = localHeapViewF64().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
     } else {
         throw new Error(`NotImplementedException ${element_type}. ${jsinteropDoc}`);
     }
-    Module._free(<any>buffer_ptr);
+    free(<any>buffer_ptr);
     return result;
 }
 

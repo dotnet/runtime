@@ -9,39 +9,44 @@ using Microsoft.Extensions.FileProviders;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Represents a base class for file based <see cref="IConfigurationSource"/>.
+    /// Provides the base class for file-based <see cref="IConfigurationSource"/>.
     /// </summary>
     public abstract class FileConfigurationSource : IConfigurationSource
     {
         /// <summary>
-        /// Used to access the contents of the file.
+        /// Gets or sets the provider used to access the contents of the file.
         /// </summary>
         public IFileProvider? FileProvider { get; set; }
 
         /// <summary>
-        /// The path to the file.
+        /// Gets or sets the path to the file.
         /// </summary>
         [DisallowNull]
         public string? Path { get; set; }
 
         /// <summary>
-        /// Determines if loading the file is optional.
+        /// Gets or sets a value that indicates whether loading the file is optional.
         /// </summary>
         public bool Optional { get; set; }
 
         /// <summary>
-        /// Determines whether the source will be loaded if the underlying file changes.
+        /// Gets or sets a value that indicates whether the source will be loaded if the underlying file changes.
         /// </summary>
         public bool ReloadOnChange { get; set; }
 
         /// <summary>
-        /// Number of milliseconds that reload will wait before calling Load.  This helps
-        /// avoid triggering reload before a file is completely written. Default is 250.
+        /// Gets or sets the number of milliseconds that reload will wait before calling Load.
         /// </summary>
+        /// <value>
+        /// The number of milliseconds that reload waits before calling Load. The default is 250.
+        /// </value>
+        /// <remarks>
+        /// This delay helps avoid triggering reload before a file is completely written.
+        /// </remarks>
         public int ReloadDelay { get; set; } = 250;
 
         /// <summary>
-        /// Will be called if an uncaught exception occurs in FileConfigurationProvider.Load.
+        /// Gets or sets the action that's called if an uncaught exception occurs in FileConfigurationProvider.Load.
         /// </summary>
         public Action<FileLoadExceptionContext>? OnLoadException { get; set; }
 
@@ -49,7 +54,7 @@ namespace Microsoft.Extensions.Configuration
         /// Builds the <see cref="IConfigurationProvider"/> for this source.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
-        /// <returns>A <see cref="IConfigurationProvider"/></returns>
+        /// <returns>To be added.</returns>
         public abstract IConfigurationProvider Build(IConfigurationBuilder builder);
 
         /// <summary>
@@ -63,8 +68,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// If no file provider has been set, for absolute Path, this will creates a physical file provider
-        /// for the nearest existing directory.
+        /// Creates a physical file provider for the nearest existing directory if no file provider has been set, for absolute Path.
         /// </summary>
         public void ResolveFileProvider()
         {

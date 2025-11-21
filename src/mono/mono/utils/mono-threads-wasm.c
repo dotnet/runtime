@@ -316,26 +316,42 @@ mono_memory_barrier_process_wide (void)
 #ifdef HOST_BROWSER
 
 G_EXTERN_C
-extern void schedule_background_exec (void);
+extern void SystemJS_ScheduleBackgroundJobImpl (void);
 
 // when this is called from ThreadPool, the cb would be System.Threading.ThreadPool.BackgroundJobHandler
 // when this is called from sgen it would be wrapper of sgen_perform_collection_inner
 // when this is called from gc, it would be mono_runtime_do_background_work
 #ifdef DISABLE_THREADS
+GSList *jobs;
+GSList *jobs_ds;
+
 void
-mono_main_thread_schedule_background_job (background_job_cb cb)
+SystemJS_ScheduleBackgroundJob (background_job_cb cb)
 {
 	g_assert (cb);
-	THREADS_DEBUG ("mono_main_thread_schedule_background_job: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
+	THREADS_DEBUG ("SystemJS_ScheduleBackgroundJob: thread %p queued job %p to current thread\n", (gpointer)pthread_self(), (gpointer) cb);
 
 	if (!jobs)
-		schedule_background_exec ();
+		SystemJS_ScheduleBackgroundJobImpl ();
 
 	if (!g_slist_find (jobs, (gconstpointer)cb))
 		jobs = g_slist_prepend (jobs, (gpointer)cb);
 }
 
-GSList *jobs;
+typedef struct {
+	ds_job_cb cb;
+	void* data;
+} DsJobRegistration;
+
+void
+mono_schedule_ds_job (ds_job_cb cb, void* data)
+{
+	g_assert (cb);
+	DsJobRegistration* reg = g_new0 (DsJobRegistration, 1);
+	reg->cb = cb;
+	reg->data = data;
+	jobs_ds = g_slist_prepend (jobs_ds, (gpointer)reg);
+}
 
 G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
@@ -356,11 +372,36 @@ mono_background_exec (void)
 	MONO_EXIT_GC_UNSAFE;
 }
 
+G_EXTERN_C
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_ds_exec (void)
+{
+	MONO_ENTER_GC_UNSAFE;
+	GSList *j1 = jobs_ds, *cur1;
+	jobs_ds = NULL;
+
+	for (cur1 = j1; cur1; cur1 = cur1->next) {
+		DsJobRegistration* reg = (DsJobRegistration*)cur1->data;
+		g_assert (reg->cb);
+		THREADS_DEBUG ("mono_wasm_ds_exec running job %p \n", (gpointer)cb);
+		gsize done = reg->cb (reg->data);
+		if (done){
+			THREADS_DEBUG ("mono_wasm_ds_exec done job %p \n", (gpointer)cb);
+			g_free (reg);
+		} else {
+			THREADS_DEBUG ("mono_wasm_ds_exec scheduling job %p again \n", (gpointer)cb);
+			jobs_ds = g_slist_prepend (jobs_ds, (gpointer)reg);
+		}
+	}
+	g_slist_free (j1);
+	MONO_EXIT_GC_UNSAFE;
+}
+
 #else /*DISABLE_THREADS*/
 
 extern void mono_wasm_schedule_synchronization_context ();
 
-void mono_target_thread_schedule_synchronization_context(MonoNativeThreadId target_thread)
+void SystemJS_ScheduleSynchronizationContext(MonoNativeThreadId target_thread)
 {
 	emscripten_dispatch_to_thread_async ((pthread_t) target_thread, EM_FUNC_SIG_V, mono_wasm_schedule_synchronization_context, NULL);
 }

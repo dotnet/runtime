@@ -56,7 +56,7 @@ public class Vector2_3_4Test
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/93669", TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void RunVector3Tests()
     {
         Console.WriteLine($"Running {nameof(RunVector3Tests)}... ");
@@ -100,7 +100,7 @@ public class Vector2_3_4Test
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/93669", TestPlatforms.Browser)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void RunVector4Tests()
     {
         Console.WriteLine($"Running {nameof(RunVector4Tests)}... ");

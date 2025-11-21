@@ -98,40 +98,6 @@ BitSetSupport::BitSetOpCounter* AllVarBitSetTraits::GetOpCounter(Compiler* comp)
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// BasicBlockBitSetTraits
-//
-///////////////////////////////////////////////////////////////////////////////
-
-// static
-unsigned BasicBlockBitSetTraits::GetSize(Compiler* comp)
-{
-    return comp->fgCurBBEpochSize;
-}
-
-// static
-unsigned BasicBlockBitSetTraits::GetArrSize(Compiler* comp)
-{
-    // Assert that the epoch has been initialized. This is a convenient place to assert this because
-    // GetArrSize() is called for every function, via IsShort().
-    assert(GetEpoch(comp) != 0);
-
-    return comp->fgBBSetCountInSizeTUnits; // This is precomputed to avoid doing math every time this function is called
-}
-
-// static
-unsigned BasicBlockBitSetTraits::GetEpoch(Compiler* comp)
-{
-    return comp->GetCurBasicBlockEpoch();
-}
-
-// static
-BitSetSupport::BitSetOpCounter* BasicBlockBitSetTraits::GetOpCounter(Compiler* comp)
-{
-    return nullptr;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//
 // BitVecTraits
 //
 ///////////////////////////////////////////////////////////////////////////////

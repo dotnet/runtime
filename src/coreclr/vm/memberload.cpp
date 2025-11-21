@@ -75,7 +75,7 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingFieldException(MethodTable* pMT
 
     LPUTF8 szFullName;
     MAKE_FULLY_QUALIFIED_MEMBER_NAME(szFullName, NULL, szClassName, (szMember?szMember:"?"), "");
-    PREFIX_ASSUME(szFullName!=NULL);
+    _ASSERTE(szFullName!=NULL);
     MAKE_WIDEPTR_FROMUTF8(szwFullName, szFullName);
     EX_THROW(EEMessageException, (kMissingFieldException, IDS_EE_MISSING_FIELD, szwFullName));
 }
@@ -344,7 +344,7 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_METHODDEF_PARENT_NO_MEMBERS);
     }
 
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
     LPCUTF8     szMember;
     PCCOR_SIGNATURE pSig;
@@ -697,7 +697,7 @@ FieldDesc* MemberLoader::GetFieldDescFromFieldDef(Module *pModule,
     if (pModule->IsEditAndContinueEnabled() && pFD->IsEnCNew())
     {
         EnCFieldDesc *pEnCFD = (EnCFieldDesc*)pFD;
-        // we may not have the full FieldDesc info at applyEnC time becuase we don't
+        // we may not have the full FieldDesc info at applyEnC time because we don't
         // have a thread so can't do things like load classes (due to possible exceptions)
         if (pEnCFD->NeedsFixup())
         {
@@ -781,6 +781,7 @@ MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
         allowInstParam,
         /* forceRemotableMethod */ FALSE,
         /* allowCreate */ TRUE,
+        AsyncVariantLookup::MatchingAsyncVariant,
         /* level */ owningTypeLoadLevel);
 } // MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec
 
@@ -1001,7 +1002,7 @@ BOOL MemberLoader::FM_ShouldSkipMethod(DWORD dwAttrs, FM_Flags flags)
     }
 
     // This makes for quick shifting in determining if an access mask bit matches
-    static_assert_no_msg((FM_ExcludePrivateScope >> 0x4) == 0x1);
+    static_assert((FM_ExcludePrivateScope >> 0x4) == 0x1);
 
     if (flags & FM_SpecialAccessMask)
     {
@@ -1261,7 +1262,7 @@ MemberLoader::FindMethod(MethodTable * pMT, mdMethodDef mb)
     // We have the EEClass (this) and so lets just look this up in the ridmap.
     MethodDesc *pMD     = NULL;
     Module     *pModule = pMT->GetModule();
-    PREFIX_ASSUME(pModule != NULL);
+    _ASSERTE(pModule != NULL);
 
     if (TypeFromToken(mb) == mdtMemberRef)
         pMD = pModule->LookupMemberRefAsMethod(mb);
@@ -1530,7 +1531,7 @@ MemberLoader::FindField(MethodTable* pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSign
     for (DWORD i = 0; i < fieldDescCount; i++)
     {
         FieldDesc * pFD = &pFieldDescList[i];
-        PREFIX_ASSUME(pFD!=NULL);
+        _ASSERTE(pFD!=NULL);
 
         // Check is valid FieldDesc, and not some random memory
         INDEBUGIMPL(pFD->GetApproxEnclosingMethodTable()->SanityCheck());

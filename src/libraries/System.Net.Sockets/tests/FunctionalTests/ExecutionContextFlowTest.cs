@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
     public class ExecutionContextFlowTest : FileCleanupTestBase
     {
         [Theory]

@@ -31,11 +31,6 @@ namespace System.Collections.Generic
         private readonly IComparer<TPriority>? _comparer;
 
         /// <summary>
-        /// Lazily-initialized collection used to expose the contents of the queue.
-        /// </summary>
-        private UnorderedItemsCollection? _unorderedItems;
-
-        /// <summary>
         /// The number of nodes in the heap.
         /// </summary>
         private int _size;
@@ -172,6 +167,11 @@ namespace System.Collections.Generic
         public int Count => _size;
 
         /// <summary>
+        ///  Gets the total numbers of elements the queue's backing storage can hold without resizing.
+        /// </summary>
+        public int Capacity => _nodes.Length;
+
+        /// <summary>
         ///  Gets the priority comparer used by the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
         public IComparer<TPriority> Comparer => _comparer ?? Comparer<TPriority>.Default;
@@ -183,7 +183,7 @@ namespace System.Collections.Generic
         ///  The enumeration does not order items by priority, since that would require N * log(N) time and N space.
         ///  Items are instead enumerated following the internal array heap layout.
         /// </remarks>
-        public UnorderedItemsCollection UnorderedItems => _unorderedItems ??= new UnorderedItemsCollection(this);
+        public UnorderedItemsCollection UnorderedItems => field ??= new UnorderedItemsCollection(this);
 
         /// <summary>
         ///  Adds the specified element with associated priority to the <see cref="PriorityQueue{TElement, TPriority}"/>.
@@ -532,16 +532,30 @@ namespace System.Collections.Generic
             if (index < newSize)
             {
                 // We're removing an element from the middle of the heap.
-                // Pop the last element in the collection and sift downward from the removed index.
+                // Pop the last element in the collection and sift from the removed index.
                 (TElement Element, TPriority Priority) lastNode = nodes[newSize];
 
                 if (_comparer == null)
                 {
-                    MoveDownDefaultComparer(lastNode, index);
+                    if (Comparer<TPriority>.Default.Compare(lastNode.Priority, priority) < 0)
+                    {
+                        MoveUpDefaultComparer(lastNode, index);
+                    }
+                    else
+                    {
+                        MoveDownDefaultComparer(lastNode, index);
+                    }
                 }
                 else
                 {
-                    MoveDownCustomComparer(lastNode, index);
+                    if (_comparer.Compare(lastNode.Priority, priority) < 0)
+                    {
+                        MoveUpCustomComparer(lastNode, index);
+                    }
+                    else
+                    {
+                        MoveDownCustomComparer(lastNode, index);
+                    }
                 }
             }
 
@@ -998,25 +1012,20 @@ namespace System.Collections.Generic
                 {
                     PriorityQueue<TElement, TPriority> localQueue = _queue;
 
-                    if (_version == localQueue._version && ((uint)_index < (uint)localQueue._size))
+                    if (_version != localQueue._version)
+                    {
+                        ThrowHelper.ThrowVersionCheckFailed();
+                    }
+
+                    if ((uint)_index < (uint)localQueue._size)
                     {
                         _current = localQueue._nodes[_index];
                         _index++;
                         return true;
                     }
 
-                    return MoveNextRare();
-                }
-
-                private bool MoveNextRare()
-                {
-                    if (_version != _queue._version)
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
-                    }
-
-                    _index = _queue._size + 1;
                     _current = default;
+                    _index = -1;
                     return false;
                 }
 
@@ -1030,7 +1039,7 @@ namespace System.Collections.Generic
                 {
                     if (_version != _queue._version)
                     {
-                        throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                        ThrowHelper.ThrowVersionCheckFailed();
                     }
 
                     _index = 0;

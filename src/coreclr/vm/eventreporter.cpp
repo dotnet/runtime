@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
-//
 //*****************************************************************************
 // EventReporter.cpp
 //
 // A utility to log an entry in event log.
 //
 //*****************************************************************************
-
 
 #include "common.h"
 #include "utilcode.h"
@@ -466,7 +463,7 @@ BOOL ShouldLogInEventLog()
     CONTRACTL_END;
 
     // If the process is being debugged, don't log
-    if ((CORDebuggerAttached() || IsDebuggerPresent())
+    if ((CORDebuggerAttached() || minipal_is_native_debugger_present())
 #ifdef _DEBUG
         // Allow debug to be able to break in
         &&
@@ -691,7 +688,7 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
         {
             // We are reporting an exception.  If we throw while working on this, it is not fatal.
         }
-        EX_END_CATCH(SwallowAllExceptions);
+        EX_END_CATCH
 
         reporter.Report();
     }

@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        public void Name_Set_GetReturnsExpected(string value)
+        public void Name_Set_GetReturnsExpected(string? value)
         {
             var attribute = new DataContractAttribute() { Name = value };
             Assert.Equal(value, attribute.Name);
@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("value")]
-        public void Namespace_Set_GetReturnsExpected(string value)
+        public void Namespace_Set_GetReturnsExpected(string? value)
         {
             var attribute = new DataContractAttribute() { Namespace = value };
             Assert.Equal(value, attribute.Namespace);

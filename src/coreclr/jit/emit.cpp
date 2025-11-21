@@ -752,6 +752,8 @@ void emitter::emitBegCG(Compiler* comp, COMP_HANDLE cmpHandle)
 
 #if defined(TARGET_AMD64)
     rbmFltCalleeTrash = emitComp->rbmFltCalleeTrash;
+    rbmIntCalleeTrash = emitComp->rbmIntCalleeTrash;
+    rbmAllInt         = emitComp->rbmAllInt;
 #endif // TARGET_AMD64
 
 #if defined(TARGET_XARCH)
@@ -1006,7 +1008,13 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         emitPrevGCrefRegs = emitThisGCrefRegs;
         emitPrevByrefRegs = emitThisByrefRegs;
 
-        emitForceStoreGCState = false;
+        if (emitAddedLabel)
+        {
+            // Reset emitForceStoreGCState only after seeing label. It will keep
+            // marking IGs with IGF_GC_VARS flag until that.
+            emitForceStoreGCState = false;
+            emitAddedLabel        = false;
+        }
     }
 
 #ifdef DEBUG
@@ -1275,6 +1283,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitPrevByrefRegs = RBM_NONE;
 
     emitForceStoreGCState = false;
+    emitAddedLabel        = false;
 
 #ifdef DEBUG
 
@@ -1297,7 +1306,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitFirstColdIG   = nullptr;
     emitTotalCodeSize = 0;
 
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64)
     emitCounts_INS_OPTS_J = 0;
 #endif
 
@@ -1620,7 +1629,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     //     ARM - This is currently broken on TARGET_ARM
     //     When nopSize is odd we misalign emitCurIGsize
     //
-    if (!emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !emitInInstrumentation &&
+    if (!emitComp->IsAot() && !emitInInstrumentation &&
         !emitIGisInProlog(emitCurIG) && // don't do this in prolog or epilog
         !emitIGisInEpilog(emitCurIG) &&
         emitRandomNops // sometimes we turn off where exact codegen is needed (pinvoke inline)
@@ -1702,13 +1711,13 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
 #endif
 
     // Make sure that idAddrUnion is just a union of various pointer sized things
-    C_ASSERT(sizeof(CORINFO_FIELD_HANDLE) <= sizeof(void*));
-    C_ASSERT(sizeof(CORINFO_METHOD_HANDLE) <= sizeof(void*));
+    static_assert(sizeof(CORINFO_FIELD_HANDLE) <= sizeof(void*));
+    static_assert(sizeof(CORINFO_METHOD_HANDLE) <= sizeof(void*));
 #ifdef TARGET_XARCH
-    C_ASSERT(sizeof(emitter::emitAddrMode) <= sizeof(void*));
+    static_assert(sizeof(emitter::emitAddrMode) <= sizeof(void*));
 #endif // TARGET_XARCH
-    C_ASSERT(sizeof(emitLclVarAddr) <= sizeof(void*));
-    C_ASSERT(sizeof(emitter::instrDesc) == (SMALL_IDSC_SIZE + sizeof(void*)));
+    static_assert(sizeof(emitLclVarAddr) <= sizeof(void*));
+    static_assert(sizeof(emitter::instrDesc) == (SMALL_IDSC_SIZE + sizeof(void*)));
 
     emitInsCount++;
 
@@ -1753,7 +1762,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
         id->idOpSize(EA_SIZE(opsz));
     }
 
-    // Amd64: ip-relative addressing is supported even when not generating relocatable ngen code
+    // Amd64: ip-relative addressing is supported even when not generating relocatable AOT code
     if (EA_IS_DSP_RELOC(opsz)
 #ifndef TARGET_AMD64
         && emitComp->opts.compReloc
@@ -2809,6 +2818,8 @@ bool emitter::emitNoGChelper(CORINFO_METHOD_HANDLE methHnd)
 
 void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, BasicBlock* prevBlock)
 {
+    bool currIGWasNonEmpty = emitCurIGnonEmpty();
+
     // if starting a new block that can be a target of a branch and the last instruction was GC-capable call.
     if ((prevBlock != nullptr) && emitComp->compCurBB->HasFlag(BBF_HAS_LABEL) && emitLastInsIsCallWithGC())
     {
@@ -2837,10 +2848,28 @@ void* emitter::emitAddLabel(VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMas
         }
     }
 
+    emitAddedLabel = true;
+
     /* Create a new IG if the current one is non-empty */
 
     if (emitCurIGnonEmpty())
     {
+#if FEATURE_LOOP_ALIGN
+
+        if (!currIGWasNonEmpty && (emitAlignLastGroup != nullptr) &&
+            (emitAlignLastGroup->idaLoopHeadPredIG != nullptr) &&
+            (emitAlignLastGroup->idaLoopHeadPredIG->igNext == emitCurIG))
+        {
+            // If the emitCurIG was thought to be a loop-head, but if it didn't turn out that way and we end up
+            // creating a new IG from which the loop starts, make sure to update the LoopHeadPred of last align
+            // instruction emitted. This will guarantee that the information stays up-to-date. Later if we
+            // notice a loop that encloses another loop, this information helps in removing the align field from
+            // such loops.
+            // We need to only update emitAlignLastGroup because we do not align intermingled or overlapping loops.
+            emitAlignLastGroup->idaLoopHeadPredIG = emitCurIG;
+        }
+#endif // FEATURE_LOOP_ALIGN
+
         emitNxtIG();
     }
     else
@@ -3071,8 +3100,25 @@ void emitter::emitSplit(emitLocation*         startLoc,
 
     } // end for loop
 
-    splitIfNecessary();
-    assert(curSize < UW_MAX_FRAGMENT_SIZE_BYTES);
+    // It's possible to have zero-sized IGs at this point in the emitter.
+    // For example, the JIT may create an IG to align a loop,
+    // but then later walk back this decision after other alignment decisions,
+    // which means it will zero out the new IG.
+    // If a zero-sized IG precedes a populated IG, it will be included in the latter's fragment.
+    // However, if the last IG candidate is a zero-sized IG, splitting would create a zero-sized fragment,
+    // so skip the last split in such cases.
+    // (The last IG in the main method body can be zero-sized if it was created to align a loop in the first funclet.)
+    if ((igLastCandidate != nullptr) && (curSize == candidateSize))
+    {
+        JITDUMP("emitSplit: can't split at last candidate IG%02u because it would create a zero-sized fragment\n",
+                igLastCandidate->igNum);
+    }
+    else
+    {
+        splitIfNecessary();
+    }
+
+    assert((curSize > 0) && (curSize < UW_MAX_FRAGMENT_SIZE_BYTES));
 }
 
 /*****************************************************************************
@@ -3417,6 +3463,7 @@ const char* emitter::emitGetFrameReg()
 
 void emitter::emitDispRegSet(regMaskTP regs)
 {
+#if HAS_FIXED_REGISTER_SET
     regNumber reg;
     bool      sp = false;
 
@@ -3450,6 +3497,7 @@ void emitter::emitDispRegSet(regMaskTP regs)
     }
 
     printf("}");
+#endif // HAS_FIXED_REGISTER_SET
 }
 
 /*****************************************************************************
@@ -3545,7 +3593,8 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
                                                  regMaskTP        gcrefRegs,
                                                  regMaskTP        byrefRegs,
                                                  emitAttr retSizeIn
-                                                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
+                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                                                 bool hasAsyncRet)
 {
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
@@ -3569,7 +3618,8 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
         (argCnt > ID_MAX_SMALL_CNS) || // too many args
         (argCnt < 0)                   // caller pops arguments
                                        // There is a second ref/byref return register.
-        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)))
+        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)) ||
+        hasAsyncRet)
     {
         instrDescCGCA* id;
 
@@ -3586,6 +3636,7 @@ emitter::instrDesc* emitter::emitNewInstrCallInd(int              argCnt,
 #if MULTIREG_HAS_SECOND_GC_RET
         emitSetSecondRetRegGCType(id, secondRetSize);
 #endif // MULTIREG_HAS_SECOND_GC_RET
+        id->hasAsyncContinuationRet(hasAsyncRet);
 
         return id;
     }
@@ -3629,7 +3680,8 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
                                                  regMaskTP        gcrefRegs,
                                                  regMaskTP        byrefRegs,
                                                  emitAttr retSizeIn
-                                                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
+                                                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                                                 bool hasAsyncRet)
 {
     emitAttr retSize = (retSizeIn != EA_UNKNOWN) ? retSizeIn : EA_PTRSIZE;
 
@@ -3649,7 +3701,8 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
         (argCnt > ID_MAX_SMALL_CNS) ||           // too many args
         (argCnt < 0)                             // caller pops arguments
                                                  // There is a second ref/byref return register.
-        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)))
+        MULTIREG_HAS_SECOND_GC_RET_ONLY(|| EA_IS_GCREF_OR_BYREF(secondRetSize)) ||
+        hasAsyncRet)
     {
         instrDescCGCA* id = emitAllocInstrCGCA(retSize);
 
@@ -3666,6 +3719,7 @@ emitter::instrDesc* emitter::emitNewInstrCallDir(int              argCnt,
 #if MULTIREG_HAS_SECOND_GC_RET
         emitSetSecondRetRegGCType(id, secondRetSize);
 #endif // MULTIREG_HAS_SECOND_GC_RET
+        id->hasAsyncContinuationRet(hasAsyncRet);
 
         return id;
     }
@@ -3731,6 +3785,31 @@ const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
     assert(!"Unsupported insFmt");
     return IS_NONE;
 }
+
+//------------------------------------------------------------------------
+// HasApxPpx: Check if the instruction has PPX feature support.
+// This helps differentiate between _idApxPpxContext and _idNoApxEvexXPromotion
+// since we use the same bit to indicate both features.
+//
+// Arguments:
+//    ins - instruction for which to check PPX support
+//
+// Return Value:
+//    true if the instruction has PPX support, false otherwise.
+//
+bool emitter::HasApxPpx(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_push:
+        case INS_pop:
+        case INS_push2:
+        case INS_pop2:
+            return true;
+        default:
+            return false;
+    }
+}
 #endif // TARGET_XARCH
 
 //------------------------------------------------------------------------
@@ -3757,6 +3836,9 @@ const size_t hexEncodingSize = 19;
 #elif defined(TARGET_RISCV64)
 const size_t basicIndent     = 12;
 const size_t hexEncodingSize = 19;
+#elif defined(TARGET_WASM)
+const size_t basicIndent     = 12;
+const size_t hexEncodingSize = 19; // 8 bytes (wasm-objdump default) + 1 space.
 #endif
 
 #ifdef DEBUG
@@ -4425,6 +4507,7 @@ void emitter::emitRecomputeIGoffsets()
         ig->igOffs = offs;
         assert(IsCodeAligned(ig->igOffs));
         offs += ig->igSize;
+        assert(offs >= ig->igOffs); // must not overflow
     }
 
     /* Set the total code size */
@@ -4446,7 +4529,7 @@ void emitter::emitRecomputeIGoffsets()
 //    cookie - the cookie stored with the handle
 //    flags  - a flag that the describes the handle
 //
-void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag)
+void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlags flag) const
 {
 #ifdef TARGET_XARCH
     const char* commentPrefix = "      ;";
@@ -4762,7 +4845,7 @@ void emitter::emitRemoveJumpToNextInst()
 /*****************************************************************************
  *  Bind targets of relative jumps to choose the smallest possible encoding.
  *  X86 and AMD64 have a small and large encoding.
- *  ARM has a small, medium, and large encoding. The large encoding is a pseudo-op
+ *  ARM and RISC-V have a small, medium, and large encoding. The large encoding is a pseudo-op
  *      to handle greater range than the conditional branch instructions can handle.
  *  ARM64 has a small and large encoding for both conditional branch and loading label addresses.
  *      The large encodings are pseudo-ops that represent a multiple instruction sequence, similar to ARM. (Currently
@@ -4770,7 +4853,7 @@ void emitter::emitRemoveJumpToNextInst()
  *  LoongArch64 has an individual implementation for emitJumpDistBind().
  */
 
-#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
+#if !defined(TARGET_LOONGARCH64)
 void emitter::emitJumpDistBind()
 {
 #ifdef DEBUG
@@ -4795,9 +4878,9 @@ void emitter::emitJumpDistBind()
                                   // to a small jump. If it is small enough, we will iterate in hopes of
                                   // converting those jumps we missed converting the first (or second...) time.
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     UNATIVE_OFFSET minMediumExtra; // Same as 'minShortExtra', but for medium-sized jumps.
-#endif                             // TARGET_ARM
+#endif                             // TARGET_ARM || TARGET_RISCV64
 
     UNATIVE_OFFSET adjIG;
     UNATIVE_OFFSET adjLJ;
@@ -4833,9 +4916,9 @@ AGAIN:
     adjIG         = 0;
     minShortExtra = (UNATIVE_OFFSET)-1;
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     minMediumExtra = (UNATIVE_OFFSET)-1;
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64
 
     for (jmp = emitJumpList; jmp; jmp = jmp->idjNext)
     {
@@ -4848,12 +4931,12 @@ AGAIN:
         NATIVE_OFFSET  nsd = 0; // small  jump max. neg distance
         NATIVE_OFFSET  psd = 0; // small  jump max. pos distance
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
         UNATIVE_OFFSET msz = 0; // medium jump size
         NATIVE_OFFSET  nmd = 0; // medium jump max. neg distance
         NATIVE_OFFSET  pmd = 0; // medium jump max. pos distance
         NATIVE_OFFSET  mextra;  // How far beyond the medium jump range is this jump offset?
-#endif                          // TARGET_ARM
+#endif                          // TARGET_ARM || TARGET_RISCV64
 
         NATIVE_OFFSET  extra;           // How far beyond the short jump range is this jump offset?
         UNATIVE_OFFSET srcInstrOffs;    // offset of the source instruction of the jump
@@ -4960,6 +5043,34 @@ AGAIN:
             assert(!"Unknown jump instruction");
         }
 #endif // TARGET_ARM64
+
+#ifdef TARGET_RISCV64
+        /* Figure out the smallest size we can end up with */
+
+        // TODO-RISC64-RVC: add compressed branches and jumps
+        if (emitIsCmpJump(jmp))
+        {
+            ssz = sizeof(code_t);
+            nsd = B_DIST_SMALL_MAX_NEG;
+            psd = B_DIST_SMALL_MAX_POS;
+
+            // 2 instructions: "reverse cmp-and-branch; jal offset;"
+            // Move bounds to the right by 'ssz' to account for the reversed branch instruction size.
+            msz = sizeof(code_t) * 2;
+            nmd = J_DIST_SMALL_MAX_NEG + ssz;
+            pmd = J_DIST_SMALL_MAX_POS + ssz;
+        }
+        else if (emitIsUncondJump(jmp))
+        {
+            ssz = sizeof(code_t);
+            nsd = J_DIST_SMALL_MAX_NEG;
+            psd = J_DIST_SMALL_MAX_POS;
+        }
+        else
+        {
+            assert(!"Unknown jump instruction");
+        }
+#endif // TARGET_RISCV64
 
         /* Make sure the jumps are properly ordered */
 
@@ -5166,9 +5277,9 @@ AGAIN:
 #if defined(TARGET_ARM)
         srcEncodingOffs =
             srcInstrOffs + 4; // For relative branches, ARM PC is always considered to be the instruction address + 4
-#elif defined(TARGET_ARM64)
-        srcEncodingOffs =
-            srcInstrOffs; // For relative branches, ARM64 PC is always considered to be the instruction address
+#elif defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+        srcEncodingOffs = srcInstrOffs; // For relative branches, ARM64 and RISC-V PC is always considered to be the
+                                        // instruction address
 #else
         srcEncodingOffs = srcInstrOffs + ssz; // Encoding offset of relative offset for small branch
 #endif
@@ -5282,14 +5393,14 @@ AGAIN:
             minShortExtra = (unsigned)extra;
         }
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
 
         // If we're here, we couldn't convert to a small jump.
         // Handle conversion to medium-sized conditional jumps.
         // 'srcInstrOffs', 'srcEncodingOffs', 'dstOffs', 'jmpDist' have already been computed
         // and don't need to be recomputed.
 
-        if (emitIsCondJump(jmp))
+        if (emitIsCmpJump(jmp))
         {
             if (jmpIG->igNum < tgtIG->igNum)
             {
@@ -5354,7 +5465,7 @@ AGAIN:
                 minMediumExtra = (unsigned)mextra;
         }
 
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64
 
         /*****************************************************************************
          * We arrive here if the jump must stay long, at least for now.
@@ -5397,13 +5508,18 @@ AGAIN:
         // The size of IF_LARGEJMP/IF_LARGEADR/IF_LARGELDC are 8 or 12.
         // All other code size is 4.
         assert((sizeDif == 4) || (sizeDif == 8));
+#elif defined(TARGET_RISCV64)
+        assert((sizeDif == 0) || (sizeDif == 4) || (sizeDif == 8));
+#elif defined(TARGET_WASM)
+        // TODO-WASM: likely the whole thing needs to be made unreachable.
+        NYI_WASM("emitJumpDistBind");
 #else
 #error Unsupported or unset target architecture
 #endif
 
         goto NEXT_JMP;
 
-#if defined(TARGET_ARM)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
 
         /*****************************************************************************/
         /* Handle conversion to medium jump                                          */
@@ -5430,7 +5546,7 @@ AGAIN:
 
         goto NEXT_JMP;
 
-#endif // TARGET_ARM
+#endif // TARGET_ARM || TARGET_RISCV64
 
         /*****************************************************************************/
 
@@ -6496,7 +6612,7 @@ void emitter::emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG)
 
             // Only to the first block of the finally (which is properly marked)
             BasicBlock* tgtBlk = tgtEH->ebdHndBeg;
-            assert(tgtBlk->HasFlag(BBF_FUNCLET_BEG));
+            assert(emitComp->bbIsFuncletBeg(tgtBlk));
 
             // And now we made it back to where we started
             assert(tgtIG == emitCodeGetCookie(tgtBlk));
@@ -6747,9 +6863,9 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     // These are the heuristics we use to decide whether or not to force the
     // code to be 16-byte aligned.
     //
-    // 1. For ngen code with IBC data, use 16-byte alignment if the method
+    // 1. For AOT code with IBC data, use 16-byte alignment if the method
     //    has been called more than ScenarioHotWeight times.
-    // 2. For JITed code and ngen code without IBC data, use 16-byte alignment
+    // 2. For JITed code and AOT code without IBC data, use 16-byte alignment
     //    when the code is 16 bytes or smaller. We align small getters/setters
     //    because of they are penalized heavily on certain hardware when not 16-byte
     //    aligned (VSWhidbey #373938). To minimize size impact of this optimization,
@@ -6829,6 +6945,10 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     args.xcptnsCount  = xcptnsCount;
     args.flag         = allocMemFlag;
 
+    comp->Metrics.AllocatedHotCodeBytes  = args.hotCodeSize;
+    comp->Metrics.AllocatedColdCodeBytes = args.coldCodeSize;
+    comp->Metrics.ReadOnlyDataBytes      = args.roDataSize;
+
     emitComp->eeAllocMem(&args, emitConsDsc.alignment);
 
     codeBlock       = (BYTE*)args.hotCodeBlock;
@@ -6841,9 +6961,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #ifdef DEBUG
     if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
     {
-        // For prejit, codeBlock will not be necessarily aligned, but it is aligned
-        // in final obj file.
-        assert((((size_t)codeBlock & 31) == 0) || emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT));
+        // For AOT, codeBlock will not be necessarily aligned, but it is aligned in final obj file.
+        assert((((size_t)codeBlock & 31) == 0) || emitComp->IsAot());
     }
 #if 0
     // TODO: we should be able to assert the following, but it appears crossgen2 doesn't respect them,
@@ -7043,7 +7162,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 assert(dsc->lvTracked);
                 assert(dsc->lvRefCnt() != 0);
 
-                assert(dsc->TypeGet() == TYP_REF || dsc->TypeGet() == TYP_BYREF);
+                assert(dsc->TypeIs(TYP_REF, TYP_BYREF));
 
                 assert(indx < emitComp->lvaTrackedCount);
 
@@ -7059,7 +7178,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 }
 #endif // JIT32_GCENCODER && FEATURE_EH_WINDOWS_X86
 
-                if (dsc->TypeGet() == TYP_BYREF)
+                if (dsc->TypeIs(TYP_BYREF))
                 {
                     offs |= byref_OFFSET_FLAG;
                 }
@@ -7574,6 +7693,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
+#elif defined(TARGET_WASM)
+                    NYI_WASM("Short jump distance adjustment");
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7589,6 +7710,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
                     // For LoongArch64 and RiscV64 `emitFwdJumps` is always false.
                     unreached();
+#elif defined(TARGET_WASM)
+                    NYI_WASM("Jump distance adjustment");
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -7662,6 +7785,8 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
     *prologSize = emitCodeOffset(emitPrologIG, emitPrologEndPos);
 
     /* Return the amount of code we've generated */
+
+    comp->Metrics.ActualCodeBytes = actualCodeSize;
 
     return actualCodeSize;
 }
@@ -7880,6 +8005,54 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
     emitConsDsc.dsdLast = secDesc;
 
     return secOffs;
+}
+
+//---------------------------------------------------------------------------
+// emitAsyncResumeTable:
+//   Allocate space for an async resumption info table in the data sections.
+//
+// Arguments:
+//    numEntries    - Number of entries in the table
+//    dataSecOffset - [out] Offset of the data section that was allocated
+//    dataSec       - [out] Information about the data section that was allocated
+//
+void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecOffs, emitter::dataSection** dataSec)
+{
+    UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
+    unsigned       emittedSize = sizeof(emitter::dataAsyncResumeInfo) * numEntries;
+    emitConsDsc.dsdOffs += emittedSize;
+
+    dataSection* secDesc = (dataSection*)emitGetMem(roundUp(sizeof(dataSection) + numEntries * sizeof(emitLocation)));
+
+    for (unsigned i = 0; i < numEntries; i++)
+        new (secDesc->dsCont + i * sizeof(emitLocation), jitstd::placement_t()) emitLocation();
+
+    secDesc->dsSize     = emittedSize;
+    secDesc->dsType     = dataSection::asyncResumeInfo;
+    secDesc->dsDataType = TYP_UNKNOWN;
+    secDesc->dsNext     = nullptr;
+
+    if (emitConsDsc.dsdLast)
+    {
+        emitConsDsc.dsdLast->dsNext = secDesc;
+    }
+    else
+    {
+        emitConsDsc.dsdList = secDesc;
+    }
+
+    emitConsDsc.dsdLast   = secDesc;
+    emitConsDsc.alignment = std::max(emitConsDsc.alignment, (UNATIVE_OFFSET)TARGET_POINTER_SIZE);
+
+    *dataSecOffs = secOffs;
+    *dataSec     = secDesc;
+
+    // We will need the resume stub. Get it from the EE now so we can display
+    // it before we emit the actual table later.
+    if (emitAsyncResumeStub == NO_METHOD_HANDLE)
+    {
+        emitAsyncResumeStub = emitCmpHandle->getAsyncResumptionStub(&emitAsyncResumeStubEntryPoint);
+    }
 }
 
 /*****************************************************************************
@@ -8139,35 +8312,138 @@ CORINFO_FIELD_HANDLE emitter::emitSimd16Const(simd16_t constValue)
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
-#if defined(TARGET_XARCH)
-CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
+#ifdef TARGET_XARCH
+//------------------------------------------------------------------------
+// emitSimdConst: Create a simd data section constant.
+//
+// Arguments:
+//    constValue - constant value
+//    attr       - The EA_SIZE for the constant type
+//
+// Return Value:
+//    A field handle representing the data offset to access the constant.
+//
+// Note:
+// Access to inline data is 'abstracted' by a special type of static member
+// (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+// to constant data, not a real static field.
+//
+CORINFO_FIELD_HANDLE emitter::emitSimdConst(simd_t* constValue, emitAttr attr)
 {
-    unsigned cnsSize  = 32;
-    unsigned cnsAlign = cnsSize;
+    unsigned  cnsSize  = EA_SIZE(attr);
+    unsigned  cnsAlign = cnsSize;
+    var_types dataType = (cnsSize >= 8) ? emitComp->getSIMDTypeForSize(cnsSize) : TYP_FLOAT;
 
+#ifdef TARGET_XARCH
     if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
     {
         cnsAlign = dataSection::MIN_DATA_ALIGN;
     }
+#endif // TARGET_XARCH
 
-    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD32);
+    UNATIVE_OFFSET cnum = emitDataConst(constValue, cnsSize, cnsAlign, dataType);
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
-CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
+//------------------------------------------------------------------------
+// emitSimdConstCompressedLoad: Create a simd data section constant,
+//   compressing it if possible, and emit an appropiate instruction
+//   to load or broadcast the constant to a register.
+//
+// Arguments:
+//    constValue - constant value
+//    attr       - The EA_SIZE for the constant type
+//    targetReg  - The target register
+//
+void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, regNumber targetReg)
 {
-    unsigned cnsSize  = 64;
-    unsigned cnsAlign = cnsSize;
+    assert(EA_SIZE(attr) >= 8 && EA_SIZE(attr) <= 64);
 
-    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    unsigned    cnsSize  = EA_SIZE(attr);
+    unsigned    dataSize = cnsSize;
+    instruction ins      = (cnsSize == 8) ? INS_movsd_simd : INS_movups;
+
+    // Most constant vectors tend to have repeated values, so we will first check to see if
+    // we can replace a full vector load with a smaller broadcast.
+
+    if ((dataSize == 64) && (constValue->v256[1] == constValue->v256[0]))
     {
-        cnsAlign = dataSection::MIN_DATA_ALIGN;
+        assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX512));
+        dataSize = 32;
+        ins      = INS_vbroadcastf32x8;
     }
 
-    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD64);
-    return emitComp->eeFindJitDataOffs(cnum);
-}
+    if ((dataSize == 32) && (constValue->v128[1] == constValue->v128[0]))
+    {
+        assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+        dataSize = 16;
+        ins      = INS_vbroadcastf32x4;
+    }
 
+    if ((dataSize == 16) && (constValue->u64[1] == constValue->u64[0]))
+    {
+        dataSize = 8;
+        ins      = (cnsSize == 16) ? INS_movddup : INS_vbroadcastsd;
+    }
+
+    // `vbroadcastss` fills the full SIMD register, so we can't do this last step if the
+    // original constant was smaller than a full reg (e.g. TYP_SIMD8)
+
+    if ((dataSize == 8) && (cnsSize >= 16) && (constValue->u32[1] == constValue->u32[0]))
+    {
+        if (emitComp->compOpportunisticallyDependsOn(InstructionSet_AVX))
+        {
+            dataSize = 4;
+            ins      = INS_vbroadcastss;
+        }
+    }
+
+    if (dataSize < cnsSize)
+    {
+        // We found a broadcast match, so emit the broadcast instruction and return.
+        // Here we use the original emitAttr for the instruction, because we need to
+        // produce a register of the original constant's size, filled with the pattern.
+
+        CORINFO_FIELD_HANDLE hnd = emitSimdConst(constValue, EA_ATTR(dataSize));
+        emitIns_R_C(ins, attr, targetReg, hnd, 0);
+        return;
+    }
+
+    // Otherwise, if the upper lanes and/or elements of the constant are zero, we can use a
+    // smaller load, because all scalar and vector memory load instructions zero the uppers.
+
+    simd32_t zeroValue = {};
+
+    if ((dataSize == 64) && (constValue->v256[1] == zeroValue))
+    {
+        dataSize = 32;
+    }
+
+    if ((dataSize == 32) && (constValue->v128[1] == zeroValue.v128[0]))
+    {
+        dataSize = 16;
+    }
+
+    if ((dataSize == 16) && (constValue->u64[1] == 0))
+    {
+        dataSize = 8;
+        ins      = INS_movsd_simd;
+    }
+
+    if ((dataSize == 8) && (constValue->u32[1] == 0))
+    {
+        dataSize = 4;
+        ins      = INS_movss;
+    }
+
+    // Here we set the emitAttr to the size of the actual load. It will zero extend
+    // up to the native SIMD register size.
+
+    attr = EA_ATTR(dataSize);
+
+    CORINFO_FIELD_HANDLE hnd = emitSimdConst(constValue, attr);
+    emitIns_R_C(ins, attr, targetReg, hnd, 0);
+}
 #endif // TARGET_XARCH
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
@@ -8249,7 +8525,8 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 bDstRW[i] = (target_size_t)(size_t)target;
                 if (emitComp->opts.compReloc)
                 {
-                    emitRecordRelocation(&(bDstRW[i]), target, IMAGE_REL_BASED_HIGHLOW);
+                    uint16_t relocType = TARGET_POINTER_SIZE == 8 ? IMAGE_REL_BASED_DIR64 : IMAGE_REL_BASED_HIGHLOW;
+                    emitRecordRelocation(&(bDstRW[i]), target, relocType);
                 }
 
                 JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDstRW[i]);
@@ -8275,6 +8552,35 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 uDstRW[i] = lab->igOffs - labFirst->igOffs;
 
                 JITDUMP("  " FMT_BB ": 0x%x\n", block->bbNum, uDstRW[i]);
+            }
+        }
+        else if (dsc->dsType == dataSection::asyncResumeInfo)
+        {
+            JITDUMP("  section %u, size %u, async resume info\n", secNum++, dscSize);
+
+            size_t numElems = dscSize / sizeof(emitter::dataAsyncResumeInfo);
+
+            emitter::dataAsyncResumeInfo* aDstRW = (emitter::dataAsyncResumeInfo*)dstRW;
+            for (size_t i = 0; i < numElems; i++)
+            {
+                emitLocation* emitLoc = &((emitLocation*)dsc->dsCont)[i];
+
+                // Async call may have been removed very late, after we have introduced suspension/resumption.
+                // In those cases just encode null.
+                BYTE* target           = emitLoc->Valid() ? emitOffsetToPtr(emitLoc->CodeOffset(this)) : nullptr;
+                aDstRW[i].Resume       = (target_size_t)(uintptr_t)emitAsyncResumeStubEntryPoint;
+                aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
+                if (emitComp->opts.compReloc)
+                {
+                    uint16_t relocType = TARGET_POINTER_SIZE == 8 ? IMAGE_REL_BASED_DIR64 : IMAGE_REL_BASED_HIGHLOW;
+                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, relocType);
+                    if (target != nullptr)
+                    {
+                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, relocType);
+                    }
+                }
+
+                JITDUMP("  Resume=%p, FinalResumeIP=%p\n", emitAsyncResumeStubEntryPoint, (void*)target);
             }
         }
         else
@@ -8414,6 +8720,40 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                 }
             }
         }
+        else if (data->dsType == dataSection::asyncResumeInfo)
+        {
+            assert(emitAsyncResumeStub != NO_METHOD_HANDLE);
+            assert(emitAsyncResumeStubEntryPoint != nullptr);
+
+            char        nameBuffer[256];
+            const char* resumeStubName =
+                emitComp->eeGetMethodFullName(emitAsyncResumeStub, true, true, nameBuffer, sizeof(nameBuffer));
+
+            size_t infoCount = data->dsSize / sizeof(emitLocation);
+            for (size_t i = 0; i < infoCount; i++)
+            {
+                if (i > 0)
+                {
+                    sprintf_s(label, ArrLen(label), "RWD%02zu", i * sizeof(dataAsyncResumeInfo));
+                    printf(labelFormat, label);
+                }
+
+                emitLocation* emitLoc = &((emitLocation*)data->dsCont)[i];
+
+                printf("\tdq\t%s\n", resumeStubName);
+
+                UNATIVE_OFFSET codeOffset = emitLoc->CodeOffset(this);
+                if (codeOffset != emitLoc->GetIG()->igOffs)
+                {
+                    printf("\tdq\t%s + %zu\n", emitLabelString(emitLoc->GetIG()),
+                           static_cast<size_t>(codeOffset - emitLoc->GetIG()->igOffs));
+                }
+                else
+                {
+                    printf("\tdq\t%s\n", emitLabelString(emitLoc->GetIG()));
+                }
+            }
+        }
         else
         {
             assert(data->dsType == dataSection::data);
@@ -8445,7 +8785,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                 switch (data->dsDataType)
                 {
                     case TYP_FLOAT:
-                        assert(data->dsSize >= 4);
+                        if (data->dsSize < 4)
+                        {
+                            printf("\t<Unexpected data size %d (expected >= 4)\n", data->dsSize);
+                        }
                         printf("\tdd\t%08llXh\t", (UINT64) * reinterpret_cast<uint32_t*>(&data->dsCont[i]));
                         printf("\t; %9.6g",
                                FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&data->dsCont[i])));
@@ -8453,7 +8796,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                         break;
 
                     case TYP_DOUBLE:
-                        assert(data->dsSize >= 8);
+                        if (data->dsSize < 8)
+                        {
+                            printf("\t<Unexpected data size %d (expected >= 8)\n", data->dsSize);
+                        }
                         printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
                         printf("\t; %12.9g", *reinterpret_cast<double*>(&data->dsCont[i]));
                         i += 8;
@@ -8474,7 +8820,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 break;
 
                             case 2:
-                                assert((data->dsSize % 2) == 0);
+                                if ((data->dsSize % 2) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%2 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdw\t%04Xh", *reinterpret_cast<uint16_t*>(&data->dsCont[i]));
                                 for (j = 2; j < 24; j += 2)
                                 {
@@ -8487,7 +8836,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
 
                             case 12:
                             case 4:
-                                assert((data->dsSize % 4) == 0);
+                                if ((data->dsSize % 4) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%4 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdd\t%08Xh", *reinterpret_cast<uint32_t*>(&data->dsCont[i]));
                                 for (j = 4; j < 24; j += 4)
                                 {
@@ -8502,7 +8854,10 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                             case 32:
                             case 16:
                             case 8:
-                                assert((data->dsSize % 8) == 0);
+                                if ((data->dsSize % 8) != 0)
+                                {
+                                    printf("\t<Unexpected data size %d (expected size%%8 == 0)\n", data->dsSize);
+                                }
                                 printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
                                 for (j = 8; j < 64; j += 8)
                                 {
@@ -8514,7 +8869,7 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 break;
 
                             default:
-                                assert(!"unexpected elemSize");
+                                printf("\t<Unexpected elemSize %d)\n", elemSize);
                                 break;
                         }
                 }
@@ -8878,6 +9233,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
         return;
     }
 
+#if EMIT_GENERATE_GCINFO
     regMaskTP life;
     regMaskTP dead;
     regMaskTP chg;
@@ -8932,6 +9288,7 @@ void emitter::emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr)
     // The 2 GC reg masks can't be overlapping
 
     assert((emitThisGCrefRegs & emitThisByrefRegs) == 0);
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -9199,6 +9556,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
 {
     assert(emitIssuing);
 
+#if EMIT_GENERATE_GCINFO
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
     {
@@ -9240,6 +9598,7 @@ void emitter::emitGCregLiveUpd(GCtype gcType, regNumber reg, BYTE* addr)
     // The 2 GC reg masks can't be overlapping
 
     assert((emitThisGCrefRegs & emitThisByrefRegs) == 0);
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -9257,6 +9616,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
         return;
     }
 
+#if EMIT_GENERATE_GCINFO
     // First, handle the gcref regs going dead
 
     regMaskTP gcrefRegs = emitThisGCrefRegs & regs;
@@ -9292,6 +9652,7 @@ void emitter::emitGCregDeadUpdMask(regMaskTP regs, BYTE* addr)
 
         emitThisByrefRegs &= ~byrefRegs;
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -9303,6 +9664,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
 {
     assert(emitIssuing);
 
+#if EMIT_GENERATE_GCINFO
     // Don't track GC changes in epilogs
     if (emitIGisInEpilog(emitCurIG))
     {
@@ -9331,6 +9693,7 @@ void emitter::emitGCregDeadUpd(regNumber reg, BYTE* addr)
 
         emitThisByrefRegs &= ~regMask;
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -9954,11 +10317,11 @@ void emitter::emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count)
 
 void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callInstrSize, unsigned count)
 {
+#if EMIT_GENERATE_GCINFO
     assert(emitIssuing);
 
     unsigned argStkCnt;
     S_UINT16 argRecCnt(0); // arg count for ESP, ptr-arg count for EBP
-    unsigned gcrefRegs, byrefRegs;
 
 #ifdef JIT32_GCENCODER
     // For the general encoder, we always need to record calls, so we make this call
@@ -10000,26 +10363,19 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
         return;
 #endif
 
-    // Do we have any interesting (i.e., callee-saved) registers live here?
+    // Do we have any interesting registers live here?
 
-    gcrefRegs = byrefRegs = 0;
+    unsigned gcrefRegs = emitThisGCrefRegs.GetIntRegSet() >> REG_INT_FIRST;
+    unsigned byrefRegs = emitThisByrefRegs.GetIntRegSet() >> REG_INT_FIRST;
 
-    // We make a bitmask whose bits correspond to callee-saved register indices (in the sequence
-    // of callee-saved registers only).
-    for (unsigned calleeSavedRegIdx = 0; calleeSavedRegIdx < CNT_CALL_GC_REGS; calleeSavedRegIdx++)
-    {
-        regMaskTP calleeSavedRbm = raRbmCalleeSaveOrder[calleeSavedRegIdx];
-        if (emitThisGCrefRegs & calleeSavedRbm)
-        {
-            gcrefRegs |= (1 << calleeSavedRegIdx);
-        }
-        if (emitThisByrefRegs & calleeSavedRbm)
-        {
-            byrefRegs |= (1 << calleeSavedRegIdx);
-        }
-    }
+    assert(regMaskTP::FromIntRegSet(SingleTypeRegSet(gcrefRegs << REG_INT_FIRST)) == emitThisGCrefRegs);
+    assert(regMaskTP::FromIntRegSet(SingleTypeRegSet(byrefRegs << REG_INT_FIRST)) == emitThisByrefRegs);
 
 #ifdef JIT32_GCENCODER
+    // x86 does not report GC refs/byrefs in return registers at call sites
+    gcrefRegs &= ~(1u << (REG_INTRET - REG_INT_FIRST));
+    byrefRegs &= ~(1u << (REG_INTRET - REG_INT_FIRST));
+
     // For the general encoder, we always have to record calls, so we don't take this early return.    /* Are there any
     // args to pop at this call site?
 
@@ -10066,6 +10422,7 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
     regPtrNext->rpdArg           = true;
     regPtrNext->rpdArgType       = (unsigned short)GCInfo::rpdARG_POP;
     regPtrNext->rpdPtrArg        = argRecCnt.Value();
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
@@ -10311,6 +10668,7 @@ const char* emitter::emitOffsetToLabel(unsigned offs)
 
 #endif // DEBUG
 
+#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------------------
 // emitGetGCRegsSavedOrModified: Returns the set of registers that keeps gcrefs and byrefs across the call.
 //
@@ -10426,8 +10784,8 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 
     return result;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
-#if !defined(JIT32_GCENCODER)
 //------------------------------------------------------------------------
 // emitDisableGC: Requests that the following instruction groups are not GC-interruptible.
 //
@@ -10519,4 +10877,3 @@ void emitter::emitEnableGC()
         JITDUMP("Enable GC: still %u no-gc requests\n", emitNoGCRequestCount);
     }
 }
-#endif // !defined(JIT32_GCENCODER)

@@ -158,7 +158,7 @@ namespace System.Text.RegularExpressions
         internal readonly HashSet<RegexNode> _isAtomicByAncestor = new(); // since the root is implicitly atomic, every tree will contain atomic-by-ancestor nodes
         /// <summary>Set of nodes that directly or indirectly contain capture groups.</summary>
         internal readonly HashSet<RegexNode> _containsCapture = new(); // the root is a capture, so this will always contain at least the root node
-        /// <summary>Set of nodes that directly or indirectly contain backtracking constructs that aren't hidden internaly by atomic constructs.</summary>
+        /// <summary>Set of nodes that directly or indirectly contain backtracking constructs that aren't hidden internally by atomic constructs.</summary>
         internal HashSet<RegexNode>? _mayBacktrack;
         /// <summary>Set of nodes contained inside loops.</summary>
         internal HashSet<RegexNode>? _inLoops;

@@ -192,7 +192,7 @@ namespace System.Net.Http
                 VerifyProtocolVersion(ProtocolVersion5, buffer[0]);
                 if (buffer[1] != Socks5_Success)
                 {
-                    throw new SocksException(SR.net_socks_connection_failed);
+                    throw new SocksException(SR.Format(SR.net_socks_connection_failed, buffer[1].ToString("X2")));
                 }
                 int bytesToSkip = buffer[3] switch
                 {
@@ -307,7 +307,7 @@ namespace System.Net.Http
                     case Socks4_AuthFailed:
                         throw new SocksException(SR.net_socks_auth_failed);
                     default:
-                        throw new SocksException(SR.net_socks_connection_failed);
+                        throw new SocksException(SR.Format(SR.net_socks_connection_failed, buffer[1].ToString("X2")));
                 }
                 // response address not used
             }

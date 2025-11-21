@@ -280,12 +280,14 @@ namespace System.Text.Json.SourceGeneration
                 bool? propertyNameCaseInsensitive = null;
                 JsonKnownNamingPolicy? propertyNamingPolicy = null;
                 JsonCommentHandling? readCommentHandling = null;
+                JsonKnownReferenceHandler? referenceHandler = null;
                 JsonUnknownTypeHandling? unknownTypeHandling = null;
                 JsonUnmappedMemberHandling? unmappedMemberHandling = null;
                 bool? useStringEnumConverter = null;
                 bool? writeIndented = null;
                 char? indentCharacter = null;
                 int? indentSize = null;
+                bool? allowDuplicateProperties = null;
 
                 if (attributeData.ConstructorArguments.Length > 0)
                 {
@@ -379,6 +381,10 @@ namespace System.Text.Json.SourceGeneration
                             readCommentHandling = (JsonCommentHandling)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.ReferenceHandler):
+                            referenceHandler = (JsonKnownReferenceHandler)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.UnknownTypeHandling):
                             unknownTypeHandling = (JsonUnknownTypeHandling)namedArg.Value.Value!;
                             break;
@@ -405,6 +411,10 @@ namespace System.Text.Json.SourceGeneration
 
                         case nameof(JsonSourceGenerationOptionsAttribute.GenerationMode):
                             generationMode = (JsonSourceGenerationMode)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.AllowDuplicateProperties):
+                            allowDuplicateProperties = (bool)namedArg.Value.Value!;
                             break;
 
                         default:
@@ -434,12 +444,14 @@ namespace System.Text.Json.SourceGeneration
                     PropertyNameCaseInsensitive = propertyNameCaseInsensitive,
                     PropertyNamingPolicy = propertyNamingPolicy,
                     ReadCommentHandling = readCommentHandling,
+                    ReferenceHandler = referenceHandler,
                     UnknownTypeHandling = unknownTypeHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
                     UseStringEnumConverter = useStringEnumConverter,
                     WriteIndented = writeIndented,
                     IndentCharacter = indentCharacter,
                     IndentSize = indentSize,
+                    AllowDuplicateProperties = allowDuplicateProperties,
                 };
             }
 
@@ -1093,14 +1105,39 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 INamedTypeSymbol? actualDictionaryType = type.GetCompatibleGenericBaseType(_knownSymbols.IDictionaryOfTKeyTValueType);
-                if (actualDictionaryType == null)
+                if (actualDictionaryType != null)
                 {
-                    return false;
+                    if (SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[0], _knownSymbols.StringType) &&
+                        (SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.ObjectType) ||
+                         SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.JsonElementType)))
+                    {
+                        return true;
+                    }
                 }
 
-                return SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[0], _knownSymbols.StringType) &&
-                        (SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.ObjectType) ||
-                         SymbolEqualityComparer.Default.Equals(actualDictionaryType.TypeArguments[1], _knownSymbols.JsonElementType));
+                // Also check for IReadOnlyDictionary<string, object> or IReadOnlyDictionary<string, JsonElement>
+                // but only if Dictionary can be assigned to it (to exclude ImmutableDictionary and similar types)
+                INamedTypeSymbol? actualReadOnlyDictionaryType = type.GetCompatibleGenericBaseType(_knownSymbols.IReadonlyDictionaryOfTKeyTValueType);
+                if (actualReadOnlyDictionaryType != null)
+                {
+                    if (SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[0], _knownSymbols.StringType) &&
+                        (SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[1], _knownSymbols.ObjectType) ||
+                         SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[1], _knownSymbols.JsonElementType)))
+                    {
+                        // Check if Dictionary can be assigned to this type
+                        INamedTypeSymbol? dictionaryType = SymbolEqualityComparer.Default.Equals(actualReadOnlyDictionaryType.TypeArguments[1], _knownSymbols.ObjectType)
+                            ? _knownSymbols.StringObjectDictionaryType
+                            : _knownSymbols.StringJsonElementDictionaryType;
+
+                        if (dictionaryType != null)
+                        {
+                            Conversion conversion = _knownSymbols.Compilation.ClassifyConversion(dictionaryType, type);
+                            return conversion.IsImplicit || conversion.IsIdentity;
+                        }
+                    }
+                }
+
+                return false;
             }
 
             private PropertyGenerationSpec? ParsePropertyGenerationSpec(
@@ -1508,6 +1545,11 @@ namespace System.Text.Json.SourceGeneration
                         continue;
                     }
 
+                    if (property.DefaultIgnoreCondition == JsonIgnoreCondition.Always && !property.IsRequired)
+                    {
+                        continue;
+                    }
+
                     if ((property.IsRequired && !constructorSetsRequiredMembers) || property.IsInitOnlySetter)
                     {
                         if (!(memberInitializerNames ??= new()).Add(property.MemberName))
@@ -1534,6 +1576,7 @@ namespace System.Text.Json.SourceGeneration
                                 ParameterType = property.PropertyType,
                                 MatchesConstructorParameter = matchingConstructorParameter is not null,
                                 ParameterIndex = matchingConstructorParameter?.ParameterIndex ?? paramCount++,
+                                IsNullable = property.PropertyType.CanBeNull && !property.IsSetterNonNullableAnnotation,
                             };
 
                             (propertyInitializers ??= new()).Add(propertyInitializer);

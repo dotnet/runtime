@@ -47,19 +47,8 @@ namespace System.Text
         private readonly InternalDecoderBestFitFallback _oFallback;
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static object? s_InternalSyncObject;
-        private static object InternalSyncObject
-        {
-            get
-            {
-                if (s_InternalSyncObject == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange<object?>(ref s_InternalSyncObject, o, null);
-                }
-                return s_InternalSyncObject;
-            }
-        }
+        private static object InternalSyncObject =>
+            field ?? Interlocked.CompareExchange(ref field, new object(), null) ?? field;
 
         // Constructor
         public InternalDecoderBestFitFallbackBuffer(InternalDecoderBestFitFallback fallback)
@@ -135,7 +124,7 @@ namespace System.Text
         }
 
         // Clear the buffer
-        public override unsafe void Reset()
+        public override void Reset()
         {
             iCount = -1;
         }

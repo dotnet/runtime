@@ -184,7 +184,8 @@ namespace System.Reflection.Emit
             }
 
             // Now write all generic parameters in order
-            genericParams.Sort((x, y) => {
+            genericParams.Sort((x, y) =>
+            {
                 int primary = CodedIndex.TypeOrMethodDef(x._parentHandle).CompareTo(CodedIndex.TypeOrMethodDef(y._parentHandle));
                 if (primary != 0)
                     return primary;
@@ -603,7 +604,7 @@ namespace System.Reflection.Emit
             _pdbBuilder.AddDocument(
                 name: _pdbBuilder.GetOrAddDocumentName(url),
                 hashAlgorithm: hashAlgorithm == default ? default : _pdbBuilder.GetOrAddGuid(hashAlgorithm),
-                hash: hash == null ? default : _metadataBuilder.GetOrAddBlob(hash),
+                hash: hash == null ? default : _pdbBuilder.GetOrAddBlob(hash),
                 language: language == default ? default : _pdbBuilder.GetOrAddGuid(language));
 
         private void FillMemberReferences(ILGeneratorImpl il)
@@ -690,6 +691,8 @@ namespace System.Reflection.Emit
 
         private EntityHandle GetTypeReferenceOrSpecificationHandle(Type type)
         {
+            type = type.UnderlyingSystemType;
+
             if (!_typeReferences.TryGetValue(type, out var typeHandle))
             {
                 if (type.HasElementType || type.IsGenericParameter ||
@@ -734,13 +737,16 @@ namespace System.Reflection.Emit
                 {
                     case FieldInfo field:
                         Type declaringType = field.DeclaringType!;
-                        if (field.DeclaringType!.IsGenericTypeDefinition)
+                        if (declaringType.IsGenericTypeDefinition)
                         {
                             //The type of the field has to be fully instantiated type.
                             declaringType = declaringType.MakeGenericType(declaringType.GetGenericArguments());
                         }
+
+                        Type fieldType = ((FieldInfo)GetOriginalMemberIfConstructedType(field)).GetModifiedFieldType();
                         memberHandle = AddMemberReference(field.Name, GetTypeHandle(declaringType),
-                            MetadataSignatureHelper.GetFieldSignature(field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
+                            MetadataSignatureHelper.GetFieldSignature(fieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers(), this));
+
                         break;
                     case ConstructorInfo ctor:
                         ctor = (ConstructorInfo)GetOriginalMemberIfConstructedType(ctor);
@@ -788,7 +794,7 @@ namespace System.Reflection.Emit
         }
 
         private BlobBuilder GetMethodSignature(MethodInfo method, Type[]? optionalParameterTypes) =>
-            MetadataSignatureHelper.GetMethodSignature(this, ParameterTypes(method.GetParameters()), method.ReturnType,
+            MetadataSignatureHelper.GetMethodSignature(this, MetadataSignatureHelper.GetParameterTypes(method.GetParameters()), method.ReturnParameter.GetModifiedParameterType(),
                 GetSignatureConvention(method.CallingConvention), method.GetGenericArguments().Length, !method.IsStatic, optionalParameterTypes);
 
         private BlobBuilder GetMethodArrayMethodSignature(ArrayMethod method) => MetadataSignatureHelper.GetMethodSignature(
@@ -797,46 +803,33 @@ namespace System.Reflection.Emit
         private static bool IsInstance(CallingConventions callingConvention) =>
             callingConvention.HasFlag(CallingConventions.HasThis) || callingConvention.HasFlag(CallingConventions.ExplicitThis) ? true : false;
 
-        internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConvention)
+        internal static SignatureCallingConvention GetSignatureConvention(CallingConventions callingConventions)
         {
             SignatureCallingConvention convention = SignatureCallingConvention.Default;
 
-            if ((callingConvention & CallingConventions.VarArgs) != 0)
+            if ((callingConventions & CallingConventions.VarArgs) != 0)
             {
                 convention = SignatureCallingConvention.VarArgs;
             }
 
+            // CallingConventions.HasThis (0x20) and ExplicitThis (0x40) can use a bitwise OR with SignatureCallingConvention.
+            const byte Mask = (byte)(CallingConventions.HasThis | CallingConventions.ExplicitThis);
+            convention = (SignatureCallingConvention)((byte)convention | (unchecked((byte)callingConventions) & Mask));
+
             return convention;
         }
 
-        private static MemberInfo GetOriginalMemberIfConstructedType(MethodBase methodBase)
+        private MemberInfo GetOriginalMemberIfConstructedType(MemberInfo memberInfo)
         {
-            Type declaringType = methodBase.DeclaringType!;
+            Type declaringType = memberInfo.DeclaringType!;
             if (declaringType.IsConstructedGenericType &&
                 declaringType.GetGenericTypeDefinition() is not TypeBuilderImpl &&
                 !ContainsTypeBuilder(declaringType.GetGenericArguments()))
             {
-                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(methodBase);
+                return declaringType.GetGenericTypeDefinition().GetMemberWithSameMetadataDefinitionAs(memberInfo);
             }
 
-            return methodBase;
-        }
-
-        private static Type[] ParameterTypes(ParameterInfo[] parameterInfos)
-        {
-            if (parameterInfos.Length == 0)
-            {
-                return Type.EmptyTypes;
-            }
-
-            Type[] parameterTypes = new Type[parameterInfos.Length];
-
-            for (int i = 0; i < parameterInfos.Length; i++)
-            {
-                parameterTypes[i] = parameterInfos[i].ParameterType;
-            }
-
-            return parameterTypes;
+            return memberInfo;
         }
 
         private AssemblyReferenceHandle GetAssemblyReference(Assembly assembly)
@@ -854,7 +847,7 @@ namespace System.Reflection.Emit
                 }
                 else
                 {
-                    publicKeyOrToken  = aName.GetPublicKeyToken();
+                    publicKeyOrToken = aName.GetPublicKeyToken();
                 }
                 handle = AddAssemblyReference(aName.Name, aName.Version, aName.CultureName, publicKeyOrToken, assemblyFlags);
                 _assemblyReferences.Add(assembly, handle);
@@ -1068,7 +1061,7 @@ namespace System.Reflection.Emit
 
         internal EntityHandle TryGetFieldHandle(FieldInfo field)
         {
-            if (field is FieldBuilderImpl fb)
+            if (field is FieldBuilderImpl fb && Equals(fb.Module))
             {
                 return fb._handle;
             }
@@ -1096,27 +1089,28 @@ namespace System.Reflection.Emit
             return GetMemberReferenceHandle(member);
         }
 
-        private static bool IsConstructedFromTypeBuilder(Type type)
+        private bool IsConstructedFromTypeBuilder(Type type)
         {
             if (type.IsConstructedGenericType)
             {
-                return type.GetGenericTypeDefinition() is TypeBuilderImpl || ContainsTypeBuilder(type.GetGenericArguments());
+                return (type.GetGenericTypeDefinition() is TypeBuilderImpl tb && Equals(tb.Module)) ||
+                    ContainsTypeBuilder(type.GetGenericArguments());
             }
 
-            Type? elementType = type.GetElementType();
-            if (elementType is not null)
+            if (type.HasElementType)
             {
-                return (elementType is TypeBuilderImpl) || IsConstructedFromTypeBuilder(elementType);
+                Type elementType = type.GetElementType()!;
+                return (elementType is TypeBuilderImpl tbi && Equals(tbi.Module)) || IsConstructedFromTypeBuilder(elementType);
             }
 
             return false;
         }
 
-        internal static bool ContainsTypeBuilder(Type[] genericArguments)
+        internal bool ContainsTypeBuilder(Type[] genericArguments)
         {
             foreach (Type type in genericArguments)
             {
-                if (type is TypeBuilderImpl || type is GenericTypeParameterBuilderImpl)
+                if ((type is TypeBuilderImpl tb && Equals(tb.Module)) || (type is GenericTypeParameterBuilderImpl gtb && Equals(gtb.Module)))
                 {
                     return true;
                 }
@@ -1154,7 +1148,7 @@ namespace System.Reflection.Emit
 
         internal EntityHandle TryGetConstructorHandle(ConstructorInfo constructor)
         {
-            if (constructor is ConstructorBuilderImpl cb)
+            if (constructor is ConstructorBuilderImpl cb && Equals(cb.Module))
             {
                 return cb._methodBuilder._handle;
             }
@@ -1166,7 +1160,7 @@ namespace System.Reflection.Emit
 
         internal EntityHandle TryGetMethodHandle(MethodInfo method)
         {
-            if (method is MethodBuilderImpl mb)
+            if (method is MethodBuilderImpl mb && Equals(mb.Module))
             {
                 return mb._handle;
             }
@@ -1180,11 +1174,11 @@ namespace System.Reflection.Emit
             return GetHandleForMember(method);
         }
 
-        private static bool IsArrayMethodTypeIsTypeBuilder(MethodInfo method) => method is ArrayMethod arrayMethod &&
-            arrayMethod.DeclaringType!.GetElementType() is TypeBuilderImpl;
+        private bool IsArrayMethodTypeIsTypeBuilder(MethodInfo method) => method is ArrayMethod arrayMethod &&
+            arrayMethod.DeclaringType!.GetElementType() is TypeBuilderImpl tb && Equals(tb.Module);
 
-        private static bool IsConstructedFromMethodBuilderOrTypeBuilder(MethodInfo method) => method.IsConstructedGenericMethod &&
-            (method.GetGenericMethodDefinition() is MethodBuilderImpl || ContainsTypeBuilder(method.GetGenericArguments()));
+        private bool IsConstructedFromMethodBuilderOrTypeBuilder(MethodInfo method) => method.IsConstructedGenericMethod &&
+            ((method.GetGenericMethodDefinition() is MethodBuilderImpl mb && Equals(mb.Module)) || ContainsTypeBuilder(method.GetGenericArguments()));
 
         internal EntityHandle TryGetMethodHandle(MethodInfo method, Type[] optionalParameterTypes)
         {
@@ -1194,7 +1188,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_NotAVarArgCallingConvention);
             }
 
-            if (method is MethodBuilderImpl mb)
+            if (method is MethodBuilderImpl mb && Equals(mb.Module))
             {
                 return mb._handle;
             }
@@ -1379,6 +1373,20 @@ namespace System.Reflection.Emit
         protected override ISymbolDocumentWriter DefineDocumentCore(string url, Guid language = default)
         {
             return new SymbolDocumentWriter(url, language);
+        }
+
+        internal List<TypeBuilderImpl> GetNestedTypeBuilders(TypeBuilderImpl declaringType)
+        {
+            List<TypeBuilderImpl> nestedTypes = new List<TypeBuilderImpl>();
+            foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
+            {
+                if (typeBuilder.DeclaringType == declaringType)
+                {
+                    nestedTypes.Add(typeBuilder);
+                }
+            }
+
+            return nestedTypes;
         }
     }
 }

@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_65937;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -22,7 +25,7 @@ public unsafe class Runtime_65937
         const int PROT_WRITE = 0x2;
         const int MAP_PRIVATE = 0x02;
         const int MAP_ANONYMOUS = 0x20;
-        const int PAGE_SIZE = 0x1000;
+        uint PAGE_SIZE = (uint)Environment.SystemPageSize;
 
         byte* pages = (byte*)mmap(null, 2 * PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 

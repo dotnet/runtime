@@ -75,16 +75,23 @@ int32_t GlobalizationNative_NormalizeStringNative(NormalizationForm normalizatio
             return 0;
         }
 
-        int32_t index = 0, dstIdx = 0, isError = 0;
+        // Calling with empty or null destination buffer to get the required buffer size.
+        if (lpDst == NULL || cwDstLength == 0)
+        {
+            return (int32_t)[normalizedString length];
+        }
+
+        ResultCode isError = Success;
+        int32_t index = 0, dstIdx = 0;
         uint16_t dstCodepoint;
-        while ((NSUInteger)index < normalizedString.length)
+        while ((NSUInteger)index < normalizedString.length && isError == Success)
         {
             dstCodepoint = [normalizedString characterAtIndex: (NSUInteger)index];
             Append(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
             index++;
         }
 
-        return !isError ? (int32_t)[normalizedString length] : 0;
+        return (isError == Success || isError == InsufficientBuffer) ? (int32_t)[normalizedString length] : 0;
     }
 }
 #endif

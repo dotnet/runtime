@@ -181,8 +181,7 @@ namespace System.Net.Http
             Exception? connectionException = null;
             HttpConnectionWaiter<Http2Connection?> waiter = queueItem.Waiter;
 
-            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
-            waiter.ConnectionCancellationTokenSource = cts;
+            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource(waiter);
             try
             {
                 (Stream stream, TransportContext? transportContext, Activity? activity, IPEndPoint? remoteEndPoint) = await ConnectAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);

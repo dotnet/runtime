@@ -4,7 +4,6 @@
 
 #include <config.h>
 #include <mono/component/event_pipe.h>
-#include <mono/component/event_pipe-wasm.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads-api.h>
@@ -12,10 +11,6 @@
 #include <eventpipe/ep-event.h>
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
-
-#if defined(HOST_WASM) && !defined(HOST_WASI)
-#include <emscripten/emscripten.h>
-#endif
 
 static bool _event_pipe_component_inited = false;
 
@@ -97,18 +92,9 @@ event_pipe_wait_for_session_signal (
 	EventPipeSessionID session_id,
 	uint32_t timeout);
 
-#if defined(HOST_WASM)  && !defined(HOST_WASI)
-static void
-mono_wasm_event_pipe_init (void);
-#endif
-
 static MonoComponentEventPipe fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_available },
-#if !defined(HOST_WASM) || defined(HOST_WASI)
 	&ep_init,
-#else
-	&mono_wasm_event_pipe_init,
-#endif
 	&ep_finish_init,
 	&ep_shutdown,
 	&event_pipe_enable,
@@ -165,19 +151,22 @@ event_pipe_enable (
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback)
 {
-	ERROR_DECL (error);
 	EventPipeSessionID session_id = 0;
 
 	EventPipeProviderConfiguration *config_providers = g_new0 (EventPipeProviderConfiguration, providers_len);
 
 	if (config_providers) {
 		for (guint32 i = 0; i < providers_len; ++i) {
+			ep_char8_t *provider_name = ep_rt_utf16_to_utf8_string ((const ep_char16_t *)(providers[i].provider_name));
+			ep_char8_t *filter_data = ep_rt_utf16_to_utf8_string ((const ep_char16_t *)(providers[i].filter_data));
 			ep_provider_config_init (
 				&config_providers[i],
-				providers[i].provider_name ? mono_utf16_to_utf8 (providers[i].provider_name, g_utf16_len (providers[i].provider_name), error) : NULL,
+				provider_name,
 				providers [i].keywords,
 				(EventPipeEventLevel)providers [i].logging_level,
-				providers[i].filter_data ? mono_utf16_to_utf8 (providers[i].filter_data, g_utf16_len (providers[i].filter_data), error) : NULL);
+				filter_data);
+			ep_rt_utf8_string_free (provider_name);
+			ep_rt_utf8_string_free (filter_data);
 		}
 	}
 
@@ -194,11 +183,8 @@ event_pipe_enable (
 		NULL);
 
 	if (config_providers) {
-		for (guint32 i = 0; i < providers_len; ++i) {
+		for (guint32 i = 0; i < providers_len; ++i)
 			ep_provider_config_fini (&config_providers[i]);
-			g_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config_providers[i]));
-			g_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config_providers[i]));
-		}
 	}
 
 	return session_id;
@@ -347,87 +333,3 @@ mono_component_event_pipe_init (void)
 
 	return &fn_table;
 }
-
-
-#if defined(HOST_WASM) && !defined(HOST_WASI)
-
-
-static MonoWasmEventPipeSessionID
-ep_to_wasm_session_id (EventPipeSessionID session_id)
-{
-	g_assert (0 == (uint64_t)session_id >> 32);
-	return (uint32_t)session_id;
-}
-
-static EventPipeSessionID
-wasm_to_ep_session_id (MonoWasmEventPipeSessionID session_id)
-{
-	return session_id;
-}
-
-EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
-			     IpcStream *ipc_stream,
-			     uint32_t circular_buffer_size_in_mb,
-			     const ep_char8_t *providers,
-			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
-			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
-			     /* bool */ gboolean rundown_requested,
-			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
-			     /* void *callback_additional_data, */
-			     MonoWasmEventPipeSessionID *out_session_id)
-{
-	MONO_ENTER_GC_UNSAFE;
-	EventPipeSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4;
-	EventPipeSessionType session_type = output_path != NULL ? EP_SESSION_TYPE_FILE : EP_SESSION_TYPE_IPCSTREAM;
-
-	g_assert ((output_path == NULL && ipc_stream != NULL) ||
-		  (output_path != NULL && ipc_stream == NULL));
-
-	EventPipeSessionID session;
-	session = ep_enable_2 (output_path,
-			       circular_buffer_size_in_mb,
-			       providers,
-			       session_type,
-			       format,
-			       !!rundown_requested,
-			       ipc_stream,
-			       /* callback*/ NULL,
-			       /* callback_data*/ NULL);
-  
-	if (out_session_id)
-		*out_session_id = ep_to_wasm_session_id (session);
-	MONO_EXIT_GC_UNSAFE;
-	return TRUE;
-}
-
-EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_start_streaming (MonoWasmEventPipeSessionID session_id)
-{
-	MONO_ENTER_GC_UNSAFE;
-	ep_start_streaming (wasm_to_ep_session_id (session_id));
-	MONO_EXIT_GC_UNSAFE;
-	return TRUE;
-}
-
-EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
-{
-	MONO_ENTER_GC_UNSAFE;
-	ep_disable (wasm_to_ep_session_id (session_id));
-	MONO_EXIT_GC_UNSAFE;
-	return TRUE;
-}
-
-// JS callback to invoke on the main thread early during runtime initialization once eventpipe is functional but before too much of the rest of the runtime is loaded.
-extern void mono_wasm_event_pipe_early_startup_callback (void);
-
-
-static void
-mono_wasm_event_pipe_init (void)
-{
-	ep_init ();
-	mono_wasm_event_pipe_early_startup_callback ();
-}
-
-#endif /* HOST_WASM && !HOST_WASI */

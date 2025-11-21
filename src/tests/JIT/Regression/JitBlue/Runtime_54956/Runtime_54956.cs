@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+
+namespace Runtime_54956;
+
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -46,7 +49,7 @@ public unsafe class Runtime_54956
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Test(Action action, [CallerArgumentExpression("action")] string expr = null)
+    static bool Test(Action action, [CallerArgumentExpression(nameof(action))] string expr = null)
     {
         try
         {

@@ -4,9 +4,11 @@
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Interface used by hosts to validate options during startup.
-    /// Options are enabled to be validated during startup by calling <see cref="DependencyInjection.OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>.
+    /// Used by hosts to validate options during startup.
     /// </summary>
+    /// <remarks>
+    /// Options are enabled to be validated during startup by calling <see cref="DependencyInjection.OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>.
+    /// </remarks>
     public interface IStartupValidator
     {
         /// <summary>

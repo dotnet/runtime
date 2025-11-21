@@ -9,7 +9,6 @@
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- This is an explicit crossgen test -->
     <CrossGenTest>false</CrossGenTest>
-    <OldToolsVersion>2.0</OldToolsVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

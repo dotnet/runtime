@@ -2,9 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
+
+// PQC types are used throughout, but only when the caller requests them.
+#pragma warning disable SYSLIB5006
 
 namespace System.Security.Cryptography.X509Certificates.Tests.Common
 {
@@ -42,6 +47,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private static readonly Asn1Tag s_context0 = new Asn1Tag(TagClass.ContextSpecific, 0);
         private static readonly Asn1Tag s_context1 = new Asn1Tag(TagClass.ContextSpecific, 1);
         private static readonly Asn1Tag s_context2 = new Asn1Tag(TagClass.ContextSpecific, 2);
+        private static readonly KeyFactory[] s_variantKeyFactories = KeyFactory.BuildVariantFactories();
+        private static readonly KeyFactory[] s_tlsVariantKeyFactories = KeyFactory.BuildTlsVariantFactories();
 
         private static readonly X500DistinguishedName s_nonParticipatingName =
             new X500DistinguishedName("CN=The Ghost in the Machine");
@@ -148,7 +155,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
         internal X509Certificate2 CreateSubordinateCA(
             string subject,
-            RSA publicKey,
+            PublicKey publicKey,
             int? depthLimit = null)
         {
             return CreateCertificate(
@@ -164,7 +171,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     s_caKeyUsage });
         }
 
-        internal X509Certificate2 CreateEndEntity(string subject, RSA publicKey, X509ExtensionCollection extensions)
+        internal X509Certificate2 CreateEndEntity(string subject, PublicKey publicKey, X509ExtensionCollection extensions)
         {
             return CreateCertificate(
                 subject,
@@ -174,6 +181,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         }
 
         internal X509Certificate2 CreateOcspSigner(string subject, RSA publicKey)
+        {
+            return CreateOcspSigner(
+                subject,
+                X509SignatureGenerator.CreateForRSA(publicKey, RSASignaturePadding.Pkcs1).PublicKey);
+        }
+
+        internal X509Certificate2 CreateOcspSigner(string subject, PublicKey publicKey)
         {
             return CreateCertificate(
                 subject,
@@ -207,7 +221,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 throw new InvalidOperationException();
             }
 
-            var req = new CertificateRequest(subjectName, _cert.PublicKey, HashAlgorithmName.SHA256);
+            var req = new CertificateRequest(subjectName, _cert.PublicKey, HashAlgorithmIfNeeded(_cert.GetKeyAlgorithm()));
 
             foreach (X509Extension ext in _cert.Extensions)
             {
@@ -222,21 +236,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             X509Certificate2 dispose = _cert;
 
             using (dispose)
-            using (RSA rsa = _cert.GetRSAPrivateKey())
+            using (KeyHolder key = new KeyHolder(_cert))
             using (X509Certificate2 tmp = req.Create(
                 subjectName,
-                X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
+                key.GetGenerator(),
                 new DateTimeOffset(_cert.NotBefore),
                 new DateTimeOffset(_cert.NotAfter),
                 serial))
             {
-                _cert = tmp.CopyWithPrivateKey(rsa);
+                _cert = key.OntoCertificate(tmp);
             }
         }
 
         private X509Certificate2 CreateCertificate(
             string subject,
-            RSA publicKey,
+            PublicKey publicKey,
             TimeSpan nestingBuffer,
             X509ExtensionCollection extensions,
             bool ocspResponder = false)
@@ -257,9 +271,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
 
             CertificateRequest request = new CertificateRequest(
-                subject,
+                new X500DistinguishedName(subject),
                 publicKey,
-                HashAlgorithmName.SHA256,
+                HashAlgorithmIfNeeded(_cert.GetKeyAlgorithm()),
                 RSASignaturePadding.Pkcs1);
 
             foreach (X509Extension extension in extensions)
@@ -282,11 +296,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             byte[] serial = new byte[sizeof(long)];
             RandomNumberGenerator.Fill(serial);
 
-            return request.Create(
-                _cert,
-                _cert.NotBefore.Add(nestingBuffer),
-                _cert.NotAfter.Subtract(nestingBuffer),
-                serial);
+            using (KeyHolder key = new KeyHolder(_cert))
+            {
+                return request.Create(
+                    _cert.SubjectName,
+                    key.GetGenerator(),
+                    _cert.NotBefore.Add(nestingBuffer),
+                    _cert.NotAfter.Subtract(nestingBuffer),
+                    serial);
+            }
         }
 
         internal byte[] GetCertData()
@@ -337,14 +355,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     nextUpdate = newExpiry;
                 }
 
-                using (RSA key = _cert.GetRSAPrivateKey())
+                using (KeyHolder key = new KeyHolder(_cert))
                 {
                     crl = builder.Build(
                         CorruptRevocationIssuerName ? s_nonParticipatingName : _cert.SubjectName,
-                        X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1),
+                        key.GetGenerator(),
                         _crlNumber,
                         nextUpdate,
-                        HashAlgorithmName.SHA256,
+                        HashAlgorithmIfNeeded(key.ToPublicKey().Oid.Value),
                         _akidExtension,
                         thisUpdate);
                 }
@@ -366,16 +384,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             DateTimeOffset newExpiry,
             X509AuthorityKeyIdentifierExtension akidExtension)
         {
+            using KeyHolder key = new KeyHolder(_cert);
+            byte[] signatureAlgId = key.GetSignatureAlgorithmIdentifier();
+
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            using (writer.PushSequence())
-            {
-                writer.WriteObjectIdentifier("1.2.840.113549.1.1.11");
-                writer.WriteNull();
-            }
-
-            byte[] signatureAlgId = writer.Encode();
-            writer.Reset();
 
             // TBSCertList
             using (writer.PushSequence())
@@ -473,17 +485,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             byte[] tbsCertList = writer.Encode();
             writer.Reset();
 
-            byte[] signature;
+            byte[] signature = key.Sign(tbsCertList);
 
-            using (RSA key = _cert.GetRSAPrivateKey())
+            if (CorruptRevocationSignature)
             {
-                signature =
-                    key.SignData(tbsCertList, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-
-                if (CorruptRevocationSignature)
-                {
-                    signature[5] ^= 0xFF;
-                }
+                signature[^2] ^= 0xFF;
             }
 
             // CertificateList
@@ -568,7 +574,7 @@ SingleResponse ::= SEQUENCE {
                         {
                             writer.PushSequence(s_context1);
 
-                            // Fracational seconds "MUST NOT" be used here. Android and macOS 13+ enforce this and
+                            // Fractional seconds "MUST NOT" be used here. Android and macOS 13+ enforce this and
                             // reject GeneralizedTime's with fractional seconds, so omit them.
                             // RFC 6960: 4.2.2.1:
                             // The format for GeneralizedTime is as specified in Section 4.1.2.5.2 of [RFC5280].
@@ -630,22 +636,15 @@ SingleResponse ::= SEQUENCE {
             {
                 writer.WriteEncodedValue(tbsResponseData);
 
-                using (writer.PushSequence())
+                using (KeyHolder key = new KeyHolder(responder))
                 {
-                    writer.WriteObjectIdentifier("1.2.840.113549.1.1.11");
-                    writer.WriteNull();
-                }
+                    writer.WriteEncodedValue(key.GetSignatureAlgorithmIdentifier());
 
-                using (RSA rsa = responder.GetRSAPrivateKey())
-                {
-                    byte[] signature = rsa.SignData(
-                        tbsResponseData,
-                        HashAlgorithmName.SHA256,
-                        RSASignaturePadding.Pkcs1);
+                    byte[] signature = key.Sign(tbsResponseData);
 
                     if (CorruptRevocationSignature)
                     {
-                        signature[5] ^= 0xFF;
+                        signature[^2] ^= 0xFF;
                     }
 
                     writer.WriteBitString(signature);
@@ -805,7 +804,8 @@ SingleResponse ::= SEQUENCE {
             bool registerAuthorities = true,
             bool pkiOptionsInSubject = false,
             string subjectName = null,
-            int keySize = DefaultKeySize,
+            KeyFactory keyFactory = null,
+            bool forTls = false,
             X509ExtensionCollection extensions = null)
         {
             bool rootDistributionViaHttp = !pkiOptions.HasFlag(PkiOptions.NoRootCertDistributionUri);
@@ -823,14 +823,39 @@ SingleResponse ::= SEQUENCE {
             // default to client
             extensions ??= new X509ExtensionCollection() { s_eeConstraints, s_eeKeyUsage, s_tlsClientEku };
 
-            using (RSA rootKey = RSA.Create(keySize))
-            using (RSA eeKey = RSA.Create(keySize))
+            if (keyFactory is null)
             {
-                var rootReq = new CertificateRequest(
-                    BuildSubject("A Revocation Test Root", testName, pkiOptions, pkiOptionsInSubject),
-                    rootKey,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
+                // This could use any of the non-cryptographic hashes, but that complicates the code sharing for this file,
+                // so use IncrementalHash(SHA256) as it's inbox.
+                //
+                // System.HashCode isn't suitable because it's randomized, and we want the algorithm to
+                // be consistent for any given test from run to run.
+                using (IncrementalHash hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
+                {
+                    // The use of AsBytes means that the hash value will differ between Big and Little Endian
+                    // platforms, but that's OK: a failing test in a given configuration will continue to fail
+                    // in that configuration.
+                    hasher.AppendData(MemoryMarshal.AsBytes(new ReadOnlySpan<PkiOptions>(ref pkiOptions)));
+                    hasher.AppendData(MemoryMarshal.AsBytes(new ReadOnlySpan<int>(ref intermediateAuthorityCount)));
+                    hasher.AppendData(MemoryMarshal.AsBytes(testName.AsSpan()));
+                    hasher.AppendData(MemoryMarshal.AsBytes(subjectName.AsSpan()));
+
+                    Span<byte> hash = stackalloc byte[256 / 8];
+                    int written = hasher.GetCurrentHash(hash);
+                    Debug.Assert(written == hash.Length);
+
+                    // Using mod here will create an imbalance any time the key factories array isn't a power of 2,
+                    // but that's OK.
+                    KeyFactory[] keyFactories = forTls ? s_tlsVariantKeyFactories : s_variantKeyFactories;
+                    keyFactory = keyFactories[hash[0] % keyFactories.Length];
+                }
+            }
+
+            using (KeyHolder rootKey = KeyHolder.CreateKey(keyFactory))
+            using (KeyHolder eeKey = KeyHolder.CreateKey(keyFactory))
+            {
+                CertificateRequest rootReq = rootKey.CreateRequest(
+                    BuildSubject("A Revocation Test Root", testName, pkiOptions, pkiOptionsInSubject));
 
                 X509BasicConstraintsExtension caConstraints =
                     new X509BasicConstraintsExtension(true, false, 0, true);
@@ -862,7 +887,7 @@ SingleResponse ::= SEQUENCE {
 
                 for (int intermediateIndex = 0; intermediateIndex < intermediateAuthorityCount; intermediateIndex++)
                 {
-                    using RSA intermediateKey = RSA.Create(keySize);
+                    using KeyHolder intermediateKey = KeyHolder.CreateKey(keyFactory);
 
                     // Don't dispose this, it's being transferred to the CertificateAuthority
                     X509Certificate2 intermedCert;
@@ -870,8 +895,8 @@ SingleResponse ::= SEQUENCE {
                     {
                         X509Certificate2 intermedPub = issuingAuthority.CreateSubordinateCA(
                             BuildSubject($"A Revocation Test CA {intermediateIndex}", testName, pkiOptions, pkiOptionsInSubject),
-                            intermediateKey);
-                        intermedCert = intermedPub.CopyWithPrivateKey(intermediateKey);
+                            intermediateKey.ToPublicKey());
+                        intermedCert = intermediateKey.OntoCertificate(intermedPub);
                         intermedPub.Dispose();
                     }
 
@@ -894,11 +919,11 @@ SingleResponse ::= SEQUENCE {
 
                 endEntityCert = issuingAuthority.CreateEndEntity(
                     BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
-                    eeKey,
+                    eeKey.ToPublicKey(),
                     extensions);
 
                 X509Certificate2 tmp = endEntityCert;
-                endEntityCert = endEntityCert.CopyWithPrivateKey(eeKey);
+                endEntityCert = eeKey.OntoCertificate(endEntityCert);
                 tmp.Dispose();
             }
 
@@ -923,10 +948,10 @@ SingleResponse ::= SEQUENCE {
             bool registerAuthorities = true,
             bool pkiOptionsInSubject = false,
             string subjectName = null,
-            int keySize = DefaultKeySize,
+            KeyFactory keyFactory = null,
+            bool forTls = false,
             X509ExtensionCollection extensions = null)
         {
-
             BuildPrivatePki(
                 pkiOptions,
                 out responder,
@@ -938,7 +963,8 @@ SingleResponse ::= SEQUENCE {
                 registerAuthorities: registerAuthorities,
                 pkiOptionsInSubject: pkiOptionsInSubject,
                 subjectName: subjectName,
-                keySize: keySize,
+                keyFactory: keyFactory,
+                forTls: forTls,
                 extensions: extensions);
 
             intermediateAuthority = intermediateAuthorities.Single();
@@ -954,6 +980,187 @@ SingleResponse ::= SEQUENCE {
             string pkiOptionsPart = includePkiOptions ? $", OU=\"{pkiOptions}\"" : "";
 
             return $"CN=\"{cn}\"" + testNamePart + pkiOptionsPart;
+        }
+
+        private static HashAlgorithmName HashAlgorithmIfNeeded(string publicKeyOid)
+        {
+            const string Rsa = "1.2.840.113549.1.1.1";
+            const string RsaPss = "1.2.840.113549.1.1.10";
+            const string EcPublicKey = "1.2.840.10045.2.1";
+            const string Dsa = "1.2.840.10040.4.1";
+
+            return publicKeyOid switch
+            {
+                Rsa or RsaPss or EcPublicKey or Dsa => HashAlgorithmName.SHA256,
+                _ => default,
+            };
+        }
+
+        internal static X509Certificate2 CloneWithPrivateKey(X509Certificate2 cert, object key)
+        {
+            return key switch
+            {
+                RSA rsa => cert.CopyWithPrivateKey(rsa),
+                ECDsa ecdsa => cert.CopyWithPrivateKey(ecdsa),
+                MLDsa mldsa => cert.CopyWithPrivateKey(mldsa),
+                SlhDsa slhDsa => cert.CopyWithPrivateKey(slhDsa),
+                DSA dsa => cert.CopyWithPrivateKey(dsa),
+                _ => throw new InvalidOperationException(
+                    $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
+            };
+        }
+
+        internal sealed class KeyFactory
+        {
+            internal static KeyFactory RSA { get; } =
+                new(() => Cryptography.RSA.Create(DefaultKeySize));
+
+            internal static KeyFactory ECDsa { get; } =
+                new(() => Cryptography.ECDsa.Create(ECCurve.NamedCurves.nistP384));
+
+            internal static KeyFactory MLDsa { get; } =
+                new(() => Cryptography.MLDsa.GenerateKey(MLDsaAlgorithm.MLDsa65));
+
+            internal static KeyFactory SlhDsa { get; } =
+                new(() => Cryptography.SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f));
+
+            private Func<IDisposable> _factory;
+
+            private KeyFactory(Func<IDisposable> factory)
+            {
+                _factory = factory;
+            }
+
+            internal IDisposable CreateKey()
+            {
+                return _factory();
+            }
+
+            internal static KeyFactory RSASize(int keySize)
+            {
+                return new KeyFactory(() => Cryptography.RSA.Create(keySize));
+            }
+
+            internal static KeyFactory[] BuildVariantFactories()
+            {
+                List<KeyFactory> factories = [RSA, ECDsa];
+
+                if (Cryptography.MLDsa.IsSupported)
+                {
+                    factories.Add(MLDsa);
+                }
+
+                if (Cryptography.SlhDsa.IsSupported)
+                {
+                    factories.Add(SlhDsa);
+                }
+
+                return factories.ToArray();
+            }
+
+            internal static KeyFactory[] BuildTlsVariantFactories()
+            {
+                List<KeyFactory> factories = [RSASize(2048), ECDsa];
+
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    if (Cryptography.MLDsa.IsSupported)
+                    {
+                        factories.Add(MLDsa);
+                    }
+
+                    // OpenSSL default provider does not advertise SLH-DSA in TLS-SIGALG capability,
+                    // causing it to not recognize SLH-DSA certificates for use in TLS connections
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/119573")]
+                    if (!PlatformDetection.IsOpenSslSupported && Cryptography.SlhDsa.IsSupported)
+                    {
+                        factories.Add(SlhDsa);
+                    }
+                }
+
+                return factories.ToArray();
+            }
+        }
+
+        private sealed class KeyHolder : IDisposable
+        {
+            private readonly IDisposable _key;
+            private X509SignatureGenerator _generator;
+
+            internal KeyHolder(IDisposable key)
+            {
+                _key = key;
+            }
+
+            internal KeyHolder(X509Certificate2 cert)
+            {
+                // We're always in the context of signing something, so EC-DH does not apply.
+                _key =
+                    cert.GetRSAPrivateKey() ??
+                    cert.GetECDsaPrivateKey() ??
+                    cert.GetMLDsaPrivateKey() ??
+                    cert.GetSlhDsaPrivateKey() ??
+                    (IDisposable)cert.GetDSAPrivateKey() ??
+                    throw new NotSupportedException();
+            }
+
+            public void Dispose()
+            {
+                _key?.Dispose();
+            }
+
+            internal static KeyHolder CreateKey(KeyFactory factory)
+            {
+                return new KeyHolder(factory.CreateKey());
+            }
+
+            internal CertificateRequest CreateRequest(string subject)
+            {
+                return _key switch
+                {
+                    RSA rsa => new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
+                    ECDsa ecdsa => new CertificateRequest(subject, ecdsa, HashAlgorithmName.SHA256),
+                    MLDsa mldsa => new CertificateRequest(subject, mldsa),
+                    SlhDsa slhDsa => new CertificateRequest(subject, slhDsa),
+                    _ => throw new NotSupportedException(),
+                };
+            }
+
+            internal X509SignatureGenerator GetGenerator()
+            {
+                return _generator ??= _key switch
+                {
+                    RSA rsa => X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
+                    ECDsa ecdsa => X509SignatureGenerator.CreateForECDsa(ecdsa),
+                    MLDsa mldsa => X509SignatureGenerator.CreateForMLDsa(mldsa),
+                    SlhDsa slhDsa => X509SignatureGenerator.CreateForSlhDsa(slhDsa),
+                    _ => throw new NotSupportedException(),
+                };
+            }
+
+            internal PublicKey ToPublicKey()
+            {
+                return GetGenerator().PublicKey;
+            }
+
+            internal X509Certificate2 OntoCertificate(X509Certificate2 cert)
+            {
+                return CloneWithPrivateKey(cert, _key);
+            }
+
+            internal byte[] Sign(byte[] data)
+            {
+                X509SignatureGenerator generator = GetGenerator();
+                return generator.SignData(data, HashAlgorithmIfNeeded(generator.PublicKey.Oid.Value));
+            }
+
+            internal byte[] GetSignatureAlgorithmIdentifier()
+            {
+                X509SignatureGenerator generator = GetGenerator();
+
+                return generator.GetSignatureAlgorithmIdentifier(
+                    HashAlgorithmIfNeeded(generator.PublicKey.Oid.Value));
+            }
         }
     }
 }

@@ -54,7 +54,7 @@ namespace System
         // This constructor is called from a class to generate a
         // delegate based upon a static method name and the Type object
         // for the class defining the method.
-        protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method)
+        protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method)
         {
             ArgumentNullException.ThrowIfNull(target);
             ArgumentNullException.ThrowIfNull(method);
@@ -257,7 +257,7 @@ namespace System
         }
 
         // V1 API.
-        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
+        public static Delegate? CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(target);
@@ -406,11 +406,9 @@ namespace System
         // internal implementation details (FCALLS and utilities)
         //
 
-        // BindToMethodName is annotated as DynamicallyAccessedMemberTypes.All because it will bind to non-public methods
-        // on a base type of methodType. Using All is currently the only way ILLinker will preserve these methods.
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:ParameterDoesntMeetParameterRequirements",
             Justification = "The parameter 'methodType' is passed by ref to QCallTypeHandle")]
-        private bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] RuntimeType methodType, string method, DelegateBindingFlags flags)
+        private bool BindToMethodName(object? target, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] RuntimeType methodType, string method, DelegateBindingFlags flags)
         {
             Delegate d = this;
             return BindToMethodName(ObjectHandleOnStack.Create(ref d), ObjectHandleOnStack.Create(ref target),
@@ -436,29 +434,16 @@ namespace System
 
         private static MulticastDelegate InternalAlloc(RuntimeType type)
         {
-            MulticastDelegate? d = null;
-            InternalAlloc(new QCallTypeHandle(ref type), ObjectHandleOnStack.Create(ref d));
-            return d!;
+            Debug.Assert(type.IsAssignableTo(typeof(MulticastDelegate)));
+            return Unsafe.As<MulticastDelegate>(RuntimeTypeHandle.InternalAlloc(type));
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InternalAlloc")]
-        private static partial void InternalAlloc(QCallTypeHandle type, ObjectHandleOnStack d);
-
-        internal static MulticastDelegate InternalAllocLike(MulticastDelegate d)
-        {
-            InternalAllocLike(ObjectHandleOnStack.Create(ref d));
-            return d;
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_InternalAllocLike")]
-        private static partial void InternalAllocLike(ObjectHandleOnStack d);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool InternalEqualTypes(object a, object b)
         {
             if (a.GetType() == b.GetType())
                 return true;
-
+#if FEATURE_TYPEEQUIVALENCE
             MethodTable* pMTa = RuntimeHelpers.GetMethodTable(a);
             MethodTable* pMTb = RuntimeHelpers.GetMethodTable(b);
 
@@ -474,12 +459,28 @@ namespace System
             GC.KeepAlive(b);
 
             return ret;
+#else
+            return false;
+#endif // FEATURE_TYPEEQUIVALENCE
         }
 
         // Used by the ctor. Do not call directly.
         // The name of this function will appear in managed stacktraces as delegate constructor.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void DelegateConstruct(object target, IntPtr slot);
+        private void DelegateConstruct(object target, IntPtr method)
+        {
+            // Via reflection you can pass in just about any value for the method.
+            // We can do some basic verification up front to prevent EE exceptions.
+            if (method == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(method));
+            }
+
+            Delegate _this = this;
+            Construct(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref target), method);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Delegate_Construct")]
+        private static partial void Construct(ObjectHandleOnStack _this, ObjectHandleOnStack target, IntPtr method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void* GetMulticastInvoke(MethodTable* pMT);

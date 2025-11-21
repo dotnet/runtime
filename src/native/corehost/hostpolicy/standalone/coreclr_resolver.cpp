@@ -13,6 +13,10 @@ bool coreclr_resolver_t::resolve_coreclr(const pal::string_t& libcoreclr_path, c
     pal::string_t coreclr_dll_path(libcoreclr_path);
     append_path(&coreclr_dll_path, LIBCORECLR_NAME);
 
+    // We should always be loading coreclr from an absolute path
+    if (!pal::is_path_fully_qualified(coreclr_dll_path))
+        return false;
+
     if (!pal::load_library(&coreclr_dll_path, &coreclr_resolver_contract.coreclr))
     {
         return false;
@@ -25,10 +29,13 @@ bool coreclr_resolver_t::resolve_coreclr(const pal::string_t& libcoreclr_path, c
     coreclr_resolver_contract.coreclr_create_delegate = reinterpret_cast<coreclr_create_delegate_fn>(pal::get_symbol(coreclr_resolver_contract.coreclr, "coreclr_create_delegate"));
 
     // Only the coreclr_set_error_writer is optional
-    assert(coreclr_resolver_contract.coreclr_initialize != nullptr
-        && coreclr_resolver_contract.coreclr_shutdown != nullptr
-        && coreclr_resolver_contract.coreclr_execute_assembly != nullptr
-        && coreclr_resolver_contract.coreclr_create_delegate != nullptr);
+    if (coreclr_resolver_contract.coreclr_initialize == nullptr
+        || coreclr_resolver_contract.coreclr_shutdown == nullptr
+        || coreclr_resolver_contract.coreclr_execute_assembly == nullptr
+        || coreclr_resolver_contract.coreclr_create_delegate == nullptr)
+    {
+        return false;
+    }
 
     return true;
 }

@@ -154,6 +154,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWithEnumParameters))]
         [JsonSerializable(typeof(ClassWithIgnoredPropertyDefaultParam))]
         [JsonSerializable(typeof(ClassWithCustomConverterOnCtorParameter))]
+        [JsonSerializable(typeof(ClassWithConflictingCaseInsensitiveProperties))]
+        [JsonSerializable(typeof(Class_ExtraProperty_ExtData))]
+        [JsonSerializable(typeof(Class_ExtraProperty_JsonElementDictionaryExtData))]
+        [JsonSerializable(typeof(Class_ManyParameters_ExtraProperty_ExtData))]
+        [JsonSerializable(typeof(ClassWithRequiredProperty))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -303,6 +308,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWithEnumParameters))]
         [JsonSerializable(typeof(ClassWithIgnoredPropertyDefaultParam))]
         [JsonSerializable(typeof(ClassWithCustomConverterOnCtorParameter))]
+        [JsonSerializable(typeof(ClassWithConflictingCaseInsensitiveProperties))]
+        [JsonSerializable(typeof(Class_ExtraProperty_ExtData))]
+        [JsonSerializable(typeof(Class_ExtraProperty_JsonElementDictionaryExtData))]
+        [JsonSerializable(typeof(Class_ManyParameters_ExtraProperty_ExtData))]
+        [JsonSerializable(typeof(ClassWithRequiredProperty))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }

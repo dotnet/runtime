@@ -27,7 +27,5 @@ internal readonly struct NextInfo
     internal PrimitiveType PrimitiveType { get; }
 
     internal NextInfo With(AllowedRecordTypes allowed, PrimitiveType primitiveType)
-        => allowed == Allowed && primitiveType == PrimitiveType
-            ? this // previous record was of the same type
-            : new(allowed, Parent, Stack, primitiveType);
+        => new(allowed, Parent, Stack, primitiveType);
 }

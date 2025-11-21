@@ -10,15 +10,17 @@ namespace Internal.Cryptography
 {
     internal static class BCryptAeadHandleCache
     {
-        private static SafeAlgorithmHandle? s_aesCcm;
         private static SafeAlgorithmHandle? s_aesGcm;
+#if NET
+        private static SafeAlgorithmHandle? s_aesCcm;
         private static SafeAlgorithmHandle? s_chaCha20Poly1305;
-
-        internal static SafeAlgorithmHandle AesCcm => GetCachedAlgorithmHandle(ref s_aesCcm, Cng.BCRYPT_AES_ALGORITHM, Cng.BCRYPT_CHAIN_MODE_CCM);
-        internal static SafeAlgorithmHandle AesGcm => GetCachedAlgorithmHandle(ref s_aesGcm, Cng.BCRYPT_AES_ALGORITHM, Cng.BCRYPT_CHAIN_MODE_GCM);
 
         internal static bool IsChaCha20Poly1305Supported { get; } = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 20142);
         internal static SafeAlgorithmHandle ChaCha20Poly1305 => GetCachedAlgorithmHandle(ref s_chaCha20Poly1305, Cng.BCRYPT_CHACHA20_POLY1305_ALGORITHM);
+        internal static SafeAlgorithmHandle AesCcm => GetCachedAlgorithmHandle(ref s_aesCcm, Cng.BCRYPT_AES_ALGORITHM, Cng.BCRYPT_CHAIN_MODE_CCM);
+#endif
+
+        internal static SafeAlgorithmHandle AesGcm => GetCachedAlgorithmHandle(ref s_aesGcm, Cng.BCRYPT_AES_ALGORITHM, Cng.BCRYPT_CHAIN_MODE_GCM);
 
         private static SafeAlgorithmHandle GetCachedAlgorithmHandle(ref SafeAlgorithmHandle? handle, string algId, string? chainingMode = null)
         {

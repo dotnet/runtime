@@ -5,7 +5,8 @@ import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, VoidPtr } from "./types/emscripten";
 import { Module, mono_assert, runtimeHelpers } from "./globals";
 import {
-    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
+    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews,
+    free
 } from "./memory";
 import { WasmOpcode, WasmValtype } from "./jiterpreter-opcodes";
 import {
@@ -152,7 +153,7 @@ class TrampolineInfo {
                 suffix = utf8ToString(pMethodName);
             } finally {
                 if (pMethodName)
-                    Module._free(<any>pMethodName);
+                    free(<any>pMethodName);
             }
         }
 
@@ -436,7 +437,7 @@ export function mono_interp_flush_jitcall_queue (): void {
         if (trace > 0)
             mono_log_info(`do_jit_call queue flush generated ${buffer.length} byte(s) of wasm`);
         modifyCounter(JiterpCounter.BytesGenerated, buffer.length);
-        const traceModule = new WebAssembly.Module(buffer);
+        const traceModule = new WebAssembly.Module(buffer as BufferSource);
         const wasmImports = builder.getWasmImports();
 
         const traceInstance = new WebAssembly.Instance(traceModule, wasmImports);
@@ -503,7 +504,7 @@ export function mono_interp_flush_jitcall_queue (): void {
                     builder.endSection();
             } catch {
                 // eslint-disable-next-line @typescript-eslint/no-extra-semi
-                ;
+
             }
 
             const buf = builder.getArrayView(false, true);

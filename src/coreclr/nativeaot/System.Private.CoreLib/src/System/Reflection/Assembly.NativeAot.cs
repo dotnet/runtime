@@ -24,7 +24,7 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
-        public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.ReflectionCoreCallbacks.Load(assemblyRef, throwOnFileNotFound: true);
+        public static Assembly Load(AssemblyName assemblyRef) => ReflectionAugments.Load(assemblyRef, throwOnFileNotFound: true);
 
         public static Assembly Load(string assemblyString)
         {
@@ -35,13 +35,9 @@ namespace System.Reflection
         }
 
         // Performance metric to count the number of assemblies
-        // Caching since in NativeAOT, the number will be the same
-        private static uint s_assemblyCount;
         internal static uint GetAssemblyCount()
         {
-            if (s_assemblyCount == 0)
-                s_assemblyCount = (uint)Internal.Reflection.Core.Execution.ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder.GetLoadedAssemblies().Count;
-            return s_assemblyCount;
+            return (uint)Internal.Reflection.Core.Execution.ReflectionCoreExecution.ExecutionEnvironment.AssemblyBinder.GetLoadedAssembliesCount();
         }
 
         [Obsolete("Assembly.LoadWithPartialName has been deprecated. Use Assembly.Load() instead.")]

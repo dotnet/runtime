@@ -71,11 +71,6 @@ namespace SingleFileApiTests
                         Console.WriteLine("AppContext.BaseDirectory: " + AppContext.BaseDirectory);
                         break;
 
-                    case "native_search_dirs":
-                        var native_search_dirs = AppContext.GetData("NATIVE_DLL_SEARCH_DIRECTORIES");
-                        Console.WriteLine("NATIVE_DLL_SEARCH_DIRECTORIES: " + native_search_dirs);
-                        break;
-
                     default:
                         Console.WriteLine("test failure");
                         return -1;

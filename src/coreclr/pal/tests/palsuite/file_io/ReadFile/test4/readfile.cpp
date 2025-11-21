@@ -80,7 +80,7 @@ PALTEST(file_io_ReadFile_test4_paltest_readfile_test4, "file_io/ReadFile/test4/p
     
     /* Set the file pointer to beginning of file.
      */
-    res = SetFilePointer(hFile, (LONG)NULL, NULL, FILE_BEGIN);
+    res = SetFilePointer(hFile, 0, NULL, FILE_BEGIN);
 
     if( (res == INVALID_SET_FILE_POINTER) &&
         (GetLastError() != NO_ERROR))

@@ -22,7 +22,7 @@ namespace LibraryImportGenerator.UnitTests
         // In particular, sort the equivalent subgroups by their diagnostic descriptor in the order that the fixer's fix-all provider
         // will add the methods.
         // This ensures that the iterative code-fix test will produce the same (deterministic) output as the fix-all tests.
-        protected override ImmutableArray<(Project project, Diagnostic diagnostic)> SortDistinctDiagnostics(IEnumerable<(Project project, Diagnostic diagnostic)> diagnostics)
+        protected override ImmutableArray<(Project project, Diagnostic diagnostic)> SortDistinctDiagnostics(ImmutableArray<(Project project, Diagnostic diagnostic)> diagnostics)
             => diagnostics.OrderBy(d => d.diagnostic.Location.GetLineSpan().Path, StringComparer.Ordinal)
                 .ThenBy(d => d.diagnostic.Location.SourceSpan.Start)
                 .ThenBy(d => d.diagnostic.Location.SourceSpan.End)

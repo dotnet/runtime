@@ -2,27 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-//
-// ===========================================================================
-// File: palrt.h
-//
-// ===========================================================================
-
 /*++
-
-
 Abstract:
 
     PAL runtime functions.  These are functions which are ordinarily
     implemented as part of the Win32 API set, but when compiling CoreCLR for
     Unix-like systems, are implemented as a runtime library on top of the PAL.
-
-Author:
-
-
-
-Revision History:
-
 --*/
 
 #ifndef __PALRT_H__
@@ -144,21 +129,11 @@ typedef enum tagEFaultRepRetVal
 
 #define _WINNT_
 
-#ifndef offsetof
-#define offsetof(type, field) __builtin_offsetof(type, field)
-#endif
-
 #define CONTAINING_RECORD(address, type, field) \
     ((type *)((LONG_PTR)(address) - offsetof(type, field)))
 
 #define ARGUMENT_PRESENT(ArgumentPointer)    (\
     (CHAR *)(ArgumentPointer) != (CHAR *)(NULL) )
-
-#if defined(HOST_64BIT)
-#define MAX_NATURAL_ALIGNMENT sizeof(ULONGLONG)
-#else
-#define MAX_NATURAL_ALIGNMENT sizeof(ULONG)
-#endif
 
 #define DECLARE_HANDLE(name) struct name##__ { int unused; }; typedef struct name##__ *name
 
@@ -213,19 +188,7 @@ EXTERN_C const GUID GUID_NULL;
 typedef GUID *LPGUID;
 typedef const GUID FAR *LPCGUID;
 
-#ifdef __cplusplus
-extern "C++" {
-#if !defined _SYS_GUID_OPERATOR_EQ_ && !defined _NO_SYS_GUID_OPERATOR_EQ_
-#define _SYS_GUID_OPERATOR_EQ_
-inline int IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
-    { return !memcmp(&rguid1, &rguid2, sizeof(GUID)); }
-inline int operator==(REFGUID guidOne, REFGUID guidOther)
-    { return IsEqualGUID(guidOne,guidOther); }
-inline int operator!=(REFGUID guidOne, REFGUID guidOther)
-    { return !IsEqualGUID(guidOne,guidOther); }
-#endif
-};
-#endif // __cplusplus
+#define IsEqualGUID(guid1, guid2) guid1 == guid2
 
 #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
     EXTERN_C const GUID FAR name
@@ -274,10 +237,6 @@ typedef union _ULARGE_INTEGER {
 } ULARGE_INTEGER, *PULARGE_INTEGER;
 
 /******************* OLE, BSTR, VARIANT *************************/
-
-STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemAlloc(SIZE_T cb);
-STDAPI_VIS(DLLEXPORT, void) CoTaskMemFree(LPVOID pv);
-
 typedef SHORT VARIANT_BOOL;
 #define VARIANT_TRUE ((VARIANT_BOOL)-1)
 #define VARIANT_FALSE ((VARIANT_BOOL)0)
@@ -350,11 +309,6 @@ typedef struct tagDEC {
 #define DECIMAL_LO64_SET(dec,value)   {(dec).v.Lo64 = value; }
 
 #define DECIMAL_SETZERO(dec) {DECIMAL_LO32(dec) = 0; DECIMAL_MID32(dec) = 0; DECIMAL_HI32(dec) = 0; DECIMAL_SIGNSCALE(dec) = 0;}
-
-typedef struct tagBLOB {
-    ULONG cbSize;
-    BYTE *pBlobData;
-} BLOB, *LPBLOB;
 
 interface IStream;
 interface IRecordInfo;
@@ -489,9 +443,6 @@ struct tagVARIANT
 
 typedef VARIANT VARIANTARG, *LPVARIANTARG;
 
-STDAPI_(void) VariantInit(VARIANT * pvarg);
-STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
-
 #define V_VT(X)         ((X)->n1.n2.vt)
 #define V_UNION(X, Y)   ((X)->n1.n2.n3.Y)
 #define V_RECORDINFO(X) ((X)->n1.n2.n3.brecVal.pRecInfo)
@@ -555,8 +506,6 @@ STDAPI_(HRESULT) VariantClear(VARIANT * pvarg);
 #define V_DECIMALREF(X)    V_UNION(X, pdecVal)
 
 #define V_ISBYREF(X)     (V_VT(X)&VT_BYREF)
-
-STDAPI CreateStreamOnHGlobal(PVOID hGlobal, BOOL fDeleteOnRelease, interface IStream** ppstm);
 
 #define STGM_DIRECT             0x00000000L
 
@@ -635,7 +584,6 @@ The wrappers below are simple implementations that may not be as robust as compl
 Remember to fix the errcode definition in safecrt.h.
 */
 
-#define _wfopen_s _wfopen_unsafe
 #define fopen_s _fopen_unsafe
 
 #define _vscprintf _vscprintf_unsafe
@@ -667,17 +615,6 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
     }
 }
 
-inline errno_t __cdecl _wfopen_unsafe(FILE * *ff, const WCHAR *fileName, const WCHAR *mode)
-{
-    FILE *result = _wfopen(fileName, mode);
-    if(result == 0) {
-        return 1;
-    } else {
-        *ff = result;
-        return 0;
-    }
-}
-
 inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const char *mode)
 {
   FILE *result = fopen(fileName, mode);
@@ -694,17 +631,6 @@ inline errno_t __cdecl _fopen_unsafe(FILE * *ff, const char *fileName, const cha
 
 /******************* misc ***************************************/
 
-#ifdef __cplusplus
-namespace std
-{
-    typedef decltype(nullptr) nullptr_t;
-}
-
-extern "C++"
-template< class T >
-typename std::remove_reference<T>::type&& move( T&& t );
-#endif // __cplusplus
-
 #define __RPC__out
 #define __RPC__in
 #define __RPC__deref_out_opt
@@ -715,8 +641,6 @@ typename std::remove_reference<T>::type&& move( T&& t );
 #define __RPC__in_xcount(x)
 #define __RPC__inout
 #define __RPC__deref_out_ecount_full_opt(x)
-
-typedef HANDLE HWND;
 
 typedef struct _LIST_ENTRY {
    struct _LIST_ENTRY *Flink;
@@ -786,8 +710,6 @@ typedef struct _LIST_ENTRY {
 #ifdef TARGET_AMD64
 #define RUNTIME_FUNCTION_INDIRECT 0x1
 #endif
-
-#define _ReturnAddress() __builtin_return_address(0)
 
 #define DIRECTORY_SEPARATOR_CHAR_A '/'
 #define DIRECTORY_SEPARATOR_CHAR_W W('/')
@@ -1039,6 +961,14 @@ typedef struct _DISPATCHER_CONTEXT {
     DWORD Reserved;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
+#elif defined(HOST_WASM)
+
+typedef struct _DISPATCHER_CONTEXT {
+    // WASM does not build the JIT at this point,
+    // so we only add necessary fields.
+    UINT32 ControlPc;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
 #else
 
 #error Unknown architecture for defining DISPATCHER_CONTEXT.
@@ -1055,8 +985,6 @@ typedef struct _EXCEPTION_REGISTRATION_RECORD EXCEPTION_REGISTRATION_RECORD;
 typedef EXCEPTION_REGISTRATION_RECORD *PEXCEPTION_REGISTRATION_RECORD;
 
 typedef LPVOID HKEY;
-typedef LPVOID PACL;
-typedef LPVOID LPBC;
 typedef LPVOID PSECURITY_DESCRIPTOR;
 
 typedef struct _EXCEPTION_RECORD64 {
@@ -1073,33 +1001,6 @@ typedef LONG (WINAPI *PTOP_LEVEL_EXCEPTION_FILTER)(
     IN struct _EXCEPTION_POINTERS *ExceptionInfo
     );
 typedef PTOP_LEVEL_EXCEPTION_FILTER LPTOP_LEVEL_EXCEPTION_FILTER;
-
-/******************** PAL RT APIs *******************************/
-
-typedef struct _HSATELLITE *HSATELLITE;
-
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceW(LPCWSTR SatelliteResourceFileName);
-EXTERN_C HSATELLITE PALAPI PAL_LoadSatelliteResourceA(LPCSTR SatelliteResourceFileName);
-EXTERN_C BOOL PALAPI PAL_FreeSatelliteResource(HSATELLITE SatelliteResource);
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringW(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPWSTR lpBuffer,
-             UINT nBufferMax);
-EXTERN_C UINT PALAPI PAL_LoadSatelliteStringA(HSATELLITE SatelliteResource,
-             UINT uID,
-             LPSTR lpBuffer,
-             UINT nBufferMax);
-
-EXTERN_C HRESULT PALAPI PAL_CoCreateInstance(REFCLSID   rclsid,
-                             REFIID     riid,
-                             void     **ppv);
-
-// So we can have CoCreateInstance in most of the code base,
-// instead of spreading around of if'def FEATURE_PALs for PAL_CoCreateInstance.
-#define CoCreateInstance(rclsid, pUnkOuter, dwClsContext, riid, ppv) PAL_CoCreateInstance(rclsid, riid, ppv)
-
-STDAPI
-CoCreateGuid(OUT GUID * pguid);
 
 /************** Byte swapping & unaligned access ******************/
 

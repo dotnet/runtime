@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Formats.Asn1;
 using Test.Cryptography;
 using Xunit;
 
@@ -126,6 +127,78 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             Assert.Equal(expected, formatted);
+        }
+
+        [Theory]
+        [InlineData("G=DotNet", UniversalTagNumber.UTF8String)]
+        [InlineData("L=Alexandria", UniversalTagNumber.UTF8String)]
+        [InlineData("O=GitHub", UniversalTagNumber.UTF8String)]
+        [InlineData("OU=ProdSec", UniversalTagNumber.UTF8String)]
+        [InlineData("S=Virginia", UniversalTagNumber.UTF8String)]
+        [InlineData("SN=Doe", UniversalTagNumber.UTF8String)]
+        [InlineData("ST=Main", UniversalTagNumber.UTF8String)]
+        [InlineData("T=Pancake", UniversalTagNumber.UTF8String)]
+        [InlineData("CN=Foo", UniversalTagNumber.UTF8String)]
+        [InlineData("I=DD", UniversalTagNumber.UTF8String)]
+        [InlineData("E=noone@example.com", UniversalTagNumber.IA5String)]
+        [InlineData("OID.2.5.4.11=ProdSec", UniversalTagNumber.UTF8String)]
+        [InlineData("OID.2.5.4.43=DD", UniversalTagNumber.UTF8String)]
+        [InlineData("OID.2.25.77135202736018529853602245419149860647=sample", UniversalTagNumber.UTF8String)]
+        [InlineData("C=US", UniversalTagNumber.PrintableString)]
+        [InlineData("OID.2.5.4.20=\"+0 (555) 555-1234\"", UniversalTagNumber.PrintableString)]
+        [InlineData("OID.2.5.4.99=840", UniversalTagNumber.NumericString, true)]
+        [InlineData("OID.2.5.4.98=USA", UniversalTagNumber.PrintableString, true)]
+        [InlineData("SERIALNUMBER=1234ABC", UniversalTagNumber.PrintableString)]
+        public static void Encode_ForceUtf8EncodingForEligibleComponents(
+            string distinguishedName,
+            UniversalTagNumber tagNumber,
+            bool nonWindowsOnly = false)
+        {
+            if (PlatformDetection.IsWindows && nonWindowsOnly)
+            {
+                return;
+            }
+
+            X500DistinguishedName name = new(distinguishedName, X500DistinguishedNameFlags.ForceUTF8Encoding);
+            byte[] encoded = name.RawData;
+
+            AsnValueReader reader = new(encoded, AsnEncodingRules.DER);
+            AsnValueReader component = reader.ReadSequence();
+            reader.ThrowIfNotEmpty();
+            AsnValueReader rdn = component.ReadSetOf();
+            component.ThrowIfNotEmpty();
+            AsnValueReader value = rdn.ReadSequence();
+            rdn.ThrowIfNotEmpty();
+
+            value.ReadObjectIdentifier();
+            Assert.Equal(new Asn1Tag(tagNumber), value.PeekTag());
+        }
+
+        [Theory]
+        [InlineData("C=$$")]
+        [InlineData("C=\"$$\"")]
+        [InlineData("E=\uD83C\uDF4C")] // banana
+        [InlineData("OID.2.5.4.99=a", true)]
+        [InlineData("OID.2.5.4.6=$$")]
+        public static void Encode_InvalidCharactersThrowCryptographicException(
+            string distinguishedName,
+            bool nonWindowsOnly = false)
+        {
+            if (PlatformDetection.IsWindows && nonWindowsOnly)
+            {
+                return;
+            }
+
+            Assert.ThrowsAny<CryptographicException>(() =>
+                new X500DistinguishedName(distinguishedName, X500DistinguishedNameFlags.ForceUTF8Encoding));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows))]
+        [InlineData(X500DistinguishedNameFlags.None)]
+        [InlineData(X500DistinguishedNameFlags.ForceUTF8Encoding)]
+        public static void Encode_FailsForIncorrectSurrogatePair(X500DistinguishedNameFlags flags)
+        {
+            Assert.ThrowsAny<CryptographicException>(() => new X500DistinguishedName("CN=\uD800", flags));
         }
     }
 }

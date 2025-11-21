@@ -16,6 +16,9 @@ using Xunit;
 //  into a new compiler temp, before storing any outgoing arguments.
 //
 
+
+namespace GitHub_16892;
+
 class Item
 {
     int _value;
@@ -59,8 +62,8 @@ public class Program
         Item[] arr = itemArray;
         int result = 0;
 
-        // Insure that we have to generate fully interruptible GC information
-        // Form a possible infinte loop that the JIT believes could execute
+        // Ensure that we have to generate fully interruptible GC information
+        // Form a possible infinite loop that the JIT believes could execute
         // without encountering a GC safe point.
         //
         do {

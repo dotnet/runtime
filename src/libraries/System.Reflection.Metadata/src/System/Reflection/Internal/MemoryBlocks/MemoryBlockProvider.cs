@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection.PortableExecutable;
 
@@ -39,12 +40,21 @@ namespace System.Reflection.Internal
         protected abstract AbstractMemoryBlock GetMemoryBlockImpl(int start, int size);
 
         /// <summary>
-        /// Gets a seekable and readable <see cref="Stream"/> that can be used to read all data.
-        /// The operations on the stream has to be done under a lock of <see cref="StreamConstraints.GuardOpt"/> if non-null.
-        /// The image starts at <see cref="StreamConstraints.ImageStart"/> and has size <see cref="StreamConstraints.ImageSize"/>.
-        /// It is the caller's responsibility not to read outside those bounds.
+        /// Gets the <see cref="Stream"/> backing the <see cref="MemoryBlockProvider"/>, if there is one.
         /// </summary>
-        public abstract Stream GetStream(out StreamConstraints constraints);
+        /// <remarks>
+        /// It is the caller's responsibility to use <paramref name="stream"/> only
+        /// while locking on <paramref name="streamGuard"/>, and not read outside the
+        /// bounds defined by <paramref name="imageStart"/> and <paramref name="imageSize"/>.
+        /// </remarks>
+        public virtual bool TryGetUnderlyingStream([NotNullWhen(true)] out Stream? stream, out long imageStart, out int imageSize, [NotNullWhen(true)] out object? streamGuard)
+        {
+            stream = null;
+            imageStart = 0;
+            imageSize = 0;
+            streamGuard = null;
+            return false;
+        }
 
         /// <summary>
         /// The size of the data.

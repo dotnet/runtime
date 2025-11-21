@@ -3,7 +3,9 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
@@ -41,6 +43,13 @@ namespace System.Buffers
                 return new RangeByteSearchValues(minInclusive, maxInclusive);
             }
 
+            // Depending on the hardware, UniqueLowNibble can be faster than even range or 2 values.
+            // It's currently consistently faster than 4/5 values on all tested platforms (Arm, Avx2, Avx512).
+            if (values.Length >= 4 && IndexOfAnyAsciiSearcher.CanUseUniqueLowNibbleSearch(values, maxInclusive))
+            {
+                return new AsciiByteSearchValues<TrueConst>(values);
+            }
+
             if (values.Length <= 5)
             {
                 Debug.Assert(values.Length is 2 or 3 or 4 or 5);
@@ -55,7 +64,7 @@ namespace System.Buffers
 
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
-                return new AsciiByteSearchValues(values);
+                return new AsciiByteSearchValues<FalseConst>(values);
             }
 
             return new AnyByteSearchValues(values);
@@ -65,7 +74,7 @@ namespace System.Buffers
         /// Creates an optimized representation of <paramref name="values"/> used for efficient searching.
         /// </summary>
         /// <param name="values">The set of values.</param>
-        /// /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
+        /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
         public static SearchValues<char> Create(params ReadOnlySpan<char> values)
         {
             if (values.IsEmpty)
@@ -122,29 +131,39 @@ namespace System.Buffers
                     : new Any3SearchValues<char, short>(shortValues);
             }
 
+            // If the values are sets of 2 ASCII letters with both cases, we can use an approach that
+            // reduces the number of comparisons by masking off the bit that differs between lower and upper case (0x20).
+            // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[]{}" => "{}").
+            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && PackedSpanHelpers.PackedIndexOfIsSupported &&
+                maxInclusive < 128 && values.Length == 4 && minInclusive > 0)
+            {
+                Span<char> copy = stackalloc char[4];
+                values.CopyTo(copy);
+                copy.Sort();
+
+                if ((copy[0] ^ copy[2]) == 0x20 &&
+                    (copy[1] ^ copy[3]) == 0x20)
+                {
+                    // We pick the higher two values (with the 0x20 bit set). "AaBb" => 'a', 'b'
+                    return new Any2CharPackedIgnoreCaseSearchValues(copy[2], copy[3]);
+                }
+            }
+
+            // Depending on the hardware, UniqueLowNibble can be faster than most implementations we currently prefer above.
+            // It's currently consistently faster than 4/5 values or Ascii on all tested platforms (Arm, Avx2, Avx512).
+            if (IndexOfAnyAsciiSearcher.CanUseUniqueLowNibbleSearch(values, maxInclusive))
+            {
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
+                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle, TrueConst>(values)
+                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default, TrueConst>(values);
+            }
+
             // IndexOfAnyAsciiSearcher for chars is slower than Any3CharSearchValues, but faster than Any4SearchValues
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && maxInclusive < 128)
             {
-                // If the values are sets of 2 ASCII letters with both cases, we can use an approach that
-                // reduces the number of comparisons by masking off the bit that differs between lower and upper case (0x20).
-                // While this most commonly applies to ASCII letters, it also works for other values that differ by 0x20 (e.g. "[]{}" => "{}").
-                if (PackedSpanHelpers.PackedIndexOfIsSupported && values.Length == 4 && minInclusive > 0)
-                {
-                    Span<char> copy = stackalloc char[4];
-                    values.CopyTo(copy);
-                    copy.Sort();
-
-                    if ((copy[0] ^ copy[2]) == 0x20 &&
-                        (copy[1] ^ copy[3]) == 0x20)
-                    {
-                        // We pick the higher two values (with the 0x20 bit set). "AaBb" => 'a', 'b'
-                        return new Any2CharPackedIgnoreCaseSearchValues(copy[2], copy[3]);
-                    }
-                }
-
                 return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
-                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values)
-                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values);
+                    ? new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle, FalseConst>(values)
+                    : new AsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default, FalseConst>(values);
             }
 
             if (values.Length == 4)
@@ -162,7 +181,7 @@ namespace System.Buffers
                 // If we have both ASCII and non-ASCII characters, use an implementation that
                 // does an optimistic ASCII fast-path and then falls back to the ProbabilisticMap.
 
-                return (Ssse3.IsSupported || PackedSimd.IsSupported) && values.Contains('\0')
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
                     ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values, maxInclusive)
                     : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values, maxInclusive);
             }
@@ -274,6 +293,22 @@ namespace System.Buffers
         internal readonly struct FalseConst : IRuntimeConst
         {
             public static bool Value => false;
+        }
+
+        /// <summary>
+        /// Same as <see cref="Vector128.ShuffleNative(Vector128{byte}, Vector128{byte})"/>, except that we guarantee that <see cref="Ssse3.Shuffle(Vector128{byte}, Vector128{byte})"/> is used when available.
+        /// Some logic in <see cref="SearchValues"/> relies on this exact behavior (implicit AND 0xF, and zeroing when the high bit is set).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        internal static Vector128<byte> ShuffleNativeModified(Vector128<byte> vector, Vector128<byte> indices)
+        {
+            if (Ssse3.IsSupported)
+            {
+                return Ssse3.Shuffle(vector, indices);
+            }
+
+            return Vector128.Shuffle(vector, indices);
         }
     }
 }

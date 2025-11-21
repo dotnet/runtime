@@ -42,7 +42,7 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
         }
 
         object @object =
-#if NETCOREAPP
+#if NET
             RuntimeHelpers.GetUninitializedObject(type);
 #else
             Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
@@ -98,4 +98,3 @@ internal abstract class ClassRecordDeserializer : ObjectRecordDeserializer
 }
 
 #pragma warning restore SYSLIB0050 // Type or member is obsolete
-

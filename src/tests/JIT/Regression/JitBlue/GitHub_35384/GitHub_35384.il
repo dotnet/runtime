@@ -6,6 +6,8 @@
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly GitHub_35384 {}
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 
 .class private sequential ansi sealed beforefieldinit Struct
        extends [System.Runtime]System.ValueType
@@ -40,9 +42,12 @@
   
   .method public hidebysig static int32 Main() cil managed
   {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = {}
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/114908')
+        type([TestLibrary]TestLibrary.PlatformDetection)
+        string[1] ('IsAppleMobile')
+    }
     .entrypoint
     .maxstack 1
     call       string Program::ValueTypeExplicitThisInstanceMethodCalli()

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Reflection.PortableExecutable;
@@ -43,6 +44,15 @@ namespace System.Reflection.Metadata
             }
 
             return assemblyName;
+        }
+
+        internal AssemblyNameInfo GetAssemblyNameInfo(StringHandle nameHandle, Version version, StringHandle cultureHandle, BlobHandle publicKeyOrTokenHandle, AssemblyFlags flags)
+        {
+            string name = GetString(nameHandle);
+            string? cultureName = !cultureHandle.IsNil ? GetString(cultureHandle) : null;
+            ImmutableArray<byte> publicKeyOrToken = !publicKeyOrTokenHandle.IsNil ? GetBlobContent(publicKeyOrTokenHandle) : default;
+
+            return new AssemblyNameInfo(name, version, cultureName, GetAssemblyNameFlags(flags), publicKeyOrToken);
         }
 
         /// <summary>

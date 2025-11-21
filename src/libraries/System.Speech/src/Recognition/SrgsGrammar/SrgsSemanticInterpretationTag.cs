@@ -19,7 +19,7 @@ namespace System.Speech.Recognition.SrgsGrammar
         }
         public SrgsSemanticInterpretationTag(string script)
         {
-            Helpers.ThrowIfNull(script, nameof(script));
+            ArgumentNullException.ThrowIfNull(script);
 
             _script = script;
         }
@@ -35,7 +35,7 @@ namespace System.Speech.Recognition.SrgsGrammar
             }
             set
             {
-                Helpers.ThrowIfNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 _script = value;
             }
@@ -47,8 +47,8 @@ namespace System.Speech.Recognition.SrgsGrammar
 
         // Validate the SRGS element.
         /// <summary>
-        /// Validate each element and recurse through all the children srgs
-        /// elements if any.
+        /// Validates each element and recurses through all the children SRGS
+        /// elements, if any.
         /// </summary>
         internal override void Validate(SrgsGrammar grammar)
         {

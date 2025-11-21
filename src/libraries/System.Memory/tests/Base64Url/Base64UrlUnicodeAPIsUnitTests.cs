@@ -112,7 +112,7 @@ namespace System.Buffers.Text.Tests
                 Assert.Equal(new String(encodedBytes), Base64Url.EncodeToString(source));
 
                 byte[] decoded = Base64Url.DecodeFromChars(encodedBytes);
-                Assert.Equal(source, decoded);
+                Assert.Equal(source, decoded.AsSpan());
             }
         }
 
@@ -438,7 +438,7 @@ namespace System.Buffers.Text.Tests
                 Span<byte> decodedBytes = new byte[original.Length];
                 int decoded = Base64Url.DecodeFromChars(encodedArray, decodedBytes);
                 Assert.Equal(original.Length, decoded);
-                AssertExtensions.SequenceEqual(original, decodedBytes);
+                AssertExtensions.SequenceEqual(original.AsSpan(), decodedBytes);
 
                 byte[] actualBytes = new byte[original.Length];
                 Assert.True(Base64Url.TryDecodeFromChars(encodedSpan, actualBytes, out int bytesWritten));

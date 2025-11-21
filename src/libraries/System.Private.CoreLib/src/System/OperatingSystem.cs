@@ -335,13 +335,19 @@ namespace System
             {
                 return current.Minor > minor;
             }
-            if (current.Build != build)
+            // Unspecified build component is to be treated as zero
+            int currentBuild = current.Build < 0 ? 0 : current.Build;
+            build = build < 0 ? 0 : build;
+            if (currentBuild != build)
             {
-                return current.Build > build;
+                return currentBuild > build;
             }
 
-            return current.Revision >= revision
-                || (current.Revision == -1 && revision == 0); // it is unavailable on OSX and Environment.OSVersion.Version.Revision returns -1
+            // Unspecified revision component is to be treated as zero
+            int currentRevision = current.Revision < 0 ? 0 : current.Revision;
+            revision = revision < 0 ? 0 : revision;
+
+            return currentRevision >= revision;
         }
     }
 }

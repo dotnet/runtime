@@ -104,8 +104,8 @@ namespace System.Runtime.CompilerServices
         /// <remarks>
         /// This releases any resources used by the handler. The method should be invoked only
         /// once and as the last thing performed on the handler. Subsequent use is erroneous, ill-defined,
-        /// and may destabilize the process, as may using any other copies of the handler after ToStringAndClear
-        /// is called on any one of them.
+        /// and may destabilize the process, as may using any other copies of the handler after
+        /// <see cref="ToStringAndClear" /> is called on any one of them.
         /// </remarks>
         public string ToStringAndClear()
         {
@@ -114,20 +114,31 @@ namespace System.Runtime.CompilerServices
             return result;
         }
 
-        /// <summary>Clears the handler, returning any rented array to the pool.</summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // used only on a few hot paths
-        internal void Clear()
+        /// <summary>Clears the handler.</summary>
+        /// <remarks>
+        /// This releases any resources used by the handler. The method should be invoked only
+        /// once and as the last thing performed on the handler. Subsequent use is erroneous, ill-defined,
+        /// and may destabilize the process, as may using any other copies of the handler after <see cref="Clear"/>
+        /// is called on any one of them.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Clear()
         {
             char[]? toReturn = _arrayToReturnToPool;
-            this = default; // defensive clear
+
+            // Defensive clear
+            _arrayToReturnToPool = null;
+            _chars = default;
+            _pos = 0;
+
             if (toReturn is not null)
             {
                 ArrayPool<char>.Shared.Return(toReturn);
             }
         }
 
-        /// <summary>Gets a span of the written characters thus far.</summary>
-        internal ReadOnlySpan<char> Text => _chars.Slice(0, _pos);
+        /// <summary>Gets a span of the characters appended to the handler.</summary>
+        public ReadOnlySpan<char> Text => _chars.Slice(0, _pos);
 
         /// <summary>Writes the specified string to the handler.</summary>
         /// <param name="value">The string to write.</param>
@@ -236,6 +247,11 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
+            if (value is null)
+            {
+                return;
+            }
+
             // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
             // requires the former.  For value types, it won't matter as the type checks devolve into
             // JIT-time constants.  For reference types, they're more likely to implement IFormattable
@@ -276,7 +292,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                s = value?.ToString();
+                s = value.ToString();
             }
 
             if (s is not null)
@@ -295,6 +311,11 @@ namespace System.Runtime.CompilerServices
             if (_hasCustomFormatter)
             {
                 AppendCustomFormatter(value, format);
+                return;
+            }
+
+            if (value is null)
+            {
                 return;
             }
 
@@ -338,7 +359,7 @@ namespace System.Runtime.CompilerServices
             }
             else
             {
-                s = value?.ToString();
+                s = value.ToString();
             }
 
             if (s is not null)

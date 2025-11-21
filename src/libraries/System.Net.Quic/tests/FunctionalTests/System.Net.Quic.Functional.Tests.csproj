@@ -42,4 +42,22 @@
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
   </ItemGroup>
+
+  <!-- Support running tests on older windows by explicitly including OpenSSL version of MsQuic,
+       The binary will be used only if "System.Net.Quic.AppLocalMsQuic" appctx switch is 'true',
+       Which we manually flip in the test setup on appropriate platform. -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <PackageReference Include="Microsoft.Native.Quic.MsQuic.OpenSSL"
+                      Version="$(MicrosoftNativeQuicMsQuicSchannelVersion)"
+                      PrivateAssets="all"
+                      GeneratePathProperty="true" />
+
+  </ItemGroup>
+  <Target Name="CopyCustomContent" AfterTargets="Build" BeforeTargets="PrepareForRun" Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Copy SourceFiles="$(PkgMicrosoft_Native_Quic_MsQuic_OpenSSL)\build\native\bin\x64\msquic.dll" DestinationFolder="$(OutDir)" />
+  </Target>
+  <Target Name="CopyCustomContentOnPublish" AfterTargets="Publish" BeforeTargets="PrepareForRun" Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Copy SourceFiles="$(PkgMicrosoft_Native_Quic_MsQuic_OpenSSL)\build\native\bin\x64\msquic.dll" DestinationFolder="$(PublishDir)" />
+  </Target>
+
 </Project>

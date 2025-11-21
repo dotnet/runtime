@@ -14,11 +14,11 @@ public class SelfContextTests
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext0B7LibraryC11getInstanceSvyFZ")]
     public unsafe static extern void* getInstance();
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext0B7LibraryC14getMagicNumberSiyFTj")]
     public static extern nint getMagicNumber(SwiftSelf self);
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
     [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext0B7LibraryC14getMagicNumberSiyFTj")]
     public static extern nint getMagicNumberOnStack(int dummy0, int dummy1, int dummy2, int dummy3, int dummy4, int dummy5, int dummy6, int dummy7, int dummy8, int dummy9, SwiftSelf self);
 
@@ -60,12 +60,12 @@ public class SelfContextTests
         public long E;
     }
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext24FrozenEnregisteredStructV3Sums5Int64VyF")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext24FrozenEnregisteredStructV3sums5Int64VyF")]
     public static extern long SumFrozenEnregisteredStruct(SwiftSelf<FrozenEnregisteredStruct> self);
 
-    [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvSwift) })]
-    [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext27FrozenNonEnregisteredStructV3Sums5Int64VyF")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext27FrozenNonEnregisteredStructV3sums5Int64VyF")]
     public static extern long SumFrozenNonEnregisteredStruct(SwiftSelf<FrozenNonEnregisteredStruct> self);
 
     [Fact]
@@ -80,5 +80,27 @@ public class SelfContextTests
     {
         long sum = SumFrozenNonEnregisteredStruct(new SwiftSelf<FrozenNonEnregisteredStruct>(new FrozenNonEnregisteredStruct { A = 10, B = 20, C = 30, D = 40, E = 50 }));
         Assert.Equal(150, sum);
+    }
+
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext24FrozenEnregisteredStructV16sumWithExtraArgs1c1dS2f_SftF")]
+    public static extern float SumFrozenEnregisteredStructWithExtraArgs(float c, float d, SwiftSelf<FrozenEnregisteredStruct> self);
+
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvSwift)])]
+    [DllImport(SwiftLib, EntryPoint = "$s16SwiftSelfContext27FrozenNonEnregisteredStructV16sumWithExtraArgs1f1gS2f_SftF")]
+    public static extern float SumFrozenNonEnregisteredStructWithExtraArgs(float f, float g, SwiftSelf<FrozenNonEnregisteredStruct> self);
+
+    [Fact]
+    public unsafe static void TestSelfIsFrozenEnregisteredStructWithExtraArgs()
+    {
+        float sum = SumFrozenEnregisteredStructWithExtraArgs(3f, 4f, new SwiftSelf<FrozenEnregisteredStruct>(new FrozenEnregisteredStruct { A = 10, B = 20 }));
+        Assert.Equal(37f, sum);
+    }
+
+    [Fact]
+    public unsafe static void TestSelfIsFrozenNonEnregisteredStructWithExtraArgs()
+    {
+        float sum = SumFrozenNonEnregisteredStructWithExtraArgs(3f, 4f, new SwiftSelf<FrozenNonEnregisteredStruct>(new FrozenNonEnregisteredStruct { A = 10, B = 20, C = 30, D = 40, E = 50 }));
+        Assert.Equal(157f, sum);
     }
 }

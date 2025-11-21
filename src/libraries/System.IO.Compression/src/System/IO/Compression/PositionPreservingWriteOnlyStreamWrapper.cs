@@ -93,6 +93,8 @@ namespace System.IO.Compression
                 _stream.Dispose();
         }
 
+        public override ValueTask DisposeAsync() => _stream.DisposeAsync();
+
         public override long Length
         {
             get { throw new NotSupportedException(SR.NotSupported); }
@@ -108,9 +110,10 @@ namespace System.IO.Compression
             throw new NotSupportedException(SR.NotSupported);
         }
 
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            throw new NotSupportedException(SR.NotSupported);
-        }
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.NotSupported);
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException(SR.NotSupported);
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(SR.NotSupported);
     }
 }

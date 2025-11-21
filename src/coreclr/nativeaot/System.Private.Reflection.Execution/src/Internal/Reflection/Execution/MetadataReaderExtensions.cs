@@ -19,7 +19,7 @@ namespace Internal.Reflection.Execution
         {
             unsafe
             {
-                Debug.Assert((HandleType)((uint)i >> 24) == HandleType.Method);
+                Debug.Assert((HandleType)((uint)i >> 25) == HandleType.Method);
                 return *(MethodHandle*)&i;
             }
         }

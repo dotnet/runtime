@@ -75,7 +75,7 @@ namespace Tracing.Tests.Common
     }
 
     // This event source is used by the test infra to
-    // to insure that providers have finished being enabled
+    // to ensure that providers have finished being enabled
     // for the session being observed. Since the client API
     // returns the pipe for reading _before_ it finishes
     // enabling the providers to write to that session,

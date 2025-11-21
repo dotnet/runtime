@@ -11,10 +11,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using WasiHttpWorld;
-using WasiHttpWorld.wit.imports.wasi.http.v0_2_1;
-using WasiHttpWorld.wit.imports.wasi.io.v0_2_1;
-using static WasiHttpWorld.wit.imports.wasi.http.v0_2_1.ITypes;
-using static WasiHttpWorld.wit.imports.wasi.io.v0_2_1.IStreams;
+using WasiHttpWorld.wit.imports.wasi.http.v0_2_0;
+using WasiHttpWorld.wit.imports.wasi.io.v0_2_0;
+using static WasiHttpWorld.wit.imports.wasi.http.v0_2_0.ITypes;
+using static WasiHttpWorld.wit.imports.wasi.io.v0_2_0.IStreams;
 
 namespace System.Net.Http
 {
@@ -29,10 +29,10 @@ namespace System.Net.Http
             pollable.Handle = 0;
             GC.SuppressFinalize(pollable);
 
-            return CallRegisterWasiPollableHandle((Thread)null!, handle, cancellationToken);
+            return CallRegisterWasiPollableHandle((Thread)null!, handle, true, cancellationToken);
 
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "RegisterWasiPollableHandle")]
-            static extern Task CallRegisterWasiPollableHandle(Thread t, int handle, CancellationToken cancellationToken);
+            static extern Task CallRegisterWasiPollableHandle(Thread t, int handle, bool ownsPollable, CancellationToken cancellationToken);
         }
 
         public static Method ConvertMethod(HttpMethod requestMethod)

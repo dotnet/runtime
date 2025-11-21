@@ -12,7 +12,7 @@
 
     LEAF_ENTRY StubPrecodeCode
         ldr x10, DATA_SLOT(StubPrecode, Target)
-        ldr x12, DATA_SLOT(StubPrecode, MethodDesc)
+        ldr x12, DATA_SLOT(StubPrecode, SecretParam)
         br x10
     LEAF_END_MARKED StubPrecodeCode
 

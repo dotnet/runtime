@@ -27,6 +27,20 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// netstandard/netfx polyfill for IDictionary.TryAdd
+        /// </summary>
+        public static bool TryAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value) where TKey : notnull
+        {
+            if (!dictionary.ContainsKey(key))
+            {
+                dictionary[key] = value;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// netstandard/netfx polyfill for Queue.TryDequeue
         /// </summary>
         public static bool TryDequeue<T>(this Queue<T> queue, [NotNullWhen(true)] out T? result)

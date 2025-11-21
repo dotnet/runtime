@@ -60,6 +60,7 @@ namespace System.Threading
 
         // Set in unmanaged and read in managed code.
         private bool _isDead;
+        private bool _isThreadPool;
 
         private Thread() { }
 
@@ -89,13 +90,13 @@ namespace System.Threading
             {
                 fixed (char* pThreadName = _name)
                 {
-                    StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, pThreadName);
+                    StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, _isThreadPool ? Interop.BOOL.TRUE : Interop.BOOL.FALSE, pThreadName);
                 }
             }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Start")]
-        private static unsafe partial void StartInternal(ThreadHandle t, int stackSize, int priority, char* pThreadName);
+        private static unsafe partial void StartInternal(ThreadHandle t, int stackSize, int priority, Interop.BOOL isThreadPool, char* pThreadName);
 
         // Called from the runtime
         private void StartCallback()
@@ -151,13 +152,24 @@ namespace System.Threading
         public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Thread InitializeCurrentThread() => t_currentThread = GetCurrentThreadNative();
+        private static Thread InitializeCurrentThread()
+        {
+            Thread? thread = null;
+            GetCurrentThread(ObjectHandleOnStack.Create(ref thread));
+            return t_currentThread = thread!;
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern Thread GetCurrentThreadNative();
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetCurrentThread")]
+        private static partial void GetCurrentThread(ObjectHandleOnStack thread);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void Initialize();
+        private void Initialize()
+        {
+            Thread _this = this;
+            Initialize(ObjectHandleOnStack.Create(ref _this));
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Initialize")]
+        private static partial void Initialize(ObjectHandleOnStack thread);
 
         /// <summary>Clean up the thread when it goes away.</summary>
         ~Thread() => InternalFinalize(); // Delegate to the unmanaged portion.
@@ -165,7 +177,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void InternalFinalize();
 
-        partial void ThreadNameChanged(string? value)
+        private void ThreadNameChanged(string? value)
         {
             InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
             GC.KeepAlive(this);
@@ -175,11 +187,7 @@ namespace System.Threading
         private static partial void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
         /// <summary>Returns true if the thread has been started and is not dead.</summary>
-        public extern bool IsAlive
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
+        public bool IsAlive => (ThreadState & (ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0;
 
         /// <summary>
         /// Return whether or not this thread is a background thread.  Background
@@ -187,9 +195,24 @@ namespace System.Threading
         /// </summary>
         public bool IsBackground
         {
-            get => GetIsBackground();
+            get
+            {
+                if (_isDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+
+                Interop.BOOL res = GetIsBackground(GetNativeHandle());
+                GC.KeepAlive(this);
+                return res != Interop.BOOL.FALSE;
+            }
             set
             {
+                if (_isDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+
                 SetIsBackground(GetNativeHandle(), value ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
                 GC.KeepAlive(this);
                 if (!value)
@@ -199,19 +222,36 @@ namespace System.Threading
             }
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool GetIsBackground();
+        [SuppressGCTransition]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetIsBackground")]
+        private static partial Interop.BOOL GetIsBackground(ThreadHandle t);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetIsBackground")]
         private static partial void SetIsBackground(ThreadHandle t, Interop.BOOL value);
 
         /// <summary>Returns true if the thread is a threadpool thread.</summary>
-        public extern bool IsThreadPoolThread
+        public bool IsThreadPoolThread
         {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            internal set;
+            get
+            {
+                if (_isDead)
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+
+                return _isThreadPool;
+            }
+            internal set
+            {
+                Debug.Assert(value);
+                Debug.Assert(!_isDead);
+                Debug.Assert(((ThreadState & ThreadState.Unstarted) != 0)
+#if TARGET_WINDOWS
+                    || ThreadPool.UseWindowsThreadPool
+#endif
+                );
+                _isThreadPool = value;
+            }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetPriority")]
@@ -233,10 +273,7 @@ namespace System.Threading
             {
                 Thread _this = this;
                 SetPriority(ObjectHandleOnStack.Create(ref _this), (int)value);
-                if (value != ThreadPriority.Normal)
-                {
-                    _mayNeedResetForThreadPool = true;
-                }
+                _mayNeedResetForThreadPool = true;
             }
         }
 
@@ -247,10 +284,19 @@ namespace System.Threading
         /// Return the thread state as a consistent set of bits.  This is more
         /// general then IsAlive or IsBackground.
         /// </summary>
-        public ThreadState ThreadState => (ThreadState)GetThreadStateNative();
+        public ThreadState ThreadState
+        {
+            get
+            {
+                var state = (ThreadState)GetThreadState(GetNativeHandle());
+                GC.KeepAlive(this);
+                return state;
+            }
+        }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern int GetThreadStateNative();
+        [SuppressGCTransition]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetThreadState")]
+        private static partial int GetThreadState(ThreadHandle t);
 
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
@@ -327,6 +373,7 @@ namespace System.Threading
             GC.KeepAlive(this);
         }
 
+        [SuppressGCTransition]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_DisableComObjectEagerCleanup")]
         private static partial void DisableComObjectEagerCleanup(ThreadHandle t);
 #else // !FEATURE_COMINTEROP
@@ -383,6 +430,32 @@ namespace System.Threading
             get;
         }
 
+        private static class DirectOnThreadLocalData
+        {
+            // Special Thread Static variable which is always allocated at the address of the Thread variable in the ThreadLocalData of the current thread
+            [ThreadStatic]
+            public static IntPtr pNativeThread;
+        }
+
+        /// <summary>
+        /// Get the ThreadStaticBase used for this threads TLS data. This ends up being a pointer to the pNativeThread field on the ThreadLocalData,
+        /// which is at a well known offset from the start of the ThreadLocalData
+        /// </summary>
+        ///
+        /// <remarks>
+        /// We use BypassReadyToRunAttribute to ensure that this method is not compiled using ReadyToRun. This avoids an issue where we might
+        /// fail to use the JIT_GetNonGCThreadStaticBaseOptimized2 JIT helpers to access the field, which would result in a stack overflow, as accessing
+        /// this field would recursively call this method.
+        /// </remarks>
+        [System.Runtime.BypassReadyToRunAttribute]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DebuggerHidden]
+        [DebuggerStepThrough]
+        internal static unsafe StaticsHelpers.ThreadLocalData* GetThreadStaticsBase()
+        {
+            return (StaticsHelpers.ThreadLocalData*)(((byte*)Unsafe.AsPointer(ref DirectOnThreadLocalData.pNativeThread)) - sizeof(StaticsHelpers.ThreadLocalData));
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetFinalizerThread()
         {
@@ -419,5 +492,42 @@ namespace System.Threading
                 Priority = ThreadPriority.Highest;
             }
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern bool CatchAtSafePoint();
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
+        private static partial void PollGCInternal();
+
+        // GC Suspension is done by simply dropping into native code via p/invoke, and we reuse the p/invoke
+        // mechanism for suspension. On all architectures we should have the actual stub used for the check be implemented
+        // as a small assembly stub which checks the global g_TrapReturningThreads flag and tail-call to this helper
+        private static void PollGC()
+        {
+            if (CatchAtSafePoint())
+            {
+                PollGCWorker();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void PollGCWorker() => PollGCInternal();
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativeThreadClass
+        {
+            public NativeThreadState m_State;
+        }
+
+        private enum NativeThreadState
+        {
+            None                      = 0,
+            TS_AbortRequested         = 0x00000001,    // Abort the thread
+            TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
+            TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
+
+        // We require (and assert) that the following bits are less than 0x100.
+            TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
+        };
     }
 }

@@ -1437,7 +1437,6 @@ public static class Program
 	}
 #endregion
 
-
 #region PackedFloatEmptyByte_RiscVTests
 	[StructLayout(LayoutKind.Sequential, Pack=1)]
 	public struct PackedFloatEmptyByte
@@ -1580,6 +1579,655 @@ public static class Program
 
 		Assert.Equal(expected, native);
 		Assert.Equal(expected, managed);
+	}
+#endregion
+
+#region ShufflingThunks_RiscVTests
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ShufflingThunk_EmptyFloatEmpty5Byte_RiscV(
+		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6,
+		EmptyFloatEmpty5Byte stack0_stack1_to_fa7_a7,
+		int stack2_to_stack0, float fa7_to_stack1)
+	{
+		Assert.Equal(0, a1_to_a0);
+		Assert.Equal(1, a2_to_a1);
+		Assert.Equal(2, a3_to_a2);
+		Assert.Equal(3, a4_to_a3);
+		Assert.Equal(4, a5_to_a4);
+		Assert.Equal(5, a6_to_a5);
+		Assert.Equal(6, a7_to_a6);
+		Assert.Equal(0f, fa0);
+		Assert.Equal(1f, fa1);
+		Assert.Equal(2f, fa2);
+		Assert.Equal(3f, fa3);
+		Assert.Equal(4f, fa4);
+		Assert.Equal(5f, fa5);
+		Assert.Equal(6f, fa6);
+		Assert.Equal(EmptyFloatEmpty5Byte.Get(), stack0_stack1_to_fa7_a7);
+		Assert.Equal(7, stack2_to_stack0);
+		Assert.Equal(7f, fa7_to_stack1);
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_EmptyFloatEmpty5Byte_RiscV()
+	{
+		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> ShufflingThunk_EmptyFloatEmpty5Byte_RiscV;
+		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f,
+			EmptyFloatEmpty5Byte.Get(), 7, 7f);
+	}
+
+
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ShufflingThunk_EmptyFloatEmpty5Sbyte_Empty8Float_RiscV(
+		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6,
+		EmptyFloatEmpty5Sbyte stack0_stack1_to_fa7_a7,
+		int stack2_to_stack0,
+		Empty8Float fa7_to_stack1_stack2)
+	{
+		Assert.Equal(0, a1_to_a0);
+		Assert.Equal(1, a2_to_a1);
+		Assert.Equal(2, a3_to_a2);
+		Assert.Equal(3, a4_to_a3);
+		Assert.Equal(4, a5_to_a4);
+		Assert.Equal(5, a6_to_a5);
+		Assert.Equal(6, a7_to_a6);
+		Assert.Equal(0f, fa0);
+		Assert.Equal(1f, fa1);
+		Assert.Equal(2f, fa2);
+		Assert.Equal(3f, fa3);
+		Assert.Equal(4f, fa4);
+		Assert.Equal(5f, fa5);
+		Assert.Equal(6f, fa6);
+		Assert.Equal(EmptyFloatEmpty5Sbyte.Get(), stack0_stack1_to_fa7_a7);
+		Assert.Equal(7, stack2_to_stack0);
+		Assert.Equal(Empty8Float.Get(), fa7_to_stack1_stack2);
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_EmptyFloatEmpty5Sbyte_Empty8Float_RiscV()
+	{
+		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> ShufflingThunk_EmptyFloatEmpty5Sbyte_Empty8Float_RiscV;
+		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, 6f,
+			EmptyFloatEmpty5Sbyte.Get(), 7, Empty8Float.Get());
+	}
+
+
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ShufflingThunk_EmptyUshortAndDouble_FloatEmpty8Float_Empty8Float_RiscV(
+		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+		EmptyUshortAndDouble stack0_stack1_to_a7_fa6, // 1st lowering
+		FloatEmpty8Float fa6_fa7_to_stack0_stack1, // delowering
+		Empty8Float stack1_stack2_to_fa7, // 2nd lowering
+		int stack3_to_stack2)
+	{
+		Assert.Equal(0, a1_to_a0);
+		Assert.Equal(1, a2_to_a1);
+		Assert.Equal(2, a3_to_a2);
+		Assert.Equal(3, a4_to_a3);
+		Assert.Equal(4, a5_to_a4);
+		Assert.Equal(5, a6_to_a5);
+		Assert.Equal(6, a7_to_a6);
+		Assert.Equal(0f, fa0);
+		Assert.Equal(1f, fa1);
+		Assert.Equal(2f, fa2);
+		Assert.Equal(3f, fa3);
+		Assert.Equal(4f, fa4);
+		Assert.Equal(5f, fa5);
+		Assert.Equal(EmptyUshortAndDouble.Get(), stack0_stack1_to_a7_fa6);
+		Assert.Equal(FloatEmpty8Float.Get(), fa6_fa7_to_stack0_stack1);
+		Assert.Equal(Empty8Float.Get(), stack1_stack2_to_fa7);
+		Assert.Equal(7, stack3_to_stack2);
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_EmptyUshortAndDouble_FloatEmpty8Float_Empty8Float_RiscV()
+	{
+		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> ShufflingThunk_EmptyUshortAndDouble_FloatEmpty8Float_Empty8Float_RiscV;
+		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
+			EmptyUshortAndDouble.Get(), FloatEmpty8Float.Get(), Empty8Float.Get(), 7);
+	}
+
+
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_Float_RiscV(
+		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+		FloatEmptyShort stack0_to_fa6_a7, // frees 1 stack slot
+		int stack1_to_stack0,
+		DoubleFloatNestedEmpty fa6_fa7_to_stack1_stack2, // takes 2 stack slots
+		int stack2_to_stack3, // shuffle stack slots to the right
+		int stack3_to_stack4,
+		Empty8Float stack4_stack5_to_fa7, // frees 2 stack slots
+		int stack6_to_stack5, // shuffle stack slots to the left
+		int stack7_to_stack6)
+	{
+		Assert.Equal(0, a1_to_a0);
+		Assert.Equal(1, a2_to_a1);
+		Assert.Equal(2, a3_to_a2);
+		Assert.Equal(3, a4_to_a3);
+		Assert.Equal(4, a5_to_a4);
+		Assert.Equal(5, a6_to_a5);
+		Assert.Equal(6, a7_to_a6);
+		Assert.Equal(0f, fa0);
+		Assert.Equal(1f, fa1);
+		Assert.Equal(2f, fa2);
+		Assert.Equal(3f, fa3);
+		Assert.Equal(4f, fa4);
+		Assert.Equal(5f, fa5);
+		Assert.Equal(FloatEmptyShort.Get(), stack0_to_fa6_a7);
+		Assert.Equal(7, stack1_to_stack0);
+		Assert.Equal(DoubleFloatNestedEmpty.Get(), fa6_fa7_to_stack1_stack2);
+		Assert.Equal(8, stack2_to_stack3);
+		Assert.Equal(9, stack3_to_stack4);
+		Assert.Equal(Empty8Float.Get(), stack4_stack5_to_fa7);
+		Assert.Equal(10, stack6_to_stack5);
+		Assert.Equal(11, stack7_to_stack6);
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_Float_RiscV()
+	{
+		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_Float_RiscV;
+		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
+			FloatEmptyShort.Get(), 7, DoubleFloatNestedEmpty.Get(), 8, 9, Empty8Float.Get(), 10, 11);
+	}
+
+
+
+	public struct FloatFloat
+	{
+		public float Float0;
+		public float Float1;
+
+		public static FloatFloat Get()
+			=> new FloatFloat { Float0 = 2.71828f, Float1 = 1.61803f };
+
+		public override bool Equals(object other)
+			=> other is FloatFloat o && Float0 == o.Float0 && Float1 == o.Float1;
+
+		public override string ToString()
+			=> $"{{Float0:{Float0}, Float1:{Float1}}}";
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ShufflingThunk_PackedEmptyFloatLong_FloatFloat_RiscV(
+		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+		PackedEmptyFloatLong stack0_stack1_to_fa7_a7,
+		int stack2_to_stack0,
+		FloatFloat fa6_fa7_to_stack1)
+	{
+		Assert.Equal(0, a1_to_a0);
+		Assert.Equal(1, a2_to_a1);
+		Assert.Equal(2, a3_to_a2);
+		Assert.Equal(3, a4_to_a3);
+		Assert.Equal(4, a5_to_a4);
+		Assert.Equal(5, a6_to_a5);
+		Assert.Equal(6, a7_to_a6);
+		Assert.Equal(0f, fa0);
+		Assert.Equal(1f, fa1);
+		Assert.Equal(2f, fa2);
+		Assert.Equal(3f, fa3);
+		Assert.Equal(4f, fa4);
+		Assert.Equal(5f, fa5);
+		Assert.Equal(PackedEmptyFloatLong.Get(), stack0_stack1_to_fa7_a7);
+		Assert.Equal(7, stack2_to_stack0);
+		Assert.Equal(FloatFloat.Get(), fa6_fa7_to_stack1);
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_PackedEmptyFloatLong_FloatFloat_RiscV()
+	{
+		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> ShufflingThunk_PackedEmptyFloatLong_FloatFloat_RiscV;
+		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
+			PackedEmptyFloatLong.Get(), 7, FloatFloat.Get());
+	}
+
+
+
+	[StructLayout(LayoutKind.Sequential, Pack=1)]
+	public struct PackedEmptyUintEmptyFloat
+	{
+		public Empty Empty0;
+		public uint Uint0;
+		public Empty Empty1;
+		public float Float0;
+
+		public static PackedEmptyUintEmptyFloat Get()
+			=> new PackedEmptyUintEmptyFloat { Uint0 = 0xB1ed0c1e, Float0 = 2.71828f };
+
+		public override bool Equals(object other)
+			=> other is PackedEmptyUintEmptyFloat o && Uint0 == o.Uint0 && Float0 == o.Float0;
+
+		public override string ToString()
+			=> $"{{Uint0:{Uint0}, Float0:{Float0}}}";
+	}
+
+	[StructLayout(LayoutKind.Sequential, Pack=1)]
+	public struct PackedEmptyDouble
+	{
+		public Empty Empty0;
+		public double Double0;
+
+		public static PackedEmptyDouble Get()
+			=> new PackedEmptyDouble { Double0 = 1.61803 };
+
+		public override bool Equals(object other)
+			=> other is PackedEmptyDouble o && Double0 == o.Double0;
+
+		public override string ToString()
+			=> $"{{Double0:{Double0}}}";
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ShufflingThunk_PackedEmptyUintEmptyFloat_PackedEmptyDouble(
+		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		float fa0, float fa1,
+		PackedEmptyUintEmptyFloat stack0_stack1_to_a7_fa2,
+		float fa2_to_fa3, float fa3_to_fa4, float fa4_to_fa5,
+		int stack2_to_stack0,
+		float fa5_to_fa6, float fa6_to_fa7,
+		PackedEmptyDouble fa7_to_stack1_stack2)
+	{
+		Assert.Equal(0, a1_to_a0);
+		Assert.Equal(1, a2_to_a1);
+		Assert.Equal(2, a3_to_a2);
+		Assert.Equal(3, a4_to_a3);
+		Assert.Equal(4, a5_to_a4);
+		Assert.Equal(5, a6_to_a5);
+		Assert.Equal(6, a7_to_a6);
+		Assert.Equal(0f, fa0);
+		Assert.Equal(1f, fa1);
+		Assert.Equal(PackedEmptyUintEmptyFloat.Get(), stack0_stack1_to_a7_fa2);
+		Assert.Equal(2f, fa2_to_fa3);
+		Assert.Equal(3f, fa3_to_fa4);
+		Assert.Equal(4f, fa4_to_fa5);
+		Assert.Equal(7, stack2_to_stack0);
+		Assert.Equal(5f, fa5_to_fa6);
+		Assert.Equal(6f, fa6_to_fa7);
+		Assert.Equal(PackedEmptyDouble.Get(), fa7_to_stack1_stack2);
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_PackedEmptyUintEmptyFloat_PackedEmptyDouble()
+	{
+		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> ShufflingThunk_PackedEmptyUintEmptyFloat_PackedEmptyDouble;
+		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f,
+			PackedEmptyUintEmptyFloat.Get(), 2f, 3f, 4f, 7, 5f, 6f, PackedEmptyDouble.Get());
+	}
+
+
+
+	public struct FloatFloatEmpty
+	{
+		public FloatFloat FloatFloat0;
+		public Empty Empty0;
+
+		public static FloatFloatEmpty Get()
+			=> new FloatFloatEmpty { FloatFloat0 = FloatFloat.Get() };
+
+		public override bool Equals(object other)
+			=> other is FloatFloatEmpty o && FloatFloat0.Equals(o.FloatFloat0);
+
+		public override string ToString()
+			=> $"{{FloatFloat0:{FloatFloat0}}}";
+	}
+
+	public struct FloatEmpty8
+	{
+		public float Float0;
+		public Eight<Empty> EightEmpty0;
+
+		public static FloatEmpty8 Get()
+			=> new FloatEmpty8 { Float0 = 2.71828f };
+
+		public override bool Equals(object other)
+			=> other is FloatEmpty8 o && Float0 == o.Float0;
+
+		public override string ToString()
+			=> $"{{Float0:{Float0}}}";
+	}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ShufflingThunk_FloatEmptyShort_FloatFloatEmpty_FloatEmpty8(
+		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+		FloatEmptyShort stack0_to_fa6_a7, // frees 1 stack slot
+		int stack1_to_stack0,
+		FloatFloatEmpty fa6_fa7_to_stack1_stack2, // takes 2 stack slots
+		int stack2_to_stack3, // shuffle stack slots to the right
+		int stack3_to_stack4,
+		FloatEmpty8 stack4_stack5_to_fa7, // frees 2 stack slots
+		int stack6_to_stack5, // shuffle stack slots to the left
+		int stack7_to_stack6)
+	{
+		Assert.Equal(0, a1_to_a0);
+		Assert.Equal(1, a2_to_a1);
+		Assert.Equal(2, a3_to_a2);
+		Assert.Equal(3, a4_to_a3);
+		Assert.Equal(4, a5_to_a4);
+		Assert.Equal(5, a6_to_a5);
+		Assert.Equal(6, a7_to_a6);
+		Assert.Equal(0f, fa0);
+		Assert.Equal(1f, fa1);
+		Assert.Equal(2f, fa2);
+		Assert.Equal(3f, fa3);
+		Assert.Equal(4f, fa4);
+		Assert.Equal(5f, fa5);
+		Assert.Equal(FloatEmptyShort.Get(), stack0_to_fa6_a7);
+		Assert.Equal(7, stack1_to_stack0);
+		Assert.Equal(FloatFloatEmpty.Get(), fa6_fa7_to_stack1_stack2);
+		Assert.Equal(8, stack2_to_stack3);
+		Assert.Equal(9, stack3_to_stack4);
+		Assert.Equal(FloatEmpty8.Get(), stack4_stack5_to_fa7);
+		Assert.Equal(10, stack6_to_stack5);
+		Assert.Equal(11, stack7_to_stack6);
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_FloatEmptyShort_FloatFloatEmpty_FloatEmpty8()
+	{
+		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> ShufflingThunk_FloatEmptyShort_FloatFloatEmpty_FloatEmpty8;
+		getDelegate()(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
+			FloatEmptyShort.Get(), 7, FloatFloatEmpty.Get(), 8, 9, FloatEmpty8.Get(), 10, 11);
+	}
+
+
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static DoubleFloatNestedEmpty ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_RiscV(
+		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+		FloatEmptyShort stack0_to_fa6_a7, // frees 1 stack slot
+		int stack1_to_stack0,
+		DoubleFloatNestedEmpty fa6_fa7_to_stack1_stack2, // takes 2 stack slots
+		int stack2_to_stack3, // shuffle stack slots to the right
+		int stack3_to_stack4) // shuffling thunk must grow the stack
+	{
+		Assert.Equal(0, a1_to_a0);
+		Assert.Equal(1, a2_to_a1);
+		Assert.Equal(2, a3_to_a2);
+		Assert.Equal(3, a4_to_a3);
+		Assert.Equal(4, a5_to_a4);
+		Assert.Equal(5, a6_to_a5);
+		Assert.Equal(6, a7_to_a6);
+		Assert.Equal(0f, fa0);
+		Assert.Equal(1f, fa1);
+		Assert.Equal(2f, fa2);
+		Assert.Equal(3f, fa3);
+		Assert.Equal(4f, fa4);
+		Assert.Equal(5f, fa5);
+		Assert.Equal(FloatEmptyShort.Get(), stack0_to_fa6_a7);
+		Assert.Equal(7, stack1_to_stack0);
+		Assert.Equal(DoubleFloatNestedEmpty.Get(), fa6_fa7_to_stack1_stack2);
+		Assert.Equal(8, stack2_to_stack3);
+		Assert.Equal(9, stack3_to_stack4);
+		return fa6_fa7_to_stack1_stack2;
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_RiscV()
+	{
+		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> ShufflingThunk_FloatEmptyShort_DoubleFloatNestedEmpty_RiscV;
+		var delegat = getDelegate();
+		Span<int> stackBeforeCall = stackalloc[] {11, 22, 33, 44};
+		DoubleFloatNestedEmpty ret = delegat(0, 1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f,
+			FloatEmptyShort.Get(), 7, DoubleFloatNestedEmpty.Get(), 8, 9);
+		Assert.Equal([11, 22, 33, 44], stackBeforeCall);
+		Assert.Equal(DoubleFloatNestedEmpty.Get(), ret);
+	}
+
+
+	class EverythingIsFineException : Exception {}
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	private static void ShufflingThunk_FloatEmptyShort_Empty8Float_RiscV(
+		int a1_to_a0, int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+		float fa0,
+		FloatEmptyShort stack0_to_fa1_a7, // frees 1 stack slot
+		double fa1_to_fa2,
+		double fa2_to_fa3,
+		byte  stack1_to_stack0,
+		short stack2_to_stack1,
+		double fa3_to_fa4,
+		float  fa4_to_fa5,
+		int   stack3_to_stack2,
+		float fa5_to_fa6,
+		double fa6_to_fa7,
+		long stack4_to_stack3,
+		Empty8Float fa7_to_stack4_stack5) // takes 2 stack slots, shuffling thunk must grow the stack
+	{
+		Assert.Equal(0, a1_to_a0);
+		Assert.Equal(1, a2_to_a1);
+		Assert.Equal(2, a3_to_a2);
+		Assert.Equal(3, a4_to_a3);
+		Assert.Equal(4, a5_to_a4);
+		Assert.Equal(5, a6_to_a5);
+		Assert.Equal(6, a7_to_a6);
+		Assert.Equal(0f, fa0);
+		Assert.Equal(FloatEmptyShort.Get(), stack0_to_fa1_a7);
+		Assert.Equal(1d, fa1_to_fa2);
+		Assert.Equal(2d, fa2_to_fa3);
+		Assert.Equal(7,  stack1_to_stack0);
+		Assert.Equal(8,  stack2_to_stack1);
+		Assert.Equal(3d, fa3_to_fa4);
+		Assert.Equal(4f, fa4_to_fa5);
+		Assert.Equal(9,  stack3_to_stack2);
+		Assert.Equal(5f, fa5_to_fa6);
+		Assert.Equal(6d, fa6_to_fa7);
+		Assert.Equal(10, stack4_to_stack3);
+		Assert.Equal(Empty8Float.Get(), fa7_to_stack4_stack5);
+		throw new EverythingIsFineException(); // see if we can walk out of the stack frame laid by the shuffle thunk
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_FloatEmptyShort_Empty8Float_RiscV()
+	{
+		var getDelegate = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> ShufflingThunk_FloatEmptyShort_Empty8Float_RiscV;
+		var delegat = getDelegate();
+		Assert.Throws<EverythingIsFineException>(() =>
+			delegat(0, 1, 2, 3, 4, 5, 6, 0f,
+				FloatEmptyShort.Get(), 1d, 2d, 7, 8, 3d, 4f, 9, 5f, 6d, 10, Empty8Float.Get())
+		);
+	}
+
+
+
+	public struct UintFloat
+	{
+		public uint Uint0;
+		public float Float0;
+
+		public static UintFloat Get()
+			=> new UintFloat { Uint0 = 0xB1ed0c1e, Float0 = 2.71828f };
+
+		public override bool Equals(object other)
+			=> other is UintFloat o && Uint0 == o.Uint0 && Float0 == o.Float0;
+
+		public override string ToString()
+			=> $"{{Uint0:{Uint0}, Float0:{Float0}}}";
+	}
+
+	public struct LongDoubleInt
+	{
+		public long Long0;
+		public double Double0;
+		public int Int0;
+
+		public static LongDoubleInt Get()
+			=> new LongDoubleInt { Long0 = 0xDadAddedC0ffee, Double0 = 3.14159, Int0 = 0xBabc1a };
+
+		public override bool Equals(object other)
+			=> other is LongDoubleInt o && Long0 == o.Long0 && Double0 == o.Double0 && Int0 == o.Int0;
+
+		public override string ToString()
+			=> $"{{Long:{Long0}, Double0:{Double0}, Int0:{Int0}}}";
+	}
+
+	class ShufflingThunk_MemberGrowsStack_RiscV
+	{
+		public static ShufflingThunk_MemberGrowsStack_RiscV TestInstance =
+			new ShufflingThunk_MemberGrowsStack_RiscV();
+
+		public delegate FloatEmpty8Float TestDelegate(
+			ShufflingThunk_MemberGrowsStack_RiscV _this,
+			int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1); // takes 2 stack slots, shuffling thunk must grow the stack
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		public FloatEmpty8Float TestMethod(
+			int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1) // takes 2 stack slots, shuffling thunk must grow the stack
+		{
+			return StaticTestMethod(this,
+				a2_to_a1, a3_to_a2, a4_to_a3, a5_to_a4, a6_to_a5, a7_to_a6,
+				fa0, fa1, fa2, fa3, fa4, fa5,
+				stack0_to_a7_fa6,
+				fa6_fa7_to_stack0_stack1);
+		}
+
+		public static FloatEmpty8Float StaticTestMethod(
+			ShufflingThunk_MemberGrowsStack_RiscV _this,
+			int a2_to_a1, int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1) // takes 2 stack slots, shuffling thunk must grow the stack
+		{
+			Assert.Equal(TestInstance, _this);
+			Assert.Equal(1, a2_to_a1);
+			Assert.Equal(2, a3_to_a2);
+			Assert.Equal(3, a4_to_a3);
+			Assert.Equal(4, a5_to_a4);
+			Assert.Equal(5, a6_to_a5);
+			Assert.Equal(6, a7_to_a6);
+			Assert.Equal(0f, fa0);
+			Assert.Equal(1f, fa1);
+			Assert.Equal(2f, fa2);
+			Assert.Equal(3f, fa3);
+			Assert.Equal(4f, fa4);
+			Assert.Equal(5f, fa5);
+			Assert.Equal(UintFloat.Get(), stack0_to_a7_fa6);
+			Assert.Equal(DoubleFloatNestedEmpty.Get(), fa6_fa7_to_stack0_stack1);
+			return FloatEmpty8Float.Get();
+		}
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_MemberGrowsStack_RiscV()
+	{
+		var delegat = (ShufflingThunk_MemberGrowsStack_RiscV.TestDelegate)Delegate.CreateDelegate(
+			typeof(ShufflingThunk_MemberGrowsStack_RiscV.TestDelegate), null,
+			typeof(ShufflingThunk_MemberGrowsStack_RiscV).GetMethod(
+				nameof(ShufflingThunk_MemberGrowsStack_RiscV.TestMethod))
+		);
+		FloatEmpty8Float ret = delegat(ShufflingThunk_MemberGrowsStack_RiscV.TestInstance,
+			1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, UintFloat.Get(), DoubleFloatNestedEmpty.Get());
+		Assert.Equal(FloatEmpty8Float.Get(), ret);
+
+		var getStaticMethod = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> (ShufflingThunk_MemberGrowsStack_RiscV.TestDelegate)
+				ShufflingThunk_MemberGrowsStack_RiscV.StaticTestMethod;
+		delegat = getStaticMethod();
+		ret = delegat(ShufflingThunk_MemberGrowsStack_RiscV.TestInstance,
+			1, 2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, UintFloat.Get(), DoubleFloatNestedEmpty.Get());
+		Assert.Equal(FloatEmpty8Float.Get(), ret);
+	}
+
+
+
+	class ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV
+	{
+		public static ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV TestInstance =
+			new ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV();
+
+		public delegate LongDoubleInt TestDelegate(
+			ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV _this,
+			// ReturnBuffer* a2_to_a0
+			int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1); // takes 2 stack slots, shuffling thunk must grow the stack
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		public LongDoubleInt TestMethod(
+			// ReturnBuffer* a2_to_a0
+			int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1) // takes 2 stack slots, shuffling thunk must grow the stack
+		{
+			return StaticTestMethod(this,
+				a3_to_a2, a4_to_a3, a5_to_a4, a6_to_a5, a7_to_a6,
+				fa0, fa1, fa2, fa3, fa4, fa5,
+				stack0_to_a7_fa6,
+				fa6_fa7_to_stack0_stack1);
+		}
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		public static LongDoubleInt StaticTestMethod(
+			ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV _this,
+			// ReturnBuffer* a2_to_a0
+			int a3_to_a2, int a4_to_a3, int a5_to_a4, int a6_to_a5, int a7_to_a6,
+			float fa0, float fa1, float fa2, float fa3, float fa4, float fa5,
+			UintFloat stack0_to_a7_fa6, // frees 1 stack slot
+			DoubleFloatNestedEmpty fa6_fa7_to_stack0_stack1) // takes 2 stack slots, shuffling thunk must grow the stack
+		{
+			Assert.Equal(TestInstance, _this);
+			Assert.Equal(2, a3_to_a2);
+			Assert.Equal(3, a4_to_a3);
+			Assert.Equal(4, a5_to_a4);
+			Assert.Equal(5, a6_to_a5);
+			Assert.Equal(6, a7_to_a6);
+			Assert.Equal(0f, fa0);
+			Assert.Equal(1f, fa1);
+			Assert.Equal(2f, fa2);
+			Assert.Equal(3f, fa3);
+			Assert.Equal(4f, fa4);
+			Assert.Equal(5f, fa5);
+			Assert.Equal(UintFloat.Get(), stack0_to_a7_fa6);
+			Assert.Equal(DoubleFloatNestedEmpty.Get(), fa6_fa7_to_stack0_stack1);
+			return LongDoubleInt.Get(); // via return buffer
+		}
+	}
+
+	[Fact]
+	public static void Test_ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV()
+	{
+		var delegat = (ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestDelegate)Delegate.CreateDelegate(
+			typeof(ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestDelegate), null,
+			typeof(ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV).GetMethod(
+				nameof(ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestMethod))
+		);
+		LongDoubleInt ret = delegat(ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestInstance,
+			2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, UintFloat.Get(), DoubleFloatNestedEmpty.Get());
+		Assert.Equal(LongDoubleInt.Get(), ret);
+
+		var getStaticMethod = [MethodImpl(MethodImplOptions.NoOptimization)] ()
+			=> (ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestDelegate)
+				ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.StaticTestMethod;
+		delegat = getStaticMethod();
+		ret = delegat(ShufflingThunk_MemberGrowsStack_ReturnBuffer_RiscV.TestInstance,
+			2, 3, 4, 5, 6, 0f, 1f, 2f, 3f, 4f, 5f, UintFloat.Get(), DoubleFloatNestedEmpty.Get());
+		Assert.Equal(LongDoubleInt.Get(), ret);
 	}
 #endregion
 }

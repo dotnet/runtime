@@ -9,6 +9,8 @@
 #include <corjit.h>   // for CORJIT_INTERNALERROR
 #include <safemath.h> // For FitsIn, used by SafeCvt methods.
 
+#include <minipal/debugger.h>
+
 #define FATAL_JIT_EXCEPTION 0x02345678
 class Compiler;
 
@@ -165,6 +167,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
+#define NYI_WASM(msg) do { } while (0)
 
 #elif defined(TARGET_X86)
 
@@ -174,6 +177,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
+#define NYI_WASM(msg) do { } while (0)
 
 #elif defined(TARGET_ARM)
 
@@ -183,6 +187,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
+#define NYI_WASM(msg) do { } while (0)
 
 #elif defined(TARGET_ARM64)
 
@@ -192,6 +197,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  NYIRAW("NYI_ARM64: " msg)
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) do { } while (0)
+#define NYI_WASM(msg) do { } while (0)
 
 #elif defined(TARGET_LOONGARCH64)
 #define NYI_AMD64(msg)  do { } while (0)
@@ -200,6 +206,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) NYIRAW("NYI_LOONGARCH64: " msg)
 #define NYI_RISCV64(msg) do { } while (0)
+#define NYI_WASM(msg) do { } while (0)
 
 #elif defined(TARGET_RISCV64)
 #define NYI_AMD64(msg)  do { } while (0)
@@ -208,6 +215,16 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_ARM64(msg)  do { } while (0)
 #define NYI_LOONGARCH64(msg) do { } while (0)
 #define NYI_RISCV64(msg) NYIRAW("NYI_RISCV64: " msg)
+#define NYI_WASM(msg) do { } while (0)
+
+#elif defined(TARGET_WASM)
+#define NYI_AMD64(msg)  do { } while (0)
+#define NYI_X86(msg)    do { } while (0)
+#define NYI_ARM(msg)    do { } while (0)
+#define NYI_ARM64(msg)  do { } while (0)
+#define NYI_LOONGARCH64(msg) do { } while (0)
+#define NYI_RISCV64(msg) do { } while (0)
+#define NYI_WASM(msg) NYIRAW("NYI_WASM: " msg)
 
 #else
 
@@ -247,7 +264,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define BreakIfDebuggerPresent()                                                                                       \
     do                                                                                                                 \
     {                                                                                                                  \
-        if (IsDebuggerPresent())                                                                                       \
+        if (minipal_is_native_debugger_present())                                                                      \
             DebugBreak();                                                                                              \
     } while (0)
 #endif

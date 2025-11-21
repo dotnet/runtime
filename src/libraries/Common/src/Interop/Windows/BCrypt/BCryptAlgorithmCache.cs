@@ -17,7 +17,7 @@ internal static partial class Interop
             /// <summary>
             /// Returns a SafeBCryptAlgorithmHandle of the desired algorithm and flags. This is a shared handle so do not dispose it!
             /// </summary>
-            public static unsafe SafeBCryptAlgorithmHandle GetCachedBCryptAlgorithmHandle(string hashAlgorithmId, BCryptOpenAlgorithmProviderFlags flags, out int hashSizeInBytes)
+            public static SafeBCryptAlgorithmHandle GetCachedBCryptAlgorithmHandle(string hashAlgorithmId, BCryptOpenAlgorithmProviderFlags flags, out int hashSizeInBytes)
             {
                 var key = (hashAlgorithmId, flags);
 
@@ -44,7 +44,7 @@ internal static partial class Interop
                 }
             }
 
-            public static unsafe bool IsBCryptAlgorithmSupported(string hashAlgorithmId, BCryptOpenAlgorithmProviderFlags flags)
+            public static bool IsBCryptAlgorithmSupported(string hashAlgorithmId, BCryptOpenAlgorithmProviderFlags flags)
             {
                 var key = (hashAlgorithmId, flags);
 

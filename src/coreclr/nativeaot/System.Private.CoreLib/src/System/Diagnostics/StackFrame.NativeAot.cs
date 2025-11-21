@@ -69,7 +69,7 @@ namespace System.Diagnostics
 
             IntPtr methodStartAddress = _ipAddress - _nativeOffset;
             Debug.Assert(RuntimeImports.RhFindMethodStartAddress(_ipAddress) == methodStartAddress);
-            _method = ReflectionAugments.ReflectionCoreCallbacks.GetMethodBaseFromStartAddressIfAvailable(methodStartAddress);
+            _method = ReflectionAugments.GetMethodBaseFromStartAddressIfAvailable(methodStartAddress);
             if (_method == null)
             {
                 _noMethodBaseAvailable = true;

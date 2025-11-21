@@ -20,12 +20,6 @@
 // GC mode like a normal P/Invoke. These two features should make QCalls easier to write reliably compared to FCalls.
 // QCalls are not prone to GC holes and GC starvation bugs that are common with FCalls.
 //
-// QCalls perform better compared to FCalls w/ HelperMethodFrame. The QCall overhead is about 1.4x less compared to
-// FCall w/ HelperMethodFrame overhead on x86. The performance is about the same on x64. However, the implementation
-// of P/Invoke marshaling on x64 is not tuned for performance yet. The QCalls should become significantly faster compared
-// to FCalls w/ HelperMethodFrame on x64 as we do performance tuning of P/Invoke marshaling on x64.
-//
-//
 // The preferred type of QCall arguments is primitive types that efficiently handled by the P/Invoke marshaler (INT32, LPCWSTR, BOOL).
 // (Notice that BOOL is the correct boolean flavor for QCall arguments. FC_BOOL_ARG is the correct boolean flavor for FCall arguments.)
 //
@@ -129,8 +123,8 @@
     MODE_PREEMPTIVE;            \
 
 #define QCALL_CHECK_NO_GC_TRANSITION    \
-    THROWS;                             \
-    GC_TRIGGERS;                        \
+    NOTHROW;                            \
+    GC_NOTRIGGER;                       \
     MODE_COOPERATIVE;                   \
 
 #define QCALL_CONTRACT CONTRACTL { QCALL_CHECK; } CONTRACTL_END;
@@ -228,6 +222,38 @@ public:
        // such as OBJECTREF *. While such things are correct, our debug checking logic is unable to verify that
        // the object reference is actually protected from access and therefore will assert.
 
+#endif // !DACCESS_COMPILE
+    };
+
+    //
+    // ByteRefOnStack type is used for returning on stack byref to byte.
+    //
+    struct ByteRefOnStack final
+    {
+        struct ByteRef
+        {
+            BYTE* m_pByte;
+        };
+
+        ByteRef* m_pByteRef;
+
+#ifndef DACCESS_COMPILE
+        void Set(BYTE* data)
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_COOPERATIVE;
+                PRECONDITION(m_pByteRef != NULL);
+            }
+            CONTRACTL_END;
+
+            // The space for the return value has to be on the stack
+            _ASSERTE(Thread::IsAddressInCurrentStack(m_pByteRef));
+
+            m_pByteRef->m_pByte = data;
+        }
 #endif // !DACCESS_COMPILE
     };
 

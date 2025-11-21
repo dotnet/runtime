@@ -10,9 +10,8 @@ namespace System.SpanTests
         [Fact]
         public static void ZeroLengthLastIndexOfAny_TwoByte()
         {
-            var sp = new ReadOnlySpan<int>(Array.Empty<int>());
-            int idx = sp.LastIndexOfAny(0, 0);
-            Assert.Equal(-1, idx);
+            Assert.Equal(-1, new ReadOnlySpan<int>(Array.Empty<int>()).LastIndexOfAny(0, 0));
+            Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(Array.Empty<int>()).LastIndexOfAny(0, 0, comparer)));
         }
 
         [Fact]
@@ -23,7 +22,6 @@ namespace System.SpanTests
             for (int length = 0; length < byte.MaxValue; length++)
             {
                 var a = new int[length];
-                var span = new ReadOnlySpan<int>(a);
 
                 int[] targets = { default, 99 };
 
@@ -32,8 +30,10 @@ namespace System.SpanTests
                     int index = rnd.Next(0, 2) == 0 ? 0 : 1;
                     int target0 = targets[index];
                     int target1 = targets[(index + 1) % 2];
-                    int idx = span.LastIndexOfAny(target0, target1);
-                    Assert.Equal(span.Length - 1, idx);
+
+                    Assert.Equal(a.Length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(a.Length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, GetFalseEqualityComparer<int>()));
                 }
             }
         }
@@ -48,30 +48,35 @@ namespace System.SpanTests
                 {
                     a[i] = i + 1;
                 }
-                var span = new ReadOnlySpan<int>(a);
 
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
                     int target0 = a[targetIndex];
                     int target1 = 0;
-                    int idx = span.LastIndexOfAny(target0, target1);
-                    Assert.Equal(targetIndex, idx);
+
+                    Assert.Equal(targetIndex, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(targetIndex, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, GetFalseEqualityComparer<int>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 1; targetIndex++)
                 {
                     int target0 = a[targetIndex];
                     int target1 = a[targetIndex + 1];
-                    int idx = span.LastIndexOfAny(target0, target1);
-                    Assert.Equal(targetIndex + 1, idx);
+
+                    Assert.Equal(targetIndex + 1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(targetIndex + 1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, GetFalseEqualityComparer<int>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 1; targetIndex++)
                 {
                     int target0 = 0;
                     int target1 = a[targetIndex + 1];
-                    int idx = span.LastIndexOfAny(target0, target1);
-                    Assert.Equal(targetIndex + 1, idx);
+
+                    Assert.Equal(targetIndex + 1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(targetIndex + 1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, GetFalseEqualityComparer<int>()));
                 }
             }
         }
@@ -85,10 +90,9 @@ namespace System.SpanTests
                 var a = new int[length];
                 int target0 = rnd.Next(1, 256);
                 int target1 = rnd.Next(1, 256);
-                var span = new ReadOnlySpan<int>(a);
 
-                int idx = span.LastIndexOfAny(target0, target1);
-                Assert.Equal(-1, idx);
+                Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, comparer)));
             }
         }
 
@@ -108,9 +112,9 @@ namespace System.SpanTests
                 a[length - 2] = 200;
                 a[length - 3] = 200;
 
-                var span = new ReadOnlySpan<int>(a);
-                int idx = span.LastIndexOfAny(200, 200);
-                Assert.Equal(length - 1, idx);
+                Assert.Equal(length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(200, 200));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(200, 200, comparer)));
+                Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(200, 200, GetFalseEqualityComparer<int>()));
             }
         }
 
@@ -122,9 +126,9 @@ namespace System.SpanTests
                 var a = new int[length + 2];
                 a[0] = 99;
                 a[length + 1] = 98;
-                var span = new ReadOnlySpan<int>(a, 1, length - 1);
-                int index = span.LastIndexOfAny(99, 98);
-                Assert.Equal(-1, index);
+
+                Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(99, 98));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(99, 98, comparer)));
             }
 
             for (int length = 1; length < byte.MaxValue; length++)
@@ -132,18 +136,17 @@ namespace System.SpanTests
                 var a = new int[length + 2];
                 a[0] = 99;
                 a[length + 1] = 99;
-                var span = new ReadOnlySpan<int>(a, 1, length - 1);
-                int index = span.LastIndexOfAny(99, 99);
-                Assert.Equal(-1, index);
+
+                Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(99, 99));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(99, 99, comparer)));
             }
         }
 
         [Fact]
         public static void ZeroLengthIndexOf_ThreeByte()
         {
-            var sp = new ReadOnlySpan<int>(Array.Empty<int>());
-            int idx = sp.LastIndexOfAny(0, 0, 0);
-            Assert.Equal(-1, idx);
+            Assert.Equal(-1, new ReadOnlySpan<int>(Array.Empty<int>()).LastIndexOfAny(0, 0, 0));
+            Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(Array.Empty<int>()).LastIndexOfAny(0, 0, 0, comparer)));
         }
 
         [Fact]
@@ -154,7 +157,6 @@ namespace System.SpanTests
             for (int length = 0; length < byte.MaxValue; length++)
             {
                 var a = new int[length];
-                var span = new ReadOnlySpan<int>(a);
 
                 int[] targets = { default, 99, 98 };
 
@@ -164,8 +166,10 @@ namespace System.SpanTests
                     int target0 = targets[index];
                     int target1 = targets[(index + 1) % 2];
                     int target2 = targets[(index + 1) % 3];
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
-                    Assert.Equal(span.Length - 1, idx);
+
+                    Assert.Equal(a.Length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(a.Length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2, GetFalseEqualityComparer<int>()));
                 }
             }
         }
@@ -180,15 +184,16 @@ namespace System.SpanTests
                 {
                     a[i] = i + 1;
                 }
-                var span = new ReadOnlySpan<int>(a);
 
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
                     int target0 = a[targetIndex];
                     int target1 = 0;
                     int target2 = 0;
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
-                    Assert.Equal(targetIndex, idx);
+
+                    Assert.Equal(targetIndex, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(targetIndex, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2, GetFalseEqualityComparer<int>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 2; targetIndex++)
@@ -196,8 +201,10 @@ namespace System.SpanTests
                     int target0 = a[targetIndex];
                     int target1 = a[targetIndex + 1];
                     int target2 = a[targetIndex + 2];
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
-                    Assert.Equal(targetIndex + 2, idx);
+
+                    Assert.Equal(targetIndex + 2, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(targetIndex + 2, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2, GetFalseEqualityComparer<int>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 2; targetIndex++)
@@ -205,8 +212,10 @@ namespace System.SpanTests
                     int target0 = 0;
                     int target1 = 0;
                     int target2 = a[targetIndex + 2];
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
-                    Assert.Equal(targetIndex + 2, idx);
+
+                    Assert.Equal(targetIndex + 2, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(targetIndex + 2, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2, GetFalseEqualityComparer<int>()));
                 }
             }
         }
@@ -221,10 +230,9 @@ namespace System.SpanTests
                 int target0 = rnd.Next(1, 256);
                 int target1 = rnd.Next(1, 256);
                 int target2 = rnd.Next(1, 256);
-                var span = new ReadOnlySpan<int>(a);
 
-                int idx = span.LastIndexOfAny(target0, target1, target2);
-                Assert.Equal(-1, idx);
+                Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(target0, target1, target2, comparer)));
             }
         }
 
@@ -245,9 +253,9 @@ namespace System.SpanTests
                 a[length - 3] = 200;
                 a[length - 4] = 200;
 
-                var span = new ReadOnlySpan<int>(a);
-                int idx = span.LastIndexOfAny(200, 200, 200);
-                Assert.Equal(length - 1, idx);
+                Assert.Equal(length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(200, 200, 200));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(200, 200, 200, comparer)));
+                Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(200, 200, 200, GetFalseEqualityComparer<int>()));
             }
         }
 
@@ -259,9 +267,9 @@ namespace System.SpanTests
                 var a = new int[length + 2];
                 a[0] = 99;
                 a[length + 1] = 98;
-                var span = new ReadOnlySpan<int>(a, 1, length - 1);
-                int index = span.LastIndexOfAny(99, 98, 99);
-                Assert.Equal(-1, index);
+
+                Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(99, 98, 99));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(99, 98, 99, comparer)));
             }
 
             for (int length = 1; length < byte.MaxValue; length++)
@@ -269,23 +277,22 @@ namespace System.SpanTests
                 var a = new int[length + 2];
                 a[0] = 99;
                 a[length + 1] = 99;
-                var span = new ReadOnlySpan<int>(a, 1, length - 1);
-                int index = span.LastIndexOfAny(99, 99, 99);
-                Assert.Equal(-1, index);
+
+                Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(99, 99, 99));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(99, 99, 99, comparer)));
             }
         }
 
         [Fact]
         public static void ZeroLengthLastIndexOfAny_ManyByte()
         {
-            var sp = new ReadOnlySpan<int>(Array.Empty<int>());
-            var values = new ReadOnlySpan<int>(new int[] { 0, 0, 0, 0 });
-            int idx = sp.LastIndexOfAny(values);
-            Assert.Equal(-1, idx);
+            var values = new int[] { 0, 0, 0, 0 };
+            Assert.Equal(-1, new ReadOnlySpan<int>(Array.Empty<int>()).LastIndexOfAny(values));
+            Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(Array.Empty<int>()).LastIndexOfAny(values, comparer)));
 
-            values = new ReadOnlySpan<int>(new int[] { });
-            idx = sp.LastIndexOfAny(values);
-            Assert.Equal(-1, idx);
+            values = new int[] { };
+            Assert.Equal(-1, new ReadOnlySpan<int>(Array.Empty<int>()).LastIndexOfAny(values));
+            Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(Array.Empty<int>()).LastIndexOfAny(values, comparer)));
         }
 
         [Fact]
@@ -294,14 +301,14 @@ namespace System.SpanTests
             for (int length = 0; length < byte.MaxValue; length++)
             {
                 var a = new int[length];
-                var span = new ReadOnlySpan<int>(a);
 
-                var values = new ReadOnlySpan<int>(new int[] { default, 99, 98, 0 });
+                var values = new int[] { default, 99, 98, 0 };
 
                 for (int i = 0; i < length; i++)
                 {
-                    int idx = span.LastIndexOfAny(values);
-                    Assert.Equal(span.Length - 1, idx);
+                    Assert.Equal(a.Length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(values));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(a.Length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(values, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(values, GetFalseEqualityComparer<int>()));
                 }
             }
         }
@@ -316,27 +323,32 @@ namespace System.SpanTests
                 {
                     a[i] = i + 1;
                 }
-                var span = new ReadOnlySpan<int>(a);
 
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
-                    var values = new ReadOnlySpan<int>(new int[] { a[targetIndex], 0, 0, 0 });
-                    int idx = span.LastIndexOfAny(values);
-                    Assert.Equal(targetIndex, idx);
+                    var values = new int[] { a[targetIndex], 0, 0, 0 };
+
+                    Assert.Equal(targetIndex, new ReadOnlySpan<int>(a).LastIndexOfAny(values));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(targetIndex, new ReadOnlySpan<int>(a).LastIndexOfAny(values, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(values, GetFalseEqualityComparer<int>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 3; targetIndex++)
                 {
-                    var values = new ReadOnlySpan<int>(new int[] { a[targetIndex], a[targetIndex + 1], a[targetIndex + 2], a[targetIndex + 3] });
-                    int idx = span.LastIndexOfAny(values);
-                    Assert.Equal(targetIndex + 3, idx);
+                    var values = new int[] { a[targetIndex], a[targetIndex + 1], a[targetIndex + 2], a[targetIndex + 3] };
+
+                    Assert.Equal(targetIndex + 3, new ReadOnlySpan<int>(a).LastIndexOfAny(values));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(targetIndex + 3, new ReadOnlySpan<int>(a).LastIndexOfAny(values, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(values, GetFalseEqualityComparer<int>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 3; targetIndex++)
                 {
-                    var values = new ReadOnlySpan<int>(new int[] { 0, 0, 0, a[targetIndex + 3] });
-                    int idx = span.LastIndexOfAny(values);
-                    Assert.Equal(targetIndex + 3, idx);
+                    var values = new int[] { 0, 0, 0, a[targetIndex + 3] };
+
+                    Assert.Equal(targetIndex + 3, new ReadOnlySpan<int>(a).LastIndexOfAny(values));
+                    Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(targetIndex + 3, new ReadOnlySpan<int>(a).LastIndexOfAny(values, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(values, GetFalseEqualityComparer<int>()));
                 }
             }
         }
@@ -357,7 +369,6 @@ namespace System.SpanTests
                     }
                     a[i] = 255;
                 }
-                var span = new ReadOnlySpan<int>(a);
 
                 var targets = new int[length * 2];
                 for (int i = 0; i < targets.Length; i++)
@@ -369,9 +380,9 @@ namespace System.SpanTests
                     targets[i] = rnd.Next(1, 255);
                 }
 
-                var values = new ReadOnlySpan<int>(targets);
-                int idx = span.LastIndexOfAny(values);
-                Assert.Equal(expectedIndex, idx);
+                Assert.Equal(expectedIndex, new ReadOnlySpan<int>(a).LastIndexOfAny(targets));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(expectedIndex, new ReadOnlySpan<int>(a).LastIndexOfAny(targets, comparer)));
+                Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(targets, GetFalseEqualityComparer<int>()));
             }
         }
 
@@ -387,11 +398,9 @@ namespace System.SpanTests
                 {
                     targets[i] = rnd.Next(1, 256);
                 }
-                var span = new ReadOnlySpan<int>(a);
-                var values = new ReadOnlySpan<int>(targets);
 
-                int idx = span.LastIndexOfAny(values);
-                Assert.Equal(-1, idx);
+                Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(targets));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(targets, comparer)));
             }
         }
 
@@ -407,11 +416,9 @@ namespace System.SpanTests
                 {
                     targets[i] = rnd.Next(1, 256);
                 }
-                var span = new ReadOnlySpan<int>(a);
-                var values = new ReadOnlySpan<int>(targets);
 
-                int idx = span.LastIndexOfAny(values);
-                Assert.Equal(-1, idx);
+                Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(targets));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(targets, comparer)));
             }
         }
 
@@ -433,10 +440,11 @@ namespace System.SpanTests
                 a[length - 4] = 200;
                 a[length - 5] = 200;
 
-                var span = new ReadOnlySpan<int>(a);
-                var values = new ReadOnlySpan<int>(new int[] { 200, 200, 200, 200, 200, 200, 200, 200, 200 });
-                int idx = span.LastIndexOfAny(values);
-                Assert.Equal(length - 1, idx);
+                var values = new int[] { 200, 200, 200, 200, 200, 200, 200, 200, 200 };
+
+                Assert.Equal(length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(values));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(length - 1, new ReadOnlySpan<int>(a).LastIndexOfAny(values, comparer)));
+                Assert.Equal(-1, new ReadOnlySpan<int>(a).LastIndexOfAny(values, GetFalseEqualityComparer<int>()));
             }
         }
 
@@ -448,10 +456,10 @@ namespace System.SpanTests
                 var a = new int[length + 2];
                 a[0] = 99;
                 a[length + 1] = 98;
-                var span = new ReadOnlySpan<int>(a, 1, length - 1);
-                var values = new ReadOnlySpan<int>(new int[] { 99, 98, 99, 98, 99, 98 });
-                int index = span.LastIndexOfAny(values);
-                Assert.Equal(-1, index);
+                var values = new int[] { 99, 98, 99, 98, 99, 98 };
+
+                Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(values));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(values, comparer)));
             }
 
             for (int length = 1; length < byte.MaxValue; length++)
@@ -459,19 +467,18 @@ namespace System.SpanTests
                 var a = new int[length + 2];
                 a[0] = 99;
                 a[length + 1] = 99;
-                var span = new ReadOnlySpan<int>(a, 1, length - 1);
-                var values = new ReadOnlySpan<int>(new int[] { 99, 99, 99, 99, 99, 99 });
-                int index = span.LastIndexOfAny(values);
-                Assert.Equal(-1, index);
+                var values = new int[] { 99, 99, 99, 99, 99, 99 };
+
+                Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(values));
+                Assert.All(GetDefaultEqualityComparers<int>(), comparer => Assert.Equal(-1, new ReadOnlySpan<int>(a, 1, length - 1).LastIndexOfAny(values, comparer)));
             }
         }
 
         [Fact]
         public static void ZeroLengthLastIndexOfAny_String_TwoByte()
         {
-            var sp = new ReadOnlySpan<string>(Array.Empty<string>());
-            int idx = sp.LastIndexOfAny("0", "0");
-            Assert.Equal(-1, idx);
+            Assert.Equal(-1, new ReadOnlySpan<string>(Array.Empty<string>()).LastIndexOfAny("0", "0"));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(Array.Empty<string>()).LastIndexOfAny("0", "0", comparer)));
         }
 
         [Fact]
@@ -482,9 +489,7 @@ namespace System.SpanTests
             for (int length = 0; length < byte.MaxValue; length++)
             {
                 var a = new string[length];
-                var tempSpan = new Span<string>(a);
-                tempSpan.Fill("");
-                ReadOnlySpan<string> span = tempSpan;
+                Array.Fill(a, "");
 
                 string[] targets = { "", "99" };
 
@@ -493,8 +498,10 @@ namespace System.SpanTests
                     int index = rnd.Next(0, 2) == 0 ? 0 : 1;
                     string target0 = targets[index];
                     string target1 = targets[(index + 1) % 2];
-                    int idx = span.LastIndexOfAny(target0, target1);
-                    Assert.Equal(span.Length - 1, idx);
+
+                    Assert.Equal(a.Length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(a.Length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, GetFalseEqualityComparer<string>()));
                 }
             }
         }
@@ -509,30 +516,35 @@ namespace System.SpanTests
                 {
                     a[i] = (i + 1).ToString();
                 }
-                var span = new ReadOnlySpan<string>(a);
 
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
                     string target0 = a[targetIndex];
                     string target1 = "0";
-                    int idx = span.LastIndexOfAny(target0, target1);
-                    Assert.Equal(targetIndex, idx);
+
+                    Assert.Equal(targetIndex, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(targetIndex, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, GetFalseEqualityComparer<string>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 1; targetIndex++)
                 {
                     string target0 = a[targetIndex];
                     string target1 = a[targetIndex + 1];
-                    int idx = span.LastIndexOfAny(target0, target1);
-                    Assert.Equal(targetIndex + 1, idx);
+
+                    Assert.Equal(targetIndex + 1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(targetIndex + 1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, GetFalseEqualityComparer<string>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 1; targetIndex++)
                 {
                     string target0 = "0";
                     string target1 = a[targetIndex + 1];
-                    int idx = span.LastIndexOfAny(target0, target1);
-                    Assert.Equal(targetIndex + 1, idx);
+
+                    Assert.Equal(targetIndex + 1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(targetIndex + 1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, GetFalseEqualityComparer<string>()));
                 }
             }
         }
@@ -546,10 +558,9 @@ namespace System.SpanTests
                 var a = new string[length];
                 string target0 = rnd.Next(1, 256).ToString();
                 string target1 = rnd.Next(1, 256).ToString();
-                var span = new ReadOnlySpan<string>(a);
 
-                int idx = span.LastIndexOfAny(target0, target1);
-                Assert.Equal(-1, idx);
+                Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, comparer)));
             }
         }
 
@@ -569,9 +580,9 @@ namespace System.SpanTests
                 a[length - 2] = "200";
                 a[length - 3] = "200";
 
-                var span = new ReadOnlySpan<string>(a);
-                int idx = span.LastIndexOfAny("200", "200");
-                Assert.Equal(length - 1, idx);
+                Assert.Equal(length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny("200", "200"));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny("200", "200", comparer)));
+                Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny("200", "200", GetFalseEqualityComparer<string>()));
             }
         }
 
@@ -583,9 +594,9 @@ namespace System.SpanTests
                 var a = new string[length + 2];
                 a[0] = "99";
                 a[length + 1] = "98";
-                var span = new ReadOnlySpan<string>(a, 1, length - 1);
-                int index = span.LastIndexOfAny("99", "98");
-                Assert.Equal(-1, index);
+
+                Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny("99", "98"));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny("99", "98", comparer)));
             }
 
             for (int length = 1; length < byte.MaxValue; length++)
@@ -593,18 +604,17 @@ namespace System.SpanTests
                 var a = new string[length + 2];
                 a[0] = "99";
                 a[length + 1] = "99";
-                var span = new ReadOnlySpan<string>(a, 1, length - 1);
-                int index = span.LastIndexOfAny("99", "99");
-                Assert.Equal(-1, index);
+
+                Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny("99", "99"));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny("99", "99", comparer)));
             }
         }
 
         [Fact]
         public static void ZeroLengthIndexOf_String_ThreeByte()
         {
-            var sp = new ReadOnlySpan<string>(Array.Empty<string>());
-            int idx = sp.LastIndexOfAny("0", "0", "0");
-            Assert.Equal(-1, idx);
+            Assert.Equal(-1, new ReadOnlySpan<string>(Array.Empty<string>()).LastIndexOfAny("0", "0", "0"));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(Array.Empty<string>()).LastIndexOfAny("0", "0", "0", comparer)));
         }
 
         [Fact]
@@ -615,9 +625,7 @@ namespace System.SpanTests
             for (int length = 0; length < byte.MaxValue; length++)
             {
                 var a = new string[length];
-                var tempSpan = new Span<string>(a);
-                tempSpan.Fill("");
-                ReadOnlySpan<string> span = tempSpan;
+                Array.Fill(a, "");
 
                 string[] targets = { "", "99", "98" };
 
@@ -627,8 +635,10 @@ namespace System.SpanTests
                     string target0 = targets[index];
                     string target1 = targets[(index + 1) % 2];
                     string target2 = targets[(index + 1) % 3];
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
-                    Assert.Equal(span.Length - 1, idx);
+
+                    Assert.Equal(a.Length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(a.Length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2, GetFalseEqualityComparer<string>()));
                 }
             }
         }
@@ -643,15 +653,16 @@ namespace System.SpanTests
                 {
                     a[i] = (i + 1).ToString();
                 }
-                var span = new ReadOnlySpan<string>(a);
 
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
                     string target0 = a[targetIndex];
                     string target1 = "0";
                     string target2 = "0";
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
-                    Assert.Equal(targetIndex, idx);
+
+                    Assert.Equal(targetIndex, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(targetIndex, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2, GetFalseEqualityComparer<string>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 2; targetIndex++)
@@ -659,8 +670,10 @@ namespace System.SpanTests
                     string target0 = a[targetIndex];
                     string target1 = a[targetIndex + 1];
                     string target2 = a[targetIndex + 2];
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
-                    Assert.Equal(targetIndex + 2, idx);
+
+                    Assert.Equal(targetIndex + 2, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(targetIndex + 2, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2, GetFalseEqualityComparer<string>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 2; targetIndex++)
@@ -668,8 +681,10 @@ namespace System.SpanTests
                     string target0 = "0";
                     string target1 = "0";
                     string target2 = a[targetIndex + 2];
-                    int idx = span.LastIndexOfAny(target0, target1, target2);
-                    Assert.Equal(targetIndex + 2, idx);
+
+                    Assert.Equal(targetIndex + 2, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(targetIndex + 2, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2, GetFalseEqualityComparer<string>()));
                 }
             }
         }
@@ -684,10 +699,9 @@ namespace System.SpanTests
                 string target0 = rnd.Next(1, 256).ToString();
                 string target1 = rnd.Next(1, 256).ToString();
                 string target2 = rnd.Next(1, 256).ToString();
-                var span = new ReadOnlySpan<string>(a);
 
-                int idx = span.LastIndexOfAny(target0, target1, target2);
-                Assert.Equal(-1, idx);
+                Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(target0, target1, target2, comparer)));
             }
         }
 
@@ -708,9 +722,9 @@ namespace System.SpanTests
                 a[length - 3] = "200";
                 a[length - 4] = "200";
 
-                var span = new ReadOnlySpan<string>(a);
-                int idx = span.LastIndexOfAny("200", "200", "200");
-                Assert.Equal(length - 1, idx);
+                Assert.Equal(length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny("200", "200", "200"));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny("200", "200", "200", comparer)));
+                Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny("200", "200", "200", GetFalseEqualityComparer<string>()));
             }
         }
 
@@ -722,9 +736,9 @@ namespace System.SpanTests
                 var a = new string[length + 2];
                 a[0] = "99";
                 a[length + 1] = "98";
-                var span = new ReadOnlySpan<string>(a, 1, length - 1);
-                int index = span.LastIndexOfAny("99", "98", "99");
-                Assert.Equal(-1, index);
+
+                Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny("99", "98", "99"));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny("99", "98", "99", comparer)));
             }
 
             for (int length = 1; length < byte.MaxValue; length++)
@@ -732,23 +746,22 @@ namespace System.SpanTests
                 var a = new string[length + 2];
                 a[0] = "99";
                 a[length + 1] = "99";
-                var span = new ReadOnlySpan<string>(a, 1, length - 1);
-                int index = span.LastIndexOfAny("99", "99", "99");
-                Assert.Equal(-1, index);
+
+                Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny("99", "99", "99"));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny("99", "99", "99", comparer)));
             }
         }
 
         [Fact]
         public static void ZeroLengthLastIndexOfAny_String_ManyByte()
         {
-            var sp = new ReadOnlySpan<string>(Array.Empty<string>());
-            var values = new ReadOnlySpan<string>(new string[] { "0", "0", "0", "0" });
-            int idx = sp.LastIndexOfAny(values);
-            Assert.Equal(-1, idx);
+            var values = new string[] { "0", "0", "0", "0" };
 
-            values = new ReadOnlySpan<string>(new string[] { });
-            idx = sp.LastIndexOfAny(values);
-            Assert.Equal(-1, idx);
+            Assert.Equal(-1, new ReadOnlySpan<string>(Array.Empty<string>()).LastIndexOfAny(values));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(Array.Empty<string>()).LastIndexOfAny(values, comparer)));
+
+            Assert.Equal(-1, new ReadOnlySpan<string>(new string[] { }).LastIndexOfAny(values));
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(new string[] { }).LastIndexOfAny(values, comparer)));
         }
 
         [Fact]
@@ -757,16 +770,15 @@ namespace System.SpanTests
             for (int length = 0; length < byte.MaxValue; length++)
             {
                 var a = new string[length];
-                var tempSpan = new Span<string>(a);
-                tempSpan.Fill("");
-                ReadOnlySpan<string> span = tempSpan;
+                Array.Fill(a, "");
 
-                var values = new ReadOnlySpan<string>(new string[] { "", "99", "98", "0" });
+                var values = new string[] { "", "99", "98", "0" };
 
                 for (int i = 0; i < length; i++)
                 {
-                    int idx = span.LastIndexOfAny(values);
-                    Assert.Equal(span.Length - 1, idx);
+                    Assert.Equal(a.Length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny(values));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(a.Length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny(values, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(values, GetFalseEqualityComparer<string>()));
                 }
             }
         }
@@ -781,27 +793,32 @@ namespace System.SpanTests
                 {
                     a[i] = (i + 1).ToString();
                 }
-                var span = new ReadOnlySpan<string>(a);
 
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
-                    var values = new ReadOnlySpan<string>(new string[] { a[targetIndex], "0", "0", "0" });
-                    int idx = span.LastIndexOfAny(values);
-                    Assert.Equal(targetIndex, idx);
+                    var values = new string[] { a[targetIndex], "0", "0", "0" };
+
+                    Assert.Equal(targetIndex, new ReadOnlySpan<string>(a).LastIndexOfAny(values));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(targetIndex, new ReadOnlySpan<string>(a).LastIndexOfAny(values, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(values, GetFalseEqualityComparer<string>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 3; targetIndex++)
                 {
-                    var values = new ReadOnlySpan<string>(new string[] { a[targetIndex], a[targetIndex + 1], a[targetIndex + 2], a[targetIndex + 3] });
-                    int idx = span.LastIndexOfAny(values);
-                    Assert.Equal(targetIndex + 3, idx);
+                    var values = new string[] { a[targetIndex], a[targetIndex + 1], a[targetIndex + 2], a[targetIndex + 3] };
+
+                    Assert.Equal(targetIndex + 3, new ReadOnlySpan<string>(a).LastIndexOfAny(values));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(targetIndex + 3, new ReadOnlySpan<string>(a).LastIndexOfAny(values, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(values, GetFalseEqualityComparer<string>()));
                 }
 
                 for (int targetIndex = 0; targetIndex < length - 3; targetIndex++)
                 {
-                    var values = new ReadOnlySpan<string>(new string[] { "0", "0", "0", a[targetIndex + 3] });
-                    int idx = span.LastIndexOfAny(values);
-                    Assert.Equal(targetIndex + 3, idx);
+                    var values = new string[] { "0", "0", "0", a[targetIndex + 3] };
+
+                    Assert.Equal(targetIndex + 3, new ReadOnlySpan<string>(a).LastIndexOfAny(values));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(targetIndex + 3, new ReadOnlySpan<string>(a).LastIndexOfAny(values, comparer)));
+                    Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(values, GetFalseEqualityComparer<string>()));
                 }
             }
         }
@@ -823,7 +840,6 @@ namespace System.SpanTests
                     }
                     a[i] = "255";
                 }
-                var span = new ReadOnlySpan<string>(a);
 
                 var targets = new string[length * 2];
                 for (int i = 0; i < targets.Length; i++)
@@ -836,9 +852,9 @@ namespace System.SpanTests
                     targets[i] = rnd.Next(1, 255).ToString();
                 }
 
-                var values = new ReadOnlySpan<string>(targets);
-                int idx = span.LastIndexOfAny(values);
-                Assert.Equal(expectedIndex, idx);
+                Assert.Equal(expectedIndex, new ReadOnlySpan<string>(a).LastIndexOfAny(targets));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(expectedIndex, new ReadOnlySpan<string>(a).LastIndexOfAny(targets, comparer)));
+                Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(targets, GetFalseEqualityComparer<string>()));
             }
         }
 
@@ -854,11 +870,9 @@ namespace System.SpanTests
                 {
                     targets[i] = rnd.Next(1, 256).ToString();
                 }
-                var span = new ReadOnlySpan<string>(a);
-                var values = new ReadOnlySpan<string>(targets);
 
-                int idx = span.LastIndexOfAny(values);
-                Assert.Equal(-1, idx);
+                Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(targets));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(targets, comparer)));
             }
         }
 
@@ -874,11 +888,9 @@ namespace System.SpanTests
                 {
                     targets[i] = rnd.Next(1, 256).ToString();
                 }
-                var span = new ReadOnlySpan<string>(a);
-                var values = new ReadOnlySpan<string>(targets);
 
-                int idx = span.LastIndexOfAny(values);
-                Assert.Equal(-1, idx);
+                Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(targets));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(targets, comparer)));
             }
         }
 
@@ -900,10 +912,11 @@ namespace System.SpanTests
                 a[length - 4] = "200";
                 a[length - 5] = "200";
 
-                var span = new ReadOnlySpan<string>(a);
-                var values = new ReadOnlySpan<string>(new string[] { "200", "200", "200", "200", "200", "200", "200", "200", "200" });
-                int idx = span.LastIndexOfAny(values);
-                Assert.Equal(length - 1, idx);
+                var values = new string[] { "200", "200", "200", "200", "200", "200", "200", "200", "200" };
+
+                Assert.Equal(length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny(values));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(length - 1, new ReadOnlySpan<string>(a).LastIndexOfAny(values, comparer)));
+                Assert.Equal(-1, new ReadOnlySpan<string>(a).LastIndexOfAny(values, GetFalseEqualityComparer<string>()));
             }
         }
 
@@ -915,10 +928,11 @@ namespace System.SpanTests
                 var a = new string[length + 2];
                 a[0] = "99";
                 a[length + 1] = "98";
-                var span = new ReadOnlySpan<string>(a, 1, length - 1);
-                var values = new ReadOnlySpan<string>(new string[] { "99", "98", "99", "98", "99", "98" });
-                int index = span.LastIndexOfAny(values);
-                Assert.Equal(-1, index);
+
+                var values = new string[] { "99", "98", "99", "98", "99", "98" };
+
+                Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny(values));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny(values, comparer)));
             }
 
             for (int length = 1; length < byte.MaxValue; length++)
@@ -926,10 +940,11 @@ namespace System.SpanTests
                 var a = new string[length + 2];
                 a[0] = "99";
                 a[length + 1] = "99";
-                var span = new ReadOnlySpan<string>(a, 1, length - 1);
-                var values = new ReadOnlySpan<string>(new string[] { "99", "99", "99", "99", "99", "99" });
-                int index = span.LastIndexOfAny(values);
-                Assert.Equal(-1, index);
+
+                var values = new string[] { "99", "99", "99", "99", "99", "99" };
+
+                Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny(values));
+                Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(-1, new ReadOnlySpan<string>(a, 1, length - 1).LastIndexOfAny(values, comparer)));
             }
         }
 
@@ -937,20 +952,27 @@ namespace System.SpanTests
         [MemberData(nameof(TestHelpers.LastIndexOfAnyNullSequenceData), MemberType = typeof(TestHelpers))]
         public static void LastIndexOfAnyNullSequence_String(string[] spanInput, string[] searchInput, int expected)
         {
-            ReadOnlySpan<string> theStrings = spanInput;
-            Assert.Equal(expected, theStrings.LastIndexOfAny(searchInput));
-            Assert.Equal(expected, theStrings.LastIndexOfAny((ReadOnlySpan<string>)searchInput));
+            Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).LastIndexOfAny(searchInput));
+            Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).LastIndexOfAny((ReadOnlySpan<string>)searchInput));
+
+            Assert.All(GetDefaultEqualityComparers<string>(), comparer =>
+            {
+                Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).LastIndexOfAny(searchInput, comparer));
+                Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).LastIndexOfAny((ReadOnlySpan<string>)searchInput, comparer));
+            });
 
             if (searchInput != null)
             {
                 if (searchInput.Length >= 3)
                 {
-                    Assert.Equal(expected, theStrings.LastIndexOfAny(searchInput[0], searchInput[1], searchInput[2]));
+                    Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).LastIndexOfAny(searchInput[0], searchInput[1], searchInput[2]));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).LastIndexOfAny(searchInput[0], searchInput[1], searchInput[2], comparer)));
                 }
 
                 if (searchInput.Length >= 2)
                 {
-                    Assert.Equal(expected, theStrings.LastIndexOfAny(searchInput[0], searchInput[1]));
+                    Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).LastIndexOfAny(searchInput[0], searchInput[1]));
+                    Assert.All(GetDefaultEqualityComparers<string>(), comparer => Assert.Equal(expected, new ReadOnlySpan<string>(spanInput).LastIndexOfAny(searchInput[0], searchInput[1], comparer)));
                 }
             }
         }

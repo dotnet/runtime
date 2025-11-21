@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Compression.Tests;
@@ -9,7 +10,7 @@ namespace System.IO.Compression.Tests;
 [Collection(nameof(DisableParallelization))]
 public class zip_LargeFiles : ZipFileTestBase
 {
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
     [OuterLoop("It requires almost 12 GB of free disk space")]
     public static void UnzipOver4GBZipFile()
     {
@@ -49,11 +50,10 @@ public class zip_LargeFiles : ZipFileTestBase
         Random.Shared.NextBytes(buffer);
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.Is64BitProcess))] // don't run it on slower runtimes
     [OuterLoop("It requires 5~6 GB of free disk space and a lot of CPU time for compressed tests")]
-    [InlineData(false)]
-    [InlineData(true)]
-    public static void CheckZIP64VersionIsSet_ForSmallFilesAfterBigFiles(bool isCompressed)
+    [MemberData(nameof(Get_Booleans_Data))]
+    public static async Task CheckZIP64VersionIsSet_ForSmallFilesAfterBigFiles_Async(bool isCompressed)
     {
         // issue #94899
 
@@ -71,11 +71,11 @@ public class zip_LargeFiles : ZipFileTestBase
             using FileStream fs = File.Open(zipArchivePath, FileMode.Create, FileAccess.ReadWrite);
 
             // Create
-            using (ZipArchive archive = new(fs, ZipArchiveMode.Create, true))
+            await using (ZipArchive archive = await ZipArchive.CreateAsync(fs, ZipArchiveMode.Create, true, entryNameEncoding: null))
             {
                 ZipArchiveEntry file = archive.CreateEntry(LargeFileName, compressLevel);
 
-                using (Stream stream = file.Open())
+                await using (Stream stream = await file.OpenAsync())
                 {
                     // Write 5GB of data
                     for (var i = 0; i < 5; i++)
@@ -85,22 +85,22 @@ public class zip_LargeFiles : ZipFileTestBase
                             FillWithHardToCompressData(largeBuffer);
                         }
 
-                        stream.Write(largeBuffer);
+                        await stream.WriteAsync(largeBuffer);
                     }
                 }
 
                 file = archive.CreateEntry(SmallFileName, compressLevel);
 
-                using (Stream stream = file.Open())
+                await using (Stream stream = await file.OpenAsync())
                 {
-                    stream.Write(smallBuffer);
+                    await stream.WriteAsync(smallBuffer);
                 }
             }
 
             fs.Position = 0;
 
             // Validate
-            using (ZipArchive archive = new(fs, ZipArchiveMode.Read))
+            await using (ZipArchive archive = await ZipArchive.CreateAsync(fs, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null))
             {
                 using var reader = new BinaryReader(fs);
 

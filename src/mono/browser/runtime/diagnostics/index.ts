@@ -1,153 +1,93 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import WasmEnableThreads from "consts:wasmEnableThreads";
+import type { GlobalObjects } from "../types/internal";
+import type { CharPtr, VoidPtr } from "../types/emscripten";
 
-import type {
-    DiagnosticOptions,
-} from "./shared/types";
-import { is_nullish } from "../types/internal";
-import type { VoidPtr } from "../types/emscripten";
-import { getController, startDiagnosticServer } from "./browser/controller";
-import * as memory from "../memory";
-import { mono_log_warn } from "../logging";
-import { mono_assert, runtimeHelpers } from "../globals";
+import { Module, runtimeHelpers } from "./globals";
+import { cleanupClient as cleanup_js_client, createDiagConnectionJs, serverSession } from "./diagnostics-js";
+import { IDiagnosticConnection } from "./common";
+import { createDiagConnectionWs } from "./diagnostics-ws";
+import { diagnosticHelpers, setRuntimeGlobalsImpl } from "./globals";
+import { collectCpuSamples } from "./dotnet-cpu-profiler";
+import { collectMetrics } from "./dotnet-counters";
+import { collectGcDump } from "./dotnet-gcdump";
+import { advertise } from "./client-commands";
 
+let socket_handles:Map<number, IDiagnosticConnection> = undefined as any;
+let next_socket_handle = 1;
+let url_override:string | undefined = undefined;
 
-// called from C on the main thread
-export function mono_wasm_event_pipe_early_startup_callback (): void {
-    if (WasmEnableThreads) {
-        return;
-    }
-}
+export function setRuntimeGlobals (globalObjects: GlobalObjects): void {
+    setRuntimeGlobalsImpl(globalObjects);
 
-// Initialization flow
-///   * The runtime calls configure_diagnostics with options from MonoConfig
-///   * We start the diagnostic server which connects to the host and waits for some configurations (an IPC CollectTracing command)
-///   * The host sends us the configurations and we push them onto the startup_session_configs array and let the startup resume
-///   * The runtime calls mono_wasm_initA_diagnostics with any options from MonoConfig
-///   * The runtime C layer calls mono_wasm_event_pipe_early_startup_callback during startup once native EventPipe code is initialized
-///   * We start all the sessiosn in startup_session_configs and allow them to start streaming
-///   * The IPC sessions first send an IPC message with the session ID and then they start streaming
-////  * If the diagnostic server gets more commands it will send us a message through the serverController and we will start additional sessions
-
-let suspendOnStartup = false;
-let diagnosticsServerEnabled = false;
-
-let diagnosticsInitialized = false;
-
-export async function mono_wasm_init_diagnostics (): Promise<void> {
-    if (!WasmEnableThreads) return;
-    if (diagnosticsInitialized) return;
-
-    const options = diagnostic_options_from_environment();
-    if (!options)
-        return;
-    diagnosticsInitialized = true;
-    if (!is_nullish(options?.server)) {
-        if (options.server.connectUrl === undefined || typeof (options.server.connectUrl) !== "string") {
-            throw new Error("server.connectUrl must be a string");
+    diagnosticHelpers.ds_rt_websocket_create = (urlPtr :CharPtr):number => {
+        if (!socket_handles) {
+            socket_handles = new Map<number, IDiagnosticConnection>();
         }
-        const url = options.server.connectUrl;
-        const suspend = boolsyOption(options.server.suspend);
-        const controller = await startDiagnosticServer(url);
-        if (controller) {
-            diagnosticsServerEnabled = true;
-            if (suspend) {
-                suspendOnStartup = true;
-            }
-        }
-    }
-}
-
-function boolsyOption (x: string | boolean): boolean {
-    if (x === true || x === false)
-        return x;
-    if (typeof x === "string") {
-        if (x === "true")
-            return true;
-        if (x === "false")
-            return false;
-    }
-    throw new Error(`invalid option: "${x}", should be true, false, or "true" or "false"`);
-}
-
-/// Parse environment variables for diagnostics configuration
-///
-/// The environment variables are:
-///  * DOTNET_DiagnosticPorts
-///
-function diagnostic_options_from_environment (): DiagnosticOptions | null {
-    const val = runtimeHelpers.config.environmentVariables ? runtimeHelpers.config.environmentVariables["DOTNET_DiagnosticPorts"] : undefined;
-    if (is_nullish(val))
-        return null;
-    // TODO: consider also parsing the DOTNET_EnableEventPipe and DOTNET_EventPipeOutputPath, DOTNET_EvnetPipeConfig variables
-    // to configure the startup sessions that will dump output to the VFS.
-    return diagnostic_options_from_ports_spec(val);
-}
-
-/// Parse a DOTNET_DiagnosticPorts string and return a DiagnosticOptions object.
-/// See https://learn.microsoft.com/dotnet/core/diagnostics/diagnostic-port#configure-additional-diagnostic-ports
-function diagnostic_options_from_ports_spec (val: string): DiagnosticOptions | null {
-    if (val === "")
-        return null;
-    const ports = val.split(";");
-    if (ports.length === 0)
-        return null;
-    if (ports.length !== 1) {
-        mono_log_warn("multiple diagnostic ports specified, only the last one will be used");
-    }
-    const portSpec = ports[ports.length - 1];
-    const components = portSpec.split(",");
-    if (components.length < 1 || components.length > 3) {
-        mono_log_warn("invalid diagnostic port specification, should be of the form <port>[,<connect>],[<nosuspend|suspend>]");
-        return null;
-    }
-    const uri: string = components[0];
-    let connect = true;
-    let suspend = true;
-    // the C Diagnostic Server goes through these parts in reverse, do the same here.
-    for (let i = components.length - 1; i >= 1; i--) {
-        const component = components[i];
-        switch (component.toLowerCase()) {
-            case "nosuspend":
-                suspend = false;
-                break;
-            case "suspend":
-                suspend = true;
-                break;
-            case "listen":
-                connect = false;
-                break;
-            case "connect":
-                connect = true;
-                break;
-            default:
-                mono_log_warn(`invalid diagnostic port specification component: ${component}`);
-                break;
-        }
-    }
-    if (!connect) {
-        mono_log_warn("this runtime does not support listening on a diagnostic port; no diagnostic server started");
-        return null;
-    }
-    return {
-        server: {
-            connectUrl: uri,
-            suspend: suspend,
-        }
+        const url = url_override ?? runtimeHelpers.utf8ToString(urlPtr);
+        const socket_handle = next_socket_handle++;
+        const isWebSocket = url.startsWith("ws://") || url.startsWith("wss://");
+        const wrapper = isWebSocket
+            ? createDiagConnectionWs(socket_handle, url)
+            : createDiagConnectionJs(socket_handle, url);
+        socket_handles.set(socket_handle, wrapper);
+        return socket_handle;
     };
 
+    diagnosticHelpers.ds_rt_websocket_send = (client_socket :number, buffer:VoidPtr, bytes_to_write:number):number => {
+        const wrapper = socket_handles.get(client_socket);
+        if (!wrapper) {
+            return -1;
+        }
+        const message = (new Uint8Array(Module.HEAPU8.buffer, buffer as any, bytes_to_write)).slice();
+        return wrapper.send(message);
+    };
+
+    diagnosticHelpers.ds_rt_websocket_poll = (client_socket :number):number => {
+        const wrapper = socket_handles.get(client_socket);
+        if (!wrapper) {
+            return 0;
+        }
+        return wrapper.poll();
+    };
+
+    diagnosticHelpers.ds_rt_websocket_recv = (client_socket :number, buffer:VoidPtr, bytes_to_read:number):number => {
+        const wrapper = socket_handles.get(client_socket);
+        if (!wrapper) {
+            return -1;
+        }
+        return wrapper.recv(buffer, bytes_to_read);
+    };
+
+    diagnosticHelpers.ds_rt_websocket_close = (client_socket :number):number => {
+        const wrapper = socket_handles.get(client_socket);
+        if (!wrapper) {
+            return -1;
+        }
+        socket_handles.delete(client_socket);
+        return wrapper.close();
+    };
+
+    globalObjects.api.collectCpuSamples = collectCpuSamples;
+    globalObjects.api.collectMetrics = collectMetrics;
+    globalObjects.api.collectGcDump = collectGcDump;
+    globalObjects.api.connectDSRouter = connectDSRouter;
+
+    cleanup_js_client();
 }
 
-export function mono_wasm_diagnostic_server_on_runtime_server_init (out_options: VoidPtr): void {
-    mono_assert(WasmEnableThreads, "The diagnostic server requires threads to be enabled during build time.");
-    if (diagnosticsServerEnabled) {
-        /* called on the main thread when the runtime is sufficiently initialized */
-        const controller = getController();
-        controller.postServerAttachToRuntime();
-        // FIXME: is this really the best place to do this?
-        memory.setI32(out_options, suspendOnStartup ? 1 : 0);
+// this will take over the existing connection to JS and send new advert message to WS client
+// use dotnet-dsrouter server-websocket -v trace
+function connectDSRouter (url: string): void {
+    if (!serverSession) {
+        throw new Error("No active session to reconnect");
     }
-}
 
+    // make sure new sessions hit the new URL
+    url_override = url;
+
+    const wrapper = createDiagConnectionWs(serverSession.client_socket, url);
+    socket_handles.set(serverSession.client_socket, wrapper);
+    wrapper.send(advertise());
+}

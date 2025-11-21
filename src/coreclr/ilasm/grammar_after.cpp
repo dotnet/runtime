@@ -839,10 +839,6 @@ int parse_literal(unsigned curSym, __inout __nullterminated char* &curPos, BOOL 
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 int yylex()
 {
     char* curPos = PENV->curPos;
@@ -1204,8 +1200,8 @@ Its_An_Id:
         begNum = curPos;
         {
             uint64_t i64 = str2uint64(begNum, const_cast<const char**>(&curPos), radix);
-            uint64_t mask64 = neg ? UI64(0xFFFFFFFF80000000) : UI64(0xFFFFFFFF00000000);
-            uint64_t largestNegVal32 = UI64(0x0000000080000000);
+            uint64_t mask64 = neg ? 0xFFFFFFFF80000000ULL : 0xFFFFFFFF00000000ULL;
+            uint64_t largestNegVal32 = 0x0000000080000000ULL;
             if ((i64 & mask64) && (i64 != largestNegVal32))
             {
                 yylval.int64 = new int64_t(i64);
@@ -1286,9 +1282,6 @@ Just_A_Character:
     PENV->curTok = curTok;
     return(tok);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 /**************************************************************************/
 static char* newString(_In_ __nullterminated const char* str1)

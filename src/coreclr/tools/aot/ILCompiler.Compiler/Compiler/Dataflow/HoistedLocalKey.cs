@@ -29,7 +29,7 @@ namespace ILCompiler.Dataflow
 
         public override int GetHashCode() => Field.GetHashCode();
 
-        public static bool operator ==(HoistedLocalKey left, HoistedLocalKey right) => left.Equals (right);
+        public static bool operator ==(HoistedLocalKey left, HoistedLocalKey right) => left.Equals(right);
         public static bool operator !=(HoistedLocalKey left, HoistedLocalKey right) => !(left == right);
     }
 }

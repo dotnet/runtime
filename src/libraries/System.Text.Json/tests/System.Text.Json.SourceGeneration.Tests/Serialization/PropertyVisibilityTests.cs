@@ -129,7 +129,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(MySmallEnum.AnotherValue, obj.GetProxy());
 
             // JsonInclude for private members not supported in source gen
-            await Assert.ThrowsAsync<InvalidOperationException>(async() => await Serializer.SerializeWrapper(obj));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj));
         }
 
         [Fact]
@@ -198,6 +198,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithStructProperty_IgnoreConditionWhenWritingDefault))]
         [JsonSerializable(typeof(ClassWithMissingObjectProperty))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
+        [JsonSerializable(typeof(Class_WithIgnoredInitOnlyProperty))]
+        [JsonSerializable(typeof(Record_WithIgnoredPropertyInCtor))]
+        [JsonSerializable(typeof(Class_WithIgnoredRequiredProperty))]
+        [JsonSerializable(typeof(RecordWithIgnoredNestedInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty?))]
         [JsonSerializable(typeof(ClassWithCustomNamedInitOnlyProperty))]
@@ -331,7 +335,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflict.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictIJoinInterface")]
         [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictUsingAttributeIJoinInterface")]
         [JsonSerializable(typeof(CollectionWithPrivateElementType))]
-        [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))][JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))]
+        [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
         [JsonSerializable(typeof(ClassWithInternalJsonIncludeProperties))]
         [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
         [JsonSerializable(typeof(ClassUsingIgnoreWhenWritingDefaultAttribute))]
@@ -340,6 +345,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithProperty_IgnoreConditionAlways_Ctor))]
         [JsonSerializable(typeof(ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor))]
         [JsonSerializable(typeof(StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor))]
+        [JsonSerializable(typeof(JsonIgnoreCondition_WhenReadingWritingTestModel))]
         [JsonSerializable(typeof(SmallStructWithValueAndReferenceTypes))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedDictionary))]
         [JsonSerializable(typeof(Class1))]
@@ -471,6 +477,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithStructProperty_IgnoreConditionWhenWritingDefault))]
         [JsonSerializable(typeof(ClassWithMissingObjectProperty))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
+        [JsonSerializable(typeof(Class_WithIgnoredInitOnlyProperty))]
+        [JsonSerializable(typeof(Record_WithIgnoredPropertyInCtor))]
+        [JsonSerializable(typeof(Class_WithIgnoredRequiredProperty))]
+        [JsonSerializable(typeof(RecordWithIgnoredNestedInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty?))]
         [JsonSerializable(typeof(ClassWithCustomNamedInitOnlyProperty))]
@@ -613,6 +623,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithProperty_IgnoreConditionAlways_Ctor))]
         [JsonSerializable(typeof(ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor))]
         [JsonSerializable(typeof(StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor))]
+        [JsonSerializable(typeof(JsonIgnoreCondition_WhenReadingWritingTestModel))]
         [JsonSerializable(typeof(SmallStructWithValueAndReferenceTypes))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedDictionary))]
         [JsonSerializable(typeof(Class1))]

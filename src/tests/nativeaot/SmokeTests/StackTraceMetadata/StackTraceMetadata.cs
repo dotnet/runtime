@@ -3,6 +3,8 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 class Program
@@ -11,6 +13,7 @@ class Program
     {
         BodyFoldingTest.Run();
         DiagnosticMethodInfoTests.Run();
+        Test108688Regression.Run();
 
         string stackTrace = Environment.StackTrace;
 
@@ -83,4 +86,171 @@ class Program
             }
         }
     }
+
+    class Test108688Regression
+    {
+        public static void Run()
+        {
+            {
+                DelStruct s;
+                Action del = s.InstanceMethod;
+                var dmi = DiagnosticMethodInfo.Create(del);
+#if STRIPPED
+                if (dmi != null)
+                    throw new Exception();
+#else
+                if (dmi.Name != nameof(DelStruct.InstanceMethod))
+                    throw new Exception();
+                // Need to make sure it was stack trace metadata and not reflection metadata that provided this
+                if (GetMethodSecretly(del.Target.GetType(), dmi.Name) != null)
+                    throw new Exception();
+#endif
+            }
+
+            {
+                DelStruct s;
+                Action del = s.InstanceGenericMethod<int>;
+                var dmi = DiagnosticMethodInfo.Create(del);
+#if STRIPPED
+                if (dmi != null)
+                    throw new Exception();
+#else
+                if (dmi.Name != nameof(DelStruct.InstanceGenericMethod))
+                    throw new Exception();
+                // Need to make sure it was stack trace metadata and not reflection metadata that provided this
+                if (GetMethodSecretly(del.Target.GetType(), dmi.Name) != null)
+                    throw new Exception();
+#endif
+            }
+
+            {
+                DelStruct s;
+                Action del = s.InstanceGenericMethod<object>;
+                var dmi = DiagnosticMethodInfo.Create(del);
+#if STRIPPED
+                if (dmi != null)
+                    throw new Exception();
+#else
+                if (dmi.Name != nameof(DelStruct.InstanceGenericMethod))
+                    throw new Exception();
+                // Need to make sure it was stack trace metadata and not reflection metadata that provided this
+                if (GetMethodSecretly(del.Target.GetType(), dmi.Name) != null)
+                    throw new Exception();
+#endif
+            }
+
+            {
+                DelStruct<int> s;
+                Action del = s.InstanceMethod;
+                var dmi = DiagnosticMethodInfo.Create(del);
+#if STRIPPED
+                if (dmi != null)
+                    throw new Exception();
+#else
+                if (dmi.Name != nameof(DelStruct.InstanceMethod))
+                    throw new Exception();
+                // Need to make sure it was stack trace metadata and not reflection metadata that provided this
+                if (GetMethodSecretly(del.Target.GetType(), dmi.Name) != null)
+                    throw new Exception();
+#endif
+            }
+
+            {
+                DelStruct<int> s;
+                Action del = s.InstanceGenericMethod<int>;
+                var dmi = DiagnosticMethodInfo.Create(del);
+#if STRIPPED
+                if (dmi != null)
+                    throw new Exception();
+#else
+                if (dmi.Name != nameof(DelStruct.InstanceGenericMethod))
+                    throw new Exception();
+                // Need to make sure it was stack trace metadata and not reflection metadata that provided this
+                if (GetMethodSecretly(del.Target.GetType(), dmi.Name) != null)
+                    throw new Exception();
+#endif
+            }
+
+            {
+                DelStruct<int> s;
+                Action del = s.InstanceGenericMethod<object>;
+                var dmi = DiagnosticMethodInfo.Create(del);
+#if STRIPPED
+                if (dmi != null)
+                    throw new Exception();
+#else
+                if (dmi.Name != nameof(DelStruct.InstanceGenericMethod))
+                    throw new Exception();
+                // Need to make sure it was stack trace metadata and not reflection metadata that provided this
+                if (GetMethodSecretly(del.Target.GetType(), dmi.Name) != null)
+                    throw new Exception();
+#endif
+            }
+
+            {
+                DelStruct<object> s;
+                Action del = s.InstanceMethod;
+                var dmi = DiagnosticMethodInfo.Create(del);
+#if STRIPPED
+                if (dmi != null)
+                    throw new Exception();
+#else
+                if (dmi.Name != nameof(DelStruct.InstanceMethod))
+                    throw new Exception();
+                // Need to make sure it was stack trace metadata and not reflection metadata that provided this
+                if (GetMethodSecretly(del.Target.GetType(), dmi.Name) != null)
+                    throw new Exception();
+#endif
+            }
+
+            {
+                DelStruct<object> s;
+                Action del = s.InstanceGenericMethod<int>;
+                var dmi = DiagnosticMethodInfo.Create(del);
+#if STRIPPED
+                if (dmi != null)
+                    throw new Exception();
+#else
+                if (dmi.Name != nameof(DelStruct.InstanceGenericMethod))
+                    throw new Exception();
+                // Need to make sure it was stack trace metadata and not reflection metadata that provided this
+                if (GetMethodSecretly(del.Target.GetType(), dmi.Name) != null)
+                    throw new Exception();
+#endif
+            }
+
+            {
+                DelStruct<object> s;
+                Action del = s.InstanceGenericMethod<object>;
+                var dmi = DiagnosticMethodInfo.Create(del);
+#if STRIPPED
+                if (dmi != null)
+                    throw new Exception();
+#else
+                if (dmi.Name != nameof(DelStruct.InstanceGenericMethod))
+                    throw new Exception();
+                // Need to make sure it was stack trace metadata and not reflection metadata that provided this
+                if (GetMethodSecretly(del.Target.GetType(), dmi.Name) != null)
+                    throw new Exception();
+#endif
+            }
+        }
+
+        [UnconditionalSuppressMessage("", "IL2070")]
+        private static MethodInfo GetMethodSecretly(Type t, string name)
+            => t.GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+
+        struct DelStruct
+        {
+            public void InstanceMethod() { }
+            public void InstanceGenericMethod<T>() { }
+        }
+
+        struct DelStruct<T>
+        {
+            public void InstanceMethod() { }
+            public void InstanceGenericMethod<U>() { }
+        }
+    }
+
 }

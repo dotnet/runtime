@@ -435,7 +435,8 @@ namespace System.Collections.Immutable.Tests
         public void ItemRef()
         {
             var list = new[] { 1, 2, 3 }.ToImmutableList();
-            var builder = new ImmutableList<int>.Builder(list);
+            var builder = ImmutableList.CreateBuilder<int>();
+            builder.AddRange(list);
 
             ref readonly int safeRef = ref builder.ItemRef(1);
             ref int unsafeRef = ref Unsafe.AsRef(in safeRef);
@@ -451,7 +452,8 @@ namespace System.Collections.Immutable.Tests
         public void ItemRef_OutOfBounds()
         {
             var list = new[] { 1, 2, 3 }.ToImmutableList();
-            var builder = new ImmutableList<int>.Builder(list);
+            var builder = ImmutableList.CreateBuilder<int>();
+            builder.AddRange(list);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.ItemRef(5));
         }
@@ -483,7 +485,7 @@ namespace System.Collections.Immutable.Tests
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {
-            return ImmutableList<T>.Empty.AddRange((ReadOnlySpan<T>)contents).ToBuilder();
+            return ImmutableList<T>.Empty.AddRange(contents).ToBuilder();
         }
 
         protected override void RemoveAllTestHelper<T>(ImmutableList<T> list, Predicate<T> test)
@@ -506,9 +508,9 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal<T>(expected, builder.ToList());
         }
 
-        internal override IImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list)
+        internal override ImmutableListQueries<T> GetListQuery<T>(ImmutableList<T> list)
         {
-            return list.ToBuilder();
+            return new ImmutableListBuilderQuery<T>(list.ToBuilder());
         }
 
         protected override List<T> SortTestHelper<T>(ImmutableList<T> list)
@@ -537,6 +539,30 @@ namespace System.Collections.Immutable.Tests
             ImmutableList<T>.Builder builder = list.ToBuilder();
             builder.Sort(index, count, comparer);
             return builder.ToImmutable().ToList();
+        }
+
+        private sealed class ImmutableListBuilderQuery<T>(ImmutableList<T>.Builder list) : ImmutableListQueries<T>(list)
+        {
+            public override int BinarySearch(T item) => list.BinarySearch(item);
+            public override int BinarySearch(T item, IComparer<T>? comparer) => list.BinarySearch(item, comparer);
+            public override int BinarySearch(int index, int count, T item, IComparer<T>? comparer) => list.BinarySearch(index, count, item, comparer);
+            public override ImmutableList<TOutput> ConvertAll<TOutput>(Func<T, TOutput> converter) => list.ConvertAll(converter);
+            public override void CopyTo(T[] array) => list.CopyTo(array);
+            public override void CopyTo(T[] array, int arrayIndex) => list.CopyTo(array, arrayIndex);
+            public override void CopyTo(int index, T[] array, int arrayIndex, int count) => list.CopyTo(index, array, arrayIndex, count);
+            public override bool Exists(Predicate<T> match) => list.Exists(match);
+            public override T? Find(Predicate<T> match) => list.Find(match);
+            public override ImmutableList<T> FindAll(Predicate<T> match) => list.FindAll(match);
+            public override int FindIndex(Predicate<T> match) => list.FindIndex(match);
+            public override int FindIndex(int startIndex, Predicate<T> match) => list.FindIndex(startIndex, match);
+            public override int FindIndex(int startIndex, int count, Predicate<T> match) => list.FindIndex(startIndex, count, match);
+            public override T? FindLast(Predicate<T> match) => list.FindLast(match);
+            public override int FindLastIndex(Predicate<T> match) => list.FindLastIndex(match);
+            public override int FindLastIndex(int startIndex, Predicate<T> match) => list.FindLastIndex(startIndex, match);
+            public override int FindLastIndex(int startIndex, int count, Predicate<T> match) => list.FindLastIndex(startIndex, count, match);
+            public override void ForEach(Action<T> action) => list.ForEach(action);
+            public override ImmutableList<T> GetRange(int index, int count) => list.GetRange(index, count);
+            public override bool TrueForAll(Predicate<T> match) => list.TrueForAll(match);
         }
     }
 }

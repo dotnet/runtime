@@ -429,6 +429,7 @@ namespace System.Xml.Serialization
             _ilGen!.Emit(OpCodes.Newarr, elementType);
         }
 
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal void StackallocSpan(Type elementType, int len)
         {
             Ldc(len);
@@ -863,6 +864,34 @@ namespace System.Xml.Serialization
                             New(DateTimeOffset_ctor);
                             break;
                         }
+                        else if (valueType == typeof(DateOnly))
+                        {
+                            ConstructorInfo DateOnly_ctor = typeof(DateOnly).GetConstructor(
+                            CodeGenerator.InstanceBindingFlags,
+                            null,
+                            new Type[] { typeof(int), typeof(int), typeof(int) },
+                            null
+                            )!;
+                            DateOnly dateOnly = (DateOnly)o;
+                            Ldc(dateOnly.Year);
+                            Ldc(dateOnly.Month);
+                            Ldc(dateOnly.Day);
+                            New(DateOnly_ctor);
+                            break;
+                        }
+                        else if (valueType == typeof(TimeOnly))
+                        {
+                            ConstructorInfo TimeOnly_ctor = typeof(TimeOnly).GetConstructor(
+                            CodeGenerator.InstanceBindingFlags,
+                            null,
+                            new Type[] { typeof(long) },
+                            null
+                            )!;
+                            TimeOnly timeOnly = (TimeOnly)o;
+                            Ldc(timeOnly.Ticks);
+                            New(TimeOnly_ctor);
+                            break;
+                        }
                         else
                         {
                             throw new NotSupportedException(SR.Format(SR.UnknownConstantType, valueType.AssemblyQualifiedName));
@@ -1246,6 +1275,7 @@ namespace System.Xml.Serialization
             return ifState;
         }
 
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal static AssemblyBuilder CreateAssemblyBuilder(string name)
         {
             AssemblyName assemblyName = new AssemblyName();

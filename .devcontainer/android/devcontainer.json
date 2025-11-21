@@ -4,7 +4,7 @@
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
-			"VARIANT": "8.0-jammy"
+			"VARIANT": "8.0-noble"
 		}
 	},
     // The container needs to run privileged in order to use Linux KVM to create Android emulators.
@@ -29,7 +29,8 @@
 		"vscode": {
 			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
-				"ms-dotnettools.csharp"
+				"ms-dotnettools.csharp",
+				"ms-dotnettools.csdevkit"
 			],
 			"settings": {
 				// Loading projects on demand is better for larger codebases

@@ -49,6 +49,8 @@ class StgStringPool;
 class StgBlobPool;
 class StgCodePool;
 
+template<typename T> struct cdac_data;
+
 //  Perform binary search on index table.
 //
 class RIDBinarySearch : public CBinarySearch<UINT32>
@@ -188,12 +190,6 @@ public:
     virtual int IsValidCookie(UINT32 nCookie)
     { WRAPPER_NO_CONTRACT; return (IsValidOffset(nCookie)); }
 
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6387) // Suppress PREFast warning: '*pszString' might be '0': this does not adhere to the specification for the function
-        // *pszString may be NULL only if method fails, but warning 6387 doesn't respect __success(SUCCEEDED(return)) which is part of HRESULT definition
-#endif
 //*****************************************************************************
 // Return a pointer to a null terminated string given an offset previously
 // handed out by AddString or FindString.
@@ -217,7 +213,7 @@ public:
             &stringData));
         _ASSERTE(hr == S_OK);
         // Raw data are always at least 1 byte long, otherwise it would be invalid offset and hr != S_OK
-        PREFAST_ASSUME(stringData.GetDataPointer() != NULL);
+        _ASSERTE(stringData.GetDataPointer() != NULL);
         // Fills output string
         *pszString = reinterpret_cast<LPSTR>(stringData.GetDataPointer());
         //_ASSERTE(stringData.GetSize() > strlen(*pszString));
@@ -253,7 +249,7 @@ public:
             &stringData));
         _ASSERTE(hr == S_OK);
         // Raw data are always at least 1 byte long, otherwise it would be invalid offset and hr != S_OK
-        PREFAST_ASSUME(stringData.GetDataPointer() != NULL);
+        _ASSERTE(stringData.GetDataPointer() != NULL);
         // Fills output string
         *pszString = reinterpret_cast<LPSTR>(stringData.GetDataPointer());
         //_ASSERTE(stringData.GetSize() > strlen(*pszString));
@@ -265,9 +261,6 @@ public:
 
         return hr;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*****************************************************************************
 // Convert a string to UNICODE into the caller's buffer.
@@ -1500,6 +1493,15 @@ public:
          IStream ** ppstm);
 
 #endif // DACCESS_COMPILE
+
+    friend struct cdac_data<CGrowableStream>;
 }; // class CGrowableStream
+
+template<>
+struct cdac_data<CGrowableStream>
+{
+    static constexpr size_t Buffer = offsetof(CGrowableStream, m_swBuffer);
+    static constexpr size_t Size = offsetof(CGrowableStream, m_dwBufferSize);
+};
 
 #endif // __StgPool_h__

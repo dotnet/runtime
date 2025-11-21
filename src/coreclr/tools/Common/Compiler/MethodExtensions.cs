@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using ILCompiler.DependencyAnalysis;
-
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -130,9 +130,35 @@ namespace ILCompiler
             TypeDesc owningType = method.OwningType;
             return !method.Signature.IsStatic && /* Static methods don't have this */
                 !owningType.IsValueType && /* Value type instance methods take a ref to data */
+                !owningType.IsInterface && /* Interface MethodTable can be optimized away but the instance method can still be callable (`this` is of a non-interface type) */
                 !owningType.IsArrayTypeWithoutGenericInterfaces() && /* Type loader can make these at runtime */
                 (owningType is not MetadataType mdType || !mdType.IsModuleType) && /* Compiler parks some instance methods on the <Module> type */
                 !method.IsSharedByGenericInstantiations; /* Current impl limitation; can be lifted */
         }
+
+        public static bool ReturnsTaskOrValueTask(this MethodSignature method)
+        {
+            TypeDesc ret = method.ReturnType;
+
+            if (ret is MetadataType md
+                && md.Module == method.Context.SystemModule
+                && md.Namespace.SequenceEqual("System.Threading.Tasks"u8))
+            {
+                ReadOnlySpan<byte> name = md.Name;
+                if (name.SequenceEqual("Task"u8) || name.SequenceEqual("Task`1"u8)
+                    || name.SequenceEqual("ValueTask"u8) || name.SequenceEqual("ValueTask`1"u8))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Determines whether a method uses the async calling convention.
+        /// Returns true for async variants (compiler-generated wrappers around Task-returning methods)
+        /// and for special async intrinsics that don't return Task/ValueTask but use async calling convention.
+        /// </summary>
+        public static bool IsAsyncCall(this MethodDesc method) => method.IsAsyncVariant() || (method.IsAsync && !method.Signature.ReturnsTaskOrValueTask());
     }
 }

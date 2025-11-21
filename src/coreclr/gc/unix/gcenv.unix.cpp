@@ -18,9 +18,14 @@
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 #include "gcenv.os.h"
+#include "gcenv.ee.h"
 #include "gcenv.unix.inl"
 #include "volatile.h"
+#include "gcconfig.h"
 #include "numasupport.h"
+#include <minipal/memorybarrierprocesswide.h>
+#include <minipal/thread.h>
+#include <minipal/time.h>
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -30,10 +35,6 @@
 
 #undef min
 #undef max
-
-#ifndef __has_cpp_attribute
-#define __has_cpp_attribute(x) (0)
-#endif
 
 #include <algorithm>
 
@@ -70,42 +71,11 @@
 
 #include <mach/task.h>
 #include <mach/vm_map.h>
-extern "C"
-{
-#  include <mach/thread_state.h>
-}
-
-#define CHECK_MACH(_msg, machret) do {                                      \
-        if (machret != KERN_SUCCESS)                                        \
-        {                                                                   \
-            char _szError[1024];                                            \
-            snprintf(_szError, ARRAY_SIZE(_szError), "%s: %u: %s", __FUNCTION__, __LINE__, _msg);  \
-            mach_error(_szError, machret);                                  \
-            abort();                                                        \
-        }                                                                   \
-    } while (false)
-
 #endif // __APPLE__
 
-#ifdef __linux__
-#include <sys/syscall.h> // __NR_membarrier
-// Ensure __NR_membarrier is defined for portable builds.
-# if !defined(__NR_membarrier)
-#  if defined(__amd64__)
-#   define __NR_membarrier  324
-#  elif defined(__i386__)
-#   define __NR_membarrier  375
-#  elif defined(__arm__)
-#   define __NR_membarrier  389
-#  elif defined(__aarch64__)
-#   define __NR_membarrier  283
-#  elif defined(__loongarch64)
-#   define __NR_membarrier  283
-#  else
-#   error Unknown architecture
-#  endif
-# endif
-#endif
+#ifdef __HAIKU__
+#include <OS.h>
+#endif // __HAIKU__
 
 #if HAVE_PTHREAD_NP_H
 #include <pthread_np.h>
@@ -138,69 +108,13 @@ typedef cpuset_t cpu_set_t;
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
 #endif
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/heap.h>
+#endif // __EMSCRIPTEN__
+
+
 // The cached total number of CPUs that can be used in the OS.
 static uint32_t g_totalCpuCount = 0;
-
-//
-// Helper membarrier function
-//
-#ifdef __NR_membarrier
-# define membarrier(...)  syscall(__NR_membarrier, __VA_ARGS__)
-#else
-# define membarrier(...)  -ENOSYS
-#endif
-
-enum membarrier_cmd
-{
-    MEMBARRIER_CMD_QUERY                                 = 0,
-    MEMBARRIER_CMD_GLOBAL                                = (1 << 0),
-    MEMBARRIER_CMD_GLOBAL_EXPEDITED                      = (1 << 1),
-    MEMBARRIER_CMD_REGISTER_GLOBAL_EXPEDITED             = (1 << 2),
-    MEMBARRIER_CMD_PRIVATE_EXPEDITED                     = (1 << 3),
-    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED            = (1 << 4),
-    MEMBARRIER_CMD_PRIVATE_EXPEDITED_SYNC_CORE           = (1 << 5),
-    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED_SYNC_CORE  = (1 << 6)
-};
-
-bool CanFlushUsingMembarrier()
-{
-
-#ifdef TARGET_ANDROID
-    // Avoid calling membarrier on older Android versions where membarrier
-    // may be barred by seccomp causing the process to be killed.
-    int apiLevel = android_get_device_api_level();
-    if (apiLevel < __ANDROID_API_Q__)
-    {
-        return false;
-    }
-#endif
-
-    // Starting with Linux kernel 4.14, process memory barriers can be generated
-    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
-
-    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
-
-    if (mask >= 0 &&
-        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED &&
-        // Register intent to use the private expedited command.
-        membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
-    {
-        return true;
-    }
-
-    return false;
-}
-
-//
-// Tracks if the OS supports FlushProcessWriteBuffers using membarrier
-//
-static int s_flushUsingMemBarrier = 0;
-
-// Helper memory page used by the FlushProcessWriteBuffers
-static uint8_t* g_helperPage = 0;
-
-// Mutex to make the FlushProcessWriteBuffersMutex thread safe
-static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
 size_t GetRestrictedPhysicalMemoryLimit();
 bool GetPhysicalMemoryUsed(size_t* val);
@@ -239,49 +153,10 @@ bool GCToOSInterface::Initialize()
 
     g_totalCpuCount = cpuCount;
 
-    //
-    // support for FlusProcessWriteBuffers
-    //
-
-    assert(s_flushUsingMemBarrier == 0);
-
-    if (CanFlushUsingMembarrier())
+    if (!minipal_initialize_memory_barrier_process_wide())
     {
-        s_flushUsingMemBarrier = TRUE;
+        return false;
     }
-#ifndef TARGET_APPLE
-    else
-    {
-        assert(g_helperPage == 0);
-
-        g_helperPage = static_cast<uint8_t*>(mmap(0, OS_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
-
-        if (g_helperPage == MAP_FAILED)
-        {
-            return false;
-        }
-
-        // Verify that the s_helperPage is really aligned to the g_SystemInfo.dwPageSize
-        assert((((size_t)g_helperPage) & (OS_PAGE_SIZE - 1)) == 0);
-
-        // Locking the page ensures that it stays in memory during the two mprotect
-        // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
-        // those calls, they would not have the expected effect of generating IPI.
-        int status = mlock(g_helperPage, OS_PAGE_SIZE);
-
-        if (status != 0)
-        {
-            return false;
-        }
-
-        status = pthread_mutex_init(&g_flushProcessWriteBuffersMutex, NULL);
-        if (status != 0)
-        {
-            munlock(g_helperPage, OS_PAGE_SIZE);
-            return false;
-        }
-    }
-#endif // !TARGET_APPLE
 
     InitializeCGroup();
 
@@ -373,13 +248,6 @@ bool GCToOSInterface::Initialize()
 // Shutdown the interface implementation
 void GCToOSInterface::Shutdown()
 {
-    int ret = munlock(g_helperPage, OS_PAGE_SIZE);
-    assert(ret == 0);
-    ret = pthread_mutex_destroy(&g_flushProcessWriteBuffersMutex);
-    assert(ret == 0);
-
-    munmap(g_helperPage, OS_PAGE_SIZE);
-
     CleanupCGroup();
 }
 
@@ -389,18 +257,7 @@ void GCToOSInterface::Shutdown()
 //  Numeric id of the current thread, as best we can retrieve it.
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
 {
-#if defined(__linux__)
-    return (uint64_t)syscall(SYS_gettid);
-#elif HAVE_PTHREAD_GETTHREADID_NP
-    return (uint64_t)pthread_getthreadid_np();
-#elif HAVE_PTHREAD_THREADID_NP
-    unsigned long long tid;
-    pthread_threadid_np(pthread_self(), &tid);
-    return (uint64_t)tid;
-#else
-    // Fallback in case we don't know how to get integer thread id on the current platform
-    return (uint64_t)pthread_self();
-#endif
+    return (uint64_t)minipal_get_current_thread_id();
 }
 
 // Get the process ID of the process.
@@ -438,86 +295,6 @@ uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 bool GCToOSInterface::CanGetCurrentProcessorNumber()
 {
     return HAVE_SCHED_GETCPU;
-}
-
-// Flush write buffers of processors that are executing threads of the current process
-void GCToOSInterface::FlushProcessWriteBuffers()
-{
-    if (s_flushUsingMemBarrier)
-    {
-        int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0);
-        assert(status == 0 && "Failed to flush using membarrier");
-    }
-    else if (g_helperPage != 0)
-    {
-        int status = pthread_mutex_lock(&g_flushProcessWriteBuffersMutex);
-        assert(status == 0 && "Failed to lock the flushProcessWriteBuffersMutex lock");
-
-        // Changing a helper memory page protection from read / write to no access
-        // causes the OS to issue IPI to flush TLBs on all processors. This also
-        // results in flushing the processor buffers.
-        status = mprotect(g_helperPage, OS_PAGE_SIZE, PROT_READ | PROT_WRITE);
-        assert(status == 0 && "Failed to change helper page protection to read / write");
-
-        // Ensure that the page is dirty before we change the protection so that
-        // we prevent the OS from skipping the global TLB flush.
-        __sync_add_and_fetch((size_t*)g_helperPage, 1);
-
-        status = mprotect(g_helperPage, OS_PAGE_SIZE, PROT_NONE);
-        assert(status == 0 && "Failed to change helper page protection to no access");
-
-        status = pthread_mutex_unlock(&g_flushProcessWriteBuffersMutex);
-        assert(status == 0 && "Failed to unlock the flushProcessWriteBuffersMutex lock");
-    }
-#ifdef TARGET_APPLE
-    else
-    {
-        mach_msg_type_number_t cThreads;
-        thread_act_t *pThreads;
-        kern_return_t machret = task_threads(mach_task_self(), &pThreads, &cThreads);
-        CHECK_MACH("task_threads()", machret);
-
-        uintptr_t sp;
-        uintptr_t registerValues[128];
-
-        // Iterate through each of the threads in the list.
-        for (mach_msg_type_number_t i = 0; i < cThreads; i++)
-        {
-            if (__builtin_available (macOS 10.14, iOS 12, tvOS 9, *))
-            {
-                // Request the threads pointer values to force the thread to emit a memory barrier
-                size_t registers = 128;
-                machret = thread_get_register_pointer_values(pThreads[i], &sp, &registers, registerValues);
-            }
-            else
-            {
-                // fallback implementation for older OS versions
-#if defined(HOST_AMD64)
-                x86_thread_state64_t threadState;
-                mach_msg_type_number_t count = x86_THREAD_STATE64_COUNT;
-                machret = thread_get_state(pThreads[i], x86_THREAD_STATE64, (thread_state_t)&threadState, &count);
-#elif defined(HOST_ARM64)
-                arm_thread_state64_t threadState;
-                mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
-                machret = thread_get_state(pThreads[i], ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
-#else
-                #error Unexpected architecture
-#endif
-            }
-
-            if (machret == KERN_INSUFFICIENT_BUFFER_SIZE)
-            {
-                CHECK_MACH("thread_get_register_pointer_values()", machret);
-            }
-
-            machret = mach_port_deallocate(mach_task_self(), pThreads[i]);
-            CHECK_MACH("mach_port_deallocate()", machret);
-        }
-        // Deallocate the thread list now we're done with it.
-        machret = vm_deallocate(mach_task_self(), (vm_address_t)pThreads, cThreads * sizeof(thread_act_t));
-        CHECK_MACH("vm_deallocate()", machret);
-    }
-#endif // TARGET_APPLE
 }
 
 // Break into a debugger. Uses a compiler intrinsic if one is available,
@@ -580,7 +357,11 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
     }
 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
-    void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE | hugePagesFlag, -1, 0);
+    int mmapFlags = MAP_ANON | MAP_PRIVATE | hugePagesFlag;
+#ifdef __HAIKU__
+    mmapFlags |= MAP_NORESERVE;
+#endif
+    void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, mmapFlags, -1, 0);
 
     if (pRetVal != MAP_FAILED)
     {
@@ -600,7 +381,7 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
         }
 
         pRetVal = pAlignedRetVal;
-#ifdef MADV_DONTDUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
         // Do not include reserved uncommitted memory in coredump.
         if (!committing)
         {
@@ -648,9 +429,13 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  true if it has succeeded, false if it has failed
 static bool VirtualCommitInner(void* address, size_t size, uint16_t node, bool newMemory)
 {
+#ifndef TARGET_WASM
     bool success = mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
+#else
+    bool success = true;
+#endif // !TARGET_WASM
 
-#ifdef MADV_DODUMP
+#if defined(MADV_DONTDUMP) && !defined(TARGET_WASM)
     if (success && !newMemory)
     {
         // Include committed memory in coredump. New memory is included by default.
@@ -729,7 +514,11 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // that much more clear to the operating system that we no
     // longer need these pages. Also, GC depends on re-committed pages to
     // be zeroed-out.
-    bool bRetVal = mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != MAP_FAILED;
+    int mmapFlags = MAP_FIXED | MAP_ANON | MAP_PRIVATE;
+#ifdef TARGET_HAIKU
+    mmapFlags |= MAP_NORESERVE;
+#endif
+    bool bRetVal = mmap(address, size, PROT_NONE, mmapFlags, -1, 0) != MAP_FAILED;
 
 #ifdef MADV_DONTDUMP
     if (bRetVal)
@@ -862,10 +651,10 @@ done:
     return result;
 }
 
-static size_t GetLogicalProcessorCacheSizeFromOS()
+static void GetLogicalProcessorCacheSizeFromSysConf(size_t* cacheLevel, size_t* cacheSize)
 {
-    size_t cacheLevel = 0;
-    size_t cacheSize = 0;
+    assert (cacheLevel != nullptr);
+    assert (cacheSize != nullptr);
 
 #if defined(_SC_LEVEL1_DCACHE_SIZE) || defined(_SC_LEVEL2_CACHE_SIZE) || defined(_SC_LEVEL3_CACHE_SIZE) || defined(_SC_LEVEL4_CACHE_SIZE)
     const int cacheLevelNames[] =
@@ -881,47 +670,105 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         long size = sysconf(cacheLevelNames[i]);
         if (size > 0)
         {
-            cacheSize = (size_t)size;
-            cacheLevel = i + 1;
+            *cacheSize = (size_t)size;
+            *cacheLevel = i + 1;
             break;
         }
     }
 #endif
+}
+
+static void GetLogicalProcessorCacheSizeFromSysFs(size_t* cacheLevel, size_t* cacheSize)
+{
+    assert (cacheLevel != nullptr);
+    assert (cacheSize != nullptr);
 
 #if defined(TARGET_LINUX) && !defined(HOST_ARM) && !defined(HOST_X86)
-    if (cacheSize == 0)
+    //
+    // Retrieve cachesize via sysfs by reading the file /sys/devices/system/cpu/cpu0/cache/index{LastLevelCache}/size
+    // for the platform. Currently musl and arm64 should be only cases to use
+    // this method to determine cache size.
+    //
+    size_t level;
+    char path_to_size_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/size";
+    char path_to_level_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/level";
+    int index = 40;
+    assert(path_to_size_file[index] == '-');
+    assert(path_to_level_file[index] == '-');
+
+    for (int i = 0; i < 5; i++)
     {
-        //
-        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available
-        // for the platform. Currently musl and arm64 should be only cases to use
-        // this method to determine cache size.
-        //
-        size_t level;
-        char path_to_size_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/size";
-        char path_to_level_file[] =  "/sys/devices/system/cpu/cpu0/cache/index-/level";
-        int index = 40;
-        assert(path_to_size_file[index] == '-');
-        assert(path_to_level_file[index] == '-');
+        path_to_size_file[index] = (char)(48 + i);
 
-        for (int i = 0; i < 5; i++)
+        uint64_t cache_size_from_sys_file = 0;
+
+        if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
         {
-            path_to_size_file[index] = (char)(48 + i);
+            *cacheSize = std::max(*cacheSize, (size_t)cache_size_from_sys_file);
 
-            uint64_t cache_size_from_sys_file = 0;
-
-            if (ReadMemoryValueFromFile(path_to_size_file, &cache_size_from_sys_file))
+            path_to_level_file[index] = (char)(48 + i);
+            if (ReadMemoryValueFromFile(path_to_level_file, &level))
             {
-                cacheSize = std::max(cacheSize, (size_t)cache_size_from_sys_file);
-
-                path_to_level_file[index] = (char)(48 + i);
-                if (ReadMemoryValueFromFile(path_to_level_file, &level))
-                {
-                    cacheLevel = level;
-                }
+                *cacheLevel = level;
             }
         }
     }
 #endif
+}
+
+static void GetLogicalProcessorCacheSizeFromHeuristic(size_t* cacheLevel, size_t* cacheSize)
+{
+    assert (cacheLevel != nullptr);
+    assert (cacheSize != nullptr);
+
+#if (defined(TARGET_LINUX) && !defined(TARGET_APPLE))
+    {
+        // Use the following heuristics at best depending on the CPU count
+        // 1 ~ 4   :  4 MB
+        // 5 ~ 16  :  8 MB
+        // 17 ~ 64 : 16 MB
+        // 65+     : 32 MB
+        DWORD logicalCPUs = g_processAffinitySet.Count();
+        if (logicalCPUs < 5)
+        {
+            *cacheSize = 4;
+        }
+        else if (logicalCPUs < 17)
+        {
+            *cacheSize = 8;
+        }
+        else if (logicalCPUs < 65)
+        {
+            *cacheSize = 16;
+        }
+        else
+        {
+            *cacheSize = 32;
+        }
+
+        *cacheSize *= (1024 * 1024);
+    }
+#endif
+}
+
+static size_t GetLogicalProcessorCacheSizeFromOS()
+{
+    size_t cacheLevel = 0;
+    size_t cacheSize = 0;
+
+    if (GCConfig::GetGCCacheSizeFromSysConf())
+    {
+        GetLogicalProcessorCacheSizeFromSysConf(&cacheLevel, &cacheSize);
+    }
+
+    if (cacheSize == 0)
+    {
+        GetLogicalProcessorCacheSizeFromSysFs(&cacheLevel, &cacheSize);
+        if (cacheSize == 0)
+        {
+            GetLogicalProcessorCacheSizeFromHeuristic(&cacheLevel, &cacheSize);
+        }
+    }
 
 #if HAVE_SYSCTLBYNAME
     if (cacheSize == 0)
@@ -948,32 +795,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
 #if (defined(HOST_ARM64) || defined(HOST_LOONGARCH64)) && !defined(TARGET_APPLE)
     if (cacheLevel != 3)
     {
-        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
-        // from most of the machines.
-        // Hence, just use the following heuristics at best depending on the CPU count
-        // 1 ~ 4   :  4 MB
-        // 5 ~ 16  :  8 MB
-        // 17 ~ 64 : 16 MB
-        // 65+     : 32 MB
-        DWORD logicalCPUs = g_processAffinitySet.Count();
-        if (logicalCPUs < 5)
-        {
-            cacheSize = 4;
-        }
-        else if (logicalCPUs < 17)
-        {
-            cacheSize = 8;
-        }
-        else if (logicalCPUs < 65)
-        {
-            cacheSize = 16;
-        }
-        else
-        {
-            cacheSize = 32;
-        }
-
-        cacheSize *= (1024 * 1024);
+        GetLogicalProcessorCacheSizeFromHeuristic(&cacheLevel, &cacheSize);
     }
 #endif
 
@@ -997,7 +819,7 @@ static uint64_t GetMemorySizeMultiplier(char units)
     return 1;
 }
 
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
 // Try to read the MemAvailable entry from /proc/meminfo.
 // Return true if the /proc/meminfo existed, the entry was present and we were able to parse it.
 static bool ReadMemAvailable(uint64_t* memAvailable)
@@ -1030,7 +852,7 @@ static bool ReadMemAvailable(uint64_t* memAvailable)
 
     return foundMemAvailable;
 }
-#endif // __APPLE__
+#endif // !defined(__APPLE__) && !defined(__HAIKU__)
 
 // Get size of the largest cache on the processor die
 // Parameters:
@@ -1259,6 +1081,14 @@ uint64_t GetAvailablePhysicalMemory()
     sysctlbyname("vm.stats.vm.v_free_count", &free_count, &sz, NULL, 0);
 
     available = (inactive_count + laundry_count + free_count) * sysconf(_SC_PAGESIZE);
+#elif defined(__HAIKU__)
+    system_info info;
+    if (get_system_info(&info) == B_OK)
+    {
+        available = info.free_memory;
+    }
+#elif defined(__EMSCRIPTEN__)
+    available = emscripten_get_heap_max() - emscripten_get_heap_size();
 #else // Linux
     static volatile bool tryReadMemInfo = true;
 
@@ -1431,22 +1261,7 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 //  The counter value
 int64_t GCToOSInterface::QueryPerformanceCounter()
 {
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#elif HAVE_CLOCK_MONOTONIC
-    struct timespec ts;
-    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-    if (result != 0)
-    {
-        assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
-        __UNREACHABLE();
-    }
-
-    return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
-#else
-#error " clock_gettime(CLOCK_MONOTONIC) or clock_gettime_nsec_np() must be supported."
-#endif
+    return minipal_hires_ticks();
 }
 
 // Get a frequency of the high precision performance counter
@@ -1455,7 +1270,7 @@ int64_t GCToOSInterface::QueryPerformanceCounter()
 int64_t GCToOSInterface::QueryPerformanceFrequency()
 {
     // The counter frequency of gettimeofday is in microseconds.
-    return tccSecondsToNanoSeconds;
+    return minipal_hires_tick_frequency();
 }
 
 // Get a time stamp with a low precision
@@ -1463,42 +1278,7 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
 //  Time stamp in milliseconds
 uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
-    uint64_t retval = 0;
-
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    retval = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / tccMilliSecondsToNanoSeconds;
-#elif HAVE_CLOCK_MONOTONIC
-    struct timespec ts;
-
-#if HAVE_CLOCK_MONOTONIC_COARSE
-    clockid_t clockType = CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
-#else
-    clockid_t clockType = CLOCK_MONOTONIC;
-#endif
-
-    if (clock_gettime(clockType, &ts) != 0)
-    {
-#if HAVE_CLOCK_MONOTONIC_COARSE
-        assert(!"clock_gettime(HAVE_CLOCK_MONOTONIC_COARSE) failed\n");
-#else
-        assert(!"clock_gettime(CLOCK_MONOTONIC) failed\n");
-#endif
-    }
-
-    retval = (ts.tv_sec * tccSecondsToMilliSeconds) + (ts.tv_nsec / tccMilliSecondsToNanoSeconds);
-#else
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) == 0)
-    {
-        retval = (tv.tv_sec * tccSecondsToMilliSeconds) + (tv.tv_usec / tccMilliSecondsToMicroSeconds);
-    }
-    else
-    {
-        assert(!"gettimeofday() failed\n");
-    }
-#endif
-
-    return retval;
+    return (uint64_t)minipal_lowres_ticks();
 }
 
 // Gets the total number of processors on the machine, not taking
@@ -1573,44 +1353,4 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
 bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_string, size_t* start_index, size_t* end_index)
 {
     return ParseIndexOrRange(config_string, start_index, end_index);
-}
-
-// Initialize the critical section
-bool CLRCriticalSection::Initialize()
-{
-    pthread_mutexattr_t mutexAttributes;
-    int st = pthread_mutexattr_init(&mutexAttributes);
-    if (st != 0)
-    {
-        return false;
-    }
-
-    st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
-    if (st == 0)
-    {
-        st = pthread_mutex_init(&m_cs.mutex, &mutexAttributes);
-    }
-
-    pthread_mutexattr_destroy(&mutexAttributes);
-
-    return (st == 0);
-}
-
-// Destroy the critical section
-void CLRCriticalSection::Destroy()
-{
-    int st = pthread_mutex_destroy(&m_cs.mutex);
-    assert(st == 0);
-}
-
-// Enter the critical section. Blocks until the section can be entered.
-void CLRCriticalSection::Enter()
-{
-    pthread_mutex_lock(&m_cs.mutex);
-}
-
-// Leave the critical section
-void CLRCriticalSection::Leave()
-{
-    pthread_mutex_unlock(&m_cs.mutex);
 }

@@ -11,9 +11,6 @@
     <EmbeddedResource Include="Templates\*.*" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
-  </ItemGroup>
-  <ItemGroup>
       <ProjectReference Include="$(RepoRoot)src\tasks\MobileBuildTasks\MobileBuildTasks.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -23,6 +20,7 @@
     <Compile Include="..\Common\Builders\CompiledAssembly.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
     <Compile Include="..\AppleAppBuilder\TargetOS.cs" />
+    <Compile Include="..\AppleAppBuilder\TargetRuntime.cs" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">

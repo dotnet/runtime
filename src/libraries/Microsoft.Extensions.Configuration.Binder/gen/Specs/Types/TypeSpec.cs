@@ -17,6 +17,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             (DisplayString, FullName) = type.GetTypeNames();
             IdentifierCompatibleSubstring = type.ToIdentifierCompatibleSubstring();
             IsValueType = type.IsValueType;
+
+            if (type is INamedTypeSymbol namedTypeSymbol)
+            {
+                IsValueTuple = namedTypeSymbol.IsTupleType;
+                IsExactIEnumerableOfT = namedTypeSymbol.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T;
+            }
         }
 
         public TypeRef TypeRef { get; }
@@ -36,6 +42,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public string IdentifierCompatibleSubstring { get; }
 
         public bool IsValueType { get; }
+
+        public bool IsValueTuple { get; }
+
+        public bool IsExactIEnumerableOfT { get; }
     }
 
     public abstract record ComplexTypeSpec : TypeSpec

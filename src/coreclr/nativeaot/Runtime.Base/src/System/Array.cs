@@ -31,7 +31,7 @@ namespace System
     internal class RawArrayData
     {
         public uint Length; // Array._numComponents padded to IntPtr
-#if BIT64
+#if TARGET_64BIT
         public uint Padding;
 #endif
         public byte Data;

@@ -16,7 +16,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ToList_AlwaysCreateACopy()
         {
-            List<int> sourceList = new List<int>() { 1, 2, 3, 4, 5 };
+            List<int> sourceList = [1, 2, 3, 4, 5];
             List<int> resultList = sourceList.ToList();
 
             Assert.NotSame(sourceList, resultList);
@@ -48,7 +48,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ToList_ProduceCorrectList()
         {
-            int[] sourceArray = new int[] { 1, 2, 3, 4, 5, 6, 7 };
+            int[] sourceArray = [1, 2, 3, 4, 5, 6, 7];
             RunToListOnAllCollectionTypes(sourceArray,
                 resultList =>
                 {
@@ -56,7 +56,7 @@ namespace System.Linq.Tests
                     Assert.Equal(sourceArray, resultList);
                 });
 
-            string[] sourceStringArray = new string[] { "1", "2", "3", "4", "5", "6", "7", "8" };
+            string[] sourceStringArray = ["1", "2", "3", "4", "5", "6", "7", "8"];
             RunToListOnAllCollectionTypes(sourceStringArray,
                 resultStringList =>
                 {
@@ -75,7 +75,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ToList_TouchCountWithICollection()
         {
-            TestCollection<int> source = new TestCollection<int>(new int[] { 1, 2, 3, 4 });
+            TestCollection<int> source = new TestCollection<int>([1, 2, 3, 4]);
             var resultList = source.ToList();
 
             Assert.Equal(source, resultList);
@@ -94,7 +94,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ToList_UseCopyToWithICollection()
         {
-            TestCollection<int> source = new TestCollection<int>(new int[] { 1, 2, 3, 4 });
+            TestCollection<int> source = new TestCollection<int>([1, 2, 3, 4]);
             var resultList = source.ToList();
 
             Assert.Equal(source, resultList);
@@ -193,7 +193,7 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceIsEmptyICollectionT()
         {
-            int[] source = { };
+            int[] source = [];
 
             ICollection<int> collection = source as ICollection<int>;
 
@@ -204,8 +204,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SourceIsICollectionTWithFewElements()
         {
-            int?[] source = { -5, null, 0, 10, 3, -1, null, 4, 9 };
-            int?[] expected = { -5, null, 0, 10, 3, -1, null, 4, 9 };
+            int?[] source = [-5, null, 0, 10, 3, -1, null, 4, 9];
+            int?[] expected = [-5, null, 0, 10, 3, -1, null, 4, 9];
 
             ICollection<int?> collection = source as ICollection<int?>;
 
@@ -224,7 +224,7 @@ namespace System.Linq.Tests
         public void SourceNotICollectionAndHasElements()
         {
             IEnumerable<int> source = NumberRangeGuaranteedNotCollectionType(-4, 10);
-            int[] expected = { -4, -3, -2, -1, 0, 1, 2, 3, 4, 5 };
+            int[] expected = [-4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
 
             Assert.Null(source as ICollection<int>);
 
@@ -235,7 +235,7 @@ namespace System.Linq.Tests
         public void SourceNotICollectionAndAllNull()
         {
             IEnumerable<int?> source = RepeatedNullableNumberGuaranteedNotCollectionType(null, 5);
-            int?[] expected = { null, null, null, null, null };
+            int?[] expected = [null, null, null, null, null];
 
             Assert.Null(source as ICollection<int>);
 

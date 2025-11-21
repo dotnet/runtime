@@ -20,7 +20,6 @@ Revision History:
 #include "pal/file.h"
 #include "pal/process.h"
 #include "pal/module.h"
-#include "pal/malloc.hpp"
 #include "pal/stackstring.hpp"
 
 #include <errno.h>

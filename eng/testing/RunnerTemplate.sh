@@ -14,7 +14,7 @@ EXECUTION_DIR=$(dirname "$0")
 RUNTIME_PATH=''
 RSP_FILE=''
 
-while [[ $# > 0 ]]; do
+while [[ $# -gt 0 ]]; do
   opt="$(echo "${1}" | tr "[:upper:]" "[:lower:]")"
   case "$opt" in
     --help|-h)
@@ -56,7 +56,7 @@ exitcode_list[133]="SIGTRAP Breakpoint hit. Core dumped."
 exitcode_list[134]="SIGABRT Abort. Managed or native assert, or runtime check such as heap corruption, caused call to abort(). Core dumped."
 exitcode_list[135]="IGBUS   Unaligned memory access. Core dumped."
 exitcode_list[136]="SIGFPE  Bad floating point arguments. Core dumped."
-exitcode_list[137]="SIGKILL Killed either due to out of memory/resources (see /var/log/messages) or by explicit kill."
+exitcode_list[137]="SIGKILL Killed either due to out of memory/resources (see /var/log/messages) or by explicit kill. No dump will be available for this."
 exitcode_list[139]="SIGSEGV Illegal memory access. Deref invalid pointer, overrunning buffer, stack overflow etc. Core dumped."
 exitcode_list[143]="SIGTERM Terminated. Usually before SIGKILL."
 exitcode_list[159]="SIGSYS  Bad System Call."
@@ -80,7 +80,7 @@ function invoke_xunitlogchecker {
 
   total_dumps=$(find $dump_folder -name "*.dmp" | wc -l)
 
-  if [[ $total_dumps > 0 ]]; then
+  if [[ $total_dumps -gt 0 ]]; then
     echo "Total dumps found in $dump_folder: $total_dumps"
     xunitlogchecker_file_name="$HELIX_CORRELATION_PAYLOAD/XUnitLogChecker"
 

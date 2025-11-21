@@ -12,4 +12,4 @@
 
 #endif/*__MONO_WASM_CONFIG_H__*/
 
-// TODOWASI deduplicate with src/mono/wasm/runtime/wasm-config.h.in
+// TODOWASI deduplicate with src/mono/browser/runtime/wasm-config.h.in

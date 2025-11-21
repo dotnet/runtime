@@ -38,7 +38,7 @@
     {
         StackBlock     *m_Next;         // Next oldest block in list
         DWORD_PTR   m_Length;       // Length of block excluding header  (needs to be pointer-sized for alignment on IA64)
-        INDEBUG(Sentinel*   m_Sentinel;)    // insure that we don't fall of the end of the buffer
+        INDEBUG(Sentinel*   m_Sentinel;)    // ensure that we don't fall of the end of the buffer
         INDEBUG(void**      m_Pad;)    		// keep the size a multiple of 8
         char *GetData() { return (char *)(this + 1);}
     };

@@ -159,9 +159,13 @@ namespace System.Diagnostics
     ///
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
-    [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
+#pragma warning disable ESGEN001 // EventSource class is not partial. It's blocked by https://github.com/dotnet/runtime/issues/121205
+    [EventSource(Name = DiagnosticSourceEventSourceName)]
     internal sealed class DiagnosticSourceEventSource : EventSource
+#pragma warning restore ESGEN001
     {
+        private const string DiagnosticSourceEventSourceName = "Microsoft-Diagnostics-DiagnosticSource";
+
         public static readonly DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();
 
         public static class Keywords
@@ -350,11 +354,28 @@ namespace System.Diagnostics
             WriteEvent(12, SourceName, ActivityName, Arguments);
 
         /// <summary>
+        /// Used to send version information.
+        /// </summary>
+        [Event(13, Keywords = Keywords.Messages)]
+        public void Version(int Major, int Minor, int Patch)
+        {
+            WriteEvent(13, Major, Minor, Patch);
+        }
+
+        /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
         [NonEvent]
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
+            if (command.Command == EventCommand.Enable)
+            {
+                Version(
+                    ThisAssembly.AssemblyFileVersion.Major,
+                    ThisAssembly.AssemblyFileVersion.Minor,
+                    ThisAssembly.AssemblyFileVersion.Build);
+            }
+
             // On every command (which the debugger can force by turning on this EventSource with ETW)
             // call a function that the debugger can hook to do an arbitrary func evaluation.
             BreakPointWithDebuggerFuncEval();
@@ -385,10 +406,8 @@ namespace System.Diagnostics
         }
 
         #region private
-        private DiagnosticSourceEventSource()
-            // This constructor uses EventSourceSettings which is only available on V4.6 and above
-            // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
-            : base(EventSourceSettings.EtwSelfDescribingEventFormat)
+        // This event source uses IEnumerable<T> as an event parameter type which is only supported by EtwSelfDescribingEventFormat.
+        private DiagnosticSourceEventSource() : base(DiagnosticSourceEventSourceName, EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
 

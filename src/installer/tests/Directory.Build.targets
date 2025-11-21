@@ -1,9 +1,16 @@
 <Project>
 
+  <!-- Exclude any ProjectReferences to framework assemblies on the latest framework -->
+  <Import Project="$(LibrariesProjectRoot)NetCoreAppLibrary.props" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <ProjectReferenceExclusion Include="@(NetCoreAppLibrary)" />
+  </ItemGroup>
+
+  <Target Name="GetTargetDir" Returns="$([System.IO.Path]::GetFullPath('$(TargetDir)'))" />
+
   <Target Name="SetupTestContextVariables"
           Condition="'$(IsTestProject)' == 'true'"
           DependsOnTargets="
-            GetProductVersions;
             DetermineTestOutputDirectory"
           BeforeTargets="Build">
     <PropertyGroup>
@@ -41,7 +48,7 @@
     -->
     <ItemGroup>
       <TestContextVariable Include="TEST_ARTIFACTS=$(SystemPathTestsOutputDir)" />
-      <TestContextVariable Include="BUILD_RID=$(OutputRID)" />
+      <TestContextVariable Include="BUILD_RID=$(TargetRid)" />
       <TestContextVariable Include="BUILD_ARCHITECTURE=$(TargetArchitecture)" />
       <TestContextVariable Include="BUILD_CONFIGURATION=$(Configuration)" />
       <TestContextVariable Include="MNA_VERSION=$(NETCoreAppRuntimePackageVersion)" />
@@ -53,6 +60,12 @@
       File="$(OutDir)TestContextVariables.txt"
       Overwrite="true"
       Lines="@(TestContextVariable)" />
+
+    <!-- Write an empty global.json to the output, such that running the test -->
+    <WriteLinesToFile
+      File="$(OutDir)global.json"
+      Lines="{}"
+      WriteOnlyWhenDifferent="true" />
   </Target>
 
   <Target Name="DetermineTestOutputDirectory">

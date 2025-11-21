@@ -12,6 +12,10 @@
 #ifndef __CALLING_CONVENTION_INCLUDED
 #define __CALLING_CONVENTION_INCLUDED
 
+#ifdef FEATURE_INTERPRETER
+#include <interpretershared.h>
+#endif // FEATURE_INTERPRETER
+
 BOOL IsRetBuffPassedAsFirstArg();
 
 // Describes how a single argument is laid out in registers and/or stack locations when given as an input to a
@@ -105,6 +109,12 @@ struct ArgLocDesc
     }
 };
 
+#ifdef TARGET_WASM
+#define TARGET_REGISTER_SIZE INTERP_STACK_SLOT_SIZE
+#else
+#define TARGET_REGISTER_SIZE TARGET_POINTER_SIZE
+#endif
+
 //
 // TransitionBlock is layout of stack frame of method call, saved argument registers and saved callee saved registers. Even though not
 // all fields are used all the time, we use uniform form for simplicity.
@@ -159,16 +169,15 @@ struct TransitionBlock
             INT64 s6;
             INT64 s7;
             INT64 s8;
-            INT64 tp;
         };
     };
-    //TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
+    TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
     ArgumentRegisters       m_argumentRegisters;
 #elif defined(TARGET_RISCV64)
     union {
         CalleeSavedRegisters m_calleeSavedRegisters;
         struct {
-            INT64 s0; // frame pointer
+            INT64 fp; // frame pointer
             TADDR m_ReturnAddress;
             INT64 s1;
             INT64 s2;
@@ -185,7 +194,17 @@ struct TransitionBlock
             INT64 gp;
         };
     };
-    //TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
+    TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
+    ArgumentRegisters       m_argumentRegisters;
+#elif defined(TARGET_WASM)
+    // No transition block on WASM yet
+    union {
+        CalleeSavedRegisters m_calleeSavedRegisters;
+        // alias saved link register as m_ReturnAddress
+        struct {
+            TADDR m_ReturnAddress;
+        };
+    };
     ArgumentRegisters       m_argumentRegisters;
 #else
     PORTABILITY_ASSERT("TransitionBlock");
@@ -230,7 +249,10 @@ struct TransitionBlock
     {
         LIMITED_METHOD_CONTRACT;
         int offs;
-#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
+        // on wasm we don't have registers, so instead we put the arguments
+        // which would be in registers on other architectures
+        // on the stack right after the transition block
+#if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
         offs = sizeof(TransitionBlock);
 #else
         offs = offsetof(TransitionBlock, m_argumentRegisters);
@@ -268,15 +290,15 @@ struct TransitionBlock
         _ASSERTE(offset != TransitionBlock::StructInRegsOffset);
 #endif
         offset -= GetOffsetOfArgumentRegisters();
-        _ASSERTE((offset % TARGET_POINTER_SIZE) == 0);
-        return offset / TARGET_POINTER_SIZE;
+        _ASSERTE((offset % TARGET_REGISTER_SIZE) == 0);
+        return offset / TARGET_REGISTER_SIZE;
     }
 
     static UINT GetStackArgumentIndexFromOffset(int offset)
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (offset - TransitionBlock::GetOffsetOfArgs()) / TARGET_POINTER_SIZE;
+        return (offset - TransitionBlock::GetOffsetOfArgs()) / TARGET_REGISTER_SIZE;
     }
 
     static UINT GetStackArgumentByteIndexFromOffset(int offset)
@@ -482,31 +504,31 @@ public:
 
                 while (typ == ELEMENT_TYPE_VALUETYPE &&
                     pMT->GetNumInstanceFields() == 1 && (!pMT->HasLayout()	||
-                    pMT->GetNumInstanceFieldBytes() == 4	
-                    )) // Don't do the optimization if we're getting specified anything but the trivial layout.	
-                {	
-                    FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();	
+                    pMT->GetNumInstanceFieldBytes() == 4
+                    )) // Don't do the optimization if we're getting specified anything but the trivial layout.
+                {
+                    FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();
                     CorElementType type = pFD->GetFieldType();
 
                     bool exitLoop = false;
-                    switch (type)	
+                    switch (type)
                     {
                         case ELEMENT_TYPE_VALUETYPE:
                         {
-                            //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?	
-                            TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();	
+                            //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?
+                            TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();
                             CONSISTENCY_CHECK(!fldHnd.IsNull());
                             pMT = fldHnd.GetMethodTable();
                             FALLTHROUGH;
-                        }	
+                        }
                         case ELEMENT_TYPE_PTR:
                         case ELEMENT_TYPE_I:
                         case ELEMENT_TYPE_U:
-                        case ELEMENT_TYPE_I4:	
+                        case ELEMENT_TYPE_I4:
                         case ELEMENT_TYPE_U4:
-                        {	
+                        {
                             typ = type;
-                            break;	
+                            break;
                         }
                         default:
                             exitLoop = true;
@@ -632,6 +654,7 @@ public:
     int GetRetBuffArgOffset();
     int GetVASigCookieOffset();
     int GetParamTypeArgOffset();
+    int GetAsyncContinuationArgOffset();
 
     //------------------------------------------------------------
     // Each time this is called, this returns a byte offset of the next
@@ -642,7 +665,7 @@ public:
     //------------------------------------------------------------
     int GetNextOffset();
 
-    CorElementType GetArgType(TypeHandle *pTypeHandle = NULL)
+    CorElementType GetArgType(TypeHandle *pTypeHandle = NULL) const
     {
         LIMITED_METHOD_CONTRACT;
         if (pTypeHandle != NULL)
@@ -652,7 +675,7 @@ public:
         return m_argType;
     }
 
-    int GetArgSize()
+    int GetArgSize() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_argSize;
@@ -666,6 +689,7 @@ public:
     // explicit arguments have been scanned is platform dependent.
     void GetThisLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetThisOffset(), pLoc); }
     void GetParamTypeLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetParamTypeArgOffset(), pLoc); }
+    void GetAsyncContinuationLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetAsyncContinuationArgOffset(), pLoc); }
     void GetVASigCookieLoc(ArgLocDesc * pLoc) { WRAPPER_NO_CONTRACT; GetSimpleLoc(GetVASigCookieOffset(), pLoc); }
 
 #ifndef CALLDESCR_RETBUFFARGREG
@@ -842,7 +866,7 @@ public:
             pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
             pLoc->m_cFloatReg = 1;
         }
-        else 
+        else
 #endif // UNIX_AMD64_ABI
         if (!TransitionBlock::IsStackArgumentOffset(argOffset))
         {
@@ -925,6 +949,16 @@ public:
     }
 
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+
+#ifdef TARGET_WASM
+
+    // Get layout information for the argument that the ArgIterator is currently visiting.
+    void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
+    {
+        _ASSERTE(!"GetArgLoc not implemented for WASM");
+    }
+#endif // TARGET_WASM
+
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
@@ -949,9 +983,6 @@ protected:
 
 #ifdef TARGET_X86
     int                 m_numRegistersUsed;
-#ifdef FEATURE_INTERPRETER
-    bool                m_fUnmanagedCallConv;
-#endif
 #endif
 
 #ifdef UNIX_AMD64_ABI
@@ -984,21 +1015,26 @@ protected:
 #endif
 
     enum {
-        ITERATION_STARTED               = 0x0001,   // Started iterating over arguments
-        SIZE_OF_ARG_STACK_COMPUTED      = 0x0002,
-        RETURN_FLAGS_COMPUTED           = 0x0004,
-        RETURN_HAS_RET_BUFFER           = 0x0008,   // Cached value of HasRetBuffArg
+        ITERATION_STARTED                 = 0x0001,   // Started iterating over arguments
+        SIZE_OF_ARG_STACK_COMPUTED        = 0x0002,
+        RETURN_FLAGS_COMPUTED             = 0x0004,
+        RETURN_HAS_RET_BUFFER             = 0x0008,   // Cached value of HasRetBuffArg
 
 #ifdef TARGET_X86
-        PARAM_TYPE_REGISTER_MASK        = 0x0030,
-        PARAM_TYPE_REGISTER_STACK       = 0x0010,
-        PARAM_TYPE_REGISTER_ECX         = 0x0020,
-        PARAM_TYPE_REGISTER_EDX         = 0x0030,
+        PARAM_TYPE_REGISTER_MASK          = 0x0030,
+        PARAM_TYPE_REGISTER_STACK         = 0x0010,
+        PARAM_TYPE_REGISTER_ECX           = 0x0020,
+        PARAM_TYPE_REGISTER_EDX           = 0x0030,
+
+        ASYNC_CONTINUATION_REGISTER_MASK  = 0x00C0,
+        ASYNC_CONTINUATION_REGISTER_STACK = 0x0040,
+        ASYNC_CONTINUATION_REGISTER_ECX   = 0x0080,
+        ASYNC_CONTINUATION_REGISTER_EDX   = 0x00C0,
 #endif
 
-        METHOD_INVOKE_NEEDS_ACTIVATION  = 0x0040,   // Flag used by ArgIteratorForMethodInvoke
+        METHOD_INVOKE_NEEDS_ACTIVATION    = 0x0100,   // Flag used by ArgIteratorForMethodInvoke
 
-        RETURN_FP_SIZE_SHIFT            = 8,        // The rest of the flags is cached value of GetFPReturnSize
+        RETURN_FP_SIZE_SHIFT              = 10,       // The rest of the flags is cached value of GetFPReturnSize
     };
 
     void ComputeReturnFlags();
@@ -1055,7 +1091,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetRetBuffArgOffset()
     ret = TransitionBlock::GetOffsetOfRetBuffArgReg();
 #else
     if (this->HasThis())
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
 #endif
 
     return ret;
@@ -1077,12 +1113,12 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetVASigCookieOffset()
 
     if (this->HasThis())
     {
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
     }
 
     if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
     {
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
     }
 
     return ret;
@@ -1130,12 +1166,74 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetParamTypeArgOffset()
 
     if (this->HasThis())
     {
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
     }
 
     if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
     {
-        ret += TARGET_POINTER_SIZE;
+        ret += TARGET_REGISTER_SIZE;
+    }
+
+    return ret;
+#endif
+}
+
+template<class ARGITERATOR_BASE>
+int ArgIteratorTemplate<ARGITERATOR_BASE>::GetAsyncContinuationArgOffset()
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    _ASSERTE(this->HasAsyncContinuation());
+
+#ifdef TARGET_X86
+    // x86 is special as always
+    if (!(m_dwFlags & SIZE_OF_ARG_STACK_COMPUTED))
+        ForceSigWalk();
+
+    switch (m_dwFlags & ASYNC_CONTINUATION_REGISTER_MASK)
+    {
+    case ASYNC_CONTINUATION_REGISTER_ECX:
+        return TransitionBlock::GetOffsetOfArgumentRegisters() + offsetof(ArgumentRegisters, ECX);
+    case ASYNC_CONTINUATION_REGISTER_EDX:
+        return TransitionBlock::GetOffsetOfArgumentRegisters() + offsetof(ArgumentRegisters, EDX);
+    default:
+        break;
+    }
+
+    // If the async continuation is a stack arg, then it comes last unless
+    // there also is a param type arg on the stack, in which case it comes
+    // before it.
+    if (this->HasParamType() && (m_dwFlags & PARAM_TYPE_REGISTER_MASK) == PARAM_TYPE_REGISTER_STACK)
+    {
+        return sizeof(TransitionBlock) + sizeof(void*);
+    }
+
+    return sizeof(TransitionBlock);
+#else
+    // The hidden arg is after this, retbuf and param type arguments by default.
+    int ret = TransitionBlock::GetOffsetOfArgumentRegisters();
+
+    if (this->HasThis())
+    {
+        ret += TARGET_REGISTER_SIZE;
+    }
+
+    if (this->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+    {
+        ret += TARGET_REGISTER_SIZE;
+    }
+
+    if (this->HasParamType())
+    {
+        ret += TARGET_REGISTER_SIZE;
     }
 
     return ret;
@@ -1174,6 +1272,11 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         {
             numRegistersUsed++;
         }
+
+        if (this->HasAsyncContinuation())
+        {
+            numRegistersUsed++;
+        }
 #endif
 
 #ifdef TARGET_X86
@@ -1182,31 +1285,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
             numRegistersUsed = NUM_ARGUMENT_REGISTERS; // Nothing else gets passed in registers for varargs
         }
 
-#ifdef FEATURE_INTERPRETER
-        BYTE callconv = CallConv();
-        switch (callconv)
-        {
-        case IMAGE_CEE_CS_CALLCONV_C:
-        case IMAGE_CEE_CS_CALLCONV_STDCALL:
-            m_numRegistersUsed = NUM_ARGUMENT_REGISTERS;
-            m_ofsStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
-            m_fUnmanagedCallConv = true;
-            break;
-
-        case IMAGE_CEE_CS_CALLCONV_THISCALL:
-        case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-            _ASSERTE_MSG(false, "Unsupported calling convention.");
-
-        default:
-            m_fUnmanagedCallConv = false;
-            m_numRegistersUsed = numRegistersUsed;
-            m_ofsStack = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
-            break;
-        }
-#else
         m_numRegistersUsed = numRegistersUsed;
         m_ofsStack = TransitionBlock::GetOffsetOfArgs() + SizeOfArgStack();
-#endif
 
 #elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
@@ -1230,6 +1310,10 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         m_idxGenReg = numRegistersUsed;
         m_ofsStack = 0;
         m_idxFPReg = 0;
+#elif defined(TARGET_WASM)
+        // we put everything on the stack, we don't have registers
+        // so we put the this and retbuf arguments first, based on the numRegistersUsed count calculated above
+        m_ofsStack = numRegistersUsed * INTERP_STACK_SLOT_SIZE;
 #else
         PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
 #endif
@@ -1264,14 +1348,6 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 #endif
 
 #ifdef TARGET_X86
-#ifdef FEATURE_INTERPRETER
-    if (m_fUnmanagedCallConv)
-    {
-        int argOfs = m_ofsStack;
-        m_ofsStack += StackElemSize(argSize);
-        return argOfs;
-    }
-#endif
     if (IsArgumentInRegister(&m_numRegistersUsed, argType, thValueType))
     {
         return TransitionBlock::GetOffsetOfArgumentRegisters() + (NUM_ARGUMENT_REGISTERS - m_numRegistersUsed) * sizeof(void *);
@@ -1810,6 +1886,13 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
 
     return argOfs;
+#elif defined(TARGET_WASM)
+    int cbArg = ALIGN_UP(argSize, INTERP_STACK_SLOT_SIZE);
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
+
+    m_ofsStack += cbArg;
+
+    return argOfs;
 #else
     PORTABILITY_ASSERT("ArgIteratorTemplate::GetNextOffset");
     return TransitionBlock::InvalidOffset;
@@ -1990,24 +2073,6 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         numRegistersUsed = NUM_ARGUMENT_REGISTERS; // Nothing else gets passed in registers for varargs
     }
 
-#ifdef FEATURE_INTERPRETER
-    BYTE callconv = CallConv();
-    switch (callconv)
-    {
-    case IMAGE_CEE_CS_CALLCONV_C:
-    case IMAGE_CEE_CS_CALLCONV_STDCALL:
-        numRegistersUsed = NUM_ARGUMENT_REGISTERS;
-        nSizeOfArgStack = TransitionBlock::GetOffsetOfArgs() + numRegistersUsed * sizeof(void *);
-        break;
-
-    case IMAGE_CEE_CS_CALLCONV_THISCALL:
-    case IMAGE_CEE_CS_CALLCONV_FASTCALL:
-        _ASSERTE_MSG(false, "Unsupported calling convention.");
-    default:
-        break;
-    }
-#endif // FEATURE_INTERPRETER
-
     DWORD nArgs = this->NumFixedArgs();
     for (DWORD i = 0; i < nArgs; i++)
     {
@@ -2033,6 +2098,23 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
             }
 #endif
         }
+    }
+
+    if (this->HasAsyncContinuation())
+    {
+        DWORD asyncContFlags = 0;
+        if (numRegistersUsed < NUM_ARGUMENT_REGISTERS)
+        {
+            numRegistersUsed++;
+            asyncContFlags = (numRegistersUsed == 1) ?
+                ASYNC_CONTINUATION_REGISTER_ECX : ASYNC_CONTINUATION_REGISTER_EDX;
+        }
+        else
+        {
+            nSizeOfArgStack += sizeof(void *);
+            asyncContFlags = ASYNC_CONTINUATION_REGISTER_STACK;
+        }
+        m_dwFlags |= asyncContFlags;
     }
 
     if (this->HasParamType())
@@ -2108,6 +2190,15 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
     // Clear the iterator started flag
     m_dwFlags &= ~ITERATION_STARTED;
 
+#ifdef TARGET_WASM
+    if (this->NumFixedArgs() == 0)
+    {
+        // We have zero arguments, but we still need to reserve space for hidden arguments which are in registers on other architectures
+        // in non-zero argument cases, the offset is already included in first argument offset.
+        maxOffset += m_ofsStack;
+    }
+#endif // TARGET_WASM
+
     int nSizeOfArgStack = maxOffset - TransitionBlock::GetOffsetOfArgs();
 
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
@@ -2172,7 +2263,13 @@ public:
     BOOL HasParamType()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pSig->GetCallingConventionInfo() & CORINFO_CALLCONV_PARAMTYPE;
+        return m_pSig->HasGenericContextArg();
+    }
+
+    BOOL HasAsyncContinuation()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pSig->HasAsyncContinuation();
     }
 
     BOOL IsVarArg()
@@ -2186,13 +2283,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_pSig->NumFixedArgs();
     }
-
-#ifdef FEATURE_INTERPRETER
-    BYTE CallConv()
-    {
-        return m_pSig->GetCallingConvention();
-    }
-#endif // FEATURE_INTERPRETER
 
     //
     // The following is used by the profiler to dig into the iterator for
@@ -2213,16 +2303,6 @@ public:
     {
         m_pSig = pSig;
     }
-
-#ifdef FEATURE_INTERPRETER
-    ArgIterator(MetaSig* pSig, MethodDesc* pMD)
-    {
-        m_pSig = pSig;
-        bool fCtorOfVariableSizedObject = m_pSig->HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
-        if (fCtorOfVariableSizedObject)
-            m_pSig->ClearHasThis();
-    }
-#endif // FEATURE_INTERPRETER
 
     // This API returns true if we are returning a structure in registers instead of using a byref return buffer
     BOOL HasNonStandardByvalReturn()
@@ -2276,6 +2356,30 @@ inline BOOL IsRetBuffPassedAsFirstArg()
 #else
     return FALSE;
 #endif
+}
+
+inline TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
+{
+    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
+#ifdef TARGET_X86
+    // x86 is special as always
+    pArgument += offsetof(ArgumentRegisters, ECX);
+#endif
+
+    return pArgument;
+}
+
+inline TADDR GetSecondArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
+{
+    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
+#ifdef TARGET_X86
+    // x86 is special as always
+    pArgument += offsetof(ArgumentRegisters, EDX);
+#else
+    pArgument += sizeof(TADDR);
+#endif
+
+    return pArgument;
 }
 
 #endif // __CALLING_CONVENTION_INCLUDED

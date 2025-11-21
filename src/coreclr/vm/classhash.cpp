@@ -759,15 +759,15 @@ PTR_EEClassHashEntry EEClassHashTable::FindByNameHandle(const NameHandle* pName)
     switch (TypeFromToken(typeToken))
     {
     case mdtTypeDef:
-        PREFIX_ASSUME(pNameModule != NULL);
+        _ASSERTE(pNameModule != NULL);
         hash = ComputeHashFunctionWithTypeDef(pTable, m_pCaseSensitiveTable, pNameModule->GetMDImport(), typeToken, &failed);
         break;
     case mdtTypeRef:
-        PREFIX_ASSUME(pNameModule != NULL);
+        _ASSERTE(pNameModule != NULL);
         hash = ComputeHashFunctionWithTypeRef(pTable, m_pCaseSensitiveTable, pNameModule->GetMDImport(), typeToken, &failed);
         break;
     case mdtExportedType:
-        PREFIX_ASSUME(pNameModule != NULL);
+        _ASSERTE(pNameModule != NULL);
         hash = ComputeHashFunctionWithExportedType(pTable, m_pCaseSensitiveTable, pNameModule->GetMDImport(), typeToken, &failed);
         break;
     default:

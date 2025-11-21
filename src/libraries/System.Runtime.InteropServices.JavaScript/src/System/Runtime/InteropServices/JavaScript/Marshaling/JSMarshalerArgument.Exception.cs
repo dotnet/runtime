@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out Exception? value)
+        public void ToManaged(out Exception? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToJS(Exception? value)
+        public void ToJS(Exception? value)
         {
             if (value == null)
             {

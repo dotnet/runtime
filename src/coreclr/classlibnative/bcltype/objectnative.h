@@ -26,15 +26,9 @@ class ObjectNative
 public:
     static FCDECL1(INT32, TryGetHashCode, Object* vThisRef);
     static FCDECL2(FC_BOOL_RET, ContentEquals, Object *pThisRef, Object *pCompareRef);
-    static FCDECL1(FC_BOOL_RET, IsLockHeld, Object* pThisUNSAFE);
 };
 
 extern "C" INT32 QCALLTYPE ObjectNative_GetHashCodeSlow(QCall::ObjectHandleOnStack objHandle);
-extern "C" void QCALLTYPE ObjectNative_GetTypeSlow(MethodTable* pMT, QCall::ObjectHandleOnStack ret);
 extern "C" void QCALLTYPE ObjectNative_AllocateUninitializedClone(QCall::ObjectHandleOnStack objHandle);
-extern "C" BOOL QCALLTYPE Monitor_Wait(QCall::ObjectHandleOnStack pThis, INT32 Timeout);
-extern "C" void QCALLTYPE Monitor_Pulse(QCall::ObjectHandleOnStack pThis);
-extern "C" void QCALLTYPE Monitor_PulseAll(QCall::ObjectHandleOnStack pThis);
-extern "C" INT64 QCALLTYPE Monitor_GetLockContentionCount();
 
 #endif // _OBJECTNATIVE_H_

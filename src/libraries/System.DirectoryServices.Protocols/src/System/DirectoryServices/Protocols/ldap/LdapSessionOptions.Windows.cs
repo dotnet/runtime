@@ -10,6 +10,13 @@ namespace System.DirectoryServices.Protocols
     {
         private static void PALCertFreeCRLContext(IntPtr certPtr) => Interop.Ldap.CertFreeCRLContext(certPtr);
 
+        [UnsupportedOSPlatform("windows")]
+        public string TrustedCertificatesDirectory
+        {
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
+        }
+
         public bool SecureSocketLayer
         {
             get
@@ -24,11 +31,8 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        public int ProtocolVersion
-        {
-            get => GetIntValueHelper(LdapOption.LDAP_OPT_VERSION);
-            set => SetIntValueHelper(LdapOption.LDAP_OPT_VERSION, value);
-        }
+        [UnsupportedOSPlatform("windows")]
+        public void StartNewTlsSessionContext() => throw new PlatformNotSupportedException();
 
         public ReferralChasingOptions ReferralChasing
         {
@@ -47,5 +51,8 @@ namespace System.DirectoryServices.Protocols
                 SetIntValueHelper(LdapOption.LDAP_OPT_REFERRALS, (int)value);
             }
         }
+
+        // In practice, this apparently rarely if ever contains useful text
+        internal string ServerErrorMessage => GetStringValueHelper(LdapOption.LDAP_OPT_SERVER_ERROR, true);
     }
 }
