@@ -276,6 +276,7 @@ namespace System.Diagnostics
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
             [SupportedOSPlatform("maccatalyst")]
+            [UnsupportedOSPlatform("haiku")]
             get
             {
                 EnsureWorkingSetLimits();
@@ -300,6 +301,7 @@ namespace System.Diagnostics
             [UnsupportedOSPlatform("ios")]
             [UnsupportedOSPlatform("tvos")]
             [SupportedOSPlatform("maccatalyst")]
+            [UnsupportedOSPlatform("haiku")]
             get
             {
                 EnsureWorkingSetLimits();

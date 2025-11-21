@@ -998,6 +998,10 @@ check_include_files(
     HAVE_IOSS_H)
 
 check_include_files(
+    image.h
+    HAVE_IMAGE_H)
+
+check_include_files(
     OS.h
     HAVE_OS_H)
 
