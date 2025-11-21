@@ -39,6 +39,8 @@
     <_WasmDefaultFlags Condition="'$(WasmEnableExceptionHandling)' != 'false'">-fwasm-exceptions</_WasmDefaultFlags>
     <_WasmDefaultFlags Condition="'$(WasmEnableSIMD)' == 'true'">-msimd128</_WasmDefaultFlags>
 
+    <_WasmOutputFileName Condition="'$(WasmSingleFileBundle)' != 'true'">dotnet.native.wasm</_WasmOutputFileName>
+
     <WasmEnableStreamingResponse Condition="'$(WasmEnableStreamingResponse)' == ''">true</WasmEnableStreamingResponse>
   </PropertyGroup>
 
