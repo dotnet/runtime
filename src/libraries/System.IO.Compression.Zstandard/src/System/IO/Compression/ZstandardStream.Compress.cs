@@ -45,7 +45,7 @@ namespace System.IO.Compression
         /// </summary>
         /// <param name="size">The size of the source data in bytes.</param>
         /// <remarks>
-        /// This method must be called before writing data to the stream.
+        /// Setting the source size is optional. If set, the information will be stored in the header of the compressed data. This method must be called before writing any data to the stream. The set size is validated during compression, and not respecting the value causes an <see cref="InvalidDataException"/> to be thrown.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Attempting to set the source size on a decompression stream, or compression has already started.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is negative.</exception>
@@ -103,7 +103,7 @@ namespace System.IO.Compression
 
                     if (lastResult == OperationStatus.InvalidData)
                     {
-                        throw new InvalidOperationException(SR.ZstandardStream_Compress_InvalidData);
+                        throw new InvalidDataException(SR.ZstandardStream_Compress_InvalidData);
                     }
                     if (bytesWritten > 0)
                     {

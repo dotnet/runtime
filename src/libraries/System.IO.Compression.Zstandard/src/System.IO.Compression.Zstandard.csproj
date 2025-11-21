@@ -10,14 +10,15 @@
        should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
 
-    <!--missing xml comments on net10.0 (not supported stubs)-->
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.IOCompressionZstandard_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+
+    <!--missing xml comments on net10.0 (not supported stubs)-->
+    <NoWarn Condition="'$(TargetPlatformIdentifier)' == ''">$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">

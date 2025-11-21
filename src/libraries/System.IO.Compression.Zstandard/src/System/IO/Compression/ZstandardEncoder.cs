@@ -414,10 +414,10 @@ namespace System.IO.Compression
             }
         }
 
-        /// <summary>Sets the pledged source size for the next compression operation.</summary>
+        /// <summary>Sets the size of the compressed data for the next compression operation.</summary>
         /// <param name="size">The size of the data to be compressed.</param>
         /// <remarks>
-        /// May be called only before the first <see cref="Compress"/> method call, or after <see cref="Reset"/>.
+        /// Setting the source size is optional. If set, the information will be stored in the header of the compressed data. This method may be called only before the first <see cref="Compress"/> method call, or after <see cref="Reset"/>.
         /// Calling <see cref="Reset"/> clears the size. The size is validated during compression and not respecting
         /// the value causes <see cref="OperationStatus.InvalidData"/>.
         /// </remarks>
