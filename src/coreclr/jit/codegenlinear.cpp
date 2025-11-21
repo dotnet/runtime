@@ -193,6 +193,7 @@ void CodeGen::genCodeForBBlist()
         // and before first of the current block is emitted
         genUpdateLife(block->bbLiveIn);
 
+#if EMIT_GENERATE_GCINFO
         // Even if liveness didn't change, we need to update the registers containing GC references.
         // genUpdateLife will update the registers live due to liveness changes. But what about registers that didn't
         // change? We cleared them out above. Maybe we should just not clear them out, but update the ones that change
@@ -286,6 +287,7 @@ void CodeGen::genCodeForBBlist()
                 }
             }
         }
+#endif // EMIT_GENERATE_GCINFO
 
         /* Start a new code output block */
 
@@ -388,12 +390,14 @@ void CodeGen::genCodeForBBlist()
         }
 #endif
 
+#ifndef TARGET_WASM // TODO-WASM: enable genPoisonFrame
         // Emit poisoning into the init BB that comes right after prolog.
         // We cannot emit this code in the prolog as it might make the prolog too large.
         if (compiler->compShouldPoisonFrame() && block->IsFirst())
         {
             genPoisonFrame(newLiveRegSet);
         }
+#endif // !TARGET_WASM
 
         // Traverse the block in linear order, generating code for each node as we
         // as we encounter it.
@@ -487,8 +491,8 @@ void CodeGen::genCodeForBBlist()
 
         regSet.rsSpillChk();
 
+#if EMIT_GENERATE_GCINFO
         // Make sure we didn't bungle pointer register tracking
-
         regMaskTP ptrRegs       = gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur;
         regMaskTP nonVarPtrRegs = ptrRegs & ~regSet.GetMaskVars();
 
@@ -536,6 +540,7 @@ void CodeGen::genCodeForBBlist()
         }
 
         noway_assert(nonVarPtrRegs == RBM_NONE);
+#endif // EMIT_GENERATE_GCINFO
 #endif // DEBUG
 
 #if defined(DEBUG)
@@ -800,9 +805,9 @@ void CodeGen::genCodeForBBlist()
                 bool isRemovableJmpCandidate = !compiler->fgInDifferentRegions(block, block->GetTarget());
 
                 inst_JMP(EJ_jmp, block->GetTarget(), isRemovableJmpCandidate);
-#else
+#else  // !TARGET_XARCH
                 inst_JMP(EJ_jmp, block->GetTarget());
-#endif // TARGET_XARCH
+#endif // !TARGET_XARCH
             }
 
 #if FEATURE_LOOP_ALIGN
@@ -907,6 +912,12 @@ void CodeGen::genCodeForBBlist()
 #endif
 }
 
+// TODO-WASM-Factoring: this ifdef factoring is temporary. The end factoring should look like this:
+// 1. Everything shared by all codegen backends (incl. WASM) is moved to codegencommon.cpp.
+// 2. Everything else stays here.
+// 3. codegenlinear.cpp gets renamed to codegennative.cpp.
+//
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genRecordAsyncResume:
 //   Record information about an async resume point in the async resume info tabl.e
@@ -1363,6 +1374,7 @@ void CodeGen::genConsumeRegAndCopy(GenTree* node, regNumber needReg)
     genConsumeReg(node);
     genCopyRegIfNeeded(node, needReg);
 }
+#endif // !TARGET_WASM
 
 // Check that registers are consumed in the right order for the current node being generated.
 #ifdef DEBUG
@@ -1416,6 +1428,7 @@ void CodeGen::genCheckConsumeNode(GenTree* const node)
 }
 #endif // DEBUG
 
+#ifndef TARGET_WASM
 //--------------------------------------------------------------------
 // genConsumeReg: Do liveness update for a single register of a multireg child node
 //                that is being consumed by codegen.
@@ -1484,6 +1497,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
     }
     return reg;
 }
+#endif // !TARGET_WASM
 
 //--------------------------------------------------------------------
 // genConsumeReg: Do liveness update for a subnode that is being
@@ -1499,6 +1513,7 @@ regNumber CodeGen::genConsumeReg(GenTree* tree, unsigned multiRegIndex)
 //
 regNumber CodeGen::genConsumeReg(GenTree* tree)
 {
+#if HAS_FIXED_REGISTER_SET
     if (tree->OperIs(GT_COPY))
     {
         genRegCopy(tree);
@@ -1526,15 +1541,16 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     }
 
     genUnspillRegIfNeeded(tree);
+#endif // HAS_FIXED_REGISTER_SET
 
     // genUpdateLife() will also spill local var if marked as GTF_SPILL by calling CodeGen::genSpillVar
     genUpdateLife(tree);
 
+#if EMIT_GENERATE_GCINFO
     // there are three cases where consuming a reg means clearing the bit in the live mask
     // 1. it was not produced by a local
     // 2. it was produced by a local that is going dead
     // 3. it was produced by a local that does not live in that reg (like one allocated on the stack)
-
     if (genIsRegCandidateLocal(tree))
     {
         assert(tree->gtHasReg(compiler));
@@ -1588,11 +1604,13 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     {
         gcInfo.gcMarkRegSetNpt(tree->gtGetRegMask());
     }
+#endif // EMIT_GENERATE_GCINFO
 
     genCheckConsumeNode(tree);
     return tree->GetRegNum();
 }
 
+#ifndef TARGET_WASM
 // Do liveness update for an address tree: one of GT_LEA, GT_LCL_VAR, or GT_CNS_INT (for call indirect).
 void CodeGen::genConsumeAddress(GenTree* addr)
 {
@@ -2576,6 +2594,7 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     genProduceReg(setcc);
 }
 #endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
+#endif // !TARGET_WASM
 
 /*****************************************************************************
  * Unit testing of the emitter: If JitEmitUnitTests is set for this function, generate

@@ -38,7 +38,7 @@ namespace ILCompiler
         {
             TypeDesc objectType = Context.GetWellKnownType(WellKnownType.Object);
             TypeDesc byrefByte = Context.GetWellKnownType(WellKnownType.Byte).MakeByRefType();
-            return _signature = new MethodSignature(0, 0, objectType, [objectType, byrefByte]);
+            return _signature = new MethodSignature(MethodSignatureFlags.Static, 0, objectType, [objectType, byrefByte]);
         }
 
         public override MethodIL EmitIL()
@@ -128,11 +128,18 @@ namespace ILCompiler
     internal sealed partial class ExplicitContinuationAsyncMethod : MethodDesc
     {
         private MethodSignature _signature;
-        private MethodDesc _wrappedMethod;
+        private readonly MethodDesc _wrappedMethod;
+        private readonly MethodDesc _typicalDefinition;
 
         public ExplicitContinuationAsyncMethod(MethodDesc target)
         {
             _wrappedMethod = target;
+
+            MethodDesc targetTypicalDefinition = target.GetTypicalMethodDefinition();
+            if (targetTypicalDefinition != target)
+                _typicalDefinition = new ExplicitContinuationAsyncMethod(targetTypicalDefinition);
+            else
+                _typicalDefinition = this;
         }
 
         public override bool IsAsync => true;
@@ -200,6 +207,8 @@ namespace ILCompiler
         public override TypeSystemContext Context => _wrappedMethod.Context;
 
         public override bool IsInternalCall => true;
+
+        public override MethodDesc GetTypicalMethodDefinition() => _typicalDefinition;
     }
 
     public static class AsyncResumptionStubExtensions

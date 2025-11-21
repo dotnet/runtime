@@ -59,7 +59,9 @@ JMP_SMALL(jmp   , jmp   , j      )
 JMP_SMALL(eq    , ne    , beq    )  // EQ
 JMP_SMALL(ne    , eq    , bne    )  // NE
 
-#elif defined(TARGET_WASM) // No jump kinds needed for WASM.
+#elif defined(TARGET_WASM)
+
+JMP_SMALL(jmp   , jmp   ,  br    )
 
 #else
   #error Unsupported or unset target architecture

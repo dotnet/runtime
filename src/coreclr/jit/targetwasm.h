@@ -88,18 +88,27 @@
 #define REG_VAR_ORDER
 #define REG_VAR_ORDER_FLT
 
-// The defines below affect CSE heuristics, so we need to give them some 'sensible' values.
-#define CNT_CALLEE_SAVED        (8)
-#define CNT_CALLEE_TRASH        (8)
-#define CNT_CALLEE_ENREG        (CNT_CALLEE_SAVED)
+// The defines below that affect CSE heuristics are given 'average native target' values.
+#define CNT_CALLEE_SAVED          (0)
+#define CNT_CALLEE_SAVED_FOR_CSE  (8)
+#define CNT_CALLEE_TRASH          (0)
+#define CNT_CALLEE_TRASH_FOR_CSE  (8)
+#define CNT_CALLEE_ENREG          (CNT_CALLEE_SAVED)
+#define CNT_CALLEE_ENREG_FOR_CSE  (CNT_CALLEE_SAVED_FOR_CSE)
 
-#define CNT_CALLEE_SAVED_FLOAT  (10)
-#define CNT_CALLEE_TRASH_FLOAT  (10)
-#define CNT_CALLEE_ENREG_FLOAT  (CNT_CALLEE_SAVED_FLOAT)
+#define CNT_CALLEE_SAVED_FLOAT          (0)
+#define CNT_CALLEE_SAVED_FLOAT_FOR_CSE  (10)
+#define CNT_CALLEE_TRASH_FLOAT          (0)
+#define CNT_CALLEE_TRASH_FLOAT_FOR_CSE  (10)
+#define CNT_CALLEE_ENREG_FLOAT          (CNT_CALLEE_SAVED_FLOAT)
+#define CNT_CALLEE_ENREG_FLOAT_FOR_CSE  (CNT_CALLEE_SAVED_FLOAT_FOR_CSE)
 
-#define CNT_CALLEE_SAVED_MASK   (0)
-#define CNT_CALLEE_TRASH_MASK   (0)
-#define CNT_CALLEE_ENREG_MASK   (CNT_CALLEE_SAVED_MASK)
+#define CNT_CALLEE_SAVED_MASK          (0)
+#define CNT_CALLEE_SAVED_MASK_FOR_CSE  (0)
+#define CNT_CALLEE_TRASH_MASK          (0)
+#define CNT_CALLEE_TRASH_MASK_FOR_CSE  (0)
+#define CNT_CALLEE_ENREG_MASK          (CNT_CALLEE_SAVED_MASK)
+#define CNT_CALLEE_ENREG_MASK_FOR_CSE  (CNT_CALLEE_SAVED_MASK_FOR_CSE)
 
 #define CALLEE_SAVED_REG_MAXSZ    (CNT_CALLEE_SAVED * REGSIZE_BYTES)
 #define CALLEE_SAVED_FLOAT_MAXSZ  (CNT_CALLEE_SAVED_FLOAT * FPSAVE_REGSIZE_BYTES)
