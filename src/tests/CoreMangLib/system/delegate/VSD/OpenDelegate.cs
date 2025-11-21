@@ -13,7 +13,7 @@ public class Program
     }
 
     public delegate int Delegate_TC_Int(ClassA tc);
-    public static MethodInfo GetMethod(Type t, string method)
+    public static MethodInfo GetMethod([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t, string method)
     {
         TypeInfo typeInfo = t.GetTypeInfo();
         IEnumerator<MethodInfo> enumerator = typeInfo.DeclaredMethods.GetEnumerator();
