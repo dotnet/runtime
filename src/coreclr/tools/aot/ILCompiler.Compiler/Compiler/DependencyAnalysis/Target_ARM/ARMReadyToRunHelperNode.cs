@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysis
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitMOV(encoder.TargetRegister.Arg0/*Result*/, encoder.TargetRegister.Arg1);
                             encoder.EmitSUB(encoder.TargetRegister.Arg0, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase));
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnNonGCStaticBase), factory.Target.CodeDelta);
                         }
                     }
                     break;
@@ -53,14 +53,14 @@ namespace ILCompiler.DependencyAnalysis
 
                         if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType));
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType), factory.Target.CodeDelta);
                         }
                         else
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg2, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitSUB(encoder.TargetRegister.Arg2, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
                             // TODO: performance optimization - inline the check verifying whether we need to trigger the cctor
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase), factory.Target.CodeDelta);
                         }
                     }
                     break;
@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
                             encoder.EmitLDR(encoder.TargetRegister.Arg1, encoder.TargetRegister.Result);
                             encoder.EmitMOV(encoder.TargetRegister.Arg0, factory.TypeNonGCStaticsSymbol(target));
                             encoder.EmitSUB(encoder.TargetRegister.Arg0, NonGCStaticsNode.GetClassConstructorContextSize(factory.Target));
-                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase));
+                            encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnGCStaticBase), factory.Target.CodeDelta);
                         }
                     }
                     break;
@@ -118,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis
                             Debug.Assert(target.Constructor.Method.Signature.Length == 2);
                         }
 
-                        encoder.EmitJMP(target.Constructor);
+                        encoder.EmitJMP(target.Constructor, factory.Target.CodeDelta);
                     }
                     break;
 
@@ -128,7 +128,7 @@ namespace ILCompiler.DependencyAnalysis
                         if (targetMethod.OwningType.IsInterface)
                         {
                             encoder.EmitMOV(encoder.TargetRegister.Arg1, factory.InterfaceDispatchCell(targetMethod));
-                            encoder.EmitJMP(factory.ExternFunctionSymbol("RhpResolveInterfaceMethod"));
+                            encoder.EmitJMP(factory.ExternFunctionSymbol("RhpResolveInterfaceMethod"), factory.Target.CodeDelta);
                         }
                         else
                         {

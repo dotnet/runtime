@@ -194,8 +194,14 @@ namespace ILCompiler.DependencyAnalysis.ARM
         // b.w symbol
         public void EmitJMP(ISymbolNode symbol)
         {
+            EmitJMP(symbol, 0);
+        }
+
+        // b.w symbol with addend
+        public void EmitJMP(ISymbolNode symbol, int addend)
+        {
             Debug.Assert(!symbol.RepresentsIndirectionCell);
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_THUMB_BRANCH24);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_THUMB_BRANCH24, addend);
             Builder.EmitByte(0);
             Builder.EmitByte(0xF0);
             Builder.EmitByte(0);

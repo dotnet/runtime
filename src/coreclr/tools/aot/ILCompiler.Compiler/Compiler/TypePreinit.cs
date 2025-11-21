@@ -2642,7 +2642,7 @@ namespace ILCompiler
                     if (method is null)
                         builder.EmitZeroPointer();
                     else
-                        builder.EmitPointerReloc(factory.ExactCallableAddressTakenAddress(method, isUnboxingStub: false));
+                        builder.EmitPointerReloc(factory.ExactCallableAddressTakenAddress(method, isUnboxingStub: false), factory.Target.CodeDelta);
                 }
             }
 
