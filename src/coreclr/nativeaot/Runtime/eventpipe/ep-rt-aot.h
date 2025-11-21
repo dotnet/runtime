@@ -507,6 +507,23 @@ ep_rt_config_value_get_enable_stackwalk (void)
     return false;
 }
 
+static
+inline
+uint32_t
+ep_rt_config_value_get_buffer_guard_level (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    uint64_t value;
+    if (RhConfig::Environment::TryGetIntegerValue("EventPipeBufferGuardLevel", &value))
+    {
+        EP_ASSERT(value <= UINT32_MAX);
+        return static_cast<uint32_t>(value);
+    }
+
+    return 0;
+}
+
 /*
  * EventPipeSampleProfiler.
  */
@@ -1801,6 +1818,33 @@ ep_rt_volatile_store_ptr_without_barrier (
     volatile void **ptr,
     void *value);
     ep_rt_aot_volatile_store_ptr_without_barrier(ptr, value);
+}
+
+/*
+ * Memory Protection
+ */
+
+static
+inline
+bool
+ep_rt_vprotect (
+    void *addr,
+    size_t length,
+    EventPipePageProtection protection)
+{
+    return true;
+}
+
+/*
+ * Fail fast
+ */
+
+static
+inline
+void
+ep_rt_fatal_error_with_message (const ep_char8_t *message)
+{
+    /* Not implemented, no-op */
 }
 
 #endif /* ENABLE_PERFTRACING */
