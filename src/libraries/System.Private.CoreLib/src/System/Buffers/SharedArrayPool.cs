@@ -107,7 +107,9 @@ namespace System.Buffers
                 ArgumentOutOfRangeException.ThrowIfNegative(minimumLength);
             }
 
-            buffer = new T[minimumLength];
+            buffer = typeof(T).IsPrimitive && typeof(T) != typeof(bool) ?
+                GC.AllocateUninitializedArray<T>(minimumLength) :
+                new T[minimumLength];
             if (log.IsEnabled())
             {
                 int bufferId = buffer.GetHashCode();
