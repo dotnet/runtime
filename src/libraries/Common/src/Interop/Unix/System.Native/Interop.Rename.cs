@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Text;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -21,18 +21,6 @@ internal static partial class Interop
         internal static partial int Rename(string oldPath, string newPath);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Rename", SetLastError = true)]
-        internal static partial int Rename(ref byte oldPath, ref byte newPath);
-
-        internal static int Rename(ReadOnlySpan<char> oldPath, ReadOnlySpan<char> newPath)
-        {
-            ValueUtf8Converter converterNewPath = new(stackalloc byte[DefaultPathBufferSize]);
-            ValueUtf8Converter converterOldPath = new(stackalloc byte[DefaultPathBufferSize]);
-            int result = Rename(
-                ref MemoryMarshal.GetReference(converterOldPath.ConvertAndTerminateString(oldPath)),
-                ref MemoryMarshal.GetReference(converterNewPath.ConvertAndTerminateString(newPath)));
-            converterNewPath.Dispose();
-            converterOldPath.Dispose();
-            return result;
-        }
+        internal static partial int Rename([MarshalUsing(typeof(SpanOfCharAsUtf8StringMarshaller))] ReadOnlySpan<char> oldPath, [MarshalUsing(typeof(SpanOfCharAsUtf8StringMarshaller))] ReadOnlySpan<char> newPath);
     }
 }
