@@ -159,7 +159,7 @@ namespace Internal.IL
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.MonitorExit), reason);
                 if (_canonMethod.Signature.IsStatic)
                 {
-                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Threading"u8, "Monitor"u8, "GetSyncObjectFromClassHandle"u8, null)), reason);
+                    _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System"u8, "Type"u8, "GetTypeFromMethodTable"u8, null)), reason);
 
                     MethodDesc method = _methodIL.OwningMethod;
                     if (method.OwningType.IsRuntimeDeterminedSubtype)
@@ -174,7 +174,7 @@ namespace Internal.IL
                     if (_canonMethod.IsCanonicalMethod(CanonicalFormKind.Any))
                     {
                         if (_canonMethod.RequiresInstMethodDescArg())
-                            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("System.Threading"u8, "Monitor"u8, "GetClassHandleFromMethodParam"u8, null)), reason);
+                            _dependencies.Add(_compilation.NodeFactory.MethodEntrypoint(_compilation.NodeFactory.TypeSystemContext.GetCoreLibEntryPoint("Internal.Runtime.CompilerHelpers"u8, "SharedCodeHelpers"u8, "GetClassHandleFromMethodParam"u8, null)), reason);
                     }
                 }
             }
