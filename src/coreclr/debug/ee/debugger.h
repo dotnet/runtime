@@ -1358,6 +1358,23 @@ public:
             (size_t *) &m_sizeOfColdCode);
     }
 
+    // Initialize for interpreter code - no hot/cold split, just bytecode
+    void InitializeForInterpreter(PCODE bytecodeAddr, SIZE_T bytecodeSize)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            SUPPORTS_DAC;
+        }
+        CONTRACTL_END;
+
+        m_addrOfHotCode = bytecodeAddr;
+        m_addrOfColdCode = (PCODE)NULL;  // No cold code for interpreter
+        m_sizeOfHotCode = bytecodeSize;
+        m_sizeOfColdCode = 0;
+    }
+
     // Converts an offset within a method to a code address
     PCODE OffsetToAddress(SIZE_T offset)
     {
