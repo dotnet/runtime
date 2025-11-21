@@ -34,14 +34,6 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 _allocated = false;
 
-                if (managed.Length == 0)
-                {
-                    // For empty spans, allocate a minimal buffer for the null terminator
-                    _unmanagedValue = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
-                    buffer[0] = 0;
-                    return;
-                }
-
                 const int MaxUtf8BytesPerChar = 3;
 
                 // >= for null terminator
