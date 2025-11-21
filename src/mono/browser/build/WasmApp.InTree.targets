@@ -11,20 +11,6 @@
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(UsingNativeAOT)' == 'true' and '$(EMSDK_PATH)' != ''" />
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.InTree.CI.targets" Condition="'$(ContinuousIntegrationBuild)' == 'true'" />
 
-  <Target Name="RebuildWasmAppBuilder">
-    <ItemGroup>
-      <WasmAppBuildProject Include="$([MSBuild]::NormalizePath($(RepoTasksDir), 'WasmAppBuilder', 'WasmAppBuilder.csproj'))" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-         Properties="Configuration=Debug;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
-         Targets="Restore"/>
-
-    <MSBuild Projects="@(WasmAppBuildProject)"
-         Properties="Configuration=Debug"
-         Targets="Build"/>
-  </Target>
-
   <Target Name="CopyAppZipToHelixTestDir"
           Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
           AfterTargets="Build"
