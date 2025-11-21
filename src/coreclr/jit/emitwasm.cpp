@@ -152,7 +152,6 @@ unsigned emitter::instrDesc::idCodeSize() const
         case IF_OPCODE:
             break;
         case IF_ULEB128:
-            // TODO-WASM: handle relocs here.
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(static_cast<target_size_t>(emitGetInsSC(this)));
             break;
         case IF_MEMARG:
