@@ -82,6 +82,7 @@ public:
         OptimizationTierOptimized, // may do less optimizations than tier 1
         OptimizationTier0Instrumented,
         OptimizationTier1Instrumented,
+        OptimizationTierInterpreted
     };
 #ifdef FEATURE_TIERED_COMPILATION
     OptimizationTier GetOptimizationTier() const;
