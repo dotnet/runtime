@@ -9,14 +9,13 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// Marshaller for ReadOnlySpan&lt;char&gt; to UTF-8 strings.
     /// </summary>
-    [CLSCompliant(false)]
     [CustomMarshaller(typeof(ReadOnlySpan<char>), MarshalMode.ManagedToUnmanagedIn, typeof(ManagedToUnmanagedIn))]
-    public static unsafe class SpanOfCharAsUtf8StringMarshaller
+    internal static unsafe class SpanOfCharAsUtf8StringMarshaller
     {
         /// <summary>
         /// Custom marshaller to marshal a ReadOnlySpan&lt;char&gt; as a UTF-8 unmanaged string.
         /// </summary>
-        public ref struct ManagedToUnmanagedIn
+        internal ref struct ManagedToUnmanagedIn
         {
             /// <summary>
             /// Gets the requested buffer size for optimized marshalling.

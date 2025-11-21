@@ -17,9 +17,6 @@ internal static partial class Interop
         /// <returns>
         /// Returns 0 on success; otherwise, returns -1
         /// </returns>
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Rename", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        internal static partial int Rename(string oldPath, string newPath);
-
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Rename", SetLastError = true)]
         internal static partial int Rename([MarshalUsing(typeof(SpanOfCharAsUtf8StringMarshaller))] ReadOnlySpan<char> oldPath, [MarshalUsing(typeof(SpanOfCharAsUtf8StringMarshaller))] ReadOnlySpan<char> newPath);
     }
