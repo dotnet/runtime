@@ -3,7 +3,8 @@
 //
 
 using Xunit;
-namespace Test
+using TestLibrary;
+namespace b41852
 {
     using System;
 

@@ -567,8 +567,43 @@ void InterpCompiler::EmitBBEndVarMoves(InterpBasicBlock *pTargetBB)
         int dVar = pTargetBB->pStackState[i].var;
         if (sVar != dVar)
         {
-            InterpType interpType = m_pVars[sVar].interpType;
-            int32_t movOp = InterpGetMovForType(interpType, false);
+            InterpType interpType = g_interpTypeFromStackType[m_pStackBase[i].GetStackType()];
+            InterpType interpDestType = g_interpTypeFromStackType[pTargetBB->pStackState[i].GetStackType()];
+            int32_t movOp;
+            if (interpType != interpDestType)
+            {
+                if (interpType == InterpTypeR4 && interpDestType == InterpTypeR8)
+                {
+                    movOp = INTOP_CONV_R8_R4;
+                }
+                else if (interpType == InterpTypeR8 && interpDestType == InterpTypeR4)
+                {
+                    movOp = INTOP_CONV_R4_R8;
+                }
+                else if (interpType == InterpTypeI && interpDestType == InterpTypeByRef)
+                {
+                    movOp = InterpGetMovForType(interpDestType, false);
+                }
+#ifdef TARGET_64BIT
+                // nint and int32 can be used interchangeably. Add implicit conversions.
+                else if (interpType == InterpTypeI4 && interpDestType == InterpTypeI8)
+                {
+                    movOp = INTOP_CONV_I8_I4;
+                }
+                else if (interpType == InterpTypeI8 && interpDestType == InterpTypeI4)
+                {
+                    movOp = InterpGetMovForType(interpDestType, false);
+                }
+#endif // TARGET_64BIT
+                else
+                {
+                    BADCODE("Incompatible types on stack between basic blocks");
+                }
+            }
+            else
+            {
+                movOp = InterpGetMovForType(interpType, false);
+            }
 
             AddIns(movOp);
             m_pLastNewIns->SetSVar(sVar);
@@ -967,6 +1002,10 @@ void ValidateEmittedSequenceTermination(InterpInst *lastIns)
 
     if (InterpOpIsUncondBranch(lastIns->opcode) ||
         (lastIns->opcode == INTOP_RET) ||
+        (lastIns->opcode == INTOP_RET_I1) ||
+        (lastIns->opcode == INTOP_RET_U1) ||
+        (lastIns->opcode == INTOP_RET_I2) ||
+        (lastIns->opcode == INTOP_RET_U2) ||
         (lastIns->opcode == INTOP_RET_VOID) ||
         (lastIns->opcode == INTOP_RET_VT) ||
         (lastIns->opcode == INTOP_THROW) ||
@@ -2619,7 +2658,7 @@ void InterpCompiler::EmitBinaryArithmeticOp(int32_t opBase)
             }
         }
     }
-    else if (opBase == INTOP_SUB_I4 && type1 == StackTypeByRef)
+    else if (opBase == INTOP_SUB_I4 && ((type1 == StackTypeByRef) || (type2 == StackTypeByRef)))
     {
         if (type2 == StackTypeI4)
         {
@@ -2827,6 +2866,18 @@ static int32_t GetLdindForType(InterpType interpType)
             assert(0);
     }
     return -1;
+}
+
+static int32_t GetRetForType(InterpType interpType)
+{
+    switch (interpType)
+    {
+        case InterpTypeI1: return INTOP_RET_I1;
+        case InterpTypeU1: return INTOP_RET_U1;
+        case InterpTypeI2: return INTOP_RET_I2;
+        case InterpTypeU2: return INTOP_RET_U2;
+        default: return INTOP_RET;
+    }
 }
 
 static bool DoesValueTypeContainGCRefs(COMP_HANDLE compHnd, CORINFO_CLASS_HANDLE clsHnd)
@@ -4538,7 +4589,8 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     if (injectRet)
     {
         // Jmp to PInvoke was converted to normal pinvoke, so we need to inject a ret after the call
-        switch (GetInterpType(callInfo.sig.retType))
+        InterpType retType = GetInterpType(m_methodInfo->args.retType);
+        switch (retType)
         {
             case InterpTypeVT:
             {
@@ -4551,7 +4603,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                 AddIns(INTOP_RET_VOID);
                 break;
             default:
-                AddIns(INTOP_RET);
+                AddIns(GetRetForType(retType));
                 m_pLastNewIns->SetSVar(dVar);
                 break;
         }
@@ -4675,8 +4727,24 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     m_pStackPointer -= 2;
 }
 
+void InterpCompiler::EmitNintIndexCheck(StackInfo *spArray, StackInfo *spIndex)
+{
+    // In the rare case when array is indexed by nint instead of int, we emit an extra check
+    // to ensure the nint value fits in int32_t
+    AddIns(INTOP_CONV_NI);
+    m_pLastNewIns->SetSVars2(spArray->var, spIndex->var);
+    int32_t var = CreateVarExplicit(g_interpTypeFromStackType[StackTypeI4], NULL, INTERP_STACK_SLOT_SIZE);
+    new (spIndex) StackInfo(StackTypeI4, NULL, var);
+    m_pLastNewIns->SetDVar(var);
+}
+
 void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 {
+    // handle nint index case
+    if (m_pStackPointer[-1].GetStackType() == StackTypeI8)
+    {
+        EmitNintIndexCheck(m_pStackPointer - 2, m_pStackPointer - 1);
+    }
     m_pStackPointer -= 2;
     AddIns(opcode);
     m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
@@ -4686,6 +4754,12 @@ void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 
 void InterpCompiler::EmitStelem(InterpType interpType)
 {
+    // handle nint index case
+    if (m_pStackPointer[-2].GetStackType() == StackTypeI8)
+    {
+        EmitNintIndexCheck(m_pStackPointer - 3, m_pStackPointer - 2);
+    }
+
     m_pStackPointer[-1].BashStackTypeToI_ForLocalVariableAddress();
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
@@ -5756,6 +5830,23 @@ retry_emit:
             {
                 AddIns(INTOP_LOAD_EXCEPTION);
                 m_pLastNewIns->SetDVar(m_pCBB->clauseVarIndex);
+
+                // To allow filter clauses in generic methods to access the generic argument,
+                // we copy that argument variable from the parent frame to the filter's frame.
+                // The target variable offset is the same as the one in the parent frame.
+                if ((m_pCBB->clauseType == BBClauseFilter) && (m_paramArgIndex != -1))
+                {
+                    AddIns(INTOP_LOAD_FRAMEVAR);
+                    PushInterpType(InterpTypeI, NULL);
+                    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                    m_pStackPointer--;
+                    int32_t opcode = GetLdindForType(m_pVars[m_paramArgIndex].interpType);
+                    AddIns(opcode);
+                    m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                    m_pLastNewIns->SetDVar(m_paramArgIndex);
+                    m_pLastNewIns->data[0] = m_pVars[m_paramArgIndex].offset;
+                }
             }
         }
 
@@ -6069,7 +6160,7 @@ retry_emit:
                         }
                     }
 
-                    AddIns(INTOP_RET);
+                    AddIns(GetRetForType(retType));
                     m_pStackPointer--;
                     m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
                 }
@@ -7972,6 +8063,26 @@ DO_LDFTN:
 
                 if (m_compHnd->isValueClass(resolvedToken.hClass))
                 {
+                    CorInfoType asCorInfoType = m_compHnd->asCorInfoType(m_compHnd->getTypeForBox(resolvedToken.hClass));
+                    if (asCorInfoType == CORINFO_TYPE_FLOAT && m_pStackPointer[-1].GetStackType() == StackTypeR8)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeR4, INTOP_CONV_R4_R8);
+                    }
+                    else if (asCorInfoType == CORINFO_TYPE_DOUBLE && m_pStackPointer[-1].GetStackType() == StackTypeR4)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeR8, INTOP_CONV_R8_R4);
+                    }
+#ifdef TARGET_64BIT
+                    // nint and int32 can be used interchangeably. Add implicit conversions.
+                    else if (asCorInfoType == CORINFO_TYPE_NATIVEINT && m_pStackPointer[-1].GetStackType() == StackTypeI4)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_I4);
+                    }
+                    else if (asCorInfoType == CORINFO_TYPE_NATIVEUINT && m_pStackPointer[-1].GetStackType() == StackTypeI4)
+                    {
+                        EmitConv(m_pStackPointer - 1, StackTypeI8, INTOP_CONV_I8_U4);
+                    }
+#endif // TARGET_64BIT
                     CORINFO_GENERICHANDLE_RESULT embedInfo;
                     m_compHnd->embedGenericHandle(&resolvedToken, false, m_methodInfo->ftn, &embedInfo);
                     m_pStackPointer -= 1;
@@ -8274,6 +8385,13 @@ DO_LDFTN:
                 CorInfoType elemCorType = m_compHnd->asCorInfoType(elemClsHnd);
 
                 m_pStackPointer -= 2;
+
+                // handle nint index
+                if (m_pStackPointer[1].GetStackType() == StackTypeI8)
+                {
+                    EmitNintIndexCheck(m_pStackPointer, m_pStackPointer + 1);
+                }
+
                 if ((elemCorType == CORINFO_TYPE_CLASS) && !readonly)
                 {
                     CORINFO_GENERICHANDLE_RESULT embedInfo;
