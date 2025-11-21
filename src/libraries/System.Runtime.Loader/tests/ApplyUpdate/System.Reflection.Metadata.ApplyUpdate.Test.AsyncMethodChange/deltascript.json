@@ -1,6 +1,8 @@
 {
-    "changes": [
-        {"document": "AsyncMethodChange.cs", "update": "AsyncMethodChange_v1.cs"}
-    ]
+  "changes": [
+    {
+      "document": "AsyncMethodChange.cs",
+      "update": "AsyncMethodChange_v1.cs"
+    }
+  ]
 }
-
