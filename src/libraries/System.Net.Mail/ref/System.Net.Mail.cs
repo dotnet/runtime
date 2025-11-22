@@ -385,6 +385,13 @@ namespace System.Net.Mime
             public const string Xml = "text/xml";
         }
     }
+    public static partial class MediaTypeMap
+    {
+        public static string? GetExtension(System.ReadOnlySpan<char> mediaType) { throw null; }
+        public static string? GetExtension(string mediaType) { throw null; }
+        public static string? GetMediaType(System.ReadOnlySpan<char> pathOrExtension) { throw null; }
+        public static string? GetMediaType(string pathOrExtension) { throw null; }
+    }
     public enum TransferEncoding
     {
         Unknown = -1,
