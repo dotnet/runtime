@@ -3292,7 +3292,12 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
 #endif
         {
             STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of managed exception through native frames at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
+#ifdef TARGET_WASM
+            // wasm cannot unwind frames, so we let C++ exception handling do all the work
+            PropagateExceptionThroughNativeFrames(OBJECTREFToObject(throwable));
+#else // !TARGET_WASM
             ExecuteFunctionBelowContext((PCODE)PropagateExceptionThroughNativeFrames, pvRegDisplay->pCurrentContext, targetSSP, (size_t)OBJECTREFToObject(throwable));
+#endif // TARGET_WASM
         }
 #undef FIRST_ARG_REG
     }
