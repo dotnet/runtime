@@ -130,7 +130,7 @@ WSL1 toolchain is operating all the files in-place, leveraging the complex folde
 WSL2 toolchain requires some manual bookkeeping about the layout. It performs much better, and can be also applied to remote system.
 
 Setup steps for WSL1 toolchain:
-1. Execute `eng/native/version/copy_version_files.cmd` to generate additional required files, or simply perform a Windows build in prior.
+1. In WSL environment, execute `/mnt/<path-to-runtime>/eng/native/version/copy_version_files.sh` at mounted Windows file system. to generate additional required files.
 2. Create `CMakeUserPresets.json` besides `src\coreclr\CMakePresets.json`. Duplicate the version etc from `CMakeUserPresets.json` and clean the `configurePresets` array. Add a new `configurePresets` element with following:
 ```json
 "configurePresets": [

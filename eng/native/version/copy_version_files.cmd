@@ -7,7 +7,7 @@ set "__RepoRoot=%~dp0..\..\.."
 for %%i in ("%__RepoRoot%") do set "__RepoRoot=%%~fi"
 set "__artifactsObjDir=%__RepoRoot%\artifacts\obj"
 
-for /r "%__VersionFolder%" %%a in (*.h *.c *.rc) do (
+for /r "%__VersionFolder%" %%a in (*.h *.rc) do (
     if not exist "%__artifactsObjDir%\%%~nxa" (
         copy "%%a" "%__artifactsObjDir%"
     )
