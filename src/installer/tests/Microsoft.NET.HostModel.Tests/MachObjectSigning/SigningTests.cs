@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System.Security.AccessControl;
 using Microsoft.NET.HostModel.Bundle;
-using Xunit.Abstractions;
 
 namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
 {
