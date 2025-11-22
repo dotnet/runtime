@@ -94,12 +94,12 @@ Once we have your `NuGet.Config` file ready, we have to make our project aware t
 
 ```xml
 <ItemGroup>
-  <!-- At the time of writing, '10.0.0-dev' is the version of the runtime repo's shipping packages. -->
-  <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="10.0.0-dev" />
+  <!-- At the time of writing, '11.0.0-dev' is the version of the runtime repo's shipping packages. -->
+  <FrameworkReference Update="Microsoft.NETCore.App" RuntimeFrameworkVersion="11.0.0-dev" />
 </ItemGroup>
 ```
 
-If you're unsure of what version your packages are, it is included as part of their filenames. For example, pick the `nupkg` file that will be used with your app from your shipping folder (`artifacts/packages/<configuration>/Shipping`). It's name is something like `Microsoft.NETCore.App.Runtime.win-x64.10.0.0-dev.nupkg`, depending on the current version and your target platform.
+If you're unsure of what version your packages are, it is included as part of their filenames. For example, pick the `nupkg` file that will be used with your app from your shipping folder (`artifacts/packages/<configuration>/Shipping`). It's name is something like `Microsoft.NETCore.App.Runtime.win-x64.11.0.0-dev.nupkg`, depending on the current version and your target platform.
 
 ### Write a small test
 
@@ -124,8 +124,8 @@ dotnet publish --self-contained
 Running this little app should yield an output like the following:
 
 ```text
-Hello World from .NET 10.0.0-dev
-The location of System.Private.CoreLib.dll is '/path/to/your/app/bin/Debug/net10.0/win-x64/publish/System.Private.CoreLib.dll'
+Hello World from .NET 11.0.0-dev
+The location of System.Private.CoreLib.dll is '/path/to/your/app/bin/Debug/net11.0/win-x64/publish/System.Private.CoreLib.dll'
 ```
 
 ## Making Changes and Consuming Updated Packages
