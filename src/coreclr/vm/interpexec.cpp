@@ -68,28 +68,29 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
     return local.result;
 }
 
+struct UnmanagedMethodWithTransitionParam
+{
+    MethodDesc *targetMethod;
+    int8_t *stack;
+    InterpMethodContextFrame *pFrame;
+    int8_t *pArgs;
+    int8_t *pRet;
+    PCODE callTarget;
+};
+
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
 NOINLINE
-void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+void InvokeUnmanagedMethodWithTransition(UnmanagedMethodWithTransitionParam *pParam)
 {
     InlinedCallFrame inlinedCallFrame;
-    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
-    inlinedCallFrame.m_pCallSiteSP = pFrame;
-    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pParam->pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pParam->pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)pParam->stack;
     inlinedCallFrame.m_pThread = GetThread();
     inlinedCallFrame.m_Datum = NULL;
     inlinedCallFrame.Push();
 
-    struct Param
-    {
-        MethodDesc *targetMethod;
-        int8_t *pArgs;
-        int8_t *pRet;
-        PCODE callTarget;
-    }
-    param = { targetMethod, pArgs, pRet, callTarget };
-
-    PAL_TRY(Param *, pParam, &param)
+    PAL_TRY(UnmanagedMethodWithTransitionParam*, pParam, pParam)
     {
         GCX_PREEMP_NO_DTOR();
         // WASM-TODO: Handle unmanaged calling conventions
@@ -408,14 +409,13 @@ typedef void (*HELPER_FTN_V_PP)(void*, void*);
 
 InterpThreadContext::InterpThreadContext()
 {
-    // FIXME VirtualAlloc/mmap with INTERP_STACK_ALIGNMENT alignment
-    pStackStart = pStackPointer = (int8_t*)malloc(INTERP_STACK_SIZE);
+    pStackStart = pStackPointer = (int8_t*)VMToOSInterface::AlignedAllocate(INTERP_STACK_SIZE, INTERP_STACK_SIZE);
     pStackEnd = pStackStart + INTERP_STACK_SIZE;
 }
 
 InterpThreadContext::~InterpThreadContext()
 {
-    free(pStackStart);
+    VMToOSInterface::AlignedFree(pStackStart);
 }
 
 DictionaryEntry GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
@@ -2547,7 +2547,8 @@ MAIN_LOOP:
                     }
                     else
                     {
-                        InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget);
+                        UnmanagedMethodWithTransitionParam param = { targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget };
+                        InvokeUnmanagedMethodWithTransition(&param);
                     }
 
                     break;

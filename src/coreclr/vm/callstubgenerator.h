@@ -70,7 +70,11 @@ class CallStubGenerator
         ReturnTypeVoid,
         ReturnTypeI8,
         ReturnTypeDouble,
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef TARGET_32BIT
+        ReturnTypeI4,
+        ReturnTypeFloat,
+#endif // TARGET_32BIT
+#if (defined(TARGET_WINDOWS) && defined(TARGET_AMD64)) || defined(TARGET_ARM)
         ReturnTypeBuffArg1,
         ReturnTypeBuffArg2,
 #else
@@ -142,10 +146,10 @@ class CallStubGenerator
     CallStubHeader::InvokeFunctionPtr m_pInvokeFunction = NULL;
     bool m_interpreterToNative = false;
 
-#ifndef UNIX_AMD64_ABI
+#if !defined(UNIX_AMD64_ABI) && defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
     PCODE GetGPRegRefRoutine(int r);
     PCODE GetStackRefRoutine();
-#endif // !UNIX_AMD64_ABI
+#endif // !UNIX_AMD64_ABI && ENREGISTERED_PARAMTYPE_MAXSIZE
     PCODE GetStackRoutine();
 #if defined(TARGET_APPLE) && defined(TARGET_ARM64)
     PCODE GetStackRoutine_1B();
@@ -156,8 +160,12 @@ class CallStubGenerator
 #ifdef TARGET_ARM64
     PCODE GetFPReg128RangeRoutine(int x1, int x2);
     PCODE GetFPReg32RangeRoutine(int x1, int x2);
-#endif    
+#endif // TARGET_ARM64
     PCODE GetGPRegRangeRoutine(int r1, int r2);
+#ifdef TARGET_ARM
+    PCODE GetRegRoutine_4B(int r1, int r2);
+    PCODE GetStackRoutine_4B();
+#endif // TARGET_ARM
     ReturnType GetReturnType(ArgIterator *pArgIt);
     CallStubHeader::InvokeFunctionPtr GetInvokeFunctionPtr(ReturnType returnType);
     PCODE GetInterpreterReturnTypeHandler(ReturnType returnType);
