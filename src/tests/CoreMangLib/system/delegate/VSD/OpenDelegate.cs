@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Collections.Generic;
 using Xunit;
@@ -13,7 +14,7 @@ public class Program
     }
 
     public delegate int Delegate_TC_Int(ClassA tc);
-    public static MethodInfo GetMethod(Type t, string method)
+    public static MethodInfo GetMethod([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t, string method)
     {
         TypeInfo typeInfo = t.GetTypeInfo();
         IEnumerator<MethodInfo> enumerator = typeInfo.DeclaredMethods.GetEnumerator();
