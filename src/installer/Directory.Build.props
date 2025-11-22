@@ -13,5 +13,12 @@
       The NuGet fallback folder can/will contain packages we are building in this repo, and we
       want to ensure we use the correct packages. -->
     <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+    <UseBootstrapLayout Condition="'$(UseBootstrap)' == 'true'">true</UseBootstrapLayout>
+  </PropertyGroup>
+
+  <!-- Bootstrap layout is used when we don't have an LKG apphost to rely on, like on freebsd. -->
+  <PropertyGroup Condition="'$(UseBootstrapLayout)' == 'true'">
+    <UseLocalAppHostPack Condition="'$(UseBootstrapLayout)' == 'true'">true</UseLocalAppHostPack>
+    <UseLocalTargetingRuntimePack Condition="'$(UseBootstrapLayout)' == 'true'">false</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 </Project>

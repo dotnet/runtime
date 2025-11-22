@@ -245,7 +245,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             // work correctly in the presence of "."s in the hostName.
             using (var app = TestApp.CreateEmpty("App.With.Periods"))
             {
-                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, TestContext.MicrosoftNETCoreAppVersion);
+                app.PopulateFrameworkDependent(Constants.MicrosoftNETCoreApp, HostTestContext.MicrosoftNETCoreAppVersion);
 
                 string hostName = Path.GetFileName(app.AppExe);
                 string depsJsonName = Path.GetFileName(app.DepsJson);
@@ -415,7 +415,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
                 App = TestApp.CreateFromBuiltAssets(AppName);
                 NonAsciiApp = TestApp.CreateFromBuiltAssets("HelloWorld_中文");
 
-                SystemDll = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
+                SystemDll = Path.Combine(HostTestContext.BuiltDotNet.GreatestVersionSharedFxPath, "System.dll");
             }
 
             public void Dispose()
