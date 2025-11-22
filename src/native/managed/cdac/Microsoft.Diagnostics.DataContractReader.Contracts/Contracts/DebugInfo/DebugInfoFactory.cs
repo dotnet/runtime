@@ -10,6 +10,7 @@ public sealed class DebugInfoFactory : IContractFactory<IDebugInfo>
         return version switch
         {
             1 => new DebugInfo_1(target),
+            2 => new DebugInfo_2(target),
             _ => default(DebugInfo),
         };
     }
