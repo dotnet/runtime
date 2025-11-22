@@ -221,7 +221,11 @@ enum _regMask_enum : unsigned
 // be lost.
 
 typedef _regNumber_enum regNumber;
-typedef unsigned char   regNumberSmall;
+#ifdef TARGET_WASM
+typedef unsigned regNumberSmall; // An 'unlimited' number of registers.
+#else
+typedef unsigned char regNumberSmall;
+#endif
 
 #if REGMASK_BITS == 8
 typedef unsigned char regMaskSmall;
@@ -610,6 +614,8 @@ static uint32_t BitScanForward(const regMaskTP& mask)
 #else
 #error Unsupported or unset target architecture
 #endif
+
+#include "targetcommon.h"
 
 #ifdef TARGET_XARCH
 
