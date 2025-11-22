@@ -3301,6 +3301,7 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 #if defined(TARGET_ARM64)
             // On arm64 SIMD parameters are HFAs and passed in multiple float
             // registers while we can enregister them as single registers.
+            // TODO-SVE: Ensure this works for Z registers as well.
             GetEmitter()->emitIns_R_R_I_I(INS_mov, emitTypeSize(edge->type), node->reg, sourceReg,
                                           edge->destOffset / genTypeSize(edge->type), 0);
 #elif defined(UNIX_AMD64_ABI)
@@ -5995,7 +5996,7 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
     var_types hfaType   = GetHfaType(hClass);
     unsigned  classSize = info.compCompHnd->getClassSize(hClass);
     // Note that the retail build issues a warning about a potential division by zero without the Max function
-    unsigned elemSize = Max((unsigned)1, EA_SIZE_IN_BYTES(emitActualTypeSize(hfaType)));
+    unsigned elemSize = Max((unsigned)1, genTypeSize(genActualType(hfaType)));
     return classSize / elemSize;
 #endif // TARGET_ARM64
 }

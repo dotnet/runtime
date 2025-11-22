@@ -107,11 +107,12 @@ inline bool _our_GetThreadCycles(uint64_t* cycleOut)
 
 #endif // which host OS
 
-const BYTE genTypeSizes[] = {
+BYTE _initGenTypeSizes[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
+const BYTE (&genTypeSizes)[TYP_COUNT] = _initGenTypeSizes;
 
 const BYTE genTypeAlignments[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) al,
@@ -609,13 +610,18 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     // Start by determining if we have an HFA/HVA with a single element.
     if (GlobalJitOptions::compFeatureHfa)
     {
-        switch (structSize)
-        {
-            case 4:
-            case 8:
+        if (structSize == 4 ||
+            structSize == 8
 #ifdef TARGET_ARM64
-            case 16:
-#endif // TARGET_ARM64
+            // Can pass in V register if structSize == 16, and Z registers for structs with sizes in
+            // multiples of 16-bytes, depending on hardware availability.
+            || structSize == 16 || ((structSize % 16 == 0) && (structSize == genTypeSize(TYP_SIMDSV)))
+#endif
+        )
+        {
+            var_types hfaType = GetHfaType(clsHnd);
+            // We're only interested in the case where the struct size is equal to the size of the hfaType.
+            if (varTypeIsValidHfaType(hfaType))
             {
                 var_types hfaType = GetHfaType(clsHnd);
                 // We're only interested in the case where the struct size is equal to the size of the hfaType.
@@ -861,7 +867,15 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     // The largest "primitive type" is MAX_PASS_SINGLEREG_BYTES
     // so we can skip calling getPrimitiveTypeForStruct when we
     // have a struct that is larger than that.
-    if (canReturnInRegister && (useType == TYP_UNKNOWN) && (structSize <= MAX_PASS_SINGLEREG_BYTES))
+    //
+    // On ARM64 we can pass structures in scalable vector registers
+    // which may allow larger structures on some hardware.
+#ifdef TARGET_ARM64
+    unsigned maxStructSize = max((unsigned)MAX_PASS_SINGLEREG_BYTES, getVectorTByteLength());
+#else
+    unsigned maxStructSize = MAX_PASS_SINGLEREG_BYTES;
+#endif
+    if (canReturnInRegister && (useType == TYP_UNKNOWN) && (structSize <= maxStructSize))
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
@@ -6805,6 +6819,14 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         default:
             break;
     }
+
+#if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
+    // Initialize the size of Vector<T> from the EE.
+    _initGenTypeSizes[TYP_SIMDSV] = (BYTE)getVectorTByteLength();
+    _initGenTypeSizes[TYP_MASK]   = (BYTE)getMaskByteLength();
+    assert(genTypeSize(TYP_SIMDSV) >= 16);
+    assert(genTypeSize(TYP_MASK) >= 2);
+#endif
 
     info.compRetType = JITtype2varType(methodInfo->args.retType);
     if (info.compRetType == TYP_STRUCT)

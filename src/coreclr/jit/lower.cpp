@@ -7365,6 +7365,12 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         // because we won't be able to use ldar/star
         return false;
     }
+
+    if (parent->TypeIs(TYP_SIMDSV))
+    {
+        // TODO-SVE: Investigate addressing modes for scalable types.
+        return false;
+    }
 #endif
 
     GenTree* base   = nullptr;

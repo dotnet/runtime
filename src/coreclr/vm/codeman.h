@@ -2212,6 +2212,24 @@ public:
         return m_CPUCompileFlags;
     }
 
+    inline bool UseScalableVectorT()
+    {
+        LIMITED_METHOD_CONTRACT;
+#ifdef TARGET_ARM64
+        // Vector length discovery is currently dependent on running directly on Arm64.
+        return CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_JitUseScalableVectorT)
+            && m_CPUCompileFlags.IsSet(InstructionSet_Sve_Arm64);
+#else
+        return false;
+#endif
+    }
+
+    static uint32_t GetSizeOfVectorT()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return CoreLibBinder::GetClass(CLASS__VECTORT)->GetNumInstanceFieldBytes();
+    }
+
 private :
     Crst                m_JitLoadLock;
 

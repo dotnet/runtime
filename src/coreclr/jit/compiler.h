@@ -157,6 +157,10 @@ inline var_types HfaTypeFromElemKind(CorInfoHFAElemType kind)
             return TYP_SIMD8;
         case CORINFO_HFA_ELEM_VECTOR128:
             return TYP_SIMD16;
+#ifdef TARGET_ARM64
+        case CORINFO_HFA_ELEM_VECTORT:
+            return TYP_SIMDSV;
+#endif
 #endif
         case CORINFO_HFA_ELEM_NONE:
             return TYP_UNDEF;
@@ -178,6 +182,10 @@ inline CorInfoHFAElemType HfaElemKindFromType(var_types type)
             return CORINFO_HFA_ELEM_VECTOR64;
         case TYP_SIMD16:
             return CORINFO_HFA_ELEM_VECTOR128;
+#ifdef TARGET_ARM64
+        case TYP_SIMDSV:
+            return CORINFO_HFA_ELEM_VECTORT;
+#endif
 #endif
         case TYP_UNDEF:
             return CORINFO_HFA_ELEM_NONE;
@@ -8233,7 +8241,7 @@ public:
         assert(type != TYP_STRUCT);
         // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
         // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
-        return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
+        return ((type == TYP_SIMDSV) || (type == TYP_SIMD16) || (type == TYP_SIMD12));
     }
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #error("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE")
@@ -9106,6 +9114,8 @@ private:
         return isSIMDClass(clsHnd) || isHWSIMDClass(clsHnd);
     }
 
+    var_types getSIMDType(CORINFO_CLASS_HANDLE typeHnd, CorInfoType* baseType = nullptr);
+
     // Get the base (element) type and size in bytes for a SIMD type. Returns CORINFO_TYPE_UNDEF
     // if it is not a SIMD type or is an unsupported base JIT type.
     CorInfoType getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes = nullptr);
@@ -9190,6 +9200,16 @@ public:
         unreached();
 #endif
     }
+
+#ifdef TARGET_ARM64
+    uint32_t getMaskByteLength()
+    {
+        // Predicate registers have 1 bit for each byte in the vector register.
+        // We round up to an int as the CLR prefers to work in integers.
+        assert((getVectorTByteLength() % 8) == 0);
+        return (uint32_t)roundUp((size_t)getVectorTByteLength() / 8, sizeof(int));
+    }
+#endif
 
     // The minimum and maximum possible number of bytes in a SIMD vector.
 
@@ -12435,7 +12455,7 @@ const instruction INS_BREAKPOINT = INS_unreachable;
 
 /*****************************************************************************/
 
-extern const BYTE genTypeSizes[];
+extern const BYTE (&genTypeSizes)[TYP_COUNT];
 extern const BYTE genTypeAlignments[];
 extern const BYTE genTypeStSzs[];
 extern const BYTE genActualTypes[];

@@ -1438,15 +1438,10 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
 #ifdef FEATURE_SIMD
         if (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName))
         {
-            unsigned    simdSize;
-            CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(node.simdTypeHnd, &simdSize);
-            // We will only promote fields of SIMD types that fit into a SIMD register.
-            if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+            var_types type = compiler->getSIMDType(node.simdTypeHnd);
+            if (type != TYP_UNDEF)
             {
-                if (compiler->structSizeMightRepresentSIMDType(simdSize))
-                {
-                    return compiler->getSIMDTypeForSize(simdSize);
-                }
+                return type;
             }
         }
 #endif
@@ -3143,6 +3138,9 @@ void Compiler::lvaSortByRefCount()
                 case TYP_SIMD32:
                 case TYP_SIMD64:
 #endif // TARGET_XARCH
+#ifdef TARGET_ARM64
+                case TYP_SIMDSV:
+#endif
 #ifdef FEATURE_MASKED_HW_INTRINSICS
                 case TYP_MASK:
 #endif // FEATURE_MASKED_HW_INTRINSICS

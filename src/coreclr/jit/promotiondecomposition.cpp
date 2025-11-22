@@ -1162,14 +1162,14 @@ private:
         //   Get the flags to set on a new indir.
         //
         // Parameters:
-        //   type - Type of the indirection
+        //   size - Size of the indirection
         //
         // Returns:
         //   Flags to set.
         //
-        GenTreeFlags GetIndirFlags(var_types type)
+        GenTreeFlags GetIndirFlags(unsigned size)
         {
-            if (genTypeSize(type) == 1)
+            if (size == 1)
             {
                 return m_indirFlags & ~GTF_IND_UNALIGNED;
             }
