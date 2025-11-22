@@ -148,6 +148,10 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         $__Command
         __cg2ExitCode=$?
 
+        if [ $__cg2ExitCode -ne 0 ]; then
+          return
+        fi
+
         echo "Running R2RDump: $__R2RDumpCommand"
         $__R2RDumpCommand
         __r2rDumpExitCode=$?
