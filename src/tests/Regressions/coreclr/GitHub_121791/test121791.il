@@ -6,7 +6,9 @@
 
 .assembly test121791{}
 
-.class public auto ansi test121791 {
+.class public auto ansi test121791
+       extends [System.Runtime]System.Object
+{
   .method public hidebysig static int32
           Main() cil managed
   {
