@@ -89,6 +89,7 @@
 #cmakedefine01 HAVE_NETPACKET_PACKET_H
 #cmakedefine01 HAVE_NET_IF_ARP_H
 #cmakedefine01 HAVE_SYS_MNTENT_H
+#cmakedefine01 HAVE_MNTENT_H
 #cmakedefine01 HAVE_NET_IFMEDIA_H
 #cmakedefine01 HAVE_IOS_NET_IFMEDIA_H
 #cmakedefine01 HAVE_LINUX_RTNETLINK_H
@@ -130,6 +131,7 @@
 #cmakedefine01 HAVE_TERMIOS_H
 #cmakedefine01 HAVE_DLFCN_H
 #cmakedefine01 HAVE_PTHREAD_H
+#cmakedefine01 HAVE_SYS_STATFS_H
 #cmakedefine01 HAVE_SYS_STATVFS_H
 #cmakedefine01 HAVE_NET_IF_H
 #cmakedefine01 HAVE_SYS_PROCINFO_H

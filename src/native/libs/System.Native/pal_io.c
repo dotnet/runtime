@@ -47,7 +47,7 @@
 #include <sys/vfs.h>
 #elif HAVE_STATFS_MOUNT // BSD
 #include <sys/mount.h>
-#elif HAVE_SYS_STATVFS_H && !HAVE_NON_LEGACY_STATFS // SunOS
+#elif HAVE_SYS_STATVFS_H && !HAVE_NON_LEGACY_STATFS && HAVE_STATVFS_BASETYPE // SunOS
 #include <sys/types.h>
 #include <sys/statvfs.h>
 #if HAVE_STATFS_VFS
@@ -58,6 +58,10 @@
 #ifdef TARGET_SUNOS
 #include <sys/param.h>
 #endif
+
+#ifdef TARGET_HAIKU
+#include <fs_info.h>
+#endif // TARGET_HAIKU
 
 #ifdef _AIX
 #include <alloca.h>
@@ -402,7 +406,7 @@ int32_t SystemNative_IsMemfdSupported(void)
     }
 #endif
 
-    // Note that the name has no affect on file descriptor behavior. From linux manpage: 
+    // Note that the name has no affect on file descriptor behavior. From linux manpage:
     //   Names do not affect the behavior of the file descriptor, and as such multiple files can have the same name without any side effects.
     int32_t fd = (int32_t)syscall(__NR_memfd_create, "test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
     if (fd < 0) return 0;
@@ -801,8 +805,14 @@ void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint
 {
 #if !defined(TARGET_WASI)
     dev_t castedDev = (dev_t)dev;
+#if !defined(TARGET_HAIKU)
     *majorNumber = (uint32_t)major(castedDev);
     *minorNumber = (uint32_t)minor(castedDev);
+#else
+    // Haiku has no concept of major/minor numbers, but it does have device IDs.
+    *majorNumber = 0;
+    *minorNumber = (uint32_t)dev;
+#endif // TARGET_HAIKU
 #else /* TARGET_WASI */
     dev_t castedDev = (dev_t)dev;
     *majorNumber = 0;
@@ -813,7 +823,12 @@ void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint
 int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
 {
 #if !defined(TARGET_WASI)
+#if !defined(TARGET_HAIKU)
     dev_t dev = (dev_t)makedev(major, minor);
+#else
+    (void)major;
+    dev_t dev = (dev_t)minor;
+#endif // !TARGET_HAIKU
 
     int32_t result;
     while ((result = mknod(pathName, (mode_t)mode, dev)) < 0 && errno == EINTR);
@@ -1560,7 +1575,7 @@ static int16_t ConvertLockType(int16_t managedLockType)
     }
 }
 
-#if !HAVE_NON_LEGACY_STATFS || defined(TARGET_APPLE) || defined(TARGET_FREEBSD)
+#if !HAVE_NON_LEGACY_STATFS || defined(TARGET_APPLE) || defined(TARGET_FREEBSD) || defined(TARGET_HAIKU)
 static uint32_t MapFileSystemNameToEnum(const char* fileSystemName)
 {
     uint32_t result = 0;
@@ -1719,9 +1734,29 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     uint32_t result = (uint32_t)statfsArgs.f_type;
     return result;
 #endif
+#elif defined(TARGET_HAIKU)
+    struct stat st;
+    int fstatRes;
+    while ((fstatRes = fstat(ToFileDescriptor(fd), &st)) == -1 && errno == EINTR);
+    if (fstatRes == -1) return 0;
+
+    struct fs_info info;
+    int fsStatDevRes;
+    while ((fsStatDevRes = fs_stat_dev(st.st_dev, &info)) == -1 && errno == EINTR);
+    if (fsStatDevRes == -1) return 0;
+
+    if (strcmp(info.fsh_name, "bfs") == 0)
+    {
+        // Haiku names its own BFS filesystem "bfs", but on Linux and some other UNIXes
+        // it is called "befs" to avoid confusion with Boot File System.
+        strncpy(info.fsh_name, "befs", sizeof(info.fsh_name) - 1);
+        info.fsh_name[sizeof(info.fsh_name) - 1] = '\0';
+    }
+
+    return MapFileSystemNameToEnum(info.fsh_name);
 #elif defined(TARGET_WASI)
     return EINTR;
-#elif !HAVE_NON_LEGACY_STATFS
+#elif !HAVE_NON_LEGACY_STATFS && HAVE_STATVFS_BASETYPE
     int statfsRes;
     struct statvfs statfsArgs;
     while ((statfsRes = fstatvfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
@@ -1895,7 +1930,7 @@ static int GetAllowedVectorCount(IOVector* vectors, int32_t vectorCount)
     // For macOS preadv and pwritev can fail with EINVAL when the total length
     // of all vectors overflows a 32-bit integer.
     size_t totalLength = 0;
-    for (int i = 0; i < allowedCount; i++) 
+    for (int i = 0; i < allowedCount; i++)
     {
         assert(INT_MAX >= vectors[i].Count);
 
