@@ -1195,7 +1195,7 @@ VOID RCWCleanupList::CleanupWrappersInCurrentCtxThread(BOOL fWait, BOOL fManualC
 
             // Do a noop wait just to make sure we are cooperating
             // with the finalizer thread
-            pThread->Join(1, TRUE);
+            pThread->DoReentrantWaitWithRetry(pThread->GetThreadHandle(), 1, WaitMode_Alertable);
         }
     }
 }

@@ -272,6 +272,18 @@ namespace System.Threading
             StartCore();
         }
 
+#if !MONO
+        public bool Join(int millisecondsTimeout)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(millisecondsTimeout, Timeout.Infinite);
+            if ((ThreadState & ThreadState.Unstarted) != 0)
+            {
+                throw new ThreadStateException(SR.ThreadState_NotStarted);
+            }
+            return JoinInternal(millisecondsTimeout);
+        }
+#endif
+
         private void RequireCurrentThread()
         {
             if (this != CurrentThread)

@@ -1424,6 +1424,10 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
         else
 #endif // FEATURE_THREAD_ACTIVATION
         {
+#ifdef TARGET_UNIX
+            _ASSERTE_MSG(false, "Thread::UserAbort: Activation injection is required on Unix platforms");
+            UNREACHABLE();
+#else // TARGET_UNIX
             BOOL fOutOfRuntime = FALSE;
             BOOL fNeedStackCrawl = FALSE;
 
@@ -1622,6 +1626,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 LPrepareRetry:
 
             checkForAbort.Release();
+#endif // TARGET_UNIX
         }
 
         // Don't do a Sleep.  It's possible that the thread we are trying to abort is
@@ -1630,7 +1635,7 @@ LPrepareRetry:
         // will time out, but it will pump if we need it to.
         if (pCurThread)
         {
-            pCurThread->Join(ABORT_POLL_TIMEOUT, TRUE);
+            pCurThread->DoReentrantWaitWithRetry(pCurThread->GetThreadHandle(), ABORT_POLL_TIMEOUT, WaitMode_Alertable);
         }
         else
         {
@@ -1666,7 +1671,7 @@ LPrepareRetry:
 
             if (pCurThread)
             {
-                pCurThread->Join(100, TRUE);
+                pCurThread->DoReentrantWaitWithRetry(pCurThread->GetThreadHandle(), 100, WaitMode_Alertable);
             }
             else
             {
