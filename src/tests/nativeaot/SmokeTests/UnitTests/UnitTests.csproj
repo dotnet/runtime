@@ -12,7 +12,16 @@
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
 
     <IlcOrderFile>order.txt</IlcOrderFile>
+
+    <!-- Enable runtime-async preview feature -->
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
+
+  <ItemGroup>
+    <CLRTestEnvironmentVariable Include="DOTNET_RuntimeAsync" Value="1" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="BasicThreading.cs" />
     <Compile Include="Delegates.cs" />
@@ -20,8 +29,10 @@
     <Compile Include="Generics.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="Ordering.cs" />
+    <Compile Include="RuntimeAsync.cs" />
     <Compile Include="Threading.cs" />
     <Compile Include="StackTraces.cs" />
     <Compile Include="Main.cs" />
+    <Compile Include="..\..\..\async\RuntimeAsyncMethodGenerationAttribute.cs" Link="RuntimeAsyncMethodGenerationAttribute.cs" />
   </ItemGroup>
 </Project>
