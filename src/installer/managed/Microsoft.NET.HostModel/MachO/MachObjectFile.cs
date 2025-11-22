@@ -133,11 +133,29 @@ internal unsafe partial class MachObjectFile
         uint signatureStart = machObject._codeSignatureLoadCommand.Command.GetDataOffset(machObject._header);
         RequirementsBlob requirementsBlob = RequirementsBlob.Empty;
         CmsWrapperBlob cmsWrapperBlob = CmsWrapperBlob.Empty;
+
+        // Get __TEXT segment boundaries
+        // The VM address range is used for the CodeDirectory header metadata
+        ulong textSegmentVMAddress = machObject._textSegment64.Command.GetVMAddress(machObject._header);
+        ulong textSegmentVMSize = machObject._textSegment64.Command.GetVMSize(machObject._header);
+        ulong execSegmentBase = textSegmentVMAddress;
+        ulong execSegmentLimit = textSegmentVMAddress + textSegmentVMSize;
+
+        // The file range is used for hashing - we only hash the __TEXT segment content
+        // The __TEXT segment typically starts at file offset 0 and contains the Mach header and load commands
+        ulong textSegmentFileOffset = machObject._textSegment64.Command.GetFileOffset(machObject._header);
+        ulong textSegmentFileSize = machObject._textSegment64.Command.GetFileSize(machObject._header);
+        Debug.Assert(textSegmentFileOffset == 0, "Expected __TEXT segment to start at file offset 0");
+        ulong textSegmentFileEnd = textSegmentFileOffset + textSegmentFileSize;
+
         var codeDirectory = CodeDirectoryBlob.Create(
             file,
             signatureStart,
             identifier,
-            requirementsBlob);
+            requirementsBlob,
+            execSegmentBase: execSegmentBase,
+            execSegmentLimit: execSegmentLimit,
+            textSegmentFileEnd: textSegmentFileEnd);
 
         return new EmbeddedSignatureBlob(
             codeDirectoryBlob: codeDirectory,
