@@ -34,8 +34,10 @@ MemoryMappedFile::MemoryMappedFile(const WCHAR* path)
     if (fstat(fd, &st) != 0)
         goto Fail;
 
-    if (st.st_size > SIZE_MAX)
+#ifdef TARGET_32BIT
+    if (st.st_size > INT32_MAX)
         goto Fail;
+#endif
 
     address = mmap(nullptr, (size_t)st.st_size, PROT_READ, 0, fd, 0);
     if (address == MAP_FAILED)

@@ -705,7 +705,7 @@ HRESULT StgIO::Seek(                    // New offset.
             }
 #else
             _ASSERTE(m_fd != -1);
-            loff_t offRtn = lseek(m_fd, lVal,
+            int64_t offRtn = (int64_t)lseek(m_fd, lVal,
                 fMoveType == FILE_BEGIN ? SEEK_SET :
                 (fMoveType == FILE_CURRENT ? SEEK_CUR : SEEK_END));
             if (offRtn < 0 || offRtn > UINT32_MAX)

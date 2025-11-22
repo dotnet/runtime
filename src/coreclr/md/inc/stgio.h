@@ -240,7 +240,11 @@ private:
     int IsBackingStore()
     { return (m_rgPageMap != 0); }
     int IsMemoryMapped()
+#ifdef TARGET_WINDOWS
+    { return ((m_hMapping != NULL) || (m_hModule != NULL)); }
+#else
     { return m_mmap; }
+#endif
 
     void CtorInit();
     HRESULT WriteToDisk(const void *pbBuff, ULONG cbWrite, ULONG *pcbWritten);
