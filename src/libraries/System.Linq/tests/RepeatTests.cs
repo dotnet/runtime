@@ -282,7 +282,7 @@ namespace System.Linq.Tests
                 list.CopyTo(actual, 1);
                 Assert.Equal(0, actual[0]);
                 Assert.Equal(0, actual[^1]);
-                AssertExtensions.SequenceEqual(expected, actual.AsSpan(1, expected.Length));
+                AssertExtensions.SequenceEqual(expected.AsSpan(), actual.AsSpan(1, expected.Length));
             }
         }
     }
