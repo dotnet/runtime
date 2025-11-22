@@ -81,6 +81,8 @@ const char* emitOffsetToLabel(unsigned offs);
 
 UNATIVE_OFFSET emitDataGenBeg(unsigned size, unsigned alignment, var_types dataType);
 
+void emitEnsureDataSectionAlignment(unsigned alignment);
+
 UNATIVE_OFFSET emitBBTableDataGenBeg(unsigned numEntries, bool relativeAddr);
 
 void emitDataGenData(unsigned offs, const void* data, UNATIVE_OFFSET size);
