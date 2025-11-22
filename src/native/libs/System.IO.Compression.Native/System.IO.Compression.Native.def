@@ -21,3 +21,35 @@ EXPORTS
     CompressionNative_InflateEnd
     CompressionNative_InflateInit2_
     CompressionNative_InflateReset2_
+    ZSTD_createCCtx
+    ZSTD_createDCtx
+    ZSTD_freeCCtx
+    ZSTD_freeDCtx
+    ZSTD_createCDict_byReference
+    ZSTD_freeCDict
+    ZSTD_createDDict_byReference
+    ZSTD_freeDDict
+    ZSTD_decompress
+    ZSTD_decompressDCtx
+    ZSTD_decompress_usingDDict
+    ZSTD_decompressBound
+    ZSTD_decompressStream
+    ZSTD_DCtx_reset
+    ZSTD_DCtx_refDDict
+    ZSTD_CCtx_refCDict
+    ZSTD_compressBound
+    ZSTD_compress2
+    ZSTD_compress_usingCDict
+    ZSTD_compressStream2
+    ZSTD_CCtx_setParameter
+    ZSTD_DCtx_setParameter
+    ZSTD_CCtx_reset
+    ZSTD_minCLevel
+    ZSTD_maxCLevel
+    ZSTD_defaultCLevel
+    ZSTD_isError
+    ZSTD_getErrorName
+    ZSTD_DCtx_refPrefix
+    ZSTD_CCtx_refPrefix
+    ZSTD_CCtx_setPledgedSrcSize
+    ZDICT_trainFromBuffer

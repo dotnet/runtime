@@ -42,6 +42,29 @@ namespace System.IO.Compression
             }
         }
 
+        [Fact]
+        public void EmptyData_RoundTrips()
+        {
+            using (var compressed = new MemoryStream())
+            {
+                using (var compressor = CreateStream(compressed, CompressionMode.Compress, leaveOpen: true))
+                {
+                    // Write no data
+                }
+
+                Assert.NotEqual(0, compressed.Length);
+
+                compressed.Position = 0;
+
+                using MemoryStream decompressed = new MemoryStream();
+                using (var decompressor = CreateStream(compressed, CompressionMode.Decompress))
+                {
+                    decompressor.CopyTo(decompressed);
+                    Assert.Equal(0, decompressed.Length);
+                }
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public virtual void FlushAsync_DuringWriteAsync()
         {
@@ -211,7 +234,7 @@ namespace System.IO.Compression
             compressedStream.Position = 0;
             using var decompressor = CreateStream(compressedStream, CompressionMode.Decompress);
 
-            while (decompressor.Read(bytes, 0, _bufferSize) > 0);
+            while (decompressor.Read(bytes, 0, _bufferSize) > 0) ;
             Assert.Equal(((compressedEndPosition / BufferSize) + 1) * BufferSize, compressedStream.Position);
         }
 
@@ -589,7 +612,7 @@ namespace System.IO.Compression
         public BadWrappedStream(Mode mode) { _mode = mode; }
         public BadWrappedStream(Mode mode, byte[] buffer) : base(buffer) { _mode = mode; }
 
-        public override int Read(byte[] buffer, int offset, int count)
+        public override int Read(Span<byte> buffer)
         {
             switch (_mode)
             {
@@ -598,10 +621,24 @@ namespace System.IO.Compression
                 case Mode.ReturnTooLargeCounts:
                     return buffer.Length + 1;
                 case Mode.ReadSlowly:
-                    return base.Read(buffer, offset, 1);
+                    int b = base.ReadByte();
+                    if (b == -1)
+                    {
+                        return 0;
+                    }
+                    else
+                    {
+                        buffer[0] = (byte)b;
+                        return 1;
+                    }
                 default:
                     return 0;
             }
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return Read(buffer.AsSpan(offset, count));
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
