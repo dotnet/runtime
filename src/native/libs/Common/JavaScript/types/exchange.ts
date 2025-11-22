@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { installVfsFile, registerDllBytes } from "../../../../corehost/browserhost/host/host";
+import type { installVfsFile, registerDllBytes, loadIcuData } from "../../../../corehost/browserhost/host/host";
 import type { check, error, info, warn, debug } from "../../../../corehost/browserhost/loader/logging";
 import type { createPromiseCompletionSource, getPromiseCompletionSource, isControllablePromise } from "../../../../corehost/browserhost/loader/promise-completion-source";
 import type { resolveRunMainPromise, rejectRunMainPromise, getRunMainPromise } from "../../../../corehost/browserhost/loader/run";
@@ -51,11 +51,13 @@ export type LoaderExportsTable = [
 export type BrowserHostExports = {
     registerDllBytes: typeof registerDllBytes
     installVfsFile: typeof installVfsFile
+    loadIcuData: typeof loadIcuData
 }
 
 export type BrowserHostExportsTable = [
     typeof registerDllBytes,
     typeof installVfsFile,
+    typeof loadIcuData,
 ]
 
 export type InteropJavaScriptExports = {
