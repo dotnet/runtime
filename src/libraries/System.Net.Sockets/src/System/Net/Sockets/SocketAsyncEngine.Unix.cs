@@ -273,7 +273,7 @@ namespace System.Net.Sockets
             // The batch that is currently in the queue could have asked only for one worker.
             // We are going to process a workitem, which may take unknown time or even block.
             // In a worst case the current workitem will indirectly depend on progress of other
-            // items and that would lead to a deadlock if noone else checks the queue.
+            // items and that would lead to a deadlock if no one else checks the queue.
             // We must ensure at least one more worker is coming if the queue is not empty.
             if (!eventQueue.IsEmpty)
             {
