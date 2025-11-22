@@ -79,6 +79,10 @@
 #include "entrypoints.h"
 #endif // TARGET_BROWSER
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 static const Entry s_QCall[] =
 {
     DllImportEntry(ArgIterator_Init)
@@ -546,6 +550,9 @@ static const Entry s_QCall[] =
     DllImportEntry(SystemJS_ScheduleTimer)
     DllImportEntry(SystemJS_ScheduleBackgroundJob)
 #endif // TARGET_BROWSER
+#ifdef FEATURE_INTERPRETER
+    DllImportEntry(AsyncHelpers_ResumeInterpreterContinuation)
+#endif // FEATURE_INTERPRETER
 };
 
 const void* QCallResolveDllImport(const char* name)

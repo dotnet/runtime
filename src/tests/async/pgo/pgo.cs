@@ -19,12 +19,13 @@ public class Async2Pgo
 
     internal static async Task<int> AsyncEntryPoint()
     {
-        int[] arr = Enumerable.Range(0, 100_000).ToArray();
+        int[] arr = Enumerable.Range(0, TestLibrary.Utilities.IsCoreClrInterpreter ? 100 : 100_000).ToArray();
 
         int sum = 0;
+        int jCount = TestLibrary.Utilities.IsCoreClrInterpreter ? 10 : 100;
         for (int i = 0; i < 4; i++)
         {
-            for (int j = 0; j < 100; j++)
+            for (int j = 0; j < jCount; j++)
                 sum += await AggregateDelegateAsync(arr, new AggregateSum(), 0);
 
             await Task.Delay(100);

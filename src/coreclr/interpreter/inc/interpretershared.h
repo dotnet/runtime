@@ -24,6 +24,7 @@ struct InterpHelperData {
 
 #ifndef INTERPRETER_COMPILER_INTERNAL
 class MethodDesc;
+class MethodTable;
 #endif
 
 struct CallStubHeader;
@@ -186,6 +187,55 @@ enum class CalliFlags : int32_t
     None = 0,
     SuppressGCTransition = 1 << 1, // The call is marked by the SuppressGCTransition attribute
     PInvoke = 1 << 2, // The call is a PInvoke call
+};
+
+struct InterpIntervalMapEntry
+{
+    uint32_t startOffset;
+    uint32_t countBytes; // If count is 0 then this is the end marker.
+};
+
+struct InterpAsyncSuspendData
+{
+// ResumeInfo . Keep in sync with dataAsyncResumeInfo in the JIT and System.Runtime.CompilerServices.ResumeInfo
+    void* resumeFuncPtr; // Pointer to the resume function
+    void* DiagnosticIP; // IP to report in diagnostic scenarios
+
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_CLASS_HANDLE ContinuationTypeHnd;
+#else
+    DPTR(MethodTable) ContinuationTypeHnd;
+#endif
+
+    InterpIntervalMapEntry* zeroedLocalsIntervals; // This will be used for the locals we need to keep live.
+    InterpIntervalMapEntry* liveLocalsIntervals; // Following the end of this struct is the array of InterpIntervalMapEntry for live locals
+    CorInfoContinuationFlags flags;
+    int32_t offsetIntoContinuationTypeForExecutionContext;
+    int32_t keepAliveOffset; // Only needed if we have a generic context to keep alive
+    InterpByteCodeStart* methodStartIP;
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_CLASS_HANDLE asyncMethodReturnType;
+#else
+    DPTR(MethodTable) asyncMethodReturnType;
+#endif
+    int32_t asyncMethodReturnTypePrimitiveSize; // 0 if not primitive, otherwise size in bytes
+    int32_t continuationArgOffset;
+
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_METHOD_HANDLE pCaptureSyncContextMethod;
+#else
+    DPTR(MethodDesc) pCaptureSyncContextMethod;
+#endif
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_METHOD_HANDLE pRestoreExecutionContextMethod;
+#else
+    DPTR(MethodDesc) pRestoreExecutionContextMethod;
+#endif
+#ifdef INTERPRETER_COMPILER_INTERNAL
+    CORINFO_METHOD_HANDLE pRestoreContextsMethod;
+#else
+    DPTR(MethodDesc) pRestoreContextsMethod;
+#endif
 };
 
 #endif

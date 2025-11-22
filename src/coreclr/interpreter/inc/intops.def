@@ -315,6 +315,8 @@ OPDEF(INTOP_SHL_I8, "shl.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SHR_I4, "shr.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SHR_I8, "shr.i8", 4, 1, 2, InterpOpNoArgs)
 
+OPDEF(INTOP_CZERO_I, "czero.i", 4, 1, 1, InterpOpNoArgs) // Set dvar to 1 if operand is non-zero otherwise 0 (produces a 32bit int)
+
 OPDEF(INTOP_CEQ_I4, "ceq.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_CEQ_I8, "ceq.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_CEQ_R4, "ceq.r4", 4, 1, 2, InterpOpNoArgs)
@@ -432,6 +434,17 @@ OPDEF(INTOP_LOAD_EXCEPTION, "load.exception", 2, 1, 0, InterpOpNoArgs)
 OPDEF(INTOP_THROW_PNSE, "throw.pnse", 1, 0, 0, InterpOpNoArgs)
 
 OPDEF(INTOP_LOAD_FRAMEVAR, "load.framevar", 2, 1, 0, InterpOpNoArgs)
+
+OPDEF(INTOP_SET_CONTINUATION_NULL, "set.continuation.null", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_SET_CONTINUATION, "set.continuation", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_GET_CONTINUATION, "get.continuation", 2, 1, 0, InterpOpNoArgs)
+OPDEF(INTOP_HANDLE_CONTINUATION, "handle.continuation", 4, 1, 0, InterpOpHandleContinuation)
+OPDEF(INTOP_HANDLE_CONTINUATION_GENERIC, "handle.continuation.generic", 5, 1, 1, InterpOpHandleContinuation)
+OPDEF(INTOP_HANDLE_CONTINUATION_SUSPEND, "handle.continuation.suspend", 3, 0, 1, InterpOpHandleContinuationPt2)
+OPDEF(INTOP_HANDLE_CONTINUATION_RESUME, "handle.continuation.resume", 2, 0, 0, InterpOpHandleContinuationPt2)
+OPDEF(INTOP_CHECK_FOR_CONTINUATION, "check.for.continuation", 3, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_CAPTURE_CONTEXT_ON_SUSPEND, "capture.context.on.suspend", 4, 1, 1, InterpOpHandleContinuationPt2)
+OPDEF(INTOP_RESTORE_CONTEXTS_ON_SUSPEND, "restore.contexts.on.suspend", 6, 1, 3, InterpOpHandleContinuationPt2)
 
 // Intrinsics
 OPDEF(INTOP_COMPARE_EXCHANGE_U1, "compare.exchange.u1", 5, 1, 3, InterpOpNoArgs)

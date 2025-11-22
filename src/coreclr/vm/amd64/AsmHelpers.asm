@@ -587,6 +587,8 @@ HaveInterpThreadContext:
         lea             rax, [rsp + __PWTB_TransitionBlock]
         ; Copy the arguments to the interpreter stack, invoke the InterpExecMethod and load the return value
         call            qword ptr [r11]
+        ; Fill in the ContinuationContext register
+        mov             rcx, [rsp + __PWTB_ArgumentRegisters]
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
@@ -1114,6 +1116,8 @@ END_PROLOGUE
         mov r11, rcx ; The routines list
         mov r10, rdx ; interpreter stack args
         call qword ptr [r11]
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
         mov rsp, rbp
         pop rbp
         ret
@@ -1129,6 +1133,8 @@ END_PROLOGUE
         mov r10, rdx ; interpreter stack args
         mov rcx, r8  ; return buffer
         call qword ptr [r11]
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
         mov rsp, rbp
         pop rbp
         ret
@@ -1144,6 +1150,8 @@ END_PROLOGUE
         mov r10, rdx ; interpreter stack args
         mov rdx, r8  ; return buffer
         call qword ptr [r11]
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
         mov rsp, rbp
         pop rbp
         ret
@@ -1161,6 +1169,8 @@ END_PROLOGUE
         mov r11, rcx ; The routines list
         mov r10, rdx ; interpreter stack args
         call qword ptr [r11]
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
         mov r8, [rbp - 8]
         movsd real8 ptr [r8], xmm0
         mov rsp, rbp
@@ -1179,6 +1189,8 @@ END_PROLOGUE
         mov r11, rcx ; The routines list
         mov r10, rdx ; interpreter stack args
         call qword ptr [r11]
+        mov rdx, [rbp + 48]
+        mov [rdx], rcx
         mov r8, [rbp - 8]
         mov qword ptr [r8], rax
         mov rsp, rbp
