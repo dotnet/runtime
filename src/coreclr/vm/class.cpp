@@ -666,7 +666,6 @@ HRESULT EEClass::AddMethodDesc(
     MethodReturnKind returnKind = ClassifyMethodReturnKind(sigParser, pModule, &offsetOfAsyncDetails, &isValueTask);
     if (returnKind != MethodReturnKind::NormalMethod)
     {
-        // TODO: (async) revisit and examine if this can be supported
         LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
         return E_FAIL;
     }
