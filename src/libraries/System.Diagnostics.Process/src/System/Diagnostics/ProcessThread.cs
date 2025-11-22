@@ -91,6 +91,7 @@ namespace System.Diagnostics
             [SupportedOSPlatform("windows")]
             [SupportedOSPlatform("linux")]
             [SupportedOSPlatform("freebsd")]
+            [SupportedOSPlatform("haiku")]
             get
             {
                 if (!_priorityLevel.HasValue)
@@ -100,6 +101,7 @@ namespace System.Diagnostics
                 return _priorityLevel.Value;
             }
             [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("haiku")]
             set
             {
                 PriorityLevelCore = value;
