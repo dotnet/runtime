@@ -20,6 +20,7 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public override string DhcpScopeName { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override string DomainName { get { return HostInformation.DomainName; } }
@@ -34,6 +35,7 @@ namespace System.Net.NetworkInformation
         [UnsupportedOSPlatform("freebsd")]
         [UnsupportedOSPlatform("illumos")]
         [UnsupportedOSPlatform("solaris")]
+        [UnsupportedOSPlatform("haiku")]
         public override bool IsWinsProxy { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override NetBiosNodeType NodeType { get { return NetBiosNodeType.Unknown; } }
