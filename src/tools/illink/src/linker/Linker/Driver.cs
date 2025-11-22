@@ -515,14 +515,21 @@ namespace Mono.Linker
                             if (!GetStringParam(token, out string? featureName))
                                 return -1;
 
-                            if (!GetBoolParam(token, value =>
-                            {
-                                context.SetFeatureValue(featureName, value);
-                            }))
+                            if (!GetStringParam(token, out string? featureValue))
                                 return -1;
+
+                            // Store all features as strings
+                            context.Features[featureName] = featureValue;
+
+                            // Store boolean features also as booleans
+                            if (bool.TryParse(featureValue, out bool boolValue))
+                            {
+                                context.SetFeatureValue(featureName, boolValue);
+                            }
 
                             continue;
                         }
+
                         case "--new-mvid":
                             //
                             // This is not same as --deterministic which calculates MVID
@@ -1520,7 +1527,7 @@ namespace Mono.Linker
             Console.WriteLine("  --enable-opt NAME [ASM]    Enable one of the additional optimizations globaly or for a specific assembly name");
             Console.WriteLine("                               sealer: Any method or type which does not have override is marked as sealed");
             Console.WriteLine("  --explicit-reflection      Adds to members never used through reflection DisablePrivateReflection attribute. Defaults to false");
-            Console.WriteLine("  --feature FEATURE VALUE    Apply any optimizations defined when this feature setting is a constant known at link time");
+            Console.WriteLine("  --feature FEATURE VALUE    Set feature setting as a constant known at link time. The trimmer may be able to optimize code based on the value.");
             Console.WriteLine("  --keep-com-interfaces      Keep COM interfaces implemented by kept types. Defaults to true");
             Console.WriteLine("  --keep-compilers-resources Keep assembly resources used for F# compilation resources. Defaults to false");
             Console.WriteLine("  --keep-dep-attributes      Keep attributes used for manual dependency tracking. Defaults to false");
