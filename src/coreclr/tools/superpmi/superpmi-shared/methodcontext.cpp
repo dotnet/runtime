@@ -138,7 +138,7 @@ unsigned int MethodContext::calculateRawFileSize()
            2 /* end canary '4', '2' */;
 }
 
-unsigned int MethodContext::saveToFile(HANDLE hFile)
+unsigned int MethodContext::saveToFile(FILE* fp)
 {
     unsigned int totalLen = calculateFileSize();
     unsigned int totalFileSize =
@@ -165,7 +165,7 @@ unsigned int MethodContext::saveToFile(HANDLE hFile)
 
     Assert(buffIndex == totalFileSize);
 
-    WriteFile(hFile, buff2, totalFileSize, &bytesWritten, NULL);
+    bytesWritten = (DWORD)fwrite(buff2, 1, totalFileSize, fp);
     delete[] buff2;
     return bytesWritten;
 }
@@ -183,12 +183,12 @@ bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size, /* 
 }
 
 // static
-bool MethodContext::Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc)
+bool MethodContext::Initialize(int mcIndex, FILE* fp, /* OUT */ MethodContext** ppmc)
 {
     MethodContext* mc = new MethodContext();
     mc->index         = mcIndex;
     *ppmc             = mc;
-    return mc->Initialize(mcIndex, hFile);
+    return mc->Initialize(mcIndex, fp);
 }
 
 bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size)
@@ -219,21 +219,21 @@ bool MethodContext::Initialize(int mcIndex, unsigned char* buff, DWORD size)
     return result;
 }
 
-bool MethodContext::Initialize(int mcIndex, HANDLE hFile)
+bool MethodContext::Initialize(int mcIndex, FILE* fp)
 {
     bool result = true;
 
     struct Param
     {
-        HANDLE         hFile;
+        FILE*          fp;
         MethodContext* pThis;
     } param;
-    param.hFile = hFile;
+    param.fp = fp;
     param.pThis = this;
 
     PAL_TRY(Param*, pParam, &param)
     {
-        pParam->pThis->MethodInitHelperFile(pParam->hFile);
+        pParam->pThis->MethodInitHelperFile(pParam->fp);
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CatchMC)
     {
@@ -245,18 +245,17 @@ bool MethodContext::Initialize(int mcIndex, HANDLE hFile)
     return result;
 }
 
-void MethodContext::MethodInitHelperFile(HANDLE hFile)
+void MethodContext::MethodInitHelperFile(FILE* fp)
 {
-    DWORD        bytesRead;
     char         buff[512];
     unsigned int totalLen = 0;
 
-    AssertCode(ReadFile(hFile, buff, 2 + sizeof(unsigned int), &bytesRead, NULL) == TRUE,
+    AssertCode(fread(buff, 1, 2 + sizeof(unsigned int), fp) == 2 + sizeof(unsigned int),
                EXCEPTIONCODE_MC); // Read Magic number and totalLen
     AssertCodeMsg((buff[0] == 'm') && (buff[1] == 'c'), EXCEPTIONCODE_MC, "Didn't find magic number");
     memcpy(&totalLen, &buff[2], sizeof(unsigned int));
     unsigned char* buff2 = new unsigned char[totalLen + 2]; // total + End Canary
-    AssertCode(ReadFile(hFile, buff2, totalLen + 2, &bytesRead, NULL) == TRUE, EXCEPTIONCODE_MC);
+    AssertCode(fread(buff2, 1, totalLen + 2, fp) == totalLen + 2, EXCEPTIONCODE_MC);
     AssertCodeMsg((buff2[totalLen] == '4') && (buff2[totalLen + 1] == '2'), EXCEPTIONCODE_MC, "Didn't find end canary");
     MethodInitHelper(buff2, totalLen);
 }

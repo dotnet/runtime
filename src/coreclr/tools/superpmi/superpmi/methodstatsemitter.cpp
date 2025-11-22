@@ -14,34 +14,28 @@ MethodStatsEmitter::MethodStatsEmitter(char* nameOfInput)
     char filename[MAX_PATH + 1];
     sprintf_s(filename, MAX_PATH + 1, "%s.stats", nameOfInput);
 
-    hStatsFile =
-        CreateFileA(filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hStatsFile == INVALID_HANDLE_VALUE)
+    fpStatsFile = fopen(filename, "w");
+    if (fpStatsFile == NULL)
     {
-        LogError("Failed to open output file '%s'. GetLastError()=%u", filename, GetLastError());
+        LogError("Failed to open output file '%s'. errno=%d", filename, errno);
     }
 }
 
 MethodStatsEmitter::~MethodStatsEmitter()
 {
-    if (hStatsFile != INVALID_HANDLE_VALUE)
+    if (fpStatsFile != NULL)
     {
-        if (CloseHandle(hStatsFile) == 0)
+        if (fclose(fpStatsFile) != 0)
         {
-            LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+            LogError("fclose failed. errno=%d", errno);
         }
     }
 }
 
 void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG firstTime, ULONGLONG secondTime)
 {
-    if (hStatsFile != INVALID_HANDLE_VALUE)
+    if (fpStatsFile != NULL)
     {
-        // Print the CSV header row
-        char  rowData[2048];
-        DWORD charCount    = 0;
-        DWORD bytesWritten = 0;
-
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'h') != NULL || strchr(statsTypes, 'H') != NULL)
         {
             // Obtain the method Hash
@@ -49,11 +43,11 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
             if (mc->dumpMethodHashToBuffer(md5Hash, MM3_HASH_BUFFER_SIZE) != MM3_HASH_BUFFER_SIZE)
                 md5Hash[0] = 0;
 
-            charCount += sprintf_s(rowData + charCount, ARRAY_SIZE(rowData) - charCount, "%s,", md5Hash);
+            fprintf(fpStatsFile, "%s,", md5Hash);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'n') != NULL || strchr(statsTypes, 'N') != NULL)
         {
-            charCount += sprintf_s(rowData + charCount, ARRAY_SIZE(rowData) - charCount, "%d,", methodNumber);
+            fprintf(fpStatsFile, "%d,", methodNumber);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'i') != NULL || strchr(statsTypes, 'I') != NULL)
         {
@@ -63,7 +57,7 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
             CORINFO_OS          os    = CORINFO_WINNT;
             mc->repCompileMethod(&info, &flags, &os);
 
-            charCount += sprintf_s(rowData + charCount, ARRAY_SIZE(rowData) - charCount, "%d,", info.ILCodeSize);
+            fprintf(fpStatsFile, "%d,", info.ILCodeSize);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'a') != NULL || strchr(statsTypes, 'A') != NULL)
         {
@@ -76,21 +70,14 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
             else
                 codeSize = 0; // this is likely a thin mc
 
-            charCount += sprintf_s(rowData + charCount, ARRAY_SIZE(rowData) - charCount, "%d,", codeSize);
+            fprintf(fpStatsFile, "%d,", codeSize);
         }
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 't') != NULL || strchr(statsTypes, 'T') != NULL)
         {
-            charCount +=
-                sprintf_s(rowData + charCount, ARRAY_SIZE(rowData) - charCount, "%llu,%llu,", firstTime, secondTime);
+            fprintf(fpStatsFile, "%llu,%llu,", (unsigned long long)firstTime, (unsigned long long)secondTime);
         }
 
-        // get rid of the final ',' and replace it with a '\n'
-        rowData[charCount - 1] = '\n';
-
-        if (!WriteFile(hStatsFile, rowData, charCount, &bytesWritten, nullptr) || bytesWritten != charCount)
-        {
-            LogError("Failed to write row header '%s'. GetLastError()=%u", rowData, GetLastError());
-        }
+        fprintf(fpStatsFile, "\n");
     }
 }
 
@@ -98,30 +85,19 @@ void MethodStatsEmitter::SetStatsTypes(char* types)
 {
     statsTypes = types;
 
-    if (hStatsFile != INVALID_HANDLE_VALUE)
+    if (fpStatsFile != INVALID_HANDLE_VALUE)
     {
-        // Print the CSV header row
-        char  rowHeader[1024];
-        DWORD charCount    = 0;
-        DWORD bytesWritten = 0;
-
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'h') != NULL || strchr(statsTypes, 'H') != NULL)
-            charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "HASH,");
+            fprintf(fpStatsFile, "HASH,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'n') != NULL || strchr(statsTypes, 'N') != NULL)
-            charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "METHOD_NUMBER,");
+            fprintf(fpStatsFile, "METHOD_NUMBER,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'i') != NULL || strchr(statsTypes, 'I') != NULL)
-            charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "IL_CODE_SIZE,");
+            fprintf(fpStatsFile, "IL_CODE_SIZE,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'a') != NULL || strchr(statsTypes, 'A') != NULL)
-            charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "ASM_CODE_SIZE,");
+            fprintf(fpStatsFile, "ASM_CODE_SIZE,");
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 't') != NULL || strchr(statsTypes, 'T') != NULL)
-            charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "Time1,Time2,");
+            fprintf(fpStatsFile, "Time1,Time2,");
 
-        // get rid of the final ',' and replace it with a '\n'
-        rowHeader[charCount - 1] = '\n';
-
-        if (!WriteFile(hStatsFile, rowHeader, charCount, &bytesWritten, nullptr) || bytesWritten != charCount)
-        {
-            LogError("Failed to write row header '%s'. GetLastError()=%u", rowHeader, GetLastError());
-        }
+        fprintf(fpStatsFile, "\n");
     }
 }
