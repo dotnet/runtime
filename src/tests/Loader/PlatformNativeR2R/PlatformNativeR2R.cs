@@ -45,8 +45,7 @@ public class PlatformNativeR2R
             }
 
             Assert.True(output.Contains("READYTORUN_FLAG_Component"), "Component assembly should be associated with a platform-native composite image");
-            // TODO: Uncomment assert when crossgen2 adds support for the flag
-            // Assert.True(output.Contains("READYTORUN_FLAG_PlatformNativeImage"), "Component assembly should be associated with a platform-native composite image");
+            Assert.True(output.Contains("READYTORUN_FLAG_PlatformNativeImage"), "Component assembly should be associated with a platform-native composite image");
         }
     }
 }
