@@ -26,6 +26,7 @@
 #endif // FEATURE_COMWRAPPERS
 
 #include "cdacplatformmetadata.hpp"
+#include "contract-descriptor.h"
 
 extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
@@ -1631,6 +1632,79 @@ HRESULT ClrDataAccess::EnumMemCLRMainModuleInfo()
     return status;
 }
 
+typedef DPTR(ContractDescriptor) PTR_ContractDescriptor;
+extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
+
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// Reports datadescriptor data for the cDAC.
+// Hardcodes number of subdescriptors and does not recursively enumerate them.
+//
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+HRESULT ClrDataAccess::EnumMemDataDescriptors(CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+
+    uint64_t contractDescriptorAddr = 0;
+    if (!TryGetSymbol(m_pTarget, m_globalBase, "DotNetRuntimeContractDescriptor", &contractDescriptorAddr))
+        return E_FAIL;
+
+    // Save the main descriptor
+    EnumDataDescriptorHelper((TADDR)contractDescriptorAddr);
+
+    // Assume that subdescriptors will be the n last pointers in the pointer_data array
+    // Must be updated if further subdescriptors are added
+    // This could be improved by iterating all of the pointer data recursively and identifying subdescriptors by
+    // the magic field in ContractDescriptor. Given the low number of subdescriptors, this is not necessary right now.
+    int cSubDescriptors = 1;
+    PTR_ContractDescriptor pContractDescriptor = dac_cast<PTR_ContractDescriptor>((TADDR)contractDescriptorAddr);
+    for (int i = 0; i < cSubDescriptors; i++)
+    {
+        int subDescriptorIndex = (pContractDescriptor->pointer_data_count - 1) - i;
+
+        TADDR pSubDescriptorAddr;
+        ULONG32 bytesRead;
+        if (FAILED(m_pTarget->ReadVirtual(
+            (TADDR)pContractDescriptor->pointer_data + subDescriptorIndex * sizeof(void*),
+            (PBYTE)&pSubDescriptorAddr, sizeof(TADDR), &bytesRead))
+            || bytesRead != sizeof(TADDR)
+            || pSubDescriptorAddr == 0)
+        {
+            continue;
+        }
+
+        TADDR subDescriptorAddr;
+        if (FAILED(m_pTarget->ReadVirtual(
+            pSubDescriptorAddr,
+            (PBYTE)&subDescriptorAddr, sizeof(TADDR), &bytesRead))
+            || bytesRead != sizeof(TADDR)
+            || subDescriptorAddr == 0)
+        {
+            continue;
+        }
+
+        // Save the subdescriptor
+        EnumDataDescriptorHelper(subDescriptorAddr);
+    }
+
+    return S_OK;
+}
+
+void ClrDataAccess::EnumDataDescriptorHelper(TADDR dataDescriptorAddr)
+{
+    PTR_ContractDescriptor pDataDescriptor = dac_cast<PTR_ContractDescriptor>(dataDescriptorAddr);
+
+    EX_TRY
+    {
+        // Enumerate the ContractDescriptor structure
+        ReportMem(dac_cast<TADDR>(pDataDescriptor), sizeof(ContractDescriptor));
+        // Report the pointer data array
+        ReportMem((TADDR)pDataDescriptor->pointer_data, pDataDescriptor->pointer_data_count * sizeof(void*));
+        // Report the JSON blob
+        ReportMem((TADDR)pDataDescriptor->descriptor, pDataDescriptor->descriptor_size);
+    }
+    EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
+}
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
@@ -2059,6 +2133,9 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
             }
         }
 #endif
+
+        EnumMemDataDescriptors(flags);
+
         Flush();
     }
     EX_CATCH

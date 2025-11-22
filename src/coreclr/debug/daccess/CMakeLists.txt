@@ -8,6 +8,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CLR_DIR}/debug/ee)
 include_directories(${CLR_DIR}/gcdump)
 include_directories(${CLR_DIR}/interop/inc)
+include_directories(${CLR_DIR}/debug/datadescriptor-shared/inc)
 
 if(CLR_CMAKE_HOST_UNIX)
   include_directories(${GENERATED_INCLUDE_DIR})
