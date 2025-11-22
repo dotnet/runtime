@@ -4201,6 +4201,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForSlliUw(treeNode->AsOp());
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
         default:
         {
 #ifdef DEBUG
