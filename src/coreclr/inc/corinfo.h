@@ -1754,13 +1754,18 @@ struct CORINFO_ASYNC_INFO
     CORINFO_FIELD_HANDLE continuationStateFldHnd;
     // 'Flags' field
     CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
-    // Method handle for AsyncHelpers.CaptureExecutionContext
+    // Method handle for AsyncHelpers.CaptureExecutionContext, used during suspension
     CORINFO_METHOD_HANDLE captureExecutionContextMethHnd;
-    // Method handle for AsyncHelpers.RestoreExecutionContext
+    // Method handle for AsyncHelpers.RestoreExecutionContext, used during resumption
     CORINFO_METHOD_HANDLE restoreExecutionContextMethHnd;
+    // Method handle for AsyncHelpers.CaptureContinuationContext, used during suspension
     CORINFO_METHOD_HANDLE captureContinuationContextMethHnd;
+    // Method handle for AsyncHelpers.CaptureContexts, used at the beginning of async methods
     CORINFO_METHOD_HANDLE captureContextsMethHnd;
+    // Method handle for AsyncHelpers.RestoreContexts, used before normal returns from async methods
     CORINFO_METHOD_HANDLE restoreContextsMethHnd;
+    // Method handle for AsyncHelpers.RestoreContextsOnSuspension, used before suspending in async methods
+    CORINFO_METHOD_HANDLE restoreContextsOnSuspensionMethHnd;
 };
 
 // Flags passed from JIT to runtime.
