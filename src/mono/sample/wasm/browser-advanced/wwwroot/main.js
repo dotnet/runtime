@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { dotnet, exit } from './dotnet.js'
+import { dotnet, exit } from './_framework/dotnet.js'
 
 function add(a, b) {
     return a + b;
@@ -40,12 +40,11 @@ try {
             maxParallelDownloads: 1,
             resources: {
                 modulesAfterConfigLoaded: [{
-                    "name": "advanced-sample.lib.module.js"
+                    "name": "../advanced-sample.lib.module.js"
                 }]
             }
         })
         .withModuleConfig({
-            configSrc: "./dotnet.boot.js",
             onConfigLoaded: (config) => {
                 // This is called during emscripten `dotnet.wasm` instantiation, after we fetched config.
                 console.log('user code Module.onConfigLoaded');
@@ -72,7 +71,7 @@ try {
         })
         .withResourceLoader((type, name, defaultUri, integrity, behavior) => {
             // loadBootResource could return string with unqualified name of resource. It assumes that we resolve it with document.baseURI
-            return name;
+            return `${defaultUri}?v=42`;
         });
 
     await dotnet.download();

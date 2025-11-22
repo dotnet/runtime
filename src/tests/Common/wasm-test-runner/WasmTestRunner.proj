@@ -34,8 +34,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <WasmExtraFilesToDeploy Include="$(CORE_ROOT)\runtime-test\index.html" />
-      <WasmExtraFilesToDeploy Include="$(CORE_ROOT)\runtime-test\test-main.js" />
       <WasmAssembliesToBundle Include="$(TestBinDir)\*.dll" />
       <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Runtime.InteropServices.JavaScript.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>

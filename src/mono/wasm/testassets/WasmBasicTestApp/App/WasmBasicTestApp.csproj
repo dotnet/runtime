@@ -27,7 +27,6 @@
   <ItemGroup Condition="'$(TestLazyLoading)' == 'true'">
     <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
     <BlazorWebAssemblyLazyLoad Include="LazyLibrary$(WasmAssemblyExtension)" />
-    <WasmExtraFilesToDeploy Include="profiler.js" />
   </ItemGroup>
 
   <ItemGroup>

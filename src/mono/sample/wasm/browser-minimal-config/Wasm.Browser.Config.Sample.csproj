@@ -2,8 +2,6 @@
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <EnableDiagnostics>false</EnableDiagnostics>
+    <WasmFingerprintAssets>false</WasmFingerprintAssets>
   </PropertyGroup>
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="main.js" />
-  </ItemGroup>
 </Project>

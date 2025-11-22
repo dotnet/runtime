@@ -13,9 +13,5 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
   </PropertyGroup>
 
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-  </ItemGroup>
-
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
 </Project>

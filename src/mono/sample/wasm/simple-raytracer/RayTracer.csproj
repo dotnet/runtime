@@ -14,9 +14,4 @@
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
-
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-    <WasmExtraFilesToDeploy Include="main.js" />
-  </ItemGroup>
 </Project>

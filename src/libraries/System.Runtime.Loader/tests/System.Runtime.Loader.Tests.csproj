@@ -107,14 +107,4 @@
       </ManagedAssemblyToLink>
     </ItemGroup>
   </Target>
-
-  <Target Name="IncludeDeltasInWasmBundle" BeforeTargets="PrepareForWasmBuildApp" Condition="'$(TargetOS)' == 'browser'">
-    <ItemGroup>
-      <!-- FIXME: this belongs in eng/testing/tests.wasm.targets -->
-      <!-- FIXME: Can we do something on the Content items in the referenced projects themselves to get this for free? -->
-      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)" Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dmeta'))" />
-      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)" Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dil'))" />
-      <WasmFilesToIncludeInFileSystem Include="@(PublishItemsOutputGroupOutputs)" Condition="$([System.String]::new('%(PublishItemsOutputGroupOutputs.Identity)').EndsWith('.dpdb'))" />
-    </ItemGroup>
-  </Target>
 </Project>

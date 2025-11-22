@@ -41,9 +41,9 @@
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JSImportGenerator\JSImports.g.cs" />
     <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JsExportGenerator\JSExports.g.cs" />
 
-    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
-    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" />
-    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\timers.mjs" />
+    <Content Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" Link="wwwroot\JavaScriptTestHelper.mjs" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" Link="wwwroot\SecondRuntimeTest.js" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\timers.mjs" Link="wwwroot\timers.mjs" CopyToOutputDirectory="PreserveNewest" />
 
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="..\JavaScriptLibrary\JavaScriptLibrary.csproj" />
@@ -71,9 +71,6 @@
 
     <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
     <None Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\test.json" />
-
-    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\WebWorkerTestHelper.mjs" />
-    <WasmExtraFilesToDeploy Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\test.json" />
   </ItemGroup>
 
 </Project>
