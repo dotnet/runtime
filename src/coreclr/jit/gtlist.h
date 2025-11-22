@@ -9,11 +9,10 @@
 /*****************************************************************************/
 //
 //     Node enum
-//                       , GenTree struct flavor
-//                                           ,commutative
-//                                             ,illegal as VN func
-//                                               ,oper kind | DEBUG oper kind
-
+//                      , GenTree struct flavor
+//                      ,                    ,commutative
+//                      ,                    , ,illegal as VN func
+//                      ,                    , , ,(oper kind | DEBUG oper kind)
 GTNODE(NONE             , char               ,0,0,GTK_SPECIAL)
 
 //-----------------------------------------------------------------------------
