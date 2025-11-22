@@ -443,7 +443,6 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         tree->SetRegSpillFlagByIdx(regFlags, regIdx);
     }
 }
-#endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_X86)
 /*****************************************************************************
@@ -568,6 +567,7 @@ void RegSet::rsMarkSpill(GenTree* tree, regNumber reg)
 {
     tree->gtFlags |= GTF_SPILLED;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 /*****************************************************************************/
 
@@ -894,60 +894,6 @@ bool RegSet::tmpAllFree() const
 }
 
 #endif // DEBUG
-
-/*
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX  Register-related utility functions                                       XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-/*****************************************************************************
- *
- *  Given a register that is an argument register
- *   returns the next argument register
- *
- *  Note: that this method will return a non arg register
- *   when given REG_ARG_LAST
- *
- */
-
-regNumber genRegArgNext(regNumber argReg)
-{
-    assert(isValidIntArgReg(argReg, CorInfoCallConvExtension::Managed) || isValidFloatArgReg(argReg));
-
-    switch (argReg)
-    {
-
-#ifdef TARGET_AMD64
-#ifdef UNIX_AMD64_ABI
-
-        // Linux x64 ABI: REG_RDI, REG_RSI, REG_RDX, REG_RCX, REG_R8, REG_R9
-        case REG_ARG_0:       // REG_RDI
-            return REG_ARG_1; // REG_RSI
-        case REG_ARG_1:       // REG_RSI
-            return REG_ARG_2; // REG_RDX
-        case REG_ARG_2:       // REG_RDX
-            return REG_ARG_3; // REG_RCX
-        case REG_ARG_3:       // REG_RCX
-            return REG_ARG_4; // REG_R8
-
-#else // !UNIX_AMD64_ABI
-
-        // Windows x64 ABI: REG_RCX, REG_RDX, REG_R8, REG_R9
-        case REG_ARG_1:       // REG_RDX
-            return REG_ARG_2; // REG_R8
-
-#endif // !UNIX_AMD64_ABI
-#endif // TARGET_AMD64
-
-        default:
-            return REG_NEXT(argReg);
-    }
-}
 
 /*****************************************************************************
  *

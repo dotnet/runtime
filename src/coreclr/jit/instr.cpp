@@ -86,7 +86,7 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrs.h"
 
 #elif defined(TARGET_WASM)
-        #define INST(id, nm, info, opcode) nm,
+        #define INST(id, nm, info, fmt, opcode) nm,
         #include "instrs.h"
 
 #else
@@ -2178,6 +2178,15 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         else
         {
             ins = INS_ld; // default ld.
+        }
+#elif defined(TARGET_WASM)
+        switch (srcType)
+        {
+            case TYP_INT:
+                ins = INS_i32_load;
+                break;
+            default:
+                NYI_WASM("ins_Load");
         }
 #else
         NYI("ins_Load");

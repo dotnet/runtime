@@ -9,13 +9,16 @@
 void getInsSveExecutionCharacteristics(instrDesc* id, insExecutionCharacteristics& result);
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
+void emitDispInst(instruction ins);
+
 /************************************************************************/
 /*           The public entry points to output instructions             */
 /************************************************************************/
 
 public:
 void emitIns(instruction ins);
-void emitIns_I(instruction ins, emitAttr attr, ssize_t imm);
+void emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm);
+void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
 void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm);
@@ -46,3 +49,5 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
 
 private:
 bool emitInsIsStore(instruction ins);
+
+insFormat emitInsFormat(instruction ins);

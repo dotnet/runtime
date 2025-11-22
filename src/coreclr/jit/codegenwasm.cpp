@@ -59,9 +59,110 @@ void CodeGen::genFuncletEpilog()
     NYI_WASM("genFuncletEpilog");
 }
 
-void CodeGen::genCodeForTreeNode(GenTree* node)
+void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 {
-    NYI_WASM("genCodeForTreeNode");
+#ifdef DEBUG
+    lastConsumedNode = nullptr;
+    if (compiler->verbose)
+    {
+        compiler->gtDispLIRNode(treeNode, "Generating: ");
+    }
+#endif // DEBUG
+
+    assert(!treeNode->IsReuseRegVal()); // TODO-WASM-CQ: enable.
+
+    // Contained nodes are part of the parent for codegen purposes.
+    if (treeNode->isContained())
+    {
+        return;
+    }
+
+    switch (treeNode->OperGet())
+    {
+        case GT_ADD:
+            genCodeForBinary(treeNode->AsOp());
+            break;
+
+        case GT_LCL_VAR:
+            genCodeForLclVar(treeNode->AsLclVar());
+            break;
+
+        case GT_RETURN:
+            genReturn(treeNode);
+            break;
+
+        case GT_IL_OFFSET:
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        default:
+#ifdef DEBUG
+            NYIRAW(GenTree::OpName(treeNode->OperGet()));
+#else
+            NYI_WASM("Opcode not implemented");
+#endif
+            break;
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForBinary: Generate code for a binary arithmetic operator
+//
+// Arguments:
+//    treeNode - The binary operation for which we are generating code.
+//
+void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
+{
+    genConsumeOperands(treeNode);
+
+    instruction ins;
+    switch (treeNode->OperGet())
+    {
+        case GT_ADD:
+            if (!treeNode->TypeIs(TYP_INT))
+            {
+                NYI_WASM("genCodeForBinary: non-INT GT_ADD");
+            }
+            ins = INS_i32_add;
+            break;
+        default:
+            ins = INS_none;
+            NYI_WASM("genCodeForBinary");
+            break;
+    }
+
+    GetEmitter()->emitIns(ins);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForLclVar: Produce code for a GT_LCL_VAR node.
+//
+// Arguments:
+//    tree - the GT_LCL_VAR node
+//
+void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
+{
+    assert(tree->OperIs(GT_LCL_VAR) && !tree->IsMultiReg());
+    LclVarDsc* varDsc = compiler->lvaGetDesc(tree);
+
+    // Unlike other targets, we can't "reload at the point of use", since that would require inserting instructions
+    // into the middle of an already-emitted instruction group. Instead, we order the nodes in a way that obeys the
+    // value stack constraints of WASM precisely. However, the liveness tracking is done in the same way as for other
+    // targets, hence "genProduceReg" is only called for non-candidates.
+    if (!varDsc->lvIsRegCandidate())
+    {
+        var_types type = varDsc->GetRegisterType(tree);
+        // TODO-WASM: actually local.get the frame base local here.
+        GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(tree), tree->GetLclNum(), 0);
+        genProduceReg(tree);
+    }
+    else
+    {
+        assert(genIsValidReg(varDsc->GetRegNum()));
+        unsigned wasmLclIndex = UnpackWasmReg(varDsc->GetRegNum());
+        GetEmitter()->emitIns_I(INS_local_get, emitTypeSize(tree), wasmLclIndex);
+    }
 }
 
 BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
@@ -76,11 +177,21 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
     NYI_WASM("genEHCatchRet");
 }
 
+void CodeGen::genStructReturn(GenTree* treeNode)
+{
+    NYI_WASM("genStructReturn");
+}
+
 void CodeGen::genEmitGSCookieCheck(bool tailCall)
 {
     // TODO-WASM: GS cookie checks have limited utility on WASM since they can only help
     // with detecting linear memory stack corruption. Decide if we want them anyway.
     NYI_WASM("genEmitGSCookieCheck");
+}
+
+void CodeGen::genProfilingLeaveCallback(unsigned helper)
+{
+    NYI_WASM("genProfilingLeaveCallback");
 }
 
 void CodeGen::genSpillVar(GenTree* tree)
@@ -155,11 +266,6 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 }
 
 void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
-{
-    NYI_WASM("Move genUpdateVarReg from codegenlinear.cpp to codegencommon.cpp shared code");
-}
-
-void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree)
 {
     NYI_WASM("Move genUpdateVarReg from codegenlinear.cpp to codegencommon.cpp shared code");
 }

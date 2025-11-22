@@ -1062,6 +1062,7 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int reg
     assert(tree->IsMultiRegLclVar() || tree->OperIs(GT_COPY));
     varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
 }
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // genUpdateVarReg: Update the current register location for a lclVar
@@ -1078,6 +1079,7 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree)
     varDsc->SetRegNum(tree->GetRegNum());
 }
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genUnspillLocal: Reload a register candidate local into a register, if needed.
 //
@@ -1610,7 +1612,6 @@ regNumber CodeGen::genConsumeReg(GenTree* tree)
     return tree->GetRegNum();
 }
 
-#ifndef TARGET_WASM
 // Do liveness update for an address tree: one of GT_LEA, GT_LCL_VAR, or GT_CNS_INT (for call indirect).
 void CodeGen::genConsumeAddress(GenTree* addr)
 {
@@ -1763,6 +1764,7 @@ void CodeGen::genConsumeOperands(GenTreeOp* tree)
     }
 }
 
+#ifndef TARGET_WASM
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // genConsumeOperands: Do liveness update for the operands of a multi-operand node,
@@ -2087,6 +2089,7 @@ void CodeGen::genSpillLocal(unsigned varNum, var_types type, GenTreeLclVar* lclN
                                   varNum, 0);
     }
 }
+#endif // !TARGET_WASM
 
 //-------------------------------------------------------------------------
 // genProduceReg: do liveness update for register produced by the current
@@ -2105,6 +2108,7 @@ void CodeGen::genProduceReg(GenTree* tree)
     tree->gtDebugFlags |= GTF_DEBUG_NODE_CG_PRODUCED;
 #endif
 
+#if HAS_FIXED_REGISTER_SET
     if (tree->gtFlags & GTF_SPILL)
     {
         // Code for GT_COPY node gets generated as part of consuming regs by its parent.
@@ -2174,10 +2178,12 @@ void CodeGen::genProduceReg(GenTree* tree)
             return;
         }
     }
+#endif // HAS_FIXED_REGISTER_SET
 
     // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);
 
+#if EMIT_GENERATE_GCINFO
     // If we've produced a register, mark it as a pointer, as needed.
     if (tree->gtHasReg(compiler))
     {
@@ -2254,8 +2260,10 @@ void CodeGen::genProduceReg(GenTree* tree)
             }
         }
     }
+#endif // EMIT_GENERATE_GCINFO
 }
 
+#ifndef TARGET_WASM
 // transfer gc/byref status of src reg to dst reg
 void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
 {

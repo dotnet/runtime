@@ -6949,6 +6949,7 @@ void CodeGen::genLongReturn(GenTree* treeNode)
     inst_Mov(targetType, REG_LNGRET_HI, hiRetVal->GetRegNum(), /* canSkip */ true, emitActualTypeSize(TYP_INT));
 }
 #endif // TARGET_X86 || TARGET_ARM
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // genReturn: Generates code for return statement.
@@ -6995,7 +6996,7 @@ void CodeGen::genReturn(GenTree* treeNode)
         else if (targetType != TYP_VOID)
         {
             assert(op1 != nullptr);
-            noway_assert(op1->GetRegNum() != REG_NA);
+            noway_assert(!HAS_FIXED_REGISTER_SET || (op1->GetRegNum() != REG_NA));
 
             // !! NOTE !! genConsumeReg will clear op1 as GC ref after it has
             // consumed a reg for the operand. This is because the variable
@@ -7005,6 +7006,7 @@ void CodeGen::genReturn(GenTree* treeNode)
             // instructions until emitted then should not rely on the outdated GC info.
             genConsumeReg(op1);
 
+#if HAS_FIXED_REGISTER_SET
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             genSimpleReturn(treeNode);
 #else // !TARGET_ARM64 || !TARGET_LOONGARCH64 || !TARGET_RISCV64
@@ -7047,6 +7049,7 @@ void CodeGen::genReturn(GenTree* treeNode)
                 inst_Mov_Extend(targetType, /* srcInReg */ true, retReg, op1->GetRegNum(), /* canSkip */ true);
             }
 #endif // !TARGET_ARM64 || !TARGET_LOONGARCH64 || !TARGET_RISCV64
+#endif // HAS_FIXED_REGISTER_SET
         }
     }
 
@@ -7055,10 +7058,12 @@ void CodeGen::genReturn(GenTree* treeNode)
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
     }
 
+#if EMIT_GENERATE_GCINFO
     if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
         genMarkReturnGCInfo();
     }
+#endif // EMIT_GENERATE_GCINFO
 
 #ifdef PROFILING_SUPPORTED
 
@@ -7103,6 +7108,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 }
 
+#ifndef TARGET_WASM
 #ifdef SWIFT_SUPPORT
 //------------------------------------------------------------------------
 // genSwiftErrorReturn: Generates code for returning the normal return value,
@@ -7200,6 +7206,7 @@ void CodeGen::genCodeForAsyncContinuation(GenTree* tree)
 
     genProduceReg(tree);
 }
+#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // isStructReturn: Returns whether the 'treeNode' is returning a struct.
@@ -7234,6 +7241,7 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
 #endif
 }
 
+#ifndef TARGET_WASM
 //------------------------------------------------------------------------
 // genStructReturn: Generates code for returning a struct.
 //
