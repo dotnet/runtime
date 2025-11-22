@@ -4940,6 +4940,17 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif
 
+#ifdef DEBUG
+    // If we are going to simulate generating wasm control flow,
+    // transform any strongly connected components into reducible flow.
+    //
+    if (JitConfig.JitWasmControlFlow() > 0)
+    {
+        DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgDfsBlocksAndRemove);
+        DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
+    }
+#endif
+
     // rationalize trees
     Rationalizer rat(this); // PHASE_RATIONALIZE
     rat.Run();
@@ -4982,6 +4993,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     FinalizeEH();
 
+#ifdef DEBUG
+    // Optionally, simulate generating wasm control flow
+    // (eventually this will become part of the wasm target)
+    //
+    if (JitConfig.JitWasmControlFlow() > 0)
+    {
+        DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
+    }
+#endif
+
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
 
@@ -5014,16 +5035,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if FEATURE_LOOP_ALIGN
     // Place loop alignment instructions
     DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);
-#endif
-
-#ifdef DEBUG
-    // Optionally, simulate generating wasm control flow
-    // (eventually this will become part of the wasm target)
-    //
-    if (JitConfig.JitWasmControlFlow() > 0)
-    {
-        DoPhase(this, PHASE_WASM_CONTROL_FLOW, &Compiler::fgWasmControlFlow);
-    }
 #endif
 
     // The common phase checks and dumps are no longer relevant past this point.
