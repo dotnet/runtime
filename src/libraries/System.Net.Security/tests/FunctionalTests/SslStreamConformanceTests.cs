@@ -42,10 +42,10 @@ namespace System.Net.Security.Tests
                 // This ping-ping should flush leftovers from the handshake.
                 // We use sync method to preserve socket in default blocking state
                 // (as we don't go back once Async is used at least once)
-                ssl1.Write(new byte[1]);
-                ssl2.Write(new byte[1]);
-                Assert.Equal(1, ssl2.Read(new byte[1]));
-                Assert.Equal(1, ssl1.Read(new byte[1]));
+                await ssl1.WriteAsync(new byte[1]);
+                await ssl2.WriteAsync(new byte[1]);
+                Assert.Equal(1, await ssl2.ReadAsync(new byte[1]));
+                Assert.Equal(1, await ssl1.ReadAsync(new byte[1]));
             }
 
             return new StreamPair(ssl1, ssl2);
