@@ -1622,6 +1622,7 @@ open_aot_data (MonoAssembly *assembly, MonoAotFileInfo *info, void **ret_handle)
 	data = (guint8*)mono_file_map (info->datafile_size, MONO_MMAP_READ, mono_file_map_fd (map), 0, ret_handle);
 	g_assert (data);
 
+	g_free(filename);
 	return data;
 }
 
