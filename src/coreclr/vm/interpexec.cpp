@@ -827,6 +827,10 @@ MAIN_LOOP:
 #if defined(DEBUG) || defined(DEBUGGING_SUPPORTED)
                 case INTOP_BREAKPOINT:
                 {
+                    // Adjust ip to point to the breakpoint instruction
+                    // TODO: Why we need to do that? Shouldn't ip already point to the breakpoint instruction?
+                    pFrame->ip = ip - 3;
+
                     struct BreakpointParam
                     {
                         const int32_t *ip;
