@@ -220,21 +220,24 @@ namespace System.IO.Compression
                 {
                     Debug.Assert(_deflater != null && _buffer != null);
 
-                    // Compress any bytes left:
-                    await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
-
-                    // Pull out any bytes left inside deflater:
-                    bool flushSuccessful;
-                    do
+                    if (_wroteBytes)
                     {
-                        int compressedBytes;
-                        flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
-                        if (flushSuccessful)
+                        // Compress any bytes left:
+                        await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+
+                        // Pull out any bytes left inside deflater:
+                        bool flushSuccessful;
+                        do
                         {
-                            await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
-                        }
-                        Debug.Assert(flushSuccessful == (compressedBytes > 0));
-                    } while (flushSuccessful);
+                            int compressedBytes;
+                            flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
+                            if (flushSuccessful)
+                            {
+                                await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
+                            }
+                            Debug.Assert(flushSuccessful == (compressedBytes > 0));
+                        } while (flushSuccessful);
+                    }
 
                     // Always flush on the underlying stream
                     await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
