@@ -340,16 +340,21 @@ void emitIns_R_C(instruction ins, emitAttr attr, regNumber destReg, regNumber ad
 
 void emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNumber reg);
 
+void emitIns_R_R_Addr(instruction ins, emitAttr attr, regNumber regDest, regNumber regAddr, void* addr);
+
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
 void emitIns_R_AI(instruction  ins,
                   emitAttr     attr,
-                  regNumber    reg,
+                  regNumber    dataReg,
+                  regNumber    addrReg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 unsigned emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id);
 
 unsigned get_curTotalCodeSize(); // bytes of code
+
+bool IsAddressInRange(void* addr);
 
 //------------------------------------------------------------------------
 // emitIsCmpJump: checks if it's a compare and jump (branch)

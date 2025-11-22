@@ -913,14 +913,20 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
             switch (relocType)
             {
-                case IMAGE_REL_RISCV64_PC:
+                case IMAGE_REL_RISCV64_CALL_PLT:
+                case IMAGE_REL_RISCV64_PCREL_I:
+                case IMAGE_REL_RISCV64_PCREL_S:
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
                         // Similar to x64's IMAGE_REL_BASED_REL32 handling we
                         // will handle this by also hardcoding the bottom bits
                         // of the target into the instruction.
-                        PutRiscV64AuipcItype((UINT32*)address, (INT32)tmp.target);
+                        INT64 offset = (INT64)tmp.target;
+                        INT32 lo12 = (offset << (64 - 12)) >> (64 - 12);
+                        INT32 hi20 = INT32(offset - lo12);
+                        bool isStype = (relocType == IMAGE_REL_RISCV64_PCREL_S);
+                        PutRiscV64AuipcCombo((UINT32*)address, INT64(lo12) + INT64(hi20), isStype);
                     }
                     wasRelocHandled = true;
                 }

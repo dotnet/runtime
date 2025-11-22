@@ -2954,7 +2954,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #ifdef DEBUG
     enableFakeSplitting = JitConfig.JitFakeProcedureSplitting();
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
     // Whether encoding of absolute addr as PC-rel offset is enabled
     opts.compEnablePCRelAddr = (JitConfig.EnablePCRelAddr() != 0);
 #endif

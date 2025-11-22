@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
 
         public void EmitMOV(Register regDst, ISymbolNode symbol)
         {
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_PC);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I);
             //auipc reg, off-hi-20bits
             EmitPC(regDst);
             //addi reg, reg, off-lo-12bits
@@ -89,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
 
         public void EmitLD(Register regDst, ISymbolNode symbol)
         {
-            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_PC);
+            Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_PCREL_I);
             //auipc reg, off-hi-20bits
             EmitPC(regDst);
             //ld reg, off-lo-12bits(reg)
@@ -118,7 +118,7 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
             }
             else
             {
-                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_PC);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_CALL_PLT);
                 EmitPC(Register.X29); // auipc x29, 0
                 EmitJALR(Register.X0, Register.X29, 0); // jalr x0, 0(x29)
             }
