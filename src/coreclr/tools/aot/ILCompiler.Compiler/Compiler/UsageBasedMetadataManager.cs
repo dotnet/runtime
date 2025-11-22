@@ -311,6 +311,22 @@ namespace ILCompiler
                 }
             }
 
+            if (type.IsArray)
+            {
+                // Array.Initialize needs the default constructor of the element type to be reflectable
+                // for value types with a public parameterless constructor.
+                TypeDesc elementType = ((ArrayType)type).ElementType;
+                if (elementType.IsValueType)
+                {
+                    MethodDesc defaultConstructor = elementType.GetDefaultConstructor();
+                    if (defaultConstructor is not null && !IsReflectionBlocked(defaultConstructor))
+                    {
+                        dependencies ??= new DependencyList();
+                        dependencies.Add(factory.ReflectedMethod(defaultConstructor.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Array.Initialize needs default constructor");
+                    }
+                }
+            }
+
             MetadataType mdType = type as MetadataType;
             ModuleDesc module = mdType?.Module;
             if (module != null && !_rootEntireAssembliesExaminedModules.Contains(module))
