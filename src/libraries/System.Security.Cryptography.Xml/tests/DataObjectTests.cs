@@ -161,5 +161,143 @@ namespace System.Security.Cryptography.Xml.Tests
 
             return element;
         }
+
+        [Fact]
+        public void LoadXml_InvalidElement()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<WrongElement />");
+
+            DataObject dataObject = new DataObject();
+            // Actually doesn't throw - just loads it anyway
+            dataObject.LoadXml(doc.DocumentElement);
+            Assert.NotNull(dataObject.Data);
+        }
+
+        [Fact]
+        public void GetXml_WithData()
+        {
+            DataObject dataObject = new DataObject();
+            XmlDocument doc = new XmlDocument();
+            XmlElement elem = doc.CreateElement("TestData");
+            elem.InnerText = "test content";
+            dataObject.Data = new XmlNodeList[] { elem.ChildNodes }[0];
+
+            XmlElement xml = dataObject.GetXml();
+            Assert.NotNull(xml);
+            Assert.Equal("Object", xml.LocalName);
+        }
+
+        [Fact]
+        public void Properties_SetAndGet()
+        {
+            DataObject dataObject = new DataObject();
+            
+            dataObject.Id = "obj-1";
+            Assert.Equal("obj-1", dataObject.Id);
+
+            dataObject.MimeType = "text/xml";
+            Assert.Equal("text/xml", dataObject.MimeType);
+
+            dataObject.Encoding = "UTF-8";
+            Assert.Equal("UTF-8", dataObject.Encoding);
+
+            Assert.NotNull(dataObject.Data);
+        }
+
+        [Fact]
+        public void LoadXml_WithData()
+        {
+            string xml = @"<Object Id=""obj1"" xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <test>data</test>
+            </Object>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            DataObject dataObject = new DataObject();
+            dataObject.LoadXml(doc.DocumentElement);
+            Assert.Equal("obj1", dataObject.Id);
+            Assert.Equal(1, dataObject.Data.Count);
+        }
+
+        [Fact]
+        public void LoadXml_NoId()
+        {
+            string xml = @"<Object xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <test>data</test>
+            </Object>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            DataObject dataObject = new DataObject();
+            dataObject.LoadXml(doc.DocumentElement);
+            Assert.Null(dataObject.Id);
+        }
+
+        [Fact]
+        public void LoadXml_NoMimeType()
+        {
+            string xml = @"<Object Id=""obj1"" xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <test>data</test>
+            </Object>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            DataObject dataObject = new DataObject();
+            dataObject.LoadXml(doc.DocumentElement);
+            Assert.Null(dataObject.MimeType);
+        }
+
+        [Fact]
+        public void LoadXml_NoEncoding()
+        {
+            string xml = @"<Object Id=""obj1"" xmlns=""http://www.w3.org/2000/09/xmldsig#"">
+                <test>data</test>
+            </Object>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            DataObject dataObject = new DataObject();
+            dataObject.LoadXml(doc.DocumentElement);
+            Assert.Null(dataObject.Encoding);
+        }
+
+        [Fact]
+        public void GetXml_NoData()
+        {
+            DataObject dataObject = new DataObject();
+            dataObject.Id = "obj1";
+            
+            XmlElement xml = dataObject.GetXml();
+            Assert.NotNull(xml);
+            Assert.Equal("Object", xml.LocalName);
+            Assert.Equal("obj1", xml.GetAttribute("Id"));
+        }
+
+        [Fact]
+        public void GetXml_EmptyStrings()
+        {
+            DataObject dataObject = new DataObject();
+            dataObject.Id = "";
+            dataObject.MimeType = "";
+            dataObject.Encoding = "";
+            
+            XmlElement xml = dataObject.GetXml();
+            Assert.NotNull(xml);
+            Assert.Equal("Object", xml.LocalName);
+        }
+
+        [Fact]
+        public void Constructor_NullArguments()
+        {
+            XmlDocument doc = new XmlDocument();
+            XmlElement elem = doc.CreateElement("test");
+            
+            DataObject dataObject = new DataObject(null, null, null, elem);
+            Assert.Null(dataObject.Id);
+            Assert.Null(dataObject.MimeType);
+            Assert.Null(dataObject.Encoding);
+            Assert.NotNull(dataObject.Data);
+        }
     }
 }
