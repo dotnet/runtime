@@ -14,6 +14,7 @@
 #include <limits.h>
 #include <algorithm>
 #include "dn-stdio.h"
+#include "dn-memmap.h"
 
 using std::min;
 using std::max;
