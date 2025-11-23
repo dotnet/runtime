@@ -87,7 +87,7 @@ namespace System.IO
 
             // If trimmedCurrentPath still has a trailing separator (root directory case like "C:\" or "/"),
             // remove it for proper boundary checking
-            if (trimmedCurrentPath.Length > 0 && IsDirectorySeparator(trimmedCurrentPath[trimmedCurrentPath.Length - 1]))
+            if (trimmedCurrentPath.Length > 0 && PathInternal.IsDirectorySeparator(trimmedCurrentPath[trimmedCurrentPath.Length - 1]))
             {
                 trimmedCurrentPath = trimmedCurrentPath.Slice(0, trimmedCurrentPath.Length - 1);
             }
