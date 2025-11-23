@@ -821,14 +821,6 @@ namespace System.Formats.Tar
             byte firstByte = buffer[0];
             switch (firstByte)
             {
-                case 0x28: // Zstandard
-                    if (buffer.Length >= 4 &&
-                        buffer[1] == 0xB5 && buffer[2] == 0x2F && buffer[3] == 0xFD)
-                    {
-                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "Zstandard"));
-                    }
-                    break;
-
                 case 0x37: // 7-Zip
                     if (buffer.Length >= 6 &&
                         buffer[1] == 0x7A && buffer[2] == 0xBC &&
@@ -868,13 +860,37 @@ namespace System.Formats.Tar
                     }
                     break;
 
-                case 0x78: // ZLIB (deflate compression)
+                case 0x28: // Could be Zstandard or ZLIB
+                    if (buffer.Length >= 4 &&
+                        buffer[1] == 0xB5 && buffer[2] == 0x2F && buffer[3] == 0xFD)
+                    {
+                        throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "Zstandard"));
+                    }
+                    // If not Zstandard, fall through to check if it's ZLIB
                     if (buffer.Length >= 2)
                     {
                         byte secondByte = buffer[1];
-                        if (secondByte == 0x01 || secondByte == 0x5E || secondByte == 0x9C ||
-                            secondByte == 0xDA || secondByte == 0x20 || secondByte == 0x7D ||
-                            secondByte == 0xBB || secondByte == 0xF9)
+                        // Check if this is a valid ZLIB header (must be divisible by 31)
+                        if (((firstByte * 256) + secondByte) % 31 == 0)
+                        {
+                            throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "ZLIB"));
+                        }
+                    }
+                    break;
+
+                // ZLIB (deflate compression) - various compression methods and window sizes
+                case 0x08:
+                case 0x18:
+                case 0x38:
+                case 0x48:
+                case 0x58:
+                case 0x68:
+                case 0x78:
+                    if (buffer.Length >= 2)
+                    {
+                        byte secondByte = buffer[1];
+                        // Check if this is a valid ZLIB header (must be divisible by 31)
+                        if (((firstByte * 256) + secondByte) % 31 == 0)
                         {
                             throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "ZLIB"));
                         }
