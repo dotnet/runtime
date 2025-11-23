@@ -961,9 +961,10 @@ namespace System.IO.Compression
                     }
 
                     // Rewind the stream if decompression has finished and the stream supports seeking
-                    if (_deflateStream._inflater.Finished() && _deflateStream._stream.CanSeek)
+                    if (_deflateStream._inflater.Finished() && !_deflateStream._decompressionFinished && _deflateStream._stream.CanSeek)
                     {
                         _deflateStream.TryRewindStream(_deflateStream._stream);
+                        _deflateStream._decompressionFinished = true;
                     }
                 }
                 finally
@@ -1003,9 +1004,10 @@ namespace System.IO.Compression
                     }
 
                     // Rewind the stream if decompression has finished and the stream supports seeking
-                    if (_deflateStream._inflater.Finished() && _deflateStream._stream.CanSeek)
+                    if (_deflateStream._inflater.Finished() && !_deflateStream._decompressionFinished && _deflateStream._stream.CanSeek)
                     {
                         _deflateStream.TryRewindStream(_deflateStream._stream);
+                        _deflateStream._decompressionFinished = true;
                     }
                 }
                 finally
