@@ -126,8 +126,9 @@ Note, the `.slnx` file can be saved and stores paths to `corerun.exe`, included 
 When you are primarily working with Windows and want to check compatibility with Unix systems, it's convenient to keep using Visual Studio.
 
 There are two versions of toolchain available, referred as WSL1 and WSL2 toolchain.
-WSL1 toolchain is operating all the files in-place, leveraging the complex folder layout. It can also run on WSL2, which is recommended for convenience.
-WSL2 toolchain requires some manual bookkeeping about the layout. It performs much better, and can be also applied to remote system.
+- WSL1 toolchain is operating all the files in-place, leveraging the complex folder layout. It can also run on WSL2, which is recommended for convenience.
+- WSL2 toolchain requires some manual bookkeeping about the layout. It performs much better, and can be also applied to remote system.
+For more information, see [Visual Studio Remote Settings vendor map](https://learn.microsoft.com/cpp/build/cmake-presets-json-reference#visual-studio-remote-settings-vendor-map).
 
 Setup steps for WSL1 toolchain:
 1. In WSL environment, execute `/mnt/<path-to-runtime>/eng/native/version/copy_version_files.sh` at mounted Windows file system. to generate additional required files.
