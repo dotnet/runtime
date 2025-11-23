@@ -669,6 +669,123 @@ namespace System.IO.Compression
             }
         }
 
+        [Fact]
+        public void StreamRewinds_OnlyOnce_AfterMultipleReads()
+        {
+            TestStreamRewindsOnlyOnce(useAsync: false).GetAwaiter().GetResult();
+        }
+
+        [Fact]
+        public async Task StreamRewinds_OnlyOnce_AfterMultipleReadsAsync()
+        {
+            await TestStreamRewindsOnlyOnce(useAsync: true);
+        }
+
+        private async Task TestStreamRewindsOnlyOnce(bool useAsync)
+        {
+            // Create test data: compressed data + footer
+            byte[] originalData = Encoding.UTF8.GetBytes("Test data for verifying single rewind behavior.");
+            byte[] footerBytes = Encoding.UTF8.GetBytes("FOOTER");
+
+            // Create compressed data
+            byte[] compressedData;
+            using (var ms = new MemoryStream())
+            {
+                using (var compressor = CreateStream(ms, CompressionMode.Compress))
+                {
+                    if (useAsync)
+                    {
+                        await compressor.WriteAsync(originalData);
+                    }
+                    else
+                    {
+                        compressor.Write(originalData);
+                    }
+                }
+                compressedData = ms.ToArray();
+            }
+
+            // Create a stream with: [compressed data][footer]
+            byte[] combinedData = new byte[compressedData.Length + footerBytes.Length];
+            Array.Copy(compressedData, 0, combinedData, 0, compressedData.Length);
+            Array.Copy(footerBytes, 0, combinedData, compressedData.Length, footerBytes.Length);
+
+            using (var stream = new MemoryStream(combinedData))
+            {
+                // Decompress the data
+                if (useAsync)
+                {
+                    await using (var decompressor = CreateStream(stream, CompressionMode.Decompress, leaveOpen: true))
+                    {
+                        using (var outputStream = new MemoryStream())
+                        {
+                            await decompressor.CopyToAsync(outputStream);
+                        }
+
+                        // After CopyToAsync completes, stream should be rewound to end of compressed data
+                        long positionAfterFirstRewind = stream.Position;
+                        Assert.Equal(compressedData.Length, positionAfterFirstRewind);
+
+                        // Call ReadAsync multiple times - should return 0 each time and NOT rewind further
+                        byte[] buffer = new byte[100];
+                        int bytesRead1 = await decompressor.ReadAsync(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead1);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position unchanged
+
+                        int bytesRead2 = await decompressor.ReadAsync(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead2);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position still unchanged
+
+                        int bytesRead3 = await decompressor.ReadAsync(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead3);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position still unchanged
+                    }
+                }
+                else
+                {
+                    using (var decompressor = CreateStream(stream, CompressionMode.Decompress, leaveOpen: true))
+                    {
+                        using (var outputStream = new MemoryStream())
+                        {
+                            decompressor.CopyTo(outputStream);
+                        }
+
+                        // After CopyTo completes, stream should be rewound to end of compressed data
+                        long positionAfterFirstRewind = stream.Position;
+                        Assert.Equal(compressedData.Length, positionAfterFirstRewind);
+
+                        // Call Read multiple times - should return 0 each time and NOT rewind further
+                        byte[] buffer = new byte[100];
+                        int bytesRead1 = decompressor.Read(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead1);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position unchanged
+
+                        int bytesRead2 = decompressor.Read(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead2);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position still unchanged
+
+                        int bytesRead3 = decompressor.Read(buffer, 0, buffer.Length);
+                        Assert.Equal(0, bytesRead3);
+                        Assert.Equal(positionAfterFirstRewind, stream.Position); // Position still unchanged
+                    }
+                }
+
+                // Verify we can still read the footer from the correct position
+                byte[] footerBuffer = new byte[footerBytes.Length];
+                int footerBytesRead;
+                if (useAsync)
+                {
+                    footerBytesRead = await stream.ReadAsync(footerBuffer, 0, footerBytes.Length);
+                }
+                else
+                {
+                    footerBytesRead = stream.Read(footerBuffer, 0, footerBytes.Length);
+                }
+                Assert.Equal(footerBytes.Length, footerBytesRead);
+                Assert.Equal(footerBytes, footerBuffer);
+            }
+        }
+
     }
 
     public enum TestScenario
