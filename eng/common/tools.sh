@@ -300,8 +300,29 @@ function GetDotNetInstallScript {
   local root=$1
   local install_script="$root/dotnet-install.sh"
   local install_script_url="https://builds.dotnet.microsoft.com/dotnet/scripts/$dotnetInstallScriptVersion/dotnet-install.sh"
+  local timestamp_file="$root/.dotnet-install.timestamp"
+  local should_download=false
 
   if [[ ! -a "$install_script" ]]; then
+    should_download=true
+  elif [[ -f "$timestamp_file" ]]; then
+    # Check if the script is older than 30 days using timestamp file
+    local download_time=$(cat "$timestamp_file" 2>/dev/null || echo "0")
+    local current_time=$(date +%s)
+    local age_seconds=$((current_time - download_time))
+    
+    # 30 days = 30 * 24 * 60 * 60 = 2592000 seconds
+    if [[ $age_seconds -gt 2592000 ]]; then
+      echo "Existing install script is too old, re-downloading..."
+      should_download=true
+    fi
+  else
+    # No timestamp file exists, assume script is old and re-download
+    echo "No timestamp found for existing install script, re-downloading..."
+    should_download=true
+  fi
+
+  if [[ "$should_download" == true ]]; then
     mkdir -p "$root"
 
     echo "Downloading '$install_script_url'"
@@ -328,6 +349,9 @@ function GetDotNetInstallScript {
         ExitWithExitCode $exit_code
       }
     fi
+    
+    # Create timestamp file to track download time in seconds from epoch
+    date +%s > "$timestamp_file"
   fi
   # return value
   _GetDotNetInstallScript="$install_script"
@@ -447,27 +471,13 @@ function MSBuild {
     fi
 
     local toolset_dir="${_InitializeToolset%/*}"
-    # new scripts need to work with old packages, so we need to look for the old names/versions
-    local selectedPath=
-    local possiblePaths=()
-    possiblePaths+=( "$toolset_dir/net/Microsoft.DotNet.ArcadeLogging.dll" )
-    possiblePaths+=( "$toolset_dir/net/Microsoft.DotNet.Arcade.Sdk.dll" )
+    local selectedPath="$toolset_dir/net/Microsoft.DotNet.ArcadeLogging.dll"
 
-    # This list doesn't need to be updated anymore and can eventually be removed.
-    possiblePaths+=( "$toolset_dir/net9.0/Microsoft.DotNet.ArcadeLogging.dll" )
-    possiblePaths+=( "$toolset_dir/net9.0/Microsoft.DotNet.Arcade.Sdk.dll" )
-    possiblePaths+=( "$toolset_dir/net8.0/Microsoft.DotNet.ArcadeLogging.dll" )
-    possiblePaths+=( "$toolset_dir/net8.0/Microsoft.DotNet.Arcade.Sdk.dll" )
-    for path in "${possiblePaths[@]}"; do
-      if [[ -f $path ]]; then
-        selectedPath=$path
-        break
-      fi
-    done
     if [[ -z "$selectedPath" ]]; then
-      Write-PipelineTelemetryError -category 'Build'  "Unable to find arcade sdk logger assembly."
+      Write-PipelineTelemetryError -category 'Build'  "Unable to find arcade sdk logger assembly: $selectedPath"
       ExitWithExitCode 1
     fi
+
     args+=( "-logger:$selectedPath" )
   fi
 

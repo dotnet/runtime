@@ -61,8 +61,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void PrivateKey_FromCertificate_CanExportPrivate_DSA()
         {
             DSAParameters originalParameters = DSATestData.GetDSA1024Params();
@@ -152,9 +151,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (MLDsa certKey = certWithKey.GetMLDsaPrivateKey())
             {
                 Assert.NotNull(certKey);
-                byte[] expectedKey = MLDsaTestsData.IetfMLDsa44.SecretKey;
-                byte[] actualKey = new byte[MLDsaAlgorithm.MLDsa44.SecretKeySizeInBytes];
-                Assert.Equal(MLDsaAlgorithm.MLDsa44.SecretKeySizeInBytes, certKey.ExportMLDsaSecretKey(actualKey));
+                byte[] expectedKey = MLDsaTestsData.IetfMLDsa44.PrivateKey;
+                byte[] actualKey = certKey.ExportMLDsaPrivateKey();
                 AssertExtensions.SequenceEqual(expectedKey, actualKey);
             }
         }
@@ -170,7 +168,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 Assert.NotNull(certKey);
                 byte[] expectedKey = SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue;
-                AssertExtensions.SequenceEqual(expectedKey, certKey.ExportSlhDsaSecretKey());
+                AssertExtensions.SequenceEqual(expectedKey, certKey.ExportSlhDsaPrivateKey());
             }
         }
 
@@ -283,8 +281,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         public static void PublicPrivateKey_IndependentLifetimes_DSA()
         {
             X509Certificate2 loaded;

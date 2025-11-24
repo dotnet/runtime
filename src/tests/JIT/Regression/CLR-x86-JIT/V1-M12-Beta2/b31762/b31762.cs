@@ -3,7 +3,7 @@
 //
 
 using Xunit;
-namespace Test
+namespace b31762
 {
     using System;
 
@@ -12,6 +12,7 @@ namespace Test
         public static uint[] m_auForward5;
         public static uint[] Method2() { return null; }
 
+        [OuterLoop]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -195,7 +195,7 @@ namespace ILCompiler
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override string Name
+            public override ReadOnlySpan<byte> Name
             {
                 get
                 {
@@ -217,15 +217,25 @@ namespace ILCompiler
 
             public override MethodIL EmitIL()
             {
+                // TODO: (async) https://github.com/dotnet/runtime/issues/121781
+                if (_targetMethod.IsAsyncCall())
+                {
+                    ILEmitter e = new ILEmitter();
+                    ILCodeStream c = e.NewCodeStream();
+
+                    c.EmitCallThrowHelper(e, Context.GetCoreLibEntryPoint("System.Runtime"u8, "InternalCalls"u8, "RhpFallbackFailFast"u8, null));
+                    return e.Link(this);
+                }
+
                 // Generate the instantiating stub. This loosely corresponds to following C#:
                 // return Interface.Method(this, GetOrdinalInterface(this.m_pEEType, Index), [rest of parameters])
 
                 ILEmitter emit = new ILEmitter();
                 ILCodeStream codeStream = emit.NewCodeStream();
 
-                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType");
-                MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers", "GetOrdinalInterface");
-                MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers", "GetCurrentSharedThunkContext");
+                FieldDesc eeTypeField = Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"u8);
+                MethodDesc getOrdinalInterfaceMethod = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetOrdinalInterface"u8);
+                MethodDesc getCurrentContext = Context.GetHelperEntryPoint("SharedCodeHelpers"u8, "GetCurrentSharedThunkContext"u8);
 
                 bool isX86 = Context.Target.Architecture == TargetArchitecture.X86;
 
@@ -307,7 +317,7 @@ namespace ILCompiler
             public override TypeSystemContext Context => _methodRepresented.Context;
             public override TypeDesc OwningType => _owningType;
 
-            public override string Name => _methodRepresented.Name;
+            public override ReadOnlySpan<byte> Name => _methodRepresented.Name;
             public override string DiagnosticName => _methodRepresented.DiagnosticName;
 
             public override MethodSignature Signature

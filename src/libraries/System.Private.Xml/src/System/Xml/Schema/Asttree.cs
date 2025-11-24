@@ -421,10 +421,7 @@ namespace System.Xml.Schema
             this.next = null;
             this.Urn = axis.Urn;
             this.abbrAxis = axis.AbbrAxis;
-            if (inputaxis != null)
-            {
-                inputaxis.Next = this;
-            }
+            inputaxis?.Next = this;
         }
 
         // recursive here

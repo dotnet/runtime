@@ -156,6 +156,27 @@ bool IntegralRange::Contains(int64_t value) const
         case GT_GT:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
+        case GT_AND:
+        {
+            IntegralRange leftRange  = IntegralRange::ForNode(node->gtGetOp1(), compiler);
+            IntegralRange rightRange = IntegralRange::ForNode(node->gtGetOp2(), compiler);
+            if (leftRange.IsNonNegative() && rightRange.IsNonNegative())
+            {
+                // If both sides are known to be non-negative, the result is non-negative.
+                // Further, the top end of the range cannot exceed the min of the two upper bounds.
+                return {SymbolicIntegerValue::Zero, min(leftRange.GetUpperBound(), rightRange.GetUpperBound())};
+            }
+
+            if (leftRange.IsNonNegative() || rightRange.IsNonNegative())
+            {
+                // If only one side is known to be non-negative, however it is harder to
+                // reason about the upper bound.
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
+            break;
+        }
+
         case GT_ARR_LENGTH:
         case GT_MDARR_LENGTH:
             return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ArrayLenMax};
@@ -215,11 +236,20 @@ bool IntegralRange::Contains(int64_t value) const
         }
 
         case GT_CNS_INT:
+        {
             if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
                 return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
             }
+
+            int64_t constValue = node->AsIntCon()->IntegralValue();
+            if (constValue >= 0)
+            {
+                return {SymbolicIntegerValue::Zero, UpperBoundForType(rangeType)};
+            }
+
             break;
+        }
 
         case GT_QMARK:
             return Union(ForNode(node->AsQmark()->ThenNode(), compiler),
@@ -251,17 +281,16 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_X86Base_CompareScalarUnorderedLessThan:
                 case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
                 case NI_X86Base_CompareScalarUnorderedGreaterThan:
-                case NI_SSE42_TestC:
-                case NI_SSE42_TestZ:
-                case NI_SSE42_TestNotZAndNotC:
+                case NI_X86Base_TestC:
+                case NI_X86Base_TestZ:
+                case NI_X86Base_TestNotZAndNotC:
                 case NI_AVX_TestC:
                 case NI_AVX_TestZ:
                 case NI_AVX_TestNotZAndNotC:
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
                 case NI_X86Base_Extract:
-                case NI_SSE42_Extract:
-                case NI_SSE42_X64_Extract:
+                case NI_X86Base_X64_Extract:
                 case NI_Vector128_ToScalar:
                 case NI_Vector256_ToScalar:
                 case NI_Vector512_ToScalar:
@@ -278,8 +307,8 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_AVX2_TrailingZeroCount:
                 case NI_AVX2_X64_LeadingZeroCount:
                 case NI_AVX2_X64_TrailingZeroCount:
-                case NI_SSE42_PopCount:
-                case NI_SSE42_X64_PopCount:
+                case NI_X86Base_PopCount:
+                case NI_X86Base_X64_PopCount:
                     // Note: No advantage in using a precise range for IntegralRange.
                     // Example: IntCns = 42 gives [0..127] with a non -precise range, [42,42] with a precise range.
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::ByteMax};
@@ -1232,9 +1261,18 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     if (op2->OperIs(GT_CNS_INT))
                     {
                         ssize_t iconVal = op2->AsIntCon()->IconValue();
-                        if (varTypeIsSmall(lclVar) && op1->OperIs(GT_STORE_LCL_VAR))
+                        if (varTypeIsSmall(lclVar))
                         {
-                            iconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                            ssize_t truncatedIconVal = optCastConstantSmall(iconVal, lclVar->TypeGet());
+                            if (!op1->OperIs(GT_STORE_LCL_VAR) && (truncatedIconVal != iconVal))
+                            {
+                                // This assertion would be saying that a small local is equal to a value
+                                // outside its range. It means this block is unreachable. Avoid creating
+                                // such impossible assertions which can hit assertions in other places.
+                                goto DONE_ASSERTION;
+                            }
+
+                            iconVal = truncatedIconVal;
                             if (!optLocalAssertionProp)
                             {
                                 assertion.op2.vn = vnStore->VNForIntCon(static_cast<int>(iconVal));
@@ -2665,7 +2703,10 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
                 if (castFrom != NO_CLASS_HANDLE)
                 {
                     CORINFO_CLASS_HANDLE castTo = gtGetHelperArgClassHandle(castClsArg);
-                    if (info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
+                    // Constant prop may fail to propagate compile time class handles, so verify we have
+                    // a handle before invoking the runtime.
+                    if ((castTo != NO_CLASS_HANDLE) &&
+                        info.compCompHnd->compareTypesForCast(castFrom, castTo) == TypeCompareState::Must)
                     {
                         // if castObjArg is not simple, we replace the arg with a temp assignment and
                         // continue using that temp - it allows us reliably extract all side effects
@@ -3932,7 +3973,7 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
         // See if (X + CNS) is known to be non-negative
         if (tree->OperIs(GT_ADD) && tree->gtGetOp2()->IsIntCnsFitsInI32())
         {
-            Range    rng = Range(Limit(Limit::keDependent));
+            Range    rng = Range(Limit(Limit::keUnknown));
             ValueNum vn  = vnStore->VNConservativeNormalValue(tree->gtGetOp1()->gtVNPair);
             if (!RangeCheck::TryGetRangeFromAssertions(this, vn, assertions, &rng))
             {
@@ -3940,7 +3981,6 @@ void Compiler::optAssertionProp_RangeProperties(ASSERT_VALARG_TP assertions,
             }
 
             int cns = static_cast<int>(tree->gtGetOp2()->AsIntCon()->IconValue());
-            rng.LowerLimit().AddConstant(cns);
 
             if ((rng.LowerLimit().IsConstant() && !rng.LowerLimit().AddConstant(cns)) ||
                 (rng.UpperLimit().IsConstant() && !rng.UpperLimit().AddConstant(cns)))
@@ -4166,7 +4206,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
 
         // Look for matching exact type assertions based on vtable accesses. E.g.:
         //
-        //   op1:       VNF_InvariantLoad(myObj) or in other words: a vtable access
+        //   op1:       VNF_InvariantNonNullLoad(myObj) or in other words: a vtable access
         //   op2:       'MyType' class handle
         //   Assertion: 'myObj's type is exactly MyType
         //
@@ -4175,7 +4215,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         {
             VNFuncApp funcApp;
             if (vnStore->GetVNFunc(vnStore->VNConservativeNormalValue(op1->gtVNPair), &funcApp) &&
-                (funcApp.m_func == VNF_InvariantLoad) && (curAssertion->op1.vn == funcApp.m_args[0]))
+                (funcApp.m_func == VNF_InvariantNonNullLoad) && (curAssertion->op1.vn == funcApp.m_args[0]))
             {
                 return assertionIndex;
             }
@@ -4405,13 +4445,10 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
     // See if we can fold "X relop CNS" using TryGetRangeFromAssertions.
     int op2cns;
-    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) &&
-        vnStore->IsVNIntegralConstant(op2VN, &op2cns)
-        // "op2cns != 0" is purely a TP quirk (such relops are handled by the code above):
-        && (op2cns != 0))
+    if (op1->TypeIs(TYP_INT) && op2->TypeIs(TYP_INT) && vnStore->IsVNIntegralConstant(op2VN, &op2cns))
     {
         // NOTE: we can call TryGetRangeFromAssertions for op2 as well if we want, but it's not cheap.
-        Range rng1 = Range(Limit(Limit::keUndef));
+        Range rng1 = Range(Limit(Limit::keUnknown));
         Range rng2 = Range(Limit(Limit::keConstant, op2cns));
 
         if (RangeCheck::TryGetRangeFromAssertions(this, op1VN, assertions, &rng1))
@@ -4691,6 +4728,13 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 
     // Find an equal or not equal assertion about op1 var.
     unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
+
+    // Make sure the local is not truncated.
+    if (!op1->TypeIs(lvaGetRealType(lclNum)))
+    {
+        return nullptr;
+    }
+
     noway_assert(lclNum < lvaCount);
     AssertionIndex index = optLocalAssertionIsEqualOrNotEqual(op1Kind, lclNum, op2Kind, cnsVal, assertions);
 
@@ -5393,21 +5437,38 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             {
                 return dropBoundsCheck(INDEBUG("a[*] followed by a[0]"));
             }
-            // Do we have two constant indexes?
-            else if (vnStore->IsVNConstant(curAssertion->op1.bnd.vnIdx) && vnStore->IsVNConstant(vnCurIdx))
+            else
             {
-                // Make sure the types match.
-                var_types type1 = vnStore->TypeOfVN(curAssertion->op1.bnd.vnIdx);
-                var_types type2 = vnStore->TypeOfVN(vnCurIdx);
+                // index1 doesn't have to be a constant, it can be a Phi each predecessor of which is a constant.
+                // The smallest of those is what we can rely on. Example:
+                //
+                //  arr[cond ? 10 : 5] = 0;  // arr is at least 6 elements long
+                //  arr[2] = 0;              // arr must be at least 3 elements long
+                //
+                // or even:
+                //
+                //  arr[cond ? 10 : 5] = 0; // arr is at least 6 elements long
+                //  arr[cond ? 1 : 2] = 0;  // arr must be at least 3 elements long
+                //
+                auto tryGetMaxOrMinConst = [this](ValueNum vn, bool getMin, int* index) -> bool {
+                    *index = getMin ? INT_MAX : INT_MIN;
+                    return vnStore->VNVisitReachingVNs(vn,
+                                                       [this, index, getMin](ValueNum vn) -> ValueNumStore::VNVisit {
+                        int cns = 0;
+                        if (vnStore->IsVNIntegralConstant(vn, &cns))
+                        {
+                            *index = getMin ? min(*index, cns) : max(*index, cns);
+                            return ValueNumStore::VNVisit::Continue;
+                        }
+                        return ValueNumStore::VNVisit::Abort;
+                    }) == ValueNumStore::VNVisit::Continue;
+                };
 
-                if (type1 == type2 && type1 == TYP_INT)
+                int index1;
+                int index2;
+                if (tryGetMaxOrMinConst(curAssertion->op1.bnd.vnIdx, /*min*/ true, &index1) &&
+                    tryGetMaxOrMinConst(vnCurIdx, /*max*/ false, &index2))
                 {
-                    int index1 = vnStore->ConstantValue<int>(curAssertion->op1.bnd.vnIdx);
-                    int index2 = vnStore->ConstantValue<int>(vnCurIdx);
-
-                    // the case where index1 == index2 should have been handled above
-                    assert(index1 != index2);
-
                     // It can always be considered as redundant with any previous higher constant value
                     //       a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2
                     if (index2 >= 0 && index1 >= index2)
@@ -5630,8 +5691,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
     GenTree* switchTree = switchBb->lastStmt()->GetRootNode()->gtEffectiveVal();
     assert(switchTree->OperIs(GT_SWITCH));
 
-    // bbsCount is uint32_t, but it's unlikely to be more than INT32_MAX.
-    noway_assert(switchBb->GetSwitchTargets()->bbsCount <= INT32_MAX);
+    // Case count is uint32_t, but it's unlikely to be more than INT32_MAX.
+    noway_assert(switchBb->GetSwitchTargets()->GetCaseCount() <= INT32_MAX);
 
     ValueNum opVN = optConservativeNormalVN(switchTree->gtGetOp1());
     if (opVN == ValueNumStore::NoVN)
@@ -5649,9 +5710,9 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
     int offset = 0;
     vnStore->PeelOffsetsI32(&opVN, &offset);
 
-    int        jumpCount  = static_cast<int>(switchBb->GetSwitchTargets()->bbsCount);
-    FlowEdge** jumpTable  = switchBb->GetSwitchTargets()->bbsDstTab;
-    bool       hasDefault = switchBb->GetSwitchTargets()->bbsHasDefault;
+    int        jumpCount  = static_cast<int>(switchBb->GetSwitchTargets()->GetCaseCount());
+    FlowEdge** jumpTable  = switchBb->GetSwitchTargets()->GetCases();
+    bool       hasDefault = switchBb->GetSwitchTargets()->HasDefaultCase();
 
     for (int jmpTargetIdx = 0; jmpTargetIdx < jumpCount; jmpTargetIdx++)
     {
@@ -5663,14 +5724,15 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
         int value = jmpTargetIdx - offset;
 
         // We can only make "X == caseValue" assertions for blocks with a single edge from the switch.
-        BasicBlock* target = jumpTable[jmpTargetIdx]->getDestinationBlock();
+        FlowEdge* const   edge   = jumpTable[jmpTargetIdx];
+        BasicBlock* const target = edge->getDestinationBlock();
         if (target->GetUniquePred(this) != switchBb)
         {
             // Target block is potentially reachable from multiple blocks (outside the switch).
             continue;
         }
 
-        if (fgGetPredForBlock(target, switchBb)->getDupCount() > 1)
+        if (edge->getDupCount() > 1)
         {
             // We have just one predecessor (BBJ_SWITCH), but there may be multiple edges (cases) per target.
             continue;
@@ -5761,6 +5823,8 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
 
 void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
 {
+    assert(!optLocalAssertionProp);
+
     if (BitVecOps::IsEmpty(apTraits, activeAssertions))
     {
         return;
@@ -5789,31 +5853,25 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
         {
             AssertionDsc* impAssertion = optGetAssertion(impIndex);
 
-            //  The impAssertion must be different from the chkAssertion
+            // The impAssertion must be different from the chkAssertion
             if (impIndex == chkAssertionIndex)
             {
                 continue;
             }
 
-            // impAssertion must be a Non Null assertion on lclNum
-            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || (impAssertion->op1.kind != O1K_LCLVAR) ||
-                (impAssertion->op2.kind != O2K_CONST_INT) || (impAssertion->op1.vn != chkAssertion->op1.vn))
+            // impAssertion must be a Non Null assertion on op1.vn
+            if ((impAssertion->assertionKind != OAK_NOT_EQUAL) || !impAssertion->CanPropNonNull() ||
+                (impAssertion->op1.vn != chkAssertion->op1.vn))
             {
                 continue;
             }
 
             // The bit may already be in the result set
-            if (!BitVecOps::IsMember(apTraits, activeAssertions, impIndex - 1))
+            if (BitVecOps::TryAddElemD(apTraits, activeAssertions, impIndex - 1))
             {
-                BitVecOps::AddElemD(apTraits, activeAssertions, impIndex - 1);
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
-                           (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
-                           impIndex);
-                }
-#endif
+                JITDUMP("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
+                        (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
+                        impIndex);
             }
 
             // There is at most one non-null assertion that is implied by the current chkIndex assertion

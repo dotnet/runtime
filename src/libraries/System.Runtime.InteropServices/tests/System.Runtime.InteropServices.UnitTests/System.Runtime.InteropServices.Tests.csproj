@@ -160,6 +160,7 @@
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeBufferTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\StandardOleMarshalObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\StructLayoutAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeIdentifierAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\UnknownWrapperTests.cs" />

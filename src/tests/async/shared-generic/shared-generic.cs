@@ -79,6 +79,31 @@ public class Async2SharedGeneric
         Assert.Equal(value, await GenericClass<T>.StaticReturnClassTypeAsync1(value));
         Assert.Equal(value, await GenericClass<T>.StaticReturnMethodTypeAsync1<T>(value));
     }
+
+    [Fact]
+    public static void TestInterface()
+    {
+        TestInterfaceAsync(new JsonDeserializer<ArrayReader>()).GetAwaiter().GetResult();
+    }
+
+    private static async Task TestInterfaceAsync(ITypeDeserializer deserializer)
+    {
+        Assert.Equal("abc", await deserializer.ReadString());
+    }
+
+    private struct ArrayReader
+    {
+    }
+
+    private interface ITypeDeserializer
+    {
+        Task<string> ReadString();
+    }
+
+    private class JsonDeserializer<TReader> : ITypeDeserializer
+    {
+        Task<string> ITypeDeserializer.ReadString() => Task.FromResult("abc");
+    }
 }
 
 public class GenericClass<T>

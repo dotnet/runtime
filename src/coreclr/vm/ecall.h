@@ -15,24 +15,6 @@
 
 class MethodDesc;
 
-// CoreCLR defines fewer FCalls so make the hashtable even smaller.
-#define FCALL_HASH_SIZE 127
-
-typedef DPTR(struct ECHash) PTR_ECHash;
-
-struct ECHash
-{
-    PTR_ECHash          m_pNext;
-    PCODE               m_pImplementation;
-    PTR_MethodDesc      m_pMD;               // for reverse mapping
-};
-
-#ifdef DACCESS_COMPILE
-GVAL_DECL(TADDR, gLowestFCall);
-GVAL_DECL(TADDR, gHighestFCall);
-GARY_DECL(PTR_ECHash, gFCallMethods, FCALL_HASH_SIZE);
-#endif
-
 enum {
     FCFuncFlag_EndOfArray   = 0x01,
     FCFuncFlag_HasSignature = 0x02,
@@ -74,30 +56,14 @@ struct ECClass
 class ECall
 {
     public:
-        //---------------------------------------------------------
-        // One-time init
-        //---------------------------------------------------------
-        static void Init();
-
-        static PCODE GetFCallImpl(MethodDesc* pMD, BOOL * pfSharedOrDynamicFCallImpl = NULL);
-        static MethodDesc* MapTargetBackToMethod(PCODE pTarg, PCODE * ppAdjustedEntryPoint = NULL);
+        static PCODE GetFCallImpl(MethodDesc* pMD, bool throwForInvalidFCall = true, bool* pHasManagedImpl = nullptr);
         static DWORD GetIDForMethod(MethodDesc *pMD);
-
-        // Some fcalls (delegate ctors and tlbimpl ctors) shared one implementation.
-        // We should never patch vtable for these since they have 1:N mapping between
-        // MethodDesc and the actual implementation
-        static BOOL IsSharedFCallImpl(PCODE pImpl);
 
         static BOOL CheckUnusedECalls(SetSHash<DWORD>& usedIDs);
 
         static void DynamicallyAssignFCallImpl(PCODE impl, DWORD index);
 
         static void PopulateManagedStringConstructors();
-
-#ifdef DACCESS_COMPILE
-        // Enumerates all gFCallMethods for minidumps.
-        static void EnumFCallMethods();
-#endif // DACCESS_COMPILE
 
 #define _DYNAMICALLY_ASSIGNED_FCALLS_BASE() \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(FastAllocateString,                RhpNewVariableSizeObject) \

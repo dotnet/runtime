@@ -56,8 +56,8 @@ public static class Program
 
     public static async Task<int> Main(string[] args)
     {
-        CommandLineConfiguration configuration = new(CreateRootCommand());
-        ParseResult parsedArguments = configuration.Parse(args);
+        RootCommand rootCommand = CreateRootCommand();
+        ParseResult parsedArguments = rootCommand.Parse(args);
 
         while (true)
         {
@@ -79,11 +79,12 @@ public static class Program
                 {
                     // Parse the remaining string as new arguments for the analyzer.
                     FileInfo inputFileArgument = parsedArguments.GetValue(InputFileArgument)!;
-                    parsedArguments = configuration.Parse($"\"{inputFileArgument.FullName}\" {command[1..]}");
+                    parsedArguments = rootCommand.Parse($"\"{inputFileArgument.FullName}\" {command[1..]}");
                     break;
                 }
             }
-        };
+        }
+        ;
     }
 
     private static readonly Argument<FileInfo> InputFileArgument = new Argument<FileInfo>("log file")
@@ -492,9 +493,11 @@ public static class Program
             GetDescriptor(contractVersion),
             [TargetPointer.Null, new TargetPointer(header->memoryBase + (nuint)((byte*)&header->moduleTable - (byte*)header))],
             (address, buffer) => ReadFromMemoryMappedLog(address, buffer, header),
+            (address, buffer) => throw new NotImplementedException("StressLogAnalyzer does not provide WriteToTarget implementation"),
             (threadId, contextFlags, bufferToFill) => throw new NotImplementedException("StressLogAnalyzer does not provide GetTargetThreadContext implementation"),
             true,
-            nuint.Size);
+            nuint.Size,
+            []);
     }
 
     private static unsafe TimeTracker CreateTimeTracker(SafeMemoryMappedViewHandle handle, Options options)
@@ -518,7 +521,7 @@ public static class Program
         {
             Baseline = BaseContractDescriptor.Baseline,
             Version = BaseContractDescriptor.Version,
-            Contracts = new(){ { "StressLog", stressLogVersion } },
+            Contracts = new() { { "StressLog", stressLogVersion } },
             Types = BaseContractDescriptor.Types,
             Globals = BaseContractDescriptor.Globals,
         };
@@ -540,7 +543,8 @@ public static class Program
                         "Logs": 24,
                         "TickFrequency": 48,
                         "StartTimestamp": 56,
-                        "ModuleOffset": 72
+                        "ModuleOffset": 72,
+                        "Modules": 80
                     },
                     "StressLogModuleDesc": {
                         "!": 16,

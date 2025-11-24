@@ -28,7 +28,7 @@ namespace ILLink.Shared.TrimAnalysis
         private readonly ReflectionMarker _reflectionMarker;
         private ILOpcode _operation;
         private readonly MethodDesc _callingMethod;
-        private readonly string _reason;
+        private readonly MethodDesc _reason;
 
         public HandleCallAction(
             FlowAnnotations annotations,
@@ -36,7 +36,7 @@ namespace ILLink.Shared.TrimAnalysis
             ReflectionMarker reflectionMarker,
             in DiagnosticContext diagnosticContext,
             MethodDesc callingMethod,
-            string reason)
+            MethodDesc reason)
         {
             _reflectionMarker = reflectionMarker;
             _operation = operation;
@@ -48,7 +48,7 @@ namespace ILLink.Shared.TrimAnalysis
             _requireDynamicallyAccessedMembersAction = new(reflectionMarker, diagnosticContext, reason);
         }
 
-        private partial bool TryHandleIntrinsic (
+        private partial bool TryHandleIntrinsic(
             MethodProxy calledMethod,
             MultiValue instanceValue,
             IReadOnlyList<MultiValue> argumentValues,
@@ -82,7 +82,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                                             if (isExact)
                                             {
-                                                _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
+                                                if (typeInstantiated.CheckConstraints())
+                                                    _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
                                             }
                                             else
                                             {
@@ -90,15 +91,24 @@ namespace ILLink.Shared.TrimAnalysis
                                             }
                                         }
                                     }
-                                    else if (typeInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
-                                    {
-                                        // This will always succeed thanks to the runtime type loader
-                                    }
                                     else
                                     {
-                                        triggersWarning = true;
-                                    }
+                                        if (typeInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
+                                        {
+                                            // This will always succeed thanks to the runtime type loader
+                                        }
+                                        else
+                                        {
+                                            triggersWarning = true;
+                                        }
 
+                                        // This should technically be in the IsConstrainedToBeReferenceTypes branch above
+                                        // but we have trim warning suppressions in dotnet/runtime and elsewhere that rely on the implementation
+                                        // detail that reference type instantiations will work, even if the generic is not
+                                        // constrained to be a reference type.
+                                        // MarkType will try to come up with a reference type type loader template.
+                                        _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
+                                    }
                                 }
                                 else if (value == NullValue.Instance)
                                 {
@@ -145,7 +155,8 @@ namespace ILLink.Shared.TrimAnalysis
 
                                             if (isExact)
                                             {
-                                                _reflectionMarker.MarkMethod(_diagnosticContext.Origin, methodInstantiated, "MakeGenericMethod");
+                                                if (methodInstantiated.CheckConstraints())
+                                                    _reflectionMarker.MarkMethod(_diagnosticContext.Origin, methodInstantiated, "MakeGenericMethod");
                                             }
                                             else
                                             {
@@ -221,7 +232,7 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Array
                 //
-                // CreateInstance (Type, Int32)
+                // CreateInstance(Type, Int32)
                 //
                 case IntrinsicId.Array_CreateInstance:
                     {
@@ -234,7 +245,7 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Enum
                 //
-                // static GetValues (Type)
+                // static GetValues(Type)
                 //
                 case IntrinsicId.Enum_GetValues:
                     {
@@ -243,7 +254,7 @@ namespace ILLink.Shared.TrimAnalysis
                         // type instead).
                         //
                         // At least until we have shared enum code, this needs extra handling to get it right.
-                        foreach (var value in argumentValues[0].AsEnumerable ())
+                        foreach (var value in argumentValues[0].AsEnumerable())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -263,10 +274,10 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Runtime.InteropServices.Marshal
                 //
-                // static SizeOf (Type)
-                // static PtrToStructure (IntPtr, Type)
-                // static DestroyStructure (IntPtr, Type)
-                // static OffsetOf (Type, string)
+                // static SizeOf(Type)
+                // static PtrToStructure(IntPtr, Type)
+                // static DestroyStructure(IntPtr, Type)
+                // static OffsetOf(Type, string)
                 //
                 case IntrinsicId.Marshal_SizeOf:
                 case IntrinsicId.Marshal_PtrToStructure:
@@ -278,7 +289,7 @@ namespace ILLink.Shared.TrimAnalysis
                             ? 0 : 1;
 
                         // We need the data to do struct marshalling.
-                        foreach (var value in argumentValues[paramIndex].AsEnumerable ())
+                        foreach (var value in argumentValues[paramIndex].AsEnumerable())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -304,12 +315,12 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Runtime.InteropServices.Marshal
                 //
-                // static GetDelegateForFunctionPointer (IntPtr, Type)
+                // static GetDelegateForFunctionPointer(IntPtr, Type)
                 //
                 case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
                     {
                         // We need the data to do delegate marshalling.
-                        foreach (var value in argumentValues[1].AsEnumerable ())
+                        foreach (var value in argumentValues[1].AsEnumerable())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -329,11 +340,11 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Delegate
                 //
-                // get_Method ()
+                // get_Method()
                 //
                 // System.Reflection.RuntimeReflectionExtensions
                 //
-                // GetMethodInfo (System.Delegate)
+                // GetMethodInfo(System.Delegate)
                 //
                 case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
                 case IntrinsicId.Delegate_get_Method:
@@ -373,12 +384,12 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 case IntrinsicId.Object_GetType:
                     {
-                        if (instanceValue.IsEmpty ()) {
-                            AddReturnValue (MultiValueLattice.Top);
+                        if (instanceValue.IsEmpty()) {
+                            AddReturnValue(MultiValueLattice.Top);
                             break;
                         }
 
-                        foreach (var valueNode in instanceValue.AsEnumerable ())
+                        foreach (var valueNode in instanceValue.AsEnumerable())
                         {
                             // Note that valueNode can be statically typed in IL as some generic argument type.
                             // For example:
@@ -646,13 +657,13 @@ namespace ILLink.Shared.TrimAnalysis
 
         private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
         {
-            foreach (var method in type.Type.GetMethodsOnTypeHierarchy(m => m.Name == name, bindingFlags))
+            foreach (var method in type.Type.GetMethodsOnTypeHierarchy(m => m.Name.StringEquals(name), bindingFlags))
                 yield return new SystemReflectionMethodBaseValue(new MethodProxy(method));
         }
 
         private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType(TypeProxy type, string name, BindingFlags? bindingFlags)
         {
-            foreach (var nestedType in type.Type.GetNestedTypesOnType(t => t.Name == name, bindingFlags))
+            foreach (var nestedType in type.Type.GetNestedTypesOnType(t => t.Name.StringEquals(name), bindingFlags))
                 yield return new SystemTypeValue(new TypeProxy(nestedType));
         }
 
@@ -701,7 +712,7 @@ namespace ILLink.Shared.TrimAnalysis
             => _reflectionMarker.MarkEventsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, e => e.Name == name, _reason, bindingFlags);
 
         private partial void MarkFieldsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
-            => _reflectionMarker.MarkFieldsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, f => f.Name == name, _reason, bindingFlags);
+            => _reflectionMarker.MarkFieldsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, f => f.Name.StringEquals(name), _reason, bindingFlags);
 
         private partial void MarkPropertiesOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
             => _reflectionMarker.MarkPropertiesOnTypeHierarchy(_diagnosticContext.Origin, type.Type, p => p.Name == name, _reason, bindingFlags);

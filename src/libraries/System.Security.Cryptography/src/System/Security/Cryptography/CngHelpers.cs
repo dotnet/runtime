@@ -17,21 +17,6 @@ namespace System.Security.Cryptography
     {
         private static readonly CngKeyBlobFormat s_cipherKeyBlobFormat = new CngKeyBlobFormat(Interop.NCrypt.NCRYPT_CIPHER_KEY_BLOB);
 
-        internal static SafeNCryptProviderHandle OpenStorageProvider(this CngProvider provider)
-        {
-            string providerName = provider.Provider;
-            SafeNCryptProviderHandle providerHandle;
-            ErrorCode errorCode = Interop.NCrypt.NCryptOpenStorageProvider(out providerHandle, providerName, 0);
-
-            if (errorCode != ErrorCode.ERROR_SUCCESS)
-            {
-                providerHandle.Dispose();
-                throw errorCode.ToCryptographicException();
-            }
-
-            return providerHandle;
-        }
-
         /// <summary>
         /// Retrieve a well-known CNG dword property. (Note: .NET Framework compat: this helper likes to return special values
         /// rather than throw exceptions for missing or ill-formatted property values. Only use it for well-known properties that

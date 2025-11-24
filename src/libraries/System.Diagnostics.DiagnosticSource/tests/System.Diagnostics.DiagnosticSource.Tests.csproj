@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser;$(NetFrameworkCurrent)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <NoWarn>NU1511</NoWarn>
+    <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.
@@ -22,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="..\src\System\Diagnostics\DsesSamplerBuilder.cs" Link="DsesSamplerBuilder.cs" />
     <Compile Include="..\src\System\Diagnostics\RateLimiter.cs" Link="RateLimiter.cs" />
     <Compile Include="..\src\System\Diagnostics\Helpers.cs" Link="Helpers.cs" />

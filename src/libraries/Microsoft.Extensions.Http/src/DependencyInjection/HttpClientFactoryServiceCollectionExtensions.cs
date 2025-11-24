@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddLogging();
             services.AddOptions();
-#if NET8_0_OR_GREATER
+#if NET
             services.AddMetrics();
 #endif
 
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.DependencyInjection
             // Misc infrastructure
             //
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IHttpMessageHandlerBuilderFilter, LoggingHttpMessageHandlerBuilderFilter>());
-#if NET8_0_OR_GREATER
+#if NET
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IHttpMessageHandlerBuilderFilter, MetricsFactoryHttpMessageHandlerFilter>());
 #endif
 

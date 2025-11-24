@@ -63,7 +63,12 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="numElements">The number of elements that will be copied into the memory block.</param>
         /// <returns>A span over the unmanaged memory that can contain the specified number of elements.</returns>
         public static Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements)
-            => new Span<TUnmanagedElement>(unmanaged, numElements);
+        {
+            if (unmanaged == null)
+                return [];
+
+            return new Span<TUnmanagedElement>(unmanaged, numElements);
+        }
 
         /// <summary>
         /// Allocates space to store the managed elements.
@@ -94,7 +99,12 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="numElements">The number of elements in the unmanaged collection.</param>
         /// <returns>A span over the native collection elements.</returns>
         public static ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanaged, int numElements)
-            => new ReadOnlySpan<TUnmanagedElement>(unmanaged, numElements);
+        {
+            if (unmanaged == null)
+                return [];
+
+            return new ReadOnlySpan<TUnmanagedElement>(unmanaged, numElements);
+        }
 
         /// <summary>
         /// Frees the allocated unmanaged memory.

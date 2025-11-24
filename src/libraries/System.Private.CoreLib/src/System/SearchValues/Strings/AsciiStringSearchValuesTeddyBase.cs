@@ -91,7 +91,7 @@ namespace System.Buffers
     //
     // For an alternative description of the algorithm, see
     // https://github.com/BurntSushi/aho-corasick/blob/8d735471fc12f0ca570cead8e17342274fae6331/src/packed/teddy/README.md
-    // Has an O(i * m) worst-case, with the expected time closer to O(n) for good bucket distributions.
+    // Has an O(i * m) worst-case, with the expected time closer to O(i) for good bucket distributions.
     internal abstract class AsciiStringSearchValuesTeddyBase<TBucketized, TStartCaseSensitivity, TCaseSensitivity> : StringSearchValuesRabinKarp<TCaseSensitivity>
         where TBucketized : struct, SearchValues.IRuntimeConst
         where TStartCaseSensitivity : struct, ICaseSensitivity  // Refers to the characters being matched by Teddy

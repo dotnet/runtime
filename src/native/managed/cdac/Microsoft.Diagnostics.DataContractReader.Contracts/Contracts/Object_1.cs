@@ -48,6 +48,8 @@ internal readonly struct Object_1 : IObject
     string IObject.GetStringValue(TargetPointer address)
     {
         TargetPointer mt = GetMethodTableAddress(address);
+        if (mt == TargetPointer.Null)
+            throw new ArgumentException("Address represents a set-free object");
         if (mt != _stringMethodTable)
             throw new ArgumentException("Address does not represent a string object", nameof(address));
 
@@ -63,6 +65,8 @@ internal readonly struct Object_1 : IObject
     public TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds)
     {
         TargetPointer mt = GetMethodTableAddress(address);
+        if (mt == TargetPointer.Null)
+            throw new ArgumentException("Address represents a set-free object");
         Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
         TypeHandle typeHandle = typeSystemContract.GetTypeHandle(mt);
         uint rank;

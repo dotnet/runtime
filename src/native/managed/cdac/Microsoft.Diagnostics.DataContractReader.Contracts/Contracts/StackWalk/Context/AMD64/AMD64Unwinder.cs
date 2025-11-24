@@ -31,7 +31,7 @@ internal class AMD64Unwinder(Target target)
     private readonly Target _target = target;
     private readonly IExecutionManager _eman = target.Contracts.ExecutionManager;
 
-    private readonly bool _unix = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix;
+    private readonly bool _unixAMD64ABI = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() != RuntimeInfoOperatingSystem.Windows;
 
     public bool Unwind(ref AMD64Context context)
     {
@@ -97,7 +97,7 @@ internal class AMD64Unwinder(Target target)
         {
             frameOffset = unwindInfo.FrameOffset;
 
-            if (_unix)
+            if (_unixAMD64ABI)
             {
                 // If UnwindInfo->FrameOffset == 15 (the maximum value), then there might be a UWOP_SET_FPREG_LARGE.
                 // However, it is still legal for a UWOP_SET_FPREG to set UnwindInfo->FrameOffset == 15 (since this
@@ -133,7 +133,7 @@ internal class AMD64Unwinder(Target target)
                 unwindOp = GetUnwindCode(unwindInfo, index);
                 if (unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_SET_FPREG)
                     break;
-                if (_unix)
+                if (_unixAMD64ABI)
                 {
                     if (unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE)
                     {
@@ -303,15 +303,17 @@ internal class AMD64Unwinder(Target target)
                 branchTarget = nextByte - imageBase;
                 if (ReadByteAt(nextByte) == JMP_IMM8_OP)
                 {
-                    branchTarget += 2u + ReadByteAt(nextByte + 1);
+                    // sign-extend the 8-bit immediate value
+                    branchTarget += 2u + (ulong)(sbyte)ReadByteAt(nextByte + 1);
                 }
                 else
                 {
+                    // sign-extend the 32-bit immediate value
                     int delta = ReadByteAt(nextByte + 1) |
                                 (ReadByteAt(nextByte + 2) << 8) |
                                 (ReadByteAt(nextByte + 3) << 16) |
                                 (ReadByteAt(nextByte + 4) << 24);
-                    branchTarget += (uint)(5 + delta);
+                    branchTarget += (ulong)(5 + delta);
                 }
 
                 //
@@ -833,7 +835,7 @@ internal class AMD64Unwinder(Target target)
 
                 UnwindCode unwindOp = GetUnwindCode(unwindInfo, index);
 
-                if (_unix)
+                if (_unixAMD64ABI)
                 {
                     if (unwindOp.UnwindOp > UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE)
                     {
@@ -843,7 +845,8 @@ internal class AMD64Unwinder(Target target)
                 }
                 else
                 {
-                    if (unwindOp.UnwindOp == UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE)
+                    Debug.Assert(_target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Windows);
+                    if (unwindOp.UnwindOp > UnwindCode.OpCodes.UWOP_PUSH_MACHFRAME)
                     {
                         Debug.Fail("Expected unwind code");
                         return false;
@@ -927,7 +930,7 @@ internal class AMD64Unwinder(Target target)
                         //
                         case UnwindCode.OpCodes.UWOP_SET_FPREG_LARGE:
                             {
-                                UnwinderAssert(_unix);
+                                UnwinderAssert(_unixAMD64ABI);
                                 UnwinderAssert(unwindInfo.FrameOffset == 15);
                                 uint frameOffset = GetUnwindCode(unwindInfo, index + 1).FrameOffset;
                                 frameOffset += (uint)(GetUnwindCode(unwindInfo, index + 2).FrameOffset << 16);
@@ -1179,9 +1182,8 @@ internal class AMD64Unwinder(Target target)
 
             return new UnwindInfoHeader(unwindInfoAddress, headerValue);
         }
-        catch (InvalidOperationException)
+        catch (VirtualReadException)
         {
-            // InvalidOperationException thrown if failed to read memory
             return null;
         }
     }

@@ -1243,7 +1243,7 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 #ifndef DACCESS_COMPILE
     if (updateFloats)
     {
-        UpdateFloatingPointRegisters(pRD);
+        UpdateFloatingPointRegisters(pRD, GetSP());
         _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
     }
 #endif // DACCESS_COMPILE

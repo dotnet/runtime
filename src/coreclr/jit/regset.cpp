@@ -35,6 +35,10 @@ const regMaskSmall regMasks[] = {
 };
 #endif
 
+// TODO-WASM-Factoring: remove this whole file from !HAS_FIXED_REGISTER_SET compilation.
+// It is being kept for now to avoid ifdefing too much code related to spill temps (which
+// also should not be used with !HAS_FIXED_REGISTER_SET).
+#if HAS_FIXED_REGISTER_SET
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -240,8 +244,7 @@ void RegSet::SetMaskVars(regMaskTP newMaskVars)
 
     _rsMaskVars = newMaskVars;
 }
-
-/*****************************************************************************/
+#endif // HAS_FIXED_REGISTER_SET
 
 RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo)
     : m_rsCompiler(compiler)
@@ -307,6 +310,7 @@ RegSet::SpillDsc* RegSet::rsGetSpillInfo(GenTree* tree, regNumber reg, SpillDsc*
     return dsc;
 }
 
+#if HAS_FIXED_REGISTER_SET
 //------------------------------------------------------------
 // rsSpillTree: Spill the tree held in 'reg'.
 //
@@ -563,6 +567,7 @@ void RegSet::rsMarkSpill(GenTree* tree, regNumber reg)
 {
     tree->gtFlags |= GTF_SPILLED;
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 /*****************************************************************************/
 
@@ -889,60 +894,6 @@ bool RegSet::tmpAllFree() const
 }
 
 #endif // DEBUG
-
-/*
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX  Register-related utility functions                                       XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-/*****************************************************************************
- *
- *  Given a register that is an argument register
- *   returns the next argument register
- *
- *  Note: that this method will return a non arg register
- *   when given REG_ARG_LAST
- *
- */
-
-regNumber genRegArgNext(regNumber argReg)
-{
-    assert(isValidIntArgReg(argReg, CorInfoCallConvExtension::Managed) || isValidFloatArgReg(argReg));
-
-    switch (argReg)
-    {
-
-#ifdef TARGET_AMD64
-#ifdef UNIX_AMD64_ABI
-
-        // Linux x64 ABI: REG_RDI, REG_RSI, REG_RDX, REG_RCX, REG_R8, REG_R9
-        case REG_ARG_0:       // REG_RDI
-            return REG_ARG_1; // REG_RSI
-        case REG_ARG_1:       // REG_RSI
-            return REG_ARG_2; // REG_RDX
-        case REG_ARG_2:       // REG_RDX
-            return REG_ARG_3; // REG_RCX
-        case REG_ARG_3:       // REG_RCX
-            return REG_ARG_4; // REG_R8
-
-#else // !UNIX_AMD64_ABI
-
-        // Windows x64 ABI: REG_RCX, REG_RDX, REG_R8, REG_R9
-        case REG_ARG_1:       // REG_RDX
-            return REG_ARG_2; // REG_R8
-
-#endif // !UNIX_AMD64_ABI
-#endif // TARGET_AMD64
-
-        default:
-            return REG_NEXT(argReg);
-    }
-}
 
 /*****************************************************************************
  *

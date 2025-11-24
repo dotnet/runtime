@@ -14,6 +14,7 @@
 //
 #include "arraynative.h"
 #include "objectnative.h"
+#include "dllimport.h"
 #include "comdelegate.h"
 #include "customattribute.h"
 #include "comdynamic.h"
@@ -188,7 +189,7 @@ enum _gsigc {
 // it is zero. An assertion failure results in error C2118: negative subscript.
 #define DEFINE_METASIG(body)            body
 #define DEFINE_METASIG_T(body)
-#define METASIG_BODY(varname, types)    C_ASSERT(types 0 == 0);
+#define METASIG_BODY(varname, types)    static_assert(types 0 == 0);
 #define METASIG_ATOM(x)                 0+
 #define METASIG_RECURSE                 1
 #define C(x)                            1+
@@ -204,7 +205,7 @@ enum _gsigc {
 // it is non zero. An assertion failure results in error C2118: negative subscript.
 #define DEFINE_METASIG(body)
 #define DEFINE_METASIG_T(body)          body
-#define METASIG_BODY(varname, types)    C_ASSERT(types 0 != 0);
+#define METASIG_BODY(varname, types)    static_assert(types 0 != 0);
 #define METASIG_ATOM(x)                 0+
 #define METASIG_RECURSE                 1
 #define C(x)                            1+

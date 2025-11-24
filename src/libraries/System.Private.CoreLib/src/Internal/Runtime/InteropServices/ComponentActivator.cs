@@ -348,7 +348,7 @@ namespace Internal.Runtime.InteropServices
             }
             else
             {
-                Delegate d = Delegate.CreateDelegate(delegateType, type, methodName)!;
+                Delegate d = Delegate.CreateDelegate(delegateType, type, methodName);
 
                 functionPtr = Marshal.GetFunctionPointerForDelegate(d);
 

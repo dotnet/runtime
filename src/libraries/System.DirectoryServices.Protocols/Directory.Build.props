@@ -4,5 +4,6 @@
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser;android;ios;tvos</UnsupportedOSPlatforms>
+    <IsAotCompatible>false</IsAotCompatible>
   </PropertyGroup>
 </Project>

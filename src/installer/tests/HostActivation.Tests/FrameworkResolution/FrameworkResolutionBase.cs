@@ -18,38 +18,41 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             public const string FailedToReconcile = "[failed to reconcile]";
         }
 
+        protected Command GetTestCommand(
+            DotNetCli dotnet,
+            TestApp app,
+            TestSettings settings)
+        {
+            if (settings.RuntimeConfigCustomizer != null)
+            {
+                settings.RuntimeConfigCustomizer(RuntimeConfig.Path(app.RuntimeConfigJson)).Save();
+            }
+
+            settings.WithCommandLine(app.AppDll);
+
+            Command command = dotnet.Exec(settings.CommandLine.First(), settings.CommandLine.Skip(1).ToArray());
+
+            if (settings.WorkingDirectory != null)
+            {
+                command = command.WorkingDirectory(settings.WorkingDirectory);
+            }
+
+            return command
+                .EnableTracingAndCaptureOutputs()
+                .Environment(settings.Environment);
+        }
+
         protected CommandResult RunTest(
             DotNetCli dotnet,
             TestApp app,
             TestSettings settings,
-            bool? multiLevelLookup = false,
             [CallerMemberName] string caller = "")
         {
             using (DotNetCliExtensions.DotNetCliCustomizer dotnetCustomizer = settings.DotnetCustomizer == null ? null : dotnet.Customize())
             {
                 settings.DotnetCustomizer?.Invoke(dotnetCustomizer);
 
-                if (app is not null)
-                {
-                    if (settings.RuntimeConfigCustomizer != null)
-                    {
-                        settings.RuntimeConfigCustomizer(RuntimeConfig.Path(app.RuntimeConfigJson)).Save();
-                    }
-
-                    settings.WithCommandLine(app.AppDll);
-                }
-
-                Command command = dotnet.Exec(settings.CommandLine.First(), settings.CommandLine.Skip(1).ToArray());
-
-                if (settings.WorkingDirectory != null)
-                {
-                    command = command.WorkingDirectory(settings.WorkingDirectory);
-                }
-
-                CommandResult result = command
-                    .EnableTracingAndCaptureOutputs()
-                    .MultilevelLookup(multiLevelLookup)
-                    .Environment(settings.Environment)
+                CommandResult result = GetTestCommand(dotnet, app, settings)
                     .Execute(caller);
 
                 return result;

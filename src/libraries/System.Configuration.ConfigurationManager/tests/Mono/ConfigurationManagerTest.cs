@@ -42,9 +42,8 @@ namespace MonoTests.System.Configuration
 
     public class ConfigurationManagerTest
     {
-        [Fact] // OpenExeConfiguration (ConfigurationUserLevel)
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))] // OpenExeConfiguration (ConfigurationUserLevel)
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21528", TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         public void OpenExeConfiguration1_UserLevel_None()
         {
             SysConfig config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -250,11 +249,10 @@ namespace MonoTests.System.Configuration
             Assert.Equal("machineconfig", fi.Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         // Doesn't pass on Mono
         // [Category("NotWorking")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21528", TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", typeof(PlatformDetection), nameof(PlatformDetection.IsSingleFile))]
         public void mapped_ExeConfiguration_null()
         {
             SysConfig config = ConfigurationManager.OpenMappedExeConfiguration(null, ConfigurationUserLevel.None);

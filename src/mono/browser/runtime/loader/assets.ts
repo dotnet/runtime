@@ -198,6 +198,7 @@ export async function mono_download_assets (): Promise<void> {
                     // wait till after onRuntimeInitialized
 
                     await runtimeHelpers.beforeOnRuntimeInitialized.promise;
+                    await runtimeHelpers.afterInstantiateWasm.promise;
                     runtimeHelpers.instantiate_asset(asset, url, data);
                 }
             } else {

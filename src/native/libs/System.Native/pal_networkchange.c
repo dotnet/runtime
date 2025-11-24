@@ -179,8 +179,6 @@ Error SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange)
 {
     (void)sock;
     (void)onNetworkChange;
-    // unreachable
-    abort();
-    return Error_EINVAL;
+    return Error_ENOTSUP;
 }
 #endif

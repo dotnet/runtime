@@ -41,14 +41,6 @@ namespace System
 
         public long LongLength => (long)NativeLength;
 
-        internal unsafe bool IsSzArray
-        {
-            get
-            {
-                return this.GetMethodTable()->IsSzArray;
-            }
-        }
-
         // This is the classlib-provided "get array MethodTable" function that will be invoked whenever the runtime
         // needs to know the base type of an array.
         [RuntimeExport("GetSystemArrayEEType")]
@@ -157,470 +149,109 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ref int GetRawMultiDimArrayBounds()
+        private unsafe ref int GetMultiDimensionalArrayBounds()
         {
-            Debug.Assert(!IsSzArray);
+            Debug.Assert(!this.GetMethodTable()->IsSzArray);
             return ref Unsafe.As<byte, int>(ref Unsafe.As<RawArrayData>(this).Data);
         }
 
-        // Provides a strong exception guarantee - either it succeeds, or
-        // it throws an exception with no side effects.  The arrays must be
-        // compatible array types based on the array element type - this
-        // method does not support casting, boxing, or primitive widening.
-        // It will up-cast, assuming the array types are correct.
-        public static void ConstrainedCopy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
+        private unsafe int GetMultiDimensionalArrayRank()
         {
-            CopyImpl(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable: true);
+            return this.GetMethodTable()->MultiDimensionalArrayRank;
         }
 
+        private static bool SupportsNonZeroLowerBound => false;
 
-        //
-        // Funnel for all the Array.Copy() overloads. The "reliable" parameter indicates whether the caller for ConstrainedCopy()
-        // (must leave destination array unchanged on any exception.)
-        //
-        private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
+        private static unsafe ArrayAssignType CanAssignArrayType(Array sourceArray, Array destinationArray)
         {
-            if (sourceArray is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.sourceArray);
-            if (destinationArray is null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
-
-            if (sourceArray.GetType() != destinationArray.GetType() && sourceArray.Rank != destinationArray.Rank)
-                throw new RankException(SR.Rank_MustMatch);
-
-            ArgumentOutOfRangeException.ThrowIfNegative(length);
-
-            const int srcLB = 0;
-            if (sourceIndex < srcLB || sourceIndex - srcLB < 0)
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_ArrayLB);
-            sourceIndex -= srcLB;
-
-            const int dstLB = 0;
-            if (destinationIndex < dstLB || destinationIndex - dstLB < 0)
-                throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_ArrayLB);
-            destinationIndex -= dstLB;
-
-            if ((uint)(sourceIndex + length) > sourceArray.NativeLength)
-                throw new ArgumentException(SR.Arg_LongerThanSrcArray, nameof(sourceArray));
-            if ((uint)(destinationIndex + length) > destinationArray.NativeLength)
-                throw new ArgumentException(SR.Arg_LongerThanDestArray, nameof(destinationArray));
-
             MethodTable* sourceElementEEType = sourceArray.ElementMethodTable;
             MethodTable* destinationElementEEType = destinationArray.ElementMethodTable;
 
-            if (!destinationElementEEType->IsValueType && !destinationElementEEType->IsPointer && !destinationElementEEType->IsFunctionPointer)
+            if (sourceElementEEType == destinationElementEEType) // This check kicks for different array kind or dimensions
+                return ArrayAssignType.SimpleCopy;
+
+            if (sourceElementEEType->IsPointer || sourceElementEEType->IsFunctionPointer
+                || destinationElementEEType->IsPointer || destinationElementEEType->IsFunctionPointer)
             {
-                if (!sourceElementEEType->IsValueType && !sourceElementEEType->IsPointer && !sourceElementEEType->IsFunctionPointer)
-                {
-                    CopyImplGcRefArray(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
-                }
-                else if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
-                {
-                    CopyImplValueTypeArrayToReferenceArray(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
-                }
+                // Compatible pointers
+                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                    return ArrayAssignType.SimpleCopy;
                 else
-                {
-                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                }
+                    return ArrayAssignType.WrongType;
             }
-            else
+
+            // Value class boxing
+            if (sourceElementEEType->IsValueType && !destinationElementEEType->IsValueType)
             {
-                if (sourceElementEEType == destinationElementEEType)
-                {
-                    if (sourceElementEEType->ContainsGCPointers)
-                    {
-                        CopyImplValueTypeArrayWithInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
-                    }
-                    else
-                    {
-                        CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
-                    }
-                }
-                else if ((sourceElementEEType->IsPointer || sourceElementEEType->IsFunctionPointer) && (destinationElementEEType->IsPointer || destinationElementEEType->IsFunctionPointer))
-                {
-                    // CLR compat note: CLR only allows Array.Copy between pointee types that would be assignable
-                    // to using array covariance rules (so int*[] can be copied to uint*[], but not to float*[]).
-                    if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
-                    {
-                        CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
-                    }
-                    else
-                    {
-                        throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                    }
-                }
-                else if (IsSourceElementABaseClassOrInterfaceOfDestinationValueType(sourceElementEEType, destinationElementEEType))
-                {
-                    CopyImplReferenceArrayToValueTypeArray(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
-                }
-                else if (sourceElementEEType->IsPrimitive && destinationElementEEType->IsPrimitive)
-                {
-                    if (RuntimeImports.AreTypesAssignable(sourceArray.GetMethodTable(), destinationArray.GetMethodTable()))
-                    {
-                        // If we're okay casting between these two, we're also okay blitting the values over
-                        CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
-                    }
-                    else
-                    {
-                        // The only case remaining is that primitive types could have a widening conversion between the source element type and the destination
-                        // If a widening conversion does not exist we are going to throw an ArrayTypeMismatchException from it.
-                        CopyImplPrimitiveTypeWithWidening(sourceArray, sourceIndex, destinationArray, destinationIndex, length, reliable);
-                    }
-                }
+                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                    return ArrayAssignType.BoxValueClassOrPrimitive;
                 else
-                {
-                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-                }
+                    return ArrayAssignType.WrongType;
             }
+
+            // Value class unboxing.
+            if (!sourceElementEEType->IsValueType && destinationElementEEType->IsValueType)
+            {
+                if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                    return ArrayAssignType.UnboxValueClass;
+                else if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))   // V extends IV. Copying from IV to V, or Object to V.
+                    return ArrayAssignType.UnboxValueClass;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // Copying primitives from one type to another
+            if (sourceElementEEType->IsPrimitive && destinationElementEEType->IsPrimitive)
+            {
+                EETypeElementType sourceElementType = sourceElementEEType->ElementType;
+                EETypeElementType destElementType = destinationElementEEType->ElementType;
+
+                if (GetNormalizedIntegralArrayElementType(sourceElementType) == GetNormalizedIntegralArrayElementType(destElementType))
+                    return ArrayAssignType.SimpleCopy;
+                else if (InvokeUtils.CanPrimitiveWiden(destElementType, sourceElementType))
+                    return ArrayAssignType.PrimitiveWiden;
+                else
+                    return ArrayAssignType.WrongType;
+            }
+
+            // Different value types
+            if (sourceElementEEType->IsValueType && destinationElementEEType->IsValueType)
+            {
+                // Different from CanCastTo in coreclr, AreTypesAssignable also allows T -> Nullable<T> conversion.
+                // Kick for this path explicitly.
+                return ArrayAssignType.WrongType;
+            }
+
+            // src Object extends dest
+            if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                return ArrayAssignType.SimpleCopy;
+
+            // dest Object extends src
+            if (RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))
+                return ArrayAssignType.MustCast;
+
+            // class X extends/implements src and implements dest.
+            if (destinationElementEEType->IsInterface)
+                return ArrayAssignType.MustCast;
+
+            // class X implements src and extends/implements dest
+            if (sourceElementEEType->IsInterface)
+                return ArrayAssignType.MustCast;
+
+            return ArrayAssignType.WrongType;
         }
 
-        private static unsafe bool IsSourceElementABaseClassOrInterfaceOfDestinationValueType(MethodTable* sourceElementEEType, MethodTable* destinationElementEEType)
+        private static EETypeElementType GetNormalizedIntegralArrayElementType(EETypeElementType elementType)
         {
-            if (sourceElementEEType->IsValueType || sourceElementEEType->IsPointer || sourceElementEEType->IsFunctionPointer)
-                return false;
+            Debug.Assert(elementType >= EETypeElementType.Boolean && elementType <= EETypeElementType.Double);
 
-            // It may look like we're passing the arguments to AreTypesAssignable in the wrong order but we're not. The source array is an interface or Object array, the destination
-            // array is a value type array. Our job is to check if the destination value type implements the interface - which is what this call to AreTypesAssignable does.
-            // The copy loop still checks each element to make sure it actually is the correct valuetype.
-            if (!RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType))
-                return false;
-            return true;
-        }
+            // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
+            // Enums with interchangeable underlying types are interchangeable
+            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
 
-        //
-        // Array.CopyImpl case: Gc-ref array to gc-ref array copy.
-        //
-        private static unsafe void CopyImplGcRefArray(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
-        {
-            // For mismatched array types, the desktop Array.Copy has a policy that determines whether to throw an ArrayTypeMismatch without any attempt to copy
-            // or to throw an InvalidCastException in the middle of a copy. This code replicates that policy.
-            MethodTable* sourceElementEEType = sourceArray.ElementMethodTable;
-            MethodTable* destinationElementEEType = destinationArray.ElementMethodTable;
-
-            Debug.Assert(!sourceElementEEType->IsValueType && !sourceElementEEType->IsPointer && !sourceElementEEType->IsFunctionPointer);
-            Debug.Assert(!destinationElementEEType->IsValueType && !destinationElementEEType->IsPointer && !destinationElementEEType->IsFunctionPointer);
-
-            bool attemptCopy = RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType);
-            bool mustCastCheckEachElement = !attemptCopy;
-            if (reliable)
-            {
-                if (mustCastCheckEachElement)
-                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
-            }
-            else
-            {
-                attemptCopy = attemptCopy || RuntimeImports.AreTypesAssignable(destinationElementEEType, sourceElementEEType);
-
-                // If either array is an interface array, we allow the attempt to copy even if the other element type does not statically implement the interface.
-                // We don't have an "IsInterface" property in EETypePtr so we instead check for a null BaseType. The only the other MethodTable with a null BaseType is
-                // System.Object but if that were the case, we would already have passed one of the AreTypesAssignable checks above.
-                attemptCopy = attemptCopy || sourceElementEEType->BaseType == null;
-                attemptCopy = attemptCopy || destinationElementEEType->BaseType == null;
-
-                if (!attemptCopy)
-                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-            }
-
-            bool reverseCopy = ((object)sourceArray == (object)destinationArray) && (sourceIndex < destinationIndex);
-            ref object? refDestinationArray = ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(destinationArray));
-            ref object? refSourceArray = ref Unsafe.As<byte, object?>(ref MemoryMarshal.GetArrayDataReference(sourceArray));
-            if (reverseCopy)
-            {
-                sourceIndex += length - 1;
-                destinationIndex += length - 1;
-                for (int i = 0; i < length; i++)
-                {
-                    object? value = Unsafe.Add(ref refSourceArray, sourceIndex - i);
-                    if (mustCastCheckEachElement && value != null && TypeCast.IsInstanceOfAny(destinationElementEEType, value) == null)
-                        throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
-                    Unsafe.Add(ref refDestinationArray, destinationIndex - i) = value;
-                }
-            }
-            else
-            {
-                for (int i = 0; i < length; i++)
-                {
-                    object? value = Unsafe.Add(ref refSourceArray, sourceIndex + i);
-                    if (mustCastCheckEachElement && value != null && TypeCast.IsInstanceOfAny(destinationElementEEType, value) == null)
-                        throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
-                    Unsafe.Add(ref refDestinationArray, destinationIndex + i) = value;
-                }
-            }
-        }
-
-        //
-        // Array.CopyImpl case: Value-type array to Object[] or interface array copy.
-        //
-        private static unsafe void CopyImplValueTypeArrayToReferenceArray(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
-        {
-            Debug.Assert(sourceArray.ElementMethodTable->IsValueType);
-            Debug.Assert(!destinationArray.ElementMethodTable->IsValueType && !destinationArray.ElementMethodTable->IsPointer && !destinationArray.ElementMethodTable->IsFunctionPointer);
-
-            // Caller has already validated this.
-            Debug.Assert(RuntimeImports.AreTypesAssignable(sourceArray.ElementMethodTable, destinationArray.ElementMethodTable));
-
-            if (reliable)
-                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
-
-            MethodTable* sourceElementEEType = sourceArray.ElementMethodTable;
-            nuint sourceElementSize = sourceArray.ElementSize;
-
-            fixed (byte* pSourceArray = &MemoryMarshal.GetArrayDataReference(sourceArray))
-            {
-                byte* pElement = pSourceArray + (nuint)sourceIndex * sourceElementSize;
-                ref object refDestinationArray = ref Unsafe.As<byte, object>(ref MemoryMarshal.GetArrayDataReference(destinationArray));
-                for (int i = 0; i < length; i++)
-                {
-                    object boxedValue = RuntimeExports.RhBox(sourceElementEEType, ref *pElement);
-                    Unsafe.Add(ref refDestinationArray, destinationIndex + i) = boxedValue;
-                    pElement += sourceElementSize;
-                }
-            }
-        }
-
-        //
-        // Array.CopyImpl case: Object[] or interface array to value-type array copy.
-        //
-        private static unsafe void CopyImplReferenceArrayToValueTypeArray(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
-        {
-            Debug.Assert(!sourceArray.ElementMethodTable->IsValueType && !sourceArray.ElementMethodTable->IsPointer && !sourceArray.ElementMethodTable->IsFunctionPointer);
-            Debug.Assert(destinationArray.ElementMethodTable->IsValueType);
-
-            if (reliable)
-                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-
-            MethodTable* destinationElementEEType = destinationArray.ElementMethodTable;
-            nuint destinationElementSize = destinationArray.ElementSize;
-            bool isNullable = destinationElementEEType->IsNullable;
-
-            fixed (byte* pDestinationArray = &MemoryMarshal.GetArrayDataReference(destinationArray))
-            {
-                ref object refSourceArray = ref Unsafe.As<byte, object>(ref MemoryMarshal.GetArrayDataReference(sourceArray));
-                byte* pElement = pDestinationArray + (nuint)destinationIndex * destinationElementSize;
-
-                for (int i = 0; i < length; i++)
-                {
-                    object boxedValue = Unsafe.Add(ref refSourceArray, sourceIndex + i);
-                    if (boxedValue == null)
-                    {
-                        if (!isNullable)
-                            throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
-                    }
-                    else
-                    {
-                        MethodTable* eeType = boxedValue.GetMethodTable();
-                        if (!(RuntimeImports.AreTypesAssignable(eeType, destinationElementEEType)))
-                            throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
-                    }
-
-                    RuntimeImports.RhUnbox(boxedValue, ref *pElement, destinationElementEEType);
-                    pElement += destinationElementSize;
-                }
-            }
-        }
-
-
-        //
-        // Array.CopyImpl case: Value-type array with embedded gc-references.
-        //
-        private static unsafe void CopyImplValueTypeArrayWithInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
-        {
-            Debug.Assert(sourceArray.GetMethodTable() == destinationArray.GetMethodTable());
-            Debug.Assert(sourceArray.ElementMethodTable->IsValueType);
-
-            MethodTable* sourceElementEEType = sourceArray.GetMethodTable()->RelatedParameterType;
-            bool reverseCopy = ((object)sourceArray == (object)destinationArray) && (sourceIndex < destinationIndex);
-
-            // Copy scenario: ValueType-array to value-type array with embedded gc-refs.
-            object[]? boxedElements = null;
-            if (reliable)
-            {
-                boxedElements = new object[length];
-                reverseCopy = false;
-            }
-
-            fixed (byte* pDstArray = &MemoryMarshal.GetArrayDataReference(destinationArray), pSrcArray = &MemoryMarshal.GetArrayDataReference(sourceArray))
-            {
-                nuint cbElementSize = sourceArray.ElementSize;
-                byte* pSourceElement = pSrcArray + (nuint)sourceIndex * cbElementSize;
-                byte* pDestinationElement = pDstArray + (nuint)destinationIndex * cbElementSize;
-                if (reverseCopy)
-                {
-                    pSourceElement += (nuint)length * cbElementSize;
-                    pDestinationElement += (nuint)length * cbElementSize;
-                }
-
-                for (int i = 0; i < length; i++)
-                {
-                    if (reverseCopy)
-                    {
-                        pSourceElement -= cbElementSize;
-                        pDestinationElement -= cbElementSize;
-                    }
-
-                    object boxedValue = RuntimeExports.RhBox(sourceElementEEType, ref *pSourceElement);
-                    if (boxedElements != null)
-                        boxedElements[i] = boxedValue;
-                    else
-                        RuntimeImports.RhUnbox(boxedValue, ref *pDestinationElement, sourceElementEEType);
-
-                    if (!reverseCopy)
-                    {
-                        pSourceElement += cbElementSize;
-                        pDestinationElement += cbElementSize;
-                    }
-                }
-            }
-
-            if (boxedElements != null)
-            {
-                fixed (byte* pDstArray = &MemoryMarshal.GetArrayDataReference(destinationArray))
-                {
-                    nuint cbElementSize = sourceArray.ElementSize;
-                    byte* pDestinationElement = pDstArray + (nuint)destinationIndex * cbElementSize;
-                    for (int i = 0; i < length; i++)
-                    {
-                        RuntimeImports.RhUnbox(boxedElements[i], ref *pDestinationElement, sourceElementEEType);
-                        pDestinationElement += cbElementSize;
-                    }
-                }
-            }
-        }
-
-        //
-        // Array.CopyImpl case: Value-type array without embedded gc-references.
-        //
-        private static unsafe void CopyImplValueTypeArrayNoInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
-        {
-            Debug.Assert((sourceArray.ElementMethodTable->IsValueType && !sourceArray.ElementMethodTable->ContainsGCPointers) ||
-                sourceArray.ElementMethodTable->IsPointer || sourceArray.ElementMethodTable->IsFunctionPointer);
-            Debug.Assert((destinationArray.ElementMethodTable->IsValueType && !destinationArray.ElementMethodTable->ContainsGCPointers) ||
-                destinationArray.ElementMethodTable->IsPointer || destinationArray.ElementMethodTable->IsFunctionPointer);
-
-            // Copy scenario: ValueType-array to value-type array with no embedded gc-refs.
-            nuint elementSize = sourceArray.ElementSize;
-
-            SpanHelpers.Memmove(
-                ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * elementSize),
-                ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * elementSize),
-                elementSize * (nuint)length);
-        }
-
-        //
-        // Array.CopyImpl case: Primitive types that have a widening conversion
-        //
-        private static unsafe void CopyImplPrimitiveTypeWithWidening(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
-        {
-            MethodTable* sourceElementEEType = sourceArray.ElementMethodTable;
-            MethodTable* destinationElementEEType = destinationArray.ElementMethodTable;
-
-            Debug.Assert(sourceElementEEType->IsPrimitive && destinationElementEEType->IsPrimitive); // Caller has already validated this.
-
-            EETypeElementType sourceElementType = sourceElementEEType->ElementType;
-            EETypeElementType destElementType = destinationElementEEType->ElementType;
-
-            nuint srcElementSize = sourceArray.ElementSize;
-            nuint destElementSize = destinationArray.ElementSize;
-
-            if ((sourceElementEEType->IsEnum || destinationElementEEType->IsEnum) && sourceElementType != destElementType)
-                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-
-            if (reliable)
-            {
-                // ConstrainedCopy() cannot even widen - it can only copy same type or enum to its exact integral subtype.
-                if (sourceElementType != destElementType)
-                    throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_ConstrainedCopy);
-            }
-
-            ref byte srcData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(sourceArray), (nuint)sourceIndex * srcElementSize);
-            ref byte dstData = ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(destinationArray), (nuint)destinationIndex * destElementSize);
-
-            if (sourceElementType == destElementType)
-            {
-                // Multidim arrays and enum->int copies can still reach this path.
-                SpanHelpers.Memmove(ref dstData, ref srcData, (nuint)length * srcElementSize);
-                return;
-            }
-
-            if (!InvokeUtils.CanPrimitiveWiden(destElementType, sourceElementType))
-            {
-                throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
-            }
-
-            for (int i = 0; i < length; i++)
-            {
-                InvokeUtils.PrimitiveWiden(destElementType, sourceElementType, ref dstData, ref srcData);
-                srcData = ref Unsafe.AddByteOffset(ref srcData, srcElementSize);
-                dstData = ref Unsafe.AddByteOffset(ref dstData, destElementSize);
-            }
-        }
-
-        public static unsafe void Clear(Array array)
-        {
-            if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-
-            MethodTable* mt = array.GetMethodTable();
-            nuint totalByteLength = mt->ComponentSize * array.NativeLength;
-            ref byte pStart = ref MemoryMarshal.GetArrayDataReference(array);
-
-            if (!mt->ContainsGCPointers)
-            {
-                SpanHelpers.ClearWithoutReferences(ref pStart, totalByteLength);
-            }
-            else
-            {
-                Debug.Assert(totalByteLength % (nuint)sizeof(IntPtr) == 0);
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref pStart), totalByteLength / (nuint)sizeof(IntPtr));
-            }
-        }
-
-        public static unsafe void Clear(Array array, int index, int length)
-        {
-            if (array == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-
-            ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
-            int lowerBound = 0;
-
-            MethodTable* mt = array.GetMethodTable();
-            if (!mt->IsSzArray)
-            {
-                int rank = mt->ArrayRank;
-                lowerBound = Unsafe.Add(ref Unsafe.As<byte, int>(ref p), rank);
-                p = ref Unsafe.Add(ref p, 2 * sizeof(int) * rank); // skip the bounds
-            }
-
-            int offset = index - lowerBound;
-
-            if (index < lowerBound || offset < 0 || length < 0 || (uint)(offset + length) > array.NativeLength)
-                ThrowHelper.ThrowIndexOutOfRangeException();
-
-            nuint elementSize = mt->ComponentSize;
-
-            ref byte ptr = ref Unsafe.AddByteOffset(ref p, (uint)offset * elementSize);
-            nuint byteLength = (uint)length * elementSize;
-
-            if (mt->ContainsGCPointers)
-            {
-                Debug.Assert(byteLength % (nuint)sizeof(IntPtr) == 0);
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, IntPtr>(ref ptr), byteLength / (uint)sizeof(IntPtr));
-            }
-            else
-            {
-                SpanHelpers.ClearWithoutReferences(ref ptr, byteLength);
-            }
-
-            // GC.KeepAlive(array) not required. pMT kept alive via `ptr`
-        }
-
-        [Intrinsic]
-        public int GetLength(int dimension)
-        {
-            int length = GetUpperBound(dimension) + 1;
-            // We don't support non-zero lower bounds so don't incur the cost of obtaining it.
-            Debug.Assert(GetLowerBound(dimension) == 0);
-            return length;
+            // U1/U2/U4/U8/U
+            int shift = (0b0010_1010_1010_0000 >> (int)elementType) & 1;
+            return (EETypeElementType)((int)elementType - shift);
         }
 
         public unsafe int Rank
@@ -666,96 +297,13 @@ namespace System
             Debug.Assert(eeType->NumVtableSlots != 0, "Compiler enforces we never have unconstructed MTs for multi-dim arrays since those can be template-constructed anytime");
             Array ret = RuntimeImports.RhNewVariableSizeObject(eeType, (int)totalLength);
 
-            ref int bounds = ref ret.GetRawMultiDimArrayBounds();
+            ref int bounds = ref ret.GetMultiDimensionalArrayBounds();
             for (int i = 0; i < rank; i++)
             {
                 Unsafe.Add(ref bounds, i) = pLengths[i];
             }
 
             return ret;
-        }
-
-        [Intrinsic]
-        public int GetLowerBound(int dimension)
-        {
-            if (!IsSzArray)
-            {
-                int rank = Rank;
-                if ((uint)dimension >= rank)
-                    throw new IndexOutOfRangeException();
-
-                return Unsafe.Add(ref GetRawMultiDimArrayBounds(), rank + dimension);
-            }
-
-            if (dimension != 0)
-                throw new IndexOutOfRangeException();
-            return 0;
-        }
-
-        [Intrinsic]
-        public int GetUpperBound(int dimension)
-        {
-            if (!IsSzArray)
-            {
-                int rank = Rank;
-                if ((uint)dimension >= rank)
-                    throw new IndexOutOfRangeException();
-
-                ref int bounds = ref GetRawMultiDimArrayBounds();
-
-                int length = Unsafe.Add(ref bounds, dimension);
-                int lowerBound = Unsafe.Add(ref bounds, rank + dimension);
-                return length + lowerBound - 1;
-            }
-
-            if (dimension != 0)
-                throw new IndexOutOfRangeException();
-            return Length - 1;
-        }
-
-        private unsafe nint GetFlattenedIndex(int rawIndex)
-        {
-            // Checked by the caller
-            Debug.Assert(Rank == 1);
-
-            if (!IsSzArray)
-            {
-                ref int bounds = ref GetRawMultiDimArrayBounds();
-                rawIndex -= Unsafe.Add(ref bounds, 1);
-            }
-
-            if ((uint)rawIndex >= NativeLength)
-                ThrowHelper.ThrowIndexOutOfRangeException();
-            return rawIndex;
-        }
-
-        internal unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
-        {
-            // Checked by the caller
-            Debug.Assert(indices.Length == Rank);
-
-            if (!IsSzArray)
-            {
-                ref int bounds = ref GetRawMultiDimArrayBounds();
-                nint flattenedIndex = 0;
-                for (int i = 0; i < indices.Length; i++)
-                {
-                    int index = indices[i] - Unsafe.Add(ref bounds, indices.Length + i);
-                    int length = Unsafe.Add(ref bounds, i);
-                    if ((uint)index >= (uint)length)
-                        ThrowHelper.ThrowIndexOutOfRangeException();
-                    flattenedIndex = (length * flattenedIndex) + index;
-                }
-                Debug.Assert((nuint)flattenedIndex < NativeLength);
-                return flattenedIndex;
-            }
-            else
-            {
-                int index = indices[0];
-                if ((uint)index >= NativeLength)
-                    ThrowHelper.ThrowIndexOutOfRangeException();
-                return index;
-            }
         }
 
         internal unsafe object? InternalGetValue(nint flattenedIndex)

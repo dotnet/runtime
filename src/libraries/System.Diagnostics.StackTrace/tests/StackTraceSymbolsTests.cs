@@ -10,8 +10,7 @@ namespace System.Diagnostics.SymbolStore.Tests
     public class StackTraceSymbolsTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51399", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", TestPlatforms.Android)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst | TestPlatforms.Android, "Symbols are in a different location on mobile platforms")]
         public void StackTraceSymbolsDoNotLockFile()
         {
             var asmPath = AssemblyPathHelper.GetAssemblyLocation(typeof(StackTraceSymbolsTests).Assembly);

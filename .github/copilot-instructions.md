@@ -2,6 +2,8 @@
 
 You MUST make your best effort to ensure your changes satisfy those criteria before committing. If for any reason you were unable to build or test the changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
 
+Do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
+
 You MUST refer to the [Building & Testing in dotnet/runtime](#building--testing-in-dotnetruntime) instructions and use the commands and approaches specified there before attempting your own suggestions.
 
 You MUST follow all code-formatting and naming conventions defined in [`.editorconfig`](/.editorconfig).
@@ -21,6 +23,8 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 - When running tests, if possible use filters and check test run counts, or look at test logs, to ensure they actually ran.
 - Do not finish work with any tests commented out or disabled that were not previously commented out or disabled.
 - When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
+- For markdown (`.md`) files, ensure there is no trailing whitespace at the end of any line.
+- When adding XML documentation to APIs, follow the guidelines at [`docs.prompt.md`](/.github/prompts/docs.prompt.md).
 
 ---
 
@@ -37,10 +41,11 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
     - [5.1. How To: Identify Affected Libraries](#51-how-to-identify-affected-libraries)
     - [5.2. How To: Build and Test Specific Library](#52-how-to-build-and-test-specific-library)
 - [6. WebAssembly (WASM) Libraries Workflow](#6-webassembly-wasm-libraries-workflow)
-- [7. Additional Notes](#7-additional-notes)
-    - [7.1. Troubleshooting](#71-troubleshooting)
-    - [7.2. Windows Command Equivalents](#72-windows-command-equivalents)
-    - [7.3. References](#73-references)
+- [7. Host Workflow](#7-host-workflow)
+- [8. Additional Notes](#8-additional-notes)
+    - [8.1. Troubleshooting](#81-troubleshooting)
+    - [8.2. Windows Command Equivalents](#82-windows-command-equivalents)
+    - [8.3. References](#83-references)
 
 ## 1. Prerequisites
 
@@ -54,6 +59,7 @@ Identify which components will be impacted by the changes. If in doubt, analyze 
 - **Mono Runtime:** Changes in `src/mono/`
 - **Libraries:** Changes in `src/libraries/`
 - **WASM/WASI Libraries:** Changes in `src/libraries/` *and* the affected library targets WASM or WASI *and* the changes are included for the target (see below for details).
+- **Host:** Changes in `src/native/corehost/`, `src/installer/managed/`, or `src/installer/tests/`
 - If none above apply, it is most possibly an infra-only or a docs-only change. Skip build and test steps.
 
 **WASM/WASI Library Change Detection**
@@ -76,6 +82,7 @@ Before applying any changes, ensure you have a full successful build of the need
     - **Mono Runtime:** `./build.sh mono+libs`
     - **Libraries:** `./build.sh clr+libs -rc release`
     - **WASM/WASI Libraries:** `./build.sh mono+libs -os browser`
+    - **Host:** `./build.sh clr+libs+host -rc release -lc release`
 
 3. Verify the build completed without error.
     - _If the baseline build failed, report the failure and don't proceed with the changes._
@@ -184,6 +191,8 @@ From the repository root:
     - [Build Libraries](/docs/workflow/building/libraries/README.md)
     - [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
 
+When working on changes limited to a specific library, do not complete without at least running all tests for that library and confirming they pass. For example if you are working within "System.Text.RegularExpressions" then make sure after your last edits that all the test libraries under `src\libraries\System.Text.RegularExpressions\tests` pass. It is OK to filter to relevant specific tests during your work, but before returning, ensure that, at least, ALL tests for the library do pass.
+
 ### 5.1. How To: Identify Affected Libraries
 
 For each changed file under `src/libraries/`, find the matching library and its test project(s).
@@ -239,9 +248,24 @@ From the repository root:
 
 ---
 
-## 7. Additional Notes
+## 7. Host Workflow
 
-### 7.1. Troubleshooting
+From the repository root:
+
+- Build:
+  `./build.sh host -rc release -lc release`
+
+- Run all tests:
+  `./build.sh host.tests -rc release -lc release -test`
+
+- More info can be found in the dedicated workflow docs:
+    - [Building and running host tests](/docs/workflow/testing/host/testing.md)
+
+---
+
+## 8. Additional Notes
+
+### 8.1. Troubleshooting
 
 - **Shared Framework Missing**
 
@@ -273,7 +297,7 @@ From the repository root:
 
 ---
 
-### 7.2. Windows Command Equivalents
+### 8.2. Windows Command Equivalents
 
 - Use `build.cmd` instead of `build.sh` on Windows.
 - Set PATH: `set PATH=%CD%\.dotnet;%PATH%`
@@ -281,7 +305,7 @@ From the repository root:
 
 ---
 
-### 7.3. References
+### 8.3. References
 
 - [`.editorconfig`](/.editorconfig)
 - [Building CoreCLR Guide](/docs/workflow/building/coreclr/README.md)
@@ -292,3 +316,4 @@ From the repository root:
 - [Testing Libraries](/docs/workflow/testing/libraries/testing.md)
 - [Build libraries for WebAssembly](/docs/workflow/building/libraries/webassembly-instructions.md)
 - [Testing Libraries on WebAssembly](/docs/workflow/testing/libraries/testing-wasm.md)
+- [Building and running host tests](/docs/workflow/testing/host/testing.md)

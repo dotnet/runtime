@@ -35,8 +35,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void FusedMultiplyAdd<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, ReadOnlySpan<T> addend, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : IFloatingPointIeee754<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, FusedMultiplyAddOperator<float>>(x, y, addend, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanSpanIntoSpan<T, FusedMultiplyAddOperator<T>>(x, y, addend, destination);
+        }
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -63,8 +70,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void FusedMultiplyAdd<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, T addend, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : IFloatingPointIeee754<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, FusedMultiplyAddOperator<float>>(x, y, addend, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanScalarIntoSpan<T, FusedMultiplyAddOperator<T>>(x, y, addend, destination);
+        }
 
         /// <summary>Computes the element-wise result of <c>(<paramref name="x" /> * <paramref name="y" />) + <paramref name="addend" /></c> for the specified tensors of numbers.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -90,12 +104,21 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void FusedMultiplyAdd<T>(ReadOnlySpan<T> x, T y, ReadOnlySpan<T> addend, Span<T> destination)
-            where T : IFloatingPointIeee754<T> =>
+            where T : IFloatingPointIeee754<T>
+        {
+            if (typeof(T) == typeof(Half) && TryTernaryInvokeHalfAsInt16<T, FusedMultiplyAddOperator<float>>(x, y, addend, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarSpanIntoSpan<T, FusedMultiplyAddOperator<T>>(x, y, addend, destination);
+        }
 
         /// <summary>(x * y) + z</summary>
         private readonly struct FusedMultiplyAddOperator<T> : ITernaryOperator<T> where T : IFloatingPointIeee754<T>
         {
+            public static bool Vectorizable => true;
+
             public static T Invoke(T x, T y, T z) => T.FusedMultiplyAdd(x, y, z);
 
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y, Vector128<T> z)

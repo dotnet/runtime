@@ -632,6 +632,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     compiler->unwindBegEpilog();
 
+    genPopCalleeSavedRegisters();
+
     if (jmpEpilog)
     {
         SetHasTailCalls(true);
@@ -644,7 +646,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if !FEATURE_FASTTAILCALL
         noway_assert(jmpNode->OperIs(GT_JMP));
 #else  // FEATURE_FASTTAILCALL
-       // armarch
        // If jmpNode is GT_JMP then gtNext must be null.
        // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
         noway_assert(!jmpNode->OperIs(GT_JMP) || (jmpNode->gtNext == nullptr));
@@ -699,28 +700,20 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                     NO_WAY("Unsupported JMP indirection");
             }
 
-            /* Simply emit a jump to the methodHnd. This is similar to a call so we can use
-             * the same descriptor with some minor adjustments.
-             */
-
-            genPopCalleeSavedRegisters(true);
-
+            // Simply emit a jump to the methodHnd. This is similar to a call so we can use
+            // the same descriptor with some minor adjustments.
             params.isJump = true;
-
             genEmitCallWithCurrentGC(params);
         }
 #if FEATURE_FASTTAILCALL
         else
         {
-            genPopCalleeSavedRegisters(true);
             genCallInstruction(jmpNode->AsCall());
         }
 #endif // FEATURE_FASTTAILCALL
     }
     else
     {
-        genPopCalleeSavedRegisters(false);
-
         GetEmitter()->emitIns_R_R_I(INS_jirl, EA_PTRSIZE, REG_R0, REG_RA, 0);
         compiler->unwindReturn(REG_RA);
     }
@@ -1505,7 +1498,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         ssize_t imm = -16;
 
         // For small allocations we will generate up to four stp instructions, to zero 16 to 64 bytes.
-        static_assert_no_msg(STACK_ALIGN == (REGSIZE_BYTES * 2));
+        static_assert(STACK_ALIGN == (REGSIZE_BYTES * 2));
         assert(amount % (REGSIZE_BYTES * 2) == 0); // stp stores two registers at a time
         size_t stpCount = amount / (REGSIZE_BYTES * 2);
         if (compiler->info.compInitMem)
@@ -2282,6 +2275,19 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     // to constant data, not a real static field.
     GetEmitter()->emitIns_R_C(INS_bl, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
                               compiler->eeFindJitDataOffs(jmpTabBase), 0);
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genAsyncResumeInfo: emits address of async resume info for a specific state
+//
+// Parameters:
+//   treeNode - the GT_ASYNC_RESUME_INFO node
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* treeNode)
+{
+    GetEmitter()->emitIns_R_C(INS_bl, emitActualTypeSize(TYP_I_IMPL), treeNode->GetRegNum(), REG_NA,
+                              genEmitAsyncResumeInfo((unsigned)treeNode->gtVal1), 0);
     genProduceReg(treeNode);
 }
 
@@ -4374,6 +4380,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld_d, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
             break;
@@ -4387,7 +4397,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_IL_OFFSET:
-            // Do nothing; these nodes are simply markers for debug info.
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         default:
@@ -4471,7 +4485,10 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 // genEmitGSCookieCheck: Generate code to check that the GS cookie
 // wasn't thrashed by a buffer overrun.
 //
-void CodeGen::genEmitGSCookieCheck(bool pushReg)
+// Parameters:
+//   tailCall - Whether or not this is being emitted for a tail call
+//
+void CodeGen::genEmitGSCookieCheck(bool tailCall)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
@@ -4481,8 +4498,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     // We don't have any IR node representing this check, so LSRA can't communicate registers
     // for us to use.
 
-    regNumber regGSConst = REG_GSCOOKIE_TMP_0;
-    regNumber regGSValue = REG_GSCOOKIE_TMP_1;
+    regMaskTP tmpRegs    = genGetGSCookieTempRegs(tailCall);
+    regNumber regGSConst = genFirstRegNumFromMaskAndToggle(tmpRegs);
+    regNumber regGSValue = genFirstRegNumFromMaskAndToggle(tmpRegs);
 
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
@@ -5698,12 +5716,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
 
-        // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
+        // The epilog may use and trash REG_GSCOOKIE_TMP. Make sure we have no
         // non-standard args that may be trash if this is a tailcall.
         if (compiler->getNeedsGSSecurityCookie())
         {
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
+            trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
         }
 
         for (CallArg& arg : call->gtArgs.Args())

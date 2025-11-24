@@ -8,6 +8,9 @@ Assertion failed '(emitThisGCrefRegs & regMask) == 0' in 'TestClass:Method4(shor
 
     File: D:\a\_work\1\s\src\coreclr\jit\emitxarch.cpp Line: 1498
 */
+
+namespace Runtime_106545;
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
@@ -15,7 +18,7 @@ using System.Runtime.Intrinsics.X86;
 using Xunit;
 
 public class Runtime_106545
-{   
+{
     Vector512<byte> v512_byte_97 = Vector512.CreateScalar((byte)1);
 
     public ulong Method0()
@@ -23,13 +26,10 @@ public class Runtime_106545
         v512_byte_97 = Vector512<byte>.AllBitsSet;
         return (0 - Vector512.ExtractMostSignificantBits(v512_byte_97));
     }
-    
-    [Fact]
+
+    [ConditionalFact(typeof(Avx2), nameof(Avx2.IsSupported))]
     public static void TestEntryPoint()
     {
-        if (Avx2.IsSupported)
-        {
-            new Runtime_106545().Method0();
-        }
+        new Runtime_106545().Method0();
     }
 }

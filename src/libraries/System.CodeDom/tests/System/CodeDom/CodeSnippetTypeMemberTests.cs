@@ -18,7 +18,7 @@ namespace System.CodeDom.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("Text")]
-        public void Ctor_String(string value)
+        public void Ctor_String(string? value)
         {
             var snippet = new CodeSnippetTypeMember(value);
             Assert.Equal(value ?? string.Empty, snippet.Text);
@@ -28,7 +28,7 @@ namespace System.CodeDom.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("Text")]
-        public void Text_Set_Get_ReturnsExpected(string value)
+        public void Text_Set_Get_ReturnsExpected(string? value)
         {
             var snippet = new CodeSnippetTypeMember();
             snippet.Text = value;

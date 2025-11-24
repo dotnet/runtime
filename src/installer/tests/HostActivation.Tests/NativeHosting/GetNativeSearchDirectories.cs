@@ -125,7 +125,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .And.HaveStdOutContaining($"get_native_search_directories (null,0) returned unexpected error code 0x{Constants.ErrorCode.ResolverInitFailure:x} expected HostApiBufferTooSmall (0x80008098).")
                 .And.HaveStdOutContaining("buffer_size: 0")
                 .And.HaveStdOutContaining("hostfxr reported errors:")
-                .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{depsJsonFile}], offset 1 (line 1, column 2): Missing a name for object member.")
+                .And.HaveStdOutContaining($"Failed to parse file [{depsJsonFile}]. JSON parsing exception: Missing a name for object member. [offset 1: line 1, column 2]")
                 .And.HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {depsJsonFile}");
         }
 

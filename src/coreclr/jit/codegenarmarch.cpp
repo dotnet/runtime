@@ -514,6 +514,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForAsyncContinuation(treeNode);
             break;
 
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
         case GT_PINVOKE_PROLOG:
             noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) &
                           ~fullIntArgRegMask(compiler->info.compCallConv)) == 0);
@@ -553,7 +557,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 #endif // TARGET_ARM
 
         case GT_IL_OFFSET:
-            // Do nothing; these nodes are simply markers for debug info.
+            // Do nothing; this node is a marker for debug info.
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
             break;
 
         default:
@@ -613,7 +621,10 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 // genEmitGSCookieCheck: Generate code to check that the GS cookie
 // wasn't thrashed by a buffer overrun.
 //
-void CodeGen::genEmitGSCookieCheck(bool pushReg)
+// Parameters:
+//   tailCall - Whether or not this is being emitted for a tail call
+//
+void CodeGen::genEmitGSCookieCheck(bool tailCall)
 {
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
@@ -623,8 +634,9 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     // We don't have any IR node representing this check, so LSRA can't communicate registers
     // for us to use.
 
-    regNumber regGSConst = REG_GSCOOKIE_TMP_0;
-    regNumber regGSValue = REG_GSCOOKIE_TMP_1;
+    regMaskTP tmpRegs    = genGetGSCookieTempRegs(tailCall);
+    regNumber regGSConst = genFirstRegNumFromMaskAndToggle(tmpRegs);
+    regNumber regGSValue = genFirstRegNumFromMaskAndToggle(tmpRegs);
 
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
@@ -1561,9 +1573,10 @@ instruction CodeGen::genGetVolatileLdStIns(instruction   currentIns,
     const bool addrIsInReg = indir->Addr()->isUsedFromReg();
 
     // With RCPC2 (arm64 v8.4+) we can work with simple addressing modes like [reg + simm9]
-    const bool shouldUseRcpc2 = compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2) && !addrIsInReg &&
-                                indir->Addr()->OperIs(GT_LEA) && !indir->HasIndex() && (indir->Scale() == 1) &&
-                                emitter::emitIns_valid_imm_for_unscaled_ldst_offset(indir->Offset());
+    const bool shouldUseRcpc2 = !addrIsInReg && indir->Addr()->OperIs(GT_LEA) && !indir->HasIndex() &&
+                                (indir->Scale() == 1) &&
+                                emitter::emitIns_valid_imm_for_unscaled_ldst_offset(indir->Offset()) &&
+                                compiler->compOpportunisticallyDependsOn(InstructionSet_Rcpc2);
 
     if (shouldUseRcpc2)
     {
@@ -1667,6 +1680,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     var_types   type      = tree->TypeGet();
     instruction ins       = ins_Load(type);
     regNumber   targetReg = tree->GetRegNum();
+    emitAttr    attr      = emitActualTypeSize(type);
 
     genConsumeAddress(tree->Addr());
 
@@ -1677,7 +1691,15 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
         ins = genGetVolatileLdStIns(ins, targetReg, tree, &emitBarrier);
     }
 
-    GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), targetReg, tree);
+#ifdef TARGET_ARM64
+    // Handle instances with a variable length load
+    if (varTypeUsesMaskReg(type))
+    {
+        attr = EA_SCALABLE;
+    }
+#endif // TARGET_ARM64
+
+    GetEmitter()->emitInsLoadStoreOp(ins, attr, targetReg, tree);
 
     if (emitBarrier)
     {
@@ -3161,7 +3183,7 @@ void CodeGen::genCall(GenTreeCall* call)
 #ifdef TARGET_ARM
                 if (compiler->opts.compUseSoftFP && returnType == TYP_DOUBLE)
                 {
-                    inst_RV_RV_RV(INS_vmov_i2d, call->GetRegNum(), returnReg, genRegArgNext(returnReg), EA_8BYTE);
+                    inst_RV_RV_RV(INS_vmov_i2d, call->GetRegNum(), returnReg, REG_NEXT(returnReg), EA_8BYTE);
                 }
                 else if (compiler->opts.compUseSoftFP && returnType == TYP_FLOAT)
                 {
@@ -3256,12 +3278,12 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
 
-        // The epilog may use and trash REG_GSCOOKIE_TMP_0/1. Make sure we have no
-        // non-standard args that may be trash if this is a tailcall.
+        // The epilog may use and trash some registers for the GS cookie check.
+        // Make sure we have no non-standard args that may be trash if this is
+        // a tailcall.
         if (compiler->getNeedsGSSecurityCookie())
         {
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_0);
-            trashedByEpilog |= genRegMask(REG_GSCOOKIE_TMP_1);
+            trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
         }
 
         for (CallArg& arg : call->gtArgs.Args())
@@ -5112,4 +5134,5 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
     compiler->unwindEndEpilog();
 }
+
 #endif // TARGET_ARMARCH

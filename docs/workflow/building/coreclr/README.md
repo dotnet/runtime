@@ -91,6 +91,12 @@ Using an x64 machine, it is possible to generate builds for other architectures.
 
 Detailed instructions on how to do cross-compilation can be found in the cross-building doc [over here](/docs/workflow/building/coreclr/cross-building.md).
 
+### Platform-Specific Guides
+
+For specialized platforms, detailed instructions are available in the following guides:
+
+- **WebAssembly:** [Building CoreCLR for WebAssembly](/docs/workflow/building/coreclr/wasm.md) - Experimental support for building, running, and debugging CoreCLR on WebAssembly.
+
 ## Other Features
 
 ### Build Drivers

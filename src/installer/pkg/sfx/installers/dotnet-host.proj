@@ -12,6 +12,7 @@
     <!-- Contributes to DependencyKey which ensures stable provider key - do not change -->
     <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
     <OutputFilesCandleVariable>HostSrc</OutputFilesCandleVariable>
+
     <MajorUpgradeSchedule>afterInstallExecute</MajorUpgradeSchedule>
     <VersionInstallerName>false</VersionInstallerName>
     <UseBrandingNameInLinuxPackageDescription>true</UseBrandingNameInLinuxPackageDescription>
