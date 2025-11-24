@@ -22,7 +22,7 @@ namespace System.IO.Compression
         private Deflater? _deflater;
         private byte[]? _buffer;
         private volatile bool _activeAsyncOperation;
-        private bool _decompressionFinished;
+        private volatile bool _decompressionFinished;
 
         internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, ZLibNative.Deflate_DefaultWindowBits, uncompressedSize)
         {

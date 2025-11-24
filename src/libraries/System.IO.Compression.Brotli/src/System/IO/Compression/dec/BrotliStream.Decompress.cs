@@ -16,7 +16,7 @@ namespace System.IO.Compression
         private int _bufferOffset;
         private int _bufferCount;
         private bool _nonEmptyInput;
-        private bool _decompressionFinished;
+        private volatile bool _decompressionFinished;
 
         /// <summary>Reads a number of decompressed bytes into the specified byte array.</summary>
         /// <param name="buffer">The array used to store decompressed bytes.</param>
