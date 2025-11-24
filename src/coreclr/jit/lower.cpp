@@ -5856,9 +5856,10 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
     // ASYNC_CONTINUATION is created from two sources:
     //
     // 1. The async resumption stubs created by NativeAOT. These call runtime
-    // async functions via "calli", passing the continuation manually. They use
-    // the AsyncHelpers.AsyncCallContinuation intrinsic after the calli, which
-    // turns into the ASYNC_CONTINUATION node during import.
+    // async functions via "call" to a fake target method, passing the
+    // continuation manually. They use the AsyncHelpers.AsyncCallContinuation
+    // intrinsic after the calli, which turns into the ASYNC_CONTINUATION node
+    // during import.
     //
     // 2. In the async transformation, ASYNC_CONTINUATION nodes are inserted
     // after calls to async calls.
