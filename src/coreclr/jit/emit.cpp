@@ -7869,9 +7869,6 @@ UNATIVE_OFFSET emitter::emitFindOffset(const insGroup* ig, unsigned insNum) cons
 //
 UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_types dataType)
 {
-    unsigned     secOffs;
-    dataSection* secDesc;
-
     assert(emitDataSecCur == nullptr);
 
     // The size must not be zero and must be a multiple of MIN_DATA_ALIGN
@@ -7882,46 +7879,16 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     // simpler to allow it than to check and block it.
     //
     assert((size != 0) && ((size % dataSection::MIN_DATA_ALIGN) == 0));
-    assert(isPow2(alignment) && (alignment <= dataSection::MAX_DATA_ALIGN));
 
-    /* Get hold of the current offset */
-    secOffs = emitConsDsc.dsdOffs;
+    emitEnsureDataSectionAlignment(alignment);
 
-    if (((secOffs % alignment) != 0) && (alignment > dataSection::MIN_DATA_ALIGN))
-    {
-        // As per the above comment, the minimum alignment is actually (MIN_DATA_ALIGN)
-        // bytes so we don't need to make any adjustments if the requested
-        // alignment is less than MIN_DATA_ALIGN.
-        //
-        // The maximum requested alignment is tracked and the memory allocator
-        // will end up ensuring offset 0 is at an address matching that
-        // alignment.  So if the requested alignment is greater than MIN_DATA_ALIGN,
-        // we need to pad the space out so the offset is a multiple of the requested.
-        //
-        uint8_t zeros[dataSection::MAX_DATA_ALIGN] = {}; // auto initialize to all zeros
-
-        unsigned  zeroSize  = alignment - (secOffs % alignment);
-        unsigned  zeroAlign = dataSection::MIN_DATA_ALIGN;
-        var_types zeroType  = TYP_INT;
-
-        emitBlkConst(&zeros, zeroSize, zeroAlign, zeroType);
-        secOffs = emitConsDsc.dsdOffs;
-    }
-
-    assert((secOffs % alignment) == 0);
-    if (emitConsDsc.alignment < alignment)
-    {
-        JITDUMP("Increasing data section alignment from %u to %u for type %s\n", emitConsDsc.alignment, alignment,
-                varTypeName(dataType));
-        emitConsDsc.alignment = alignment;
-    }
-
+    unsigned secOffs = emitConsDsc.dsdOffs;
     /* Advance the current offset */
     emitConsDsc.dsdOffs += size;
 
     /* Allocate a data section descriptor and add it to the list */
 
-    secDesc = emitDataSecCur = (dataSection*)emitGetMem(roundUp(sizeof(*secDesc) + size));
+    dataSection* secDesc = emitDataSecCur = (dataSection*)emitGetMem(roundUp(sizeof(*secDesc) + size));
 
     secDesc->dsSize = size;
 
@@ -7944,6 +7911,50 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_ty
     return secOffs;
 }
 
+//---------------------------------------------------------------------------
+// emitEnsureDataSectionAlignment:
+//   Ensure that data is emitted such that the next byte would be aligned at
+//   the specified alignment. Also increase the overall data section alignment
+//   if necessary.
+//
+// Arguments:
+//   alignment - The aligment
+//
+void emitter::emitEnsureDataSectionAlignment(unsigned alignment)
+{
+    assert(isPow2(alignment) && (alignment <= dataSection::MAX_DATA_ALIGN));
+
+    if (emitConsDsc.alignment < alignment)
+    {
+        JITDUMP("Increasing overall data section alignment from %u to %u\n", emitConsDsc.alignment, alignment);
+        emitConsDsc.alignment = alignment;
+    }
+
+    unsigned secOffs = emitConsDsc.dsdOffs;
+    if ((secOffs % alignment) == 0)
+    {
+        return;
+    }
+
+    // Should always be aligned to the minimum alignment.
+    assert((secOffs % dataSection::MIN_DATA_ALIGN) == 0);
+
+    // The maximum requested alignment is tracked and the memory allocator
+    // will end up ensuring offset 0 is at an address matching that
+    // alignment.  So if the requested alignment is greater than MIN_DATA_ALIGN,
+    // we need to pad the space out so the offset is a multiple of the requested.
+    //
+    uint8_t zeros[dataSection::MAX_DATA_ALIGN] = {}; // auto initialize to all zeros
+
+    unsigned  zeroSize  = alignment - (secOffs % alignment);
+    unsigned  zeroAlign = dataSection::MIN_DATA_ALIGN;
+    var_types zeroType  = TYP_INT;
+
+    emitBlkConst(zeros, zeroSize, zeroAlign, zeroType);
+
+    assert((emitConsDsc.dsdOffs % alignment) == 0);
+}
+
 //  Start generating a constant data section for the current function
 //  populated with BasicBlock references.
 //  You can choose the references to be either absolute pointers, or
@@ -7958,16 +7969,11 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 
     assert(emitDataSecCur == nullptr);
 
-    UNATIVE_OFFSET emittedSize;
+    unsigned elemSize = relativeAddr ? 4 : TARGET_POINTER_SIZE;
 
-    if (relativeAddr)
-    {
-        emittedSize = numEntries * 4;
-    }
-    else
-    {
-        emittedSize = numEntries * TARGET_POINTER_SIZE;
-    }
+    emitEnsureDataSectionAlignment(elemSize);
+
+    UNATIVE_OFFSET emittedSize = numEntries * elemSize;
 
     /* Get hold of the current offset */
 
@@ -8014,6 +8020,8 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
 //
 void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecOffs, emitter::dataSection** dataSec)
 {
+    emitEnsureDataSectionAlignment(TARGET_POINTER_SIZE);
+
     UNATIVE_OFFSET secOffs     = emitConsDsc.dsdOffs;
     unsigned       emittedSize = sizeof(emitter::dataAsyncResumeInfo) * numEntries;
     emitConsDsc.dsdOffs += emittedSize;
@@ -8037,8 +8045,7 @@ void emitter::emitAsyncResumeTable(unsigned numEntries, UNATIVE_OFFSET* dataSecO
         emitConsDsc.dsdList = secDesc;
     }
 
-    emitConsDsc.dsdLast   = secDesc;
-    emitConsDsc.alignment = std::max(emitConsDsc.alignment, (UNATIVE_OFFSET)TARGET_POINTER_SIZE);
+    emitConsDsc.dsdLast = secDesc;
 
     *dataSecOffs = secOffs;
     *dataSec     = secDesc;
