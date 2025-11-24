@@ -106,6 +106,33 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// OperAndType: Pack a genTreeOps and var_types into a switch value
+//
+// Arguments:
+//    oper - a genTreeOps to pack
+//    type - a var_types to pack
+//
+// Return Value:
+//    oper and type packed into a uint64_t that can be used as a switch value/case
+//
+constexpr uint64_t OperAndType (genTreeOps oper, var_types type) {
+    return ((uint64_t)oper) | ((uint64_t)type << 32);
+}
+
+//------------------------------------------------------------------------
+// OperAndType: Pack a GenTreeOp* into a switch value
+//
+// Arguments:
+//    treeNode - a GenTreeOp to extract oper and type from
+//
+// Return Value:
+//    the node's oper and type packed into a uint64_t that can be used as a switch value/case
+//
+constexpr uint64_t OperAndType (GenTreeOp* treeNode) {
+    return OperAndType(treeNode->OperGet(), treeNode->TypeGet());
+}
+
+//------------------------------------------------------------------------
 // genCodeForBinary: Generate code for a binary arithmetic operator
 //
 // Arguments:
@@ -116,14 +143,19 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (treeNode->OperGet())
+    switch (OperAndType(treeNode))
     {
-        case GT_ADD:
-            if (!treeNode->TypeIs(TYP_INT))
-            {
-                NYI_WASM("genCodeForBinary: non-INT GT_ADD");
-            }
+        case OperAndType(GT_ADD, TYP_INT):
             ins = INS_i32_add;
+            break;
+        case OperAndType(GT_ADD, TYP_LONG):
+            ins = INS_i64_add;
+            break;
+        case OperAndType(GT_ADD, TYP_FLOAT):
+            ins = INS_f32_add;
+            break;
+        case OperAndType(GT_ADD, TYP_DOUBLE):
+            ins = INS_f64_add;
             break;
         default:
             ins = INS_none;
