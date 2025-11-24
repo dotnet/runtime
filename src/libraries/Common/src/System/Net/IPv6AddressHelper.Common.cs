@@ -136,9 +136,9 @@ namespace System.Net
             int i;
             for (i = start; i < end; ++i)
             {
-                int currentCh = IPv4AddressHelper.ToUShort(name[i]);
+                ushort currentCh = IPv4AddressHelper.ToUShort(name[i]);
 
-                if (HexConverter.IsHexChar(currentCh))
+                if (char.IsAsciiHexDigit((char)currentCh))
                 {
                     ++sequenceLength;
                     expectingNumber = false;
@@ -197,9 +197,7 @@ namespace System.Net
                                 i += 4;
                                 for (; i < end; i++)
                                 {
-                                    int ch = IPv4AddressHelper.ToUShort(name[i]);
-
-                                    if (!HexConverter.IsHexChar(ch))
+                                    if (!char.IsAsciiHexDigit((char)IPv4AddressHelper.ToUShort(name[i])))
                                     {
                                         return false;
                                     }
