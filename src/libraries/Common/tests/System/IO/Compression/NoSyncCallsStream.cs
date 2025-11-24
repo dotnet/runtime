@@ -89,21 +89,9 @@ internal sealed class NoSyncCallsStream : Stream
         IsRestrictionEnabled ? throw new InvalidOperationException() : _s.Read(buffer);
     public override void Write(byte[] buffer, int offset, int count)
     {
-        bool isDeflateStream = false;
-
-        // Get the stack trace to determine the calling method
-        var stackTrace = new System.Diagnostics.StackTrace();
-        var callingMethod = stackTrace.GetFrame(1)?.GetMethod();
-
-        // Check if the calling method belongs to the DeflateStream class
-        if (callingMethod?.DeclaringType == typeof(System.IO.Compression.DeflateStream))
+        if (IsRestrictionEnabled)
         {
-            isDeflateStream = true;
-        }
-
-        if (!isDeflateStream && IsRestrictionEnabled)
-        {
-            throw new InvalidOperationException($"Parent class is {callingMethod.DeclaringType}");
+            throw new InvalidOperationException();
         }
         else
         {

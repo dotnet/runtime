@@ -1572,7 +1572,7 @@ namespace System.IO.Compression.Tests
         public static async Task NoSyncCallsWhenUsingAsync()
         {
             using MemoryStream ms = new();
-            using NoSyncCallsStream s = new(ms); // Only allows async calls
+            using NoSyncCallsStream s = new(ms) { IsRestrictionEnabled = true }; // Only allows async calls
 
             // Create mode
             await using (ZipArchive archive = await ZipArchive.CreateAsync(s, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding: Encoding.UTF8))
@@ -1593,8 +1593,8 @@ namespace System.IO.Compression.Tests
                             // Note the parent archive is not using NoSyncCallsStream, so it can be opened in sync mode
                             using (Stream normalEntryStream = normalEntry.Open())
                             {
-                                // Note the parent archive is not using NoSyncCallsStream, so it can be copied in sync mode
-                                normalEntryStream.CopyTo(newEntryStream);
+                                // Use async CopyTo when writing to NoSyncCallsStream
+                                await normalEntryStream.CopyToAsync(newEntryStream);
                             }
                         }
                     }
