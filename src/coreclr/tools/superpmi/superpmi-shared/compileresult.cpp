@@ -671,57 +671,49 @@ void CompileResult::dmpReportFatalError(DWORD key, DWORD value)
     printf("ReportFatalError key Count-%u, value result-%08X", key, value);
 }
 
-void CompileResult::recRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta)
+void CompileResult::recRecordRelocation(void* location, void* target, CorInfoReloc fRelocType, int32_t addlDelta)
 {
     repRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
-const char* relocationTypeToString(uint16_t fRelocType)
+const char* relocationTypeToString(CorInfoReloc fRelocType)
 {
     switch (fRelocType)
     {
-        // From winnt.h
-        case IMAGE_REL_BASED_ABSOLUTE:
-            return "absolute";
-        case IMAGE_REL_BASED_HIGH:
-            return "high";
-        case IMAGE_REL_BASED_LOW:
-            return "low";
-        case IMAGE_REL_BASED_HIGHLOW:
-            return "highlow";
-        case IMAGE_REL_BASED_HIGHADJ:
-            return "highadj";
-        case IMAGE_REL_BASED_DIR64:
-            return "dir64";
-
-        // From corinfo.h
-        case IMAGE_REL_BASED_REL32:
-            return "rel32";
-        case IMAGE_REL_SECREL:
-            return "secrel";
-        case IMAGE_REL_TLSGD:
-            return "tlsgd";
-        case IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
-            return "tlsdesc_high21";
-        case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
-            return "tlsdesc_lo12";
-        case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
-            return "tlsdesc_add_lo12";
-        case IMAGE_REL_AARCH64_TLSDESC_CALL:
-            return "tlsdesc_call";
-        case IMAGE_REL_BASED_THUMB_BRANCH24:
-            return "thumb_branch24";
+#define ADD_CASE(name) case CorInfoReloc::name: return #name
+        ADD_CASE(NONE);
+        ADD_CASE(DIR32);
+        ADD_CASE(DIR64);
+        ADD_CASE(REL32);
+        ADD_CASE(ARM64_BRANCH26);
+        ADD_CASE(ARM64_PAGEBASE_REL21);
+        ADD_CASE(ARM64_PAGEOFFSET_12A);
+        ADD_CASE(ARM64_LIN_TLSDESC_ADR_PAGE21);
+        ADD_CASE(ARM64_LIN_TLSDESC_LD64_LO12);
+        ADD_CASE(ARM64_LIN_TLSDESC_ADD_LO12);
+        ADD_CASE(ARM64_LIN_TLSDESC_CALL);
+        ADD_CASE(ARM64_WIN_TLS_SECREL_HIGH12A);
+        ADD_CASE(ARM64_WIN_TLS_SECREL_LOW12A);
+        ADD_CASE(AMD64_WIN_SECREL);
+        ADD_CASE(AMD64_LIN_TLSGD);
+        ADD_CASE(ARM32_THUMB_BRANCH24);
+        ADD_CASE(ARM32_THUMB_MOV32);
+        ADD_CASE(ARM32_THUMB_MOV32_PCREL);
+        ADD_CASE(LOONGARCH64_PC);
+        ADD_CASE(LOONGARCH64_JIR);
+        ADD_CASE(RISCV64_PC);
         default:
             return "UNKNOWN";
+#undef ADD_CASE
     }
 }
 void CompileResult::dmpRecordRelocation(DWORD key, const Agnostic_RecordRelocation& value)
 {
     printf("RecordRelocation key %u, value loc-%016" PRIX64 " tgt-%016" PRIX64 " fRelocType-%u(%s) addlDelta:%d", key,
-           value.location, value.target, value.fRelocType, relocationTypeToString((uint16_t)value.fRelocType),
+           value.location, value.target, value.fRelocType, relocationTypeToString((CorInfoReloc)value.fRelocType),
            (int32_t)value.addlDelta);
 }
-void CompileResult::repRecordRelocation(void* location, void* target, uint16_t fRelocType, int32_t addlDelta)
+void CompileResult::repRecordRelocation(void* location, void* target, CorInfoReloc fRelocType, int32_t addlDelta)
 {
     if (RecordRelocation == nullptr)
         RecordRelocation = new DenseLightWeightMap<Agnostic_RecordRelocation>();
@@ -781,14 +773,14 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
         const SPMI_TARGET_ARCHITECTURE targetArch = GetSpmiTargetArchitecture();
 
-        const DWORD relocType = tmp.fRelocType;
+        const CorInfoReloc relocType = (CorInfoReloc)tmp.fRelocType;
         bool wasRelocHandled  = false;
 
         // Do platform specific relocations first.
 
         if ((targetArch == SPMI_TARGET_ARCHITECTURE_X86) || (targetArch == SPMI_TARGET_ARCHITECTURE_ARM))
         {
-            if (relocType == IMAGE_REL_BASED_HIGHLOW)
+            if (relocType == CorInfoReloc::DIR32)
             {
                 DWORDLONG fixupLocation = tmp.location;
 
@@ -810,8 +802,8 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
             switch (relocType)
             {
-                case IMAGE_REL_BASED_THUMB_MOV32:
-                case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
+                case CorInfoReloc::ARM32_THUMB_MOV32:
+                case CorInfoReloc::ARM32_THUMB_MOV32_PCREL:
                 {
                     INT32 delta  = (INT32)(tmp.target - fixupLocation);
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
@@ -822,7 +814,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 }
                 break;
 
-                case IMAGE_REL_BASED_THUMB_BRANCH24:
+                case CorInfoReloc::ARM32_THUMB_BRANCH24:
                 {
                     INT32 delta = (INT32)(tmp.target - fixupLocation);
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
@@ -850,7 +842,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
             switch (relocType)
             {
-                case IMAGE_REL_ARM64_BRANCH26: // 26 bit offset << 2 & sign ext, for B and BL
+                case CorInfoReloc::ARM64_BRANCH26: // 26 bit offset << 2 & sign ext, for B and BL
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
@@ -863,8 +855,8 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 }
                 break;
 
-                case IMAGE_REL_ARM64_PAGEBASE_REL21: // ADRP 21 bit PC-relative page address
-                case IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21: // ADRP 21 bit for TLSDesc
+                case CorInfoReloc::ARM64_PAGEBASE_REL21: // ADRP 21 bit PC-relative page address
+                case CorInfoReloc::ARM64_LIN_TLSDESC_ADR_PAGE21: // ADRP 21 bit for TLSDesc
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
@@ -878,7 +870,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 }
                 break;
 
-                case IMAGE_REL_ARM64_PAGEOFFSET_12A: // ADD 12 bit page offset
+                case CorInfoReloc::ARM64_PAGEOFFSET_12A: // ADD 12 bit page offset
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
@@ -889,11 +881,11 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 }
                 break;
 
-                case IMAGE_REL_ARM64_SECREL_HIGH12A: // TLSDESC ADD for High-12 Add
-                case IMAGE_REL_ARM64_SECREL_LOW12A:  // TLSDESC ADD for Low-12 Add
-                case IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
-                case IMAGE_REL_AARCH64_TLSDESC_ADD_LO12: // TLSDESC ADD for corresponding ADRP
-                case IMAGE_REL_AARCH64_TLSDESC_CALL:
+                case CorInfoReloc::ARM64_WIN_TLS_SECREL_HIGH12A: // TLSDESC ADD for High-12 Add
+                case CorInfoReloc::ARM64_WIN_TLS_SECREL_LOW12A:  // TLSDESC ADD for Low-12 Add
+                case CorInfoReloc::ARM64_LIN_TLSDESC_LD64_LO12:
+                case CorInfoReloc::ARM64_LIN_TLSDESC_ADD_LO12: // TLSDESC ADD for corresponding ADRP
+                case CorInfoReloc::ARM64_LIN_TLSDESC_CALL:
                 {
                     // These are patched later by linker during actual execution
                     // and do not need relocation.
@@ -913,7 +905,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
             switch (relocType)
             {
-                case IMAGE_REL_RISCV64_PC:
+                case CorInfoReloc::RISCV64_PC:
                 {
                     if ((section_begin <= address) && (address < section_end)) // A reloc for our section?
                     {
@@ -933,7 +925,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
         if (IsSpmiTarget64Bit())
         {
-            if (!wasRelocHandled && (relocType == IMAGE_REL_BASED_DIR64))
+            if (!wasRelocHandled && (relocType == CorInfoReloc::DIR64))
             {
                 DWORDLONG fixupLocation = tmp.location;
 
@@ -948,7 +940,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
                 wasRelocHandled = true;
             }
-            else if (relocType == IMAGE_REL_TLSGD)
+            else if (relocType == CorInfoReloc::AMD64_LIN_TLSGD)
             {
                 // These are patched later by linker during actual execution
                 // and do not need relocation.
@@ -960,7 +952,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
             continue;
 
         // Now do all-platform relocations.
-        if ((tmp.fRelocType == IMAGE_REL_BASED_REL32) || (tmp.fRelocType == IMAGE_REL_SECREL))
+        if ((relocType == CorInfoReloc::REL32) || (relocType == CorInfoReloc::AMD64_WIN_SECREL))
         {
             DWORDLONG fixupLocation = tmp.location;
 
@@ -995,8 +987,8 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                             int       index = rc->mc->GetRelocTypeHint->GetIndex(key);
                             if (index != -1)
                             {
-                                WORD retVal = (WORD)rc->mc->GetRelocTypeHint->Get(key);
-                                if (retVal == IMAGE_REL_BASED_REL32)
+                                CorInfoReloc retVal = (CorInfoReloc)rc->mc->GetRelocTypeHint->Get(key);
+                                if (retVal == CorInfoReloc::REL32)
                                 {
                                     LogDebug("    REL32 target used as argument to getRelocTypeHint: setting delta=%d (0x%X)",
                                              (int)key, (int)key);

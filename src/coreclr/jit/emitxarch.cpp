@@ -14250,6 +14250,14 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     return emitOutputNOP(dst, paddingToAdd);
 }
 
+#ifdef TARGET_64BIT
+static constexpr CorInfoReloc RELOC_DISP32  = CorInfoReloc::REL32;
+static constexpr CorInfoReloc RELOC_MOFFSET = CorInfoReloc::DIR64;
+#else
+static constexpr CorInfoReloc RELOC_DISP32  = CorInfoReloc::DIR32;
+static constexpr CorInfoReloc RELOC_MOFFSET = CorInfoReloc::DIR32;
+#endif
+
 /*****************************************************************************
  *
  *  Output an instruction involving an address mode.
@@ -14683,7 +14691,7 @@ GOT_DSP:
 
         if (id->idIsDspReloc())
         {
-            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), (void*)dsp, IMAGE_REL_BASED_MOFFSET);
+            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), (void*)dsp, RELOC_MOFFSET);
         }
 
 #endif // TARGET_X86
@@ -14752,13 +14760,13 @@ GOT_DSP:
                     if (!IsSimdInstruction(ins) && id->idIsTlsGD())
                     {
                         addlDelta = -4;
-                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_TLSGD,
-                                                          addlDelta);
+                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp,
+                                                          CorInfoReloc::AMD64_LIN_TLSGD, addlDelta);
                     }
                     else
                     {
-                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp,
-                                                          IMAGE_REL_BASED_DISP32, addlDelta);
+                        emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(INT32)), (void*)dsp, RELOC_DISP32,
+                                                          addlDelta);
                     }
                 }
                 else
@@ -14777,7 +14785,7 @@ GOT_DSP:
        // This addr mode should never be used while generating relocatable AOT code nor if
        // the addr can be encoded as pc-relative address.
                     noway_assert(!emitComp->opts.compReloc);
-                    noway_assert(codeGen->genAddrRelocTypeHint((size_t)dsp) != IMAGE_REL_BASED_REL32);
+                    noway_assert(codeGen->genAddrRelocTypeHint((size_t)dsp) != CorInfoReloc::REL32);
                     noway_assert((int)dsp == dsp);
 
                     // This requires, specifying a SIB byte after ModRM byte.
@@ -14814,7 +14822,7 @@ GOT_DSP:
 
                         if (id->idIsDspReloc())
                         {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, CorInfoReloc::DIR32);
                         }
                     }
                 }
@@ -14832,7 +14840,7 @@ GOT_DSP:
 
                     if (id->idIsDspReloc())
                     {
-                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, CorInfoReloc::DIR32);
                     }
                 }
                 break;
@@ -14864,7 +14872,7 @@ GOT_DSP:
 
                         if (id->idIsDspReloc())
                         {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, CorInfoReloc::DIR32);
                         }
                     }
                 }
@@ -14890,7 +14898,7 @@ GOT_DSP:
 
                     if (id->idIsDspReloc())
                     {
-                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, CorInfoReloc::DIR32);
                     }
                 }
                 break;
@@ -14922,7 +14930,7 @@ GOT_DSP:
 
                         if (id->idIsDspReloc())
                         {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, CorInfoReloc::DIR32);
                         }
                     }
                 }
@@ -14951,7 +14959,7 @@ GOT_DSP:
 
                         if (id->idIsDspReloc())
                         {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, CorInfoReloc::DIR32);
                         }
                     }
                 }
@@ -15001,7 +15009,7 @@ GOT_DSP:
 
                         if (id->idIsDspReloc())
                         {
-                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, CorInfoReloc::DIR32);
                         }
                     }
                 }
@@ -15027,7 +15035,7 @@ GOT_DSP:
 
                     if (id->idIsDspReloc())
                     {
-                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, CorInfoReloc::DIR32);
                     }
                 }
             }
@@ -15057,7 +15065,7 @@ GOT_DSP:
                 dst += emitOutputLong(dst, dsp);
                 if (id->idIsDspReloc())
                 {
-                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, CorInfoReloc::DIR32);
                 }
             }
         }
@@ -15090,7 +15098,7 @@ GOT_DSP:
 
                     if (id->idIsDspReloc())
                     {
-                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, CorInfoReloc::DIR32);
                     }
                 }
             }
@@ -15116,7 +15124,7 @@ GOT_DSP:
 
                 if (id->idIsDspReloc())
                 {
-                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, IMAGE_REL_BASED_HIGHLOW);
+                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)dsp, CorInfoReloc::DIR32);
                 }
             }
         }
@@ -15152,7 +15160,7 @@ GOT_DSP:
 
         if (addc->cnsReloc)
         {
-            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, IMAGE_REL_BASED_HIGHLOW);
+            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, CorInfoReloc::DIR32);
             assert(opsz == 4);
         }
     }
@@ -15684,7 +15692,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (addc->cnsReloc)
         {
-            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, IMAGE_REL_BASED_HIGHLOW);
+            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, CorInfoReloc::DIR32);
             assert(opsz == 4);
         }
     }
@@ -16149,7 +16157,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (id->idIsDspReloc())
         {
-            emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(int)), target, IMAGE_REL_BASED_DISP32, addlDelta);
+            emitRecordRelocationWithAddlDelta((void*)(dst - sizeof(int)), target, RELOC_DISP32, addlDelta);
         }
     }
     else
@@ -16165,7 +16173,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (id->idIsDspReloc())
         {
-            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), target, IMAGE_REL_BASED_MOFFSET);
+            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), target, RELOC_MOFFSET);
         }
 
 #endif // TARGET_X86
@@ -16200,7 +16208,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         if (addc->cnsReloc)
         {
-            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, IMAGE_REL_BASED_HIGHLOW);
+            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)cval, CorInfoReloc::DIR32);
             assert(opsz == 4);
         }
     }
@@ -17232,13 +17240,13 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
         {
             if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && id->idAddr()->iiaSecRel)
             {
-                // For section relative, the immediate offset is relocatable and hence need IMAGE_REL_SECREL
-                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_SECREL);
+                // For section relative, the immediate offset is relocatable and hence needs SECREL relocation
+                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val,
+                                     CorInfoReloc::AMD64_WIN_SECREL);
             }
             else
             {
-                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val,
-                                     IMAGE_REL_BASED_MOFFSET);
+                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, RELOC_MOFFSET);
             }
         }
 
@@ -17411,7 +17419,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         if (id->idIsCnsReloc())
         {
-            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, IMAGE_REL_BASED_HIGHLOW);
+            emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, CorInfoReloc::DIR32);
             assert(size == EA_4BYTE);
         }
     }
@@ -17585,7 +17593,7 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
                 dst += emitOutputLong(dst, val);
                 if (id->idIsCnsReloc())
                 {
-                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, IMAGE_REL_BASED_HIGHLOW);
+                    emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, CorInfoReloc::DIR32);
                 }
             }
             break;
@@ -17942,12 +17950,12 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         {
             if (!relAddr)
             {
-                emitRecordRelocation((void*)(dst - sizeof(int32_t)), (void*)distVal, IMAGE_REL_BASED_HIGHLOW);
+                emitRecordRelocation((void*)(dst - sizeof(int32_t)), (void*)distVal, CorInfoReloc::DIR32);
             }
             else if (crossJump)
             {
                 assert(id->idjKeepLong);
-                emitRecordRelocation((void*)(dst - sizeof(int32_t)), dst + distVal, IMAGE_REL_BASED_REL32);
+                emitRecordRelocation((void*)(dst - sizeof(int32_t)), dst + distVal, CorInfoReloc::REL32);
             }
         }
     }
@@ -18496,7 +18504,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #else
                     dst += emitOutputLong(dst, (int)(ssize_t)addr);
 #endif
-                    emitRecordRelocation((void*)(dst - sizeof(int)), addr, IMAGE_REL_BASED_DISP32);
+
+                    emitRecordRelocation((void*)(dst - sizeof(int)), addr, RELOC_DISP32);
                 }
                 else
                 {
@@ -18507,7 +18516,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
        // This addr mode should never be used while generating relocatable AOT code nor if
        // the addr can be encoded as pc-relative address.
                     noway_assert(!emitComp->opts.compReloc);
-                    noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != IMAGE_REL_BASED_REL32);
+                    noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != CorInfoReloc::REL32);
                     noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (ssize_t)addr);
 
                     // This requires, specifying a SIB byte after ModRM byte.
@@ -18560,7 +18569,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             if (id->idIsDspReloc())
             {
-                emitRecordRelocation((void*)(dst - sizeof(INT32)), addr, IMAGE_REL_BASED_REL32);
+                emitRecordRelocation((void*)(dst - sizeof(INT32)), addr, CorInfoReloc::REL32);
             }
 
         DONE_CALL:
@@ -18897,7 +18906,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
                     if (id->idIsCnsReloc())
                     {
-                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, IMAGE_REL_BASED_HIGHLOW);
+                        emitRecordRelocation((void*)(dst - sizeof(INT32)), (void*)(size_t)val, CorInfoReloc::DIR32);
                         assert(size == EA_4BYTE);
                     }
                 }
