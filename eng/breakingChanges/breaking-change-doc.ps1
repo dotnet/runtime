@@ -768,16 +768,7 @@ Write-Host "`n📥 Step 1: Collecting comprehensive PR data..." -ForegroundColor
 if ($PrNumber) {
     # Single PR mode - fetch only the specified PR
     Write-Host "   Mode: Single PR #$PrNumber"
-    try {
-        $prJson = gh pr view $PrNumber --repo $Config.SourceRepo --json number,title,url,baseRefName,closedAt,mergeCommit,labels,files,state
-        $prData = $prJson | ConvertFrom-Json
-
-        $prs = @($prData)
-        Write-Host "   Found PR #$($prs[0].number): $($prs[0].title)"
-    } catch {
-        Write-Error "Failed to fetch PR #${PrNumber}: $($_.Exception.Message)"
-        exit 1
-    }
+    $prs = @(@{ number = $PrNumber })
 } else {
     # Query mode - fetch all PRs matching criteria
     Write-Host "   Mode: Query - $Query"
@@ -798,13 +789,25 @@ $analysisData = @()
 foreach ($pr in $prs) {
     Write-Host "   Collecting data for PR #$($pr.number): $($pr.title)" -ForegroundColor Gray
 
-    # Get comprehensive PR details including comments and reviews
+    # Get comprehensive PR details including comments, reviews, and commits
     try {
-        $prDetails = gh pr view $pr.number --repo $Config.SourceRepo --json body,title,comments,reviews,closingIssuesReferences
+        $prDetails = gh pr view $pr.number --repo $Config.SourceRepo --json body,title,comments,reviews,closingIssuesReferences,commits
         $prDetailData = $prDetails | ConvertFrom-Json
     } catch {
         Write-Warning "Could not fetch detailed PR data for #$($pr.number)"
         continue
+    }
+
+    # Extract commits from the PR details
+    $commits = @()
+    if ($prDetailData.commits) {
+        foreach ($commit in $prDetailData.commits) {
+            $commitMessage = $commit.messageHeadline
+            if ($commit.messageBody -and $commit.messageBody.Trim() -ne "") {
+                $commitMessage += "`n`n" + $commit.messageBody
+            }
+            $commits += $commitMessage
+        }
     }
 
     # Get closing issues with full details and comments
@@ -881,6 +884,7 @@ foreach ($pr in $prs) {
             Sha = $pr.mergeCommit.oid
             Url = $mergeCommitUrl
         }
+        Commits = $commits
         Body = if ($prDetailData.body) { $prDetailData.body } else { $pr.body }
         Comments = $prDetailData.comments
         Reviews = $prDetailData.reviews
@@ -970,14 +974,8 @@ if ($PrNumber) {
 foreach ($pr in $prsNeedingDocs) {
     Write-Host "   🔍 Processing PR #$($pr.Number): $($pr.Title)" -ForegroundColor Cyan
 
-    # Get detailed PR data
-    try {
-        $prDetails = gh pr view $pr.Number --repo $Config.SourceRepo --json body,title,comments,reviews,closingIssuesReferences,files
-        $prData = $prDetails | ConvertFrom-Json
-    } catch {
-        Write-Error "Failed to get PR details for #$($pr.Number)"
-        continue
-    }
+    # Use commits data already collected in Step 1
+    $commits = $pr.Commits
 
     # Prepare data for LLM
     $comments = if ($pr.Comments -and $pr.Comments.Count -gt 0) {
@@ -1074,6 +1072,16 @@ $(if ($pr.MergeCommit.Url) { "**Merge Commit**: $($pr.MergeCommit.Url)" })
 **PR Body**:
 $(Limit-Text -text $pr.Body -maxLength 1500)
 
+## Commits
+$(if ($commits -and $commits.Count -gt 0) {
+    $commitInfo = $commits | ForEach-Object {
+        "$(Limit-Text -text $_ -maxLength 300)"
+    }
+    $commitInfo -join "`n`n"
+} else {
+    "No commit information available"
+})))
+
 ## Changed Files
 $($pr.ChangedFiles -join "`n")
 
@@ -1107,7 +1115,7 @@ Generate the complete issue following the template structure and using the examp
         $issueTitle = $matches[1].Trim()
         $issueBody = $matches[2].Trim()
     } else {
-        $issueTitle = "[Breaking change]: $($prData.title -replace '^\[.*?\]\s*', '')"
+        $issueTitle = "[Breaking change]: $($pr.Title -replace '^\[.*?\]\s*', '')"
         $issueBody = $llmResponse
     }
 
