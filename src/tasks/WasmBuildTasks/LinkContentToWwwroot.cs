@@ -37,6 +37,12 @@ public class LinkContentToWwwroot : Task
             string identity = item.ItemSpec ?? string.Empty;
             string link = item.GetMetadata("Link") ?? string.Empty;
 
+            if (!string.IsNullOrEmpty(link) && item.GetMetadata("BuildReference") == "true" && item.GetMetadata("OriginalItemName") == "WasmAssembliesFinal" && !string.Equals(Path.GetExtension(link), Path.GetExtension(identity), StringComparison.OrdinalIgnoreCase))
+            {
+                Log.LogMessage(MessageImportance.Low, $"Ignoring Link '{link}' for Identity '{identity}', because it has a different extension and is coming from nested publish (WasmAssembliesFinal).");
+                link = string.Empty;
+            }
+
             bool copyPreserveOrAlways = string.Equals(copyToOutput, "PreserveNewest", StringComparison.OrdinalIgnoreCase) || string.Equals(copyToOutput, "Always", StringComparison.OrdinalIgnoreCase);
 
             // Case 1: use TargetPath when present
