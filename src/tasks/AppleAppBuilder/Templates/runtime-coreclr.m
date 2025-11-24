@@ -82,35 +82,25 @@ pinvoke_override (const char *libraryName, const char *entrypointName)
 
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
-size_t get_image_size(void* base_address)
+size_t get_image_size(const struct mach_header_64* header)
 {
-    uint32_t image_count = _dyld_image_count();
-    for (uint32_t i = 0; i < image_count; ++i)
+    const struct load_command* cmd = (const struct load_command*)((const char*)header + sizeof(struct mach_header_64));
+
+    size_t image_size = 0;
+    for (uint32_t j = 0; j < header->ncmds; ++j)
     {
-        const struct mach_header_64* header = (const struct mach_header_64*)_dyld_get_image_header(i);
-        if ((const void*)header != base_address)
-            continue;
-
-        const struct load_command* cmd = (const struct load_command*)((const char*)header + sizeof(struct mach_header_64));
-
-        size_t image_size = 0;
-        for (uint32_t j = 0; j < header->ncmds; ++j)
+        if (cmd->cmd == LC_SEGMENT_64)
         {
-            if (cmd->cmd == LC_SEGMENT_64)
-            {
-                const struct segment_command_64* seg = (const struct segment_command_64*)cmd;
-                size_t end_addr = (size_t)(seg->vmaddr + seg->vmsize);
-                if (end_addr > image_size)
-                    image_size = end_addr;
-            }
-
-            cmd = (const struct load_command*)((const char*)cmd + cmd->cmdsize);
+            const struct segment_command_64* seg = (const struct segment_command_64*)cmd;
+            size_t end_addr = (size_t)(seg->vmaddr + seg->vmsize);
+            if (end_addr > image_size)
+                image_size = end_addr;
         }
 
-        return image_size;
+        cmd = (const struct load_command*)((const char*)cmd + cmd->cmdsize);
     }
 
-    return 0;
+    return image_size;
 }
 
 bool get_native_code_data(const struct host_runtime_contract_native_code_context* context, struct host_runtime_contract_native_code_data* data)
@@ -148,10 +138,14 @@ bool get_native_code_data(const struct host_runtime_contract_native_code_context
         return false;
     }
 
+    // The base address points to the Mach header
+    void* base_address = info.dli_fbase;
+    const struct mach_header_64* header = (const struct mach_header_64*)base_address;
+
     data->size = sizeof(struct host_runtime_contract_native_code_data);
     data->r2r_header_ptr = r2r_header;
-    data->image_size = get_image_size(info.dli_fbase);
-    data->image_base = info.dli_fbase;
+    data->image_size = get_image_size(header);
+    data->image_base = base_address;
     return true;
 }
 
