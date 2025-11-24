@@ -1120,6 +1120,7 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
     if (ReadyToRunCodeDisabled())
         return false;
 
+    // TODO: (async) PGO support for async variants (https://github.com/dotnet/runtime/issues/121755)
     if (pMD->IsAsyncVariantMethod())
         return false;
 
@@ -1195,6 +1196,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     if (ReadyToRunCodeDisabled())
         goto done;
 
+    // TODO: (async) R2R support for async variants (https://github.com/dotnet/runtime/issues/121559)
     if (pMD->IsAsyncVariantMethod())
         goto done;
 

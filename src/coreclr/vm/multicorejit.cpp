@@ -400,6 +400,7 @@ HRESULT MulticoreJitRecorder::WriteOutput(FILE * fp)
         MethodDesc * pMethod = m_JitInfoArray[i].GetMethodDescAndClean();
         if (pMethod->IsAsyncVariantMethod())
         {
+            // TODO: (async) Multicore JIT https://github.com/dotnet/runtime/issues/115097
             skipped++;
             continue;
         }
