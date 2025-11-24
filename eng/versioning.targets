@@ -160,11 +160,11 @@
 #define RuntimeFileBuildVersion $(FileVersion.Split('.')[2])
 #define RuntimeFileRevisionVersion $(FileVersion.Split('.')[3])
 
-#define RuntimeProductMajorVersion $(InformationalVersion.Split(".-")[0])
-#define RuntimeProductMinorVersion $(InformationalVersion.Split(".-")[1])
-#define RuntimeProductPatchVersion $(InformationalVersion.Split(".-")[2])
+#define RuntimeProductMajorVersion $(Version.Split(".-")[0])
+#define RuntimeProductMinorVersion $(Version.Split(".-")[1])
+#define RuntimeProductPatchVersion $(Version.Split(".-")[2])
 
-#define RuntimeProductVersion $(InformationalVersion)
+#define RuntimeProductVersion $(Version)
  ]]>
       </_RuntimeVersionFileContents>
     </PropertyGroup>
