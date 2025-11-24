@@ -4132,7 +4132,7 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     int numArgs = numArgsFromStack + (newObjThisArgLocation == 0);
 
     int extraParamArgLocation = INT_MAX;
-    if (callInfo.sig.hasTypeArg() || (m_nextCallGenericContextVar >= 0))
+    if (callInfo.sig.hasTypeArg())
     {
         extraParamArgLocation = callInfo.sig.hasThis() ? 1 : 0;
         numArgs++;
