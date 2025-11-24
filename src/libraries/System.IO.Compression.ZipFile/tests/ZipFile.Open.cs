@@ -18,7 +18,7 @@ public class ZipFile_Open : ZipFileTestBase
         return Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => CallZipFileOpen(async, "bad file", (ZipArchiveMode)(10)));
     }
 
-     [Fact]
+    [Fact]
     public void Open_PassDirectory_ThrowsUnauthorizedAccessException()
     {
         string directoryPath = GetTestFilePath();
