@@ -402,7 +402,7 @@ namespace ILCompiler
                     }
 
                     ReadyToRunContainerFormat format = Get(_command.OutputFormat);
-                    if (!composite && format != ReadyToRunContainerFormat.PE)
+                    if (!composite && format != ReadyToRunContainerFormat.PE && format != ReadyToRunContainerFormat.Wasm)
                     {
                         throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
                     }
