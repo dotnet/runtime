@@ -106,7 +106,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// OperAndType: Pack a genTreeOps and var_types into a switch value
+// PackOperAndType: Pack a genTreeOps and var_types into a switch value
 //
 // Arguments:
 //    oper - a genTreeOps to pack
@@ -115,12 +115,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 // Return Value:
 //    oper and type packed into a uint64_t that can be used as a switch value/case
 //
-constexpr uint64_t OperAndType (genTreeOps oper, var_types type) {
+constexpr uint64_t PackOperAndType(genTreeOps oper, var_types type)
+{
     return ((uint64_t)oper) | ((uint64_t)type << 32);
 }
 
 //------------------------------------------------------------------------
-// OperAndType: Pack a GenTreeOp* into a switch value
+// PackOperAndType: Pack a GenTreeOp* into a switch value
 //
 // Arguments:
 //    treeNode - a GenTreeOp to extract oper and type from
@@ -128,8 +129,9 @@ constexpr uint64_t OperAndType (genTreeOps oper, var_types type) {
 // Return Value:
 //    the node's oper and type packed into a uint64_t that can be used as a switch value/case
 //
-constexpr uint64_t OperAndType (GenTreeOp* treeNode) {
-    return OperAndType(treeNode->OperGet(), treeNode->TypeGet());
+constexpr uint64_t PackOperAndType(GenTreeOp* treeNode)
+{
+    return PackOperAndType(treeNode->OperGet(), treeNode->TypeGet());
 }
 
 //------------------------------------------------------------------------
@@ -143,18 +145,18 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (OperAndType(treeNode))
+    switch (PackOperAndType(treeNode))
     {
-        case OperAndType(GT_ADD, TYP_INT):
+        case PackOperAndType(GT_ADD, TYP_INT):
             ins = INS_i32_add;
             break;
-        case OperAndType(GT_ADD, TYP_LONG):
+        case PackOperAndType(GT_ADD, TYP_LONG):
             ins = INS_i64_add;
             break;
-        case OperAndType(GT_ADD, TYP_FLOAT):
+        case PackOperAndType(GT_ADD, TYP_FLOAT):
             ins = INS_f32_add;
             break;
-        case OperAndType(GT_ADD, TYP_DOUBLE):
+        case PackOperAndType(GT_ADD, TYP_DOUBLE):
             ins = INS_f64_add;
             break;
         default:
