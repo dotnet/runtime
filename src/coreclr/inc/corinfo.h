@@ -884,6 +884,18 @@ enum class CorInfoReloc
     // Arm32 relocs
     ARM32_THUMB_BRANCH24,                  // Thumb2: B, BL
     ARM32_THUMB_MOV32,                     // Thumb2: MOVW/MOVT
+    // The identifier for ARM32-specific PC-relative address
+    // computation corresponds to the following instruction
+    // sequence:
+    //  l0: movw rX, #imm_lo  // 4 byte
+    //  l4: movt rX, #imm_hi  // 4 byte
+    //  l8: add  rX, pc <- after this instruction rX = relocTarget
+    //
+    // Program counter at l8 is address of l8 + 4
+    // Address of relocated movw/movt is l0
+    // So, imm should be calculated as the following:
+    //  imm = relocTarget - (l8 + 4) = relocTarget - (l0 + 8 + 4) = relocTarget - (l_0 + 12)
+    // So, the value of offset correction is 12
     ARM32_THUMB_MOV32_PCREL,               // Thumb2: MOVW/MOVT
 
     // LoongArch64 relocs

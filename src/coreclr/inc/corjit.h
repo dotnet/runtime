@@ -425,7 +425,7 @@ public:
             void *                  location,     /* IN  */
             void *                  locationRW,   /* IN  */
             void *                  target,       /* IN  */
-            CorInfoReloc fRelocType,   /* IN  */
+            CorInfoReloc            fRelocType,   /* IN  */
             int32_t                 addlDelta = 0 /* IN  */
             ) = 0;
 
