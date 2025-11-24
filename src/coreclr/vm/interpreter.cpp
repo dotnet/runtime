@@ -812,6 +812,10 @@ void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlot
 	    fpArgsUsed |= (0x1 << (numFPRegArgSlots + i));
 	}
 	numFPRegArgSlots += numSlots;
+	if (canonIndex < 8 && numRegArgs < NumberOfIntegerRegArgs())
+	{
+	    numRegArgs += numSlots;
+	}
     }
     else
     {
@@ -1399,7 +1403,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_POWERPC64)
 	    // TODO TARGET_POWERPC64 check here offset on StubLinkerCPU::EmitProlog
             unsigned       intRegArgBaseOffset = 0;
-	    unsigned       floatRegArgBaseOffset = intRegArgBaseOffset + (8 * sizeof(void*));
+	    unsigned       floatRegArgBaseOffset = (8 * sizeof(void*));
             unsigned short stackArgBaseOffset = 496 + (8 * sizeof(void*));
 #else
 #error unsupported platform
@@ -1478,7 +1482,6 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_POWERPC64)
 		else if (argState.argIsReg[k] == ArgState::ARS_FloatReg)
 		{
-		    _ASSERTE_MSG(false, "Power floatRegArgBaseOffset");
 		    argState.argOffsets[k] += floatRegArgBaseOffset;
 		}
 #endif

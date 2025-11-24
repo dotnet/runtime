@@ -2056,7 +2056,11 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 	if (m_idxFPReg < 13)
 	{
 	    int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-	    m_idxFPReg += 1;
+	    m_idxFPReg += cFPRegs;
+	    if (m_idxGenReg < 8)
+	    {
+		m_idxGenReg += cFPRegs;
+	    }
 	    return argOfs;
 	}
     }
