@@ -1419,7 +1419,7 @@ void MethodDesc::CreateDerivedTargetSig(MetaSig& msig, SigBuilder *stubSigBuilde
     if (msig.HasThis())
         callingConvention |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
     if (msig.HasGenericContextArg())
-        callingConvention |= IMAGE_CEE_CS_CALLCONV_PARAMTYPE;
+        callingConvention |= CORINFO_CALLCONV_PARAMTYPE;
     // CallingConvention
     stubSigBuilder->AppendByte(callingConvention);
 

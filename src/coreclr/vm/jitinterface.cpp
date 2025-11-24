@@ -14575,6 +14575,10 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     {
         callConv |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
     }
+    if (msig.HasGenericContextArg())
+    {
+        callConv |= CORINFO_CALLCONV_PARAMTYPE;
+    }
     sigBuilder.AppendByte(callConv);
     sigBuilder.AppendData(msig.NumFixedArgs());
 

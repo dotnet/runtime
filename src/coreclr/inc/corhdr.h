@@ -991,7 +991,7 @@ typedef enum CorCallingConvention
     IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS = 0x40,  // This parameter is explicitly in the signature
 
     IMAGE_CEE_CS_CALLCONV_GENERIC   = 0x10,     // Generic method sig with explicit number of type arguments (precedes ordinary parameter count)
-    IMAGE_CEE_CS_CALLCONV_PARAMTYPE = 0x80,     // Signature has a generic context argument
+    // 0x80 is reserved for internal use
 } CorCallingConvention;
 
 #define IMAGE_CEE_CS_CALLCONV_INSTANTIATION IMAGE_CEE_CS_CALLCONV_GENERICINST
