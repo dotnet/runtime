@@ -145,6 +145,7 @@ public class TypeMap
 
         IReadOnlyDictionary<Type, Type> map = TypeMapping.GetOrCreateProxyTypeMapping<TypicalUseCase>();
 
+        // Need to use `new`, not just `typeof` due to trimming rules: https://github.com/dotnet/runtime/blob/550c960396d3bba1a83198d0a3ac24109124e82d/docs/design/features/typemap.md#type-map-entry-trimming-rules
         Assert.Equal(typeof(C1), map[new C1().GetType()]);
         Assert.Equal(typeof(S1), map[((object)default(S1)).GetType()]);
         Assert.Equal(typeof(C1), map[((object)default(Guid)).GetType()]);
