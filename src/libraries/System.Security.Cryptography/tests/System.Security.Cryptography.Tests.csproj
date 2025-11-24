@@ -273,7 +273,8 @@
     <Compile Include="MD5Tests.cs" />
     <Compile Include="OidTests.cs" />
     <Compile Include="OidCollectionTests.cs" />
-    <Compile Include="OpenSslNamedKeysTests.manual.cs" />
+    <!-- https://github.com/dotnet/dnceng/issues/3008 - osx Helix queue doesn't have OpenSSL. -->
+    <Compile Condition="'$(TargetPlatformIdentifier)' != 'osx' and '$(RuntimeFlavor)' != 'mono'" Include="OpenSslNamedKeysTests.manual.cs" />
     <Compile Include="PaddingModeTests.cs" />
     <Compile Include="PbeParametersTests.cs" />
     <Compile Include="PemEncodingTests.cs" />
