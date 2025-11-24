@@ -3260,7 +3260,6 @@ namespace System
                 // Dos/Unix paths have no host.  Other schemes cleared/set _string with host information in PrivateParseMinimal.
                 if (InFact(Flags.DosPath | Flags.UnixPath))
                 {
-                    Debug.Assert(ReferenceEquals(_string, OriginalString));
                     Debug.Assert(!InFact(Flags.HasUserInfo));
 
                     _string =
@@ -3271,6 +3270,10 @@ namespace System
                     _info.Offset.Scheme = 0;
                     _info.Offset.User = _string.Length;
                     _info.Offset.Host = _string.Length;
+                }
+                else
+                {
+                    Debug.Assert(!ReferenceEquals(_string, OriginalString));
                 }
 
                 _info.Offset.Path = _string.Length;
