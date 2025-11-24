@@ -1400,6 +1400,81 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Fact]
+        public async Task CreateAndReadAES256EncryptedEntry_RoundTrip()
+        {
+            // Arrange
+            string tempPath = Path.Join(DownloadsDir, "source_plain_mine.zip");
+            const string entryName = "source_plain.txt";
+            const string password = "123456789";
+            const string expectedContent = "this is plain";
+
+            // Act 1: Create ZIP with AES-256 encrypted entry
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(entryName);
+                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes256);
+                using var writer = new StreamWriter(entryStream, Encoding.UTF8);
+                writer.Write(expectedContent);
+            }
+
+            // Act 2: Read back the encrypted entry
+            string actualContent;
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                var entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var entryStream = entry!.Open(password);
+                using var reader = new StreamReader(entryStream, Encoding.UTF8);
+                actualContent = await reader.ReadToEndAsync();
+            }
+
+            // Assert
+            Assert.Equal(expectedContent, actualContent);
+
+        }
+
+
+        [Fact]
+        public void CreateBasicArchive()
+        {
+            // Arrange
+            string tempPath = Path.Join(DownloadsDir, "test_simple.zip");
+            const string entryName = "test.txt";
+            const string expectedContent = "this is plain";
+
+            // Act 1: Create ZIP with AES-256 encrypted entry
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(entryName);
+                using var entryStream = entry.Open();
+                using var writer = new StreamWriter(entryStream, Encoding.UTF8);
+                writer.Write(expectedContent);
+            }
+
+            // Act 2: Read back the encrypted entry
+            string actualContent;
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                var entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var entryStream = entry!.Open();
+                using var reader = new StreamReader(entryStream, Encoding.UTF8);
+                actualContent = reader.ReadToEnd();
+            }
+
+            // Assert
+            Assert.Equal(expectedContent, actualContent);
+        }
+
+
+
     }
 
 

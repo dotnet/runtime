@@ -34,8 +34,11 @@ namespace System.IO.Compression
         private bool _authCodeValidated;
         private readonly long _totalStreamSize;
         private long _bytesReadFromBase;
+        private readonly bool _leaveOpen;
+        private readonly MemoryStream? _encryptionBuffer;
 
-        public WinZipAesStream(Stream baseStream, ReadOnlyMemory<char> password, bool encrypting, int keySizeBits = 256, bool ae2 = true, uint? crc32 = null, long totalStreamSize = -1)
+
+        public WinZipAesStream(Stream baseStream, ReadOnlyMemory<char> password, bool encrypting, int keySizeBits = 256, bool ae2 = true, uint? crc32 = null, long totalStreamSize = -1, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(baseStream);
 
@@ -48,6 +51,7 @@ namespace System.IO.Compression
             _crc32ForHeader = crc32;
             _totalStreamSize = totalStreamSize; // Store the total size
             _bytesReadFromBase = 0;
+            _leaveOpen = leaveOpen;
 #pragma warning disable CA1416 // HMACSHA1 is available on all platforms
             _aes = Aes.Create();
 #pragma warning restore CA1416
@@ -65,6 +69,7 @@ namespace System.IO.Compression
 
             if (_encrypting)
             {
+                _encryptionBuffer = new MemoryStream();
                 GenerateKeys();
                 InitCipher();
             }
@@ -84,11 +89,11 @@ namespace System.IO.Compression
 
                 // WinZip AES uses SHA1 for PBKDF2 with 1000 iterations per spec
                 byte[] derivedKey = Rfc2898DeriveBytes.Pbkdf2(
-                    passwordBytes,
-                    _salt!,
-                    1000,
-                    HashAlgorithmName.SHA1,
-                    totalKeySize);
+                passwordBytes,
+                _salt!,
+                1000,
+                HashAlgorithmName.SHA1,
+                totalKeySize);
 
                 // Split the derived key material
                 _key = new byte[keySizeInBytes];
@@ -171,13 +176,9 @@ namespace System.IO.Compression
 
             _baseStream.Write(_salt);
             _baseStream.Write(_passwordVerifier);
-
-            if (_ae2 && _crc32ForHeader.HasValue)
-            {
-                Span<byte> crcBytes = stackalloc byte[4];
-                BitConverter.TryWriteBytes(crcBytes, _crc32ForHeader.Value);
-                _baseStream.Write(crcBytes);
-            }
+            // output to debug log
+            Debug.WriteLine($"Wrote salt: {BitConverter.ToString(_salt)}");
+            Debug.WriteLine($"Wrote password verifier: {BitConverter.ToString(_passwordVerifier)}");
 
             _headerWritten = true;
         }
@@ -219,9 +220,6 @@ namespace System.IO.Compression
             _hmac.Key = _hmacKey!;
             InitCipher();
 
-            int headerSize = saltSize + 2; // Salt + Password Verifier
-            _bytesReadFromBase += headerSize;
-
             Array.Clear(_counterBlock, 0, 16);
             _counterBlock[0] = 1;
 
@@ -254,22 +252,27 @@ namespace System.IO.Compression
 
                 int blockSize = Math.Min(16, count - processed);
 
-                // For decryption: HMAC is computed on ciphertext BEFORE decryption
-                if (!_encrypting)
-                {
-                    _hmac.TransformBlock(buffer, offset + processed, blockSize, null, 0);
-                }
-
-                // XOR the data with the keystream
-                for (int i = 0; i < blockSize; i++)
-                {
-                    buffer[offset + processed + i] ^= keystream[i];
-                }
-
-                // For encryption: HMAC is computed on ciphertext AFTER encryption
+                // For encryption: XOR first, then HMAC the ciphertext
                 if (_encrypting)
                 {
+                    // XOR the data with the keystream to create ciphertext
+                    for (int i = 0; i < blockSize; i++)
+                    {
+                        buffer[offset + processed + i] ^= keystream[i];
+                    }
+                    // HMAC is computed on the ciphertext (after XOR)
                     _hmac.TransformBlock(buffer, offset + processed, blockSize, null, 0);
+                }
+                // For decryption: HMAC first (on ciphertext), then XOR
+                else
+                {
+                    // HMAC is computed on the ciphertext (before XOR)
+                    _hmac.TransformBlock(buffer, offset + processed, blockSize, null, 0);
+                    // XOR the ciphertext with the keystream to recover plaintext
+                    for (int i = 0; i < blockSize; i++)
+                    {
+                        buffer[offset + processed + i] ^= keystream[i];
+                    }
                 }
 
                 processed += blockSize;
@@ -277,6 +280,7 @@ namespace System.IO.Compression
 
             Debug.WriteLine($"Final counter after processing: {BitConverter.ToString(_counterBlock)}");
         }
+
 
         private void IncrementCounter()
         {
@@ -300,6 +304,7 @@ namespace System.IO.Compression
             {
                 // WinZip AES spec requires only the first 10 bytes of the HMAC
                 _baseStream.Write(authCode, 0, 10);
+                Debug.WriteLine($"Wrote authentication code: {BitConverter.ToString(authCode, 0, 10)}");
             }
 
             _authCodeValidated = true;
@@ -315,10 +320,25 @@ namespace System.IO.Compression
             WriteHeader();
 
             // We need to copy the data since ProcessBlock modifies it in place
-            byte[] tmp = buffer.ToArray();
-            ProcessBlock(tmp, 0, tmp.Length);
-            _baseStream.Write(tmp);
+            //byte[] tmp = buffer.ToArray();
+            //ProcessBlock(tmp, 0, tmp.Length);
+            //_baseStream.Write(tmp);
+            _encryptionBuffer?.Write(buffer);
             _position += buffer.Length;
+            //output tmp to debug log
+            Debug.WriteLine($"Wrote {buffer.Length} bytes of ciphertext: {BitConverter.ToString(buffer.ToArray())}");
+        }
+
+        // Flush all buffered data, encrypt it, and write to base stream
+        private void FlushEncryptionBuffer()
+        {
+            if (_encryptionBuffer != null && _encryptionBuffer.Length > 0)
+            {
+                byte[] data = _encryptionBuffer.ToArray();
+                ProcessBlock(data, 0, data.Length);
+                _baseStream.Write(data);
+                _encryptionBuffer.SetLength(0); // Clear the buffer
+            }
         }
 
         private int ReadCore(Span<byte> buffer)
@@ -336,14 +356,14 @@ namespace System.IO.Compression
             // If we know the total size, ensure we don't read into the HMAC
             if (_totalStreamSize > 0)
             {
-                const int hmacSize = 10; // Correct 10-byte HMAC size
-                long remainingData = _totalStreamSize - _bytesReadFromBase - hmacSize;
+                // Calculate the size of the AES overhead
+                int saltSize = _keySizeBits / 16;
+                int headerSize = saltSize + 2; // Salt + Password Verifier
+                const int hmacSize = 10; // 10-byte HMAC
 
-                Debug.WriteLine($"=== ReadCore Debug ===");
-                Debug.WriteLine($"Total stream size: {_totalStreamSize}");
-                Debug.WriteLine($"Bytes read from base: {_bytesReadFromBase}");
-                Debug.WriteLine($"Remaining data: {remainingData}");
-                Debug.WriteLine($"Buffer length requested: {buffer.Length}");
+                // The actual encrypted data size is the total minus header and HMAC
+                long encryptedDataSize = _totalStreamSize - headerSize - hmacSize;
+                long remainingData = encryptedDataSize - _bytesReadFromBase;
 
                 if (remainingData <= 0)
                 {
@@ -378,17 +398,11 @@ namespace System.IO.Compression
                 Debug.WriteLine($"Ciphertext (hex): {BitConverter.ToString(buffer.Slice(0, n).ToArray())}");
 
                 // The buffer now contains the ciphertext.
-                // We need to pass an array to ProcessBlock.
                 byte[] temp = buffer.Slice(0, n).ToArray();
 
-                // ProcessBlock will now correctly:
                 // 1. Update the HMAC with the ciphertext from `temp`.
                 // 2. Decrypt `temp` in-place.
                 ProcessBlock(temp, 0, n);
-
-                // Log the plaintext after decryption
-                Debug.WriteLine($"Plaintext (hex): {BitConverter.ToString(temp)}");
-                Debug.WriteLine($"Plaintext (ASCII): {System.Text.Encoding.ASCII.GetString(temp)}");
 
                 // Copy the decrypted data from `temp` back to the original buffer.
                 temp.CopyTo(buffer);
@@ -406,7 +420,6 @@ namespace System.IO.Compression
             return n;
         }
 
-        // All Write overloads redirect to Write(ReadOnlySpan<byte>)
         public override void Write(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -477,8 +490,14 @@ namespace System.IO.Compression
 
             if (_totalStreamSize > 0)
             {
+                // Calculate the size of the AES overhead
+                int saltSize = _keySizeBits / 16;
+                int headerSize = saltSize + 2; // Salt + Password Verifier
                 const int hmacSize = 10;
-                long remainingData = _totalStreamSize - _bytesReadFromBase - hmacSize;
+
+                // The actual encrypted data size is the total minus header and HMAC
+                long encryptedDataSize = _totalStreamSize - headerSize - hmacSize;
+                long remainingData = encryptedDataSize - _bytesReadFromBase;
 
                 if (remainingData <= 0)
                 {
@@ -505,7 +524,7 @@ namespace System.IO.Compression
 
             if (n > 0)
             {
-                _bytesReadFromBase += n; // This was missing - crucial for boundary tracking!
+                _bytesReadFromBase += n;
 
                 // Process the data
                 byte[] temp = buffer.Slice(0, n).ToArray();
@@ -530,17 +549,22 @@ namespace System.IO.Compression
             {
                 try
                 {
-                    // For encryption, write the auth code when closing
-                    if (_encrypting && _headerWritten && !_authCodeValidated)
+                    if (_encrypting && !_authCodeValidated)
                     {
-                        WriteAuthCode();
-                    }
+                        // CRITICAL: Flush the base stream BEFORE calculating auth code
+                        // This ensures all encrypted data is written to the stream
+                        if (_baseStream.CanWrite)
+                        {
+                            _baseStream.Flush();
+                        }
 
-                    // Only flush if the base stream supports writing
-                    // SubReadStream (used for reading compressed data) doesn't support Flush()
-                    if (_baseStream.CanWrite)
-                    {
-                        _baseStream.Flush();
+                        WriteAuthCode();
+
+                        // Flush again after writing auth code
+                        if (_baseStream.CanWrite)
+                        {
+                            _baseStream.Flush();
+                        }
                     }
                 }
                 finally
@@ -548,11 +572,49 @@ namespace System.IO.Compression
                     _aesEncryptor?.Dispose();
                     _aes.Dispose();
                     _hmac.Dispose();
+
+                    // Only dispose the base stream if we don't leave it open
+                    if (!_leaveOpen)
+                    {
+                        _baseStream.Dispose();
+                    }
                 }
             }
 
             _disposed = true;
             base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (_disposed)
+                return;
+
+            try
+            {
+                if (_encrypting && !_authCodeValidated)
+                {
+                    FlushEncryptionBuffer();
+                }
+
+                _encryptionBuffer?.Dispose();
+
+            }
+            finally
+            {
+                _aesEncryptor?.Dispose();
+                _aes.Dispose();
+                _hmac.Dispose();
+
+                // Only dispose the base stream if we don't leave it open
+                if (!_leaveOpen)
+                {
+                    await _baseStream.DisposeAsync().ConfigureAwait(false);
+                }
+            }
+
+            _disposed = true;
+            GC.SuppressFinalize(this);
         }
 
         public override bool CanRead => !_encrypting && !_disposed;
@@ -561,7 +623,28 @@ namespace System.IO.Compression
         public override long Length => throw new NotSupportedException();
         public override long Position
         {
-            get => _position;
+            get
+            {
+                // Calculate the actual position including all metadata
+                long position = _position;
+
+                // Add header size if it has been written/read
+                if (_headerWritten || _headerRead)
+                {
+                    int saltSize = _keySizeBits / 16;
+                    int headerSize = saltSize + 2; // Salt + Password Verifier
+                    position += headerSize;
+                }
+
+                // Add auth code size if it has been written/validated
+                if (_authCodeValidated)
+                {
+                    const int authCodeSize = 10;
+                    position += authCodeSize;
+                }
+
+                return position;
+            }
             set => throw new NotSupportedException();
         }
 
@@ -575,6 +658,38 @@ namespace System.IO.Compression
                 _baseStream.Flush();
             }
         }
+
+        public override void Close()
+        {
+            if (!_disposed)
+            {
+                if (_encrypting && !_authCodeValidated && _headerWritten)
+                {
+                    // Encrypt all buffered data first
+                    FlushEncryptionBuffer();
+
+                    // Flush any pending data
+                    if (_baseStream.CanWrite)
+                    {
+                        _baseStream.Flush();
+                    }
+
+                    // Write the authentication code
+                    WriteAuthCode();
+
+                    // Flush again to ensure auth code is written
+                    if (_baseStream.CanWrite)
+                    {
+                        _baseStream.Flush();
+                    }
+                }
+            }
+
+            // Call base.Close() which will call Dispose(true)
+            base.Close();
+        }
+
+
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override void SetLength(long value) => throw new NotSupportedException();
