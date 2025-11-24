@@ -6508,7 +6508,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
             assert(genActualType(obj->gtType) == TYP_I_IMPL || obj->TypeIs(TYP_BYREF));
             CorInfoType constraintTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
 
-            obj = gtNewIndir(JITtype2varType(constraintTyp), obj);
+            obj = gtNewLoadValueNode(JITtype2varType(constraintTyp), nullptr, obj);
             return obj;
         }
 

@@ -2886,17 +2886,9 @@ static bool DoesValueTypeContainGCRefs(COMP_HANDLE compHnd, CORINFO_CLASS_HANDLE
     // getClassGClayout assumes it's given a buffer of exactly this size
     unsigned maxGcPtrs = (size + sizeof(void *) - 1) / sizeof(void *);
     BYTE *gcLayout = (BYTE *)alloca(maxGcPtrs + 1);
-    uint32_t numSlots = compHnd->getClassGClayout(clsHnd, gcLayout);
+    uint32_t numGCRefs = compHnd->getClassGClayout(clsHnd, gcLayout);
 
-    for (uint32_t i = 0; i < numSlots; ++i)
-    {
-        if (gcLayout[i] != TYPE_GC_NONE)
-        {
-            return true;
-        }
-    }
-
-    return false;
+    return numGCRefs > 0;
 }
 
 void InterpCompiler::ConvertFloatingPointStackEntryToStackType(StackInfo* entry, StackType type)
@@ -5039,7 +5031,80 @@ static OpcodePeepElement peepBoxUnboxOpcodes[] = {
     { 10, CEE_ILLEGAL } // End marker
 };
 
-OpcodePeepElement peepTypeValueTypeOpcodes[] = {
+static OpcodePeepElement peepBoxBrFalseOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_BRFALSE },
+    { 10, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxBrFalseSOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_BRFALSE_S },
+    { 7, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxBrTrueOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_BRTRUE },
+    { 10, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxBrTrueSOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_BRTRUE_S },
+    { 7, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstBrFalseOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_BRFALSE },
+    { 15, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstBrFalseSOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_BRFALSE_S },
+    { 12, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstBrTrueOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_BRTRUE },
+    { 15, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstBrTrueSOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_BRTRUE_S },
+    { 12, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstLdNullCgtUnOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_LDNULL },
+    { 11, CEE_CGT_UN },
+    { 13, CEE_ILLEGAL } // End marker
+};
+
+static OpcodePeepElement peepBoxIsInstUnboxAnyOpcodes[] = {
+    { 0, CEE_BOX },
+    { 5, CEE_ISINST },
+    { 10, CEE_UNBOX_ANY },
+    { 15, CEE_ILLEGAL } // End marker
+};
+
+OpcodePeepElement peepTypeValueTypeOpcodesOpcodes[] =  {
     { 0, CEE_LDTOKEN },
     { 5, CEE_CALL },
     { 10, CEE_CALL },
@@ -5057,10 +5122,21 @@ public:
     OpcodePeep peepStoreLoadS = { peepStLdLoc_S, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoadS" };
     OpcodePeep peepStoreLoad = { peepStLdLoc, &InterpCompiler::IsStoreLoadPeep, &InterpCompiler::ApplyStoreLoadPeep, "StoreLoad" };
     OpcodePeep peepBoxUnbox = { peepBoxUnboxOpcodes, &InterpCompiler::IsBoxUnboxPeep, &InterpCompiler::ApplyBoxUnboxPeep, "BoxUnbox" };
-    OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
+    OpcodePeep peepBoxBrFalse = { peepBoxBrFalseOpcodes, &InterpCompiler::IsBoxBrTrueFalsePeep, &InterpCompiler::ApplyBoxBrTrueFalsePeep, "BoxBrFalse" };
+    OpcodePeep peepBoxBrFalseS = { peepBoxBrFalseSOpcodes, &InterpCompiler::IsBoxBrTrueFalsePeep, &InterpCompiler::ApplyBoxBrTrueFalsePeep, "BoxBrFalseS" };
+    OpcodePeep peepBoxBrTrue = { peepBoxBrTrueOpcodes, &InterpCompiler::IsBoxBrTrueFalsePeep, &InterpCompiler::ApplyBoxBrTrueFalsePeep, "BoxBrTrue" };
+    OpcodePeep peepBoxBrTrueS = { peepBoxBrTrueSOpcodes, &InterpCompiler::IsBoxBrTrueFalsePeep, &InterpCompiler::ApplyBoxBrTrueFalsePeep, "BoxBrTrueS" };
+    OpcodePeep peepBoxIsInst = { peepBoxIsInstOpcodes, &InterpCompiler::IsBoxIsInstPeep, &InterpCompiler::ApplyBoxIsInstPeep, "BoxIsInst" };
+    OpcodePeep peepBoxIsInstBrFalse = { peepBoxIsInstBrFalseSOpcodes, &InterpCompiler::IsBoxIsInstBrTrueFalsePeep, &InterpCompiler::ApplyBoxIsInstBrTrueFalsePeep, "BoxIsInstBrFalse" };
+    OpcodePeep peepBoxIsInstBrFalseS = { peepBoxIsInstBrFalseSOpcodes, &InterpCompiler::IsBoxIsInstBrTrueFalsePeep, &InterpCompiler::ApplyBoxIsInstBrTrueFalsePeep, "BoxIsInstBrFalseS" };
+    OpcodePeep peepBoxIsInstBrTrue = { peepBoxIsInstBrTrueOpcodes, &InterpCompiler::IsBoxIsInstBrTrueFalsePeep, &InterpCompiler::ApplyBoxIsInstBrTrueFalsePeep, "BoxIsInstBrTrue" };
+    OpcodePeep peepBoxIsInstBrTrueS = { peepBoxIsInstBrTrueSOpcodes, &InterpCompiler::IsBoxIsInstBrTrueFalsePeep, &InterpCompiler::ApplyBoxIsInstBrTrueFalsePeep, "BoxIsInstBrTrueS" };
+    OpcodePeep peepBoxIsInstLdNullCgtUn = { peepBoxIsInstLdNullCgtUnOpcodes, &InterpCompiler::IsBoxIsInstLdNullCgtUnPeep, &InterpCompiler::ApplyBoxIsInstLdNullCgtUnPeep, "BoxIsInstLdNullCgtUn" };
+    OpcodePeep peepBoxIsInstUnboxAny = { peepBoxIsInstUnboxAnyOpcodes, &InterpCompiler::IsBoxIsInstUnboxAnyPeep, &InterpCompiler::ApplyBoxIsInstUnboxAnyPeep, "BoxIsInstUnboxAny" };
+    OpcodePeep peepTypeValueType = { peepTypeValueTypeOpcodesOpcodes, &InterpCompiler::IsTypeValueTypePeep, &InterpCompiler::ApplyTypeValueTypePeep, "TypeValueType" };
 
 public:
-    OpcodePeep* Peeps[10] = {
+    OpcodePeep* Peeps[21] = {
         &peepTypeEqualityCheck,
         &peepStoreLoad,
         &peepStoreLoad1,
@@ -5069,6 +5145,19 @@ public:
         &peepStoreLoadS,
         &peepStoreLoad0,
         &peepBoxUnbox,
+        &peepBoxBrFalse,
+        &peepBoxBrFalseS,
+        &peepBoxBrTrue,
+        &peepBoxBrTrueS,
+        // The BoxIsInst peep must be before the other peeps that start with BoxIsInst
+        // It applies only to Box used on non-ByRefLike types
+        &peepBoxIsInst,
+        &peepBoxIsInstBrFalse,
+        &peepBoxIsInstBrFalseS,
+        &peepBoxIsInstBrTrue,
+        &peepBoxIsInstBrTrueS,
+        &peepBoxIsInstLdNullCgtUn,
+        &peepBoxIsInstUnboxAny,
         &peepTypeValueType,
         NULL };
 
@@ -5118,8 +5207,12 @@ public:
             {
                 INTERP_DUMP("Applying peep: %s\n", peep->Name);
                 // The peep applies, so apply it
-                (compiler->*(peep->ApplyPeepFunc))(ip, peep->pattern, computedInfo);
-                compiler->m_ip = ip + peep->GetPeepSize();
+                int skip = (compiler->*(peep->ApplyPeepFunc))(ip, peep->pattern, computedInfo);
+                if (skip == -1)
+                {
+                    skip = (int)peep->GetPeepSize();
+                }
+                compiler->m_ip = ip + skip;
                 return true;
             }
         }
@@ -5210,7 +5303,7 @@ bool InterpCompiler::IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElemen
     }
 }
 
-void InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+int InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
 {
     int resultValue = (int)(size_t)computedInfo;
 
@@ -5220,6 +5313,8 @@ void InterpCompiler::ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepEle
     m_pLastNewIns->data[0] = resultValue;
     PushInterpType(InterpTypeI4, NULL);
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    return -1;
 }
 
 bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -5323,7 +5418,7 @@ bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* patte
     return localVar == secondLocalVar;
 }
 
-void InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+int InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
 {
     // We are going to replace the entire peep with just storing to the local variable, and possibly coercing the type if needed.
     int localVar = (int)(size_t)computedInfo;
@@ -5394,6 +5489,8 @@ void InterpCompiler::ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* pa
     EnsureStack(1);
     *m_pStackPointer = topOfStackInfo;
     m_pStackPointer++;
+
+    return -1;
 }
 
 bool InterpCompiler::IsBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -5447,9 +5544,228 @@ bool InterpCompiler::IsBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* patter
     return false;
 }
 
-void InterpCompiler::ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+int InterpCompiler::ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
 {
     AddIns(INTOP_NOP);
+    return -1;
+}
+
+bool InterpCompiler::IsBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ipForBox + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    if (!m_compHnd->isValueClass(boxResolvedToken.hClass))
+    {
+        return false;
+    }
+
+    return ((m_compHnd->getClassAttribs(boxResolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0 ||
+            (m_compHnd->getBoxHelper(boxResolvedToken.hClass) == CORINFO_HELP_BOX));
+}
+
+int InterpCompiler::ApplyBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // Replace BOX BRTRUE/BRFALSE; by ldc.i4 1; BRTRUE/BRFALSE
+    m_pStackPointer--;
+    AddIns(INTOP_LDC_I4);
+    m_pLastNewIns->data[0] = 1;
+    PushInterpType(InterpTypeI4, NULL);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    // Skip the CEE_BOX, keep the branch
+    return pattern[1].offsetIntoPeep;
+}
+
+bool InterpCompiler::IsBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ipForBox + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    if (!m_compHnd->isValueClass(boxResolvedToken.hClass))
+    {
+        return false;
+    }
+
+    if ((m_compHnd->getClassAttribs(boxResolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0)
+    {
+        return false;
+    }
+
+    if (m_compHnd->getBoxHelper(boxResolvedToken.hClass) == CORINFO_HELP_BOX)
+    {
+        const uint8_t* ipForIsInst = ip + pattern[1].offsetIntoPeep;
+        CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+
+        assert(pattern[1].opcode == CEE_ISINST);
+        ResolveToken(getU4LittleEndian(ipForIsInst + 1), CORINFO_TOKENKIND_Casting, &isInstResolvedToken);
+        return m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass) == TypeCompareState::MustNot;
+    }
+
+    return false;
+}
+
+int InterpCompiler::ApplyBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // Replace BOX; ISINST; by null
+    m_pStackPointer--;
+    AddIns(INTOP_LDNULL);
+    PushStackType(StackTypeO, NULL);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    return -1;
+}
+
+bool InterpCompiler::IsBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ipForBox + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    if (!m_compHnd->isValueClass(boxResolvedToken.hClass))
+    {
+        return false;
+    }
+
+    CorInfoHelpFunc foldAsHelper;
+    if ((m_compHnd->getClassAttribs(boxResolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0)
+    {
+        // Treat ByRefLike types as if they were regular boxing operations
+        // so they can be elided.
+        foldAsHelper = CORINFO_HELP_BOX;
+    }
+    else
+    {
+        foldAsHelper = m_compHnd->getBoxHelper(boxResolvedToken.hClass);
+    }
+
+    if (foldAsHelper == CORINFO_HELP_BOX)
+    {
+        const uint8_t* ipForIsInst = ip + pattern[1].offsetIntoPeep;
+        CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+
+        assert(pattern[1].opcode == CEE_ISINST);
+        ResolveToken(getU4LittleEndian(ipForIsInst + 1), CORINFO_TOKENKIND_Casting, &isInstResolvedToken);
+        TypeCompareState castResult = m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass);
+
+        if (castResult != TypeCompareState::May)
+        {
+            *ppComputedInfo = (void*)(size_t)((castResult == TypeCompareState::Must) ? 1 : 0);
+            return true;
+        }
+    }
+    // TODO: consider handling the case when foldAsHelper == CORINFO_HELP_BOX_NULLABLE like Compiler::impBoxPatternMatch
+
+    return false;
+}
+
+int InterpCompiler::ApplyBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // Replace BOX; ISINST; BRTRUE/BRFALSE; by ldc.i4 0/1; BRTRUE/BRFALSE
+    m_pStackPointer--;
+    AddIns(INTOP_LDC_I4);
+    PushStackType(StackTypeI4, NULL);
+    m_pLastNewIns->data[0] = (int)(size_t)computedInfo;
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    // Skip the CEE_BOX, CEE_ISINST, keep the branch
+    return pattern[2].offsetIntoPeep;
+}
+
+bool InterpCompiler::IsBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ipForBox + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    if (!m_compHnd->isValueClass(boxResolvedToken.hClass))
+    {
+        return false;
+    }
+
+    if ((m_compHnd->getClassAttribs(boxResolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0)
+    {
+        return false;
+    }
+
+    CorInfoHelpFunc foldAsHelper = m_compHnd->getBoxHelper(boxResolvedToken.hClass);
+
+    if (foldAsHelper == CORINFO_HELP_BOX)
+    {
+        const uint8_t* ipForIsInst = ip + pattern[1].offsetIntoPeep;
+        CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+
+        assert(pattern[1].opcode == CEE_ISINST);
+        ResolveToken(getU4LittleEndian(ipForIsInst + 1), CORINFO_TOKENKIND_Casting, &isInstResolvedToken);
+        TypeCompareState castResult = m_compHnd->compareTypesForCast(boxResolvedToken.hClass, isInstResolvedToken.hClass);
+
+        if (castResult != TypeCompareState::May)
+        {
+            *ppComputedInfo = (void*)(size_t)((castResult == TypeCompareState::Must) ? 1 : 0);
+            return true;
+        }
+    }
+    // TODO: consider handling the case when foldAsHelper == CORINFO_HELP_BOX_NULLABLE like Compiler::impBoxPatternMatch
+
+    return false;
+}
+
+int InterpCompiler::ApplyBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // Replace the whole BOX; ISINST; LDNULL; CGT_UN sequence
+    m_pStackPointer--;
+    AddIns(INTOP_LDC_I4);
+    PushStackType(StackTypeI4, NULL);
+    m_pLastNewIns->data[0] = (int)(size_t)computedInfo;
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    return -1;
+}
+
+bool InterpCompiler::IsBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
+{
+    const uint8_t* ipForBox = ip + pattern[0].offsetIntoPeep;
+    const uint8_t* ipForIsInst = ip + pattern[1].offsetIntoPeep;
+
+    CORINFO_RESOLVED_TOKEN boxResolvedToken;
+    assert(pattern[0].opcode == CEE_BOX);
+    ResolveToken(getU4LittleEndian(ipForBox + 1), CORINFO_TOKENKIND_Box, &boxResolvedToken);
+
+    CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+    assert(pattern[1].opcode == CEE_ISINST);
+    ResolveToken(getU4LittleEndian(ipForIsInst + 1), CORINFO_TOKENKIND_Casting, &isInstResolvedToken);
+
+    if (m_compHnd->compareTypesForEquality(isInstResolvedToken.hClass, boxResolvedToken.hClass) == TypeCompareState::Must)
+    {
+        const uint8_t* ipForUnbox = ip + pattern[2].offsetIntoPeep;
+        CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
+        ResolveToken(getU4LittleEndian(ipForUnbox + 1), CORINFO_TOKENKIND_Class, &unboxResolvedToken);
+
+        // If so, box + isinst + unbox.any is a nop.
+        if (m_compHnd->compareTypesForEquality(unboxResolvedToken.hClass, boxResolvedToken.hClass) == TypeCompareState::Must)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int InterpCompiler::ApplyBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+{
+    // Replace the whole BOX; ISINST; UNBOX.ANY sequence by NOP
+    AddIns(INTOP_NOP);
+    return -1;
 }
 
 bool InterpCompiler::IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* pattern, void** ppComputedInfo)
@@ -5508,7 +5824,7 @@ bool InterpCompiler::IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* p
     return true;
 }
 
-void InterpCompiler::ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
+int InterpCompiler::ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* pattern, void* computedInfo)
 {
     int resultValue = (int)(size_t)computedInfo;
 
@@ -5519,6 +5835,8 @@ void InterpCompiler::ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement
     m_pLastNewIns->data[0] = resultValue;
     PushInterpType(InterpTypeI4, NULL);
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+    return -1;
 }
 
 void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
@@ -8118,7 +8436,7 @@ DO_LDFTN:
                     CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
                     if (helpFunc == CORINFO_HELP_UNBOX)
                     {
-                        EmitPushHelperCall_2(helpFunc, embedInfo, m_pStackPointer[0].var, StackTypeO, (CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
+                        EmitPushHelperCall_2(helpFunc, embedInfo, m_pStackPointer[0].var, StackTypeByRef, (CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
                     }
                     else
                     {

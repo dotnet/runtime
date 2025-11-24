@@ -520,7 +520,7 @@ struct OpcodePeepElement
 };
 
 typedef bool (InterpCompiler::*CheckIfTokensAllowPeepToBeUsedFunc_t)(const uint8_t* ip, OpcodePeepElement*, void** outComputedInfo);
-typedef void (InterpCompiler::*ApplyPeepFunc_t)(const uint8_t* ip, OpcodePeepElement*, void* computedInfo);
+typedef int (InterpCompiler::*ApplyPeepFunc_t)(const uint8_t* ip, OpcodePeepElement*, void* computedInfo);
 struct OpcodePeep
 {
     OpcodePeepElement* const pattern;
@@ -803,16 +803,31 @@ private:
 
     // Opcode peeps
     bool    IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void** computedInfo);
-    void    ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyTypeEqualityCheckPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyBoxUnboxPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstBrTrueFalsePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstLdNullCgtUnPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+
+    bool    IsBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
+    int     ApplyBoxIsInstUnboxAnyPeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     bool    IsTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void** outComputedInfo);
-    void    ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
+    int     ApplyTypeValueTypePeep(const uint8_t* ip, OpcodePeepElement* peep, void* computedInfo);
 
     // Code emit
     void    EmitConv(StackInfo *sp, StackType type, InterpOpcode convOp);
