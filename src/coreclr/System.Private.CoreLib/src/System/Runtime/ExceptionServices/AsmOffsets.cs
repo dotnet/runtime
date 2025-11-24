@@ -135,8 +135,13 @@ class AsmOffsets
 #if TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x8;
 #if FEATURE_INTERPRETER
+#if TARGET_UNIX
     public const int SIZEOF__StackFrameIterator = 0x168;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x160;
+#else // TARGET_UNIX
+    public const int SIZEOF__StackFrameIterator = 0x170;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x168;
+#endif // TARGET_UNIX
 #else
     public const int SIZEOF__StackFrameIterator = 0x148;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x140;

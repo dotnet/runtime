@@ -26,12 +26,12 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunPerfmapFormatVersion Condition="'$(PublishReadyToRunPerfmapFormatVersion)' == ''">1</PublishReadyToRunPerfmapFormatVersion>
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == ''">pe</PublishReadyToRunContainerFormat>
 
-    <PublishReadyToRunEmitSymbols Condition="$(RuntimeIdentifier.StartsWith('ios-'))">false</PublishReadyToRunEmitSymbols>
-    <PublishReadyToRunEmitSymbols Condition="$(RuntimeIdentifier.StartsWith('tvos-'))">false</PublishReadyToRunEmitSymbols>
-    <PublishReadyToRunEmitSymbols Condition="$(RuntimeIdentifier.StartsWith('iossimulator-'))">false</PublishReadyToRunEmitSymbols>
-    <PublishReadyToRunEmitSymbols Condition="$(RuntimeIdentifier.StartsWith('tvossimulator-'))">false</PublishReadyToRunEmitSymbols>
-    <PublishReadyToRunEmitSymbols Condition="$(RuntimeIdentifier.StartsWith('maccatalyst-'))">false</PublishReadyToRunEmitSymbols>
-    <PublishReadyToRunEmitSymbols Condition="$(RuntimeIdentifier.StartsWith('osx-'))">false</PublishReadyToRunEmitSymbols>
+    <PublishReadyToRunEmitSymbols Condition="'$(PublishReadyToRunEmitSymbols)' == '' and $(RuntimeIdentifier.StartsWith('ios-'))">false</PublishReadyToRunEmitSymbols>
+    <PublishReadyToRunEmitSymbols Condition="'$(PublishReadyToRunEmitSymbols)' == '' and $(RuntimeIdentifier.StartsWith('tvos-'))">false</PublishReadyToRunEmitSymbols>
+    <PublishReadyToRunEmitSymbols Condition="'$(PublishReadyToRunEmitSymbols)' == '' and $(RuntimeIdentifier.StartsWith('iossimulator-'))">false</PublishReadyToRunEmitSymbols>
+    <PublishReadyToRunEmitSymbols Condition="'$(PublishReadyToRunEmitSymbols)' == '' and $(RuntimeIdentifier.StartsWith('tvossimulator-'))">false</PublishReadyToRunEmitSymbols>
+    <PublishReadyToRunEmitSymbols Condition="'$(PublishReadyToRunEmitSymbols)' == '' and $(RuntimeIdentifier.StartsWith('maccatalyst-'))">false</PublishReadyToRunEmitSymbols>
+    <PublishReadyToRunEmitSymbols Condition="'$(PublishReadyToRunEmitSymbols)' == '' and $(RuntimeIdentifier.StartsWith('osx-'))">false</PublishReadyToRunEmitSymbols>
   </PropertyGroup>
 
   <!--
