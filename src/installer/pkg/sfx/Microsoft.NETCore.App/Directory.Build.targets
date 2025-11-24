@@ -22,12 +22,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="ReturnProductVersion" Returns="@(_VersionInformation)">
-    <ItemGroup>
-      <!-- FxVersion needs to remain in sync with ProductVersionInfoGenerator -->
-      <_VersionInformation Include="$(Version)" FxVersion="$(InformationalVersion)" />  
-    </ItemGroup>
-  </Target>
+  <Target Name="ReturnProductVersion" Returns="$(Version)" />
 
   <Target Name="CreatePackageOverrides">
     <PropertyGroup>

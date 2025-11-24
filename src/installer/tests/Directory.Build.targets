@@ -38,13 +38,8 @@
     <MSBuild
       Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj"
       Targets="ReturnProductVersion">
-      <Output TaskParameter="TargetOutputs" ItemName="NETCoreAppRuntimePackageVersionInfo" />
+      <Output TaskParameter="TargetOutputs" PropertyName="NETCoreAppRuntimePackageVersion" />
     </MSBuild>
-
-    <PropertyGroup>
-      <NETCoreAppRuntimePackageVersion>%(NETCoreAppRuntimePackageVersionInfo.Identity)</NETCoreAppRuntimePackageVersion>
-      <NETCoreAppFxVersion>%(NETCoreAppRuntimePackageVersionInfo.FxVersion)</NETCoreAppFxVersion>
-    </PropertyGroup>
 
     <!--
       Set up properties used inside tests. Write them to a text file so that they can be found
@@ -57,7 +52,6 @@
       <TestContextVariable Include="BUILD_ARCHITECTURE=$(TargetArchitecture)" />
       <TestContextVariable Include="BUILD_CONFIGURATION=$(Configuration)" />
       <TestContextVariable Include="MNA_VERSION=$(NETCoreAppRuntimePackageVersion)" />
-      <TestContextVariable Include="MNA_FXVERSION=$(NETCoreAppFxVersion)" />
       <TestContextVariable Include="MNA_TFM=$(NetCoreAppCurrent)" />
       <TestContextVariable Include="TEST_ASSETS_OUTPUT=$(TestArtifactsOutputRoot)" />
     </ItemGroup>

@@ -75,7 +75,7 @@ namespace AppHost.Bundle.Tests
             if (OperatingSystem.IsWindows())
             {
                 // StandaloneApp sets FileVersion to NETCoreApp version. On Windows, this should be copied to singlefilehost resources.
-                Assert.Equal(TestContext.MicrosoftNETCoreAppVersionNoPrerelease, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
+                Assert.Equal(TestContext.ProductVersionNoPrerelease, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
             }
         }
 
@@ -100,7 +100,7 @@ namespace AppHost.Bundle.Tests
             if (OperatingSystem.IsWindows())
             {
                 // StandaloneApp sets FileVersion to NETCoreApp version. On Windows, this should be copied to singlefilehost resources.
-                Assert.Equal(TestContext.MicrosoftNETCoreAppVersionNoPrerelease, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
+                Assert.Equal(TestContext.ProductVersionNoPrerelease, System.Diagnostics.FileVersionInfo.GetVersionInfo(singleFile).FileVersion);
             }
         }
 
@@ -123,7 +123,7 @@ namespace AppHost.Bundle.Tests
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdOutContaining(TestContext.FrameworkVersion);
+                .And.HaveStdOutContaining(TestContext.ProductVersionNoPrerelease);
         }
 
         [Theory]

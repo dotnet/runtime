@@ -665,7 +665,9 @@ namespace HostActivation.Tests
                 if (isMissing)
                 {
                     // Request a higher major framework version than the one available relative to the running hostfxr
-                    Version existingVersion = Version.Parse(TestContext.MicrosoftNETCoreAppVersionNoPrerelease);
+                    Version existingVersion = Version.Parse(TestContext.MicrosoftNETCoreAppVersion.Contains('-')
+                        ? TestContext.MicrosoftNETCoreAppVersion[..TestContext.MicrosoftNETCoreAppVersion.IndexOf('-')]
+                        : TestContext.MicrosoftNETCoreAppVersion);
                     Version newerVersion = new Version(existingVersion.Major + 1, existingVersion.Minor, existingVersion.Build);
                     requestedVersion = newerVersion.ToString(3);
                 }
