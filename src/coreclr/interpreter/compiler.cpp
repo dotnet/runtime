@@ -8405,7 +8405,7 @@ DO_LDFTN:
                     CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper((CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
                     if (helpFunc == CORINFO_HELP_UNBOX)
                     {
-                        EmitPushHelperCall_2(helpFunc, embedInfo, m_pStackPointer[0].var, StackTypeI, (CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
+                        EmitPushHelperCall_2(helpFunc, embedInfo, m_pStackPointer[0].var, StackTypeByRef, (CORINFO_CLASS_HANDLE)embedInfo.compileTimeHandle);
                     }
                     else
                     {
