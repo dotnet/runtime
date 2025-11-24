@@ -4088,7 +4088,7 @@ namespace Internal.JitInterface
                 CorInfoReloc.LOONGARCH64_PC => RelocType.IMAGE_REL_BASED_LOONGARCH64_PC,
                 CorInfoReloc.LOONGARCH64_JIR => RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR,
                 CorInfoReloc.RISCV64_PC => RelocType.IMAGE_REL_BASED_RISCV64_PC,
-                _ => throw new ArgumentException("Unsupported relocation type: " + reloc);
+                _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
         private void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int addlDelta)
