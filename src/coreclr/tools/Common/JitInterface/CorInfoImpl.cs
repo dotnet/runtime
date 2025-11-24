@@ -4065,33 +4065,30 @@ namespace Internal.JitInterface
 
         // Translates relocation type constants used by JIT to RelocType enumeration
         private static RelocType GetRelocType(CorInfoReloc reloc)
-        {
-            switch (reloc)
+            => reloc switch
             {
-                case CorInfoReloc.DIR32: return RelocType.IMAGE_REL_BASED_HIGHLOW;
-                case CorInfoReloc.DIR64: return RelocType.IMAGE_REL_BASED_DIR64;
-                case CorInfoReloc.REL32: return RelocType.IMAGE_REL_BASED_REL32;
-                case CorInfoReloc.ARM64_BRANCH26: return RelocType.IMAGE_REL_BASED_ARM64_BRANCH26;
-                case CorInfoReloc.ARM64_PAGEBASE_REL21: return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
-                case CorInfoReloc.ARM64_PAGEOFFSET_12A: return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
-                case CorInfoReloc.ARM64_LIN_TLSDESC_ADR_PAGE21: return RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21;
-                case CorInfoReloc.ARM64_LIN_TLSDESC_LD64_LO12: return RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12;
-                case CorInfoReloc.ARM64_LIN_TLSDESC_ADD_LO12: return RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12;
-                case CorInfoReloc.ARM64_LIN_TLSDESC_CALL: return RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL;
-                case CorInfoReloc.ARM64_WIN_TLS_SECREL_HIGH12A: return RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A;
-                case CorInfoReloc.ARM64_WIN_TLS_SECREL_LOW12A: return RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A;
-                case CorInfoReloc.AMD64_WIN_SECREL: return RelocType.IMAGE_REL_SECREL;
-                case CorInfoReloc.AMD64_LIN_TLSGD: return RelocType.IMAGE_REL_TLSGD;
-                case CorInfoReloc.ARM32_THUMB_BRANCH24: return RelocType.IMAGE_REL_BASED_THUMB_BRANCH24;
-                case CorInfoReloc.ARM32_THUMB_MOV32: return RelocType.IMAGE_REL_BASED_THUMB_MOV32;
-                case CorInfoReloc.ARM32_THUMB_MOV32_PCREL: return RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL;
-                case CorInfoReloc.LOONGARCH64_PC: return RelocType.IMAGE_REL_BASED_LOONGARCH64_PC;
-                case CorInfoReloc.LOONGARCH64_JIR: return RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR;
-                case CorInfoReloc.RISCV64_PC: return RelocType.IMAGE_REL_BASED_RISCV64_PC;
-                default:
-                    throw new ArgumentException("Unsupported relocation type: " + reloc);
-            }
-        }
+                CorInfoReloc.DIR32 => RelocType.IMAGE_REL_BASED_HIGHLOW,
+                CorInfoReloc.DIR64 => RelocType.IMAGE_REL_BASED_DIR64,
+                CorInfoReloc.REL32 => RelocType.IMAGE_REL_BASED_REL32,
+                CorInfoReloc.ARM64_BRANCH26 => RelocType.IMAGE_REL_BASED_ARM64_BRANCH26,
+                CorInfoReloc.ARM64_PAGEBASE_REL21 => RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
+                CorInfoReloc.ARM64_PAGEOFFSET_12A => RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A,
+                CorInfoReloc.ARM64_LIN_TLSDESC_ADR_PAGE21 => RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21,
+                CorInfoReloc.ARM64_LIN_TLSDESC_LD64_LO12 => RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12,
+                CorInfoReloc.ARM64_LIN_TLSDESC_ADD_LO12 => RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12,
+                CorInfoReloc.ARM64_LIN_TLSDESC_CALL => RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL,
+                CorInfoReloc.ARM64_WIN_TLS_SECREL_HIGH12A => RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A,
+                CorInfoReloc.ARM64_WIN_TLS_SECREL_LOW12A => RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A,
+                CorInfoReloc.AMD64_WIN_SECREL => RelocType.IMAGE_REL_SECREL,
+                CorInfoReloc.AMD64_LIN_TLSGD => RelocType.IMAGE_REL_TLSGD,
+                CorInfoReloc.ARM32_THUMB_BRANCH24 => RelocType.IMAGE_REL_BASED_THUMB_BRANCH24,
+                CorInfoReloc.ARM32_THUMB_MOV32 => RelocType.IMAGE_REL_BASED_THUMB_MOV32,
+                CorInfoReloc.ARM32_THUMB_MOV32_PCREL => RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL,
+                CorInfoReloc.LOONGARCH64_PC => RelocType.IMAGE_REL_BASED_LOONGARCH64_PC,
+                CorInfoReloc.LOONGARCH64_JIR => RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR,
+                CorInfoReloc.RISCV64_PC => RelocType.IMAGE_REL_BASED_RISCV64_PC,
+                _ => throw new ArgumentException("Unsupported relocation type: " + reloc);
+            };
 
         private void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int addlDelta)
         {
