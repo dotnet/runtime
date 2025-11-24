@@ -59,7 +59,7 @@ public class LinkContentToWwwroot : Task
                 outItem.SetMetadata("TargetPath", Path.Combine("wwwroot", targetPath));
                 contentItems.Add(outItem);
 
-                Log.LogMessage(MessageImportance.Low, $"LinkContentToWwwroot: Adding TargetPath '{targetPath}' and ContentRoot '{contentRoot}' for Identity '{identity}'.");
+                Log.LogMessage(MessageImportance.Low, $"Adding TargetPath '{targetPath}' and ContentRoot '{contentRoot}' for Identity '{identity}'.");
                 continue;
             }
 
@@ -85,7 +85,7 @@ public class LinkContentToWwwroot : Task
                 outItem.SetMetadata("TargetPath", Path.Combine("wwwroot", targetPath));
                 contentItems.Add(outItem);
 
-                Log.LogMessage(MessageImportance.Low, $"LinkContentToWwwroot: Adding TargetPath '{targetPath}' and ContentRoot '{contentRoot}' for Identity '{identity}'.");
+                Log.LogMessage(MessageImportance.Low, $"Adding TargetPath '{targetPath}' and ContentRoot '{contentRoot}' for Identity '{identity}'.");
                 continue;
             }
 
@@ -103,17 +103,17 @@ public class LinkContentToWwwroot : Task
                 outItem.SetMetadata("Link", Path.Combine("wwwroot", link));
                 contentItems.Add(outItem);
 
-                Log.LogMessage(MessageImportance.Low, $"LinkContentToWwwroot: Adding Link '{link}' and ContentRoot '{contentRoot}' for Identity '{identity}'.");
+                Log.LogMessage(MessageImportance.Low, $"Adding Link '{link}' and ContentRoot '{contentRoot}' for Identity '{identity}'.");
                 continue;
             }
 
-            Log.LogMessage(MessageImportance.Low, $"LinkContentToWwwroot: Skipping item with Identity '{identity}' (TargetPath '{targetPath}', Link '{link}') because CopyToOutputDirectory is not 'PreserveNewest' or 'Always' ('{copyPreserveOrAlways}').");
+            Log.LogMessage(MessageImportance.Low, $"Skipping item with Identity '{identity}' (TargetPath '{targetPath}', Link '{link}') because CopyToOutputDirectory is not 'PreserveNewest' or 'Always' ('{copyPreserveOrAlways}').");
         }
 
         WasmFilesToIncludeInFileSystem = wasmFiles.ToArray();
         ContentOut = contentItems.ToArray();
 
-        Log.LogMessage(MessageImportance.Low, $"LinkContentToWwwroot: produced {WasmFilesToIncludeInFileSystem.Length} wasm file items and {ContentOut.Length} content items.");
+        Log.LogMessage(MessageImportance.Low, $"Produced {WasmFilesToIncludeInFileSystem.Length} VFS files and {ContentOut.Length} content items.");
 
         return !Log.HasLoggedErrors;
     }
