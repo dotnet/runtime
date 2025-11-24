@@ -24,12 +24,12 @@ namespace System.IO.Compression
             _encoderOwned = false;
         }
 
-        private bool TryDecompress(Span<byte> destination, out int bytesWritten)
+        private bool TryDecompress(Span<byte> destination, out int bytesWritten, out OperationStatus lastResult)
         {
             Debug.Assert(_decoder != null);
 
             // Decompress any data we may have in our buffer.
-            OperationStatus lastResult = _decoder.Decompress(_buffer.ActiveSpan, destination, out int bytesConsumed, out bytesWritten);
+            lastResult = _decoder.Decompress(_buffer.ActiveSpan, destination, out int bytesConsumed, out bytesWritten);
             _buffer.Discard(bytesConsumed);
 
             if (lastResult == OperationStatus.InvalidData)
@@ -105,7 +105,8 @@ namespace System.IO.Compression
                 BeginRWOperation();
 
                 int bytesWritten;
-                while (!TryDecompress(buffer, out bytesWritten))
+                OperationStatus lastResult;
+                while (!TryDecompress(buffer, out bytesWritten, out lastResult))
                 {
                     int bytesRead = _stream.Read(_buffer.AvailableSpan);
                     if (bytesRead <= 0)
@@ -123,6 +124,12 @@ namespace System.IO.Compression
                     }
 
                     _buffer.Commit(bytesRead);
+                }
+
+                // When decompression finishes, rewind the stream to the exact end of compressed data
+                if (lastResult == OperationStatus.Done && _stream.CanSeek)
+                {
+                    TryRewindStream(_stream);
                 }
 
                 return bytesWritten;
@@ -172,7 +179,8 @@ namespace System.IO.Compression
                 BeginRWOperation();
 
                 int bytesWritten;
-                while (!TryDecompress(buffer.Span, out bytesWritten))
+                OperationStatus lastResult;
+                while (!TryDecompress(buffer.Span, out bytesWritten, out lastResult))
                 {
                     int bytesRead = await _stream.ReadAsync(_buffer.AvailableMemory, cancellationToken).ConfigureAwait(false);
                     if (bytesRead <= 0)
@@ -190,6 +198,12 @@ namespace System.IO.Compression
                     }
 
                     _buffer.Commit(bytesRead);
+                }
+
+                // When decompression finishes, rewind the stream to the exact end of compressed data
+                if (lastResult == OperationStatus.Done && _stream.CanSeek)
+                {
+                    TryRewindStream(_stream);
                 }
 
                 return bytesWritten;
@@ -227,6 +241,26 @@ namespace System.IO.Compression
             Span<byte> singleByte = stackalloc byte[1];
             int bytesRead = Read(singleByte);
             return bytesRead > 0 ? singleByte[0] : -1;
+        }
+
+        /// <summary>
+        /// Rewinds the underlying stream to the exact end of the compressed data if there are unconsumed bytes.
+        /// This is called when decompression finishes to reset the stream position.
+        /// </summary>
+        private void TryRewindStream(Stream stream)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(_mode == CompressionMode.Decompress);
+            Debug.Assert(stream.CanSeek);
+
+            // Check if there are unconsumed bytes in the buffer
+            int unconsumedBytes = _buffer.ActiveLength;
+            if (unconsumedBytes > 0)
+            {
+                // Rewind the stream to the exact end of the compressed data
+                stream.Seek(-unconsumedBytes, SeekOrigin.Current);
+                _buffer.Discard(unconsumedBytes);
+            }
         }
 
         private static readonly bool s_useStrictValidation =
