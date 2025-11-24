@@ -660,11 +660,7 @@ HRESULT EEClass::AddMethodDesc(
     if (FAILED(hr = pImport->GetSigOfMethodDef(methodDef, &sigLen, &sig)))
         return hr;
 
-    SigParser sigParser(sig, sigLen);
-    ULONG offsetOfAsyncDetails;
-    bool isValueTask;
-    MethodReturnKind returnKind = ClassifyMethodReturnKind(sigParser, pModule, &offsetOfAsyncDetails, &isValueTask);
-    if (returnKind != MethodReturnKind::NormalMethod)
+    if (IsMiAsync(dwImplFlags))
     {
         LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
         return E_FAIL;
