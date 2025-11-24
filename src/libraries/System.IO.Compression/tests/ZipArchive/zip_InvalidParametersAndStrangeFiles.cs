@@ -1515,11 +1515,7 @@ namespace System.IO.Compression.Tests
             {
                 _ = archive.Comment;
 
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 var entries = archive.Entries;
-                s.IsRestrictionEnabled = true;
-
                 foreach (var entry in entries)
                 {
                     _ = archive.GetEntry(entry.Name);
@@ -1550,11 +1546,7 @@ namespace System.IO.Compression.Tests
             // Update mode
             using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Update, leaveOpen: false, entryNameEncoding: Encoding.UTF8))
             {
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 ZipArchiveEntry entryToDelete = archive.Entries[0];
-                s.IsRestrictionEnabled = true;
-
                 entryToDelete.Delete();
 
                 ZipArchiveEntry entry = archive.CreateEntry("mynewentry.txt");
@@ -1608,11 +1600,7 @@ namespace System.IO.Compression.Tests
             {
                 _ = archive.Comment;
 
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 var entries = archive.Entries;
-                s.IsRestrictionEnabled = true;
-
                 foreach (var entry in entries)
                 {
                     _ = archive.GetEntry(entry.Name);
@@ -1642,11 +1630,7 @@ namespace System.IO.Compression.Tests
 
             await using (ZipArchive archive = await ZipArchive.CreateAsync(s, ZipArchiveMode.Update, leaveOpen: false, entryNameEncoding: Encoding.UTF8))
             {
-                // Entries is sync only
-                s.IsRestrictionEnabled = false;
                 ZipArchiveEntry entryToDelete = archive.Entries[0];
-                s.IsRestrictionEnabled = true;
-
                 entryToDelete.Delete(); // Delete is async only
 
                 ZipArchiveEntry entry = archive.CreateEntry("mynewentry.txt");
