@@ -866,17 +866,8 @@ namespace System.Formats.Tar
                     {
                         throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "Zstandard"));
                     }
-                    // If not Zstandard, fall through to check if it's ZLIB
-                    if (buffer.Length >= 2)
-                    {
-                        byte secondByte = buffer[1];
-                        // Check if this is a valid ZLIB header (must be divisible by 31)
-                        if (((firstByte * 256) + secondByte) % 31 == 0)
-                        {
-                            throw new InvalidDataException(SR.Format(SR.TarCompressionArchiveDetected, "ZLIB"));
-                        }
-                    }
-                    break;
+                    // If not Zstandard, check if it's ZLIB
+                    goto CheckZlib;
 
                 // ZLIB (deflate compression) - various compression methods and window sizes
                 case 0x08:
@@ -886,6 +877,7 @@ namespace System.Formats.Tar
                 case 0x58:
                 case 0x68:
                 case 0x78:
+                CheckZlib:
                     if (buffer.Length >= 2)
                     {
                         byte secondByte = buffer[1];
