@@ -685,12 +685,9 @@ namespace System
         // b) Bidi chars are stripped
         //
         // should be called only if IRI parsing is switched on
-        internal unsafe string EscapeUnescapeIri(string input, int start, int end, bool isQuery)
+        internal static string EscapeUnescapeIri(string input, int start, int end, bool isQuery)
         {
-            fixed (char* pInput = input)
-            {
-                return IriHelper.EscapeUnescapeIri(pInput, start, end, isQuery);
-            }
+            return IriHelper.EscapeUnescapeIri(input.AsSpan(start, end - start), isQuery);
         }
 
         // Should never be used except by the below method
