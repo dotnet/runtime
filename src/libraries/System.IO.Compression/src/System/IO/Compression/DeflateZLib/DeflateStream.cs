@@ -676,7 +676,7 @@ namespace System.IO.Compression
 
         /// <summary>
         /// Rewinds the underlying stream to the exact end of the compressed data if there are unconsumed bytes.
-        /// This is called during disposal to reset the stream position.
+        /// This is called when decompression finishes to reset the stream position.
         /// </summary>
         private void TryRewindStream(Stream stream)
         {
