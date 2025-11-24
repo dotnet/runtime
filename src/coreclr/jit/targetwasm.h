@@ -266,30 +266,29 @@
 
 inline bool genIsValidIntReg(regNumber reg)
 {
-    NYI_WASM("genIsValidIntReg");
-    return false;
+    WasmValueType type;
+    UnpackWasmReg(reg, &type);
+    return (type == WasmValueType::I32) || (type == WasmValueType::I64);
 }
 
 inline bool genIsValidIntOrFakeReg(regNumber reg)
 {
-    NYI_WASM("genIsValidIntOrFakeReg");
-    return false;
+    return genIsValidIntReg(reg);
 }
 
 inline bool genIsValidFloatReg(regNumber reg)
 {
-    NYI_WASM("genIsValidFloatReg");
-    return false;
+    WasmValueType type;
+    UnpackWasmReg(reg, &type);
+    return (type == WasmValueType::F32) || (type == WasmValueType::F64);
 }
 
 inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
 {
-    NYI_WASM("isValidIntArgReg");
-    return false;
+    return genIsValidIntReg(reg);
 }
 
 inline bool isValidFloatArgReg(regNumber reg)
 {
-    NYI_WASM("isValidFloatArgReg");
-    return false;
+    return genIsValidFloatReg(reg);
 }
