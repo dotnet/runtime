@@ -18,6 +18,38 @@ public class ZipFile_Open : ZipFileTestBase
         return Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => CallZipFileOpen(async, "bad file", (ZipArchiveMode)(10)));
     }
 
+     [Fact]
+    public void Open_PassDirectory_ThrowsUnauthorizedAccessException()
+    {
+        string directoryPath = GetTestFilePath();
+        Directory.CreateDirectory(directoryPath);
+
+        UnauthorizedAccessException ex = Assert.Throws<UnauthorizedAccessException>(() => ZipFile.Open(directoryPath, ZipArchiveMode.Read));
+        Assert.Contains("directory", ex.Message, StringComparison.OrdinalIgnoreCase);
+
+        ex = Assert.Throws<UnauthorizedAccessException>(() => ZipFile.OpenRead(directoryPath));
+        Assert.Contains("directory", ex.Message, StringComparison.OrdinalIgnoreCase);
+
+        ex = Assert.Throws<UnauthorizedAccessException>(() => ZipFile.Open(directoryPath, ZipArchiveMode.Update));
+        Assert.Contains("directory", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task OpenAsync_PassDirectory_ThrowsUnauthorizedAccessException()
+    {
+        string directoryPath = GetTestFilePath();
+        Directory.CreateDirectory(directoryPath);
+
+        UnauthorizedAccessException ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipFile.OpenAsync(directoryPath, ZipArchiveMode.Read, default));
+        Assert.Contains("directory", ex.Message, StringComparison.OrdinalIgnoreCase);
+
+        ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipFile.OpenReadAsync(directoryPath, default));
+        Assert.Contains("directory", ex.Message, StringComparison.OrdinalIgnoreCase);
+
+        ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipFile.OpenAsync(directoryPath, ZipArchiveMode.Update, default));
+        Assert.Contains("directory", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public void InvalidFiles()
     {

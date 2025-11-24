@@ -473,7 +473,15 @@ namespace System.IO.Compression
                 _ => throw new ArgumentOutOfRangeException(nameof(mode)),
             };
 
-            return new FileStream(archiveFileName, fileMode, access, fileShare, bufferSize: FileStreamBufferSize, useAsync);
+            try
+            {
+                return new FileStream(archiveFileName, fileMode, access, fileShare, bufferSize: FileStreamBufferSize, useAsync);
+            }
+            catch (UnauthorizedAccessException) when (Directory.Exists(archiveFileName))
+            {
+                // If we get UnauthorizedAccessException and the path is a directory, provide a clearer error message
+                throw new UnauthorizedAccessException(SR.Format(SR.IO_DirectoryNotAllowed, archiveFileName));
+            }
         }
 
         private static (string, string) GetFullPathsForDoCreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName)
