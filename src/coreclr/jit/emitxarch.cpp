@@ -14251,11 +14251,9 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 }
 
 #ifdef TARGET_64BIT
-static constexpr CorInfoReloc RELOC_DISP32  = CorInfoReloc::RELATIVE32;
-static constexpr CorInfoReloc RELOC_MOFFSET = CorInfoReloc::DIRECT;
+static constexpr CorInfoReloc RELOC_DISP32 = CorInfoReloc::RELATIVE32;
 #else
-static constexpr CorInfoReloc RELOC_DISP32  = CorInfoReloc::DIRECT;
-static constexpr CorInfoReloc RELOC_MOFFSET = CorInfoReloc::DIRECT;
+static constexpr CorInfoReloc RELOC_DISP32 = CorInfoReloc::DIRECT;
 #endif
 
 /*****************************************************************************
@@ -14691,7 +14689,7 @@ GOT_DSP:
 
         if (id->idIsDspReloc())
         {
-            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), (void*)dsp, RELOC_MOFFSET);
+            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), (void*)dsp, CorInfoReloc::DIRECT);
         }
 
 #endif // TARGET_X86
@@ -16173,7 +16171,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         if (id->idIsDspReloc())
         {
-            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), target, RELOC_MOFFSET);
+            emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), target, CorInfoReloc::DIRECT);
         }
 
 #endif // TARGET_X86
@@ -17246,7 +17244,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
             }
             else
             {
-                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, RELOC_MOFFSET);
+                emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, CorInfoReloc::DIRECT);
             }
         }
 
