@@ -2188,12 +2188,6 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
             case TYP_LONG:
                 ins = INS_i64_load;
                 break;
-            case TYP_FLOAT:
-                ins = INS_f32_load;
-                break;
-            case TYP_DOUBLE:
-                ins = INS_f64_load;
-                break;
             default:
                 NYI_WASM("ins_Load");
         }
@@ -2267,6 +2261,17 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     {
         assert(srcType == TYP_FLOAT);
         return INS_flw;
+    }
+#elif defined(TARGET_WASM)
+    switch (srcType)
+    {
+        case TYP_FLOAT:
+            return INS_f32_load;
+        case TYP_DOUBLE:
+            return INS_f64_load;
+        default:
+            NYI_WASM("ins_Load");
+            return INS_none;
     }
 #else
     NYI("ins_Load");
