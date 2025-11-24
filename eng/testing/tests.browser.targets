@@ -211,7 +211,7 @@
       <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dil'))" />
       <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
       <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
-      <_WasmFilesForVfs Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.BuildReference)' == 'true' and $([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.dll')) and !$([System.String]::new('%(ReferenceCopyLocalPaths.Identity)').EndsWith('.resources.dll'))" />
+      <_WasmFilesForVfs Include="@(_WasmBuildAssetCandidates)" Condition="'%(_WasmBuildAssetCandidates.BuildReference)' == 'true' and $([System.String]::new('%(_WasmBuildAssetCandidates.Identity)').EndsWith('.dll')) and !$([System.String]::new('%(_WasmBuildAssetCandidates.Identity)').EndsWith('.resources.dll'))" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
