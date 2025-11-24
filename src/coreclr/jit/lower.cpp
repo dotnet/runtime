@@ -1614,13 +1614,14 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
         {
             assert(abiInfo.NumSegments == 1);
             // FIXME: Workaround for NumSegments being 0 on Wasm and causing crashes
-            if (abiInfo.NumSegments > 0) {
-                const ABIPassingSegment& stackSeg = abiInfo.Segment(0);
+            if (abiInfo.NumSegments > 0)
+            {
+                const ABIPassingSegment& stackSeg             = abiInfo.Segment(0);
                 const bool               putInIncomingArgArea = call->IsFastTailCall();
 
                 GenTree* putArg =
                     new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg, stackSeg.GetStackOffset(),
-                        stackSeg.GetStackSize(), call, putInIncomingArgArea);
+                                                               stackSeg.GetStackSize(), call, putInIncomingArgArea);
 
                 BlockRange().InsertAfter(arg, putArg);
                 *ppArg = arg = putArg;
