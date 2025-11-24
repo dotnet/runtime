@@ -1447,7 +1447,7 @@ DONE_CALL:
                     // these calls should be in statements of the form call() or var = call().
                     // Such form allows to find statements with fat calls without walking through whole trees
                     // and removes problems with cutting trees.
-                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG(isFatPointerCandidate ? "calli" : "async"));
+                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG("calli"));
                     LclVarDsc* varDsc    = lvaGetDesc(resultLcl);
                     // Keep the information about small typedness to avoid
                     // inserting unnecessary casts around normalization.

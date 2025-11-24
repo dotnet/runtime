@@ -1357,10 +1357,6 @@ void emitter::emitBegFN(bool hasFramePtr
     ig->igPrev          = nullptr;
 #endif
 
-#ifdef DEBUG
-    emitScratchSigInfo = nullptr;
-#endif // DEBUG
-
     /* Append another group, to start generating the method body */
 
     emitNewIG();
@@ -10102,7 +10098,7 @@ void emitter::emitRemoveLastInstruction()
  *  emitGetInsSC: Get the instruction's constant value.
  */
 
-cnsval_ssize_t emitter::emitGetInsSC(const instrDesc* id) const
+cnsval_ssize_t emitter::emitGetInsSC(const instrDesc* id)
 {
 #ifdef TARGET_ARM // should it be TARGET_ARMARCH? Why do we need this? Note that on ARM64 we store scaled immediates
                   // for some formats
@@ -10317,6 +10313,7 @@ void emitter::emitStackPushLargeStk(BYTE* addr, GCtype gcType, unsigned count)
 
 void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callInstrSize, unsigned count)
 {
+#if EMIT_GENERATE_GCINFO
     assert(emitIssuing);
 
     unsigned argStkCnt;
@@ -10421,6 +10418,7 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
     regPtrNext->rpdArg           = true;
     regPtrNext->rpdArgType       = (unsigned short)GCInfo::rpdARG_POP;
     regPtrNext->rpdPtrArg        = argRecCnt.Value();
+#endif // EMIT_GENERATE_GCINFO
 }
 
 /*****************************************************************************
