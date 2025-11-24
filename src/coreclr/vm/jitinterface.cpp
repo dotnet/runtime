@@ -11830,16 +11830,12 @@ void CEEJitInfo::recordRelocation(void * location,
     switch (fRelocType)
     {
 
-    case CorInfoReloc::DIR64:
-        *((UINT64 *) locationRW) = (UINT64)(uintptr_t)target;
-        break;
-
-    case CorInfoReloc::DIR32:
-        *((UINT32 *) locationRW) = (UINT32)(uintptr_t)target;
+    case CorInfoReloc::DIRECT:
+        *(void**)locationRW = target;
         break;
 
 #ifdef TARGET_AMD64
-    case CorInfoReloc::REL32:
+    case CorInfoReloc::RELATIVE32:
     {
         target = (BYTE *)target + addlDelta;
 
@@ -11860,7 +11856,7 @@ void CEEJitInfo::recordRelocation(void * location,
             if (m_fAllowRel32)
             {
                 //
-                // When m_fAllowRel32 == TRUE, the JIT will use REL32s for both data addresses and direct code targets.
+                // When m_fAllowRel32 == TRUE, the JIT will use RELATIVE32s for both data addresses and direct code targets.
                 // Since we cannot tell what the relocation is for, we have to defensively retry.
                 //
                 m_fJumpStubOverflow = TRUE;
@@ -11876,7 +11872,7 @@ void CEEJitInfo::recordRelocation(void * location,
                 else
                 {
                     //
-                    // When m_fAllowRel32 == FALSE, the JIT will use a REL32s for direct code targets only.
+                    // When m_fAllowRel32 == FALSE, the JIT will use a RELATIVE32s for direct code targets only.
                     // Use jump stub.
                     //
                     delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled, NULL, false /* throwOnOutOfMemoryWithinRange */);
@@ -12095,7 +12091,7 @@ CorInfoReloc CEEJitInfo::getRelocTypeHint(void * target)
     if (m_fAllowRel32)
     {
         if (ExecutableAllocator::IsPreferredExecutableRange(target))
-            return CorInfoReloc::REL32;
+            return CorInfoReloc::RELATIVE32;
     }
 #endif // TARGET_AMD64
 

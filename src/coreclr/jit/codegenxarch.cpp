@@ -11742,7 +11742,7 @@ CorInfoReloc CodeGenInterface::genAddrRelocTypeHint(size_t addr)
 bool CodeGenInterface::genDataIndirAddrCanBeEncodedAsPCRelOffset(size_t addr)
 {
 #ifdef TARGET_AMD64
-    return genAddrRelocTypeHint(addr) == CorInfoReloc::REL32;
+    return genAddrRelocTypeHint(addr) == CorInfoReloc::RELATIVE32;
 #else
     // x86: PC-relative addressing is available only for control flow instructions (jmp and call)
     return false;
@@ -11763,7 +11763,7 @@ bool CodeGenInterface::genDataIndirAddrCanBeEncodedAsPCRelOffset(size_t addr)
 bool CodeGenInterface::genCodeIndirAddrCanBeEncodedAsPCRelOffset(size_t addr)
 {
 #ifdef TARGET_AMD64
-    return genAddrRelocTypeHint(addr) == CorInfoReloc::REL32;
+    return genAddrRelocTypeHint(addr) == CorInfoReloc::RELATIVE32;
 #else
     // x86: PC-relative addressing is available only for control flow instructions (jmp and call)
     return true;

@@ -4065,12 +4065,11 @@ namespace Internal.JitInterface
         }
 
         // Translates relocation type constants used by JIT to RelocType enumeration
-        private static RelocType GetRelocType(CorInfoReloc reloc)
+        private RelocType GetRelocType(CorInfoReloc reloc)
             => reloc switch
             {
-                CorInfoReloc.DIR32 => RelocType.IMAGE_REL_BASED_HIGHLOW,
-                CorInfoReloc.DIR64 => RelocType.IMAGE_REL_BASED_DIR64,
-                CorInfoReloc.REL32 => RelocType.IMAGE_REL_BASED_REL32,
+                CorInfoReloc.DIRECT => PointerSize == 8 ? RelocType.IMAGE_REL_BASED_DIR64 : RelocType.IMAGE_REL_BASED_HIGHLOW,
+                CorInfoReloc.RELATIVE32 => RelocType.IMAGE_REL_BASED_REL32,
                 CorInfoReloc.ARM64_BRANCH26 => RelocType.IMAGE_REL_BASED_ARM64_BRANCH26,
                 CorInfoReloc.ARM64_PAGEBASE_REL21 => RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
                 CorInfoReloc.ARM64_PAGEOFFSET_12A => RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A,
@@ -4160,7 +4159,7 @@ namespace Internal.JitInterface
             switch (_compilation.TypeSystemContext.Target.Architecture)
             {
                 case TargetArchitecture.X64:
-                    return CorInfoReloc.REL32;
+                    return CorInfoReloc.RELATIVE32;
 
 #if READYTORUN
                 case TargetArchitecture.ARM:

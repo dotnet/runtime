@@ -6488,7 +6488,7 @@ CorInfoReloc MethodContext::repGetRelocTypeHint(void* target)
     CorInfoReloc retVal;
     if (index == -1)
     {
-        retVal = CorInfoReloc::REL32;
+        retVal = CorInfoReloc::RELATIVE32;
     }
     else
     {

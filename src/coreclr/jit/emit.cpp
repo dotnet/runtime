@@ -8521,8 +8521,7 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 bDstRW[i] = (target_size_t)(size_t)target;
                 if (emitComp->opts.compReloc)
                 {
-                    CorInfoReloc relocType = TARGET_POINTER_SIZE == 8 ? CorInfoReloc::DIR64 : CorInfoReloc::DIR32;
-                    emitRecordRelocation(&(bDstRW[i]), target, relocType);
+                    emitRecordRelocation(&(bDstRW[i]), target, CorInfoReloc::DIRECT);
                 }
 
                 JITDUMP("  " FMT_BB ": 0x%p\n", block->bbNum, bDstRW[i]);
@@ -8568,11 +8567,10 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                 aDstRW[i].DiagnosticIP = (target_size_t)(uintptr_t)target;
                 if (emitComp->opts.compReloc)
                 {
-                    CorInfoReloc relocType = TARGET_POINTER_SIZE == 8 ? CorInfoReloc::DIR64 : CorInfoReloc::DIR32;
-                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, relocType);
+                    emitRecordRelocation(&aDstRW[i].Resume, emitAsyncResumeStubEntryPoint, CorInfoReloc::DIRECT);
                     if (target != nullptr)
                     {
-                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, relocType);
+                        emitRecordRelocation(&aDstRW[i].DiagnosticIP, target, CorInfoReloc::DIRECT);
                     }
                 }
 

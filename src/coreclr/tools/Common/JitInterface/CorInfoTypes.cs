@@ -466,9 +466,8 @@ namespace Internal.JitInterface
         NONE,
 
         // General relocation types
-        DIR32,                                 // Direct/absolute 32 bit address
-        DIR64,                                 // Direct/absolute 64 bit address
-        REL32,                                 // 32-bit relative address from byte following reloc
+        DIRECT,                                // Direct/absolute pointer sized address
+        RELATIVE32,                            // 32-bit relative address from byte following reloc
 
         // Arm64 relocs
         ARM64_BRANCH26,                        // Arm64: B, BL

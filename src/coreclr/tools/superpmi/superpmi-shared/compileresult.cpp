@@ -682,9 +682,8 @@ const char* relocationTypeToString(CorInfoReloc fRelocType)
     {
 #define ADD_CASE(name) case CorInfoReloc::name: return #name
         ADD_CASE(NONE);
-        ADD_CASE(DIR32);
-        ADD_CASE(DIR64);
-        ADD_CASE(REL32);
+        ADD_CASE(DIRECT);
+        ADD_CASE(RELATIVE32);
         ADD_CASE(ARM64_BRANCH26);
         ADD_CASE(ARM64_PAGEBASE_REL21);
         ADD_CASE(ARM64_PAGEOFFSET_12A);
@@ -780,7 +779,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
         if ((targetArch == SPMI_TARGET_ARCHITECTURE_X86) || (targetArch == SPMI_TARGET_ARCHITECTURE_ARM))
         {
-            if (relocType == CorInfoReloc::DIR32)
+            if (relocType == CorInfoReloc::DIRECT)
             {
                 DWORDLONG fixupLocation = tmp.location;
 
@@ -925,7 +924,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
 
         if (IsSpmiTarget64Bit())
         {
-            if (!wasRelocHandled && (relocType == CorInfoReloc::DIR64))
+            if (!wasRelocHandled && (relocType == CorInfoReloc::DIRECT))
             {
                 DWORDLONG fixupLocation = tmp.location;
 
@@ -952,7 +951,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
             continue;
 
         // Now do all-platform relocations.
-        if ((relocType == CorInfoReloc::REL32) || (relocType == CorInfoReloc::AMD64_WIN_SECREL))
+        if ((relocType == CorInfoReloc::RELATIVE32) || (relocType == CorInfoReloc::AMD64_WIN_SECREL))
         {
             DWORDLONG fixupLocation = tmp.location;
 
@@ -970,9 +969,9 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                     {
                         // For just AMD64:
                         // The VM attempts to allocate the JIT code buffer near the CLR assemblies, so 32-bit
-                        // offsets (and REL32 relocations) can be used in the code. If this doesn't work out,
-                        // such that a REL32 relocation doesn't fit, the VM throws away the JIT result, disables
-                        // using REL32 relocations, and restarts compilation. SuperPMI doesn't know where the
+                        // offsets (and RELATIVE32 relocations) can be used in the code. If this doesn't work out,
+                        // such that a RELATIVE32 relocation doesn't fit, the VM throws away the JIT result, disables
+                        // using RELATIVE32 relocations, and restarts compilation. SuperPMI doesn't know where the
                         // original compilation (during the collection) was allocated (though maybe we should
                         // add that to the MC, not just the CompileResult), and we don't have any control over
                         // where the JIT buffer is allocated. To handle this, if the getRelocTypeHint() was
@@ -988,9 +987,9 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                             if (index != -1)
                             {
                                 CorInfoReloc retVal = (CorInfoReloc)rc->mc->GetRelocTypeHint->Get(key);
-                                if (retVal == CorInfoReloc::REL32)
+                                if (retVal == CorInfoReloc::RELATIVE32)
                                 {
-                                    LogDebug("    REL32 target used as argument to getRelocTypeHint: setting delta=%d (0x%X)",
+                                    LogDebug("    RELATIVE32 target used as argument to getRelocTypeHint: setting delta=%d (0x%X)",
                                              (int)key, (int)key);
                                     delta        = (INT64)(int)key;
                                     deltaIsFinal = true;
@@ -1002,7 +1001,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                     if (!deltaIsFinal)
                     {
                         // Check if tmp.target is the result of a call to getHelperFtn(). If so, the VM would create a
-                        // jump stub if the REL32 address doesn't fit. We don't want to fail with a REL32 overflow if
+                        // jump stub if the RELATIVE32 address doesn't fit. We don't want to fail with a RELATIVE32 overflow if
                         // the actual target address doesn't fit, so use the low-order 32 bits of the address.
                         // We need to iterate the entire table since we don't know the helper function id.
 
@@ -1013,7 +1012,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                                 Agnostic_GetHelperFtn value = rc->mc->GetHelperFtn->GetItem(idx);
                                 if (value.helperLookup.handle == tmp.target)
                                 {
-                                    LogDebug("    REL32 target is result of getHelperFtn(): setting delta=%d (0x%X)",
+                                    LogDebug("    RELATIVE32 target is result of getHelperFtn(): setting delta=%d (0x%X)",
                                              (int)tmp.target, (int)tmp.target);
                                     delta        = (INT64)(int)tmp.target;
                                     deltaIsFinal = true;
@@ -1026,7 +1025,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                     if (!deltaIsFinal)
                     {
                         // Check if tmp.target is the result of a call to GetFunctionEntryPoint(). As for helper
-                        // functions, above, the VM would create a jump stub if the REL32 address doesn't fit.
+                        // functions, above, the VM would create a jump stub if the RELATIVE32 address doesn't fit.
 
                         if (rc->mc->GetFunctionEntryPoint != nullptr)
                         {
@@ -1035,7 +1034,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                                 DLD value = rc->mc->GetFunctionEntryPoint->GetItem(idx);
                                 if (value.A == tmp.target)
                                 {
-                                    LogDebug("    REL32 target is result of getFunctionEntryPoint(): setting delta=%d (0x%X)",
+                                    LogDebug("    RELATIVE32 target is result of getFunctionEntryPoint(): setting delta=%d (0x%X)",
                                              (int)tmp.target, (int)tmp.target);
                                     delta        = (INT64)(int)tmp.target;
                                     deltaIsFinal = true;
@@ -1065,7 +1064,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                                 ro_section_fake_start = rc->originalHotCodeAddress + rc->hotCodeSize;
                                 delta                 = (INT64)(ro_section_fake_start + ro_section_offset - baseAddr);
                                 deltaIsFinal          = true;
-                                LogDebug("    REL32 hot code target is in RO data section: setting delta=%d (0x%X)",
+                                LogDebug("    RELATIVE32 hot code target is in RO data section: setting delta=%d (0x%X)",
                                          delta, delta);
                             }
                             else if ((rc->originalColdCodeAddress <= (size_t)fixupLocation) &&
@@ -1075,7 +1074,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                                 ro_section_fake_start = rc->originalColdCodeAddress + rc->coldCodeSize;
                                 delta                 = (INT64)(ro_section_fake_start + ro_section_offset - baseAddr);
                                 deltaIsFinal          = true;
-                                LogDebug("    REL32 cold code target is in RO data section: setting delta=%d (0x%X)",
+                                LogDebug("    RELATIVE32 cold code target is in RO data section: setting delta=%d (0x%X)",
                                          delta, delta);
                             }
                         }
@@ -1089,7 +1088,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                         target         = (DWORDLONG)originalAddr + (DWORDLONG)blocksize1;
                         INT64 newdelta = (INT64)(target - baseAddr);
 
-                        LogDebug("    REL32 overflow. Mapping target to %016" PRIX64 ". Mapping delta: %016" PRIX64 " => %016" PRIX64,
+                        LogDebug("    RELATIVE32 overflow. Mapping target to %016" PRIX64 ". Mapping delta: %016" PRIX64 " => %016" PRIX64,
                                  target, delta, newdelta);
 
                         delta = newdelta;
@@ -1106,7 +1105,7 @@ void CompileResult::applyRelocs(RelocContext* rc, unsigned char* block1, ULONG b
                 {
                     if (delta != (INT64)(int)delta)
                     {
-                        LogError("REL32 relocation overflows field! delta=0x%016" PRIX64, delta);
+                        LogError("RELATIVE32 relocation overflows field! delta=0x%016" PRIX64, delta);
                     }
                 }
 
