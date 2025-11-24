@@ -35,8 +35,7 @@ namespace System.Security.Cryptography.Xml.Tests
             string result = new StreamReader(output, Encoding.UTF8).ReadToEnd();
             
             // Entity should be expanded in canonical form
-            Assert.Contains("TestValue", result);
-            Assert.Contains("<root>", result);
+            Assert.Equal("<root>TestValue</root>", result);
         }
 
         [Fact]
@@ -62,9 +61,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Stream output = (Stream)transform.GetOutput();
             string result = new StreamReader(output, Encoding.UTF8).ReadToEnd();
             
-            // The node should be present in canonical form
-            Assert.Contains("<child>", result);
-            Assert.Contains("</child>", result);
+            // Only the child element should be in the result (entity not expanded since only child element is in XPath)
+            Assert.Equal("<child></child>", result);
         }
 
         [Fact]

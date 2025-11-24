@@ -59,9 +59,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             DataReference dataRef = new DataReference("#encrypted-data-1");
             XmlElement xml = dataRef.GetXml();
-            Assert.Equal("DataReference", xml.LocalName);
-            Assert.Equal(EncryptedXml.XmlEncNamespaceUrl, xml.NamespaceURI);
-            Assert.Equal("#encrypted-data-1", xml.GetAttribute("URI"));
+            Assert.Equal(@"<DataReference URI=""#encrypted-data-1"" xmlns=""http://www.w3.org/2001/04/xmlenc#"" />", xml.OuterXml);
         }
 
         [Fact]

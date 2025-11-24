@@ -169,9 +169,14 @@ namespace System.Security.Cryptography.Xml.Tests
             doc.LoadXml("<WrongElement />");
 
             DataObject dataObject = new DataObject();
-            // Actually doesn't throw - just loads it anyway
+            dataObject.Id = "test-id";
+            dataObject.Encoding = "UTF-8";
+            // LoadXml replaces the properties, so pre-set values are overwritten
             dataObject.LoadXml(doc.DocumentElement);
             Assert.NotNull(dataObject.Data);
+            // LoadXml reads from the XML, not the pre-set values
+            Assert.Null(dataObject.Id);
+            Assert.Null(dataObject.Encoding);
         }
 
         [Fact]
@@ -186,6 +191,8 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlElement xml = dataObject.GetXml();
             Assert.NotNull(xml);
             Assert.Equal("Object", xml.LocalName);
+            // The InnerText "test content" is a text node, verify it appears in the output
+            Assert.Contains("test content", xml.InnerXml);
         }
 
         [Fact]
@@ -270,8 +277,7 @@ namespace System.Security.Cryptography.Xml.Tests
             
             XmlElement xml = dataObject.GetXml();
             Assert.NotNull(xml);
-            Assert.Equal("Object", xml.LocalName);
-            Assert.Equal("obj1", xml.GetAttribute("Id"));
+            Assert.Equal(@"<Object Id=""obj1"" xmlns=""http://www.w3.org/2000/09/xmldsig#"" />", xml.OuterXml);
         }
 
         [Fact]
@@ -285,6 +291,8 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlElement xml = dataObject.GetXml();
             Assert.NotNull(xml);
             Assert.Equal("Object", xml.LocalName);
+            Assert.Equal(SignedXml.XmlDsigNamespaceUrl, xml.NamespaceURI);
+            // Empty string attributes may or may not be present depending on implementation
         }
 
         [Fact]
@@ -298,6 +306,14 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Null(dataObject.MimeType);
             Assert.Null(dataObject.Encoding);
             Assert.NotNull(dataObject.Data);
+            
+            // Verify GetXml output - should include the test element content
+            XmlElement xml = dataObject.GetXml();
+            Assert.NotNull(xml);
+            Assert.Equal("Object", xml.LocalName);
+            Assert.Equal(SignedXml.XmlDsigNamespaceUrl, xml.NamespaceURI);
+            // The element should contain the child element
+            Assert.Contains("<test", xml.InnerXml);
         }
     }
 }

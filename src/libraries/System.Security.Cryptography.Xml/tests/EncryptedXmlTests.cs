@@ -60,8 +60,7 @@ namespace System.Security.Cryptography.Xml.Tests
             EncryptedData encData = new EncryptedData();
             encData.CipherData = new CipherData(new byte[] { 1, 2, 3 });
             XmlElement xml = encData.GetXml();
-            Assert.Equal("EncryptedData", xml.LocalName);
-            Assert.Equal(EncryptedXml.XmlEncNamespaceUrl, xml.NamespaceURI);
+            Assert.Equal(@"<EncryptedData xmlns=""http://www.w3.org/2001/04/xmlenc#""><CipherData><CipherValue>AQID</CipherValue></CipherData></EncryptedData>", xml.OuterXml);
         }
 
         [Fact]
@@ -86,11 +85,15 @@ namespace System.Security.Cryptography.Xml.Tests
             encData.EncryptionProperties.Add(prop);
 
             XmlElement xml = encData.GetXml();
-            Assert.Equal("EncryptedData", xml.LocalName);
-            Assert.Equal("test-id", xml.GetAttribute("Id"));
-            Assert.Equal(EncryptedXml.XmlEncElementUrl, xml.GetAttribute("Type"));
-            Assert.Equal("text/xml", xml.GetAttribute("MimeType"));
-            Assert.Equal("utf-8", xml.GetAttribute("Encoding"));
+            // Verify full XML structure
+            Assert.Contains(@"Id=""test-id""", xml.OuterXml);
+            Assert.Contains(@"Type=""http://www.w3.org/2001/04/xmlenc#Element""", xml.OuterXml);
+            Assert.Contains(@"MimeType=""text/xml""", xml.OuterXml);
+            Assert.Contains(@"Encoding=""utf-8""", xml.OuterXml);
+            Assert.Contains(@"Algorithm=""http://www.w3.org/2001/04/xmlenc#aes256-cbc""", xml.OuterXml);
+            Assert.Contains("<KeyName>key1</KeyName>", xml.OuterXml);
+            Assert.Contains("<CipherValue>AQID</CipherValue>", xml.OuterXml);
+            Assert.Contains("EncryptionProperty", xml.OuterXml);
         }
 
         [Fact]
@@ -109,6 +112,9 @@ namespace System.Security.Cryptography.Xml.Tests
             encData.LoadXml(doc.DocumentElement);
             Assert.NotNull(encData.CipherData);
             Assert.NotNull(encData.CipherData.CipherValue);
+            // EncryptionMethod auto-initializes but has null KeyAlgorithm when not specified
+            Assert.NotNull(encData.EncryptionMethod);
+            Assert.Null(encData.EncryptionMethod.KeyAlgorithm);
         }
 
         [Fact]
@@ -131,6 +137,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal("application/xml", encData.MimeType);
             Assert.Equal("utf-8", encData.Encoding);
             Assert.NotNull(encData.EncryptionMethod);
+            Assert.Equal(EncryptedXml.XmlEncAES256Url, encData.EncryptionMethod.KeyAlgorithm);
         }
 
         [Fact]
@@ -177,22 +184,9 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Null(encKey.Type);
             Assert.Null(encKey.MimeType);
             Assert.Null(encKey.Encoding);
-            Assert.Equal(string.Empty, encKey.Recipient);
+            Assert.Equal(string.Empty, encKey.Recipient); // Default value
             Assert.Null(encKey.CarriedKeyName);
-        }
-
-        [Fact]
-        public static void EncryptedKey_Recipient_DefaultValue()
-        {
-            EncryptedKey encKey = new EncryptedKey();
-            Assert.Equal(string.Empty, encKey.Recipient);
-        }
-
-        [Fact]
-        public static void EncryptedKey_ReferenceList_NotNull()
-        {
-            EncryptedKey encKey = new EncryptedKey();
-            Assert.NotNull(encKey.ReferenceList);
+            Assert.NotNull(encKey.ReferenceList); // ReferenceList is auto-initialized
             Assert.Equal(0, encKey.ReferenceList.Count);
         }
 
