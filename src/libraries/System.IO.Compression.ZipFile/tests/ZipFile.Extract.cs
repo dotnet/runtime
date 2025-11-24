@@ -54,7 +54,6 @@ namespace System.IO.Compression.Tests
             Assert.Contains("directory", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
-
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
         public async Task ExtractToDirectoryUnicode(bool async)
