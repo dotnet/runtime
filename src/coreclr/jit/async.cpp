@@ -1708,7 +1708,8 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
     GenTree*     resumedPlaceholder     = m_comp->gtNewIconNode(0);
     GenTree*     execContextPlaceholder = m_comp->gtNewNull();
     GenTree*     syncContextPlaceholder = m_comp->gtNewNull();
-    GenTreeCall* restoreCall = m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    GenTreeCall* restoreCall =
+        m_comp->gtNewCallNode(CT_USER_FUNC, m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
 
     restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(syncContextPlaceholder));
     restoreCall->gtArgs.PushFront(m_comp, NewCallArg::Primitive(execContextPlaceholder));
