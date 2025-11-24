@@ -285,10 +285,12 @@ inline bool genIsValidFloatReg(regNumber reg)
 
 inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
 {
-    return genIsValidIntReg(reg);
+    NYI_WASM("isValidIntArgReg");
+    return false;
 }
 
 inline bool isValidFloatArgReg(regNumber reg)
 {
-    return genIsValidFloatReg(reg);
+    NYI_WASM("isValidFloatArgReg");
+    return false;
 }
