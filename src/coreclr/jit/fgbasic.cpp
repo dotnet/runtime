@@ -4932,7 +4932,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 //    Returns a new block, that is a successor of 'curr' and which branches unconditionally to 'succ'
 //
 // Assumptions:
-//    'curr' must have a bbKind of BBJ_COND, BBJ_ALWAYS, or BBJ_SWITCH
+//    'curr' must have a bbKind of BBJ_COND, BBJ_ALWAYS, BBJ_SWITCH, or BBJ_CALLFINALLYRET
 //
 // Notes:
 //    The returned block is empty.
@@ -4940,7 +4940,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
 BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 {
-    assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS));
+    assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS, BBJ_CALLFINALLYRET));
     assert(fgPredsComputed);
     assert(fgGetPredForBlock(succ, curr) != nullptr);
 
