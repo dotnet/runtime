@@ -74,8 +74,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
-    <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="(EnvVarCommand) PATH=%HELIX_CORRELATION_PAYLOAD%\wasmtime%3B%PATH%" />
-    <HelixPreCommand Condition="'$(NeedsWasiSdk)' == 'true'" Include="(EnvVarCommand) PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk\bin%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="$(EnvVarCommand) PATH=%HELIX_CORRELATION_PAYLOAD%\wasmtime%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsWasiSdk)' == 'true'" Include="$(EnvVarCommand) PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk\bin%3B%PATH%" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
