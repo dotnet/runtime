@@ -132,7 +132,12 @@ namespace System
             /// <summary>
             /// Used for asserting that certain methods are only called from the constructor to validate thread-safety assumptions
             /// </summary>
-            Debug_LeftConstructor = 1UL << 57
+            Debug_LeftConstructor = 1UL << 57,
+
+            /// <summary>
+            /// Indicates that there is an authority, but the scheme does not use "//" to delimit it (e.g. "http:\\host").
+            /// </summary>
+            SchemeNotCanonical_NoTrailingSlashes = 1UL << 58,
         }
 
         [Conditional("DEBUG")]
@@ -1898,7 +1903,6 @@ namespace System
             return uri;
         }
 
-        //
         // http://www.ietf.org/rfc/rfc3986.txt
         //
         // 3.3.  Path
@@ -1914,7 +1918,6 @@ namespace System
         // http:(relativeUri) may be considered a valid relative Uri.
         //
         // Returns true if a colon is found in the first path segment, false otherwise
-        //
         private static readonly SearchValues<char> s_segmentSeparatorChars =
             SearchValues.Create(@":\/?#");
 
@@ -2236,12 +2239,14 @@ namespace System
         // This will create the _info based on the copied parser context.
         // If multi-threading, this method may do duplicated yet harmless work.
         //
-        private unsafe void CreateUriInfo(Flags cF)
+        private void CreateUriInfo(Flags cF)
         {
             UriInfo info = new UriInfo();
 
-            // This will be revisited in ParseRemaining but for now just have it at least _string.Length
-            info.Offset.End = _string.Length;
+            string str = OriginalString;
+
+            // This will be revisited in ParseRemaining if we're rewriting the _string.
+            info.Offset.End = str.Length;
 
             if (UserDrivenParsing)
                 goto Done;
@@ -2249,24 +2254,26 @@ namespace System
             int idx;
             bool notCanonicalScheme = false;
 
-            // The _string may have leading spaces, figure that out
-            // plus it will set idx value for next steps
+            // Skip leading whitespace
+            idx = 0;
+            while (UriHelper.IsLWS(str[idx]))
+            {
+                idx++;
+                info.Offset.Scheme++;
+            }
+
             if ((cF & Flags.ImplicitFile) != 0)
             {
-                idx = 0;
-                while (UriHelper.IsLWS(_string[idx]))
-                {
-                    ++idx;
-                    ++info.Offset.Scheme;
-                }
-
                 if (StaticInFact(cF, Flags.UncPath))
                 {
+                    Debug.Assert(str[idx] is '/' or '\\' && str[idx + 1] is '/' or '\\');
+
                     // For implicit file AND Unc only
                     idx += 2;
-                    //skip any other slashes (compatibility with V1.0 parser)
+
+                    // Skip any other slashes (compatibility with V1.0 parser)
                     int end = (int)(cF & Flags.IndexMask);
-                    while (idx < end && (_string[idx] == '/' || _string[idx] == '\\'))
+                    while (idx < end && (str[idx] == '/' || str[idx] == '\\'))
                     {
                         ++idx;
                     }
@@ -2275,25 +2282,24 @@ namespace System
             else
             {
                 // This is NOT an ImplicitFile uri
-                idx = _syntax.SchemeName.Length;
-
-                while (_string[idx++] != ':')
-                {
-                    ++info.Offset.Scheme;
-                }
+                idx += _syntax.SchemeName.Length + 1;
+                Debug.Assert(str[idx - 1] == ':');
 
                 if ((cF & Flags.AuthorityFound) != 0)
                 {
-                    if (_string[idx] == '\\' || _string[idx + 1] == '\\')
+                    Debug.Assert(str[idx] is '/' or '\\' && str[idx + 1] is '/' or '\\');
+
+                    if (str[idx] == '\\' || str[idx + 1] == '\\')
                         notCanonicalScheme = true;
 
                     idx += 2;
+
                     if ((cF & (Flags.UncPath | Flags.DosPath)) != 0)
                     {
                         // Skip slashes if it was allowed during ctor time
                         // NB: Today this is only allowed if a Unc or DosPath was found after the scheme
                         int end = (int)(cF & Flags.IndexMask);
-                        while (idx < end && (_string[idx] == '/' || _string[idx] == '\\'))
+                        while (idx < end && (str[idx] == '/' || str[idx] == '\\'))
                         {
                             notCanonicalScheme = true;
                             ++idx;
@@ -2302,124 +2308,95 @@ namespace System
                 }
             }
 
+            // Up until the userinfo/host, the _string and OriginalString are the same.
+            Debug.Assert(_string.AsSpan(0, idx).SequenceEqual(OriginalString.AsSpan(0, idx)));
+
             // Some schemes (mailto) do not have Authority-based syntax, still they do have a port
             if (_syntax.DefaultPort != UriParser.NoDefaultPort)
                 info.Offset.PortValue = (ushort)_syntax.DefaultPort;
 
-            //Here we set the indexes for already parsed components
-            if ((cF & Flags.HostTypeMask) == Flags.UnknownHostType
-                || StaticInFact(cF, Flags.DosPath)
-                )
-            {
-                //there is no Authority component defined
-                info.Offset.User = (int)(cF & Flags.IndexMask);
-                info.Offset.Host = info.Offset.User;
-                info.Offset.Path = info.Offset.User;
-                cF &= ~Flags.IndexMask;
-                if (notCanonicalScheme)
-                {
-                    cF |= Flags.SchemeNotCanonical;
-                }
-                goto Done;
-            }
-
             info.Offset.User = idx;
-
-            //Basic Host Type does not have userinfo and port
-            if (HostType == Flags.BasicHostType)
-            {
-                info.Offset.Host = idx;
-                info.Offset.Path = (int)(cF & Flags.IndexMask);
-                cF &= ~Flags.IndexMask;
-                goto Done;
-            }
 
             if ((cF & Flags.HasUserInfo) != 0)
             {
-                // we previously found a userinfo, get it again
-                while (_string[idx] != '@')
-                {
-                    ++idx;
-                }
-                ++idx;
-                info.Offset.Host = idx;
-            }
-            else
-            {
-                info.Offset.Host = idx;
+                // We've seen the '@' before. It should also be the first '@' in the input.
+                Debug.Assert(str.AsSpan(idx).Contains('@'));
+                Debug.Assert(str.IndexOf('@') == str.IndexOf('@', idx));
+
+                // The UserInfo in _string may have been modified if we're recreating the string.
+                // Since Offset.Host must point into _string and not OriginalString, find the offset in the new string.
+                idx = _string.IndexOf('@') + 1;
             }
 
-            //Now reload the end of the parsed host
+            info.Offset.Host = idx;
+
+            // Now reload the end of the parsed host.
+            // This index is pointing into the original string.
             idx = (int)(cF & Flags.IndexMask);
+            Debug.Assert((uint)idx <= (uint)OriginalString.Length);
 
-            //From now on we do not need IndexMask bits, and reuse the space for X_NotCanonical flags
-            //clear them now
+            // From now on we do not need IndexMask bits, and reuse the space for X_NotCanonical flags
             cF &= ~Flags.IndexMask;
 
-            // If this is not canonical, don't count on user input to be good
             if (notCanonicalScheme)
             {
                 cF |= Flags.SchemeNotCanonical;
             }
 
-            //Guessing this is a path start
-            info.Offset.Path = idx;
-
-            // parse Port if any. The new spec allows a port after ':' to be empty (assuming default?)
-            bool notEmpty = false;
-            // Note we already checked on general port syntax in ParseMinimal()
-
-            // If iri parsing is on with unicode chars then the end of parsed host
-            // points to _originalUnicodeString and not _string
-
-            if ((cF & Flags.HasUnicode) != 0)
-                info.Offset.End = _originalUnicodeString.Length;
-
-            if (idx < info.Offset.End)
+            // UnknownHostType / DosPath can't have a port.
+            if ((cF & Flags.HostTypeMask) != Flags.UnknownHostType && (cF & Flags.DosPath) == 0 &&
+                (uint)idx < (uint)str.Length && str[idx] == ':')
             {
-                fixed (char* userString = OriginalString)
-                {
-                    if (userString[idx] == ':')
-                    {
-                        int port = 0;
+                Debug.Assert(!IsUnc);
 
-                        //Check on some non-canonical cases http://host:0324/, http://host:03, http://host:0, etc
-                        if (++idx < info.Offset.End)
+                // Parse the Port if any. The new spec allows a port after ':' to be empty (assuming default?)
+                // Note we already checked on general port syntax in ParseMinimal()
+                bool notEmpty = false;
+                int port = 0;
+
+                idx++; // Skip ':'
+
+                // Check on some non-canonical cases http://host:0324/, http://host:03, http://host:0, etc
+                if ((uint)idx < (uint)str.Length)
+                {
+                    port = str[idx] - '0';
+                    if ((uint)port <= ('9' - '0'))
+                    {
+                        notEmpty = true;
+                        if (port == 0)
                         {
-                            port = userString[idx] - '0';
-                            if ((uint)port <= ('9' - '0'))
-                            {
-                                notEmpty = true;
-                                if (port == 0)
-                                {
-                                    cF |= (Flags.PortNotCanonical | Flags.E_PortNotCanonical);
-                                }
-                                for (++idx; idx < info.Offset.End; ++idx)
-                                {
-                                    int val = userString[idx] - '0';
-                                    if ((uint)val > ('9' - '0'))
-                                    {
-                                        break;
-                                    }
-                                    port = (port * 10 + val);
-                                }
-                            }
-                        }
-                        if (notEmpty && _syntax.DefaultPort != port)
-                        {
-                            info.Offset.PortValue = (ushort)port;
-                            cF |= Flags.NotDefaultPort;
-                        }
-                        else
-                        {
-                            //This will tell that we do have a ':' but the port value does
-                            //not follow to canonical rules
                             cF |= (Flags.PortNotCanonical | Flags.E_PortNotCanonical);
                         }
-                        info.Offset.Path = idx;
+
+                        for (idx++; (uint)idx < (uint)str.Length; idx++)
+                        {
+                            int val = str[idx] - '0';
+                            if ((uint)val > ('9' - '0'))
+                            {
+                                break;
+                            }
+                            port = (port * 10 + val);
+                        }
                     }
                 }
+
+                if (notEmpty && _syntax.DefaultPort != port)
+                {
+                    info.Offset.PortValue = (ushort)port;
+                    cF |= Flags.NotDefaultPort;
+                }
+                else
+                {
+                    // This will tell that we do have a ':' but the port value does
+                    // not follow to canonical rules
+                    cF |= (Flags.PortNotCanonical | Flags.E_PortNotCanonical);
+                }
             }
+
+            // While info.Offset values must point into _string instead of OriginalString when we're done with parsing,
+            // we'll temporarily point the path offset into OriginalString.
+            // ParseRemaining will update the value if we're replacing the _string.
+            info.Offset.Path = idx;
 
         Done:
             cF |= Flags.MinimalUriInfoSet;
@@ -2434,7 +2411,7 @@ namespace System
                 {
                     return;
                 }
-                current = (Flags)oldValue;
+                current = oldValue;
             }
         }
 
@@ -2442,7 +2419,7 @@ namespace System
         // This will create a Host string. The validity has been already checked
         //
         // Assuming: UriInfo member is already set at this point
-        private unsafe void CreateHostString()
+        private void CreateHostString()
         {
             if (!_syntax.IsSimple)
             {
@@ -2470,12 +2447,7 @@ namespace System
                 // An Authority may need escaping except when it's an inet server address
                 if (HostType == Flags.BasicHostType)
                 {
-                    int idx = 0;
-                    Check result;
-                    fixed (char* pHost = host)
-                    {
-                        result = CheckCanonical(pHost, ref idx, host.Length, c_DummyChar);
-                    }
+                    Check result = CheckCanonical(host, c_DummyChar, out _);
 
                     if ((result & Check.DisplayCanonical) == 0)
                     {
@@ -3206,7 +3178,7 @@ namespace System
         //  - Sets the Canonicalization flags if applied
         //  - Will NOT create MoreInfo members
         //
-        private unsafe void ParseRemaining()
+        private void ParseRemaining()
         {
             // ensure we parsed up to the path
             EnsureUriInfo();
@@ -3222,76 +3194,74 @@ namespace System
             int origIdx; // stores index to switched original string
             int idx = _info.Offset.Scheme;
             int length = _string.Length;
-            Check result = Check.None;
+            Check result;
             UriSyntaxFlags syntaxFlags = _syntax.Flags;
 
             // _info.Offset values may be parsed twice but we lock only on _flags update.
 
-            fixed (char* str = _string)
-            {
-                GetLengthWithoutTrailingSpaces(_string, ref length, idx);
+            GetLengthWithoutTrailingSpaces(_string, ref length, idx);
 
-                if (IsImplicitFile)
+            if (IsImplicitFile)
+            {
+                cF |= Flags.SchemeNotCanonical;
+            }
+            else
+            {
+                ReadOnlySpan<char> str = _string.AsSpan(idx);
+
+                Debug.Assert(str.StartsWith(_syntax.SchemeName, StringComparison.OrdinalIgnoreCase));
+                Debug.Assert(str[_syntax.SchemeName.Length] == ':');
+
+                int schemeLength = _syntax.SchemeName.Length;
+
+                // Check that the scheme casing matches the canonical one (lowercase).
+                // Using a manual loop instead of ContainsAnyInRange because the expected length is small.
+                foreach (char c in str.Slice(0, schemeLength))
                 {
-                    cF |= Flags.SchemeNotCanonical;
-                }
-                else
-                {
-                    int i;
-                    string schemeName = _syntax.SchemeName;
-                    for (i = 0; i < schemeName.Length; ++i)
-                    {
-                        if (schemeName[i] != str[idx + i])
-                            cF |= Flags.SchemeNotCanonical;
-                    }
-                    // For an authority Uri only // after the scheme would be canonical
-                    // (for compatibility with: http:\\host)
-                    if (((_flags & Flags.AuthorityFound) != 0) && (idx + i + 3 >= length || str[idx + i + 1] != '/' ||
-                        str[idx + i + 2] != '/'))
+                    if (char.IsAsciiLetterUpper(c))
                     {
                         cF |= Flags.SchemeNotCanonical;
+                        break;
                     }
                 }
 
-
-                //Check the form of the user info
-                if ((_flags & Flags.HasUserInfo) != 0)
+                // For an authority Uri only // after the scheme would be canonical
+                // (for compatibility with: http:\\host)
+                if ((_flags & Flags.AuthorityFound) != 0 && !str.Slice(schemeLength).StartsWith("://", StringComparison.Ordinal))
                 {
-                    idx = _info.Offset.User;
-                    result = CheckCanonical(str, ref idx, _info.Offset.Host, '@');
-                    if ((result & Check.DisplayCanonical) == 0)
-                    {
-                        cF |= Flags.UserNotCanonical;
-                    }
-                    if ((result & (Check.EscapedCanonical | Check.BackslashInPath)) != Check.EscapedCanonical)
-                    {
-                        cF |= Flags.E_UserNotCanonical;
-                    }
-                    if (IriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
-                                                    | Check.FoundNonAscii | Check.NotIriCanonical))
-                                                    == (Check.DisplayCanonical | Check.FoundNonAscii)))
-                    {
-                        cF |= Flags.UserIriCanonical;
-                    }
+                    cF |= Flags.SchemeNotCanonical | Flags.SchemeNotCanonical_NoTrailingSlashes;
                 }
             }
-            //
-            // Delay canonical Host checking to avoid creation of a host string
-            // Will do that on demand.
-            //
 
+            // Check the form of the user info
+            if ((_flags & Flags.HasUserInfo) != 0)
+            {
+                idx = _info.Offset.User;
+                result = CheckCanonical(_string.AsSpan(idx, _info.Offset.Host - idx), '@', out _);
 
-            //
-            //We have already checked on the port in EnsureUriInfo() that calls CreateUriInfo
-            //
+                if ((result & Check.DisplayCanonical) == 0)
+                {
+                    cF |= Flags.UserNotCanonical;
+                }
+                if ((result & (Check.EscapedCanonical | Check.BackslashInPath)) != Check.EscapedCanonical)
+                {
+                    cF |= Flags.E_UserNotCanonical;
+                }
+                if (IriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
+                                                | Check.FoundNonAscii | Check.NotIriCanonical))
+                                                == (Check.DisplayCanonical | Check.FoundNonAscii)))
+                {
+                    cF |= Flags.UserIriCanonical;
+                }
+            }
 
-            //
-            // Parsing the Path if any
-            //
+            // Delay canonical Host checking to avoid creation of a host string.
+            // We will do that on demand.
+            // We have already checked on the port in EnsureUriInfo() that calls CreateUriInfo.
 
-            // For iri parsing if we found unicode the idx has offset into _originalUnicodeString..
+            // Parsing the Path if any.
+            // For iri parsing if we found unicode the idx has offset into _originalUnicodeString,
             // so restart parsing from there and make _info.Offset.Path as _string.Length
-
             idx = _info.Offset.Path;
             origIdx = _info.Offset.Path;
 
@@ -3396,34 +3366,31 @@ namespace System
                 }
             }
 
-            fixed (char* str = _string)
             {
-                if (IsImplicitFile || ((syntaxFlags & (UriSyntaxFlags.MayHaveQuery | UriSyntaxFlags.MayHaveFragment)) == 0))
-                {
-                    result = CheckCanonical(str, ref idx, length, c_DummyChar);
-                }
-                else
-                {
-                    result = CheckCanonical(str, ref idx, length, (((syntaxFlags & UriSyntaxFlags.MayHaveQuery) != 0)
-                        ? '?' : _syntax.InFact(UriSyntaxFlags.MayHaveFragment) ? '#' : c_EOL));
-                }
+                char delim =
+                    IsImplicitFile || (syntaxFlags & (UriSyntaxFlags.MayHaveQuery | UriSyntaxFlags.MayHaveFragment)) == 0 ? c_DummyChar :
+                    ((syntaxFlags & UriSyntaxFlags.MayHaveQuery) != 0) ? '?' : '#';
 
-                // ATTN:
-                // This may render problems for unknown schemes, but in general for an authority based Uri
-                // (that has slashes) a path should start with "/"
-                // This becomes more interesting knowing how a file uri is used in "file://c:/path"
-                // It will be converted to file:///c:/path
-                //
-                // However, even more interesting is that vsmacros://c:\path will not add the third slash in the _canoical_ case
-                //
-                // We use special syntax flag to check if the path is rooted, i.e. has a first slash
-                //
-                if (((_flags & Flags.AuthorityFound) != 0) && ((syntaxFlags & UriSyntaxFlags.PathIsRooted) != 0)
-                    && (_info.Offset.Path == length || (str[_info.Offset.Path] != '/' && str[_info.Offset.Path] != '\\')))
-                {
-                    cF |= Flags.FirstSlashAbsent;
-                }
+                result = CheckCanonical(_string.AsSpan(idx, length - idx), delim, out int checkedChars);
+                idx += checkedChars;
             }
+
+            // ATTN:
+            // This may render problems for unknown schemes, but in general for an authority based Uri
+            // (that has slashes) a path should start with "/"
+            // This becomes more interesting knowing how a file uri is used in "file://c:/path"
+            // It will be converted to file:///c:/path
+            //
+            // However, even more interesting is that vsmacros://c:\path will not add the third slash in the _canoical_ case
+            //
+            // We use special syntax flag to check if the path is rooted, i.e. has a first slash
+            //
+            if (((_flags & Flags.AuthorityFound) != 0) && ((syntaxFlags & UriSyntaxFlags.PathIsRooted) != 0)
+                && (_info.Offset.Path == length || _string[_info.Offset.Path] is not ('/' or '\\')))
+            {
+                cF |= Flags.FirstSlashAbsent;
+            }
+
             // Check the need for compression or backslashes conversion
             // we included IsDosPath since it may come with other than FILE uri, for ex. scheme://C:\path
             // (This is very unfortunate that the original design has included that feature)
@@ -3529,31 +3496,30 @@ namespace System
 
             _info.Offset.Query = idx;
 
-            fixed (char* str = _string)
+            if (idx < length && _string[idx] == '?')
             {
-                if (idx < length && str[idx] == '?')
+                idx++; // This is to exclude first '?' character from checking
+                result = CheckCanonical(_string.AsSpan(idx, length - idx), (syntaxFlags & (UriSyntaxFlags.MayHaveFragment)) != 0 ? '#' : c_EOL, out int charsChecked);
+                idx += charsChecked;
+
+                if ((result & Check.DisplayCanonical) == 0)
                 {
-                    ++idx; // This is to exclude first '?' character from checking
-                    result = CheckCanonical(str, ref idx, length, ((syntaxFlags & (UriSyntaxFlags.MayHaveFragment)) != 0)
-                        ? '#' : c_EOL);
-                    if ((result & Check.DisplayCanonical) == 0)
-                    {
-                        cF |= Flags.QueryNotCanonical;
-                    }
+                    cF |= Flags.QueryNotCanonical;
+                }
 
-                    if ((result & (Check.EscapedCanonical | Check.BackslashInPath)) != Check.EscapedCanonical)
-                    {
-                        cF |= Flags.E_QueryNotCanonical;
-                    }
+                if ((result & (Check.EscapedCanonical | Check.BackslashInPath)) != Check.EscapedCanonical)
+                {
+                    cF |= Flags.E_QueryNotCanonical;
+                }
 
-                    if (IriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
-                                | Check.FoundNonAscii | Check.NotIriCanonical))
-                                == (Check.DisplayCanonical | Check.FoundNonAscii)))
-                    {
-                        cF |= Flags.QueryIriCanonical;
-                    }
+                if (IriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
+                            | Check.FoundNonAscii | Check.NotIriCanonical))
+                            == (Check.DisplayCanonical | Check.FoundNonAscii)))
+                {
+                    cF |= Flags.QueryIriCanonical;
                 }
             }
+
             //
             //Now we've got to parse the Fragment if any. Note that Fragment requires the presence of '#'
             //
@@ -3577,29 +3543,28 @@ namespace System
 
             _info.Offset.Fragment = idx;
 
-            fixed (char* str = _string)
+            if (idx < length && _string[idx] == '#')
             {
-                if (idx < length && str[idx] == '#')
+                idx++; // This is to exclude first '#' character from checking
+                // We don't using c_DummyChar since want to allow '?' and '#' as unescaped
+                result = CheckCanonical(_string.AsSpan(idx, length - idx), c_EOL, out int checkedChars);
+                idx += checkedChars;
+
+                if ((result & Check.DisplayCanonical) == 0)
                 {
-                    ++idx; // This is to exclude first '#' character from checking
-                    //We don't using c_DummyChar since want to allow '?' and '#' as unescaped
-                    result = CheckCanonical(str, ref idx, length, c_EOL);
-                    if ((result & Check.DisplayCanonical) == 0)
-                    {
-                        cF |= Flags.FragmentNotCanonical;
-                    }
+                    cF |= Flags.FragmentNotCanonical;
+                }
 
-                    if ((result & (Check.EscapedCanonical | Check.BackslashInPath)) != Check.EscapedCanonical)
-                    {
-                        cF |= Flags.E_FragmentNotCanonical;
-                    }
+                if ((result & (Check.EscapedCanonical | Check.BackslashInPath)) != Check.EscapedCanonical)
+                {
+                    cF |= Flags.E_FragmentNotCanonical;
+                }
 
-                    if (IriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
-                                | Check.FoundNonAscii | Check.NotIriCanonical))
-                                == (Check.DisplayCanonical | Check.FoundNonAscii)))
-                    {
-                        cF |= Flags.FragmentIriCanonical;
-                    }
+                if (IriParsing && ((result & (Check.DisplayCanonical | Check.EscapedCanonical | Check.BackslashInPath
+                            | Check.FoundNonAscii | Check.NotIriCanonical))
+                            == (Check.DisplayCanonical | Check.FoundNonAscii)))
+                {
+                    cF |= Flags.FragmentIriCanonical;
                 }
             }
             _info.Offset.End = idx;
@@ -4141,24 +4106,28 @@ namespace System
             FoundNonAscii = 0x8
         }
 
-        //
         // Used by ParseRemaining as well by InternalIsWellFormedOriginalString
-        //
-        private unsafe Check CheckCanonical(char* str, ref int idx, int end, char delim)
+        private Check CheckCanonical(ReadOnlySpan<char> span, char delim, out int end)
         {
+            Debug.Assert(delim is '@' or '/' or '?' or '#' or c_DummyChar or c_EOL);
+
             Check res = Check.None;
             bool needsEscaping = false;
             bool foundEscaping = false;
             bool iriParsing = IriParsing;
 
-            char c;
-            int i = idx;
-            for (; i < end; ++i)
+            int i;
+            for (i = 0; (uint)i < (uint)span.Length; i++)
             {
-                c = str[i];
-                // Control chars usually should be escaped in any case
-                if (c <= '\x1F' || (c >= '\x7F' && c <= '\x9F'))
+                char c = span[i];
+
+                if (char.IsAsciiLetterOrDigit(c))
                 {
+                    // The most common case - unreserved chars.
+                }
+                else if (c <= '\x1F' || (c >= '\x7F' && c <= '\x9F'))
+                {
+                    // Control chars usually should be escaped in any case
                     needsEscaping = true;
                     foundEscaping = true;
                     res |= Check.ReservedFound;
@@ -4172,19 +4141,21 @@ namespace System
 
                         if (char.IsHighSurrogate(c))
                         {
-                            if ((i + 1) < end)
+                            if ((uint)(i + 1) < (uint)span.Length)
                             {
-                                valid = IriHelper.CheckIriUnicodeRange(c, str[i + 1], out _, true);
+                                valid = IriHelper.CheckIriUnicodeRange(c, span[i + 1], out _, true);
+                                i++;
                             }
                         }
                         else
                         {
                             valid = IriHelper.CheckIriUnicodeRange(c, true);
                         }
+
                         if (!valid) res |= Check.NotIriCanonical;
                     }
 
-                    if (!needsEscaping) needsEscaping = true;
+                    needsEscaping = true;
                 }
                 else if (c == delim)
                 {
@@ -4197,8 +4168,7 @@ namespace System
                 }
                 else if (c == '?')
                 {
-                    if (IsImplicitFile || (_syntax != null && !_syntax.InFact(UriSyntaxFlags.MayHaveQuery)
-                        && delim != c_EOL))
+                    if (IsImplicitFile || (_syntax != null && !_syntax.InFact(UriSyntaxFlags.MayHaveQuery) && delim != c_EOL))
                     {
                         // If found as reserved this char is not suitable for safe unescaped display
                         // Will need to escape it when both escaping and unescaping the string
@@ -4210,6 +4180,7 @@ namespace System
                 else if (c == '#')
                 {
                     needsEscaping = true;
+
                     if (IsImplicitFile || (_syntax != null && !_syntax.InFact(UriSyntaxFlags.MayHaveFragment)))
                     {
                         // If found as reserved this char is not suitable for safe unescaped display
@@ -4220,19 +4191,19 @@ namespace System
                 }
                 else if (c == '/' || c == '\\')
                 {
-                    if ((res & Check.BackslashInPath) == 0 && c == '\\')
+                    if (c == '\\')
                     {
                         res |= Check.BackslashInPath;
                     }
-                    if ((res & Check.DotSlashAttn) == 0 && i + 1 != end && (str[i + 1] == '/' || str[i + 1] == '\\'))
+
+                    if ((uint)(i + 1) < (uint)span.Length && (span[i + 1] == '/' || span[i + 1] == '\\'))
                     {
                         res |= Check.DotSlashAttn;
                     }
                 }
                 else if (c == '.')
                 {
-                    if ((res & Check.DotSlashAttn) == 0 && i + 1 == end || str[i + 1] == '.' || str[i + 1] == '/'
-                        || str[i + 1] == '\\' || str[i + 1] == '?' || str[i + 1] == '#')
+                    if (((uint)(i + 1) >= (uint)span.Length || span[i + 1] == '.' || span[i + 1] == '/' || span[i + 1] == '\\' || span[i + 1] == '?' || span[i + 1] == '#'))
                     {
                         res |= Check.DotSlashAttn;
                     }
@@ -4240,7 +4211,7 @@ namespace System
                 else if (((c <= '"' && c != '!') || (c >= '[' && c <= '^') || c == '>'
                         || c == '<' || c == '`'))
                 {
-                    if (!needsEscaping) needsEscaping = true;
+                    needsEscaping = true;
 
                     // The check above validates only that we have valid IRI characters, which is not enough to
                     // conclude that we have a valid canonical IRI.
@@ -4257,41 +4228,36 @@ namespace System
                 }
                 else if (c == '%')
                 {
-                    if (!foundEscaping) foundEscaping = true;
-                    //try unescape a byte hex escaping
-                    if (i + 2 < end && (c = UriHelper.DecodeHexChars(str[i + 1], str[i + 2])) != c_DummyChar)
+                    foundEscaping = true;
+
+                    // try unescape a byte hex escaping
+                    if ((uint)(i + 2) < (uint)span.Length && (c = UriHelper.DecodeHexChars(span[i + 1], span[i + 2])) != c_DummyChar)
                     {
                         if (c == '.' || c == '/' || c == '\\')
                         {
                             res |= Check.DotSlashEscaped;
                         }
+
                         i += 2;
                         continue;
                     }
+
                     // otherwise we follow to non escaped case
-                    if (!needsEscaping)
-                    {
-                        needsEscaping = true;
-                    }
+                    needsEscaping = true;
                 }
             }
 
-            if (foundEscaping)
+            if (!needsEscaping)
             {
-                if (!needsEscaping)
-                {
-                    res |= Check.EscapedCanonical;
-                }
+                res |= Check.EscapedCanonical;
             }
-            else
+
+            if (!foundEscaping)
             {
                 res |= Check.DisplayCanonical;
-                if (!needsEscaping)
-                {
-                    res |= Check.EscapedCanonical;
-                }
             }
-            idx = i;
+
+            end = i;
             return res;
         }
 
