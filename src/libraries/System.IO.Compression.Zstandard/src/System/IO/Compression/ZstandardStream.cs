@@ -24,8 +24,10 @@ namespace System.IO.Compression
         // When owned, they are disposed; when not owned, they are reset
         private bool _encoderOwned = true;
 
-        private ZstandardStream(Stream stream, CompressionMode mode, bool leaveOpen, object encoderOrDecoder)
+        private ZstandardStream(Stream stream, CompressionMode mode, bool leaveOpen, int _ignored)
         {
+            _ = _ignored; // to differentiate from other ctors
+
             ArgumentNullException.ThrowIfNull(stream);
 
             _mode = mode;
@@ -38,8 +40,6 @@ namespace System.IO.Compression
                     {
                         throw new ArgumentException(SR.Stream_FalseCanWrite, nameof(stream));
                     }
-                    Debug.Assert(encoderOrDecoder is ZstandardEncoder);
-                    _encoder = (ZstandardEncoder)encoderOrDecoder;
                     break;
 
                 case CompressionMode.Decompress:
@@ -47,8 +47,6 @@ namespace System.IO.Compression
                     {
                         throw new ArgumentException(SR.Stream_FalseCanRead, nameof(stream));
                     }
-                    Debug.Assert(encoderOrDecoder is ZstandardDecoder);
-                    _decoder = (ZstandardDecoder)encoderOrDecoder;
                     break;
 
                 default:
@@ -63,7 +61,17 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress data to the stream or decompress data from the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
-        public ZstandardStream(Stream stream, CompressionMode mode, bool leaveOpen) : this(stream, mode, leaveOpen, mode == CompressionMode.Compress ? new ZstandardEncoder() : new ZstandardDecoder()) { }
+        public ZstandardStream(Stream stream, CompressionMode mode, bool leaveOpen) : this(stream, mode, leaveOpen, 0)
+        {
+            if (mode == CompressionMode.Compress)
+            {
+                _encoder = new ZstandardEncoder();
+            }
+            else
+            {
+                _decoder = new ZstandardDecoder();
+            }
+        }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardStream" /> class by using the specified stream and compression mode.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which data to decompress is read.</param>
@@ -77,7 +85,19 @@ namespace System.IO.Compression
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="dictionary"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="mode"/> is not a valid <see cref="CompressionMode"/> value, or the stream does not support the required operation.</exception>
-        public ZstandardStream(Stream stream, CompressionMode mode, ZstandardDictionary dictionary, bool leaveOpen = false) : this(stream, mode, leaveOpen, mode == CompressionMode.Compress ? new ZstandardEncoder(dictionary) : new ZstandardDecoder(dictionary)) { }
+        public ZstandardStream(Stream stream, CompressionMode mode, ZstandardDictionary dictionary, bool leaveOpen = false) : this(stream, mode, leaveOpen, 0)
+        {
+            ArgumentNullException.ThrowIfNull(dictionary);
+
+            if (mode == CompressionMode.Compress)
+            {
+                _encoder = new ZstandardEncoder(dictionary);
+            }
+            else
+            {
+                _decoder = new ZstandardDecoder(dictionary);
+            }
+        }
 
         /// <summary>Gets a reference to the underlying stream.</summary>
         /// <value>A stream object that represents the underlying stream.</value>

@@ -19,8 +19,11 @@ namespace System.IO.Compression
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after the <see cref="ZstandardStream" /> object is disposed; otherwise, <see langword="false" />.</param>
         /// <exception cref="ArgumentNullException"><paramref name="stream"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="stream"/> does not support reading.</exception>
-        public ZstandardStream(Stream stream, ZstandardDecoder decoder, bool leaveOpen = false) : this(stream, CompressionMode.Decompress, leaveOpen, decoder)
+        public ZstandardStream(Stream stream, ZstandardDecoder decoder, bool leaveOpen = false) : this(stream, CompressionMode.Decompress, leaveOpen, 0)
         {
+            ArgumentNullException.ThrowIfNull(decoder);
+
+            _decoder = decoder;
             _encoderOwned = false;
         }
 

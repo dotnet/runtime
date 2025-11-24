@@ -608,8 +608,8 @@ namespace System.IO.Compression
         {
             int chunkSize = 100;
             int totalSize = 20000;
-            EncoderAdapter encoder = CreateEncoder();
-            DecoderAdapter decoder = CreateDecoder();
+            using EncoderAdapter encoder = CreateEncoder();
+            using DecoderAdapter decoder = CreateDecoder();
             for (int i = 0; i < totalSize; i += chunkSize)
             {
                 byte[] uncompressed = new byte[chunkSize];
