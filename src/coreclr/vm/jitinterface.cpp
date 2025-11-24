@@ -11810,11 +11810,11 @@ void CEEJitInfo::recordCallSite(uint32_t              instrOffset,
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 
-void CEEJitInfo::recordRelocation(void * location,
-                                  void * locationRW,
-                                  void * target,
+void CEEJitInfo::recordRelocation(void *       location,
+                                  void *       locationRW,
+                                  void *       target,
                                   CorInfoReloc fRelocType,
-                                  INT32  addlDelta)
+                                  INT32        addlDelta)
 {
     CONTRACTL {
         THROWS;
