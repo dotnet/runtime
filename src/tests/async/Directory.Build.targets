@@ -9,7 +9,7 @@
     <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetArchitecture)' == 'x86'">true</DisableProjectBuild>
 
     <!-- https://github.com/dotnet/runtime/issues/121878 -->
-    <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetArchitecture)' == 'arm64' and ('$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android')">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetArchitecture)' == 'arm64'">true</DisableProjectBuild>
   </PropertyGroup>
 
   <PropertyGroup>
