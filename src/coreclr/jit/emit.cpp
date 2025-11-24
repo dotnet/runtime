@@ -10372,10 +10372,10 @@ void emitter::emitStackPopLargeStk(BYTE* addr, bool isCall, unsigned char callIn
     assert(regMaskTP::FromIntRegSet(SingleTypeRegSet(byrefRegs << REG_INT_FIRST)) == emitThisByrefRegs);
 
 #ifdef JIT32_GCENCODER
-    // x86 does not report GC refs/byrefs in return registers at call sites
-    unsigned returnRegs = (RBM_INTRET | RBM_LNGRET | RBM_ASYNC_CONTINUATION_RET).GetIntRegSet() >> REG_INT_FIRST;
-    gcrefRegs &= ~returnRegs;
-    byrefRegs &= ~returnRegs;
+    // x86 only reports GC refs/byrefs in callee saves at call sites -- no return registers.
+    unsigned reportedRegs = (RBM_INT_CALLEE_SAVED | RBM_EBP).GetIntRegSet() >> REG_INT_FIRST;
+    gcrefRegs &= reportedRegs;
+    byrefRegs &= reportedRegs;
 
     // For the general encoder, we always have to record calls, so we don't take this early return.    /* Are there any
     // args to pop at this call site?
