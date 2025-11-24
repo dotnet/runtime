@@ -33,9 +33,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
-
-    <!-- Why is this needed? -->
-    <ProjectReference Include="..\src\System.IO.Compression.Zstandard.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Compression.TestData" Version="$(SystemIOCompressionTestDataVersion)" />
