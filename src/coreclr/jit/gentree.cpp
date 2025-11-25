@@ -19944,8 +19944,8 @@ bool GenTree::SupportsSettingZeroFlag()
 //
 bool GenTree::SupportsSettingFlagsAsCompareToZero()
 {
-#if defined(TARGET_ARM64)
-    return true;
+#if defined(TARGET_ARMARCH)
+    return OperIs(GT_AND, GT_AND_NOT);
 #else
     return false;
 #endif
