@@ -1,7 +1,5 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(RUNTIME_DIR ../runtime)
-
 # Needed due to the munged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
@@ -922,7 +920,8 @@ elseif(CLR_CMAKE_TARGET_ARCH_WASM)
         ${ARCH_SOURCES_DIR}/calldescrworkerwasm.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         ${ARCH_SOURCES_DIR}/helpers.cpp
-        ${ARCH_SOURCES_DIR}/callhelpers.cpp
+        ${ARCH_SOURCES_DIR}/callhelpers-interp-to-managed.cpp
+        ${ARCH_SOURCES_DIR}/callhelpers-reverse.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )

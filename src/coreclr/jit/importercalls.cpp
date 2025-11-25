@@ -66,6 +66,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // to see any imperative security.
     // Reverse P/Invokes need a call to CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT
     // at the end, so tailcalls should be disabled.
+    // Async methods need to restore contexts, so tailcalls should be disabled.
     if (info.compFlags & CORINFO_FLG_SYNCH)
     {
         canTailCall             = false;
@@ -75,6 +76,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         canTailCall             = false;
         szCanTailCallFailReason = "Caller is Reverse P/Invoke";
+    }
+    else if (compIsAsync())
+    {
+        canTailCall             = false;
+        szCanTailCallFailReason = "Caller is async method";
     }
 #if !FEATURE_FIXED_OUT_ARGS
     else if (info.compIsVarArgs)
@@ -90,8 +96,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool bIntrinsicImported = false;
 
     CORINFO_SIG_INFO calliSig;
-    GenTree*         varArgsCookie = nullptr;
-    GenTree*         instParam     = nullptr;
+    GenTree*         varArgsCookie     = nullptr;
+    GenTree*         instParam         = nullptr;
+    GenTree*         asyncContinuation = nullptr;
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
@@ -386,7 +393,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+                    impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
                 }
 
                 impPopCallArgs(sig, call->AsCall());
@@ -691,7 +698,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAndSpillForAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+        impSetupAsyncCall(call->AsCall(), opcode, prefixFlags, di);
+
+        if (lvaNextCallAsyncContinuation != BAD_VAR_NUM)
+        {
+            asyncContinuation            = gtNewLclVarNode(lvaNextCallAsyncContinuation);
+            lvaNextCallAsyncContinuation = BAD_VAR_NUM;
+        }
+        else
+        {
+            asyncContinuation = gtNewNull();
+        }
     }
 
     // Now create the argument list.
@@ -726,101 +743,109 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->hasTypeArg())
     {
-        assert(call->AsCall()->gtCallType == CT_USER_FUNC);
-        if (clsHnd == nullptr)
+        if (lvaNextCallGenericContext != BAD_VAR_NUM)
         {
-            NO_WAY("CALLI on parameterized type");
+            instParam                 = gtNewLclVarNode(lvaNextCallGenericContext);
+            lvaNextCallGenericContext = BAD_VAR_NUM;
         }
-
-        assert(opcode != CEE_CALLI);
-
-        bool runtimeLookup;
-
-        // Instantiated generic method
-        if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
-        {
-            assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
-
-            CORINFO_METHOD_HANDLE exactMethodHandle =
-                (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
-
-            if (!exactContextNeedsRuntimeLookup)
-            {
-#ifdef FEATURE_READYTORUN
-                if (IsAot())
-                {
-                    instParam =
-                        impReadyToRunLookupToTree(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL, exactMethodHandle);
-                    if (instParam == nullptr)
-                    {
-                        assert(compDonotInline());
-                        return TYP_UNDEF;
-                    }
-                }
-                else
-#endif
-                {
-                    instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
-                    info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(exactMethodHandle);
-                }
-            }
-            else
-            {
-                instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
-                if (instParam == nullptr)
-                {
-                    assert(compDonotInline());
-                    return TYP_UNDEF;
-                }
-            }
-        }
-
-        // otherwise must be an instance method in a generic struct,
-        // a static method in a generic type, or a runtime-generated array method
         else
         {
-            assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-            CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(exactContextHnd);
-
-            if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
+            assert(call->AsCall()->gtCallType == CT_USER_FUNC);
+            if (clsHnd == nullptr)
             {
-                compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
-                return TYP_UNDEF;
+                NO_WAY("CALLI on parameterized type");
             }
 
-            if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
+            assert(opcode != CEE_CALLI);
+
+            bool runtimeLookup;
+
+            // Instantiated generic method
+            if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
             {
-                // We indicate "readonly" to the Address operation by using a null
-                // instParam.
-                instParam = gtNewIconNode(0, TYP_REF);
-            }
-            else if (!exactContextNeedsRuntimeLookup)
-            {
-#ifdef FEATURE_READYTORUN
-                if (IsAot())
+                assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
+
+                CORINFO_METHOD_HANDLE exactMethodHandle =
+                    (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
+
+                if (!exactContextNeedsRuntimeLookup)
                 {
-                    instParam =
-                        impReadyToRunLookupToTree(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
+#ifdef FEATURE_READYTORUN
+                    if (IsAot())
+                    {
+                        instParam = impReadyToRunLookupToTree(&callInfo->instParamLookup, GTF_ICON_METHOD_HDL,
+                                                              exactMethodHandle);
+                        if (instParam == nullptr)
+                        {
+                            assert(compDonotInline());
+                            return TYP_UNDEF;
+                        }
+                    }
+                    else
+#endif
+                    {
+                        instParam = gtNewIconEmbMethHndNode(exactMethodHandle);
+                        info.compCompHnd->methodMustBeLoadedBeforeCodeIsRun(exactMethodHandle);
+                    }
+                }
+                else
+                {
+                    instParam = impTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
                     if (instParam == nullptr)
                     {
                         assert(compDonotInline());
                         return TYP_UNDEF;
                     }
                 }
-                else
-#endif
-                {
-                    instParam = gtNewIconEmbClsHndNode(exactClassHandle);
-                    info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(exactClassHandle);
-                }
             }
+
+            // otherwise must be an instance method in a generic struct,
+            // a static method in a generic type, or a runtime-generated array method
             else
             {
-                instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
-                if (instParam == nullptr)
+                assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+                CORINFO_CLASS_HANDLE exactClassHandle = eeGetClassFromContext(exactContextHnd);
+
+                if (compIsForInlining() && (clsFlags & CORINFO_FLG_ARRAY) != 0)
                 {
-                    assert(compDonotInline());
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_IS_ARRAY_METHOD);
                     return TYP_UNDEF;
+                }
+
+                if ((clsFlags & CORINFO_FLG_ARRAY) && isReadonlyCall)
+                {
+                    // We indicate "readonly" to the Address operation by using a null
+                    // instParam.
+                    instParam = gtNewIconNode(0, TYP_REF);
+                }
+                else if (!exactContextNeedsRuntimeLookup)
+                {
+#ifdef FEATURE_READYTORUN
+                    if (IsAot())
+                    {
+                        instParam =
+                            impReadyToRunLookupToTree(&callInfo->instParamLookup, GTF_ICON_CLASS_HDL, exactClassHandle);
+                        if (instParam == nullptr)
+                        {
+                            assert(compDonotInline());
+                            return TYP_UNDEF;
+                        }
+                    }
+                    else
+#endif
+                    {
+                        instParam = gtNewIconEmbClsHndNode(exactClassHandle);
+                        info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(exactClassHandle);
+                    }
+                }
+                else
+                {
+                    instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, true /*mustRestoreHandle*/);
+                    if (instParam == nullptr)
+                    {
+                        assert(compDonotInline());
+                        return TYP_UNDEF;
+                    }
                 }
             }
         }
@@ -861,7 +886,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     impPopCallArgs(sig, call->AsCall());
 
     // Extra args
-    if ((instParam != nullptr) || call->AsCall()->IsAsync() || (varArgsCookie != nullptr))
+    if ((instParam != nullptr) || (asyncContinuation != nullptr) || (varArgsCookie != nullptr))
     {
         if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
         {
@@ -871,11 +896,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                                            .WellKnown(WellKnownArg::VarArgsCookie));
             }
 
-            // Add async continuation arg. For calli these are used for IL
-            // stubs and the VM inserts the arg itself.
-            if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
+            if (asyncContinuation != nullptr)
             {
-                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(asyncContinuation)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
             }
 
@@ -887,11 +910,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
         else
         {
-            // Add async continuation arg. For calli these are used for IL
-            // stubs and the VM inserts the arg itself.
-            if (call->AsCall()->IsAsync() && (opcode != CEE_CALLI))
+            if (asyncContinuation != nullptr)
             {
-                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewNull(), TYP_REF)
+                call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(asyncContinuation)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
             }
 
@@ -1433,40 +1454,15 @@ DONE_CALL:
 
                 // Propagate retExpr as the placeholder for the call.
                 call = retExpr;
-
-                if (origCall->IsAsyncAndAlwaysSavesAndRestoresExecutionContext())
-                {
-                    // Async calls that require save/restore of
-                    // ExecutionContext need to be top most so that we can
-                    // insert try-finally around them. We can inline these, so
-                    // we need to ensure that the RET_EXPR is findable when we
-                    // later expand this.
-
-                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG("async"));
-                    LclVarDsc* varDsc    = lvaGetDesc(resultLcl);
-                    // Keep the information about small typedness to avoid
-                    // inserting unnecessary casts around normalization.
-                    if (varTypeIsSmall(origCall->gtReturnType))
-                    {
-                        assert(origCall->NormalizesSmallTypesOnReturn());
-                        varDsc->lvType = origCall->gtReturnType;
-                    }
-
-                    impStoreToTemp(resultLcl, call, CHECK_SPILL_ALL);
-                    // impStoreToTemp can change src arg list and return type for call that returns struct.
-                    var_types type = genActualType(lvaGetDesc(resultLcl)->TypeGet());
-                    call           = gtNewLclvNode(resultLcl, type);
-                }
             }
             else
             {
-                if (call->IsCall() &&
-                    (isFatPointerCandidate || call->AsCall()->IsAsyncAndAlwaysSavesAndRestoresExecutionContext()))
+                if (call->IsCall() && isFatPointerCandidate)
                 {
                     // these calls should be in statements of the form call() or var = call().
                     // Such form allows to find statements with fat calls without walking through whole trees
                     // and removes problems with cutting trees.
-                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG(isFatPointerCandidate ? "calli" : "async"));
+                    unsigned   resultLcl = lvaGrabTemp(true DEBUGARG("calli"));
                     LclVarDsc* varDsc    = lvaGetDesc(resultLcl);
                     // Keep the information about small typedness to avoid
                     // inserting unnecessary casts around normalization.
@@ -3321,6 +3317,24 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         // the return address of.
         info.compHasNextCallRetAddr = true;
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
+    }
+
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext)
+    {
+        lvaNextCallGenericContext                     = lvaGrabTemp(false DEBUGARG("Upcoming generic context"));
+        lvaGetDesc(lvaNextCallGenericContext)->lvType = TYP_I_IMPL;
+
+        GenTree* node = gtNewStoreLclVarNode(lvaNextCallGenericContext, impPopStack().val);
+        return node;
+    }
+
+    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation)
+    {
+        lvaNextCallAsyncContinuation                     = lvaGrabTemp(false DEBUGARG("Upcoming async continuation"));
+        lvaGetDesc(lvaNextCallAsyncContinuation)->lvType = TYP_REF;
+
+        GenTree* node = gtNewStoreLclVarNode(lvaNextCallAsyncContinuation, impPopStack().val);
+        return node;
     }
 
     if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation)
@@ -6530,7 +6544,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
             assert(genActualType(obj->gtType) == TYP_I_IMPL || obj->TypeIs(TYP_BYREF));
             CorInfoType constraintTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
 
-            obj = gtNewIndir(JITtype2varType(constraintTyp), obj);
+            obj = gtNewLoadValueNode(JITtype2varType(constraintTyp), nullptr, obj);
             return obj;
         }
 
@@ -6816,9 +6830,8 @@ void Compiler::impCheckForPInvokeCall(
 }
 
 //------------------------------------------------------------------------
-// impSetupAndSpillForAsyncCall:
+// impSetupAsyncCall:
 //   Register a call as being async and set up context handling information depending on the IL.
-//   Also spill IL arguments if necessary.
 //
 // Arguments:
 //    call        - The call
@@ -6826,10 +6839,7 @@ void Compiler::impCheckForPInvokeCall(
 //    prefixFlags - Flags containing context handling information from IL
 //    callDI      - Debug info for the async call
 //
-void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall*     call,
-                                            OPCODE           opcode,
-                                            unsigned         prefixFlags,
-                                            const DebugInfo& callDI)
+void Compiler::impSetupAsyncCall(GenTreeCall* call, OPCODE opcode, unsigned prefixFlags, const DebugInfo& callDI)
 {
     AsyncCallInfo asyncInfo;
 
@@ -6841,9 +6851,6 @@ void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall*     call,
     if ((prefixFlags & PREFIX_IS_TASK_AWAIT) != 0)
     {
         JITDUMP("Call is an async task await\n");
-
-        asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::SaveAndRestore;
-        asyncInfo.SaveAndRestoreSynchronizationContextField = true;
 
         if ((prefixFlags & PREFIX_TASK_AWAIT_CONTINUE_ON_CAPTURED_CONTEXT) != 0)
         {
@@ -6864,40 +6871,9 @@ void Compiler::impSetupAndSpillForAsyncCall(GenTreeCall*     call,
     else
     {
         JITDUMP("Call is an async non-task await\n");
-        // Only expected non-task await to see in IL is one of the AsyncHelpers.AwaitAwaiter variants.
-        // These are awaits of custom awaitables, and they come with the behavior that the execution context
-        // is captured and restored on suspension/resumption.
-        // We could perhaps skip this for AwaitAwaiter (but not for UnsafeAwaitAwaiter) since it is expected
-        // that the safe INotifyCompletion will take care of flowing ExecutionContext.
-        asyncInfo.ExecutionContextHandling = ExecutionContextHandling::AsyncSaveAndRestore;
-    }
-
-    // For tailcalls the contexts does not need saving/restoring: they will be
-    // overwritten by the caller anyway.
-    //
-    // More specifically, if we can show that
-    // Thread.CurrentThread._executionContext is not accessed between the
-    // call and returning then we can omit save/restore of the execution
-    // context. We do not do that optimization yet.
-    if ((prefixFlags & PREFIX_TAILCALL) != 0)
-    {
-        asyncInfo.ExecutionContextHandling                  = ExecutionContextHandling::None;
-        asyncInfo.ContinuationContextHandling               = ContinuationContextHandling::None;
-        asyncInfo.SaveAndRestoreSynchronizationContextField = false;
     }
 
     call->AsCall()->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
-
-    if (asyncInfo.ExecutionContextHandling == ExecutionContextHandling::SaveAndRestore)
-    {
-        compMustSaveAsyncContexts = true;
-
-        // In this case we will need to save the context after the arguments are evaluated.
-        // Spill the arguments to accomplish that.
-        // (We could do this via splitting in SaveAsyncContexts, but since we need to
-        //  handle inline candidates we won't gain much.)
-        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("Async await with execution context save and restore"));
-    }
 }
 
 //------------------------------------------------------------------------
@@ -10866,6 +10842,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                             }
+                            else if (strcmp(methodName, "SetNextCallGenericContext") == 0)
+                            {
+                                return NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext;
+                            }
+                            else if (strcmp(methodName, "SetNextCallAsyncContinuation") == 0)
+                            {
+                                return NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation;
+                            }
                         }
                         else if (strcmp(className, "AsyncHelpers") == 0)
                         {
@@ -11220,7 +11204,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     if (strcmp(methodName, "ConfigureAwait") == 0)
                     {
                         if (strcmp(className, "Task`1") == 0 || strcmp(className, "Task") == 0 ||
-                            strcmp(className, "ValuTask`1") == 0 || strcmp(className, "ValueTask") == 0)
+                            strcmp(className, "ValueTask`1") == 0 || strcmp(className, "ValueTask") == 0)
                         {
                             result = NI_System_Threading_Tasks_Task_ConfigureAwait;
                         }

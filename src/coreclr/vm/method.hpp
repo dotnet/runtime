@@ -69,7 +69,7 @@ enum class AsyncMethodKind
 
     // Regular methods that return Task/ValueTask
     // Such method has its actual IL body and there also a synthetic variant that is an
-    // Async-callable think. (AsyncVariantThunk)
+    // Async-callable thunk. (AsyncVariantThunk)
     TaskReturning,
 
     // Task-returning methods marked as MethodImpl::Async in metadata.
@@ -1979,6 +1979,17 @@ public:
         m_wFlags |= mdfHasAsyncMethodData;
     }
 
+    // Returns true if this is an async method that requires save and restore
+    // of async contexts. Regular user implemented runtime async methods
+    // require this behavior, but thunks should be transparent and should not
+    // come with this behavior.
+    inline bool RequiresAsyncContextSaveAndRestore() const
+    {
+        if (!HasAsyncMethodData())
+            return false;
+        return GetAddrOfAsyncMethodData()->kind == AsyncMethodKind::AsyncVariantImpl;
+    }
+
 #ifdef FEATURE_METADATA_UPDATER
     inline BOOL IsEnCAddedMethod()
     {
@@ -2131,7 +2142,7 @@ private:
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
     int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
 public:
-    static void CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder* stubSigBuilder);
+    static void CreateDerivedTargetSig(MetaSig& msig, SigBuilder* stubSigBuilder);
     bool TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     void GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
 #endif // DACCESS_COMPILE

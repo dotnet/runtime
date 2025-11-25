@@ -171,6 +171,16 @@ namespace System.Runtime.CompilerServices
             public INotifyCompletion? Notifier;
             public IValueTaskSourceNotifier? ValueTaskSourceNotifier;
             public Task? TaskNotifier;
+
+            public ExecutionContext? ExecutionContext;
+            public SynchronizationContext? SynchronizationContext;
+
+            public void CaptureContexts()
+            {
+                Thread curThread = Thread.CurrentThreadAssumedInitialized;
+                ExecutionContext = curThread._executionContext;
+                SynchronizationContext = curThread._synchronizationContext;
+            }
         }
 
         [ThreadStatic]
@@ -240,6 +250,7 @@ namespace System.Runtime.CompilerServices
                 state.ValueTaskSourceNotifier = (IValueTaskSourceNotifier)o;
             }
 
+            state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
         }
 
@@ -541,6 +552,8 @@ namespace System.Runtime.CompilerServices
             {
                 ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
 
+                RestoreContextsOnSuspension(false, state.ExecutionContext, state.SynchronizationContext);
+
                 ICriticalNotifyCompletion? critNotifier = state.CriticalNotifier;
                 INotifyCompletion? notifier = state.Notifier;
                 IValueTaskSourceNotifier? vtsNotifier = state.ValueTaskSourceNotifier;
@@ -550,13 +563,15 @@ namespace System.Runtime.CompilerServices
                 state.Notifier = null;
                 state.ValueTaskSourceNotifier = null;
                 state.TaskNotifier = null;
+                state.ExecutionContext = null;
+                state.SynchronizationContext = null;
 
                 Continuation sentinelContinuation = state.SentinelContinuation!;
                 Continuation headContinuation = sentinelContinuation.Next!;
                 sentinelContinuation.Next = null;
 
                 // Head continuation should be the result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
-                // These never have special continuation handling.
+                // These never have special continuation context handling.
                 const ContinuationFlags continueFlags =
                     ContinuationFlags.ContinueOnCapturedSynchronizationContext |
                     ContinuationFlags.ContinueOnThreadPool |
@@ -774,28 +789,55 @@ namespace System.Runtime.CompilerServices
             syncCtx = thread._synchronizationContext;
         }
 
+        // Restore contexts onto current Thread. If "resumed" then this is not the first starting call for the async method.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void RestoreContexts(bool suspended, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
+        private static void RestoreContexts(bool resumed, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
         {
-            Thread thread = Thread.CurrentThreadAssumedInitialized;
-            if (!suspended && previousSyncCtx != thread._synchronizationContext)
+            if (!resumed)
             {
-                thread._synchronizationContext = previousSyncCtx;
-            }
+                Thread thread = Thread.CurrentThreadAssumedInitialized;
+                if (previousSyncCtx != thread._synchronizationContext)
+                {
+                    thread._synchronizationContext = previousSyncCtx;
+                }
 
-            ExecutionContext? currentExecCtx = thread._executionContext;
-            if (previousExecCtx != currentExecCtx)
-            {
-                ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
+                ExecutionContext? currentExecCtx = thread._executionContext;
+                if (previousExecCtx != currentExecCtx)
+                {
+                    ExecutionContext.RestoreChangedContextToThread(thread, previousExecCtx, currentExecCtx);
+                }
             }
         }
 
-        private static void CaptureContinuationContext(SynchronizationContext syncCtx, ref object context, ref ContinuationFlags flags)
+        // Restore contexts onto current Thread as we unwind during suspension. We control the code that runs
+        // during suspension and we do not need to raise ExecutionContext notifications -- we know that it is
+        // not going to be accessed and that DispatchContinuations will return it back to the leaf's context
+        // before calling user code, and restore the original contexts with appropriate notifications before
+        // returning.
+        private static void RestoreContextsOnSuspension(bool resumed, ExecutionContext? previousExecCtx, SynchronizationContext? previousSyncCtx)
         {
+            if (!resumed)
+            {
+                Thread thread = Thread.CurrentThreadAssumedInitialized;
+                if (previousSyncCtx != thread._synchronizationContext)
+                {
+                    thread._synchronizationContext = previousSyncCtx;
+                }
+
+                if (previousExecCtx != thread._executionContext)
+                {
+                    thread._executionContext = previousExecCtx;
+                }
+            }
+        }
+
+        private static void CaptureContinuationContext(ref object continuationContext, ref ContinuationFlags flags)
+        {
+            SynchronizationContext? syncCtx = Thread.CurrentThreadAssumedInitialized._synchronizationContext;
             if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
             {
                 flags |= ContinuationFlags.ContinueOnCapturedSynchronizationContext;
-                context = syncCtx;
+                continuationContext = syncCtx;
                 return;
             }
 
@@ -803,7 +845,7 @@ namespace System.Runtime.CompilerServices
             if (sched != null && sched != TaskScheduler.Default)
             {
                 flags |= ContinuationFlags.ContinueOnCapturedTaskScheduler;
-                context = sched;
+                continuationContext = sched;
                 return;
             }
 
