@@ -347,7 +347,11 @@ namespace MonoTests.System.Runtime.Caching
 
             config.Set("PhysicalMemoryMode", "Default:" + ((long)0x50000000).ToString()); // A value known to result in 97% physical memory limit
             mc = new MemoryCache("MyCache", config);
+#if SRC_ALLOW_CUSTOM_PHYSICAL_BYTES
             Assert.Equal(IsFullFramework ? autoCalculatedPhysicalMemoryLimit : 97, mc.PhysicalMemoryLimit);
+#else
+            Assert.Equal(autoCalculatedPhysicalMemoryLimit, mc.PhysicalMemoryLimit);    // PhysicalMemoryBytes within PhysicalMemoryMode is ignored
+#endif
 
             // This sneaky way of setting physical memory available is only supported in 'Default' mode.
             config.Set("PhysicalMemoryMode", "Legacy:" + ((long)0x50000000).ToString());

@@ -39,34 +39,15 @@ namespace System.Runtime.Caching
             InitHistory();
         }
 
-        internal override int GetPercentToTrim(DateTime lastTrimTime, int lastTrimPercent)
-        {
-            int percent = 0;
-            if (IsAboveHighPressure())
-            {
-                // choose percent such that we don't repeat this for ~5 (TARGET_TOTAL_MEMORY_TRIM_INTERVAL) minutes,
-                // but keep the percentage between 10 and 50.
-                DateTime utcNow = DateTime.UtcNow;
-                long ticksSinceTrim = utcNow.Subtract(lastTrimTime).Ticks;
-                if (ticksSinceTrim > 0)
-                {
-                    percent = Math.Min(50, (int)((lastTrimPercent * TargetTotalMemoryTrimIntervalTicks) / ticksSinceTrim));
-                    percent = Math.Max(MinTotalMemoryTrimPercent, percent);
-                }
-
-#if PERF
-                Debug.WriteLine($"PhysicalMemoryMonitor.GetPercentToTrim: percent={percent:N}, lastTrimPercent={lastTrimPercent:N}, secondsSinceTrim={ticksSinceTrim/TimeSpan.TicksPerSecond:N}{Environment.NewLine}");
-#endif
-            }
-
-            return percent;
-        }
-
         internal void SetLimit(int physicalMemoryLimitPercentage, PhysicalMemoryMode physicalMemoryMode, long? physicalMemoryBytes)
         {
 #if NETCOREAPP
             _physicalMemoryMode = physicalMemoryMode;
+#if SRC_ALLOW_CUSTOM_PHYSICAL_BYTES
             _physicalMemoryBytes = (physicalMemoryMode == PhysicalMemoryMode.Default) ? physicalMemoryBytes : null;
+#else
+            _physicalMemoryBytes = null;
+#endif // SRC_ALLOW_CUSTOM_PHYSICAL_BYTES
 #else
             // For non-netcoreapp, we only support Legacy mode because the GC.GetGCMemoryInfo API is not available.
             _physicalMemoryMode = PhysicalMemoryMode.Legacy;
@@ -75,7 +56,7 @@ namespace System.Runtime.Caching
             {
                 throw new PlatformNotSupportedException("PhysicalMemoryMonitor only supports Legacy mode on non-netcoreapp platforms.");
             }
-#endif
+#endif // NETCOREAPP
 
             if (physicalMemoryLimitPercentage == 0)
             {
@@ -159,7 +140,7 @@ namespace System.Runtime.Caching
                 if (_physicalMemoryMode == PhysicalMemoryMode.GCThresholds)
                 {
                     // GCThresholds mode: Use GC's high memory load threshold
-                    limit = memInfo.HighMemoryLoadThresholdBytes;
+                    limit = Math.Min(memInfo.HighMemoryLoadThresholdBytes, limit);
                 }
 
                 if (limit > memInfo.MemoryLoadBytes)
@@ -173,6 +154,29 @@ namespace System.Runtime.Caching
 #endif
             // Legacy mode: Platform-specific implementation
             return LegacyGetCurrentPressure();
+        }
+
+        internal override int GetPercentToTrim(DateTime lastTrimTime, int lastTrimPercent)
+        {
+            int percent = 0;
+            if (IsAboveHighPressure())
+            {
+                // choose percent such that we don't repeat this for ~5 (TARGET_TOTAL_MEMORY_TRIM_INTERVAL) minutes,
+                // but keep the percentage between 10 and 50.
+                DateTime utcNow = DateTime.UtcNow;
+                long ticksSinceTrim = utcNow.Subtract(lastTrimTime).Ticks;
+                if (ticksSinceTrim > 0)
+                {
+                    percent = Math.Min(50, (int) ((lastTrimPercent* TargetTotalMemoryTrimIntervalTicks) / ticksSinceTrim));
+                    percent = Math.Max(MinTotalMemoryTrimPercent, percent);
+                }
+
+#if PERF
+                Debug.WriteLine($"PhysicalMemoryMonitor.GetPercentToTrim: percent={percent:N}, lastTrimPercent={lastTrimPercent:N}, secondsSinceTrim={ticksSinceTrim/TimeSpan.TicksPerSecond:N}{Environment.NewLine}");
+#endif
+            }
+
+            return percent;
         }
     }
 }

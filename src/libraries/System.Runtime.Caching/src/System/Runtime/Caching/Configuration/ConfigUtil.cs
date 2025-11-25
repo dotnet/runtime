@@ -108,9 +108,7 @@ namespace System.Runtime.Caching.Configuration
             // Parse the mode part - This part is required
             if (!Enum.TryParse<PhysicalMemoryMode>(parts[0], true, out PhysicalMemoryMode mode))
             {
-                // Ugly hack until we can add a new localized exception message for this.
-                var msgFormat = new InvalidEnumArgumentException(ConfigUtil.PhysicalMemoryMode, -999, typeof(PhysicalMemoryMode));
-                throw new ArgumentException(msgFormat.Message.Replace("-999", parts[0]));
+                throw new ArgumentException(null, ConfigUtil.PhysicalMemoryMode);
             }
 
             parsedMode = mode;
