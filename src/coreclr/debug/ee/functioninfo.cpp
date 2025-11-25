@@ -1253,28 +1253,9 @@ void DebuggerJitInfo::Init(TADDR newAddress)
     this->m_addrOfCode = (ULONG_PTR)PTR_TO_CORDB_ADDRESS((BYTE*) newAddress);
     this->m_jitComplete = true;
 
-    if (this->m_nativeCodeVersion.GetOptimizationTier() != NativeCodeVersion::OptimizationTierInterpreted)
-    {
-        this->m_codeRegionInfo.InitializeFromStartAddress(PINSTRToPCODE((TADDR)this->m_addrOfCode));
-    }
-    else
-    {
-        // For interpreter code, initialize code region info with IL bytecode info
-        // We only have "hot" code (the bytecode), no cold regions or funclets
-        MethodDesc* pMD = this->m_nativeCodeVersion.GetMethodDesc();
-        COR_ILMETHOD* pILHeader = pMD->GetILHeader();
-        SIZE_T ilCodeSize = 0;
-
-        if (pILHeader != NULL)
-        {
-            COR_ILMETHOD_DECODER decoder(pILHeader);
-            ilCodeSize = decoder.GetCodeSize();
-        }
-
-        this->m_codeRegionInfo.InitializeForInterpreter(PINSTRToPCODE((TADDR)this->m_addrOfCode), ilCodeSize);
-    }
-
+    this->m_codeRegionInfo.InitializeFromStartAddress(PINSTRToPCODE((TADDR)this->m_addrOfCode));
     this->m_sizeOfCode =  this->m_codeRegionInfo.getSizeOfTotalCode();
+
     this->m_encVersion = this->m_methodInfo->GetCurrentEnCVersion();
 
 #if defined(FEATURE_EH_FUNCLETS)
