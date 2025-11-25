@@ -5731,7 +5731,8 @@ retry_for_debugger:
 //          It is unsafe to use blocking APIs or allocate in this method.
 BOOL CheckActivationSafePoint(SIZE_T ip)
 {
-    Thread *pThread = GetThreadNULLOk();
+    Thread *pThread = GetThreadAsyncSafe();
+    _ASSERTE(pThread != NULL);
 
     // The criteria for safe activation is to be running managed code.
     // Also we are not interested in handling interruption if we are already in preemptive mode nor if we are single stepping
@@ -5740,7 +5741,7 @@ BOOL CheckActivationSafePoint(SIZE_T ip)
         pThread->PreemptiveGCDisabled() &&
         ExecutionManager::IsManagedCode(ip);
 
-    if (!isActivationSafePoint)
+    if (!isActivationSafePoint && pThread != NULL)
     {
         pThread->m_hasPendingActivation = false;
     }

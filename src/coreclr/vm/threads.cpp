@@ -33,6 +33,7 @@
 #include "vmholder.h"
 #include "exceptmacros.h"
 #include "minipal/time.h"
+#include "minipal/thread.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -61,6 +62,129 @@
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
+
+#ifdef TARGET_UNIX
+// Async safe lock free thread map for use in signal handlers
+class AsyncSafeThreadMap
+{
+    struct ThreadEntry
+    {
+        size_t osThread;
+        Thread* pThread;
+    };
+
+    static const size_t MaxThreadsInSegment = 256;
+
+    struct ThreadSegment
+    {
+        ThreadEntry entries[MaxThreadsInSegment];
+        ThreadSegment* pNext;
+    };
+
+    ThreadSegment *m_pHeadSegment;
+
+public:
+
+    void Initialize()
+    {
+        STANDARD_VM_CONTRACT;
+
+        ThreadSegment* pSegment = new ThreadSegment();
+        ZeroMemory(pSegment, sizeof(ThreadSegment));
+        m_pHeadSegment = pSegment;
+    }
+
+    void Insert(Thread* pThread)
+    {
+        STANDARD_VM_CONTRACT;
+
+        size_t osThread = pThread->GetOSThreadId64();
+        size_t startIndex = osThread % MaxThreadsInSegment;
+
+        ThreadSegment* pSegment = m_pHeadSegment;
+        while (pSegment)
+        {
+            for (size_t i = 0; i < MaxThreadsInSegment; i++)
+            {
+                size_t index = (startIndex + i) % MaxThreadsInSegment;
+                if (InterlockedCompareExchangeT(&pSegment->entries[index].osThread, osThread, (size_t)0) == 0)
+                {
+                    // Successfully inserted
+                    pSegment->entries[index].pThread = pThread;
+                    return;
+                }
+            }
+            if (pSegment->pNext == nullptr)
+            {
+                // Need to add a new segment
+                ThreadSegment* pNewSegment = new ThreadSegment();
+                ZeroMemory(pNewSegment, sizeof(ThreadSegment));
+                ThreadSegment* pOldNext = InterlockedCompareExchangeT(&pSegment->pNext, pNewSegment, nullptr);
+                if (pOldNext != nullptr)
+                {
+                    // Another thread added the segment first
+                    delete pNewSegment;
+                }
+            }
+            pSegment = pSegment->pNext;
+        }
+    }
+
+    void Remove(Thread* pThread)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        size_t osThread = pThread->GetOSThreadId64();
+        size_t startIndex = osThread % MaxThreadsInSegment;
+
+        ThreadSegment* pSegment = m_pHeadSegment;
+        while (pSegment)
+        {
+            for (size_t i = 0; i < MaxThreadsInSegment; i++)
+            {
+                size_t index = (startIndex + i) % MaxThreadsInSegment;
+                if (pSegment->entries[index].pThread == pThread)
+                {
+                    // Found the entry, remove it
+                    pSegment->entries[index].pThread = nullptr;
+                    InterlockedExchangeT(&pSegment->entries[i].osThread, (size_t)0);
+                    return;
+                }
+            }
+            pSegment = pSegment->pNext;
+        }
+    }
+
+    Thread *GetThread(size_t osThread)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        size_t startIndex = osThread % MaxThreadsInSegment;
+        ThreadSegment* pSegment = m_pHeadSegment;
+        while (pSegment)
+        {
+            for (size_t i = 0; i < MaxThreadsInSegment; i++)
+            {
+                size_t index = (startIndex + i) % MaxThreadsInSegment;
+                if (pSegment->entries[index].osThread == osThread)
+                {
+                    return pSegment->entries[index].pThread;
+                }
+            }
+            pSegment = pSegment->pNext;
+        }
+        return nullptr;
+    }
+};
+
+static AsyncSafeThreadMap s_asyncSafeThreadMap;
+
+Thread* GetThreadAsyncSafe()
+{
+    return s_asyncSafeThreadMap.GetThread(minipal_get_current_thread_id());
+}
+
+#endif // TARGET_UNIX
 
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
@@ -371,6 +495,17 @@ void SetThread(Thread* t)
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
     t_CurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
+
+#ifdef TARGET_UNIX
+    if (t != NULL)
+    {
+        s_asyncSafeThreadMap.Insert(t);
+    }
+    else if (origThread != NULL)
+    {
+        s_asyncSafeThreadMap.Remove(origThread);
+    }
+#endif
 }
 
 BOOL Thread::Alert ()
@@ -1187,6 +1322,9 @@ void InitThreadManager()
 #endif // _DEBUG
 
     ThreadSuspend::Initialize();
+#ifdef TARGET_UNIX
+    s_asyncSafeThreadMap.Initialize();
+#endif
 }
 
 
