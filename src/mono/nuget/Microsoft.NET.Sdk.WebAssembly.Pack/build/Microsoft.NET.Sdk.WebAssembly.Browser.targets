@@ -286,6 +286,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$(_WasmNativeAssetFileNames.Contains(';%(FileName)%(Extension);'))" />
+
+      <!-- If we have @(WasmAssembliesFinal), prefer them over @(ReferenceCopyLocalPaths). They come from AOT during build. In that case @(ReferenceCopyLocalPaths) is already empty  -->
       <_WasmProjectAssemblyBuild Include="@(WasmAssembliesFinal)" Condition="$(_WasmIntermediateAssemblyFileNames.Contains(';%(FileName)%(Extension);'))" />
       <_WasmProjectAssemblyBuild Include="@(IntermediateAssembly)" Condition="@(_WasmProjectAssemblyBuild->Count()) == 0" />
       <_WasmBuildAssetCandidates Include="@(ReferenceCopyLocalPaths)" />

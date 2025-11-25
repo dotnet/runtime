@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <Target Name="CopyWwwrootToOutputDirectory" BeforeTargets="ResolveProjectStaticWebAssets">
-    <!-- StaticWebAssetsSDK by default doesn't copy wwwroot content to build output (only during publish) -->
+    <!-- StaticWebAssetsSDK by default doesn't copy wwwroot content to build output (only during publish) and we need it for running the samples with simple server (without DevServer) -->
     <ItemGroup>
       <Content CopyToOutputDirectory="PreserveNewest" Condition="$([MSBuild]::ValueOrDefault('%(Content.Identity)', '').Contains('wwwroot'))" />
     </ItemGroup>

@@ -152,7 +152,6 @@
     <RunScriptCommand Condition="'$(RunScriptCommand)' != ''">$(_AOTBuildCommand) $(_ShellCommandSeparator) $(RunScriptCommand)</RunScriptCommand>
   </PropertyGroup>
 
-  <!-- Don't include InTree.props here, because the test projects themselves can set the target* properties -->
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.props"
           Condition="'$(BuildAOTTestsOn)' == 'local' and '$(IsWasmProject)' != 'false'" />
   <Import Project="$(BrowserProjectRoot)build\WasmApp.InTree.targets"

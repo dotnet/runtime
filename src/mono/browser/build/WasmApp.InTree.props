@@ -2,8 +2,6 @@
   <!-- This depends on the root Directory.Build.props imported this file -->
   <PropertyGroup>
     <UsingMicrosoftNETSdkWebAssembly>true</UsingMicrosoftNETSdkWebAssembly>
-    <!-- <UsingBrowserRuntimeWorkload>true</UsingBrowserRuntimeWorkload> -->
-    <!-- <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest> -->
 
     <WasmCommonTargetsPath Condition="Exists('$(MSBuildThisFileDirectory)WasmApp.Common.props')">$(MSBuildThisFileDirectory)</WasmCommonTargetsPath>
     <WasmCommonTargetsPath Condition="'$(WasmCommonTargetsPath)' == ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'build'))</WasmCommonTargetsPath>
@@ -20,6 +18,7 @@
     <OutputType>library</OutputType>
   </PropertyGroup>
 
+  <!-- Don't set defaults for test, because the test projects themselves can set the target* properties -->
   <PropertyGroup Condition="'$(_WasmInTreeDefaults)' != 'false'">
     <SelfContained>true</SelfContained>
     <Platform>AnyCPU</Platform>
