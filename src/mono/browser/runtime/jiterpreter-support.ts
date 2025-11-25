@@ -343,13 +343,14 @@ export class WasmBuilder {
         } else {
             // mono_log_info(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
             this.appendU8(WasmOpcode.i32_const);
-            this.appendULeb(<any>pointer >>> 0);
+            // i32_const is always signed
+            this.appendLebRef((pointer as any | 0), true);
         }
     }
 
     ip_const (value: MintOpcodePtr) {
         this.appendU8(WasmOpcode.i32_const);
-        this.appendULeb(<any>value >>> 0 - <any>this.base >>> 0);
+        this.appendLeb(<any>value - <any>this.base);
     }
 
     i52_const (value: number) {
@@ -910,7 +911,7 @@ export class WasmBuilder {
 
     appendMemarg (offset: number, alignPower: number) {
         this.appendULeb(alignPower);
-        this.appendULeb(offset >>> 0);
+        this.appendLeb(offset | 0);
     }
 
     /*
@@ -1633,7 +1634,7 @@ export function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {
     builder.block(WasmValtype.void, WasmOpcode.if_);
     builder.local("frame");
     // Not ip_const, because we can't pass relative IP to do_safepoint
-    builder.i32_const(ip);//
+    builder.ptr_const(ip);
     builder.callImport("safepoint");
     builder.endBlock();
 }
