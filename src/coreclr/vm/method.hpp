@@ -94,19 +94,17 @@ enum class AsyncMethodFlags
     //   - it "unwraps" the element type.
     //   - it is reversible. Thus nonconflicting signatures will map to nonconflicting ones.
     //
-    // Async methods are called with CORINFO_CALLCONV_ASYNCCALL call convention.
-    //
     // It is possible to get from one variant to another via GetAsyncOtherVariant.
     //
     // NOTE: Not all AsyncCall methods are "variants" from a pair.
     //       Methods that are explicitly declared as MethodImpl.Async in metadata while
-    //       not Task returning is a special case used in a few methods like `Await` or
+    //       not Promise-returning is a special case used in a few methods like `Await` or
     //       other infrastructure methods used in implementation of Runtime Async itself.
     //       Such methods do not get Task-returning facades. (We would not even know if the
     //       facade needs to return Task or ValueTask)
     //       Such methods can only be called from other AsyncCall methods.
-    //       Like all other cases of AsyncCall, these calls have semantic of "await" and can
-    //       participate in suspension/resume.
+    //       Like all other cases of AsyncCall, calls to these methods have semantic of "await"
+    //       and can participate in suspension/resume.
 };
 
 inline AsyncMethodFlags operator|(AsyncMethodFlags lhs, AsyncMethodFlags rhs)

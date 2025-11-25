@@ -3320,7 +3320,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 if (IsTaskReturning(returnKind))
                 {
                     // Declare a TaskReturning variant method.
-                    // In the next pass we will also add an Async variant that can be called by async
+                    // In the next pass we will also add an AsyncCall variant that can be called by async
                     // code when awaiting and bypass Task abstraction.
                     AsyncMethodFlags kind = AsyncMethodFlags::ReturnsTaskOrValueTask;
 
