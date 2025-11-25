@@ -5528,7 +5528,7 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
     if (variantLookup == AsyncVariantLookup::AsyncOtherVariant && !declMethod.IsNull())
     {
         bmtRTMethod* declRTMethod = declMethod.AsRTMethod();
-        // Other varian may not exist. For example we return Task and the base is generic and returns T.
+        // Other variant may not exist. For example we return Task and the base is generic and returns T.
         // Then we return Null.
         declMethod = {};
         for (; !slotIt.AtEnd(); slotIt.Next())
