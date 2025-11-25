@@ -75,17 +75,17 @@ INST(i64_ge_u,    "i32.ge_u",    0, IF_OPCODE,  0x5A)
 
 INST(f32_eq,      "f32.eq",      0, IF_OPCODE,  0x5B)
 INST(f32_ne,      "f32.ne",      0, IF_OPCODE,  0x5C)
-INST(f32_lt,      "f32.lt_s",    0, IF_OPCODE,  0x5D)
-INST(f32_gt,      "f32.gt_s",    0, IF_OPCODE,  0x5E)
-INST(f32_le,      "f32.le_s",    0, IF_OPCODE,  0x5F)
-INST(f32_ge,      "f32.ge_s",    0, IF_OPCODE,  0x60)
+INST(f32_lt,      "f32.lt",      0, IF_OPCODE,  0x5D)
+INST(f32_gt,      "f32.gt",      0, IF_OPCODE,  0x5E)
+INST(f32_le,      "f32.le",      0, IF_OPCODE,  0x5F)
+INST(f32_ge,      "f32.ge",      0, IF_OPCODE,  0x60)
 
 INST(f64_eq,      "f64.eq",      0, IF_OPCODE,  0x61)
 INST(f64_ne,      "f64.ne",      0, IF_OPCODE,  0x62)
-INST(f64_lt,      "f64.lt_s",    0, IF_OPCODE,  0x63)
-INST(f64_gt,      "f64.gt_s",    0, IF_OPCODE,  0x64)
-INST(f64_le,      "f64.le_s",    0, IF_OPCODE,  0x65)
-INST(f64_ge,      "f64.ge_s",    0, IF_OPCODE,  0x66)
+INST(f64_lt,      "f64.lt",      0, IF_OPCODE,  0x63)
+INST(f64_gt,      "f64.gt",      0, IF_OPCODE,  0x64)
+INST(f64_le,      "f64.le",      0, IF_OPCODE,  0x65)
+INST(f64_ge,      "f64.ge",      0, IF_OPCODE,  0x66)
 
 // other
 

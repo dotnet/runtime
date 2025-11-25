@@ -900,6 +900,7 @@ void CodeGen::genCodeForBBlist()
                 unsigned       blockNum   = 0;
                 unsigned const depth      = findDepth(succNum, isBackedge, blockNum);
                 inst_JMP(EJ_br, depth);
+                break;
             }
 
             case BBJ_COND:

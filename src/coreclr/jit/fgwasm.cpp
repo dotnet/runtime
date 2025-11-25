@@ -1345,7 +1345,7 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // If we use an explicit EH state marker, likely we do not need
     // to keep the try region contiguous.
     //
-    // If we need contigouous trys we can likely create a try-aware
+    // If we need contiguous trys we can likely create a try-aware
     // loop-aware RPO, since both regions will be single-entry.
     // The main trick is to figure out both the extent of the try region
     // and if there is a block that is both try entry and loop header,
