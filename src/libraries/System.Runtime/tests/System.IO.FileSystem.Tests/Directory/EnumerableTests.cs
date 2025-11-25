@@ -57,7 +57,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void CreateSubdirectory_RootDriveSubfolder()
+        public void CreateSubdirectory_RootDriveSubfolder_Windows()
         {
             // Get the root of the OS drive (e.g., "C:\")
             string rootDrive = Path.GetPathRoot(Environment.SystemDirectory);
@@ -87,6 +87,42 @@ namespace System.IO.Tests
                 }
             }
         }
+
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void CreateSubdirectory_RootDriveSubfolder_Linux()
+        {
+            // Get the root of the OS drive (e.g., "/")
+            // can not use string rootDrive = Path.GetPathRoot(Environment.SystemDirectory); as Environment.SystemDirectory is empty for Linux
+            string rootDrive = "/"
+
+            // Create a DirectoryInfo for the root drive
+            DirectoryInfo rootDirectory = new DirectoryInfo(rootDrive);
+
+            // Create a unique test folder name to avoid conflicts
+            string testFolderName = $"TestFolder_{Guid.NewGuid():N}";
+
+            try
+            {
+                // Create a subdirectory directly in the root
+                DirectoryInfo subDirectory = rootDirectory.CreateSubdirectory(testFolderName);
+
+                // Verify it was created
+                Assert.True(subDirectory.Exists);
+                Assert.Equal(Path.Combine(rootDrive, testFolderName), subDirectory.FullName);
+            }
+            finally
+            {
+                // Cleanup
+                string testFolderPath = Path.Combine(rootDrive, testFolderName);
+                if (Directory.Exists(testFolderPath))
+                {
+                    Directory.Delete(testFolderPath, recursive: true);
+                }
+            }
+        }
+
 
         [Fact]
         public void EnumerateDirectories_NonBreakingSpace()
