@@ -33,8 +33,6 @@ public class BuildPublishTests : BlazorWasmTestBase
             data.Add(Configuration.Debug, true);
         }
 
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/103625", TestPlatforms.Windows)]
-        // when running locally the path might be longer than 260 chars and these tests can fail with AOT
         data.Add(Configuration.Release, false); // Release relinks by default
         data.Add(Configuration.Release, true);
         return data;
@@ -53,6 +51,17 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_AOT_WithWorkload(Configuration config, bool testUnicode)
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_aot", appendUnicodeToPath: testUnicode);
+        BlazorBuild(info, config);
+
+        PublishProject(info, config, new PublishOptions(AOT: true, UseCache: false));
+    }
+
+    [Fact]
+    public void DefaultTemplate_AOT_WithLongPath()
+    {
+        Configuration config = Configuration.Release;
+        string longIdPrefix = $"blz_aot_{config}_{GetRandomId()}_TEST_OF_EXTREMELY_LONG_PATH";
+        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, longIdPrefix, appendUnicodeToPath: true);
         BlazorBuild(info, config);
 
         PublishProject(info, config, new PublishOptions(AOT: true, UseCache: false));
