@@ -8,7 +8,6 @@
   .ver 4:0:0:0
 }
 .assembly extern xunit.core {}
-.assembly extern mscorlib {}
 .assembly extern System.Runtime {}
 .assembly ASSEMBLY_NAME {}
 .class interface private abstract auto ansi IncrDecr
@@ -31,7 +30,7 @@
 } 
 
 .class private auto ansi beforefieldinit MyInt
-       extends [mscorlib]System.Object
+       extends [System.Runtime]System.Object
        implements IncrDecr
 {
   .field private int32 x
@@ -80,17 +79,17 @@
   {
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+    IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
     IL_0006:  ret
   } 
 
 } 
 
 .class private auto ansi beforefieldinit MyCounter<(IncrDecr) T>
-       extends [mscorlib]System.Object
+       extends [System.Runtime]System.Object
 {
   .param type T 
-  .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+  .custom instance void [System.Runtime]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
   .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
   .field private !T counter
   .field private !T[] counters
@@ -98,13 +97,13 @@
           Increment<(IncrDecr) T2>() cil managed
   {
     .param type T2 
-    .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
     .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  2
     .locals init (!!T2 V_0)
     IL_0000:  ldtoken    !!T2
-    IL_0005:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_000a:  call       object [mscorlib]System.Activator::CreateInstance(class [mscorlib]System.Type)
+    IL_0005:  call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    IL_000a:  call       object [System.Runtime]System.Activator::CreateInstance(class [System.Runtime]System.Type)
     IL_000f:  unbox.any  !!T2
     IL_0014:  stloc.0
     IL_0015:  ldloca 0
@@ -124,7 +123,7 @@
           Decrement<(IncrDecr) T2>() cil managed
   {
     .param type T2 
-    .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
     .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  2
     .locals init (!!T2 V_0)
@@ -149,7 +148,7 @@
           Increment<(IncrDecr) T2>(int32 index) cil managed
   {
     .param type T2 
-    .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
     .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  4
     .locals init (!!T2[] V_0)
@@ -159,8 +158,8 @@
     IL_0007:  ldloc.0
     IL_0008:  ldarg.1
     IL_0009:  ldtoken    !!T2
-    IL_000e:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_0013:  call       object [mscorlib]System.Activator::CreateInstance(class [mscorlib]System.Type)
+    IL_000e:  call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    IL_0013:  call       object [System.Runtime]System.Activator::CreateInstance(class [System.Runtime]System.Type)
     IL_0018:  unbox.any  !!T2
     IL_001d:  stelem     !!T2
     IL_0022:  ldloc.0
@@ -186,7 +185,7 @@
           Decrement<(IncrDecr) T2>(int32 index) cil managed
   {
     .param type T2 
-    .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
     .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  4
     .locals init (!!T2[] V_0)
@@ -224,7 +223,7 @@
           instance void  Increment2<(IncrDecr) T2>(!!T2 cnter) cil managed
   {
     .param type T2 
-    .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
     .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  8
     IL_0000:  ldarga 1
@@ -244,7 +243,7 @@
           instance void  Decrement2<(IncrDecr) T2>(!!T2 cnter) cil managed
   {
     .param type T2 
-    .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
     .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  8
     IL_0000:  ldarg.1
@@ -299,8 +298,8 @@
     .maxstack  8
     IL_0000:  ldarg.0
     IL_0001:  ldtoken    !T
-    IL_0006:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(valuetype [mscorlib]System.RuntimeTypeHandle)
-    IL_000b:  call       object [mscorlib]System.Activator::CreateInstance(class [mscorlib]System.Type)
+    IL_0006:  call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+    IL_000b:  call       object [System.Runtime]System.Activator::CreateInstance(class [System.Runtime]System.Type)
     IL_0010:  unbox.any  !T
     IL_0015:  stfld      !0 class MyCounter<!T>::counter
     IL_001a:  ldarg.0
@@ -308,14 +307,14 @@
     IL_001c:  newarr     !T
     IL_0021:  stfld      !0[] class MyCounter<!T>::counters
     IL_0026:  ldarg.0
-    IL_0027:  call       instance void [mscorlib]System.Object::.ctor()
+    IL_0027:  call       instance void [System.Runtime]System.Object::.ctor()
     IL_002c:  ret
   } 
 
 } 
 
 .class public auto ansi beforefieldinit test
-       extends [mscorlib]System.Object
+       extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
@@ -341,7 +340,7 @@
     IL_0020:  ldstr      "Expected: 100, Actual: {0}"
     IL_0025:  ldloc.0
     IL_0026:  callvirt   instance int32 class MyCounter<class MyInt>::Val()
-    IL_002b:  box        [mscorlib]System.Int32
+    IL_002b:  box        [System.Runtime]System.Int32
     IL_0030:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0035:  ldc.i4.1
@@ -359,7 +358,7 @@
     IL_0054:  ldstr      "Expected: 100, Actual: {0}"
     IL_0059:  ldloc.0
     IL_005a:  callvirt   instance int32 class MyCounter<class MyInt>::Val()
-    IL_005f:  box        [mscorlib]System.Int32
+    IL_005f:  box        [System.Runtime]System.Int32
     IL_0064:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0069:  ldc.i4.2
@@ -381,7 +380,7 @@
     IL_0091:  ldloc.0
     IL_0092:  ldc.i4.0
     IL_0093:  callvirt   instance int32 class MyCounter<class MyInt>::Val(int32)
-    IL_0098:  box        [mscorlib]System.Int32
+    IL_0098:  box        [System.Runtime]System.Int32
     IL_009d:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_00a2:  ldc.i4.3
@@ -402,7 +401,7 @@
     IL_00c8:  ldloc.0
     IL_00c9:  ldc.i4.0
     IL_00ca:  callvirt   instance int32 class MyCounter<class MyInt>::Val(int32)
-    IL_00cf:  box        [mscorlib]System.Int32
+    IL_00cf:  box        [System.Runtime]System.Int32
     IL_00d4:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_00d9:  ldc.i4.4
@@ -424,7 +423,7 @@
     IL_00fe:  ldstr      "Expected: 100, Actual: {0}"
     IL_0103:  ldloc.0
     IL_0104:  callvirt   instance int32 class MyCounter<class MyInt>::Val()
-    IL_0109:  box        [mscorlib]System.Int32
+    IL_0109:  box        [System.Runtime]System.Int32
     IL_010e:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0113:  ldc.i4.5
@@ -443,7 +442,7 @@
     IL_0130:  ldstr      "Expected: 100, Actual: {0}"
     IL_0135:  ldloc.0
     IL_0136:  callvirt   instance int32 class MyCounter<class MyInt>::Val()
-    IL_013b:  box        [mscorlib]System.Int32
+    IL_013b:  box        [System.Runtime]System.Int32
     IL_0140:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0145:  ldc.i4.6
@@ -465,7 +464,7 @@
   {
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
+    IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
     IL_0006:  ret
   } 
 }
