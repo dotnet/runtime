@@ -117,7 +117,7 @@ export class TraceInfo {
     isVerbose: boolean;
 
     constructor (ip: MintOpcodePtr, index: number, isVerbose: number) {
-        this.ip = ip;
+        this.ip = ip as any >>> 0 as any;
         this.index = index;
         this.isVerbose = !!isVerbose;
     }
@@ -1011,6 +1011,10 @@ export function mono_interp_tier_prepare_jiterpreter (
     presetFunctionPointer: number
 ): number {
     mono_assert(ip, "expected instruction pointer");
+    ip = ip as any >>> 0 as any;
+    frame = frame as any >>> 0 as any;
+    method = method as any >>> 0 as any;
+    startOfBody = startOfBody as any >>> 0 as any;
     if (!mostRecentOptions)
         mostRecentOptions = getOptions();
 
@@ -1084,6 +1088,9 @@ export function mono_interp_tier_prepare_jiterpreter (
 export function mono_wasm_free_method_data (
     method: MonoMethod, imethod: number, traceIndex: number
 ) {
+    method = method as any >>> 0 as any;
+    imethod = imethod >>> 0;
+
     if (runtimeHelpers.emscriptenBuildOptions.enableDevToolsProfiler) {
         mono_wasm_profiler_free_method(method);
     }

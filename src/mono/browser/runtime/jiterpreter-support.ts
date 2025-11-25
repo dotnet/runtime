@@ -334,7 +334,7 @@ export class WasmBuilder {
             (idx < 0) && (this.nextConstantSlot < this.constantSlots.length)
         ) {
             idx = this.nextConstantSlot++;
-            this.constantSlots[idx] = <any>pointer;
+            this.constantSlots[idx] = <any>pointer >>> 0;
         }
 
         if (idx >= 0) {
@@ -342,13 +342,14 @@ export class WasmBuilder {
             this.appendLeb(idx);
         } else {
             // mono_log_info(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
-            this.i32_const(pointer);
+            this.appendU8(WasmOpcode.i32_const);
+            this.appendULeb(<any>pointer >>> 0 - <any>this.base);
         }
     }
 
     ip_const (value: MintOpcodePtr) {
         this.appendU8(WasmOpcode.i32_const);
-        this.appendLeb(<any>value - <any>this.base);
+        this.appendULeb(<any>value >>> 0 - <any>this.base);
     }
 
     i52_const (value: number) {
@@ -909,20 +910,21 @@ export class WasmBuilder {
 
     appendMemarg (offset: number, alignPower: number) {
         this.appendULeb(alignPower);
-        this.appendULeb(offset);
+        this.appendULeb(offset >>> 0);
     }
 
     /*
         generates either (u32)get_local(ptr) + offset or (u32)ptr1 + offset
     */
     lea (ptr1: string | number, offset: number) {
-        if (typeof (ptr1) === "string")
+        if (typeof (ptr1) === "string") {
             this.local(ptr1);
-        else
-            this.i32_const(ptr1);
+        } else {
+            this.appendU8(WasmOpcode.i32_const);
+            this.appendULeb(<any>ptr1 >>> 0);
+        }
 
         this.i32_const(offset);
-        // FIXME: How do we make sure this has correct semantics for pointers over 2gb?
         this.appendU8(WasmOpcode.i32_add);
     }
 
@@ -1617,7 +1619,7 @@ export function append_profiler_event (builder: WasmBuilder, ip: MintOpcodePtr, 
             throw new Error(`Unimplemented profiler event ${opcode}`);
     }
     builder.local("frame");
-    builder.i32_const(ip);
+    builder.ptr_const(ip);
     builder.callImport(event_name);
 }
 
@@ -1633,7 +1635,7 @@ export function append_safepoint (builder: WasmBuilder, ip: MintOpcodePtr) {
     builder.block(WasmValtype.void, WasmOpcode.if_);
     builder.local("frame");
     // Not ip_const, because we can't pass relative IP to do_safepoint
-    builder.i32_const(ip);
+    builder.i32_const(ip);//
     builder.callImport("safepoint");
     builder.endBlock();
 }

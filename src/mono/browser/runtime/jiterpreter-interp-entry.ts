@@ -167,7 +167,7 @@ export function mono_jiterp_free_method_data_interp_entry (imethod: number) {
 // FIXME: move this counter into C and make it thread safe
 export function mono_interp_record_interp_entry (imethod: number) {
     // clear the unbox bit
-    imethod = imethod & ~0x1;
+    imethod = (imethod >>> 0) & ~0x1;
 
     const info = infoTable[imethod];
     // This shouldn't happen but it's not worth crashing over
@@ -198,6 +198,10 @@ export function mono_interp_jit_wasm_entry_trampoline (
     // HACK
     if (argumentCount > maxInlineArgs)
         return 0;
+
+    imethod = imethod >>> 0;
+    method = method as any >>> 0 as any;
+    pParamTypes = pParamTypes as any >>> 0 as any;
 
     const info = new TrampolineInfo(
         imethod, method, argumentCount, pParamTypes,
