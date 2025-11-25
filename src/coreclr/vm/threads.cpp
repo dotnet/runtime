@@ -6873,6 +6873,12 @@ BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
     }
     CONTRACTL_END;
 
+    // This can be called early during startup from HandleFatalError
+    if (s_pThreadStore == NULL)
+    {
+        return FALSE;
+    }
+
     if (pThread)
     {
         return (pThread == s_pThreadStore->m_HoldingThread);

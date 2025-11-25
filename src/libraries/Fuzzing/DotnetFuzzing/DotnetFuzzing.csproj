@@ -18,20 +18,7 @@
 
   <ItemGroup>
     <Compile Include="Assert.cs" />
-    <Compile Include="Fuzzers\AssemblyNameInfoFuzzer.cs" />
-    <Compile Include="Fuzzers\Base64Fuzzer.cs" />
-    <Compile Include="Fuzzers\Base64UrlFuzzer.cs" />
-    <Compile Include="Fuzzers\HttpHeadersFuzzer.cs" />
-    <Compile Include="Fuzzers\IPAddressFuzzer.cs" />
-    <Compile Include="Fuzzers\JsonDocumentFuzzer.cs" />
-    <Compile Include="Fuzzers\NrbfDecoderFuzzer.cs" />
-    <Compile Include="Fuzzers\SearchValuesByteCharFuzzer.cs" />
-    <Compile Include="Fuzzers\SearchValuesStringFuzzer.cs" />
-    <Compile Include="Fuzzers\TextEncodingFuzzer.cs" />
-    <Compile Include="Fuzzers\TypeNameFuzzer.cs" />
-    <Compile Include="Fuzzers\UTF8Fuzzer.cs" />
-    <Compile Include="Fuzzers\Utf8JsonWriterFuzzer.cs" />
-    <Compile Include="Fuzzers\ZipArchiveFuzzer.cs" />
+    <Compile Include="Fuzzers\*.cs" />
     <Compile Include="IFuzzer.cs" />
     <Compile Include="PooledBoundedMemory.cs" />
     <Compile Include="Program.cs" />
@@ -41,6 +28,9 @@
 
   <ItemGroup>
     <None Include="Dictionaries\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Corpora\*\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
