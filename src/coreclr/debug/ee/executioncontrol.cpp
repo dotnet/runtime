@@ -60,7 +60,7 @@ bool InterpreterExecutionControl::UnapplyPatch(DebuggerControllerPatch* patch)
         patch, patch->address, patch->opcode));
 
     // Restore the original opcode
-    *(uint32_t*)patch->address = patch->opcode;
+    *(uint32_t*)patch->address = (uint32_t)patch->opcode; // Opcodes are stored in uint32_t slots
     InitializePRD(&(patch->opcode));
 
     LOG((LF_CORDB, LL_EVERYTHING, "InterpreterEC::UnapplyPatch Restored opcode at %p\n",
