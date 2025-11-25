@@ -181,7 +181,7 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     {
         pMD->SetHasAsyncMethodData();
         // Async stubs are standalone AsyncCall methods that do not form variant pairs.
-        pMD->GetAddrOfAsyncMethodData()->kind = AsyncMethodFlags::AsyncCall;
+        pMD->GetAddrOfAsyncMethodData()->flags = AsyncMethodFlags::AsyncCall;
     }
 
     //

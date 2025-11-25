@@ -3322,15 +3322,15 @@ MethodTableBuilder::EnumerateClassMethods()
                     // Declare a TaskReturning variant method.
                     // In the next pass we will also add an AsyncCall variant that can be called by async
                     // code when awaiting and bypass Task abstraction.
-                    AsyncMethodFlags kind = AsyncMethodFlags::ReturnsTaskOrValueTask;
+                    AsyncMethodFlags flags = AsyncMethodFlags::ReturnsTaskOrValueTask;
 
                     // if IsMiAsync is set, then the method becomes a task-returning thunk,
                     // while actual IL belongs to the Async variant.
                     // Otherwise the Async variant will be the thunk.
                     if (IsMiAsync(dwImplFlags))
-                        kind |= AsyncMethodFlags::Thunk;
+                        flags |= AsyncMethodFlags::Thunk;
 
-                    pNewMethod->SetAsyncMethodFlags(kind);
+                    pNewMethod->SetAsyncMethodFlags(flags);
                 }
                 else
                 {
@@ -3365,10 +3365,10 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG newSuffixSize;
                 ULONG newPrefixSize;
 
-                AsyncMethodFlags asyncKind = (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
+                AsyncMethodFlags asyncFlags = (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
                 // The opposite of the "if (IsMiAsync(dwImplFlags))" code above.
                 if (!IsMiAsync(dwImplFlags))
-                    asyncKind |= AsyncMethodFlags::Thunk;
+                    asyncFlags |= AsyncMethodFlags::Thunk;
 
                 if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
                 {
@@ -3439,7 +3439,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     dwImplFlags,
                     dwMethodRVA,
                     newMemberSig,
-                    asyncKind,
+                    asyncFlags,
                     type,
                     implType);
 
@@ -6130,7 +6130,7 @@ MethodTableBuilder::InitMethodDesc(
     IMDInternalImport * pIMDII,     // Needed for PInvoke, EEImpl(Delegate) cases
     LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
     Signature           sig, // Only needed for the Async thunk case
-    AsyncMethodFlags     asyncKind
+    AsyncMethodFlags     asyncFlags
     COMMA_INDEBUG(LPCUTF8 pszDebugMethodName)
     COMMA_INDEBUG(LPCUTF8 pszDebugClassName)
     COMMA_INDEBUG(LPCUTF8 pszDebugMethodSignature)
@@ -6289,15 +6289,15 @@ MethodTableBuilder::InitMethodDesc(
 #endif // !_DEBUG
         pNewMD->SetSynchronized();
 
-    // if the method has nontrivial async kind, we need to at least store the kind
-    if (asyncKind != AsyncMethodFlags::None)
+    // if the method has nontrivial async flags, we need to at least store the flags
+    if (asyncFlags != AsyncMethodFlags::None)
     {
         AsyncMethodData* pAsyncMethodData = pNewMD->GetAddrOfAsyncMethodData();
-        pAsyncMethodData->kind = asyncKind;
+        pAsyncMethodData->flags = asyncFlags;
 
         // async variants have a signature different from their task-returning
-        // definitions, so we store the signature together with the kind
-        if (hasAsyncKindFlags(asyncKind, AsyncMethodFlags::IsAsyncVariant))
+        // definitions, so we store the signature together with the flags
+        if (hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant))
         {
             pAsyncMethodData->sig = sig;
         }

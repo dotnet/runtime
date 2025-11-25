@@ -1078,12 +1078,12 @@ private:
 
         bool IsAsyncVariant() const
         {
-            return hasAsyncKindFlags(GetAsyncMethodFlags(), AsyncMethodFlags::IsAsyncVariant);
+            return hasAsyncFlags(GetAsyncMethodFlags(), AsyncMethodFlags::IsAsyncVariant);
         }
 
-        void SetAsyncMethodFlags(AsyncMethodFlags kind)
+        void SetAsyncMethodFlags(AsyncMethodFlags flags)
         {
-            m_AsyncMethodFlags = kind;
+            m_AsyncMethodFlags = flags;
         }
 
         AsyncMethodFlags GetAsyncMethodFlags() const
@@ -2701,7 +2701,7 @@ private:
         IMDInternalImport * pIMDII,  // Needed for PInvoke, EEImpl(Delegate) cases
         LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
         Signature           sig, // Only needed for the Async thunk case
-        AsyncMethodFlags     asyncKind
+        AsyncMethodFlags     asyncFlags
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodName)
         COMMA_INDEBUG(LPCUTF8             pszDebugClassName)
         COMMA_INDEBUG(LPCUTF8             pszDebugMethodSignature));

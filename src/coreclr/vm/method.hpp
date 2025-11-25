@@ -129,14 +129,14 @@ inline AsyncMethodFlags& operator&=(AsyncMethodFlags& lhs, AsyncMethodFlags rhs)
     return lhs;
 }
 
-inline bool hasAsyncKindFlags(AsyncMethodFlags value, AsyncMethodFlags flags)
+inline bool hasAsyncFlags(AsyncMethodFlags value, AsyncMethodFlags flags)
 {
     return (value & flags) == flags;
 }
 
 struct AsyncMethodData
 {
-    AsyncMethodFlags kind;
+    AsyncMethodFlags flags;
     Signature sig;
 };
 
@@ -1942,8 +1942,8 @@ public:
         if (!HasAsyncMethodData())
             return false;
 
-        AsyncMethodFlags asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return hasAsyncKindFlags(asyncKind, AsyncMethodFlags::AsyncCall);
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::AsyncCall);
     }
 
     // If yes, the method has another variant.
@@ -1961,8 +1961,8 @@ public:
         if (!HasAsyncMethodData())
             return false;
 
-        AsyncMethodFlags asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return hasAsyncKindFlags(asyncKind, AsyncMethodFlags::IsAsyncVariant);
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::IsAsyncVariant);
     }
 
     // Is this a small(ish) synthetic Task/async adapter to an async/Task implementation?
@@ -1973,8 +1973,8 @@ public:
         if (!HasAsyncMethodData())
             return false;
 
-        AsyncMethodFlags asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return hasAsyncKindFlags(asyncKind, AsyncMethodFlags::Thunk);
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::Thunk);
     }
 
     inline bool ReturnsTaskOrValueTask() const
@@ -1983,8 +1983,8 @@ public:
         if (!HasAsyncMethodData())
             return false;
 
-        AsyncMethodFlags asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return hasAsyncKindFlags(asyncKind, AsyncMethodFlags::ReturnsTaskOrValueTask);
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
+        return hasAsyncFlags(asyncFlags, AsyncMethodFlags::ReturnsTaskOrValueTask);
     }
 
     inline bool HasAsyncMethodData() const
@@ -2009,9 +2009,9 @@ public:
         if (!HasAsyncMethodData())
             return false;
 
-        AsyncMethodFlags asyncKind = GetAddrOfAsyncMethodData()->kind;
+        AsyncMethodFlags asyncFlags = GetAddrOfAsyncMethodData()->flags;
         // asynccall that is also async variant, but not a thunk
-        return asyncKind == (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
+        return asyncFlags == (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
     }
 
 #ifdef FEATURE_METADATA_UPDATER
