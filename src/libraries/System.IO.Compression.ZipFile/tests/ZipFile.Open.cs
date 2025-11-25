@@ -110,20 +110,13 @@ public class ZipFile_Open : ZipFileTestBase
             await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
         }
 
-        await using (ZipArchive archive = await ZipFile.OpenReadAsync(bad("CDoffsetInBoundsWrong.zip"), default))
-        {
-            Assert.Throws<InvalidDataException>(() => { var x = archive.Entries; });
-        }
-
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenReadAsync(bad("CDoffsetInBoundsWrong.zip"), default));
         using (TempFile testArchive = CreateTempCopyFile(bad("CDoffsetInBoundsWrong.zip"), GetTestFilePath()))
         {
             await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
         }
 
-        await using (ZipArchive archive = await ZipFile.OpenReadAsync(bad("numberOfEntriesDifferent.zip"), default))
-        {
-            Assert.Throws<InvalidDataException>(() => { var x = archive.Entries; });
-        }
+        await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenReadAsync(bad("numberOfEntriesDifferent.zip"), default));
         using (TempFile testArchive = CreateTempCopyFile(bad("numberOfEntriesDifferent.zip"), GetTestFilePath()))
         {
             await Assert.ThrowsAsync<InvalidDataException>(() => ZipFile.OpenAsync(testArchive.Path, ZipArchiveMode.Update, default));
@@ -293,7 +286,7 @@ public class ZipFile_Open : ZipFileTestBase
                 Stream s = await OpenEntryStream(async, e);
                 Assert.True(s.CanRead, "Can read to read archive");
                 Assert.False(s.CanWrite, "Can't write to read archive");
-                
+
                 if (s.CanSeek)
                 {
                     // If the stream is seekable, verify that seeking works correctly
@@ -301,16 +294,16 @@ public class ZipFile_Open : ZipFileTestBase
                     long beginResult = s.Seek(0, SeekOrigin.Begin);
                     Assert.Equal(0, beginResult);
                     Assert.Equal(0, s.Position);
-                    
+
                     // Test seeking to end
                     long endResult = s.Seek(0, SeekOrigin.End);
                     Assert.Equal(e.Length, endResult);
                     Assert.Equal(e.Length, s.Position);
-                    
+
                     // Test Position setter
                     s.Position = 0;
                     Assert.Equal(0, s.Position);
-                    
+
                     // Reset to beginning for length check
                     s.Seek(0, SeekOrigin.Begin);
                 }
@@ -320,7 +313,7 @@ public class ZipFile_Open : ZipFileTestBase
                     Assert.Throws<NotSupportedException>(() => s.Seek(0, SeekOrigin.Begin));
                     Assert.Throws<NotSupportedException>(() => s.Position = 0);
                 }
-                
+
                 Assert.Equal(await LengthOfUnseekableStream(s), e.Length);
                 await DisposeStream(async, s);
             }
