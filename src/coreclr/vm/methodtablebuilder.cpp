@@ -3874,7 +3874,7 @@ CorElementType MethodTableBuilder::GetCorElementTypeOfTypeDefOrRefForStaticField
 
     if (!ClassLoader::ResolveTokenToTypeDefThrowing(module, typeDefOrRef, &pModuleOfTypeDef, &tkTypeDef))
     {
-        // Returning ELEMENT_TYPE_VALUETYPE will cause the type to be fully resolved and type load exception
+        // Returning ELEMENT_TYPE_VALUETYPE will cause the type to be fully resolved and proper type load exception
         // to be thrown later in MethodTable::DoFullyLoad
         return ELEMENT_TYPE_VALUETYPE;
     }
