@@ -599,6 +599,11 @@ private:
     //  populates the var at method entry
     int32_t m_hiddenArgumentVar;
 
+    // If RuntimeHelpers.SetNextCallGenericContext or SetNextCallAsyncContinuation were used
+    // then these contain the value that should be passed as those arguments.
+    int32_t m_nextCallGenericContextVar;
+    int32_t m_nextCallAsyncContinuationVar;
+
     // Table of mappings of leave instructions to the first finally call island the leave
     // needs to execute.
     TArray<LeavesTableEntry, MemPoolAllocator> m_leavesTable;
