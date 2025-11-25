@@ -278,7 +278,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_ResolveWasmOutputs" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
     <PropertyGroup>
       <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');@(WasmAssembliesFinal->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
-      <_WasmIntermediateAssemblyFileNames>;@(IntermediateAssembly->'%(FileName)%(Extension)');</_WasmIntermediateAssemblyFileNames>
+      <_WasmIntermediateAssemblyFileNames Condition="@(WasmAssembliesFinal->Count()) != 0">;@(IntermediateAssembly->'%(FileName)%(Extension)');</_WasmIntermediateAssemblyFileNames>
     </PropertyGroup>
 
     <ItemGroup>
