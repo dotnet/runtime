@@ -179,9 +179,9 @@
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.LinkContentToWwwroot" AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.LinkContentToWwwroot" AssemblyFile="$(WasmBuildTasksAssemblyPath)" Condition="'$(TestTrimming)' != 'true'" />
 
-  <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true'">
+  <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(TestTrimming)' != 'true'">
     <!-- StaticWebAssetsSDK expects all "files accessible from web" to be in wwwroot folder -->
     <!-- Here we are adding Link/TargetPath for all Content items and adding them to WasmFilesToIncludeInFileSystem -->
     <LinkContentToWwwroot Content="@(Content)" MSBuildProjectDirectory="$(MSBuildProjectDirectory)">
@@ -194,7 +194,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="LinkPublishContentToWwwroot" BeforeTargets="ComputeWasmVfs" DependsOnTargets="GetCopyToOutputDirectoryItems" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true'">
+  <Target Name="LinkPublishContentToWwwroot" BeforeTargets="ComputeWasmVfs" DependsOnTargets="GetCopyToOutputDirectoryItems" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(TestTrimming)' != 'true'">
     <!-- StaticWebAssetsSDK doesn't have support for adding generated files during publish as "files accessible from web" -->
     <!-- Here we are adding Link/TargetPath for various files generated during publish, adding them to WasmFilesToIncludeInFileSystem and defining them as StaticWebAsset with StaticWebAssetEndpoint -->
     <ItemGroup>
