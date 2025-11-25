@@ -60,7 +60,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     public void DefaultTemplate_AOT_WithLongPath()
     {
         Configuration config = Configuration.Release;
-        string longIdPrefix = $"blz_aot_{config}_{GetRandomId()}_TEST_OF_EXTREMELY_LONG_PATH";
+        string longIdPrefix = $"blz_aot_{config}_{GetRandomId()}_TEST_OF_EXTREMELY_LONG_PATH_THAT_EXCEEDS_MAX_PATH_LIMIT_TO_ENSURE_LONG_PATH_SUPPORT_WORKS_CORRECTLY_WITH_AOT_COMPILATION_ON_WINDOWS_SYSTEMS_THAT_HAVE_THE_260_CHARACTER_LIMITATION";
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, longIdPrefix, appendUnicodeToPath: true);
         BlazorBuild(info, config);
 
