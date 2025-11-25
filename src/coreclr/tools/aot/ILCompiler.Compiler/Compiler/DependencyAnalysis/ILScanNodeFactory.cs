@@ -22,15 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsInternalCall)
             {
                 // TODO: come up with a scheme where this can be shared between codegen backends and the scanner
-                if (TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
-                {
-                    return MethodEntrypoint(TypeSystemContext.GetRealSpecialUnboxingThunkTargetMethod(method));
-                }
-                else if (TypeSystemContext.IsDefaultInterfaceMethodImplementationThunkTargetMethod(method))
-                {
-                    return MethodEntrypoint(TypeSystemContext.GetRealDefaultInterfaceMethodImplementationThunkTargetMethod(method));
-                }
-                else if (method.IsExplicitContinuationAsyncMethod())
+                if (method.IsExplicitContinuationAsyncMethod())
                 {
                     return MethodEntrypoint(method.GetExplicitContinuationAsyncMethodTarget());
                 }
