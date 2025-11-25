@@ -7,6 +7,7 @@
 #endif
 
 #include "codegen.h"
+#include "fgwasm.h"
 
 void CodeGen::genMarkLabelsForCodegen()
 {
@@ -16,7 +17,46 @@ void CodeGen::genMarkLabelsForCodegen()
 
 void CodeGen::genFnProlog()
 {
-    NYI_WASM("Uncomment CodeGen::genFnProlog and proceed from there");
+    ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
+
+    compiler->funSetCurrentFunc(0);
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In genFnProlog()\n");
+    }
+#endif
+
+#ifdef DEBUG
+    genInterruptibleUsed = true;
+#endif
+
+    assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
+
+    /* Ready to start on the prolog proper */
+
+    GetEmitter()->emitBegProlog();
+    // compiler->unwindBegProlog();
+
+    // Do this so we can put the prolog instruction group ahead of
+    // other instruction groups
+    genIPmappingAddToFront(IPmappingDscKind::Prolog, DebugInfo(), true);
+
+#ifdef DEBUG
+    if (compiler->opts.dspCode)
+    {
+        printf("\n__prolog:\n");
+    }
+#endif
+
+    if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0))
+    {
+        // Create new scopes for the method-parameters for the prolog-block.
+        psiBegProlog();
+    }
+
+    // Todo: prolog zeroing, shadow stack maintenance
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
@@ -80,11 +120,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     switch (treeNode->OperGet())
     {
         case GT_ADD:
+        case GT_GT:
             genCodeForBinary(treeNode->AsOp());
             break;
 
         case GT_LCL_VAR:
             genCodeForLclVar(treeNode->AsLclVar());
+            break;
+
+        case GT_JTRUE:
+            // Do nothing; handled by end of block processing
             break;
 
         case GT_RETURN:
@@ -125,6 +170,15 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             }
             ins = INS_i32_add;
             break;
+
+        case GT_GT:
+            if (!treeNode->TypeIs(TYP_INT))
+            {
+                NYI_WASM("genCodeForBinary:non-INT  GT_GT");
+            }
+            ins = treeNode->IsUnsigned() ? INS_i32_gt_u : INS_i32_gt_s;
+            break;
+
         default:
             ins = INS_none;
             NYI_WASM("genCodeForBinary");
@@ -202,9 +256,18 @@ void CodeGen::genSpillVar(GenTree* tree)
 //------------------------------------------------------------------------
 // inst_JMP: Generate a jump instruction.
 //
-void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
+void CodeGen::inst_JMP(emitJumpKind jmp, unsigned depth)
 {
-    NYI_WASM("inst_JMP");
+    instruction instr = emitter::emitJumpKindToIns(jmp);
+    GetEmitter()->emitIns_I(instr, EA_4BYTE, depth);
+}
+
+//------------------------------------------------------------------------
+// inst_LABEL: Emit a label index
+//
+void CodeGen::inst_LABEL(unsigned depth)
+{
+    NYI_WASM("inst_LABEL");
 }
 
 void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize, unsigned prologSize, unsigned epilogSize DEBUGARG(void* code))

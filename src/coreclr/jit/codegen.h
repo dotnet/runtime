@@ -1343,6 +1343,9 @@ public:
     void instGen(instruction ins);
 #if defined(TARGET_XARCH)
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJmpCandidate = false);
+#elif defined(TARGET_WASM)
+    void inst_JMP(emitJumpKind jmp, unsigned depth);
+    void inst_LABEL(unsigned depth);
 #else
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
 #endif

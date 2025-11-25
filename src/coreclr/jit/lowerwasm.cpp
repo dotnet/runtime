@@ -110,10 +110,24 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 // Return Value:
 //    The next node to lower (usually nullptr).
 //
+// Notes:
+//    For wasm we handle all this in codegen
+//
 GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 {
-    NYI_WASM("LowerJTrue");
-    return jtrue->gtNext;
+    assert(jtrue->gtNext == nullptr);
+
+    JITDUMP("Lowering JTRUE:\n");
+    DISPTREERANGE(BlockRange(), jtrue);
+    JITDUMP("\n");
+
+    // Todo: recognize eqz cases
+
+    JITDUMP("Lowering JTRUE Result:\n");
+    DISPTREERANGE(BlockRange(), jtrue);
+    JITDUMP("\n");
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------

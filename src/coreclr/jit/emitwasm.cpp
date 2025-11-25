@@ -169,10 +169,58 @@ void emitter::emitSetShortJump(instrDescJmp* id)
     NYI_WASM("emitSetShortJump");
 }
 
+inline emitter::code_t insOpcode(instruction ins)
+{
+    // clang-format off
+    const static emitter::code_t insCodes[] =
+    {
+        #define INST(id, nm, v, fmt, op) op,
+        #include "instrs.h"
+    };
+    // clang-format on
+
+    assert((unsigned)ins < ArrLen(insCodes));
+    assert((insCodes[ins] != BAD_CODE));
+
+    return insCodes[ins];
+}
+
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    NYI_WASM("emitOutputInstr");
-    return 0;
+
+    BYTE*       dst    = *dp;
+    size_t      sz     = sizeof(instrDesc);
+    instruction ins    = id->idIns();
+    insFormat   insFmt = id->idInsFmt();
+    code_t      code   = insOpcode(ins);
+
+    switch (insFmt)
+    {
+        case IF_OPCODE:
+            dst += emitOutputByte(dst, code);
+            break;
+        case IF_ULEB128:
+            dst += emitOutputByte(dst, code);
+            // todo... uleb128
+            break;
+        default:
+            NYI_WASM("emitOutputInstr");
+    }
+
+    *dp = dst;
+    return sz;
+}
+
+const instruction emitJumpKindInstructions[] = {
+    INS_nop,
+#define JMP_SMALL(en, rev, ins) INS_##ins,
+#include "emitjmps.h"
+};
+
+/*static*/ instruction emitter::emitJumpKindToIns(emitJumpKind jumpKind)
+{
+    assert((unsigned)jumpKind < ArrLen(emitJumpKindInstructions));
+    return emitJumpKindInstructions[jumpKind];
 }
 
 //--------------------------------------------------------------------
@@ -305,8 +353,11 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 #if defined(DEBUG) || defined(LATE_DISASM)
 emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(instrDesc* id)
 {
-    NYI_WASM("getInsSveExecutionCharacteristics");
-    return {};
+    // TODO: for real...
+    insExecutionCharacteristics result;
+    result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+    result.insLatency    = PERFSCORE_LATENCY_1C;
+    return result;
 }
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 

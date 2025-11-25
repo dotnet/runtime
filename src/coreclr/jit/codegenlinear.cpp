@@ -17,6 +17,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
+#if defined(TARGET_WASM)
+#include "fgwasm.h"
+#endif
+
 //------------------------------------------------------------------------
 // genInitializeRegisterState: Initialize the register state contained in 'regSet'.
 //
@@ -159,6 +163,55 @@ void CodeGen::genCodeForBBlist()
     /* Initialize structures used in the block list iteration */
     genInitialize();
 
+#if defined(TARGET_WASM)
+    // Wasm control flow is stack based.
+    //
+    // We have pre computed the set of intervals that require control flow
+    // stack transitions in compiler->fgWasmIntervals, ordered by starting block index.
+    //
+    // As we walk the blocks we'll push and pop onto this stack. As we emit control
+    // flow instructions, we'll consult this stack to figure out the depth of the target labels.
+    //
+    ArrayStack<WasmInterval*> wasmControlFlowStack(compiler->getAllocator(CMK_WasmCfgLowering));
+    unsigned                  wasmCursor = 0;
+
+    // Compute the depth of the block ending at targetNum
+    // or (if isBackedge) the loop starting at targetNum
+    // in the wasm control flow stack
+    //
+    auto findDepth = [&wasmControlFlowStack](unsigned targetNum, bool isBackedge, unsigned& match) {
+        int const h = wasmControlFlowStack.Height();
+
+        for (int i = 0; i < h; i++)
+        {
+            WasmInterval* const ii = wasmControlFlowStack.Top(i);
+            match                  = 0;
+
+            if (isBackedge)
+            {
+                // loops bind to start
+                match = ii->Start();
+            }
+            else
+            {
+                // blocks bind to end
+                match = ii->End();
+            }
+
+            if ((match == targetNum) && (isBackedge == ii->IsLoop()))
+            {
+                return i;
+            }
+        }
+
+        JITDUMP("Could not find %u%s in active control stack\n", targetNum, isBackedge ? " (backedge)" : "");
+        assert(!"Can't find target in control stack");
+
+        return ~0;
+    };
+
+#endif // defined(TARGET_WASM)
+
     /*-------------------------------------------------------------------------
      *
      *  Walk the basic blocks and generate code for each one
@@ -178,6 +231,12 @@ void CodeGen::genCodeForBBlist()
             compiler->fgDispBBLiveness(block);
         }
 #endif // DEBUG
+
+#if defined(TARGET_WASM)
+        // Track where this block is in the linear order
+        //
+        unsigned const cursor = block->bbPreorderNum;
+#endif
 
         assert(LIR::AsRange(block).CheckLIR(compiler));
 
@@ -353,6 +412,49 @@ void CodeGen::genCodeForBBlist()
             noway_assert(block->bbEmitCookie);
             GetEmitter()->emitSetFirstColdIGCookie(block->bbEmitCookie);
         }
+
+#if defined(TARGET_WASM)
+
+        // Pop control flow intervals that end here (at most two, block and/or loop)
+        //
+        while (!wasmControlFlowStack.Empty() && (wasmControlFlowStack.Top()->End() == cursor))
+        {
+            instGen(INS_end);
+            wasmControlFlowStack.Pop();
+        }
+
+        // Push control flow for intervals that start here or earlier
+        //
+        if (wasmCursor < compiler->fgWasmIntervals->size())
+        {
+            WasmInterval* interval = compiler->fgWasmIntervals->at(wasmCursor);
+            WasmInterval* chain    = interval->Chain();
+
+            while (chain->Start() <= cursor)
+            {
+                if (interval->IsLoop())
+                {
+                    instGen(INS_loop);
+                }
+                else
+                {
+                    instGen(INS_block);
+                }
+
+                wasmCursor++;
+                wasmControlFlowStack.Push(interval);
+
+                if (wasmCursor >= compiler->fgWasmIntervals->size())
+                {
+                    break;
+                }
+
+                interval = compiler->fgWasmIntervals->at(wasmCursor);
+                chain    = interval->Chain();
+            }
+        }
+
+#endif // defined(TARGET_WASM)
 
         // Both stacks are always empty on entry to a basic block.
         assert(genStackLevel == 0);
@@ -705,9 +807,146 @@ void CodeGen::genCodeForBBlist()
         };
 #endif // FEATURE_LOOP_ALIGN
 
+        bool removedJmp = false;
+
+#if defined(TARGET_WASM)
+        // Generate Wasm control flow instructions for block ends
+        //
+        switch (block->GetKind())
+        {
+            case BBJ_RETURN:
+                instGen(INS_return);
+                break;
+
+            case BBJ_THROW:
+                instGen(INS_unreachable);
+                break;
+
+            case BBJ_CALLFINALLY:
+                genCallFinally(block);
+                if (!block->isBBCallFinallyPair())
+                {
+                    instGen(INS_unreachable);
+                }
+                break;
+
+            case BBJ_EHCATCHRET:
+                assert(compiler->UsesFunclets());
+                genEHCatchRet(block);
+                FALLTHROUGH;
+
+            case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
+            case BBJ_EHFILTERRET:
+                if (compiler->UsesFunclets())
+                {
+                    genReserveFuncletEpilog(block);
+                }
+                instGen(INS_return);
+                break;
+
+            case BBJ_SWITCH:
+            {
+                BBswtDesc* const desc      = block->GetSwitchTargets();
+                unsigned const   caseCount = desc->GetCaseCount();
+
+                assert(!desc->HasDefaultCase());
+
+                if (caseCount == 0)
+                {
+                    break;
+                }
+
+                inst_JMP(EJ_br_table, caseCount);
+
+                for (unsigned caseNum = 0; caseNum < caseCount; caseNum++)
+                {
+                    BasicBlock* const caseTarget    = desc->GetCase(caseNum)->getDestinationBlock();
+                    unsigned const    caseTargetNum = caseTarget->bbPreorderNum;
+
+                    bool const isBackedge = caseTargetNum <= cursor;
+                    unsigned   blockNum   = 0;
+                    unsigned   depth      = findDepth(caseTargetNum, isBackedge, blockNum);
+
+                    inst_LABEL(depth);
+                }
+
+                JITDUMP("\n");
+                break;
+            }
+
+            case BBJ_CALLFINALLYRET:
+            case BBJ_ALWAYS:
+            {
+#ifdef DEBUG
+                GenTree* call = block->lastNode();
+                if ((call != nullptr) && call->OperIs(GT_CALL))
+                {
+                    // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
+                    assert(!call->AsCall()->IsNoReturn());
+                }
+#endif // DEBUG
+
+                unsigned const succNum = block->GetTarget()->bbPreorderNum;
+
+                // If this block jumps to the next one, we might be able to skip emitting the jump
+                if (block->CanRemoveJumpToNext(compiler))
+                {
+                    assert(succNum == (cursor + 1));
+                    break;
+                }
+
+                bool const     isBackedge = succNum <= cursor;
+                unsigned       blockNum   = 0;
+                unsigned const depth      = findDepth(succNum, isBackedge, blockNum);
+                inst_JMP(EJ_br, depth);
+            }
+
+            case BBJ_COND:
+            {
+                const unsigned trueNum  = block->GetTrueTarget()->bbPreorderNum;
+                const unsigned falseNum = block->GetFalseTarget()->bbPreorderNum;
+
+                // We don't expect degenerate BBJ_COND
+                //
+                assert(trueNum != falseNum);
+
+                // We don't expect the true target to be the next block.
+                //
+                const bool reverseCondition = trueNum == (cursor + 1);
+                assert(!reverseCondition);
+
+                // br_if for true target
+                //
+                bool const isTrueBackedge = trueNum <= cursor;
+                unsigned   blockNum       = 0;
+                unsigned   depth          = findDepth(trueNum, isTrueBackedge, blockNum);
+                inst_JMP(EJ_br_if, depth);
+
+                // br for false target, if not fallthrough
+                //
+                const bool fallThrough = falseNum == (cursor + 1);
+                if (fallThrough)
+                {
+                    break;
+                }
+
+                bool const isFalseBackedge = falseNum <= cursor;
+                blockNum                   = 0;
+                depth                      = findDepth(falseNum, isFalseBackedge, blockNum);
+                inst_JMP(EJ_br, depth);
+
+                break;
+            }
+
+            default:
+                noway_assert(!"Unexpected bbKind");
+                break;
+        }
+#else
+
         /* Do we need to generate a jump or return? */
 
-        bool removedJmp = false;
         switch (block->GetKind())
         {
             case BBJ_RETURN:
@@ -829,6 +1068,8 @@ void CodeGen::genCodeForBBlist()
                 noway_assert(!"Unexpected bbKind");
                 break;
         }
+
+#endif // defined(TARGET_WASM)
 
 #if FEATURE_LOOP_ALIGN
         if (block->hasAlign())
@@ -2620,6 +2861,10 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
 
 void CodeGen::genEmitterUnitTests()
 {
+
+#if defined(TARGET_WASM)
+    return;
+#else
     if (!JitConfig.JitEmitUnitTests().contains(compiler->info.compMethodHnd, compiler->info.compClassHnd,
                                                &compiler->info.compMethodInfo->args))
     {
@@ -2689,6 +2934,8 @@ void CodeGen::genEmitterUnitTests()
     instGen(INS_nop);
 
     JITDUMP("*************** End of genEmitterUnitTests()\n");
+
+#endif // defined(TARGET_WASM)
 }
 
 #endif // defined(DEBUG)
