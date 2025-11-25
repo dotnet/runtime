@@ -1,7 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.WebAssembly" DefaultTargets="BundleTestWasmApp">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-  </PropertyGroup>
+<Project DefaultTargets="BundleTestWasmApp">
   <Import Project="Directory.Build.props" />
   <PropertyGroup>
     <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$([MSBuild]::NormalizeDirectory($(HELIX_WORKITEM_ROOT), 'wasm_build'))</TestRootDir>
@@ -15,13 +12,14 @@
     <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
 
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
+    <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
 
     <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>
   </PropertyGroup>
 
   <Import Project="$(_PropsFile)" />
 
-  <Target Name="BundleTestWasmApp" DependsOnTargets="PrepareForWasmBuildApp;Build" />
+  <Target Name="BundleTestWasmApp" DependsOnTargets="WasmBuildApp" />
 
   <!-- This is fake target, we assume that runtimeconfig.json was already generated on CI agent before during build -->
   <Target Name="GenerateBuildRuntimeConfigurationFiles" >
@@ -47,7 +45,6 @@
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" />
-      <WasmAssembliesToBundle Condition="'%(WasmAssembliesToBundle.FileName)' == 'WasmSymbolicator'" AOT_InternalForceToInterpret="true" />
 
       <_VFSFiles Include="$(VFSFilesPath)**\*" />
       <WasmFilesToIncludeInFileSystem Include="@(_VFSFiles)" TargetPath="%(RecursiveDir)%(FileName)%(Extension)" />
