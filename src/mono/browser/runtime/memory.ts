@@ -211,7 +211,7 @@ export function getB32 (offset: MemOffset): boolean {
 
 export function getB8 (offset: MemOffset): boolean {
     receiveWorkerHeapViews();
-    return !!(Module.HEAPU8[<any>offset] >>> 0);
+    return !!(Module.HEAPU8[<any>offset >>> 0]);
 }
 
 export function getU8 (offset: MemOffset): number {
