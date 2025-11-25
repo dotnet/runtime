@@ -14266,18 +14266,6 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
-    // Check if an object of this type can even exist
-    if (info.compCompHnd->getExactClasses(clsHnd, 0, nullptr) == 0)
-    {
-        JITDUMP("Runtime reported %p (%s) is never allocated\n", dspPtr(clsHnd), eeGetClassName(clsHnd));
-
-        const bool operatorIsEQ  = (oper == GT_EQ);
-        const int  compareResult = operatorIsEQ ? 0 : 1;
-        JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
-        GenTree* result = gtNewIconNode(compareResult);
-        return result;
-    }
-
     // We're good to go.
     JITDUMP("Optimizing compare of obj.GetType()"
             " and type-from-handle to compare method table pointer\n");
@@ -14296,6 +14284,20 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     else
     {
         objOp = opOther->AsCall()->gtArgs.GetThisArg()->GetNode();
+    }
+
+    // Check if an object of this type can even exist
+    if (info.compCompHnd->getExactClasses(clsHnd, 0, nullptr) == 0)
+    {
+        JITDUMP("Runtime reported %p (%s) is never allocated\n", dspPtr(clsHnd), eeGetClassName(clsHnd));
+
+        const bool operatorIsEQ  = (oper == GT_EQ);
+        const int  compareResult = operatorIsEQ ? 0 : 1;
+        JITDUMP("Runtime reports comparison is known at jit time: %u\n", compareResult);
+
+        GenTree* result      = gtNewIconNode(compareResult);
+        GenTree* sideEffects = fgAddrCouldBeNull(objOp) ? gtNewNullCheck(objOp) : objOp;
+        return gtWrapWithSideEffects(result, sideEffects, GTF_ALL_EFFECT);
     }
 
     bool                 isExact   = false;
@@ -18312,7 +18314,7 @@ bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
     {
         // During AOT JIT is always asked to generate relocatable code.
         // Hence JIT will try to encode only icon handles as pc-relative offsets.
-        return IsIconHandle() && (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue()));
+        return IsIconHandle() && (comp->eeGetRelocTypeHint((void*)IconValue()) == CorInfoReloc::RELATIVE32);
     }
     else
     {
@@ -18333,7 +18335,7 @@ bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
         // offsets.  Note that JIT will always attempt to relocate code addresses (.e.g call addr).
         // After an overflow, VM will assume any relocation recorded is for a code address and will
         // emit jump thunk if it cannot be encoded as pc-relative offset.
-        return (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue())) || FitsInI32();
+        return (comp->eeGetRelocTypeHint((void*)IconValue()) == CorInfoReloc::RELATIVE32) || FitsInI32();
     }
 }
 
@@ -18344,11 +18346,11 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
     {
         // During AOT JIT is always asked to generate relocatable code.
         // Hence JIT will try to encode only icon handles as pc-relative offsets.
-        return IsIconHandle() && (IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue()));
+        return IsIconHandle() && (comp->eeGetRelocTypeHint((void*)IconValue()) == CorInfoReloc::RELATIVE32);
     }
     else
     {
-        return IMAGE_REL_BASED_REL32 == comp->eeGetRelocTypeHint((void*)IconValue());
+        return comp->eeGetRelocTypeHint((void*)IconValue()) == CorInfoReloc::RELATIVE32;
     }
 }
 

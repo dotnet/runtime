@@ -862,6 +862,22 @@ MAIN_LOOP:
                     // Return stack slot sized value
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
                     goto EXIT_FRAME;
+                case INTOP_RET_I1:
+                    // Return int8 value
+                    *(int64_t*)pFrame->pRetVal = (int8_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
+                case INTOP_RET_U1:
+                    // Return uint8 value
+                    *(int64_t*)pFrame->pRetVal = (uint8_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
+                case INTOP_RET_I2:
+                    // Return int16 value
+                    *(int64_t*)pFrame->pRetVal = (int16_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
+                case INTOP_RET_U2:
+                    // Return uint16 value
+                    *(int64_t*)pFrame->pRetVal = (uint16_t)LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
                 case INTOP_RET_VT:
                     memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
                     goto EXIT_FRAME;
@@ -2817,6 +2833,8 @@ CALL_INTERP_METHOD:
                     int32_t vtSize = ip[4];
                     void *vtThis = LOCAL_VAR_ADDR(returnOffset, void);
 
+                    memset(vtThis, 0, vtSize);
+
                     // pass the address of the valuetype
                     LOCAL_VAR(callArgsOffset, void*) = vtThis;
 
@@ -3322,6 +3340,19 @@ do {                                                                           \
 
                     LOCAL_VAR(ip[1], void*) = elemAddr;
                     ip += 6;
+                    break;
+                }
+
+                case INTOP_CONV_NI:
+                {
+                    NULL_CHECK(LOCAL_VAR(ip[2], void*));
+                    int64_t index = LOCAL_VAR(ip[3], int64_t);
+                    if ((index < 0) || (index > UINT_MAX))
+                    {
+                        COMPlusThrow(kIndexOutOfRangeException);
+                    }
+                    LOCAL_VAR(ip[1], int64_t) = index;
+                    ip += 4;
                     break;
                 }
 

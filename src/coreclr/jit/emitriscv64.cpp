@@ -2020,7 +2020,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
         dst += emitOutput_ITypeInstr(dst, INS_jalr, linkReg, tempReg, 0);
 
         assert(id->idIsDspReloc());
-        emitRecordRelocation(origDst, (BYTE*)addr, IMAGE_REL_RISCV64_CALL_PLT);
+        emitRecordRelocation(origDst, (BYTE*)addr, CorInfoReloc::RISCV64_CALL_PLT);
     }
 
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
@@ -2877,7 +2877,7 @@ BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruc
     dst += emitInsIsStore(*ins) ? emitOutput_STypeInstr(dst, *ins, addrReg, dataReg, 0)
                                 : emitOutput_ITypeInstr(dst, *ins, dataReg, addrReg, 0);
 
-    uint16_t type = emitInsIsStore(*ins) ? IMAGE_REL_RISCV64_PCREL_S : IMAGE_REL_RISCV64_PCREL_I;
+    uint16_t type = emitInsIsStore(*ins) ? CorInfoReloc::RISCV64_PCREL_S : CorInfoReloc::RISCV64_PCREL_I;
     emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, type);
     return dst;
 }

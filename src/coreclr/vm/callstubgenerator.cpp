@@ -2460,7 +2460,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines)
     if (argIt.HasParamType())
     {
 #if LOG_COMPUTE_CALL_STUB
-            printf("argIt.HasParamType\n");
+        printf("argIt.HasParamType\n");
 #endif
         // In the Interpreter calling convention the argument after the "this" pointer is the parameter type
         ArgLocDesc paramArgLocDesc;
