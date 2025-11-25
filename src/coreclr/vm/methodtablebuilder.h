@@ -1078,7 +1078,7 @@ private:
 
         bool IsAsyncVariant() const
         {
-            return hasAsyncKindFlags(GetAsyncMethodKind(), AsyncMethodKind::Async | AsyncMethodKind::HasAsyncOtherVariant);
+            return hasAsyncKindFlags(GetAsyncMethodKind(), AsyncMethodKind::IsAsyncVariant);
         }
 
         void SetAsyncMethodKind(AsyncMethodKind kind)

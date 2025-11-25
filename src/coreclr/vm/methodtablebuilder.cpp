@@ -3322,7 +3322,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     // Declare a TaskReturning variant method.
                     // In the next pass we will also add an Async variant that can be called by async
                     // code when awaiting and bypass Task abstraction.
-                    AsyncMethodKind kind = AsyncMethodKind::ReturnsTaskOrValueTask | AsyncMethodKind::HasAsyncOtherVariant;
+                    AsyncMethodKind kind = AsyncMethodKind::ReturnsTaskOrValueTask;
 
                     // if IsMiAsync is set, then the method becomes a task-returning thunk,
                     // while actual IL belongs to the Async variant.
@@ -3343,7 +3343,7 @@ MethodTableBuilder::EnumerateClassMethods()
                             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
                         }
 
-                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::Async);
+                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::AsyncCall);
                     }
                     else
                     {
@@ -3365,7 +3365,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG newSuffixSize;
                 ULONG newPrefixSize;
 
-                AsyncMethodKind asyncKind = (AsyncMethodKind::Async | AsyncMethodKind::HasAsyncOtherVariant);
+                AsyncMethodKind asyncKind = (AsyncMethodKind::AsyncCall | AsyncMethodKind::IsAsyncVariant);
                 // The opposite of the "if (IsMiAsync(dwImplFlags))" code above.
                 if (!IsMiAsync(dwImplFlags))
                     asyncKind |= AsyncMethodKind::Thunk;
@@ -6297,7 +6297,7 @@ MethodTableBuilder::InitMethodDesc(
 
         // async variants have a signature different from their task-returning
         // definitions, so we store the signature together with the kind
-        if (hasAsyncKindFlags(asyncKind, AsyncMethodKind::Async | AsyncMethodKind::HasAsyncOtherVariant))
+        if (hasAsyncKindFlags(asyncKind, AsyncMethodKind::IsAsyncVariant))
         {
             pAsyncMethodData->sig = sig;
         }
