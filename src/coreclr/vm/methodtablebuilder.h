@@ -972,7 +972,7 @@ private:
             DWORD dwImplAttrs,
             DWORD dwRVA,
             Signature sig,
-            AsyncMethodFlags AsyncMethodFlags,
+            AsyncMethodFlags asyncMethodFlags,
             MethodClassification type,
             METHOD_IMPL_TYPE implType);
 
@@ -1083,13 +1083,13 @@ private:
 
         void SetAsyncMethodFlags(AsyncMethodFlags flags)
         {
-            m_AsyncMethodFlags = flags;
+            m_asyncMethodFlags = flags;
         }
 
         AsyncMethodFlags GetAsyncMethodFlags() const
         {
             LIMITED_METHOD_CONTRACT;
-            return m_AsyncMethodFlags;
+            return m_asyncMethodFlags;
         }
 
         bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
@@ -1103,7 +1103,7 @@ private:
         DWORD             m_dwImplAttrs;
         DWORD             m_dwRVA;
         MethodClassification  m_type;               // Specific MethodDesc flavour
-        AsyncMethodFlags   m_AsyncMethodFlags;
+        AsyncMethodFlags   m_asyncMethodFlags;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
         bmtMDMethod*      m_asyncOtherVariant = NULL;
