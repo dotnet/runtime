@@ -1235,7 +1235,7 @@ void emitter::emitIns_R_AI(instruction  ins,
                            ssize_t addr DEBUGARG(size_t targetHandle) DEBUGARG(GenTreeFlags gtFlags))
 {
     assert(EA_IS_RELOC(attr));
-    assert(emitComp->opts.compReloc || (IMAGE_REL_BASED_REL32 == emitComp->eeGetRelocTypeHint((void*)addr)));
+    assert(emitComp->opts.compReloc || (CorInfoReloc::RELATIVE32 == emitComp->eeGetRelocTypeHint((void*)addr)));
     assert(ins == INS_addi || emitInsIsLoadOrStore(ins));
     assert(emitInsIsStore(ins) || isFloatReg(dataReg) || (dataReg == REG_ZERO) || (dataReg == addrReg));
     assert(isGeneralRegister(addrReg));
@@ -2877,7 +2877,7 @@ BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruc
     dst += emitInsIsStore(*ins) ? emitOutput_STypeInstr(dst, *ins, addrReg, dataReg, 0)
                                 : emitOutput_ITypeInstr(dst, *ins, dataReg, addrReg, 0);
 
-    uint16_t type = emitInsIsStore(*ins) ? CorInfoReloc::RISCV64_PCREL_S : CorInfoReloc::RISCV64_PCREL_I;
+    CorInfoReloc type = emitInsIsStore(*ins) ? CorInfoReloc::RISCV64_PCREL_S : CorInfoReloc::RISCV64_PCREL_I;
     emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, type);
     return dst;
 }
@@ -5145,8 +5145,8 @@ unsigned emitter::get_curTotalCodeSize()
 //    A struct containing the current instruction execution characteristics
 bool emitter::IsAddressInRange(void* addr)
 {
-    return emitComp->opts.compReloc ||
-           (INDEBUG(emitComp->opts.compEnablePCRelAddr&&)(IMAGE_REL_BASED_REL32 == emitComp->eeGetRelocTypeHint(addr)));
+    return emitComp->opts.compReloc || (INDEBUG(emitComp->opts.compEnablePCRelAddr&&)(
+                                           CorInfoReloc::RELATIVE32 == emitComp->eeGetRelocTypeHint(addr)));
 }
 
 #if defined(DEBUG) || defined(LATE_DISASM)
