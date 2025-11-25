@@ -9,6 +9,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
+.assembly extern System.Runtime {}
 .assembly ASSEMBLY_NAME {}
 .class interface private abstract auto ansi IncrDecr
 {
@@ -90,6 +91,7 @@
 {
   .param type T 
   .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+  .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
   .field private !T counter
   .field private !T[] counters
   .method public hidebysig instance void 
@@ -97,6 +99,7 @@
   {
     .param type T2 
     .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  2
     .locals init (!!T2 V_0)
     IL_0000:  ldtoken    !!T2
@@ -122,6 +125,7 @@
   {
     .param type T2 
     .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  2
     .locals init (!!T2 V_0)
     IL_0000:  ldarg.0
@@ -146,6 +150,7 @@
   {
     .param type T2 
     .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  4
     .locals init (!!T2[] V_0)
     IL_0000:  ldc.i4.1
@@ -182,6 +187,7 @@
   {
     .param type T2 
     .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  4
     .locals init (!!T2[] V_0)
     IL_0000:  ldc.i4.1
@@ -219,6 +225,7 @@
   {
     .param type T2 
     .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  8
     IL_0000:  ldarga 1
     IL_0001:  
@@ -238,6 +245,7 @@
   {
     .param type T2 
     .custom instance void [mscorlib]System.Runtime.CompilerServices.NewConstraintAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes) = ( 01 00 01 00 00 00 00 00 )
     .maxstack  8
     IL_0000:  ldarg.1
     IL_0001:  box        !!T2
