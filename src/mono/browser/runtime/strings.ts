@@ -65,7 +65,7 @@ export function utf8ToStringRelaxed (buffer: Uint8Array): string {
 
 export function utf8ToString (ptr: CharPtr): string {
     const heapU8 = localHeapViewU8();
-    return utf8BufferToString(heapU8, ptr as any, heapU8.length - (ptr as any));
+    return utf8BufferToString(heapU8, fixupPointer(ptr, 0), heapU8.length - (ptr as any));
 }
 
 export function utf8BufferToString (heapOrArray: Uint8Array, idx: number, maxBytesToRead: number): string {
