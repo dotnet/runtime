@@ -20,11 +20,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if (method.IsInternalCall)
             {
-                if (method.IsExplicitContinuationAsyncMethod())
-                {
-                    return MethodEntrypoint(method.GetExplicitContinuationAsyncMethodTarget());
-                }
-                else if (method.IsArrayAddressMethod())
+                if (method.IsArrayAddressMethod())
                 {
                     return MethodEntrypoint(((ArrayType)method.OwningType).GetArrayMethod(ArrayMethodKind.AddressWithHiddenArg));
                 }
