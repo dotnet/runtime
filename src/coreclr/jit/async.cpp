@@ -1977,7 +1977,7 @@ void AsyncTransformation::RestoreFromDataOnResumption(const ContinuationLayout& 
     {
         // Ensure that the continuation remains alive until we finished loading the generic context
         GenTree* continuation = m_comp->gtNewLclvNode(m_comp->lvaAsyncContinuationArg, TYP_REF);
-        GenTree* keepAlive    = m_comp->gtNewOperNode(GT_KEEPALIVE, TYP_VOID, continuation);
+        GenTree* keepAlive    = m_comp->gtNewKeepAliveNode(continuation);
         LIR::AsRange(resumeBB).InsertAtEnd(LIR::SeqTree(m_comp, keepAlive));
     }
 }
