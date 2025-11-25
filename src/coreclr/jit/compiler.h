@@ -1375,6 +1375,10 @@ public:
     }
     void tdAdjustTempOffs(int offs)
     {
+#ifdef TARGET_ARM64
+        // Cannot adjust temporary offsets on the UnknownSizeFrame.
+        assert(!varTypeHasUnknownSize(tdType));
+#endif
         tdOffs += offs;
         assert(tdLegalOffset());
     }
@@ -4320,6 +4324,7 @@ public:
     void lvaAlignFrame();
     void lvaAssignFrameOffsetsToPromotedStructs();
     int lvaAllocateTemps(int stkOffs, bool mustDoubleAlign);
+    void lvaAllocateUnknownSizeTemp(TempDsc* temp);
 
 #ifdef DEBUG
     void lvaDumpRegLocation(unsigned lclNum);
@@ -4519,6 +4524,13 @@ public:
         int GetAddressingOffset(LclVarDsc* varDsc)
         {
             return GetOffset(varDsc->GetUnknownSizeFrameIndex(), varDsc->TypeIs(TYP_MASK));
+        }
+
+        int GetAddressingOffset(TempDsc* tmpDsc)
+        {
+            assert(tmpDsc->tdTempOffs() >= 0);
+            assert(varTypeHasUnknownSize(tmpDsc->tdTempType()));
+            return GetOffset((unsigned)tmpDsc->tdTempOffs(), tmpDsc->tdTempType() == TYP_MASK);
         }
 
         // This system ensures we don't try and generate an address on the frame

@@ -625,12 +625,9 @@ TempDsc* RegSet::tmpGetTemp(var_types type)
     type          = tmpNormalizeType(type);
     unsigned size = genTypeSize(type);
 
-    // If TYP_STRUCT ever gets in here we do bad things (tmpSlot returns -1)
-    noway_assert(size >= sizeof(int) && size != SIZE_UNKNOWN);
-
     /* Find the slot to search for a free temp of the right size */
 
-    unsigned slot = tmpSlot(size);
+    unsigned slot = tmpSlot(type);
 
     /* Look for a temp with a matching type */
 
@@ -687,19 +684,22 @@ void RegSet::tmpPreAllocateTemps(var_types type, unsigned count)
     assert(type == tmpNormalizeType(type));
     unsigned size = genTypeSize(type);
 
-    // If TYP_STRUCT ever gets in here we do bad things (tmpSlot returns -1)
-    noway_assert(size >= sizeof(int) && size != SIZE_UNKNOWN);
-
     // Find the slot to search for a free temp of the right size.
-    // Note that slots are shared by types of the identical size (e.g., TYP_REF and TYP_LONG on AMD64),
+    // Note that slots can be shared by types of the identical size (e.g., TYP_REF and TYP_LONG on AMD64),
     // so we can't assert that the slot is empty when we get here.
 
-    unsigned slot = tmpSlot(size);
+    unsigned slot = tmpSlot(type);
 
     for (unsigned i = 0; i < count; i++)
     {
         tmpCount++;
-        tmpSize += size;
+
+        if (size != SIZE_UNKNOWN)
+        {
+            // We don't count temps that have unknown size, because they will be allocated in a different
+            // part of the frame to temps that have a known size.
+            tmpSize += size;
+        }
 
 #ifdef TARGET_ARM
         if (type == TYP_DOUBLE)
@@ -738,7 +738,7 @@ void RegSet::tmpRlsTemp(TempDsc* temp)
 
     /* Add the temp to the 'free' list */
 
-    slot = tmpSlot(temp->tdTempSize());
+    slot = tmpSlot(temp->tdTempType());
 
 #ifdef DEBUG
     if (m_compiler->verbose)
@@ -795,6 +795,40 @@ TempDsc* RegSet::tmpFindNum(int tnum, TEMP_USAGE_TYPE usageType /* = TEMP_USAGE_
     return nullptr;
 }
 
+//----------------------------------------------------------------------------
+//  tmpGetNum: Given a temp number, get the corresponding temp.
+//
+//  This looks for temps in the free list and the used list, meaning it can only be used after code
+//  generation.
+//
+//  It will assert that the temp is found. This should be called for a temp that is known to exist.
+//
+TempDsc* RegSet::tmpGetNum(int tnum) const
+{
+    TempDsc* tmp = tmpFindNum(tnum, TEMP_USAGE_FREE);
+    if (tmp == nullptr)
+    {
+        tmp = tmpFindNum(tnum, TEMP_USAGE_USED);
+    }
+    assert(tmp != nullptr);
+    return tmp;
+}
+
+//----------------------------------------------------------------------------
+//  tmpIsUnknownSizeTemp: Given a temp number, does the corresponding temp have an unknown size?
+//
+//  It will assert that the temp is found. This should be called for a temp that is known to exist.
+//
+//  Arguments:
+//      tnum - Temp number to test
+//
+//  Returns:
+//      true when the temp has an unknown size at compile-time.
+bool RegSet::tmpIsUnknownSizeTemp(int tnum) const
+{
+    return varTypeHasUnknownSize(tmpGetNum(tnum)->tdTempType());
+}
+
 /*****************************************************************************
  *
  *  A helper function is used to iterate over all the temps.
@@ -832,12 +866,13 @@ TempDsc* RegSet::tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType /* = TEM
     assert(curTemp != nullptr);
 
     TempDsc* temp = curTemp->tdNext;
+    unsigned size = curTemp->tdTempSize();
+
     if (temp == nullptr)
     {
-        unsigned size = curTemp->tdTempSize();
-
         // If there are no more temps in the list, check if there are more
-        // slots (for bigger sized temps) to walk.
+        // slots (for bigger sized temps) to walk. This is only possible if
+        // the temps have a known size.
 
         TempDsc* const* tmpLists;
         if (usageType == TEMP_USAGE_FREE)
@@ -849,14 +884,17 @@ TempDsc* RegSet::tmpListNxt(TempDsc* curTemp, TEMP_USAGE_TYPE usageType /* = TEM
             tmpLists = tmpUsed;
         }
 
-        while (size < TEMP_MAX_SIZE && temp == nullptr)
+        unsigned slot = tmpSlot(curTemp->tdTempType()) + 1;
+        while (slot < TEMP_SLOT_COUNT && temp == nullptr)
         {
-            size += sizeof(int);
-            unsigned slot = tmpSlot(size);
-            temp          = tmpLists[slot];
+            temp = tmpLists[slot];
+            slot++;
         }
 
-        assert((temp == nullptr) || (temp->tdTempSize() == size));
+        if (temp == nullptr)
+        {
+            assert(slot == TEMP_SLOT_COUNT);
+        }
     }
 
     return temp;
