@@ -4064,84 +4064,33 @@ namespace Internal.JitInterface
             }
         }
 
-        // Translates relocation type constants used by JIT (defined in winnt.h) to RelocType enumeration
-        private static RelocType GetRelocType(TargetArchitecture targetArchitecture, ushort fRelocType)
-        {
-            switch (targetArchitecture)
+        // Translates relocation type constants used by JIT to RelocType enumeration
+        private RelocType GetRelocType(CorInfoReloc reloc)
+            => reloc switch
             {
-                case TargetArchitecture.ARM64:
-                {
-                    const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
-                    const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
-                    const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
-                    const ushort IMAGE_REL_ARM64_SECREL_LOW12A = 9;
-                    const ushort IMAGE_REL_ARM64_SECREL_HIGH12A = 0xA;
-                    const ushort IMAGE_REL_ARM64_TLSDESC_ADR_PAGE21 = 0x107;
-                    const ushort IMAGE_REL_ARM64_TLSDESC_LD64_LO12 = 0x108;
-                    const ushort IMAGE_REL_ARM64_TLSDESC_ADD_LO12 = 0x109;
-                    const ushort IMAGE_REL_ARM64_TLSDESC_CALL = 0x10A;
+                CorInfoReloc.DIRECT => PointerSize == 8 ? RelocType.IMAGE_REL_BASED_DIR64 : RelocType.IMAGE_REL_BASED_HIGHLOW,
+                CorInfoReloc.RELATIVE32 => RelocType.IMAGE_REL_BASED_REL32,
+                CorInfoReloc.ARM64_BRANCH26 => RelocType.IMAGE_REL_BASED_ARM64_BRANCH26,
+                CorInfoReloc.ARM64_PAGEBASE_REL21 => RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
+                CorInfoReloc.ARM64_PAGEOFFSET_12A => RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A,
+                CorInfoReloc.ARM64_LIN_TLSDESC_ADR_PAGE21 => RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21,
+                CorInfoReloc.ARM64_LIN_TLSDESC_LD64_LO12 => RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12,
+                CorInfoReloc.ARM64_LIN_TLSDESC_ADD_LO12 => RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12,
+                CorInfoReloc.ARM64_LIN_TLSDESC_CALL => RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL,
+                CorInfoReloc.ARM64_WIN_TLS_SECREL_HIGH12A => RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A,
+                CorInfoReloc.ARM64_WIN_TLS_SECREL_LOW12A => RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A,
+                CorInfoReloc.AMD64_WIN_SECREL => RelocType.IMAGE_REL_SECREL,
+                CorInfoReloc.AMD64_LIN_TLSGD => RelocType.IMAGE_REL_TLSGD,
+                CorInfoReloc.ARM32_THUMB_BRANCH24 => RelocType.IMAGE_REL_BASED_THUMB_BRANCH24,
+                CorInfoReloc.ARM32_THUMB_MOV32 => RelocType.IMAGE_REL_BASED_THUMB_MOV32,
+                CorInfoReloc.ARM32_THUMB_MOV32_PCREL => RelocType.IMAGE_REL_BASED_THUMB_MOV32_PCREL,
+                CorInfoReloc.LOONGARCH64_PC => RelocType.IMAGE_REL_BASED_LOONGARCH64_PC,
+                CorInfoReloc.LOONGARCH64_JIR => RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR,
+                CorInfoReloc.RISCV64_PC => RelocType.IMAGE_REL_BASED_RISCV64_PC,
+                _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
+            };
 
-
-                    switch (fRelocType)
-                    {
-                        case IMAGE_REL_ARM64_BRANCH26:
-                            return RelocType.IMAGE_REL_BASED_ARM64_BRANCH26;
-                        case IMAGE_REL_ARM64_PAGEBASE_REL21:
-                            return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
-                        case IMAGE_REL_ARM64_PAGEOFFSET_12A:
-                            return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
-                        case IMAGE_REL_ARM64_TLSDESC_ADR_PAGE21:
-                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21;
-                        case IMAGE_REL_ARM64_TLSDESC_ADD_LO12:
-                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12;
-                        case IMAGE_REL_ARM64_TLSDESC_LD64_LO12:
-                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12;
-                        case IMAGE_REL_ARM64_TLSDESC_CALL:
-                            return RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL;
-                        case IMAGE_REL_ARM64_SECREL_HIGH12A:
-                            return RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A;
-                        case IMAGE_REL_ARM64_SECREL_LOW12A:
-                            return RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A;
-                        default:
-                            Debug.Fail("Invalid RelocType: " + fRelocType);
-                            return 0;
-                    }
-                }
-                case TargetArchitecture.LoongArch64:
-                {
-                    const ushort IMAGE_REL_LOONGARCH64_PC = 3;
-                    const ushort IMAGE_REL_LOONGARCH64_JIR = 4;
-
-                    switch (fRelocType)
-                    {
-                        case IMAGE_REL_LOONGARCH64_PC:
-                            return RelocType.IMAGE_REL_BASED_LOONGARCH64_PC;
-                        case IMAGE_REL_LOONGARCH64_JIR:
-                            return RelocType.IMAGE_REL_BASED_LOONGARCH64_JIR;
-                        default:
-                            Debug.Fail("Invalid RelocType: " + fRelocType);
-                            return 0;
-                    }
-                }
-                case TargetArchitecture.RiscV64:
-                {
-                    const ushort IMAGE_REL_RISCV64_PC = 3;
-
-                    switch (fRelocType)
-                    {
-                        case IMAGE_REL_RISCV64_PC:
-                            return RelocType.IMAGE_REL_BASED_RISCV64_PC;
-                        default:
-                            Debug.Fail("Invalid RelocType: " + fRelocType);
-                            return 0;
-                    }
-                }
-                default:
-                    return (RelocType)fRelocType;
-            }
-        }
-
-        private void recordRelocation(void* location, void* locationRW, void* target, ushort fRelocType, int addlDelta)
+        private void recordRelocation(void* location, void* locationRW, void* target, CorInfoReloc fRelocType, int addlDelta)
         {
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
@@ -4196,8 +4145,7 @@ namespace Internal.JitInterface
 
             relocDelta += addlDelta;
 
-            TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
-            RelocType relocType = GetRelocType(targetArchitecture, fRelocType);
+            RelocType relocType = GetRelocType(fRelocType);
             // relocDelta is stored as the value
             Relocation.WriteValue(relocType, location, relocDelta);
 
@@ -4206,20 +4154,20 @@ namespace Internal.JitInterface
             sourceBlock.Add(new Relocation(relocType, relocOffset, relocTarget));
         }
 
-        private ushort getRelocTypeHint(void* target)
+        private CorInfoReloc getRelocTypeHint(void* target)
         {
             switch (_compilation.TypeSystemContext.Target.Architecture)
             {
                 case TargetArchitecture.X64:
-                    return (ushort)RelocType.IMAGE_REL_BASED_REL32;
+                    return CorInfoReloc.RELATIVE32;
 
 #if READYTORUN
                 case TargetArchitecture.ARM:
-                    return (ushort)RelocType.IMAGE_REL_BASED_THUMB_BRANCH24;
+                    return CorInfoReloc.ARM32_THUMB_BRANCH24;
 #endif
 
                 default:
-                    return ushort.MaxValue;
+                    return CorInfoReloc.NONE;
             }
         }
 

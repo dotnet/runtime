@@ -11810,11 +11810,11 @@ void CEEJitInfo::recordCallSite(uint32_t              instrOffset,
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 
-void CEEJitInfo::recordRelocation(void * location,
-                                  void * locationRW,
-                                  void * target,
-                                  WORD   fRelocType,
-                                  INT32  addlDelta)
+void CEEJitInfo::recordRelocation(void *       location,
+                                  void *       locationRW,
+                                  void *       target,
+                                  CorInfoReloc fRelocType,
+                                  INT32        addlDelta)
 {
     CONTRACTL {
         THROWS;
@@ -11829,229 +11829,220 @@ void CEEJitInfo::recordRelocation(void * location,
 
     switch (fRelocType)
     {
-#ifdef TARGET_64BIT
-    case IMAGE_REL_BASED_DIR64:
-        // Write 64-bits into location
-        *((UINT64 *) locationRW) = (UINT64) target;
+
+    case CorInfoReloc::DIRECT:
+        *(void**)locationRW = target;
         break;
-#else
-    case IMAGE_REL_BASED_HIGHLOW:
-        // Write 32-bits into location
-        *((UINT32 *) locationRW) = (UINT32) target;
-        break;
-#endif
 
 #ifdef TARGET_AMD64
-    case IMAGE_REL_BASED_REL32:
+    case CorInfoReloc::RELATIVE32:
+    {
+        target = (BYTE *)target + addlDelta;
+
+        INT32 * fixupLocation = (INT32 *) location;
+        INT32 * fixupLocationRW = (INT32 *) locationRW;
+        BYTE * baseAddr = (BYTE *)fixupLocation + sizeof(INT32);
+
+        delta  = (INT64)((BYTE *)target - baseAddr);
+
+        //
+        // Do we need to insert a jump stub to make the source reach the target?
+        //
+        // Note that we cannot stress insertion of jump stub by inserting it unconditionally. JIT records the relocations
+        // for intra-module jumps and calls. It does not expect the register used by the jump stub to be trashed.
+        //
+        if (!FitsInI4(delta))
         {
-            target = (BYTE *)target + addlDelta;
-
-            INT32 * fixupLocation = (INT32 *) location;
-            INT32 * fixupLocationRW = (INT32 *) locationRW;
-            BYTE * baseAddr = (BYTE *)fixupLocation + sizeof(INT32);
-
-            delta  = (INT64)((BYTE *)target - baseAddr);
-
-            //
-            // Do we need to insert a jump stub to make the source reach the target?
-            //
-            // Note that we cannot stress insertion of jump stub by inserting it unconditionally. JIT records the relocations
-            // for intra-module jumps and calls. It does not expect the register used by the jump stub to be trashed.
-            //
-            if (!FitsInI4(delta))
+            if (m_fAllowRel32)
             {
-                if (m_fAllowRel32)
+                //
+                // When m_fAllowRel32 == TRUE, the JIT will use RELATIVE32s for both data addresses and direct code targets.
+                // Since we cannot tell what the relocation is for, we have to defensively retry.
+                //
+                m_fJumpStubOverflow = TRUE;
+                delta = 0;
+            }
+            else
+            {
+                if (m_fJumpStubOverflow)
                 {
-                    //
-                    // When m_fAllowRel32 == TRUE, the JIT will use REL32s for both data addresses and direct code targets.
-                    // Since we cannot tell what the relocation is for, we have to defensively retry.
-                    //
-                    m_fJumpStubOverflow = TRUE;
+                    // Do not attempt to allocate more jump stubs. We are going to throw away the code and retry anyway.
                     delta = 0;
                 }
                 else
                 {
-                    if (m_fJumpStubOverflow)
-                    {
-                        // Do not attempt to allocate more jump stubs. We are going to throw away the code and retry anyway.
-                        delta = 0;
-                    }
-                    else
-                    {
-                        //
-                        // When m_fAllowRel32 == FALSE, the JIT will use a REL32s for direct code targets only.
-                        // Use jump stub.
-                        //
-                        delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled, NULL, false /* throwOnOutOfMemoryWithinRange */);
-                        if (delta == 0)
-                        {
-                            // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
-                            // we will find space for them.
-                            m_fJumpStubOverflow = TRUE;
-                        }
-                    }
-
-                    // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it to reserve extra memory
-                    // on retry to increase chances that the retry succeeds.
-                    m_reserveForJumpStubs = max((size_t)0x400, m_reserveForJumpStubs + 0x10);
-                }
-            }
-
-            LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
-                 DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, delta));
-
-            // Write the 32-bits pc-relative delta into location
-            *fixupLocationRW = (INT32) delta;
-        }
-        break;
-#endif // TARGET_AMD64
-
-#ifdef TARGET_ARM64
-    case IMAGE_REL_ARM64_BRANCH26:   // 26 bit offset << 2 & sign ext, for B and BL
-        {
-            _ASSERTE(addlDelta == 0);
-
-            PCODE branchTarget  = (PCODE) target;
-            _ASSERTE((branchTarget & 0x3) == 0);   // the low two bits must be zero
-
-            PCODE fixupLocation = (PCODE) location;
-            PCODE fixupLocationRW = (PCODE) locationRW;
-            _ASSERTE((fixupLocation & 0x3) == 0);  // the low two bits must be zero
-
-            delta = (INT64)(branchTarget - fixupLocation);
-            _ASSERTE((delta & 0x3) == 0);          // the low two bits must be zero
-
-            UINT32 branchInstr = *((UINT32*) fixupLocationRW);
-            branchInstr &= 0xFC000000;  // keep bits 31-26
-            _ASSERTE((branchInstr & 0x7FFFFFFF) == 0x14000000);  // Must be B or BL
-
-            //
-            // Do we need to insert a jump stub to make the source reach the target?
-            //
-            //
-            if (!FitsInRel28(delta))
-            {
-                TADDR jumpStubAddr;
-
-                if (m_fJumpStubOverflow)
-                {
-                    // Do not attempt to allocate more jump stubs. We are going to throw away the code and retry anyway.
-                    jumpStubAddr = 0;
-                }
-                else
-                {
-
+                    //
+                    // When m_fAllowRel32 == FALSE, the JIT will use a RELATIVE32s for direct code targets only.
                     // Use jump stub.
                     //
-                    TADDR baseAddr = (TADDR)fixupLocation;
-                    TADDR loAddr   = baseAddr - 0x08000000;   // -2^27
-                    TADDR hiAddr   = baseAddr + 0x07FFFFFF;   // +2^27-1
-
-                    // Check for the wrap around cases
-                    if (loAddr > baseAddr)
-                        loAddr = UINT64_MIN; // overflow
-                    if (hiAddr < baseAddr)
-                        hiAddr = UINT64_MAX; // overflow
-
-                    jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled,
-                                                              (PCODE)  target,
-                                                              (BYTE *) loAddr,
-                                                              (BYTE *) hiAddr,
-                                                              NULL,
-                                                              false);
+                    delta = rel32UsingJumpStub(fixupLocation, (PCODE)target, m_pMethodBeingCompiled, NULL, false /* throwOnOutOfMemoryWithinRange */);
+                    if (delta == 0)
+                    {
+                        // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
+                        // we will find space for them.
+                        m_fJumpStubOverflow = TRUE;
+                    }
                 }
 
                 // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it to reserve extra memory
                 // on retry to increase chances that the retry succeeds.
-                m_reserveForJumpStubs = max((size_t)0x400, m_reserveForJumpStubs + 2*BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
+                m_reserveForJumpStubs = max((size_t)0x400, m_reserveForJumpStubs + 0x10);
+            }
+        }
 
-                if (jumpStubAddr == 0)
-                {
-                    // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
-                    // we will find space for them.
-                    m_fJumpStubOverflow = TRUE;
-                    break;
-                }
+        LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
+             DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, delta));
 
-                delta = (INT64)(jumpStubAddr - fixupLocation);
+        // Write the 32-bits pc-relative delta into location
+        *fixupLocationRW = (INT32) delta;
+        break;
+    }
+#endif // TARGET_AMD64
 
-                if (!FitsInRel28(delta))
-                {
-                    _ASSERTE(!"jump stub was not in expected range");
-                    EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-                }
+#ifdef TARGET_ARM64
+    case CorInfoReloc::ARM64_BRANCH26:   // 26 bit offset << 2 & sign ext, for B and BL
+    {
+        _ASSERTE(addlDelta == 0);
 
-                LOG((LF_JIT, LL_INFO100000, "Using JumpStub at" FMT_ADDR "that jumps to" FMT_ADDR "\n",
-                     DBG_ADDR(jumpStubAddr), DBG_ADDR(target)));
+        PCODE branchTarget  = (PCODE) target;
+        _ASSERTE((branchTarget & 0x3) == 0);   // the low two bits must be zero
+
+        PCODE fixupLocation = (PCODE) location;
+        PCODE fixupLocationRW = (PCODE) locationRW;
+        _ASSERTE((fixupLocation & 0x3) == 0);  // the low two bits must be zero
+
+        delta = (INT64)(branchTarget - fixupLocation);
+        _ASSERTE((delta & 0x3) == 0);          // the low two bits must be zero
+
+        UINT32 branchInstr = *((UINT32*) fixupLocationRW);
+        branchInstr &= 0xFC000000;  // keep bits 31-26
+        _ASSERTE((branchInstr & 0x7FFFFFFF) == 0x14000000);  // Must be B or BL
+
+        //
+        // Do we need to insert a jump stub to make the source reach the target?
+        //
+        //
+        if (!FitsInRel28(delta))
+        {
+            TADDR jumpStubAddr;
+
+            if (m_fJumpStubOverflow)
+            {
+                // Do not attempt to allocate more jump stubs. We are going to throw away the code and retry anyway.
+                jumpStubAddr = 0;
+            }
+            else
+            {
+
+                // Use jump stub.
+                //
+                TADDR baseAddr = (TADDR)fixupLocation;
+                TADDR loAddr   = baseAddr - 0x08000000;   // -2^27
+                TADDR hiAddr   = baseAddr + 0x07FFFFFF;   // +2^27-1
+
+                // Check for the wrap around cases
+                if (loAddr > baseAddr)
+                    loAddr = UINT64_MIN; // overflow
+                if (hiAddr < baseAddr)
+                    hiAddr = UINT64_MAX; // overflow
+
+                jumpStubAddr = ExecutionManager::jumpStub(m_pMethodBeingCompiled,
+                                                          (PCODE)  target,
+                                                          (BYTE *) loAddr,
+                                                          (BYTE *) hiAddr,
+                                                          NULL,
+                                                          false);
             }
 
-            LOG((LF_JIT, LL_INFO100000, "Encoded a BRANCH26 at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%04x\n",
-                 DBG_ADDR(fixupLocation), DBG_ADDR(target), delta));
+            // Keep track of conservative estimate of how much memory may be needed by jump stubs. We will use it to reserve extra memory
+            // on retry to increase chances that the retry succeeds.
+            m_reserveForJumpStubs = max((size_t)0x400, m_reserveForJumpStubs + 2*BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
 
-            _ASSERTE(FitsInRel28(delta));
+            if (jumpStubAddr == 0)
+            {
+                // This forces the JIT to retry the method, which allows us to reserve more space for jump stubs and have a higher chance that
+                // we will find space for them.
+                m_fJumpStubOverflow = TRUE;
+                break;
+            }
 
-            PutArm64Rel28((UINT32*) fixupLocationRW, (INT32)delta);
+            delta = (INT64)(jumpStubAddr - fixupLocation);
+
+            if (!FitsInRel28(delta))
+            {
+                _ASSERTE(!"jump stub was not in expected range");
+                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+            }
+
+            LOG((LF_JIT, LL_INFO100000, "Using JumpStub at" FMT_ADDR "that jumps to" FMT_ADDR "\n",
+                 DBG_ADDR(jumpStubAddr), DBG_ADDR(target)));
         }
+
+        LOG((LF_JIT, LL_INFO100000, "Encoded a BRANCH26 at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%04x\n",
+             DBG_ADDR(fixupLocation), DBG_ADDR(target), delta));
+
+        _ASSERTE(FitsInRel28(delta));
+
+        PutArm64Rel28((UINT32*) fixupLocationRW, (INT32)delta);
         break;
+    }
 
-    case IMAGE_REL_ARM64_PAGEBASE_REL21:
-        {
-            _ASSERTE(addlDelta == 0);
+    case CorInfoReloc::ARM64_PAGEBASE_REL21:
+    {
+        _ASSERTE(addlDelta == 0);
 
-            // Write the 21 bits pc-relative page address into location.
-            INT64 targetPage = (INT64)target & 0xFFFFFFFFFFFFF000LL;
-            INT64 locationPage = (INT64)location & 0xFFFFFFFFFFFFF000LL;
-            INT64 relPage = (INT64)(targetPage - locationPage);
-            INT32 imm21 = (INT32)(relPage >> 12) & 0x1FFFFF;
-            PutArm64Rel21((UINT32 *)locationRW, imm21);
-        }
+        // Write the 21 bits pc-relative page address into location.
+        INT64 targetPage = (INT64)target & 0xFFFFFFFFFFFFF000LL;
+        INT64 locationPage = (INT64)location & 0xFFFFFFFFFFFFF000LL;
+        INT64 relPage = (INT64)(targetPage - locationPage);
+        INT32 imm21 = (INT32)(relPage >> 12) & 0x1FFFFF;
+        PutArm64Rel21((UINT32 *)locationRW, imm21);
         break;
+    }
 
-    case IMAGE_REL_ARM64_PAGEOFFSET_12A:
-        {
-            _ASSERTE(addlDelta == 0);
+    case CorInfoReloc::ARM64_PAGEOFFSET_12A:
+    {
+        _ASSERTE(addlDelta == 0);
 
-            // Write the 12 bits page offset into location.
-            INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
-            PutArm64Rel12((UINT32 *)locationRW, imm12);
-        }
+        // Write the 12 bits page offset into location.
+        INT32 imm12 = (INT32)(SIZE_T)target & 0xFFFLL;
+        PutArm64Rel12((UINT32 *)locationRW, imm12);
         break;
+    }
 
 #endif // TARGET_ARM64
 
 #ifdef TARGET_LOONGARCH64
-    case IMAGE_REL_LOONGARCH64_PC:
-        {
-            _ASSERTE(addlDelta == 0);
+    case CorInfoReloc::LOONGARCH64_PC:
+    {
+        _ASSERTE(addlDelta == 0);
 
-            INT64 imm = (INT64)target - ((INT64)location & 0xFFFFFFFFFFFFF000LL);
-            imm += ((INT64)target & 0x800) << 1;
-            PutLoongArch64PC12((UINT32 *)locationRW, imm);
-        }
+        INT64 imm = (INT64)target - ((INT64)location & 0xFFFFFFFFFFFFF000LL);
+        imm += ((INT64)target & 0x800) << 1;
+        PutLoongArch64PC12((UINT32 *)locationRW, imm);
         break;
+    }
 
-    case IMAGE_REL_LOONGARCH64_JIR:
-        {
-            _ASSERTE(addlDelta == 0);
+    case CorInfoReloc::LOONGARCH64_JIR:
+    {
+        _ASSERTE(addlDelta == 0);
 
-            INT64 imm = (INT64)target - (INT64)location;
-            PutLoongArch64JIR((UINT32 *)locationRW, imm);
-        }
+        INT64 imm = (INT64)target - (INT64)location;
+        PutLoongArch64JIR((UINT32 *)locationRW, imm);
         break;
-
+    }
 #endif // TARGET_LOONGARCH64
 
 
 #ifdef TARGET_RISCV64
-    case IMAGE_REL_RISCV64_PC:
-        {
-            _ASSERTE(addlDelta == 0);
+    case CorInfoReloc::RISCV64_PC:
+    {
+        _ASSERTE(addlDelta == 0);
 
-            INT64 offset = (INT64)target - (INT64)location;
-            PutRiscV64AuipcItype((UINT32 *)locationRW, offset);
-        }
+        INT64 offset = (INT64)target - (INT64)location;
+        PutRiscV64AuipcItype((UINT32 *)locationRW, offset);
         break;
-
+    }
 #endif // TARGET_RISCV64
 
     default:
@@ -12088,7 +12079,7 @@ void CEEJitInfo::recordRelocation(void * location,
 //
 // Under these assumptions we should only hit the "recovery" case once the
 // preferred range is actually full.
-WORD CEEJitInfo::getRelocTypeHint(void * target)
+CorInfoReloc CEEJitInfo::getRelocTypeHint(void * target)
 {
     CONTRACTL {
         THROWS;
@@ -12100,12 +12091,12 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
     if (m_fAllowRel32)
     {
         if (ExecutableAllocator::IsPreferredExecutableRange(target))
-            return IMAGE_REL_BASED_REL32;
+            return CorInfoReloc::RELATIVE32;
     }
 #endif // TARGET_AMD64
 
     // No hints
-    return (WORD)-1;
+    return CorInfoReloc::NONE;
 }
 
 void CEEInfo::JitProcessShutdownWork()
@@ -14570,24 +14561,18 @@ static Signature BuildResumptionStubSignature(LoaderAllocator* alloc, AllocMemTr
 
 static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* mt, LoaderAllocator* alloc, AllocMemTracker* pamTracker)
 {
-    unsigned numArgs = 0;
-    if (msig.HasGenericContextArg())
-    {
-        numArgs++;
-    }
-
-    numArgs++; // Continuation
-
-    numArgs += msig.NumFixedArgs();
-
     SigBuilder sigBuilder;
-    BYTE callConv = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+    BYTE callConv = IMAGE_CEE_CS_CALLCONV_ASYNC;
     if (msig.HasThis())
     {
         callConv |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
     }
+    if (msig.HasGenericContextArg())
+    {
+        callConv |= CORINFO_CALLCONV_PARAMTYPE;
+    }
     sigBuilder.AppendByte(callConv);
-    sigBuilder.AppendData(numArgs);
+    sigBuilder.AppendData(msig.NumFixedArgs());
 
     auto appendTypeHandle = [](SigBuilder& sigBuilder, TypeHandle th)
     {
@@ -14609,14 +14594,6 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     };
 
     appendTypeHandle(sigBuilder, msig.GetRetTypeHandleThrowing()); // return type
-#ifndef TARGET_X86
-    if (msig.HasGenericContextArg())
-    {
-        sigBuilder.AppendElementType(ELEMENT_TYPE_I);
-    }
-
-    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
-#endif
 
     msig.Reset();
     CorElementType ty;
@@ -14625,15 +14602,6 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
         TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
         appendTypeHandle(sigBuilder, tyHnd);
     }
-
-#ifdef TARGET_X86
-    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
-
-    if (msig.HasGenericContextArg())
-    {
-        sigBuilder.AppendElementType(ELEMENT_TYPE_I);
-    }
-#endif
 
     return AllocateSignature(alloc, sigBuilder, pamTracker);
 }
@@ -14661,6 +14629,15 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 
     ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
+    if (msig.HasGenericContextArg())
+    {
+        pCode->EmitLDC(0);
+        pCode->EmitCALL(METHOD__RUNTIME_HELPERS__SET_NEXT_CALL_GENERIC_CONTEXT, 1, 0);
+    }
+
+    pCode->EmitLDARG(0);
+    pCode->EmitCALL(METHOD__RUNTIME_HELPERS__SET_NEXT_CALL_ASYNC_CONTINUATION, 1, 0);
+
     int numArgs = 0;
 
     if (msig.HasThis())
@@ -14678,18 +14655,6 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         numArgs++;
     }
 
-#ifndef TARGET_X86
-    if (msig.HasGenericContextArg())
-    {
-        pCode->EmitLDC(0);
-        numArgs++;
-    }
-
-    // Continuation
-    pCode->EmitLDARG(0);
-    numArgs++;
-#endif
-
     msig.Reset();
     CorElementType ty;
     while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
@@ -14701,19 +14666,6 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         pCode->EmitLDLOC(loc);
         numArgs++;
     }
-
-#ifdef TARGET_X86
-    // Continuation
-    pCode->EmitLDARG(0);
-
-    if (msig.HasGenericContextArg())
-    {
-        pCode->EmitLDC(0);
-        numArgs++;
-    }
-
-    numArgs++;
-#endif
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Resumption stubs are uniquely coupled to the code version (since the
@@ -14951,7 +14903,7 @@ void CEEInfo::recordRelocation(
         void *                 location,   /* IN  */
         void *                 locationRW, /* IN  */
         void *                 target,     /* IN  */
-        WORD                   fRelocType, /* IN  */
+        CorInfoReloc           fRelocType, /* IN  */
         INT32                  addlDelta /* IN  */
         )
 {
@@ -14959,10 +14911,11 @@ void CEEInfo::recordRelocation(
     UNREACHABLE();      // only called on derived class.
 }
 
-WORD CEEInfo::getRelocTypeHint(void * target)
+CorInfoReloc CEEInfo::getRelocTypeHint(void * target)
 {
     LIMITED_METHOD_CONTRACT;
-    UNREACHABLE_RET();      // only called on derived class.
+    UNREACHABLE();      // only called on derived class.
+    return CorInfoReloc::NONE;
 }
 
 uint32_t CEEInfo::getExpectedTargetArchitecture()
