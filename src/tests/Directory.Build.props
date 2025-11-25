@@ -3,6 +3,7 @@
   <PropertyGroup>
     <LibrariesConfiguration>Release</LibrariesConfiguration>
     <InstallV8ForTests>false</InstallV8ForTests>
+    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
