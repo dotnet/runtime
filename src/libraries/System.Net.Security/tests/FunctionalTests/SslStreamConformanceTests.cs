@@ -38,10 +38,6 @@ namespace System.Net.Security.Tests
             {
                 // TLS 1.3 can generate some extra messages and we may get reset if test sends unidirectional traffic
                 // and extra packet stays in socket buffer.
-
-                // This ping-ping should flush leftovers from the handshake.
-                // We use sync method to preserve socket in default blocking state
-                // (as we don't go back once Async is used at least once)
                 await ssl1.WriteAsync(new byte[1]);
                 await ssl2.WriteAsync(new byte[1]);
                 Assert.Equal(1, await ssl2.ReadAsync(new byte[1]));
