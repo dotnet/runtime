@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
@@ -165,6 +165,7 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
     <Compile Include="..\ILCompiler.Reflection.ReadyToRun\PEReaderExtensions.cs" Link="Reflection\PEReaderExtensions.cs" />
+    <Compile Include="..\ILCompiler.Compiler\Compiler\JitHelper.cs" Link="Compiler\JitHelper.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ClosedAttribute.cs" Link="ILLink.Shared\ClosedAttribute.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" Link="ILLink.Shared\DynamicallyAccessedMemberTypesEx.cs" />
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\ParameterIndex.cs" Link="ILLink.Shared\ParameterIndex.cs" />
@@ -333,9 +334,6 @@
     <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
       <Link>IL\HelperExtensions.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.cs" Link="IL\Stubs\AsyncResumptionStub.cs" />
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Mangling.cs" Link="IL\Stubs\AsyncResumptionStub.Mangling.cs" />
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\AsyncResumptionStub.Sorting.cs" Link="IL\Stubs\AsyncResumptionStub.Sorting.cs" />
     <Compile Include="..\..\Common\JitInterface\JitTypeNameFormatter.cs">
       <Link>JitInterface\JitTypeNameFormatter.cs</Link>
     </Compile>
