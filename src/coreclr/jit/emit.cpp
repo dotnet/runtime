@@ -1499,7 +1499,7 @@ void emitter::dispIns(instrDesc* id)
 #elif defined(TARGET_RISCV64)
 void emitter::dispIns(instrDesc* id)
 {
-    // For RISCV64 using the emitDisInsName().
+    // For RISCV64 using the emitDispInsName().
     NYI_RISCV64("Not used on RISCV64.");
 }
 #else
