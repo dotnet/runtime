@@ -71,7 +71,7 @@ INST(i64_gt_u,    "i64.gt_u",    0, IF_OPCODE,  0x56)
 INST(i64_le_s,    "i64.le_s",    0, IF_OPCODE,  0x57)
 INST(i64_le_u,    "i64.le_u",    0, IF_OPCODE,  0x58)
 INST(i64_ge_s,    "i64.ge_s",    0, IF_OPCODE,  0x59)
-INST(i64_ge_u,    "i32.ge_u",    0, IF_OPCODE,  0x5A)
+INST(i64_ge_u,    "i64.ge_u",    0, IF_OPCODE,  0x5A)
 
 INST(f32_eq,      "f32.eq",      0, IF_OPCODE,  0x5B)
 INST(f32_ne,      "f32.ne",      0, IF_OPCODE,  0x5C)
