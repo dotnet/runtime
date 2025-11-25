@@ -455,13 +455,21 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
 #if defined(DEBUG) || defined(DEBUGGING_SUPPORTED)
 static void InterpBreakpoint(const int32_t *ip, InterpMethodContextFrame *pFrame, int8_t *stack)
 {
-    const ULONG_PTR info[3] = {
+    ULONG_PTR info[3] = {
         (const ULONG_PTR)ip,        // Bytecode address
         (const ULONG_PTR)pFrame,    // Interpreter frame pointer
         (const ULONG_PTR)stack      // Stack pointer
     };
 
-    RaiseException(STATUS_BREAKPOINT, 0, 3, info);
+    PAL_TRY(ULONG_PTR*, pInfo, info)
+    {
+        RaiseException(STATUS_BREAKPOINT, 0, 3, pInfo);
+    }
+    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
+    {
+        // Do nothing - filter should have already notified the debugger
+    }
+    PAL_ENDTRY
 }
 #endif
 
@@ -830,24 +838,7 @@ MAIN_LOOP:
                     // Adjust ip to point to the breakpoint instruction
                     // TODO: Why we need to do that? Shouldn't ip already point to the breakpoint instruction?
                     pFrame->ip = ip - 3;
-
-                    struct BreakpointParam
-                    {
-                        const int32_t *ip;
-                        InterpMethodContextFrame *pFrame;
-                        int8_t *stack;
-                    };
-                    BreakpointParam bpParam = { ip, pFrame, stack };
-
-                    PAL_TRY(BreakpointParam *, pBpParam, &bpParam)
-                    {
-                        InterpBreakpoint(pBpParam->ip, pBpParam->pFrame, pBpParam->stack);
-                    }
-                    PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
-                    {
-                        // The filter should have handled the breakpoint
-                    }
-                    PAL_ENDTRY
+                    InterpBreakpoint(ip, pFrame, stack);
                     break;
                 }
 #endif // DEBUG || DEBUGGING_SUPPORTED
