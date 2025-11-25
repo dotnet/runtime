@@ -343,7 +343,7 @@ export class WasmBuilder {
         } else {
             // mono_log_info(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
             this.appendU8(WasmOpcode.i32_const);
-            this.appendULeb(<any>pointer >>> 0 - <any>this.base);
+            this.appendULeb(<any>pointer >>> 0);
         }
     }
 
@@ -917,12 +917,10 @@ export class WasmBuilder {
         generates either (u32)get_local(ptr) + offset or (u32)ptr1 + offset
     */
     lea (ptr1: string | number, offset: number) {
-        if (typeof (ptr1) === "string") {
+        if (typeof (ptr1) === "string")
             this.local(ptr1);
-        } else {
-            this.appendU8(WasmOpcode.i32_const);
-            this.appendULeb(<any>ptr1 >>> 0);
-        }
+        else
+            this.ptr_const(ptr1);
 
         this.i32_const(offset);
         this.appendU8(WasmOpcode.i32_add);
