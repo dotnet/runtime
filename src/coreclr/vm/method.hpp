@@ -66,7 +66,7 @@ enum class AsyncMethodFlags
     AsyncCall                  = 1,
     // Ordinary, not an AsyncCall method that returns a promise type [Task|Task<T>|ValueTask|ValueTask<T>]
     ReturnsTaskOrValueTask     = 2,
-    // An AsyncCall representaton of a ReturnsTaskOrValueTask method.
+    // An AsyncCall representation of a ReturnsTaskOrValueTask method.
     IsAsyncVariant             = 4,
     // Method has synthetic body, which forwards to the other variant.
     Thunk                      = 8,
