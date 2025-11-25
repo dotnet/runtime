@@ -349,7 +349,7 @@ export class WasmBuilder {
 
     ip_const (value: MintOpcodePtr) {
         this.appendU8(WasmOpcode.i32_const);
-        this.appendULeb(<any>value >>> 0 - <any>this.base);
+        this.appendULeb(<any>value >>> 0 - <any>this.base >>> 0);
     }
 
     i52_const (value: number) {
