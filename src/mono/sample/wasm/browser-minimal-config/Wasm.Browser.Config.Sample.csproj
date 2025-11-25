@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\DefaultBrowserSample.targets" />
-  <PropertyGroup>
-    <EnableDiagnostics>false</EnableDiagnostics>
-    <WasmFingerprintAssets>false</WasmFingerprintAssets>
-  </PropertyGroup>
-</Project>
