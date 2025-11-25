@@ -308,6 +308,14 @@ namespace System
 
             foreach (string timeZoneId in GetTimeZoneIds())
             {
+                // Skip UTC aliases to avoid duplicate display names in the list.
+                // UTC is already added to the dictionary at the start, and aliases like
+                // UCT, Etc/UTC, Zulu, etc. have the same display name as UTC.
+                if (IsUtcAlias(timeZoneId))
+                {
+                    continue;
+                }
+
                 if (TryGetTimeZone(timeZoneId, false, out TimeZoneInfo? timeZone, out _, cachedData, alwaysFallbackToLocalMachine: true) == TimeZoneInfoResult.Success &&
                     timeZone is not null)
                 {
