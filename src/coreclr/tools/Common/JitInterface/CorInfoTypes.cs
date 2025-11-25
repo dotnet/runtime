@@ -905,6 +905,7 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* captureContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreContextsOnSuspensionMethHnd;
     }
 
     // Flags passed from JIT to runtime.
