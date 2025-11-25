@@ -453,7 +453,7 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
 }
 
 #if defined(DEBUG) || defined(DEBUGGING_SUPPORTED)
-static void InterpBreakpoint(const int32_t *ip, InterpMethodContextFrame *pFrame, int8_t *stack)
+static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *pFrame, const int8_t *stack)
 {
     ULONG_PTR info[3] = {
         (const ULONG_PTR)ip,        // Bytecode address
