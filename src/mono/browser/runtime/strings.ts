@@ -280,8 +280,8 @@ export function viewOrCopy (view: Uint8Array, start: CharPtr, end: CharPtr): Uin
     // this condition should be eliminated by rollup on non-threading builds
     const needsCopy = isSharedArrayBuffer(view.buffer);
     return needsCopy
-        ? view.slice(<any>start, <any>end)
-        : view.subarray(<any>start, <any>end);
+        ? view.slice(<any>start >>> 0, <any>end >>> 0)
+        : view.subarray(<any>start >>> 0, <any>end >>> 0);
 }
 
 // below is minimal legacy support for Blazor

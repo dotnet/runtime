@@ -65,6 +65,7 @@ function assert_int_in_range (value: Number, min: Number, max: Number) {
 }
 
 export function _zero_region (byteOffset: VoidPtr, sizeBytes: number): void {
+    byteOffset = fixupPointer(byteOffset, 0);
     localHeapViewU8().fill(0, <any>byteOffset, <any>byteOffset + sizeBytes);
 }
 
