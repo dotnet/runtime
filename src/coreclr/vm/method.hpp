@@ -1946,13 +1946,6 @@ public:
         return hasAsyncFlags(asyncFlags, AsyncMethodFlags::AsyncCall);
     }
 
-    // If yes, the method has another variant.
-    inline bool HasAsyncOtherVariant() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return IsAsyncVariantMethod() || ReturnsTaskOrValueTask();
-    }
-
     // Is this an Async variant method?
     // If yes, the method has another Task-returning variant.
     inline bool IsAsyncVariantMethod() const
