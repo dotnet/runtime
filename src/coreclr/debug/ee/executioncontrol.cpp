@@ -41,7 +41,7 @@ bool InterpreterExecutionControl::ApplyPatch(DebuggerControllerPatch* patch)
         patch, patch->address));
 
     patch->SetKind(PATCH_KIND_NATIVE_INTERPRETER);
-    patch->opcode = *(int32_t*)patch->address;;
+    patch->opcode = *(int32_t*)patch->address;
     *(uint32_t*)patch->address = INTOP_BREAKPOINT;
 
     LOG((LF_CORDB, LL_EVERYTHING, "InterpreterEC::ApplyPatch Breakpoint inserted at %p, saved opcode %x\n",
