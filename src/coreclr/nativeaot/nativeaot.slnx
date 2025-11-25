@@ -11,13 +11,13 @@
   </Configurations>
   <Folder Name="/gen/">
     <Project Path="../../libraries/System.Private.CoreLib/gen/EventSourceGenerator.csproj">
-      <BuildType Solution="Checked|*" Project="Release" />
+      <BuildType Solution="Checked|*" Project="Debug" />
     </Project>
     <Project Path="../../libraries/System.Private.CoreLib/gen/System.Private.CoreLib.Generators.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
     </Project>
     <Project Path="../../libraries/System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj">
-      <BuildType Solution="Checked|*" Project="Release" />
+      <BuildType Solution="Checked|*" Project="Debug" />
     </Project>
     <Project Path="../../libraries/System.Runtime.InteropServices/gen/LibraryImportGenerator/LibraryImportGenerator.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
