@@ -60,27 +60,26 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
 
-enum class AsyncMethodKind
+enum class AsyncMethodFlags
 {
-    // Method uses Async call convention and its body is emitted as a state machine.
+    // Method uses CORINFO_CALLCONV_ASYNCCALL call convention and its body is emitted as a state machine.
     AsyncCall                  = 1,
-    // Ordinary not AsyncCall method that returns a promise type {Task, Task<T>, ValueTask, ValueTask<T>}
+    // Ordinary, not an AsyncCall method that returns a promise type [Task|Task<T>|ValueTask|ValueTask<T>]
     ReturnsTaskOrValueTask     = 2,
-    // IsAsyncVariant indicates that this method is an entry point with async calling convention
-    // for a ReturnsTaskOrValueTask method.
+    // An AsyncCall representaton of a ReturnsTaskOrValueTask method.
     IsAsyncVariant             = 4,
     // Method has synthetic body, which forwards to the other variant.
     Thunk                      = 8,
     // The rest of the methods that are not in any of the above groups.
     // Such methods are not interesting to the Runtime Async feature.
-    // Note: Generic T-returning methods are Ordinary, even if T could be a Task.
-    Ordinary                   = 0,
+    // Note: Generic T-returning methods are classified as "None", even if T could be a Task.
+    None                       = 0,
 
     //=============================================================
     // A few words about ReturnsTaskOrValueTask and IsAsyncVariant pairs:
     //
-    // When we see a Task-returning method in metadata we create 2 method variants that logically match
-    // the same method definition. One variant has the same signature/callconv as the defining method
+    // When we see a Task/ValueTask-returning method in metadata we create 2 method variants that logically
+    // match the same method definition. One variant has the same signature/callconv as the defining method
     // and another is a matching AsyncCall variant. 
     // Depending on whether the definition was marked with `MethodImpl.Async` or not,
     // the IL body belongs to one of the variants and another variant is a synthetic thunk.
@@ -110,36 +109,36 @@ enum class AsyncMethodKind
     //       participate in suspension/resume.
 };
 
-inline AsyncMethodKind operator|(AsyncMethodKind lhs, AsyncMethodKind rhs)
+inline AsyncMethodFlags operator|(AsyncMethodFlags lhs, AsyncMethodFlags rhs)
 {
-    return (AsyncMethodKind)((int)lhs | (int)rhs);
+    return (AsyncMethodFlags)((int)lhs | (int)rhs);
 }
 
-inline AsyncMethodKind operator&(AsyncMethodKind lhs, AsyncMethodKind rhs)
+inline AsyncMethodFlags operator&(AsyncMethodFlags lhs, AsyncMethodFlags rhs)
 {
-    return (AsyncMethodKind)((int)lhs & (int)rhs);
+    return (AsyncMethodFlags)((int)lhs & (int)rhs);
 }
 
-inline AsyncMethodKind& operator|=(AsyncMethodKind& lhs, AsyncMethodKind rhs)
+inline AsyncMethodFlags& operator|=(AsyncMethodFlags& lhs, AsyncMethodFlags rhs)
 {
     lhs = lhs | rhs;
     return lhs;
 }
 
-inline AsyncMethodKind& operator&=(AsyncMethodKind& lhs, AsyncMethodKind rhs)
+inline AsyncMethodFlags& operator&=(AsyncMethodFlags& lhs, AsyncMethodFlags rhs)
 {
     lhs = lhs & rhs;
     return lhs;
 }
 
-inline bool hasAsyncKindFlags(AsyncMethodKind value, AsyncMethodKind flags)
+inline bool hasAsyncKindFlags(AsyncMethodFlags value, AsyncMethodFlags flags)
 {
     return (value & flags) == flags;
 }
 
 struct AsyncMethodData
 {
-    AsyncMethodKind kind;
+    AsyncMethodFlags kind;
     Signature sig;
 };
 
@@ -1945,8 +1944,8 @@ public:
         if (!HasAsyncMethodData())
             return false;
 
-        AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::AsyncCall);
+        AsyncMethodFlags asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return hasAsyncKindFlags(asyncKind, AsyncMethodFlags::AsyncCall);
     }
 
     // If yes, the method has another variant.
@@ -1964,8 +1963,8 @@ public:
         if (!HasAsyncMethodData())
             return false;
 
-        AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::IsAsyncVariant);
+        AsyncMethodFlags asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return hasAsyncKindFlags(asyncKind, AsyncMethodFlags::IsAsyncVariant);
     }
 
     // Is this a small(ish) synthetic Task/async adapter to an async/Task implementation?
@@ -1976,8 +1975,8 @@ public:
         if (!HasAsyncMethodData())
             return false;
 
-        AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::Thunk);
+        AsyncMethodFlags asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return hasAsyncKindFlags(asyncKind, AsyncMethodFlags::Thunk);
     }
 
     inline bool ReturnsTaskOrValueTask() const
@@ -1986,8 +1985,8 @@ public:
         if (!HasAsyncMethodData())
             return false;
 
-        AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
-        return hasAsyncKindFlags(asyncKind, AsyncMethodKind::ReturnsTaskOrValueTask);
+        AsyncMethodFlags asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return hasAsyncKindFlags(asyncKind, AsyncMethodFlags::ReturnsTaskOrValueTask);
     }
 
     inline bool HasAsyncMethodData() const
@@ -2012,9 +2011,9 @@ public:
         if (!HasAsyncMethodData())
             return false;
 
-        AsyncMethodKind asyncKind = GetAddrOfAsyncMethodData()->kind;
+        AsyncMethodFlags asyncKind = GetAddrOfAsyncMethodData()->kind;
         // asynccall that is also async variant, but not a thunk
-        return asyncKind == (AsyncMethodKind::AsyncCall | AsyncMethodKind::IsAsyncVariant);
+        return asyncKind == (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
     }
 
 #ifdef FEATURE_METADATA_UPDATER

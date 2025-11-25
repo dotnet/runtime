@@ -739,7 +739,7 @@ HRESULT EEClass::AddMethodDesc(
                                 pImport,
                                 NULL,
                                 Signature(),
-                                AsyncMethodKind::Ordinary
+                                AsyncMethodFlags::None
                                 COMMA_INDEBUG(debug_szMethodName)
                                 COMMA_INDEBUG(pMT->GetDebugClassName())
                                 COMMA_INDEBUG(NULL)
