@@ -4570,7 +4570,7 @@ void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& Method
     methodRegionInfo->coldSize         = 0;
 }
 
-#if !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE) && !defined(TARGET_BROWSER)
 IExecutionControl* InterpreterJitManager::GetExecutionControl()
 {
     LIMITED_METHOD_CONTRACT;
