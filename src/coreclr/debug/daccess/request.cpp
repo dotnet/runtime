@@ -1287,11 +1287,6 @@ HRESULT ClrDataAccess::GetTieredVersions(
                 nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
             }
 
-            if ((int)(*iter).GetOptimizationTier() == NativeCodeVersion::OptimizationTierInterpreted)
-            {
-                nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Interpreted;
-            }
-
             ++count;
 
             if (count >= cNativeCodeAddrs)
