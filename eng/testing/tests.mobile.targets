@@ -121,7 +121,6 @@
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
-          BeforeTargets="_ResolveWasmOutputs"
           AfterTargets="ComputeResolvedFilesToPublishList"
           Condition="'$(TestFramework)' == 'xunit'">
     <ItemGroup>
@@ -139,16 +138,6 @@
 
       <ResolvedFileToPublish Include="@(_runnerFilesToPublishToFileName -> '%(OriginalIdentity)')" RelativePath="%(FileName)%(Extension)" CopyToPublishDirectory="PreserveNewest" PostprocessAssembly="true" />
 
-    </ItemGroup>
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
-      <!-- Remove runner files that already exist in ResolvedFileToPublish to avoid double publishing -->
-      <_ReferenceCopyLocalPathsFileName Include="@(ReferenceCopyLocalPaths -> '%(FileName)%(Extension)')" />
-
-      <_runnerReferenceCopyLocalPathsFileName Include="@(_runnerFilesToPublish -> '%(FileName)%(Extension)')">
-        <OriginalIdentity>%(Identity)</OriginalIdentity>
-      </_runnerReferenceCopyLocalPathsFileName>
-      <_runnerReferenceCopyLocalPathsFileName Remove="@(_ReferenceCopyLocalPathsFileName)" />
-      <ReferenceCopyLocalPaths Include="@(_runnerReferenceCopyLocalPathsFileName -> '%(OriginalIdentity)')" />
     </ItemGroup>
   </Target>
 
