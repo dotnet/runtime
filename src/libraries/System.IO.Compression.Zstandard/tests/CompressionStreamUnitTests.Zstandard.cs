@@ -13,7 +13,7 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen) => new ZstandardStream(stream, mode, leaveOpen);
         public override Stream CreateStream(Stream stream, CompressionLevel level)
         {
-            if (PlatformDetection.Is32BitProcess() && level == CompressionLevel.SmallestSize)
+            if (PlatformDetection.Is32BitProcess && level == CompressionLevel.SmallestSize)
             {
                 // Zstandard smallest size requires too much working memory
                 // (800+ MB) and causes intermittent allocation errors on 32-bit
@@ -25,7 +25,7 @@ namespace System.IO.Compression
         }
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen)
         {
-            if (PlatformDetection.Is32BitProcess() && level == CompressionLevel.SmallestSize)
+            if (PlatformDetection.Is32BitProcess && level == CompressionLevel.SmallestSize)
             {
                 // Zstandard smallest size requires too much working memory
                 // (800+ MB) and causes intermittent allocation errors on 32-bit
