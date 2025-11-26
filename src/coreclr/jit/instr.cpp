@@ -2097,6 +2097,24 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*/)
 {
     // TODO-Cleanup: split this function across target-specific files (e. g. emit<target>.cpp).
+
+#if defined(TARGET_WASM)
+    switch (srcType)
+    {
+        case TYP_INT:
+            return INS_i32_load;
+        case TYP_LONG:
+            return INS_i64_load;
+        case TYP_FLOAT:
+            return INS_f32_load;
+        case TYP_DOUBLE:
+            return INS_f64_load;
+        default:
+            NYI_WASM("ins_Load");
+            return INS_none;
+    }
+#endif // defined(TARGET_WASM)
+
     if (varTypeUsesIntReg(srcType))
     {
         instruction ins = INS_invalid;
@@ -2178,15 +2196,6 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
         else
         {
             ins = INS_ld; // default ld.
-        }
-#elif defined(TARGET_WASM)
-        switch (srcType)
-        {
-            case TYP_INT:
-                ins = INS_i32_load;
-                break;
-            default:
-                NYI_WASM("ins_Load");
         }
 #else
         NYI("ins_Load");
