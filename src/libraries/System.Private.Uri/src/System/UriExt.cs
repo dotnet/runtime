@@ -71,12 +71,10 @@ namespace System
                     }
                     return null;
                 }
-                else
-                {
-                    // This is a fatal error based solely on scheme name parsing
-                    _string = null!; // make it be invalid Uri
-                    return GetException(err);
-                }
+
+                // This is a fatal error based solely on scheme name parsing
+                _string = null!; // make it be invalid Uri
+                return GetException(err);
             }
 
             Debug.Assert(_syntax is not null);
@@ -116,10 +114,8 @@ namespace System
                         _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
                         return null;
                     }
-                    else
-                    {
-                        return GetException(err);
-                    }
+
+                    return GetException(err);
                 }
 
                 if (uriKind == UriKind.Relative)
