@@ -768,13 +768,10 @@ void FgWasm::WasmFindSccsCore(BitVec& subset, ArrayStack<Scc*>& sccs, BasicBlock
         AssignBlockToScc(block, block, subset, sccs, map);
     }
 
-    if (sccs.Height() > 0)
+    for (int i = 0; i < sccs.Height(); i++)
     {
-        for (int i = 0; i < sccs.Height(); i++)
-        {
-            Scc* const scc = sccs.Bottom(i);
-            scc->Finalize();
-        }
+        Scc* const scc = sccs.Bottom(i);
+        scc->Finalize();
     }
 }
 
