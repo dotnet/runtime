@@ -2526,10 +2526,9 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
         return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
     }
 
-    constexpr size_t maxLen = 65536; // Arbitrary threshold to avoid large buffer allocations
-    if (len > maxLen)
+    if (!FitsIn<int>(len))
     {
-        JITDUMP("...length is too big (%u bytes) - bail out.\n", (unsigned)len);
+        JITDUMP("...length is too big to handle - bail out.\n");
         return nullptr;
     }
 
