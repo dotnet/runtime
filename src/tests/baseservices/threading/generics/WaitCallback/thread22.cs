@@ -222,7 +222,7 @@ public class Test_thread22
 	}
 	
 	[Fact]
-    public static int TestEntryPoint()
+	public static int TestEntryPoint()
 	{
 	
 		GenInt.ThreadPoolTest<int>();

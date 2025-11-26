@@ -55,7 +55,7 @@ public class Test_thread30
 	}
 	
 	[Fact]
-    public static int TestEntryPoint()
+	public static int TestEntryPoint()
 	{
 		Gen.ThreadPoolTest<object>();
 		Gen.ThreadPoolTest<string>();
