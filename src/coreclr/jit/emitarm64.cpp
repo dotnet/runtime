@@ -429,7 +429,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_DR_2A: // DR_2A   X..........mmmmm ......nnnnn.....         Rn Rm
             assert(isValidGeneralDatasize(id->idOpSize()));
-            assert(isGeneralRegister(id->idReg1()));
+            assert(isGeneralRegisterOrZR(id->idReg1()));
             assert(isGeneralRegister(id->idReg2()));
             break;
 
@@ -2495,13 +2495,6 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
 /*static*/ bool emitter::emitIns_valid_imm_for_unscaled_ldst_offset(INT64 imm)
 {
     return (imm >= -256) && (imm <= 255);
-}
-
-// true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
-/*static*/ bool emitter::emitIns_valid_imm_for_scaled_sve_ldst_offset(INT64 imm)
-{
-    // TODO-SVE: This assumes 128bit SVE.
-    return ((imm % 16) == 0 && (imm / 16) <= 255 && (imm / 16) >= -256);
 }
 
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
@@ -8240,8 +8233,23 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             case INS_lea:
                 // We shouldn't be materializing the address of a mask.
                 assert(m_compiler->lvaGetActualType(varx) != TYP_MASK);
-                // addvl reg1, x19, #imm
-                emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                if (isValidSimm<6>(imm))
+                {
+                    // addvl reg1, x19, #imm
+                    emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                }
+                else
+                {
+                    // Cannot encode immediate, generate `addr = fp + imm * VL`.
+                    //
+                    // set reg1 = imm
+                    // rdvl rsvd, #1
+                    // madd reg1, reg1, rsvd, x19
+                    regNumber rsvd = codeGen->rsGetRsvdReg();
+                    codeGen->instGen_Set_Reg_To_Imm(EA_8BYTE, reg1, imm);
+                    emitIns_R_I(INS_sve_rdvl, EA_8BYTE, rsvd, 1);
+                    emitIns_R_R_R_R(INS_madd, EA_8BYTE, reg1, reg1, rsvd, REG_UNKBASE);
+                }
                 return;
 
             case INS_sve_ldr:
