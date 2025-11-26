@@ -731,18 +731,12 @@ function generate_wasm (
     traceIndex: number, methodFullName: string | undefined,
     backwardBranchTable: Uint16Array | null, presetFunctionPointer: number
 ): number {
-    // Pre-allocate a decent number of constant slots - this adds fixed size bloat
-    //  to the trace but will make the actual pointer constants in the trace smaller
-    // If we run out of constant slots it will transparently fall back to i32_const
-    // For System.Runtime.Tests we only run out of slots ~50 times in 9100 test cases
-    const constantSlotCount = 8;
-
     let builder = traceBuilder;
     if (!builder) {
-        traceBuilder = builder = new WasmBuilder(constantSlotCount);
+        traceBuilder = builder = new WasmBuilder();
         initialize_builder(builder);
     } else
-        builder.clear(constantSlotCount);
+        builder.clear();
 
     mostRecentOptions = builder.options;
 
