@@ -49,7 +49,7 @@
  * Returns TRUE if:
  * - The path is long enough to potentially hit MAX_PATH limit
  * - The path doesn't already have the \\?\ prefix
- * - The path is an absolute Windows path (e.g., C:\path)
+ * - The path is an absolute Windows path (e.g., C:\path) or UNC path (e.g., \\server\share)
  */
 static gboolean
 g_path_needs_long_prefix (const gchar *path)
@@ -67,6 +67,9 @@ g_path_needs_long_prefix (const gchar *path)
 	if (path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
 		return TRUE;
 	
+	if (path[0] == '\\' && path[1] == '\\' && path[2] != '?')
+		return TRUE;
+	
 	return FALSE;
 }
 
@@ -80,6 +83,15 @@ g_path_make_long_compatible (const gchar *path)
 	if (!g_path_needs_long_prefix(path))
 		return g_strdup(path);
 	
+	/* Handle UNC paths: \\server\share becomes \\?\UNC\server\share */
+	if (path[0] == '\\' && path[1] == '\\') {
+		gchar *prefixed = g_malloc(strlen(path) + 7);
+		strcpy(prefixed, "\\\\?\\UNC\\");
+		strcat(prefixed, path + 2);
+		return prefixed;
+	}
+	
+	/* Handle regular absolute paths: C:\path becomes \\?\C:\path */
 	gchar *prefixed = g_malloc(strlen(path) + 5);
 	strcpy(prefixed, "\\\\?\\");
 	strcat(prefixed, path);
