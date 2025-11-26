@@ -2505,8 +2505,8 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
     if (!vnStore->IsVNConstant(lenVN))
     {
         // See if arguments are the same - in that case we can optimize to constant true
-        ValueNum arg1VN = vnStore->VNLiberalNormalValue(arg1->GetNode()->gtVNPair);
-        ValueNum arg2VN = vnStore->VNLiberalNormalValue(arg2->GetNode()->gtVNPair);
+        ValueNum arg1VN = optConservativeNormalVN(arg1->GetNode());
+        ValueNum arg2VN = optConservativeNormalVN(arg2->GetNode());
         if ((arg1VN != ValueNumStore::NoVN) && (arg1VN == arg2VN))
         {
             JITDUMP("...both arguments have the same VN -> optimize to constant true.\n");
