@@ -2504,6 +2504,15 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
     ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
     if (!vnStore->IsVNConstant(lenVN))
     {
+        // See if arguments are the same - in that case we can optimize to constant true
+        ValueNum arg1VN = vnStore->VNLiberalNormalValue(arg1->GetNode()->gtVNPair);
+        ValueNum arg2VN = vnStore->VNLiberalNormalValue(arg2->GetNode()->gtVNPair);
+        if (arg1VN != ValueNumStore::NoVN && (arg1VN == arg2VN))
+        {
+            JITDUMP("...both arguments have the same VN -> optimize to constant true.\n");
+            return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+        }
+
         JITDUMP("...length is not a constant - bail out.\n");
         return nullptr;
     }
@@ -2524,10 +2533,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
         return nullptr;
     }
 
-    // Extract original call side-effects to preserve order
-    GenTree* result = nullptr;
-    gtExtractSideEffList(call, &result, GTF_ALL_EFFECT, true);
-
     uint8_t* buffer1 = new (this, CMK_AssertionProp) uint8_t[len];
     uint8_t* buffer2 = new (this, CMK_AssertionProp) uint8_t[len];
     if (GetImmutableDataFromAddress(arg1->GetNode(), (int)len, buffer1) &&
@@ -2537,8 +2542,7 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
         bool areEqual = (memcmp(buffer1, buffer2, len) == 0);
         JITDUMP("...both memory regions are known at compile time -> optimize to constant %s.\n",
                 areEqual ? "true" : "false");
-        GenTree* const foldedConst = gtNewIconNode(areEqual ? 1 : 0);
-        return (result == nullptr) ? foldedConst : gtNewOperNode(GT_COMMA, TYP_INT, result, foldedConst);
+        return gtWrapWithSideEffects(gtNewIconNode(areEqual ? 1 : 0), call, GTF_ALL_EFFECT, true);
     }
 
     JITDUMP("...data is not known at compile time - bail out.\n");
