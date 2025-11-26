@@ -2484,10 +2484,10 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
-// optVNBasedFoldExpr_Call_Memcmp: Unrolls NI_System_SpanHelpers_SequenceEqual for constant length.
+// optVNBasedFoldExpr_Call_Memcmp: Folds NI_System_SpanHelpers_SequenceEqual for immutable data.
 //
 // Arguments:
-//    call - NI_System_SpanHelpers_SequenceEqual call to unroll
+//    call - NI_System_SpanHelpers_SequenceEqual call to fold
 //
 // Return Value:
 //    Returns a new tree or nullptr if nothing is changed.
@@ -2509,11 +2509,6 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
     }
 
     const size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
-    if (len > getUnrollThreshold(Memcmp))
-    {
-        JITDUMP("...length is too big to unroll - bail out.\n");
-        return nullptr;
-    }
 
     // SequenceEqual(..., len == 0) => true, and does not dereference pointers
     if (len == 0)
@@ -2522,9 +2517,12 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
         return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
     }
 
-    // Spill arg side-effects directly in the args so we can multi-use
-    GenTree* a = fgMakeMultiUse(&arg1->NodeRef());
-    GenTree* b = fgMakeMultiUse(&arg2->NodeRef());
+    constexpr size_t maxLen = 65536; // Arbitrary threshold to avoid large buffer allocations
+    if (len > maxLen)
+    {
+        JITDUMP("...length is too big (%u bytes) - bail out.\n", (unsigned)len);
+        return nullptr;
+    }
 
     // Extract original call side-effects to preserve order
     GenTree* result = nullptr;
@@ -2543,47 +2541,8 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
         return (result == nullptr) ? foldedConst : gtNewOperNode(GT_COMMA, TYP_INT, result, foldedConst);
     }
 
-    GenTree* diffAccum    = nullptr;
-    unsigned lenRemaining = (unsigned)len;
-    while (lenRemaining > 0)
-    {
-        const ssize_t offset = (ssize_t)len - (ssize_t)lenRemaining;
-
-        // Clone a and b, add offset if necessary
-        GenTree* currA = gtCloneExpr(a);
-        GenTree* currB = gtCloneExpr(b);
-        if (offset != 0)
-        {
-            currA = gtNewOperNode(GT_ADD, currA->TypeGet(), currA, gtNewIconNode(offset, TYP_I_IMPL));
-            currB = gtNewOperNode(GT_ADD, currB->TypeGet(), currB, gtNewIconNode(offset, TYP_I_IMPL));
-        }
-
-        // Create indirection load for both sides using the largest possible chunk.
-        var_types loadType = roundDownMaxType(lenRemaining);
-        GenTree*  loadA    = gtNewIndir(loadType, currA, GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
-        GenTree*  loadB    = gtNewIndir(loadType, currB, GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
-
-        // XOR current chunk
-        GenTree* diffChunk = gtNewOperNode(GT_XOR, loadType, loadA, loadB);
-
-        // Zero-extend chunk to accumulator width if needed
-        GenTree* diffWide =
-            (loadType == TYP_I_IMPL) ? diffChunk : gtNewCastNode(TYP_I_IMPL, diffChunk, true, TYP_I_IMPL);
-
-        // Accumulate differences
-        diffAccum = (diffAccum == nullptr) ? diffWide : gtNewOperNode(GT_OR, TYP_I_IMPL, diffAccum, diffWide);
-
-        lenRemaining -= genTypeSize(loadType);
-    }
-
-    assert(diffAccum != nullptr);
-
-    // Compare accumulated differences to zero
-    GenTree* allEq = gtNewOperNode(GT_EQ, TYP_INT, diffAccum, gtNewIconNode(0, diffAccum->TypeGet()));
-    result         = (result == nullptr) ? allEq : gtNewOperNode(GT_COMMA, TYP_INT, result, allEq);
-    JITDUMP("...optimized NI_System_SpanHelpers_SequenceEqual into load/compare chain:\n");
-    DISPTREE(result);
-    return result;
+    JITDUMP("...data is not known at compile time - bail out.\n");
+    return nullptr;
 }
 
 //------------------------------------------------------------------------------

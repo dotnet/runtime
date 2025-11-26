@@ -9465,7 +9465,6 @@ public:
         Memset,
         Memcpy,
         Memmove,
-        Memcmp,
         MemcmpU16,
         ProfiledMemmove,
         ProfiledMemcmp
@@ -9548,14 +9547,6 @@ public:
             threshold = maxRegSize * 2;
 #ifdef TARGET_ARM64
             threshold = maxRegSize * 6;
-#endif
-        }
-
-        if (type == UnrollKind::Memcmp)
-        {
-            threshold = maxRegSize * 4;
-#ifdef TARGET_ARM64
-            threshold = maxRegSize * 12;
 #endif
         }
 
