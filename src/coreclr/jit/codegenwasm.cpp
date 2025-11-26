@@ -121,7 +121,7 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types type)
     {
         type = TYP_I_IMPL;
     }
-    static_assert(GT_COUNT > TYP_COUNT);
+    static_assert((ssize_t)GT_COUNT > (ssize_t)TYP_COUNT);
     return ((uint32_t)oper << (ConstLog2<GT_COUNT>::value + 1)) | ((uint32_t)type);
 }
 
