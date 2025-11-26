@@ -53,7 +53,7 @@ namespace System.Runtime.Caching
 #if NETCOREAPP
             _physicalMemoryMode = physicalMemoryMode;
 #if SRC_ALLOW_CUSTOM_PHYSICAL_BYTES
-            _physicalMemoryBytes = (physicalMemoryMode == PhysicalMemoryMode.Default) ? physicalMemoryBytes : null;
+            _physicalMemoryBytes = (physicalMemoryMode == PhysicalMemoryMode.Standard) ? physicalMemoryBytes : null;
 #else
             _physicalMemoryBytes = null;
 #endif // SRC_ALLOW_CUSTOM_PHYSICAL_BYTES
@@ -73,7 +73,7 @@ namespace System.Runtime.Caching
             }
             else
             {
-                // Legacy and Default modes: Use specified percentage with appropriate monitoring
+                // Legacy and Standard modes: Use specified percentage with appropriate monitoring
                 _pressureHigh = Math.Max(3, physicalMemoryLimitPercentage);
                 _pressureLow = Math.Max(1, _pressureHigh - 9);
             }
@@ -151,7 +151,7 @@ namespace System.Runtime.Caching
             int currentPressure = CalculateCurrentPressure();
 
 #if NETCOREAPP
-            if (currentPressure < PressureHigh) // Reset in any mode. No ill effects in Legacy/Default modes.
+            if (currentPressure < PressureHigh) // Reset in any mode. No ill effects in Legacy/Standard modes.
             {
                 // Not above high pressure - reset tracking
                 _initialMemInfo = null;
@@ -166,7 +166,7 @@ namespace System.Runtime.Caching
         private int CalculateCurrentPressure()
         {
 #if NETCOREAPP
-            // Modern GC-based monitoring for Default and GCThresholds modes
+            // Modern GC-based monitoring for Standard and GCThresholds modes
             if (_physicalMemoryMode != PhysicalMemoryMode.Legacy)
             {
                 // Get stats from GC without inducing collection

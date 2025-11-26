@@ -20,9 +20,9 @@ namespace System.Runtime.Caching.Configuration
         Legacy = 0,
 
         /// <summary>
-        /// Default mode - uses GCMemoryInfo without inducing GC collections.
+        /// Standard mode - uses GCMemoryInfo without inducing GC collections.
         /// </summary>
-        Default = 1,
+        Standard = 1,
 
         /// <summary>
         /// GC thresholds mode - uses GCMemoryInfo.HighMemoryLoadThresholdBytes instead of percentage of total memory.
@@ -134,9 +134,9 @@ namespace System.Runtime.Caching.Configuration
         /// Gets or sets the physical memory monitoring mode.
         /// Valid values:
         /// - "Legacy": Platform-specific memory detection (default)
-        /// - "Default": Use GC.GetGCMemoryInfo().TotalAvailableMemoryBytes without inducing GC
+        /// - "Standard": Use GC.GetGCMemoryInfo().TotalAvailableMemoryBytes without inducing GC
         /// - "GCThresholds": Follow GC's high memory load threshold
-        /// - "Default:1234567890": Use Default mode - specified against a static amount of available RAM (in bytes)
+        /// - "Standard:1234567890": Use Standard mode - specified against a static amount of available RAM (in bytes)
         /// </summary>
         [ConfigurationProperty("physicalMemoryMode", DefaultValue = "Legacy")]
         internal string PhysicalMemoryModeRaw

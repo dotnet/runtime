@@ -14,7 +14,7 @@ namespace System.Runtime.Caching.Configuration
          <memoryCaches>
            <namedCaches>
              <add name="Default" physicalMemoryPercentage="0" physicalMemoryMode="Legacy" pollingInterval="00:02:00"/>
-             <add name="Foo" physicalMemoryPercentage="0" physicalMemoryMode="Default" pollingInterval="00:02:00"/>
+             <add name="Foo" physicalMemoryPercentage="0" physicalMemoryMode="Standard" pollingInterval="00:02:00"/>
              <add name="Bar" physicalMemoryPercentage="0" physicalMemoryMode="GCThresholds" pollingInterval="00:02:00"/>
            </namedCaches>
          </memoryCaches>
