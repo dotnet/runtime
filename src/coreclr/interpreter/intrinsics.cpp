@@ -110,6 +110,10 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
                 else if (!strcmp(methodName, "GetMethodTable"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
+                else if (!strcmp(methodName, "SetNextCallGenericContext"))
+                    return NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext;
+                else if (!strcmp(methodName, "SetNextCallAsyncContinuation"))
+                    return NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation;
             }
         }
         else if (!strcmp(namespaceName, "System.Runtime.InteropServices"))

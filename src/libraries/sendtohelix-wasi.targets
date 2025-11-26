@@ -61,22 +61,21 @@
     <SdkForWorkloadTestingDirName Condition="'$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">dotnet-none</SdkForWorkloadTestingDirName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="$(EnvVarCommand) SCENARIO=$(Scenario)" />
+    <HelixPreCommand Include="$(EnvVarCommand) XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="$(EnvVarCommand) XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+    <HelixPreCommand Include="$(EnvVarCommand) WASMTIME_BACKTRACE_DETAILS=1" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
-    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
-    <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
-    <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
-    <HelixPreCommand Include="export WASMTIME_BACKTRACE_DETAILS=1" />
     <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/wasmtime:$PATH" />
     <HelixPreCommand Condition="'$(NeedsWasiSdk)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/wasi-sdk/bin:$PATH" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
-    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="set SCENARIO=$(Scenario)" />
-    <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
-    <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
-    <HelixPreCommand Include="set WASMTIME_BACKTRACE_DETAILS=1" />
-    <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\wasmtime%3B%PATH%" />
-    <HelixPreCommand Condition="'$(NeedsWasiSdk)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk\bin%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsWasmtime)' == 'true'" Include="$(EnvVarCommand) PATH=%HELIX_CORRELATION_PAYLOAD%\wasmtime%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsWasiSdk)' == 'true'" Include="$(EnvVarCommand) PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk\bin%3B%PATH%" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
@@ -86,8 +85,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;WASI_SDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;WASI_SDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/wasi-sdk&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="$(EnvVarCommand) &quot;WASI_SDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="$(EnvVarCommand) &quot;WASI_SDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/wasi-sdk&quot;" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsWasiSdk)' == 'true'">

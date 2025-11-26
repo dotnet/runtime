@@ -599,5 +599,7 @@ namespace Internal.TypeSystem.Ecma
         public override EcmaMethod GetMethodDefinition() => this;
 
         public override EcmaMethod GetTypicalMethodDefinition() => this;
+
+        public override MethodDesc InstantiateSignature(Instantiation typeInstantiation, Instantiation methodInstantiation) => this;
     }
 }

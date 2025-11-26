@@ -70,7 +70,7 @@ class CallStubGenerator
         ReturnTypeVoid,
         ReturnTypeI8,
         ReturnTypeDouble,
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
         ReturnTypeBuffArg1,
         ReturnTypeBuffArg2,
 #else

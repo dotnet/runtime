@@ -986,10 +986,10 @@ typedef enum CorCallingConvention
 
 
         // The high bits of the calling convention convey additional info
-    IMAGE_CEE_CS_CALLCONV_MASK      = 0x0f,  // Calling convention is bottom 4 bits
-    IMAGE_CEE_CS_CALLCONV_HASTHIS   = 0x20,  // Top bit indicates a 'this' parameter
+    IMAGE_CEE_CS_CALLCONV_MASK      = 0x0f,     // Calling convention is bottom 4 bits
+    IMAGE_CEE_CS_CALLCONV_HASTHIS   = 0x20,     // Top bit indicates a 'this' parameter
     IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS = 0x40,  // This parameter is explicitly in the signature
-    IMAGE_CEE_CS_CALLCONV_GENERIC   = 0x10,  // Generic method sig with explicit number of type arguments (precedes ordinary parameter count)
+    IMAGE_CEE_CS_CALLCONV_GENERIC   = 0x10,     // Generic method sig with explicit number of type arguments (precedes ordinary parameter count)
     // 0x80 is reserved for internal use
 } CorCallingConvention;
 

@@ -852,6 +852,59 @@ enum InfoAccessType
     IAT_RELPVALUE   // The value needs to be accessed via a relative indirection
 };
 
+enum class CorInfoReloc
+{
+    NONE,
+
+    // General relocation types
+    DIRECT,                                // Direct/absolute pointer sized address
+    RELATIVE32,                            // 32-bit relative address from byte following reloc
+
+    // Arm64 relocs
+    ARM64_BRANCH26,                        // Arm64: B, BL
+    ARM64_PAGEBASE_REL21,                  // ADRP
+    ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+    // Linux arm64
+    ARM64_LIN_TLSDESC_ADR_PAGE21,
+    ARM64_LIN_TLSDESC_LD64_LO12,
+    ARM64_LIN_TLSDESC_ADD_LO12,
+    ARM64_LIN_TLSDESC_CALL,
+    // Windows arm64
+    ARM64_WIN_TLS_SECREL_HIGH12A,          // ADD high 12-bit offset for tls
+    ARM64_WIN_TLS_SECREL_LOW12A,           // ADD low 12-bit offset for tls
+
+    // Windows x64
+    AMD64_WIN_SECREL,
+
+    // Linux x64
+    // GD model
+    AMD64_LIN_TLSGD,
+
+    // Arm32 relocs
+    ARM32_THUMB_BRANCH24,                  // Thumb2: B, BL
+    ARM32_THUMB_MOV32,                     // Thumb2: MOVW/MOVT
+    // The identifier for ARM32-specific PC-relative address
+    // computation corresponds to the following instruction
+    // sequence:
+    //  l0: movw rX, #imm_lo  // 4 byte
+    //  l4: movt rX, #imm_hi  // 4 byte
+    //  l8: add  rX, pc <- after this instruction rX = relocTarget
+    //
+    // Program counter at l8 is address of l8 + 4
+    // Address of relocated movw/movt is l0
+    // So, imm should be calculated as the following:
+    //  imm = relocTarget - (l8 + 4) = relocTarget - (l0 + 8 + 4) = relocTarget - (l_0 + 12)
+    // So, the value of offset correction is 12
+    ARM32_THUMB_MOV32_PCREL,               // Thumb2: MOVW/MOVT
+
+    // LoongArch64 relocs
+    LOONGARCH64_PC,                        // LoongArch64: pcalau12i+imm12
+    LOONGARCH64_JIR,                       // LoongArch64: pcaddu18i+jirl
+
+    // RISCV64 relocs
+    RISCV64_PC,                            // RiscV64: auipc
+};
+
 enum CorInfoGCType
 {
     TYPE_GC_NONE,   // no embedded objectrefs
@@ -3398,50 +3451,6 @@ public:
 
     virtual CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;
 };
-
-/**********************************************************************************/
-
-// It would be nicer to use existing IMAGE_REL_XXX constants instead of defining our own here...
-#define IMAGE_REL_BASED_REL32           0x10
-#define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
-#define IMAGE_REL_SECREL                0x104
-
-// Linux x64
-// GD model
-#define IMAGE_REL_TLSGD                 0x105
-
-// Linux arm64
-//    TLSDESC  (dynamic)
-#define IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21   0x107
-#define IMAGE_REL_AARCH64_TLSDESC_LD64_LO12    0x108
-#define IMAGE_REL_AARCH64_TLSDESC_ADD_LO12     0x109
-#define IMAGE_REL_AARCH64_TLSDESC_CALL         0x10A
-
-// The identifier for ARM32-specific PC-relative address
-// computation corresponds to the following instruction
-// sequence:
-//  l0: movw rX, #imm_lo  // 4 byte
-//  l4: movt rX, #imm_hi  // 4 byte
-//  l8: add  rX, pc <- after this instruction rX = relocTarget
-//
-// Program counter at l8 is address of l8 + 4
-// Address of relocated movw/movt is l0
-// So, imm should be calculated as the following:
-//  imm = relocTarget - (l8 + 4) = relocTarget - (l0 + 8 + 4) = relocTarget - (l_0 + 12)
-// So, the value of offset correction is 12
-//
-#define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
-
-//
-// LOONGARCH64 relocation types
-//
-#define IMAGE_REL_LOONGARCH64_PC        0x0003
-#define IMAGE_REL_LOONGARCH64_JIR       0x0004
-
-//
-// RISCV64 relocation types
-//
-#define IMAGE_REL_RISCV64_PC            0x0003
 
 /**********************************************************************************/
 #ifdef TARGET_64BIT

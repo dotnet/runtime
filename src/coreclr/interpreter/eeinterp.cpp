@@ -85,8 +85,8 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
                 break;
         }
 
-#ifdef TARGET_WASM
-        // interpret everything on wasm
+#if !defined(FEATURE_JIT)
+        // interpret everything when we do not have a JIT
         doInterpret = true;
 #else
         // NOTE: We do this check even if doInterpret==true in order to populate g_interpModule

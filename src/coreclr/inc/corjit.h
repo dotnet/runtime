@@ -425,11 +425,11 @@ public:
             void *                  location,     /* IN  */
             void *                  locationRW,   /* IN  */
             void *                  target,       /* IN  */
-            uint16_t                fRelocType,   /* IN  */
+            CorInfoReloc            fRelocType,   /* IN  */
             int32_t                 addlDelta = 0 /* IN  */
             ) = 0;
 
-    virtual uint16_t getRelocTypeHint(void * target) = 0;
+    virtual CorInfoReloc getRelocTypeHint(void * target) = 0;
 
     // For what machine does the VM expect the JIT to generate code? The VM
     // returns one of the CorInfoArch values. Note that if the VM is cross

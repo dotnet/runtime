@@ -1901,7 +1901,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
         // If we are running the altjit for AOT, then assume we can use the "BL" instruction.
         // This matches the usual behavior for AOT, since we normally do generate "BL".
         (!compiler->info.compMatchedVM && compiler->IsAot()) ||
-        (compiler->eeGetRelocTypeHint((void*)addr) == IMAGE_REL_BASED_THUMB_BRANCH24);
+        (compiler->eeGetRelocTypeHint((void*)addr) == CorInfoReloc::ARM32_THUMB_BRANCH24);
 }
 
 #endif // TARGET_ARM
@@ -1911,7 +1911,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
 {
     // On arm64, we always assume a call target is in range and generate a 28-bit relative
     // 'bl' instruction. If this isn't sufficient range, the VM will generate a jump stub when
-    // we call recordRelocation(). See the IMAGE_REL_ARM64_BRANCH26 case in jitinterface.cpp
+    // we call recordRelocation(). See the CorInfoReloc::ARM64_BRANCH26 case in jitinterface.cpp
     // (for JIT) or zapinfo.cpp (for AOT). If we cannot allocate a jump stub, it is fatal.
     return true;
 }

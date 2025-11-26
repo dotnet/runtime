@@ -2277,12 +2277,21 @@ namespace System
 
                 if ((cF & Flags.AuthorityFound) != 0)
                 {
-                    Debug.Assert(str[idx] is '/' or '\\' && str[idx + 1] is '/' or '\\');
+                    if (str[idx] is '/' or '\\' && str[idx + 1] is '/' or '\\')
+                    {
+                        if (str[idx] == '\\' || str[idx + 1] == '\\')
+                        {
+                            notCanonicalScheme = true;
+                        }
 
-                    if (str[idx] == '\\' || str[idx + 1] == '\\')
-                        notCanonicalScheme = true;
-
-                    idx += 2;
+                        idx += 2;
+                    }
+                    else
+                    {
+                        Debug.Assert(IsDosPath);
+                        Debug.Assert(char.IsAsciiLetter(str.AsSpan(idx).TrimStart(['/', '\\'])[0]));
+                        Debug.Assert(str.AsSpan(idx).TrimStart(['/', '\\'])[1] is ':' or '|');
+                    }
 
                     if ((cF & (Flags.UncPath | Flags.DosPath)) != 0)
                     {
@@ -3249,20 +3258,22 @@ namespace System
                 DebugAssertInCtor();
 
                 // Dos/Unix paths have no host.  Other schemes cleared/set _string with host information in PrivateParseMinimal.
-                if (IsFile && !IsUncPath)
+                if (InFact(Flags.DosPath | Flags.UnixPath))
                 {
-                    if (IsImplicitFile)
-                    {
-                        _string = string.Empty;
-                    }
-                    else
-                    {
-                        _string = _syntax.SchemeName + SchemeDelimiter;
-                    }
+                    Debug.Assert(!InFact(Flags.HasUserInfo));
+
+                    _string =
+                        IsImplicitFile ? string.Empty :
+                        InFact(Flags.AuthorityFound) ? _syntax.SchemeName + SchemeDelimiter :
+                        _syntax.SchemeName + ':';
 
                     _info.Offset.Scheme = 0;
                     _info.Offset.User = _string.Length;
                     _info.Offset.Host = _string.Length;
+                }
+                else
+                {
+                    Debug.Assert(!ReferenceEquals(_string, OriginalString));
                 }
 
                 _info.Offset.Path = _string.Length;

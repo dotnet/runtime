@@ -531,8 +531,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, two, appendNewLine: false);
+                WriteFormatHelper(format, [arg0, arg1], appendNewLine: false);
             }
             else
             {
@@ -544,8 +543,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, three, appendNewLine: false);
+                WriteFormatHelper(format, [arg0, arg1, arg2], appendNewLine: false);
             }
             else
             {
@@ -602,8 +600,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                TwoObjects two = new TwoObjects(arg0, arg1);
-                WriteFormatHelper(format, two, appendNewLine: true);
+                WriteFormatHelper(format, [arg0, arg1], appendNewLine: true);
             }
             else
             {
@@ -615,8 +612,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
-                WriteFormatHelper(format, three, appendNewLine: true);
+                WriteFormatHelper(format, [arg0, arg1, arg2], appendNewLine: true);
             }
             else
             {

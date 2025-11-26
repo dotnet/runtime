@@ -2022,7 +2022,7 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id)
         dst += emitOutput_ITypeInstr(dst, INS_jalr, linkReg, tempReg, 0);
 
         assert(id->idIsDspReloc());
-        emitRecordRelocation(origDst, (BYTE*)addr, IMAGE_REL_RISCV64_PC);
+        emitRecordRelocation(origDst, (BYTE*)addr, CorInfoReloc::RISCV64_PC);
     }
 
     // If the method returns a GC ref, mark INTRET (A0) appropriately.
@@ -2884,7 +2884,7 @@ BYTE* emitter::emitOutputInstr_OptsReloc(BYTE* dst, const instrDesc* id, instruc
 
     dst += emitOutput_ITypeInstr(dst, *ins, reg1, reg1, 0);
 
-    emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, IMAGE_REL_RISCV64_PC);
+    emitRecordRelocation(dstBase, id->idAddr()->iiaAddr, CorInfoReloc::RISCV64_PC);
 
     return dst;
 }

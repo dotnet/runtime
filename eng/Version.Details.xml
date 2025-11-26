@@ -417,5 +417,9 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>b5d67650a6a37772770a9df6ca762eebd0c21617</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotnetFuzzing.TestData" Version="11.0.0-beta.25553.1">
+      <Uri>https://github.com/dotnet/runtime-assets</Uri>
+      <Sha />
+    </Dependency>
   </ToolsetDependencies>
 </Dependencies>

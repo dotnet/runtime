@@ -1825,21 +1825,21 @@ void MyICJI::recordCallSite(uint32_t              instrOffset, /* IN */
 
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
-void MyICJI::recordRelocation(void*    location,   /* IN  */
-                              void*    locationRW, /* IN  */
-                              void*    target,     /* IN  */
-                              uint16_t fRelocType, /* IN  */
-                              int32_t  addlDelta   /* IN  */
+void MyICJI::recordRelocation(void*        location,   /* IN  */
+                              void*        locationRW, /* IN  */
+                              void*        target,     /* IN  */
+                              CorInfoReloc fRelocType, /* IN  */
+                              int32_t      addlDelta   /* IN  */
                               )
 {
     jitInstance->mc->cr->AddCall("recordRelocation");
     jitInstance->mc->cr->repRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
-uint16_t MyICJI::getRelocTypeHint(void* target)
+CorInfoReloc MyICJI::getRelocTypeHint(void* target)
 {
     jitInstance->mc->cr->AddCall("getRelocTypeHint");
-    uint16_t result = jitInstance->mc->repGetRelocTypeHint(target);
+    CorInfoReloc result = jitInstance->mc->repGetRelocTypeHint(target);
     return result;
 }
 

@@ -2014,7 +2014,7 @@ void interceptor_ICJI::recordCallSite(uint32_t              instrOffset, /* IN *
 void interceptor_ICJI::recordRelocation(void*    location,   /* IN  */
                                         void*    locationRW, /* IN  */
                                         void*    target,     /* IN  */
-                                        uint16_t fRelocType, /* IN  */
+                                        CorInfoReloc fRelocType, /* IN  */
                                         int32_t  addlDelta   /* IN  */
                                         )
 {
@@ -2023,10 +2023,10 @@ void interceptor_ICJI::recordRelocation(void*    location,   /* IN  */
     mc->cr->recRecordRelocation(location, target, fRelocType, addlDelta);
 }
 
-uint16_t interceptor_ICJI::getRelocTypeHint(void* target)
+CorInfoReloc interceptor_ICJI::getRelocTypeHint(void* target)
 {
     mc->cr->AddCall("getRelocTypeHint");
-    WORD result = original_ICorJitInfo->getRelocTypeHint(target);
+    CorInfoReloc result = original_ICorJitInfo->getRelocTypeHint(target);
     mc->recGetRelocTypeHint(target, result);
     return result;
 }
