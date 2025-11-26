@@ -171,7 +171,7 @@ else ()
         endif()
 
         if (NOT CLR_CMAKE_USE_SYSTEM_ZSTD)
-            target_link_libraries(System.IO.Compression.Native PUBLIC libzstd)
+            target_link_libraries(System.IO.Compression.Native PUBLIC libzstd_static)
         endif()
 
         target_include_directories(System.IO.Compression.Native PUBLIC ${BROTLI_INCLUDE_DIRS})
@@ -243,7 +243,7 @@ else ()
             install_static_library(zlib aotsdk nativeaot)
         endif()
         if (NOT CLR_CMAKE_USE_SYSTEM_ZSTD)
-            install_static_library(libzstd aotsdk nativeaot)
+            install_static_library(libzstd_static aotsdk nativeaot)
         endif()
     endif()
 
