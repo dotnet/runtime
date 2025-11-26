@@ -103,10 +103,8 @@ export class WasmBuilder {
     traceBuf: Array<string> = [];
     branchTargets = new Set<MintOpcodePtr>();
     options!: JiterpreterOptions;
-    constantSlots: Array<number> = [];
     backBranchOffsets: Array<MintOpcodePtr> = [];
     callHandlerReturnAddresses: Array<MintOpcodePtr> = [];
-    nextConstantSlot = 0;
     backBranchTraceLevel = 0;
 
     containsSimd!: boolean;
@@ -115,14 +113,14 @@ export class WasmBuilder {
     compressImportNames = false;
     lockImports = false;
 
-    constructor (constantSlotCount: number) {
+    constructor () {
         this.stack = [new BlobBuilder()];
-        this.clear(constantSlotCount);
+        this.clear();
         this.cfg = new Cfg(this);
         this.defineType("__cpp_exception", { "ptr": WasmValtype.i32 }, WasmValtype.void, true);
     }
 
-    clear (constantSlotCount: number) {
+    clear () {
         this.options = getOptions();
         if (this.options.maxModuleSize >= blobBuilderCapacity)
             throw new Error(`blobBuilderCapacity ${blobBuilderCapacity} is not large enough for jiterpreter-max-module-size of ${this.options.maxModuleSize}`);
@@ -154,10 +152,6 @@ export class WasmBuilder {
         this.traceBuf.length = 0;
         this.branchTargets.clear();
         this.activeBlocks = 0;
-        this.nextConstantSlot = 0;
-        this.constantSlots.length = this.options.useConstants ? constantSlotCount : 0;
-        for (let i = 0; i < this.constantSlots.length; i++)
-            this.constantSlots[i] = 0;
         this.backBranchOffsets.length = 0;
         this.callHandlerReturnAddresses.length = 0;
 
@@ -209,7 +203,6 @@ export class WasmBuilder {
 
         const exceptionTag = this.getExceptionTag();
         const result: any = {
-            c: <any>this.getConstants(),
             m: { h: memory },
         };
         if (exceptionTag)
@@ -329,24 +322,11 @@ export class WasmBuilder {
 
     ptr_const (pointer: number | ManagedPointer | NativePointer) {
         pointer = pointer as any >>> 0;
-        let idx = this.options.useConstants ? this.constantSlots.indexOf(<any>pointer) : -1;
-        if (
-            this.options.useConstants &&
-            (idx < 0) && (this.nextConstantSlot < this.constantSlots.length)
-        ) {
-            idx = this.nextConstantSlot++;
-            this.constantSlots[idx] = <any>pointer >>> 0;
-        }
 
-        if (idx >= 0) {
-            this.appendU8(WasmOpcode.get_global);
-            this.appendLeb(idx);
-        } else {
-            // mono_log_info(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
-            this.appendU8(WasmOpcode.i32_const);
-            // i32_const is always signed
-            this.appendLebRef((pointer as any | 0), true);
-        }
+        // mono_log_info(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
+        this.appendU8(WasmOpcode.i32_const);
+        // i32_const is always signed
+        this.appendLeb(pointer as any | 0);
     }
 
     ip_const (value: MintOpcodePtr) {
@@ -510,7 +490,7 @@ export class WasmBuilder {
         this.appendULeb(
             1 + // memory
             (enableWasmEh ? 1 : 0) + // c++ exception tag
-            importsToEmit.length + this.constantSlots.length +
+            importsToEmit.length +
             ((includeFunctionTable !== false) ? 1 : 0)
         );
 
@@ -522,14 +502,6 @@ export class WasmBuilder {
             this.appendName(this.getCompressedName(ifi));
             this.appendU8(0x0); // function
             this.appendU8(ifi.typeIndex);
-        }
-
-        for (let i = 0; i < this.constantSlots.length; i++) {
-            this.appendName("c");
-            this.appendName(i.toString(shortNameBase));
-            this.appendU8(0x03); // global
-            this.appendU8(WasmValtype.i32); // all constants are pointers right now
-            this.appendU8(0x00); // constant
         }
 
         // import the native heap
@@ -933,13 +905,6 @@ export class WasmBuilder {
         if ((suppressDeepStackError !== true) && this.stackSize > 1)
             throw new Error("Jiterpreter block stack not empty");
         return this.stack[0].getArrayView(fullCapacity);
-    }
-
-    getConstants () {
-        const result: { [key: string]: number } = {};
-        for (let i = 0; i < this.constantSlots.length; i++)
-            result[i.toString(shortNameBase)] = this.constantSlots[i];
-        return result;
     }
 }
 
@@ -2023,8 +1988,6 @@ export type JiterpreterOptions = {
     countBailouts: boolean;
     // Dump the wasm blob for all compiled traces
     dumpTraces: boolean;
-    // Use runtime imports for pointer constants
-    useConstants: boolean;
     // Enable performing backward branches without exiting traces
     noExitBackwardBranches: boolean;
     // Unwrap gsharedvt wrappers when compiling jitcalls if possible
@@ -2065,7 +2028,6 @@ const optionNames: { [jsName: string]: string } = {
     "estimateHeat": "jiterpreter-estimate-heat",
     "countBailouts": "jiterpreter-count-bailouts",
     "dumpTraces": "jiterpreter-dump-traces",
-    "useConstants": "jiterpreter-use-constants",
     "eliminateNullChecks": "jiterpreter-eliminate-null-checks",
     "noExitBackwardBranches": "jiterpreter-backward-branches-enabled",
     "directJitCalls": "jiterpreter-direct-jit-calls",
