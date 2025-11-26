@@ -3586,26 +3586,26 @@ public:
 #define emitRecordRelocationWithAddlDelta(location, target, fRelocType, addlDelta)                                     \
     emitRecordRelocationHelp(location, target, fRelocType, #fRelocType, addlDelta)
 
-    void emitRecordRelocationHelp(void*       location,      /* IN */
-                                  void*       target,        /* IN */
-                                  uint16_t    fRelocType,    /* IN */
-                                  const char* relocTypeName, /* IN */
-                                  int32_t     addlDelta = 0);    /* IN */
+    void emitRecordRelocationHelp(void*        location,      /* IN */
+                                  void*        target,        /* IN */
+                                  CorInfoReloc fRelocType,    /* IN */
+                                  const char*  relocTypeName, /* IN */
+                                  int32_t      addlDelta = 0);     /* IN */
 
 #else // !DEBUG
 
-    void emitRecordRelocationWithAddlDelta(void*    location,   /* IN */
-                                           void*    target,     /* IN */
-                                           uint16_t fRelocType, /* IN */
-                                           int32_t  addlDelta)   /* IN */
+    void emitRecordRelocationWithAddlDelta(void*        location,   /* IN */
+                                           void*        target,     /* IN */
+                                           CorInfoReloc fRelocType, /* IN */
+                                           int32_t      addlDelta)       /* IN */
     {
         emitRecordRelocation(location, target, fRelocType, addlDelta);
     }
 
-    void emitRecordRelocation(void*    location,      /* IN */
-                              void*    target,        /* IN */
-                              uint16_t fRelocType,    /* IN */
-                              int32_t  addlDelta = 0); /* IN */
+    void emitRecordRelocation(void*        location,   /* IN */
+                              void*        target,     /* IN */
+                              CorInfoReloc fRelocType, /* IN */
+                              int32_t      addlDelta = 0);  /* IN */
 
 #endif // !DEBUG
 

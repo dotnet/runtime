@@ -151,6 +151,40 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
+// PackOperAndType: Pack a genTreeOps and var_types into a uint32_t
+//
+// Arguments:
+//    oper - a genTreeOps to pack
+//    type - a var_types to pack
+//
+// Return Value:
+//    oper and type packed into an integer that can be used as a switch value/case
+//
+static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types type)
+{
+    if (type == TYP_BYREF)
+    {
+        type = TYP_I_IMPL;
+    }
+    static_assert((ssize_t)GT_COUNT > (ssize_t)TYP_COUNT);
+    return ((uint32_t)oper << (ConstLog2<GT_COUNT>::value + 1)) | ((uint32_t)type);
+}
+
+//------------------------------------------------------------------------
+// PackOperAndType: Pack a GenTreeOp* into a uint32_t
+//
+// Arguments:
+//    treeNode - a GenTreeOp to extract oper and type from
+//
+// Return Value:
+//    the node's oper and type packed into an integer that can be used as a switch value
+//
+static uint32_t PackOperAndType(GenTreeOp* treeNode)
+{
+    return PackOperAndType(treeNode->OperGet(), treeNode->TypeGet());
+}
+
+//------------------------------------------------------------------------
 // genCodeForBinary: Generate code for a binary arithmetic operator
 //
 // Arguments:
@@ -161,22 +195,97 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     genConsumeOperands(treeNode);
 
     instruction ins;
-    switch (treeNode->OperGet())
+    switch (PackOperAndType(treeNode))
     {
-        case GT_ADD:
-            if (!treeNode->TypeIs(TYP_INT))
-            {
-                NYI_WASM("genCodeForBinary: non-INT GT_ADD");
-            }
+        case PackOperAndType(GT_ADD, TYP_INT):
             ins = INS_i32_add;
             break;
+        case PackOperAndType(GT_ADD, TYP_LONG):
+            ins = INS_i64_add;
+            break;
+        case PackOperAndType(GT_ADD, TYP_FLOAT):
+            ins = INS_f32_add;
+            break;
+        case PackOperAndType(GT_ADD, TYP_DOUBLE):
+            ins = INS_f64_add;
+            break;
 
-        case GT_GT:
-            if (!treeNode->TypeIs(TYP_INT))
-            {
-                NYI_WASM("genCodeForBinary:non-INT  GT_GT");
-            }
+        case PackOperAndType(GT_EQ, TYP_INT):
+            ins = INS_i32_eq;
+            break;
+        case PackOperAndType(GT_EQ, TYP_LONG):
+            ins = INS_i64_eq;
+            break;
+        case PackOperAndType(GT_EQ, TYP_FLOAT):
+            ins = INS_f32_eq;
+            break;
+        case PackOperAndType(GT_EQ, TYP_DOUBLE):
+            ins = INS_f64_eq;
+            break;
+
+        case PackOperAndType(GT_NE, TYP_INT):
+            ins = INS_i32_ne;
+            break;
+        case PackOperAndType(GT_NE, TYP_LONG):
+            ins = INS_i64_ne;
+            break;
+        case PackOperAndType(GT_NE, TYP_FLOAT):
+            ins = INS_f32_ne;
+            break;
+        case PackOperAndType(GT_NE, TYP_DOUBLE):
+            ins = INS_f64_ne;
+            break;
+
+        case PackOperAndType(GT_LT, TYP_INT):
+            ins = treeNode->IsUnsigned() ? INS_i32_lt_u : INS_i32_lt_s;
+            break;
+        case PackOperAndType(GT_LT, TYP_LONG):
+            ins = treeNode->IsUnsigned() ? INS_i64_lt_u : INS_i64_lt_s;
+            break;
+        case PackOperAndType(GT_LT, TYP_FLOAT):
+            ins = INS_f32_lt;
+            break;
+        case PackOperAndType(GT_LT, TYP_DOUBLE):
+            ins = INS_f64_lt;
+            break;
+
+        case PackOperAndType(GT_LE, TYP_INT):
+            ins = treeNode->IsUnsigned() ? INS_i32_le_u : INS_i32_le_s;
+            break;
+        case PackOperAndType(GT_LE, TYP_LONG):
+            ins = treeNode->IsUnsigned() ? INS_i64_le_u : INS_i64_le_s;
+            break;
+        case PackOperAndType(GT_LE, TYP_FLOAT):
+            ins = INS_f32_le;
+            break;
+        case PackOperAndType(GT_LE, TYP_DOUBLE):
+            ins = INS_f64_le;
+            break;
+
+        case PackOperAndType(GT_GE, TYP_INT):
+            ins = treeNode->IsUnsigned() ? INS_i32_ge_u : INS_i32_ge_s;
+            break;
+        case PackOperAndType(GT_GE, TYP_LONG):
+            ins = treeNode->IsUnsigned() ? INS_i64_ge_u : INS_i64_ge_s;
+            break;
+        case PackOperAndType(GT_GE, TYP_FLOAT):
+            ins = INS_f32_ge;
+            break;
+        case PackOperAndType(GT_GE, TYP_DOUBLE):
+            ins = INS_f64_ge;
+            break;
+
+        case PackOperAndType(GT_GT, TYP_INT):
             ins = treeNode->IsUnsigned() ? INS_i32_gt_u : INS_i32_gt_s;
+            break;
+        case PackOperAndType(GT_GT, TYP_LONG):
+            ins = treeNode->IsUnsigned() ? INS_i64_gt_u : INS_i64_gt_s;
+            break;
+        case PackOperAndType(GT_GT, TYP_FLOAT):
+            ins = INS_f32_gt;
+            break;
+        case PackOperAndType(GT_GT, TYP_DOUBLE):
+            ins = INS_f64_gt;
             break;
 
         default:

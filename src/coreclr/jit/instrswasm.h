@@ -91,7 +91,13 @@ INST(f64_ge,      "f64.ge",      0, IF_OPCODE,  0x66)
 
 INST(local_get,   "local.get",   0, IF_ULEB128, 0x20)
 INST(i32_load,    "i32.load",    0, IF_MEMARG,  0x28)
+INST(i64_load,    "i64.load",    0, IF_MEMARG,  0x29)
+INST(f32_load,    "f32.load",    0, IF_MEMARG,  0x2a)
+INST(f64_load,    "f64.load",    0, IF_MEMARG,  0x2b)
 INST(i32_add,     "i32.add",     0, IF_OPCODE,  0x6a)
+INST(i64_add,     "i64.add",     0, IF_OPCODE,  0x7c)
+INST(f32_add,     "f32.add",     0, IF_OPCODE,  0x92)
+INST(f64_add,     "f64.add",     0, IF_OPCODE,  0xa0)
 // clang-format on
 
 #undef INST
