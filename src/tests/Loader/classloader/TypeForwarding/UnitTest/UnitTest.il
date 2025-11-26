@@ -66,6 +66,7 @@
               ldstr      "MyDep.Enclosing2+Nested1+SubNested2, MyDep, Versio"
               + "n=1.0.0.0, Culture=neutral, PublicKeyToken=null"
               call       class [mscorlib]System.Type [mscorlib]System.Type::GetType(string)
+              call       object [mscorlib]System.Activator::CreateInstance(class [mscorlib]System.Type)
               pop
 
     IL_0066:  ldstr      "MyDep.Enclosing2+Nested2+SubNested1, MyDep, Versio"
@@ -119,6 +120,7 @@
               ldstr      "MyDep2.Enclosing2+Nested1+SubNested2, MyDep, Versi"
               + "on=1.0.0.0, Culture=neutral, PublicKeyToken=null"
               call       class [mscorlib]System.Type [mscorlib]System.Type::GetType(string)
+              call       object [mscorlib]System.Activator::CreateInstance(class [mscorlib]System.Type)
               pop
 
     IL_00ec:  ldstr      "MyDep2.Enclosing2+Nested2+SubNested1, MyDep, Versi"
@@ -172,6 +174,7 @@
               ldstr      "MyDep3.Enclosing2+Nested1+SubNested2, MyDep, Versi"
               + "on=1.0.0.0, Culture=neutral, PublicKeyToken=null"
               call       class [mscorlib]System.Type [mscorlib]System.Type::GetType(string)
+              call       object [mscorlib]System.Activator::CreateInstance(class [mscorlib]System.Type)
               pop
 
 
