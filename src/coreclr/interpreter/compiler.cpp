@@ -7803,7 +7803,7 @@ retry_emit:
                 CORINFO_FIELD_INFO fieldInfo;
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
-                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_SET, &fieldInfo);
 
                 // Inject call to callsite callout helper
                 EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
@@ -7882,7 +7882,7 @@ retry_emit:
                 CORINFO_FIELD_INFO fieldInfo;
                 uint32_t token = getU4LittleEndian(m_ip + 1);
                 ResolveToken(token, CORINFO_TOKENKIND_Field, &resolvedToken);
-                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_GET, &fieldInfo);
+                m_compHnd->getFieldInfo(&resolvedToken, m_methodHnd, CORINFO_ACCESS_SET, &fieldInfo);
 
                 // Inject call to callsite callout helper
                 EmitCallsiteCallout(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
