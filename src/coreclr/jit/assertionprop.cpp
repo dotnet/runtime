@@ -2558,16 +2558,22 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
             currB = gtNewOperNode(GT_ADD, currB->TypeGet(), currB, gtNewIconNode(offset, TYP_I_IMPL));
         }
 
-        // Create indirection load for both sides
-        var_types type  = roundDownMaxType(lenRemaining);
-        GenTree*  loadA = gtNewIndir(type, currA, GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
-        GenTree*  loadB = gtNewIndir(type, currB, GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
+        // Create indirection load for both sides using the largest possible chunk.
+        var_types loadType = roundDownMaxType(lenRemaining);
+        GenTree*  loadA    = gtNewIndir(loadType, currA, GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
+        GenTree*  loadB    = gtNewIndir(loadType, currB, GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
+
+        // XOR current chunk
+        GenTree* diffChunk = gtNewOperNode(GT_XOR, loadType, loadA, loadB);
+
+        // Zero-extend chunk to accumulator width if needed
+        GenTree* diffWide =
+            (loadType == TYP_I_IMPL) ? diffChunk : gtNewCastNode(TYP_I_IMPL, diffChunk, true, TYP_I_IMPL);
 
         // Accumulate differences
-        GenTree* diff = gtNewOperNode(GT_XOR, type, loadA, loadB);
-        diffAccum     = (diffAccum == nullptr) ? diff : gtNewOperNode(GT_OR, type, diffAccum, diff);
+        diffAccum = (diffAccum == nullptr) ? diffWide : gtNewOperNode(GT_OR, TYP_I_IMPL, diffAccum, diffWide);
 
-        lenRemaining -= genTypeSize(type);
+        lenRemaining -= genTypeSize(loadType);
     }
 
     assert(diffAccum != nullptr);
