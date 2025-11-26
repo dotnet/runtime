@@ -39,6 +39,54 @@
 #include <unistd.h>
 #endif
 
+#ifdef G_OS_WIN32
+
+#ifndef MAX_PATH
+#define MAX_PATH 260
+#endif
+
+/* Helper function to check if a Windows path needs the \\?\ prefix for long path support.
+ * Returns TRUE if:
+ * - The path is long enough to potentially hit MAX_PATH limit
+ * - The path doesn't already have the \\?\ prefix
+ * - The path is an absolute Windows path (e.g., C:\path)
+ */
+static gboolean
+g_path_needs_long_prefix (const gchar *path)
+{
+	if (!path || strlen(path) <= 2)
+		return FALSE;
+	
+	/* Only add prefix for paths that are approaching or exceeding MAX_PATH */
+	if (strlen(path) < MAX_PATH)
+		return FALSE;
+	
+	if (strncmp(path, "\\\\?\\", 4) == 0)
+		return FALSE;
+	
+	if (path[1] == ':' && (path[2] == '\\' || path[2] == '/'))
+		return TRUE;
+	
+	return FALSE;
+}
+
+/* Makes a path compatible with long path support by adding \\?\ prefix if needed. Caller must free the result. */
+gchar *
+g_path_make_long_compatible (const gchar *path)
+{
+	if (!path)
+		return NULL;
+	
+	if (!g_path_needs_long_prefix(path))
+		return g_strdup(path);
+	
+	gchar *prefixed = g_malloc(strlen(path) + 5);
+	strcpy(prefixed, "\\\\?\\");
+	strcat(prefixed, path);
+	return prefixed;
+}
+#endif
+
 gchar *
 g_build_path (const gchar *separator, const gchar *first_element, ...)
 {
