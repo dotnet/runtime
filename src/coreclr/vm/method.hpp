@@ -1692,10 +1692,17 @@ public:
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
     }
 
+    MethodDesc* GetAsyncVariant(BOOL allowInstParam = TRUE)
+    {
+        _ASSERT(!IsAsyncVariantMethod());
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
+    }
+
     // same as above, but with allowCreate = FALSE
     // for rare cases where we cannot allow GC, but we know that the other variant is already created.
-    MethodDesc* GetAsyncOtherVariantNoCreate(BOOL allowInstParam = TRUE)
+    MethodDesc* GetAsyncVariantNoCreate(BOOL allowInstParam = TRUE)
     {
+        _ASSERT(!IsAsyncVariantMethod());
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, FALSE, AsyncVariantLookup::AsyncOtherVariant);
     }
 
@@ -2152,8 +2159,8 @@ private:
 
     bool TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
-    void EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
-    void EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
+    void EmitTaskReturningThunk(MethodDesc* pAsyncCallVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
+    void EmitAsyncMethodThunk(MethodDesc* pAsyncCallVariant, MetaSig& msig, ILStubLinker* pSL);
     SigPointer GetAsyncThunkResultTypeSig();
     bool IsValueTaskAsyncThunk();
     int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
