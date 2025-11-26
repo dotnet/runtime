@@ -269,10 +269,9 @@ function flush_wasm_entry_trampoline_jit_queue () {
 
     // If the function signature contains types that need stackval_from_data, that'll use
     //  some constant slots, so make some extra space
-    const constantSlots = (4 * jitQueue.length) + 1;
     let builder = trampBuilder;
     if (!builder) {
-        trampBuilder = builder = new WasmBuilder(constantSlots);
+        trampBuilder = builder = new WasmBuilder();
 
         builder.defineType(
             "unbox",
@@ -307,7 +306,7 @@ function flush_wasm_entry_trampoline_jit_queue () {
             WasmValtype.void, true
         );
     } else
-        builder.clear(constantSlots);
+        builder.clear();
 
     if (builder.options.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated)) {
         return;
