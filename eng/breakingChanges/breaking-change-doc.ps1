@@ -38,20 +38,20 @@ PARAMETERS:
 
 EXAMPLES:
     .\breaking-change-doc.ps1 -PrNumber 114929                                                        # Process specific PR
-    .\breaking-change-doc.ps1 -Query "repo:dotnet/runtime state:closed label:needs-breaking-change-doc-created is:merged merged:>2024-09-16 -milestone:11.0.0"
-    .\breaking-change-doc.ps1 -Query "repo:dotnet/runtime state:closed label:needs-breaking-change-doc-created is:merged" -Comment
+    .\breaking-change-doc.ps1 -Query "state:closed label:needs-breaking-change-doc-created is:merged merged:>2024-09-16 -milestone:11.0.0"
+    .\breaking-change-doc.ps1 -Query "state:closed label:needs-breaking-change-doc-created is:merged" -Comment
     .\breaking-change-doc.ps1 -PrNumber 114929 -CreateIssues                                         # Create issues directly
     .\breaking-change-doc.ps1 -Query "your-search-query" -CollectOnly                                # Only collect data
 
 QUERY EXAMPLES:
     # PRs merged after specific date, excluding milestone:
-    "repo:dotnet/runtime state:closed label:needs-breaking-change-doc-created is:merged merged:>2024-09-16 -milestone:11.0.0"
+    "state:closed label:needs-breaking-change-doc-created is:merged merged:>2024-09-16 -milestone:11.0.0"
 
     # All PRs with the target label:
-    "repo:dotnet/runtime state:closed label:needs-breaking-change-doc-created is:merged"
+    "state:closed label:needs-breaking-change-doc-created is:merged"
 
     # PRs from specific author:
-    "repo:dotnet/runtime state:closed label:needs-breaking-change-doc-created is:merged author:username"
+    "state:closed label:needs-breaking-change-doc-created is:merged author:username"
 
 SETUP:
     1. Install GitHub CLI and authenticate: gh auth login
@@ -91,7 +91,7 @@ if ($Config.LlmProvider -eq "github-models") {
             exit 1
         }
     }
-    
+
     # Import the module
     Import-Module powershell-yaml -ErrorAction Stop
 }
@@ -182,7 +182,7 @@ if ($Clean) {
     Write-Host "`n🧹 Cleaning previous data..." -ForegroundColor Yellow
     if (Test-Path $outputRoot) { Remove-Item $outputRoot -Recurse -Force }
     Write-Host "✅ Cleanup completed" -ForegroundColor Green
-    
+
     if (-not $PrNumber -and -not $Query) {
         exit 0
     }
@@ -203,7 +203,7 @@ EXAMPLES:
     .\breaking-change-doc.ps1 -PrNumber 114929
 
   Query for PRs (example - customize as needed):
-    .\breaking-change-doc.ps1 -Query "repo:dotnet/runtime state:closed label:needs-breaking-change-doc-created is:merged merged:>2024-09-16 -milestone:11.0.0"
+    .\breaking-change-doc.ps1 -Query "state:closed label:needs-breaking-change-doc-created is:merged merged:>2024-09-16 -milestone:11.0.0"
 
 Use -Help for more examples and detailed usage information.
 "@
@@ -260,7 +260,7 @@ function Enter-GitHubSession {
 
     # Store original token
     $originalGitHubToken = $env:GH_TOKEN
-    
+
     if ($ApiKey) {
         # Set temporary token
         $env:GH_TOKEN = $ApiKey
@@ -337,18 +337,18 @@ function ConvertFrom-DotNetTag {
     # Parse v(major).(minor).(build)(-prerelease)
     if ($tagName -match '^v(\d+)\.(\d+)\.(\d+)(?:-(.+))?$') {
         $major = [int]$matches[1]
-        $minor = [int]$matches[2] 
+        $minor = [int]$matches[2]
         $build = [int]$matches[3]
         $prerelease = if ($matches[4]) { $matches[4] } else { $null }
 
         # Parse prerelease into type and number using single regex
         $prereleaseType = $null
         $prereleaseNumber = $null
-        
+
         if ($prerelease -and $prerelease -match '^([a-zA-Z]+)\.(\d+)') {
             $rawType = $matches[1]
             $prereleaseNumber = [int]$matches[2]
-            
+
             # Normalize prerelease type casing
             if ($rawType -ieq "rc") {
                 $prereleaseType = "RC"
@@ -381,7 +381,7 @@ function Format-DotNetVersion {
     }
 
     $baseVersion = ".NET $($parsedTag.Major).$($parsedTag.Minor)"
-    
+
     if ($parsedTag.IsRelease) {
         return $baseVersion
     }
@@ -480,7 +480,7 @@ function Get-VersionInfo {
             if ($prNumber -and $mergedAt) {
                 # For merged PRs, try to get the merge commit
                 $targetCommit = gh pr view $prNumber --repo $Config.SourceRepo --json mergeCommit --jq '.mergeCommit.oid' 2>$null
-                
+
                 if ($targetCommit) {
                     # Get the first tag that includes this commit
                     $firstTagWith = git describe --tags --contains $targetCommit 2>$null
@@ -489,7 +489,7 @@ function Get-VersionInfo {
                     }
                 }
             }
-            
+
             # If no target commit yet (unmerged PR or failed to get merge commit), use branch head
             if (-not $targetCommit) {
                 $targetCommit = git rev-parse "origin/$baseRef" 2>$null
@@ -522,7 +522,7 @@ function Get-VersionInfo {
 
             # Determine the estimated version using new tag parsing logic
             $estimatedVersion = "Next release"
-            
+
             if ($firstTagWith -ne "Not yet released") {
                 # If we know the first tag that contains this change, use it directly
                 $parsedFirstTag = ConvertFrom-DotNetTag $firstTagWith
@@ -563,22 +563,22 @@ function Invoke-LlmApi {
             try {
                 # Create prompt file in YAML format for GitHub Models
                 $promptFile = Join-Path $promptsDir "pr_${PrNumber}_prompt.yml"
-                
+
                 # Create YAML structure for GitHub Models
                 $messages = @()
-                
+
                 if ($SystemPrompt) {
                     $messages += @{
                         role = "system"
                         content = $SystemPrompt
                     }
                 }
-                
+
                 $messages += @{
-                    role = "user" 
+                    role = "user"
                     content = $Prompt
                 }
-                
+
                 $promptYaml = @{
                     name = "Breaking Change Documentation"
                     description = "Generate breaking change documentation for .NET runtime PR"
@@ -589,10 +589,10 @@ function Invoke-LlmApi {
                     }
                     messages = $messages
                 }
-                
+
                 # Convert to YAML and save to file
                 $promptYaml | ConvertTo-Yaml | Out-File -FilePath $promptFile -Encoding UTF8
-                
+
                 try {
                     $gitHubSession = Enter-GitHubSession $apiKey
                     $output = gh models run --file $promptFile
@@ -618,14 +618,14 @@ function Invoke-LlmApi {
             try {
                 # Create prompt file for GitHub Copilot CLI
                 $promptFile = Join-Path $promptsDir "pr_${PrNumber}_copilot_prompt.txt"
-                
+
                 # Combine system prompt and user prompt, emphasizing text-only response
                 $fullPrompt = if ($SystemPrompt) {
                     "$SystemPrompt`n`nIMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
                 } else {
                     "IMPORTANT: Please respond with only the requested text content. Do not create, modify, or execute any files. Just return the text response.`n`n$Prompt"
                 }
-                
+
                 # Write prompt to file
                 $fullPrompt | Out-File -FilePath $promptFile -Encoding UTF8
 
