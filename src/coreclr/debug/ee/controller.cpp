@@ -1504,9 +1504,12 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
 
 #ifdef FEATURE_INTERPRETER
         EECodeInfo codeInfo((PCODE)patch->address);
-        IJitManager* pJitManager = codeInfo.GetJitManager();
-        if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
-            return pJitManager->GetExecutionControl()->ApplyPatch(patch);
+        if (codeInfo.IsValid())
+        {
+            IJitManager* pJitManager = codeInfo.GetJitManager();
+            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
+                return pJitManager->GetExecutionControl()->ApplyPatch(patch);
+        }
 #endif // FEATURE_INTERPRETER
 
 #if _DEBUG
@@ -1624,9 +1627,12 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
 
 #ifdef FEATURE_INTERPRETER
         EECodeInfo codeInfo((PCODE)patch->address);
-        IJitManager* pJitManager = codeInfo.GetJitManager();
-        if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
-            return pJitManager->GetExecutionControl()->UnapplyPatch(patch);
+        if (codeInfo.IsValid())
+        {
+            IJitManager* pJitManager = codeInfo.GetJitManager();
+            if (pJitManager != NULL && pJitManager == ExecutionManager::GetInterpreterJitManager())
+                return pJitManager->GetExecutionControl()->UnapplyPatch(patch);
+        }
 #endif // FEATURE_INTERPRETER
 
         LPVOID baseAddress = (LPVOID)(patch->address);
