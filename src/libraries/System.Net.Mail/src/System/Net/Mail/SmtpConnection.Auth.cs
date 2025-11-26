@@ -23,7 +23,7 @@ namespace System.Net.Mail
         private readonly ISmtpAuthenticationModule[] _authenticationModules;
 
         // accounts for the '=' or ' ' character after AUTH
-        private const int SizeOfAuthExtension = 4;
+        private const int SizeOfAuthExtension = 5;
 
         private static readonly char[] s_authExtensionSplitters = new char[] { ' ', '=' };
         private const string AuthExtension = "auth";
@@ -45,37 +45,38 @@ namespace System.Net.Mail
             _supportedAuth = SupportedAuth.None;
             foreach (string extension in extensions)
             {
-                if (string.Compare(extension, 0, AuthExtension, 0,
-                    SizeOfAuthExtension, StringComparison.OrdinalIgnoreCase) == 0)
+                if (extension.StartsWith(AuthExtension, StringComparison.OrdinalIgnoreCase))
                 {
                     // remove the AUTH text including the following character
                     // to ensure that split only gets the modules supported
-                    string[] authTypes = extension.Remove(0, SizeOfAuthExtension).Split(s_authExtensionSplitters, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (string authType in authTypes)
+                    ReadOnlySpan<char> authTypes = extension.AsSpan(SizeOfAuthExtension);
+
+                    foreach (Range i in authTypes.SplitAny(s_authExtensionSplitters))
                     {
-                        if (string.Equals(authType, AuthLogin, StringComparison.OrdinalIgnoreCase))
+                        ReadOnlySpan<char> authType = authTypes[i];
+                        if (authType.Equals(AuthLogin, StringComparison.OrdinalIgnoreCase))
                         {
                             _supportedAuth |= SupportedAuth.Login;
                         }
-                        else if (string.Equals(authType, AuthNtlm, StringComparison.OrdinalIgnoreCase))
+                        else if (authType.Equals(AuthNtlm, StringComparison.OrdinalIgnoreCase))
                         {
                             _supportedAuth |= SupportedAuth.NTLM;
                         }
-                        else if (string.Equals(authType, AuthGssapi, StringComparison.OrdinalIgnoreCase))
+                        else if (authType.Equals(AuthGssapi, StringComparison.OrdinalIgnoreCase))
                         {
                             _supportedAuth |= SupportedAuth.GSSAPI;
                         }
                     }
                 }
-                else if (string.Compare(extension, 0, "dsn ", 0, 3, StringComparison.OrdinalIgnoreCase) == 0)
+                else if (extension.StartsWith("dsn ", StringComparison.OrdinalIgnoreCase))
                 {
                     _dsnEnabled = true;
                 }
-                else if (string.Compare(extension, 0, "STARTTLS", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                else if (extension.StartsWith("STARTTLS", StringComparison.OrdinalIgnoreCase))
                 {
                     _serverSupportsStartTls = true;
                 }
-                else if (string.Compare(extension, 0, "SMTPUTF8", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                else if (extension.StartsWith("SMTPUTF8", StringComparison.OrdinalIgnoreCase))
                 {
                     _serverSupportsEai = true;
                 }
