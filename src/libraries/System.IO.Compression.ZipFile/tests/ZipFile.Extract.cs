@@ -265,7 +265,7 @@ namespace System.IO.Compression.Tests
         {
             string ZipPath = @"C:\Users\spahontu\Downloads\test.zip";
             string EntryName = "hello.txt";
-            
+
             string tempFile = Path.Combine(Path.GetTempPath(), "hello_extracted.txt");
             if (File.Exists(tempFile)) File.Delete(tempFile);
 
@@ -1437,23 +1437,197 @@ namespace System.IO.Compression.Tests
 
         }
 
-
         [Fact]
-        public void CreateBasicArchive()
+        public async Task CreateAndReadMultipleAES256EncryptedEntries_RoundTrip()
         {
             // Arrange
-            string tempPath = Path.Join(DownloadsDir, "test_simple.zip");
-            const string entryName = "test.txt";
-            const string expectedContent = "this is plain";
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "multiple_aes256_entries.zip");
+            const string password = "123456789";
 
-            // Act 1: Create ZIP with AES-256 encrypted entry
+            var entries = new (string Name, string Content)[]
+            {
+        ("entry1.txt", "First encrypted entry"),
+        ("folder/entry2.txt", "Second encrypted entry in folder"),
+        ("folder/subfolder/entry3.md", "# Third Entry\nMarkdown content"),
+        ("data.json", "{\"key\": \"value\", \"encrypted\": true}"),
+        ("readme.txt", "This is AES-256 encrypted content")
+            };
+
+            // Act 1: Create ZIP with multiple AES-256 encrypted entries
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                foreach (var (name, content) in entries)
+                {
+                    var entry = archive.CreateEntry(name);
+                    using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes256);
+                    using var writer = new StreamWriter(entryStream, Encoding.UTF8);
+                    await writer.WriteAsync(content);
+                }
+            }
+
+            // Act 2: Read back all encrypted entries
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                foreach (var (name, expectedContent) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+
+                    using var entryStream = entry!.Open(password);
+                    using var reader = new StreamReader(entryStream, Encoding.UTF8);
+                    string actualContent = await reader.ReadToEndAsync();
+
+                    // Assert each entry's content matches
+                    Assert.Equal(expectedContent, actualContent);
+                }
+
+                // Verify wrong password fails
+                var firstEntry = archive.GetEntry(entries[0].Name);
+                Assert.NotNull(firstEntry);
+            }
+        }
+
+        [Fact]
+        public async Task CreateAndReadAES256EntriesWithDifferentPasswords_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "multiple_aes256_diff_passwords.zip");
+
+            var entries = new (string Name, string Content, string Password)[]
+            {
+        ("secure1.txt", "Content with password1", "password1"),
+        ("secure2.txt", "Content with password2", "password2"),
+        ("folder/secure3.txt", "Content with password3", "password3")
+            };
+
+            // Act 1: Create ZIP with AES-256 encrypted entries using different passwords
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                foreach (var (name, content, pwd) in entries)
+                {
+                    var entry = archive.CreateEntry(name);
+                    using var entryStream = entry.Open(pwd, ZipArchiveEntry.EncryptionMethod.Aes256);
+                    using var writer = new StreamWriter(entryStream, Encoding.UTF8);
+                    await writer.WriteAsync(content);
+                }
+            }
+
+            // Act 2: Read back entries with their respective passwords
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                foreach (var (name, expectedContent, pwd) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+
+                    // Correct password should work
+                    using (var entryStream = entry!.Open(pwd))
+                    using (var reader = new StreamReader(entryStream, Encoding.UTF8))
+                    {
+                        string actualContent = await reader.ReadToEndAsync();
+                        Assert.Equal(expectedContent, actualContent);
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task CreateMixedPlainAndAES256EncryptedEntries_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "mixed_plain_aes256.zip");
+            const string password = "securePassword123";
+
+            var encryptedEntries = new (string Name, string Content)[]
+            {
+        ("secure/credentials.txt", "username=admin\npassword=secret"),
+        ("secure/data.json", "{\"sensitive\": true}")
+            };
+
+            var plainEntries = new (string Name, string Content)[]
+            {
+        ("readme.txt", "This archive contains both encrypted and plain files"),
+        ("public/info.txt", "This is public information")
+            };
+
+            // Act 1: Create ZIP with both plain and AES-256 encrypted entries
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                // Add encrypted entries
+                foreach (var (name, content) in encryptedEntries)
+                {
+                    var entry = archive.CreateEntry(name);
+                    using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes256);
+                    using var writer = new StreamWriter(entryStream, Encoding.UTF8);
+                    await writer.WriteAsync(content);
+                }
+
+                // Add plain entries
+                foreach (var (name, content) in plainEntries)
+                {
+                    var entry = archive.CreateEntry(name);
+                    using var entryStream = entry.Open();
+                    using var writer = new StreamWriter(entryStream, Encoding.UTF8);
+                    await writer.WriteAsync(content);
+                }
+            }
+
+            // Act 2: Read back both encrypted and plain entries
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                // Read encrypted entries with password
+                foreach (var (name, expectedContent) in encryptedEntries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+
+                    using var entryStream = entry!.Open(password);
+                    using var reader = new StreamReader(entryStream, Encoding.UTF8);
+                    string actualContent = await reader.ReadToEndAsync();
+                    Assert.Equal(expectedContent, actualContent);
+                }
+
+                // Read plain entries without password
+                foreach (var (name, expectedContent) in plainEntries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+
+                    using var entryStream = entry!.Open();
+                    using var reader = new StreamReader(entryStream, Encoding.UTF8);
+                    string actualContent = await reader.ReadToEndAsync();
+                    Assert.Equal(expectedContent, actualContent);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task CreateAndReadAES128EncryptedEntry_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "aes128_single.zip");
+            const string entryName = "test_aes128.txt";
+            const string password = "Test123!@#";
+            const string expectedContent = "This content is encrypted with AES-128";
+
+            // Act 1: Create ZIP with AES-128 encrypted entry
             using (var createStream = File.Create(tempPath))
             using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
             {
                 var entry = archive.CreateEntry(entryName);
-                using var entryStream = entry.Open();
+                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes128);
                 using var writer = new StreamWriter(entryStream, Encoding.UTF8);
-                writer.Write(expectedContent);
+                await writer.WriteAsync(expectedContent);
             }
 
             // Act 2: Read back the encrypted entry
@@ -1464,16 +1638,660 @@ namespace System.IO.Compression.Tests
                 var entry = archive.GetEntry(entryName);
                 Assert.NotNull(entry);
 
-                using var entryStream = entry!.Open();
+                using var entryStream = entry!.Open(password);
                 using var reader = new StreamReader(entryStream, Encoding.UTF8);
-                actualContent = reader.ReadToEnd();
+                actualContent = await reader.ReadToEndAsync();
+            }
+
+            // Assert
+            Assert.Equal(expectedContent, actualContent);
+
+        }
+
+        [Fact]
+        public async Task CreateAndReadAES192EncryptedEntry_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "aes192_single.zip");
+            const string entryName = "test_aes192.txt";
+            const string password = "SecurePass456$%^";
+            const string expectedContent = "This content is protected with AES-192 encryption";
+
+            // Act 1: Create ZIP with AES-192 encrypted entry
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(entryName);
+                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes192);
+                using var writer = new StreamWriter(entryStream, Encoding.UTF8);
+                await writer.WriteAsync(expectedContent);
+            }
+
+            // Act 2: Read back the encrypted entry
+            string actualContent;
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                var entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var entryStream = entry!.Open(password);
+                using var reader = new StreamReader(entryStream, Encoding.UTF8);
+                actualContent = await reader.ReadToEndAsync();
             }
 
             // Assert
             Assert.Equal(expectedContent, actualContent);
         }
 
+        [Fact]
+        public void CreateAndReadMultipleEntriesWithDifferentAESLevels_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "mixed_aes_levels.zip");
 
+            var entries = new (string Name, string Content, string Password, ZipArchiveEntry.EncryptionMethod Encryption)[]
+            {
+        ("aes128/file1.txt", "AES-128 encrypted content", "password128", ZipArchiveEntry.EncryptionMethod.Aes128),
+        ("aes192/file2.txt", "AES-192 encrypted content", "password192", ZipArchiveEntry.EncryptionMethod.Aes192),
+        ("aes256/file3.txt", "AES-256 encrypted content", "password256", ZipArchiveEntry.EncryptionMethod.Aes256),
+        ("mixed/doc1.json", "{\"encryption\": \"AES-128\"}", "jsonPass128", ZipArchiveEntry.EncryptionMethod.Aes128),
+        ("mixed/doc2.xml", "<root>AES-192</root>", "xmlPass192", ZipArchiveEntry.EncryptionMethod.Aes192)
+            };
+
+            // Act 1: Create ZIP with entries using different AES encryption levels
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                foreach (var (name, content, pwd, encryption) in entries)
+                {
+                    var entry = archive.CreateEntry(name);
+                    using var entryStream = entry.Open(pwd, encryption);
+                    using var writer = new StreamWriter(entryStream, Encoding.UTF8);
+                    writer.Write(content);
+                }
+            }
+
+            // Act 2: Read back all encrypted entries with their respective passwords
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                foreach (var (name, expectedContent, pwd, _) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+
+                    // Correct password should work
+                    using (var entryStream = entry!.Open(pwd))
+                    using (var reader = new StreamReader(entryStream, Encoding.UTF8))
+                    {
+                        string actualContent = reader.ReadToEnd();
+                        Assert.Equal(expectedContent, actualContent);
+                    }
+
+                }
+            }
+        }
+
+        [Fact]
+        public void CreateLargeFileWithAES128_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "aes128_large2.zip");
+            const string entryName = "large_file.bin";
+            const string password = "LargeFilePass123!";
+
+            // Create a larger content
+            var random = new Random(42); // Seed for reproducibility
+            var largeContent = new byte[1024 * 1024];
+            random.NextBytes(largeContent);
+
+            // Act 1: Create ZIP with AES-128 encrypted large entry
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(entryName);
+                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes128);
+                entryStream.Write(largeContent);
+            }
+
+            // Act 2: Read back and verify the large encrypted entry
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                var entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var entryStream = entry!.Open(password);
+                using var ms = new MemoryStream();
+                entryStream.CopyTo(ms);
+                var actualContent = ms.ToArray();
+
+                // Assert
+                Assert.Equal(largeContent.Length, actualContent.Length);
+                Assert.Equal(largeContent, actualContent);
+            }
+        }
+
+        [Fact]
+        public async Task CreateCompressedAndAES192Encrypted_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "aes192_compressed.zip");
+            const string password = "CompressedPass!";
+
+            // Create highly compressible content
+            string repeatedContent = string.Join("\n", Enumerable.Repeat("This line is repeated many times to test compression with AES-192.", 100));
+
+            var entries = new (string Name, string Content, CompressionLevel Level)[]
+            {
+        ("optimal.txt", repeatedContent, CompressionLevel.Optimal),
+        ("fastest.txt", repeatedContent, CompressionLevel.Fastest),
+        ("smallest.txt", repeatedContent, CompressionLevel.SmallestSize),
+        ("nocompression.txt", repeatedContent, CompressionLevel.NoCompression)
+            };
+
+            // Act 1: Create ZIP with AES-192 encrypted entries at different compression levels
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                foreach (var (name, content, level) in entries)
+                {
+                    var entry = archive.CreateEntry(name, level);
+                    using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes192);
+                    using var writer = new StreamWriter(entryStream, Encoding.UTF8);
+                    writer.Write(content);
+                }
+            }
+
+            // Act 2: Read back all entries
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                foreach (var (name, expectedContent, _) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+
+                    using var entryStream = entry!.Open(password);
+                    using var reader = new StreamReader(entryStream, Encoding.UTF8);
+                    string actualContent = await reader.ReadToEndAsync();
+
+                    Assert.Equal(expectedContent, actualContent);
+                }
+            }
+
+            // Verify file sizes are different due to compression levels
+            var fileInfo = new FileInfo(tempPath);
+            Assert.True(fileInfo.Exists);
+            Assert.True(fileInfo.Length > 0);
+        }
+
+        [Fact]
+        public async Task MixAllEncryptionTypes_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "all_encryption_types.zip");
+
+            var entries = new (string Name, string Content, string? Password, ZipArchiveEntry.EncryptionMethod? Encryption)[]
+            {
+        // Plain entry
+        ("plain/readme.txt", "This is a plain unencrypted file", null, null),
+        
+        // ZipCrypto
+        ("zipcrypto/secret.txt", "ZipCrypto encrypted content", "zipPass", ZipArchiveEntry.EncryptionMethod.ZipCrypto),
+        
+        // AES-128
+        ("aes128/data.txt", "AES-128 encrypted data", "aes128Pass", ZipArchiveEntry.EncryptionMethod.Aes128),
+        
+        // AES-192
+        ("aes192/config.json", "{\"level\": \"AES-192\"}", "aes192Pass", ZipArchiveEntry.EncryptionMethod.Aes192),
+        
+        // AES-256
+        ("aes256/secure.xml", "<data>AES-256 secured</data>", "aes256Pass", ZipArchiveEntry.EncryptionMethod.Aes256)
+            };
+
+            // Act 1: Create ZIP with all encryption types
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                foreach (var (name, content, pwd, encryption) in entries)
+                {
+                    var entry = archive.CreateEntry(name);
+                    Stream entryStream = pwd != null && encryption.HasValue
+                        ? entry.Open(pwd, encryption.Value)
+                        : entry.Open();
+
+                    using (entryStream)
+                    using (var writer = new StreamWriter(entryStream, Encoding.UTF8))
+                    {
+                        await writer.WriteAsync(content);
+                    }
+                }
+            }
+
+            // Act 2: Read back all entries
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                foreach (var (name, expectedContent, pwd, _) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+
+                    Stream entryStream = pwd != null
+                        ? entry!.Open(pwd)
+                        : entry!.Open();
+
+                    using (entryStream)
+                    using (var reader = new StreamReader(entryStream, Encoding.UTF8))
+                    {
+                        string actualContent = await reader.ReadToEndAsync();
+                        Assert.Equal(expectedContent, actualContent);
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public async Task AES128WithSpecialCharacters_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "aes128_special_chars.zip");
+            const string password = "パスワード123!@#"; // Japanese characters in password
+
+            var entries = new (string Name, string Content)[]
+            {
+        ("unicode/chinese.txt", "你好世界 - Hello World in Chinese"),
+        ("unicode/arabic.txt", "مرحبا بالعالم - Hello World in Arabic"),
+        ("unicode/emoji.txt", "Hello 👋 World 🌍 with emojis! 🎉"),
+        ("unicode/mixed.txt", "Ñiño José façade naïve Zürich")
+            };
+
+            // Act 1: Create ZIP with AES-128 encrypted Unicode content
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                foreach (var (name, content) in entries)
+                {
+                    var entry = archive.CreateEntry(name);
+                    using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes128);
+                    using var writer = new StreamWriter(entryStream, Encoding.UTF8);
+                    await writer.WriteAsync(content);
+                }
+            }
+
+            // Act 2: Read back and verify Unicode content
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                foreach (var (name, expectedContent) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+
+                    using var entryStream = entry!.Open(password);
+                    using var reader = new StreamReader(entryStream, Encoding.UTF8);
+                    string actualContent = await reader.ReadToEndAsync();
+
+                    Assert.Equal(expectedContent, actualContent);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task CreateAndReadAES256WithAsyncOperations_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "aes256_async_operations.zip");
+            const string entryName = "async_test.txt";
+            const string password = "AsyncPass123!";
+            const string expectedContent = "This content was written and read asynchronously with AES-256";
+
+            // Act 1: Create ZIP with AES-256 encrypted entry using async write
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(entryName);
+                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes256);
+
+                // Use async write operations
+                byte[] contentBytes = Encoding.UTF8.GetBytes(expectedContent);
+                await entryStream.WriteAsync(contentBytes, 0, contentBytes.Length);
+                await entryStream.FlushAsync();
+            }
+
+            // Act 2: Read back using async operations
+            string actualContent;
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                var entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var entryStream = entry!.Open(password);
+                using var reader = new StreamReader(entryStream, Encoding.UTF8);
+                actualContent = await reader.ReadToEndAsync();
+            }
+
+            // Assert
+            Assert.Equal(expectedContent, actualContent);
+        }
+
+        [Fact]
+        public async Task CreateMultipleAESEntriesWithAsyncWrites_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "multiple_aes_async_writes.zip");
+
+            var entries = new (string Name, byte[] Content, string Password, ZipArchiveEntry.EncryptionMethod Encryption)[]
+            {
+        ("async128.bin", Encoding.UTF8.GetBytes("AES-128 async content"), "pass128", ZipArchiveEntry.EncryptionMethod.Aes128),
+        ("async192.bin", Encoding.UTF8.GetBytes("AES-192 async content"), "pass192", ZipArchiveEntry.EncryptionMethod.Aes192),
+        ("async256.bin", Encoding.UTF8.GetBytes("AES-256 async content"), "pass256", ZipArchiveEntry.EncryptionMethod.Aes256)
+            };
+
+            // Act 1: Create entries with async writes
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                foreach (var (name, content, pwd, encryption) in entries)
+                {
+                    var entry = archive.CreateEntry(name);
+                    using var entryStream = entry.Open(pwd, encryption);
+
+                    // Write asynchronously
+                    await entryStream.WriteAsync(content, 0, content.Length);
+                    await entryStream.FlushAsync();
+                }
+            }
+
+            // Act 2: Read back with async operations
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                foreach (var (name, expectedContent, pwd, _) in entries)
+                {
+                    var entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+
+                    using var entryStream = entry!.Open(pwd);
+
+                    // Read asynchronously
+                    var buffer = new byte[expectedContent.Length];
+                    int totalRead = 0;
+                    while (totalRead < buffer.Length)
+                    {
+                        int bytesRead = await entryStream.ReadAsync(buffer, totalRead, buffer.Length - totalRead);
+                        if (bytesRead == 0) break;
+                        totalRead += bytesRead;
+                    }
+
+                    Assert.Equal(expectedContent, buffer);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task CreateLargeBinaryDataWithAES128Async_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "aes128_large_async.zip");
+            const string entryName = "large_async.bin";
+            const string password = "LargeAsync!@#";
+
+            // Create larger test data
+            var random = new Random(123);
+            var largeData = new byte[256 * 1024]; // 256KB
+            random.NextBytes(largeData);
+
+            // Act 1: Write large data asynchronously with AES-128
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes128);
+
+                // Write in chunks asynchronously
+                const int chunkSize = 8192;
+                for (int offset = 0; offset < largeData.Length; offset += chunkSize)
+                {
+                    int writeSize = Math.Min(chunkSize, largeData.Length - offset);
+                    await entryStream.WriteAsync(largeData, offset, writeSize);
+                }
+                await entryStream.FlushAsync();
+            }
+
+            // Act 2: Read back asynchronously
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                var entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var entryStream = entry!.Open(password);
+                using var ms = new MemoryStream();
+
+                // Read in chunks asynchronously
+                await entryStream.CopyToAsync(ms, bufferSize: 8192);
+                var actualData = ms.ToArray();
+
+                // Assert
+                Assert.Equal(largeData.Length, actualData.Length);
+                Assert.Equal(largeData, actualData);
+            }
+        }
+
+        [Fact]
+        public async Task StreamCopyAsyncWithAES192_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "aes192_stream_copy.zip");
+            const string entryName = "stream_copy.dat";
+            const string password = "StreamCopy192!";
+
+            // Create test data
+            var testData = new byte[64 * 1024]; // 64KB
+            new Random(456).NextBytes(testData);
+
+            // Act 1: Use CopyToAsync to write
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(entryName);
+                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes192);
+                using var sourceStream = new MemoryStream(testData);
+
+                await sourceStream.CopyToAsync(entryStream);
+            }
+
+            // Act 2: Use CopyToAsync to read
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                var entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var entryStream = entry!.Open(password);
+                using var destStream = new MemoryStream();
+
+                await entryStream.CopyToAsync(destStream);
+                var actualData = destStream.ToArray();
+
+                // Assert
+                Assert.Equal(testData, actualData);
+            }
+        }
+
+        [Fact]
+        public async Task MultipleAsyncWritesInSingleEntry_AES256_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "aes256_multiple_writes.zip");
+            const string entryName = "multi_write.txt";
+            const string password = "MultiWrite256";
+
+            var parts = new[]
+            {
+        "First part of content\n",
+        "Second part of content\n",
+        "Third part of content\n",
+        "Final part of content"
+    };
+            string expectedContent = string.Join("", parts);
+
+            // Act 1: Write multiple times to same entry
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(entryName);
+                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes256);
+
+                // Write each part asynchronously
+                foreach (var part in parts)
+                {
+                    byte[] partBytes = Encoding.UTF8.GetBytes(part);
+                    await entryStream.WriteAsync(partBytes, 0, partBytes.Length);
+                }
+                await entryStream.FlushAsync();
+            }
+
+            // Act 2: Read back all content
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                var entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var entryStream = entry!.Open(password);
+                using var reader = new StreamReader(entryStream);
+                string actualContent = await reader.ReadToEndAsync();
+
+                // Assert
+                Assert.Equal(expectedContent, actualContent);
+            }
+        }
+
+        [Fact]
+        public async Task AsyncReadInChunks_AES128_VerifyContent()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "aes128_chunked_read.zip");
+            const string entryName = "chunked.bin";
+            const string password = "ChunkedRead128";
+
+            // Create recognizable pattern
+            var pattern = new byte[1024];
+            for (int i = 0; i < pattern.Length; i++)
+            {
+                pattern[i] = (byte)(i % 256);
+            }
+
+            // Act 1: Write pattern
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                var entry = archive.CreateEntry(entryName);
+                using var entryStream = entry.Open(password, ZipArchiveEntry.EncryptionMethod.Aes128);
+                await entryStream.WriteAsync(pattern, 0, pattern.Length);
+            }
+
+            // Act 2: Read in small chunks and verify
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                var entry = archive.GetEntry(entryName);
+                Assert.NotNull(entry);
+
+                using var entryStream = entry!.Open(password);
+
+                // Read in 100-byte chunks
+                const int chunkSize = 16;
+                var readBuffer = new byte[chunkSize];
+                var allData = new List<byte>();
+
+                int bytesRead;
+                while ((bytesRead = await entryStream.ReadAsync(readBuffer, 0, chunkSize)) > 0)
+                {
+                    allData.AddRange(readBuffer.Take(bytesRead));
+                }
+
+                // Assert
+                Assert.Equal(pattern, allData.ToArray());
+            }
+        }
+
+        [Fact]
+        public async Task MixedSyncAsyncOperations_AES192_RoundTrip()
+        {
+            // Arrange
+            Directory.CreateDirectory(DownloadsDir);
+            string tempPath = Path.Join(DownloadsDir, "aes192_mixed_ops.zip");
+
+            var entries = new[]
+            {
+        ("sync_write.txt", "Written synchronously", "syncPass"),
+        ("async_write.txt", "Written asynchronously", "asyncPass")
+    };
+
+            // Act 1: Mix sync and async writes
+            using (var createStream = File.Create(tempPath))
+            using (var archive = new ZipArchive(createStream, ZipArchiveMode.Create))
+            {
+                // Synchronous write
+                var syncEntry = archive.CreateEntry(entries[0].Item1);
+                using (var syncStream = syncEntry.Open(entries[0].Item3, ZipArchiveEntry.EncryptionMethod.Aes192))
+                {
+                    byte[] syncBytes = Encoding.UTF8.GetBytes(entries[0].Item2);
+                    syncStream.Write(syncBytes, 0, syncBytes.Length);
+                }
+
+                // Asynchronous write
+                var asyncEntry = archive.CreateEntry(entries[1].Item1);
+                using (var asyncStream = asyncEntry.Open(entries[1].Item3, ZipArchiveEntry.EncryptionMethod.Aes192))
+                {
+                    byte[] asyncBytes = Encoding.UTF8.GetBytes(entries[1].Item2);
+                    await asyncStream.WriteAsync(asyncBytes, 0, asyncBytes.Length);
+                }
+            }
+
+            // Act 2: Read back with mixed operations
+            using (var readStream = File.OpenRead(tempPath))
+            using (var archive = new ZipArchive(readStream, ZipArchiveMode.Read))
+            {
+                // Read first entry asynchronously
+                var entry1 = archive.GetEntry(entries[0].Item1);
+                Assert.NotNull(entry1);
+                using (var stream1 = entry1!.Open(entries[0].Item3))
+                using (var reader1 = new StreamReader(stream1))
+                {
+                    string content1 = await reader1.ReadToEndAsync();
+                    Assert.Equal(entries[0].Item2, content1);
+                }
+
+                // Read second entry synchronously
+                var entry2 = archive.GetEntry(entries[1].Item1);
+                Assert.NotNull(entry2);
+                using (var stream2 = entry2!.Open(entries[1].Item3))
+                using (var reader2 = new StreamReader(stream2))
+                {
+                    string content2 = reader2.ReadToEnd();
+                    Assert.Equal(entries[1].Item2, content2);
+                }
+            }
+        }
 
     }
 

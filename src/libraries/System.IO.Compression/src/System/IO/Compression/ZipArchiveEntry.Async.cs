@@ -146,10 +146,31 @@ public partial class ZipArchiveEntry
             await _archive.ArchiveStream.WriteAsync(cdStaticHeader, cancellationToken).ConfigureAwait(false);
             await _archive.ArchiveStream.WriteAsync(_storedEntryNameBytes, cancellationToken).ConfigureAwait(false);
 
-            // only write zip64ExtraField if we decided we need it (it's not null)
+            // Write zip64ExtraField first if we decided we need it
             if (zip64ExtraField != null)
             {
                 await zip64ExtraField.WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+            }
+
+            // Write WinZip AES extra field AFTER Zip64 (matching sync version order)
+            // Must match the exact check used in the sync version WriteCentralDirectoryFileHeader
+            if (_encryptionMethod == EncryptionMethod.Aes128 || _encryptionMethod == EncryptionMethod.Aes192 || _encryptionMethod    == EncryptionMethod.Aes256)
+            {
+                var aesExtraField = new WinZipAesExtraField
+                {
+                    VendorVersion = 2, // AE-2
+                    AesStrength = _encryptionMethod switch
+                    {
+                        EncryptionMethod.Aes128 => (byte)1,
+                        EncryptionMethod.Aes192 => (byte)2,
+                        EncryptionMethod.Aes256 => (byte)3,
+                        _ => (byte)3
+                    },
+                    CompressionMethod = _compressionLevel == CompressionLevel.NoCompression ?
+                            (ushort)CompressionMethodValues.Stored :
+                            (ushort)CompressionMethodValues.Deflate
+                };
+                await aesExtraField.WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
             }
 
             // write extra fields (and any malformed trailing data).
@@ -161,7 +182,6 @@ public partial class ZipArchiveEntry
             }
         }
     }
-
     internal async Task LoadLocalHeaderExtraFieldIfNeededAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -289,10 +309,30 @@ public partial class ZipArchiveEntry
             await _archive.ArchiveStream.WriteAsync(lfStaticHeader, cancellationToken).ConfigureAwait(false);
             await _archive.ArchiveStream.WriteAsync(_storedEntryNameBytes, cancellationToken).ConfigureAwait(false);
 
-            // Only when handling zip64
             if (zip64ExtraField != null)
             {
                 await zip64ExtraField.WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
+            }
+
+            // Write WinZip AES extra field if using AES encryption
+            // Must match the exact check used in the sync version WriteLocalFileHeader
+            if (_encryptionMethod == EncryptionMethod.Aes128 || _encryptionMethod == EncryptionMethod.Aes192 || _encryptionMethod == EncryptionMethod.Aes256)
+            {
+                var aesExtraField = new WinZipAesExtraField
+                {
+                    VendorVersion = 2, // AE-2
+                    AesStrength = _encryptionMethod switch
+                    {
+                        EncryptionMethod.Aes128 => (byte)1,
+                        EncryptionMethod.Aes192 => (byte)2,
+                        EncryptionMethod.Aes256 => (byte)3,
+                        _ => (byte)3
+                    },
+                    CompressionMethod = _compressionLevel == CompressionLevel.NoCompression ?
+                            (ushort)CompressionMethodValues.Stored :
+                            (ushort)CompressionMethodValues.Deflate
+                };
+                await aesExtraField.WriteBlockAsync(_archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
             }
 
             await ZipGenericExtraField.WriteAllBlocksAsync(_lhUnknownExtraFields, _lhTrailingExtraFieldData ?? Array.Empty<byte>(), _archive.ArchiveStream, cancellationToken).ConfigureAwait(false);
@@ -300,7 +340,6 @@ public partial class ZipArchiveEntry
 
         return zip64ExtraField != null;
     }
-
     private async Task WriteLocalFileHeaderAndDataIfNeededAsync(bool forceWrite, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

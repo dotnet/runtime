@@ -183,6 +183,18 @@ namespace System.IO.Compression
             _headerWritten = true;
         }
 
+        private async Task WriteHeaderAsync(CancellationToken cancellationToken)
+        {
+            if (_headerWritten) return;
+            Debug.Assert(_salt is not null && _passwordVerifier is not null, "Keys should have been generated before writing header");
+            await _baseStream.WriteAsync(_salt, cancellationToken).ConfigureAwait(false);
+            await _baseStream.WriteAsync(_passwordVerifier, cancellationToken).ConfigureAwait(false);
+            // output to debug log
+            Debug.WriteLine($"Wrote salt: {BitConverter.ToString(_salt)}");
+            Debug.WriteLine($"Wrote password verifier: {BitConverter.ToString(_passwordVerifier)}");
+            _headerWritten = true;
+        }
+
         private void ReadHeader()
         {
             if (_headerRead) return;
@@ -310,6 +322,24 @@ namespace System.IO.Compression
             _authCodeValidated = true;
         }
 
+        private async Task WriteAuthCodeAsync(CancellationToken cancellationToken)
+        {
+            if (!_encrypting || _authCodeValidated)
+                return;
+
+            _hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            byte[]? authCode = _hmac.Hash;
+
+            if (authCode is not null)
+            {
+                // WinZip AES spec requires only the first 10 bytes of the HMAC
+                await _baseStream.WriteAsync(authCode.AsMemory(0, 10), cancellationToken).ConfigureAwait(false);
+                Debug.WriteLine($"Wrote authentication code: {BitConverter.ToString(authCode, 0, 10)}");
+            }
+
+            _authCodeValidated = true;
+        }
+
         private void WriteCore(ReadOnlySpan<byte> buffer)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -319,15 +349,12 @@ namespace System.IO.Compression
 
             WriteHeader();
 
-            // We need to copy the data since ProcessBlock modifies it in place
-            //byte[] tmp = buffer.ToArray();
-            //ProcessBlock(tmp, 0, tmp.Length);
-            //_baseStream.Write(tmp);
+            // Buffer the data - don't process it yet
             _encryptionBuffer?.Write(buffer);
-            _position += buffer.Length;
-            //output tmp to debug log
-            Debug.WriteLine($"Wrote {buffer.Length} bytes of ciphertext: {BitConverter.ToString(buffer.ToArray())}");
+
+            Debug.WriteLine($"Buffered {buffer.Length} bytes for encryption");
         }
+
 
         // Flush all buffered data, encrypt it, and write to base stream
         private void FlushEncryptionBuffer()
@@ -337,6 +364,20 @@ namespace System.IO.Compression
                 byte[] data = _encryptionBuffer.ToArray();
                 ProcessBlock(data, 0, data.Length);
                 _baseStream.Write(data);
+                _position += data.Length;
+                _encryptionBuffer.SetLength(0); // Clear the buffer
+            }
+        }
+
+        // Replace the FlushEncryptionBufferAsync method with this version:
+        private async Task FlushEncryptionBufferAsync(CancellationToken cancellationToken)
+        {
+            if (_encryptionBuffer != null && _encryptionBuffer.Length > 0)
+            {
+                byte[] data = _encryptionBuffer.ToArray();
+                ProcessBlock(data, 0, data.Length);
+                await _baseStream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
+                _position += data.Length;
                 _encryptionBuffer.SetLength(0); // Clear the buffer
             }
         }
@@ -437,25 +478,21 @@ namespace System.IO.Compression
             await WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).ConfigureAwait(false);
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        // Replace the WriteAsync method with this:
+        public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (!_encrypting)
                 throw new NotSupportedException("Stream is in decryption mode.");
 
-            return Core(buffer, cancellationToken);
+            await WriteHeaderAsync(cancellationToken).ConfigureAwait(false);
 
-            async ValueTask Core(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
-            {
-                WriteHeader();
+            // Just buffer the data
+            // The async version should match the sync version logic
+            await _encryptionBuffer!.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-                // We need to copy the data since ProcessBlock modifies it in place
-                byte[] tmp = buffer.ToArray();
-                ProcessBlock(tmp, 0, tmp.Length);
-                await _baseStream.WriteAsync(tmp, cancellationToken).ConfigureAwait(false);
-                _position += buffer.Length;
-            }
+            Debug.WriteLine($"Buffered {buffer.Length} bytes for encryption");
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -549,18 +586,21 @@ namespace System.IO.Compression
             {
                 try
                 {
-                    if (_encrypting && !_authCodeValidated)
+                    if (_encrypting && !_authCodeValidated && _headerWritten)
                     {
-                        // CRITICAL: Flush the base stream BEFORE calculating auth code
-                        // This ensures all encrypted data is written to the stream
+                        // Encrypt all buffered data first
+                        FlushEncryptionBuffer();
+
+                        // Flush any pending data
                         if (_baseStream.CanWrite)
                         {
                             _baseStream.Flush();
                         }
 
+                        // Write the authentication code
                         WriteAuthCode();
 
-                        // Flush again after writing auth code
+                        // Flush again to ensure auth code is written
                         if (_baseStream.CanWrite)
                         {
                             _baseStream.Flush();
@@ -572,6 +612,7 @@ namespace System.IO.Compression
                     _aesEncryptor?.Dispose();
                     _aes.Dispose();
                     _hmac.Dispose();
+                    _encryptionBuffer?.Dispose();
 
                     // Only dispose the base stream if we don't leave it open
                     if (!_leaveOpen)
@@ -585,6 +626,7 @@ namespace System.IO.Compression
             base.Dispose(disposing);
         }
 
+        // Replace DisposeAsync with this version:
         public override async ValueTask DisposeAsync()
         {
             if (_disposed)
@@ -592,19 +634,36 @@ namespace System.IO.Compression
 
             try
             {
-                if (_encrypting && !_authCodeValidated)
+                if (_encrypting && !_authCodeValidated && _headerWritten)
                 {
-                    FlushEncryptionBuffer();
+                    // make sure header is flushed
+                    await _baseStream.FlushAsync(CancellationToken.None).ConfigureAwait(false);
+
+                    // Encrypt all buffered data first
+                    await FlushEncryptionBufferAsync(CancellationToken.None).ConfigureAwait(false);
+
+                    // Flush any pending data
+                    if (_baseStream.CanWrite)
+                    {
+                        await _baseStream.FlushAsync(CancellationToken.None).ConfigureAwait(false);
+                    }
+
+                    // Write the authentication code (this is still sync, which is fine)
+                    await WriteAuthCodeAsync(CancellationToken.None).ConfigureAwait(false);
+
+                    // Flush again to ensure auth code is written
+                    if (_baseStream.CanWrite)
+                    {
+                        await _baseStream.FlushAsync(CancellationToken.None).ConfigureAwait(false);
+                    }
                 }
-
-                _encryptionBuffer?.Dispose();
-
             }
             finally
             {
                 _aesEncryptor?.Dispose();
                 _aes.Dispose();
                 _hmac.Dispose();
+                _encryptionBuffer?.Dispose();
 
                 // Only dispose the base stream if we don't leave it open
                 if (!_leaveOpen)
@@ -616,7 +675,6 @@ namespace System.IO.Compression
             _disposed = true;
             GC.SuppressFinalize(this);
         }
-
         public override bool CanRead => !_encrypting && !_disposed;
         public override bool CanSeek => false;
         public override bool CanWrite => _encrypting && !_disposed;
@@ -658,38 +716,26 @@ namespace System.IO.Compression
                 _baseStream.Flush();
             }
         }
-
-        public override void Close()
+        public override async Task FlushAsync(CancellationToken cancellationToken)
         {
-            if (!_disposed)
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            if (_encrypting)
             {
-                if (_encrypting && !_authCodeValidated && _headerWritten)
+                // First flush base stream to ensure header is written
+                if (_baseStream.CanWrite)
                 {
-                    // Encrypt all buffered data first
-                    FlushEncryptionBuffer();
-
-                    // Flush any pending data
-                    if (_baseStream.CanWrite)
-                    {
-                        _baseStream.Flush();
-                    }
-
-                    // Write the authentication code
-                    WriteAuthCode();
-
-                    // Flush again to ensure auth code is written
-                    if (_baseStream.CanWrite)
-                    {
-                        _baseStream.Flush();
-                    }
+                    await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
+
             }
 
-            // Call base.Close() which will call Dispose(true)
-            base.Close();
+            // Finally flush base stream to ensure encrypted data is written
+            if (_baseStream.CanWrite)
+            {
+                await _baseStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
-
-
 
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override void SetLength(long value) => throw new NotSupportedException();

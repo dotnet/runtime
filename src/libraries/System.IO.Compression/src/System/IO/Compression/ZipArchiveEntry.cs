@@ -992,26 +992,35 @@ namespace System.IO.Compression
                     crc32: null,
                     leaveOpen: true);
             }
-            else if (encryptionMethod == EncryptionMethod.Aes256)
+            else if (encryptionMethod == EncryptionMethod.Aes256 || encryptionMethod == EncryptionMethod.Aes192 || encryptionMethod == EncryptionMethod.Aes128)
             {
                 if (string.IsNullOrEmpty(password))
                     throw new InvalidOperationException("Password is required for encryption.");
 
                 Encryption = encryptionMethod;
 
+                // use switch to calculate keysizebits based on encryption strength
+                int keysizebits = encryptionMethod switch
+                {
+                    EncryptionMethod.Aes128 => 128,
+                    EncryptionMethod.Aes192 => 192,
+                    EncryptionMethod.Aes256 => 256,
+                    _ => 256 // Default to AES-256
+                };
+
                 // targetstream should be new winzipaesstream for wrting, ae2
                 targetStream = new WinZipAesStream(
                        baseStream: _archive.ArchiveStream,
                        password: password.AsMemory(),
                        encrypting: true,
-                       keySizeBits: 256,
+                       keySizeBits: keysizebits,
                        ae2: true,
                        leaveOpen: true);
             }
 
             CheckSumAndSizeWriteStream crcSizeStream = GetDataCompressor(
                 targetStream,
-                encryptionMethod == EncryptionMethod.Aes256 ? false : true,
+                encryptionMethod == EncryptionMethod.Aes256 || encryptionMethod == EncryptionMethod.Aes192 || encryptionMethod == EncryptionMethod.Aes128 ? false : true,
                 (object? o, EventArgs e) =>
                 {
                     // release the archive stream
@@ -1245,24 +1254,30 @@ namespace System.IO.Compression
 
             public void WriteBlock(Stream stream)
             {
-                Span<byte> buffer = stackalloc byte[TotalSize];
+                Span<byte> buffer = new byte[TotalSize];
                 WriteBlockCore(buffer);
                 stream.Write(buffer);
             }
 
+            public async Task WriteBlockAsync(Stream stream, CancellationToken cancellationToken = default)
+            {
+                byte[] buffer = new byte[TotalSize];
+                WriteBlockCore(buffer);
+                await stream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+            }
+
             private void WriteBlockCore(Span<byte> buffer)
             {
-                BinaryPrimitives.WriteUInt16LittleEndian(buffer[0..], HeaderId);
-                BinaryPrimitives.WriteUInt16LittleEndian(buffer[2..], 7); // Data size
-                BinaryPrimitives.WriteUInt16LittleEndian(buffer[4..], VendorVersion);
-                // Write "AE" as two ASCII bytes, vendor ID
-                buffer[6] = (byte)'A'; // 0x41
-                buffer[7] = (byte)'E'; // 0x45
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(0), HeaderId);
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(2), 7); // DataSize
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.Slice(4), VendorVersion);
+                buffer[6] = (byte)'A';
+                buffer[7] = (byte)'E';
                 buffer[8] = AesStrength;
+
                 BinaryPrimitives.WriteUInt16LittleEndian(buffer[9..], CompressionMethod);
             }
         }
-
         private bool WriteLocalFileHeaderInitialize(bool isEmptyFile, bool forceWrite, out Zip64ExtraField? zip64ExtraField, out uint compressedSizeTruncated, out uint uncompressedSizeTruncated, out ushort extraFieldLength)
         {
             // _entryname only gets set when we read in or call moveTo. MoveTo does a check, and
