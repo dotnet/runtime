@@ -1068,7 +1068,7 @@ export function generateWasmBody (
             case MintOpcode.MINT_ISINST_COMMON:
             case MintOpcode.MINT_CASTCLASS:
             case MintOpcode.MINT_ISINST: {
-                const klass = get_imethod_data(frame, getArgU16(ip, 3)) >>> 0,
+                const klass = get_imethod_data(frame, getArgU16(ip, 3)),
                     canDoFastCheck = (opcode === MintOpcode.MINT_CASTCLASS_COMMON) ||
                         (opcode === MintOpcode.MINT_ISINST_COMMON),
                     bailoutOnFailure = (opcode === MintOpcode.MINT_CASTCLASS) ||
@@ -1201,7 +1201,7 @@ export function generateWasmBody (
             }
 
             case MintOpcode.MINT_UNBOX: {
-                const klass = get_imethod_data(frame, getArgU16(ip, 3)) >>> 0,
+                const klass = get_imethod_data(frame, getArgU16(ip, 3)),
                     // The type check needs to examine the boxed value's rank and element class
                     elementClassOffset = getMemberOffset(JiterpMember.ClassElementClass),
                     destOffset = getArgU16(ip, 1),
@@ -2336,7 +2336,7 @@ function emit_fieldop (
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     append_ldloc(builder, objectOffset, WasmOpcode.i32_load);
                     builder.i32_const(builder.traceIndex);
-                    builder.ip_const(ip);
+                    builder.ptr_const(ip);
                     builder.callImport("notnull");
                 }
             }

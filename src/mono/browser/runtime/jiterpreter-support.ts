@@ -328,6 +328,7 @@ export class WasmBuilder {
     }
 
     ptr_const (pointer: number | ManagedPointer | NativePointer) {
+        pointer = pointer as any >>> 0;
         let idx = this.options.useConstants ? this.constantSlots.indexOf(<any>pointer) : -1;
         if (
             this.options.useConstants &&
