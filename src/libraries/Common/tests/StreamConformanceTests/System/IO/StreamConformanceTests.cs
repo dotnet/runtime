@@ -3311,7 +3311,10 @@ namespace System.IO.Tests
                 if (_disposed) return;
 
                 _disposed = true;
-                _innerStream.Dispose();
+                if (disposing)
+                {
+                    _innerStream.Dispose();
+                }
             }
 
             public override ValueTask DisposeAsync()
@@ -3322,7 +3325,10 @@ namespace System.IO.Tests
                 return _innerStream.DisposeAsync();
             }
 
-            public override void Close() => _innerStream.Close();
+            public override void Close()
+            {
+                throw new NotSupportedException("Synchronous operations are not supported.");
+            }
         }
     }
 
