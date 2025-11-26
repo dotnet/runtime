@@ -47,6 +47,12 @@ namespace System.Net.Mail
             {
                 if (extension.StartsWith(AuthExtension, StringComparison.OrdinalIgnoreCase))
                 {
+                    if (extension.Length == AuthExtension.Length)
+                    {
+                        // No auth types specified
+                        continue;
+                    }
+
                     // remove the AUTH text including the following character
                     // to ensure that split only gets the modules supported
                     ReadOnlySpan<char> authTypes = extension.AsSpan(SizeOfAuthExtension);
