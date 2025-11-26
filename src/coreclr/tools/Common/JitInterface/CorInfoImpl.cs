@@ -842,11 +842,6 @@ namespace Internal.JitInterface
             if (method.IsIntrinsic)
             {
                 // Some intrinsics will beg to differ about the hasHiddenParameter decision
-#if !READYTORUN
-                if (_compilation.TypeSystemContext.IsSpecialUnboxingThunkTargetMethod(method))
-                    hasHiddenParameter = false;
-#endif
-
                 if (method.IsArrayAddressMethod())
                     hasHiddenParameter = true;
             }

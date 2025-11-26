@@ -5864,12 +5864,6 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
     // 2. In the async transformation, ASYNC_CONTINUATION nodes are inserted
     // after calls to async calls.
     //
-    // In the former case, for NativeAOT nothing has marked the previous call
-    // as an "async" method. We need to do that here to ensure that the backend
-    // knows that the call has a non-standard calling convention that returns
-    // an additional GC ref. This requires additional GC tracking that we would
-    // otherwise not get.
-    //
     GenTree* node = asyncCont;
     while (true)
     {
@@ -5878,13 +5872,7 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
 
         if (node->IsCall())
         {
-            if (!node->AsCall()->IsAsync())
-            {
-                JITDUMP("Marking the call [%06u] before async continuation [%06u] as an async call\n",
-                        Compiler::dspTreeID(node), Compiler::dspTreeID(asyncCont));
-                node->AsCall()->SetIsAsync(new (comp, CMK_Async) AsyncCallInfo);
-            }
-
+            assert(node->AsCall()->IsAsync());
             BlockRange().Remove(asyncCont);
             BlockRange().InsertAfter(node, asyncCont);
             break;
