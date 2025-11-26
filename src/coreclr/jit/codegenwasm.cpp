@@ -120,6 +120,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     switch (treeNode->OperGet())
     {
         case GT_ADD:
+        case GT_EQ:
+        case GT_NE:
+        case GT_LT:
+        case GT_LE:
+        case GT_GE:
         case GT_GT:
             genCodeForBinary(treeNode->AsOp());
             break;
