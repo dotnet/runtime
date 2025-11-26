@@ -103,7 +103,7 @@ enum class AsyncMethodFlags
     //       Such methods do not get Task-returning facades. (We would not even know if the
     //       facade needs to return Task or ValueTask)
     //       Such methods can only be called from other AsyncCall methods.
-    //       Like all other cases of AsyncCall, calls to these methods have semantic of "await"
+    //       Like all other cases of AsyncCall, calls to these methods have semantics of "await"
     //       and can participate in suspension/resume.
 };
 
@@ -2002,7 +2002,7 @@ public:
     // of async contexts. User-implemented runtime async methods require this
     // behavior for compatibility with classic state machine implementations.
     // Other methods like thunks or infrastructure helpers should be transparent
-    // to the sideeffects of context manipulations in calees and should not
+    // to the sideeffects of context manipulations in callees and should not
     // come with save/restore behavior.
     inline bool RequiresAsyncContextSaveAndRestore() const
     {
