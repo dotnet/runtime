@@ -461,6 +461,45 @@ namespace Internal.JitInterface
         IAT_RELPVALUE   // The value needs to be accessed via a relative indirection
     }
 
+    public enum CorInfoReloc
+    {
+        NONE,
+
+        // General relocation types
+        DIRECT,                                // Direct/absolute pointer sized address
+        RELATIVE32,                            // 32-bit relative address from byte following reloc
+
+        // Arm64 relocs
+        ARM64_BRANCH26,                        // Arm64: B, BL
+        ARM64_PAGEBASE_REL21,                  // ADRP
+        ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+        // Linux arm64
+        ARM64_LIN_TLSDESC_ADR_PAGE21,
+        ARM64_LIN_TLSDESC_LD64_LO12,
+        ARM64_LIN_TLSDESC_ADD_LO12,
+        ARM64_LIN_TLSDESC_CALL,
+        // Windows arm64
+        ARM64_WIN_TLS_SECREL_HIGH12A,          // ADD high 12-bit offset for tls
+        ARM64_WIN_TLS_SECREL_LOW12A,           // ADD low 12-bit offset for tls
+
+        // Windows x64
+        AMD64_WIN_SECREL,
+        // Linux x64
+        AMD64_LIN_TLSGD,
+
+        // Arm32 relocs
+        ARM32_THUMB_BRANCH24,                  // Thumb2: based B, BL
+        ARM32_THUMB_MOV32,                     // Thumb2: based MOVW/MOVT
+        ARM32_THUMB_MOV32_PCREL,               // Thumb2: based MOVW/MOVT
+
+        // LoongArch64 relocs
+        LOONGARCH64_PC,                        // LoongArch64: pcalau12i+imm12
+        LOONGARCH64_JIR,                       // LoongArch64: pcaddu18i+jirl
+
+        // RISCV64 relocs
+        RISCV64_PC,                            // RiscV64: auipc
+    }
+
     public enum CorInfoGCType
     {
         TYPE_GC_NONE,   // no embedded objectrefs

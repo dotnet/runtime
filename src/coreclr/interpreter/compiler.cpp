@@ -1737,6 +1737,8 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     : m_stackmapsByClass(FreeInterpreterStackMap)
     , m_pInitLocalsIns(nullptr)
     , m_hiddenArgumentVar(-1)
+    , m_nextCallGenericContextVar(-1)
+    , m_nextCallAsyncContinuationVar(-1)
     , m_leavesTable(this)
     , m_dataItems(this)
     , m_globalVarsWithRefsStackTop(0)
@@ -3258,6 +3260,22 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             return true;
         }
 
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext:
+        {
+            CHECK_STACK(1);
+            m_pStackPointer--;
+            m_nextCallGenericContextVar = m_pStackPointer[0].var;
+            return true;
+        }
+
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation:
+        {
+            CHECK_STACK(1);
+            m_pStackPointer--;
+            m_nextCallAsyncContinuationVar = m_pStackPointer[0].var;
+            return true;
+        }
+
         case NI_System_Threading_Interlocked_CompareExchange:
         {
             CHECK_STACK(3);
@@ -4268,62 +4286,69 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     {
         int contextParamVar = -1;
 
-        // Instantiated generic method
-        CORINFO_CONTEXT_HANDLE exactContextHnd = callInfo.contextHandle;
-        if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+        if (m_nextCallGenericContextVar >= 0)
         {
-            assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
-
-            CORINFO_METHOD_HANDLE exactMethodHandle =
-            (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
-            DeclarePointerIsMethod(exactMethodHandle);
-
-            if (!callInfo.exactContextNeedsRuntimeLookup)
-            {
-                PushStackType(StackTypeI, NULL);
-                m_pStackPointer--;
-                contextParamVar = m_pStackPointer[0].var;
-                AddIns(INTOP_LDPTR);
-                m_pLastNewIns->SetDVar(contextParamVar);
-                m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactMethodHandle);
-            }
-            else
-            {
-                contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly).var;
-            }
+            contextParamVar = m_nextCallGenericContextVar;
+            m_nextCallGenericContextVar = -1;
         }
-
-        // otherwise must be an instance method in a generic struct,
-        // a static method in a generic type, or a runtime-generated array method
         else
         {
-            assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
-            CORINFO_CLASS_HANDLE exactClassHandle = getClassFromContext(exactContextHnd);
-            DeclarePointerIsClass(exactClassHandle);
+            // Instantiated generic method
+            CORINFO_CONTEXT_HANDLE exactContextHnd = callInfo.contextHandle;
+            if (((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+            {
+                assert(exactContextHnd != METHOD_BEING_COMPILED_CONTEXT());
 
-            if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && readonly)
-            {
-                PushStackType(StackTypeI, NULL);
-                m_pStackPointer--;
-                contextParamVar = m_pStackPointer[0].var;
-                // We indicate "readonly" to the Address operation by using a null
-                // instParam.
-                AddIns(INTOP_LDPTR);
-                m_pLastNewIns->SetDVar(contextParamVar);
-                m_pLastNewIns->data[0] = GetDataItemIndex(NULL);
+                CORINFO_METHOD_HANDLE exactMethodHandle =
+                    (CORINFO_METHOD_HANDLE)((SIZE_T)exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK);
+                DeclarePointerIsMethod(exactMethodHandle);
+
+                if (!callInfo.exactContextNeedsRuntimeLookup)
+                {
+                    PushStackType(StackTypeI, NULL);
+                    m_pStackPointer--;
+                    contextParamVar = m_pStackPointer[0].var;
+                    AddIns(INTOP_LDPTR);
+                    m_pLastNewIns->SetDVar(contextParamVar);
+                    m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactMethodHandle);
+                }
+                else
+                {
+                    contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly).var;
+                }
             }
-            else if (!callInfo.exactContextNeedsRuntimeLookup)
-            {
-                PushStackType(StackTypeI, NULL);
-                m_pStackPointer--;
-                contextParamVar = m_pStackPointer[0].var;
-                AddIns(INTOP_LDPTR);
-                m_pLastNewIns->SetDVar(contextParamVar);
-                m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactClassHandle);
-            }
+            // otherwise must be an instance method in a generic struct,
+            // a static method in a generic type, or a runtime-generated array method
             else
             {
-                contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly | GenericHandleEmbedOptions::EmbedParent).var;
+                assert(((SIZE_T)exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+                CORINFO_CLASS_HANDLE exactClassHandle = getClassFromContext(exactContextHnd);
+                DeclarePointerIsClass(exactClassHandle);
+
+                if ((callInfo.classFlags & CORINFO_FLG_ARRAY) && readonly)
+                {
+                    PushStackType(StackTypeI, NULL);
+                    m_pStackPointer--;
+                    contextParamVar = m_pStackPointer[0].var;
+                    // We indicate "readonly" to the Address operation by using a null
+                    // instParam.
+                    AddIns(INTOP_LDPTR);
+                    m_pLastNewIns->SetDVar(contextParamVar);
+                    m_pLastNewIns->data[0] = GetDataItemIndex(NULL);
+                }
+                else if (!callInfo.exactContextNeedsRuntimeLookup)
+                {
+                    PushStackType(StackTypeI, NULL);
+                    m_pStackPointer--;
+                    contextParamVar = m_pStackPointer[0].var;
+                    AddIns(INTOP_LDPTR);
+                    m_pLastNewIns->SetDVar(contextParamVar);
+                    m_pLastNewIns->data[0] = GetDataItemIndex((void*)exactClassHandle);
+                }
+                else
+                {
+                    contextParamVar = EmitGenericHandle(&resolvedCallToken, GenericHandleEmbedOptions::VarOnly | GenericHandleEmbedOptions::EmbedParent).var;
+                }
             }
         }
         callArgs[extraParamArgLocation] = contextParamVar;
@@ -4500,6 +4525,18 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
                     m_pLastNewIns->data[2] =
                         ((lookup.accessType == IAT_PVALUE) ? (int32_t)PInvokeCallFlags::Indirect : 0) |
                         (suppressGCTransition ? (int32_t)PInvokeCallFlags::SuppressGCTransition : 0);
+                }
+                else if (opcode == INTOP_CALLDELEGATE)
+                {
+                    int32_t firstTargetArgOffset = INTERP_STACK_SLOT_SIZE;
+                    if (numArgs > 1)
+                    {
+                        // The first argument is the delegate obj, the second is the first target arg
+                        // The offset of the first target arg relative to the start of delegate call args is equal to the alignment of the
+                        // first target arg.
+                        GetInterpTypeStackSize(m_pVars[callArgs[1]].clsHnd, m_pVars[callArgs[1]].interpType, &firstTargetArgOffset);
+                    }
+                    m_pLastNewIns->data[1] = firstTargetArgOffset;
                 }
             }
             break;
