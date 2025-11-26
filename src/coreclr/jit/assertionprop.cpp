@@ -2484,6 +2484,90 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 }
 
 //------------------------------------------------------------------------------
+// optVNBasedFoldExpr_Call_Memcmp: Unrolls NI_System_SpanHelpers_SequenceEqual for constant length.
+//
+// Arguments:
+//    call - NI_System_SpanHelpers_SequenceEqual call to unroll
+//
+// Return Value:
+//    Returns a new tree or nullptr if nothing is changed.
+//
+GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
+{
+    JITDUMP("See if we can optimize NI_System_SpanHelpers_SequenceEqual with help of VN...\n");
+    assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual));
+
+    CallArg* arg1   = call->gtArgs.GetUserArgByIndex(0);
+    CallArg* arg2   = call->gtArgs.GetUserArgByIndex(1);
+    CallArg* lenArg = call->gtArgs.GetUserArgByIndex(2);
+
+    ValueNum lenVN = vnStore->VNConservativeNormalValue(lenArg->GetNode()->gtVNPair);
+    if (!vnStore->IsVNConstant(lenVN))
+    {
+        JITDUMP("...length is not a constant - bail out.\n");
+        return nullptr;
+    }
+
+    const size_t len = vnStore->CoercedConstantValue<size_t>(lenVN);
+    if (len > getUnrollThreshold(Memcmp))
+    {
+        JITDUMP("...length is too big to unroll - bail out.\n");
+        return nullptr;
+    }
+
+    // SequenceEqual(..., len == 0) => true, and does not dereference pointers
+    if (len == 0)
+    {
+        JITDUMP("...length is 0 -> optimize to constant true.\n");
+        return gtWrapWithSideEffects(gtNewIconNode(1), call, GTF_ALL_EFFECT, true);
+    }
+
+    // Spill arg side-effects directly in the args so we can multi-use
+    GenTree* a = fgMakeMultiUse(&arg1->NodeRef());
+    GenTree* b = fgMakeMultiUse(&arg2->NodeRef());
+
+    // Extract original call side-effects to preserve order
+    GenTree* result = nullptr;
+    gtExtractSideEffList(call, &result, GTF_ALL_EFFECT, true);
+
+    GenTree* diffAccum    = nullptr;
+    unsigned lenRemaining = (unsigned)len;
+    while (lenRemaining > 0)
+    {
+        const ssize_t offset = (ssize_t)len - (ssize_t)lenRemaining;
+
+        // Clone a and b, add offset if necessary
+        GenTree* currA = gtCloneExpr(a);
+        GenTree* currB = gtCloneExpr(b);
+        if (offset != 0)
+        {
+            currA = gtNewOperNode(GT_ADD, currA->TypeGet(), currA, gtNewIconNode(offset, TYP_I_IMPL));
+            currB = gtNewOperNode(GT_ADD, currB->TypeGet(), currB, gtNewIconNode(offset, TYP_I_IMPL));
+        }
+
+        // Create indirection load for both sides
+        var_types type  = roundDownMaxType(lenRemaining);
+        GenTree*  loadA = gtNewIndir(type, currA, GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
+        GenTree*  loadB = gtNewIndir(type, currB, GTF_IND_UNALIGNED | GTF_IND_ALLOW_NON_ATOMIC);
+
+        // Accumulate differences
+        GenTree* diff = gtNewOperNode(GT_XOR, type, loadA, loadB);
+        diffAccum     = (diffAccum == nullptr) ? diff : gtNewOperNode(GT_OR, type, diffAccum, diff);
+
+        lenRemaining -= genTypeSize(type);
+    }
+
+    assert(diffAccum != nullptr);
+
+    // Compare accumulated differences to zero
+    GenTree* allEq = gtNewOperNode(GT_EQ, TYP_INT, diffAccum, gtNewIconNode(0, diffAccum->TypeGet()));
+    result         = (result == nullptr) ? allEq : gtNewOperNode(GT_COMMA, TYP_INT, result, allEq);
+    JITDUMP("...optimized NI_System_SpanHelpers_SequenceEqual into load/compare chain:\n");
+    DISPTREE(result);
+    return result;
+}
+
+//------------------------------------------------------------------------------
 // optVNBasedFoldExpr_Call_Memset: Unrolls NI_System_SpanHelpers_Fill for constant length.
 //
 // Arguments:
@@ -2494,6 +2578,7 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
 //
 GenTree* Compiler::optVNBasedFoldExpr_Call_Memset(GenTreeCall* call)
 {
+    JITDUMP("See if we can optimize NI_System_SpanHelpers_Fill with help of VN...\n");
     assert(call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill));
 
     CallArg* dstArg = call->gtArgs.GetUserArgByIndex(0);
@@ -2730,6 +2815,11 @@ GenTree* Compiler::optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, G
     if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Fill))
     {
         return optVNBasedFoldExpr_Call_Memset(call);
+    }
+
+    if (call->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
+    {
+        return optVNBasedFoldExpr_Call_Memcmp(call);
     }
 
     return nullptr;

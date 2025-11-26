@@ -8022,6 +8022,7 @@ public:
     GenTree*     optVNBasedFoldExpr_Call(BasicBlock* block, GenTree* parent, GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call);
     GenTree*     optVNBasedFoldExpr_Call_Memset(GenTreeCall* call);
+    GenTree*     optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call);
 
     AssertionIndex GetAssertionCount()
     {
@@ -9464,6 +9465,7 @@ public:
         Memset,
         Memcpy,
         Memmove,
+        Memcmp,
         MemcmpU16,
         ProfiledMemmove,
         ProfiledMemcmp
@@ -9546,6 +9548,14 @@ public:
             threshold = maxRegSize * 2;
 #ifdef TARGET_ARM64
             threshold = maxRegSize * 6;
+#endif
+        }
+
+        if (type == UnrollKind::Memcmp)
+        {
+            threshold = maxRegSize * 4;
+#ifdef TARGET_ARM64
+            threshold = maxRegSize * 12;
 #endif
         }
 
