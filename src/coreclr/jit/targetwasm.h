@@ -260,37 +260,3 @@
 // clang-format on
 
 #include "registeropswasm.h"
-
-// TODO-WASM: implement the following functions in terms of a "locals registry" that would hold information
-// about the registers.
-
-inline bool genIsValidIntReg(regNumber reg)
-{
-    WasmValueType type;
-    UnpackWasmReg(reg, &type);
-    return (type == WasmValueType::I32) || (type == WasmValueType::I64);
-}
-
-inline bool genIsValidIntOrFakeReg(regNumber reg)
-{
-    return genIsValidIntReg(reg);
-}
-
-inline bool genIsValidFloatReg(regNumber reg)
-{
-    WasmValueType type;
-    UnpackWasmReg(reg, &type);
-    return (type == WasmValueType::F32) || (type == WasmValueType::F64);
-}
-
-inline bool isValidIntArgReg(regNumber reg, CorInfoCallConvExtension callConv)
-{
-    NYI_WASM("isValidIntArgReg");
-    return false;
-}
-
-inline bool isValidFloatArgReg(regNumber reg)
-{
-    NYI_WASM("isValidFloatArgReg");
-    return false;
-}
