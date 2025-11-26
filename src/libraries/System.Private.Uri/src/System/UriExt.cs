@@ -38,12 +38,12 @@ namespace System
 
             ParsingError err = ParseScheme(_string, ref _flags, ref _syntax!);
 
-            InitializeUri(err, uriKind, out UriFormatException? e);
+            UriFormatException? e = InitializeUri(err, uriKind);
             if (e != null)
                 throw e;
         }
 
-        private void InitializeUri(ParsingError err, UriKind uriKind, out UriFormatException? e)
+        private UriFormatException? InitializeUri(ParsingError err, UriKind uriKind)
         {
             DebugAssertInCtor();
             Debug.Assert((err is ParsingError.None) == (_syntax is not null));
@@ -65,8 +65,7 @@ namespace System
                     {
                         _syntax = null!; // make it be relative Uri
                         _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                        e = null;
-                        return;
+                        return null;
                     }
 
                     // V1 compat
@@ -79,8 +78,7 @@ namespace System
                     {
                         _syntax = null!; //make it be relative Uri
                         _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                        e = null;
-                        return;
+                        return null;
                         // Otherwise an absolute file Uri wins when it's of the form "\\something"
                     }
                 }
@@ -91,22 +89,20 @@ namespace System
                 // and we'll allow relative Uri's, then create one.
                 if (err <= ParsingError.LastErrorOkayForRelativeUris)
                 {
-                    e = null;
                     _flags &= Flags.UserEscaped | Flags.HasUnicode; // the only flags that makes sense for a relative uri
                     if (hasUnicode)
                     {
                         // Iri'ze and then normalize relative uris
                         _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length, isQuery: false);
                     }
+                    return null;
                 }
                 else
                 {
                     // This is a fatal error based solely on scheme name parsing
                     _string = null!; // make it be invalid Uri
-                    e = GetException(err);
+                    return GetException(err);
                 }
-
-                return;
             }
 
             Debug.Assert(err == ParsingError.None && _syntax is not null);
@@ -119,22 +115,21 @@ namespace System
                     {
                         // RFC 3986 Section 5.4.2 - http:(relativeUri) may be considered a valid relative Uri.
                         _syntax = null!; // convert to relative uri
-                        e = null;
                         _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                        return;
+                        return null;
                     }
                     else
-                        e = GetException(err);
+                    {
+                        return GetException(err);
+                    }
                 }
                 else if (uriKind == UriKind.Relative)
                 {
                     // Here we know that we can create an absolute Uri, but the user has requested only a relative one
-                    e = GetException(ParsingError.CannotCreateRelative);
+                    return GetException(ParsingError.CannotCreateRelative);
                 }
-                else
-                    e = null;
 
-                if (e is null && hasUnicode)
+                if (hasUnicode)
                 {
                     // In this scenario we need to parse the whole string
                     try
@@ -143,7 +138,7 @@ namespace System
                     }
                     catch (UriFormatException ex)
                     {
-                        e = ex;
+                        return ex;
                     }
                 }
             }
@@ -156,37 +151,42 @@ namespace System
                 _flags |= Flags.UserDrivenParsing;
 
                 // Ask a registered type to validate this uri
-                _syntax.InternalValidate(this, out e);
+                _syntax.InternalValidate(this, out UriFormatException? e);
 
-                if (e is null)
+                if (e is not null)
                 {
-                    if (err != ParsingError.None || InFact(Flags.ErrorOrParsingRecursion))
-                    {
-                        // User parser took over on an invalid Uri
-                        // we use = here to clear all parsing flags for a uri that we think is invalid.
-                        _flags = Flags.UserDrivenParsing | (_flags & Flags.UserEscaped);
-                    }
-                    else if (uriKind == UriKind.Relative)
-                    {
-                        // Here we know that custom parser can create an absolute Uri, but the user has requested only a
-                        // relative one
-                        e = GetException(ParsingError.CannotCreateRelative);
-                    }
+                    return e;
+                }
 
-                    if (e is null && hasUnicode)
+                if (err != ParsingError.None || InFact(Flags.ErrorOrParsingRecursion))
+                {
+                    // User parser took over on an invalid Uri
+                    // we use = here to clear all parsing flags for a uri that we think is invalid.
+                    _flags = Flags.UserDrivenParsing | (_flags & Flags.UserEscaped);
+                }
+                else if (uriKind == UriKind.Relative)
+                {
+                    // Here we know that custom parser can create an absolute Uri, but the user has requested only a
+                    // relative one
+                    return GetException(ParsingError.CannotCreateRelative);
+                }
+
+                if (hasUnicode)
+                {
+                    // In this scenario we need to parse the whole string
+                    try
                     {
-                        // In this scenario we need to parse the whole string
-                        try
-                        {
-                            EnsureParseRemaining();
-                        }
-                        catch (UriFormatException ex)
-                        {
-                            e = ex;
-                        }
+                        EnsureParseRemaining();
+                    }
+                    catch (UriFormatException ex)
+                    {
+                        return ex;
                     }
                 }
             }
+
+            // We have a valid absolute Uri.
+            return null;
         }
 
         /// <summary>SearchValues for all ASCII characters other than %</summary>
@@ -721,7 +721,7 @@ namespace System
             // Validate instance using ether built in or a user Parser
             try
             {
-                result.InitializeUri(err, uriKind, out e);
+                e = result.InitializeUri(err, uriKind);
 
                 if (e == null)
                 {
