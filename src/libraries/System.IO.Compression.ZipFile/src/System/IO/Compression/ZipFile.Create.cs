@@ -482,11 +482,6 @@ namespace System.IO.Compression
                 // If we get UnauthorizedAccessException and the path is a directory, provide a clearer error message
                 throw new UnauthorizedAccessException(SR.Format(SR.IO_DirectoryNotAllowed, archiveFileName));
             }
-            catch (IOException) when (mode == ZipArchiveMode.Create && Directory.Exists(archiveFileName))
-            {
-                // If we get IOException in Create mode and the path is a directory, provide a clearer error message
-                throw new IOException(SR.Format(SR.IO_DirectoryNotAllowed, archiveFileName));
-            }
         }
 
         private static (string, string) GetFullPathsForDoCreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName)
