@@ -34,6 +34,12 @@ namespace System.Numerics
         private static UInt128 NegativeInfinityValue => new UInt128(upper: 0xf800_0000_0000_0000, lower: 0);
         private static UInt128 ZeroValue => new UInt128(0, 0);
         private static UInt128 NegativeZeroValue => new UInt128(0x8000_0000_0000_0000, 0);
+        private static UInt128 QuietNaNValue => new UInt128(0x7C00_0000_0000_0000, 0);
+
+        public static Decimal128 PositiveInfinity => new Decimal128(PositiveInfinityValue);
+        public static Decimal128 NegativeInfinity => new Decimal128(NegativeInfinityValue);
+        public static Decimal128 NaN => new Decimal128(QuietNaNValue);
+        public static Decimal128 NegativeZero => new Decimal128(NegativeZeroValue);
 
         internal Decimal128(UInt128 value)
         {
@@ -334,6 +340,8 @@ namespace System.Numerics
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.Zero => ZeroValue;
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NegativeZero => NegativeZeroValue;
+
+        static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.NaN => QuietNaNValue;
 
         static UInt128 IDecimalIeee754ParseAndFormatInfo<Decimal128, UInt128>.MostSignificantBitOfSignificandMask => new UInt128(0x0002_0000_0000_0000, 0);
 

@@ -146,6 +146,7 @@ namespace System
         static abstract int ExponentBias { get; }
         static abstract TValue PositiveInfinity { get; }
         static abstract TValue NegativeInfinity { get; }
+        static abstract TValue NaN { get; }
         static abstract TValue Zero { get; }
         static abstract TValue NegativeZero { get; }
         static abstract TValue MaxSignificand { get; }
@@ -979,6 +980,69 @@ namespace System
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
+                ReadOnlySpan<TChar> valueTrim = SpanTrim(value);
+                ReadOnlySpan<TChar> positiveInfinitySymbol = info.PositiveInfinitySymbolTChar<TChar>();
+
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
+                {
+                    result = TDecimal.Construct(TDecimal.PositiveInfinity);
+                    return ParsingStatus.OK;
+                }
+
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, info.NegativeInfinitySymbolTChar<TChar>()))
+                {
+                    result = TDecimal.Construct(TDecimal.NegativeInfinity);
+                    return ParsingStatus.OK;
+                }
+
+                ReadOnlySpan<TChar> nanSymbol = info.NaNSymbolTChar<TChar>();
+
+                if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
+                {
+                    result = TDecimal.Construct(TDecimal.NaN);
+                    return ParsingStatus.OK;
+                }
+
+
+                var positiveSign = info.PositiveSignTChar<TChar>();
+
+                if (SpanStartsWith(valueTrim, positiveSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    valueTrim = valueTrim.Slice(positiveSign.Length);
+
+                    if (SpanEqualsOrdinalIgnoreCase(valueTrim, positiveInfinitySymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.PositiveInfinity);
+                        return ParsingStatus.OK;
+                    }
+                    else if (SpanEqualsOrdinalIgnoreCase(valueTrim, nanSymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.NaN);
+                        return ParsingStatus.OK;
+                    }
+
+                    result = TDecimal.Construct(TDecimal.Zero);
+                    return ParsingStatus.OK;
+                }
+
+                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+
+                if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(negativeSign.Length), nanSymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.NaN);
+                        return ParsingStatus.OK;
+                    }
+
+                    if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')) && SpanEqualsOrdinalIgnoreCase(valueTrim.Slice(1), nanSymbol))
+                    {
+                        result = TDecimal.Construct(TDecimal.NaN);
+                        return ParsingStatus.OK;
+                    }
+                }
+
+                result = TDecimal.Construct(TDecimal.Zero);
                 return ParsingStatus.Failed;
             }
 

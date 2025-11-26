@@ -25,10 +25,16 @@ namespace System.Numerics
         private const ulong NegativeInfinityValue = 0xF800_0000_0000_0000;
         private const ulong ZeroValue = 0x0000_0000_0000_0000;
         private const ulong NegativeZeroValue = 0x8000_0000_0000_0000;
+        private const ulong QuietNaNValue = 0x7C00_0000_0000_0000;
         private const ulong G0G1Mask = 0x6000_0000_0000_0000;
         private const ulong SignMask = 0x8000_0000_0000_0000;
         private const ulong MostSignificantBitOfSignificandMask = 0x0020_0000_0000_0000;
         private const ulong MaxSignificand = 9_999_999_999_999_999;
+
+        public static Decimal64 PositiveInfinity => new Decimal64(PositiveInfinityValue);
+        public static Decimal64 NegativeInfinity => new Decimal64(NegativeInfinityValue);
+        public static Decimal64 NaN => new Decimal64(QuietNaNValue);
+        public static Decimal64 NegativeZero => new Decimal64(NegativeZeroValue);
 
         private static ReadOnlySpan<ulong> UInt64Powers10 =>
             [
@@ -295,6 +301,8 @@ namespace System.Numerics
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Zero => ZeroValue;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NegativeZero => NegativeZeroValue;
+
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NaN => QuietNaNValue;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 

@@ -32,10 +32,16 @@ namespace System.Numerics
         private const uint NegativeInfinityValue = 0xF800_0000;
         private const uint ZeroValue = 0x0000_0000;
         private const uint NegativeZeroValue = 0x8000_0000;
+        private const uint QuietNaNValue = 0x7C00_0000;
         private const uint G0G1Mask = 0x6000_0000;
         private const uint SignMask = 0x8000_0000;
         private const uint MostSignificantBitOfSignificandMask = 0x0080_0000;
         private const uint MaxSignificand = 9_999_999;
+
+        public static Decimal32 PositiveInfinity => new Decimal32(PositiveInfinityValue);
+        public static Decimal32 NegativeInfinity => new Decimal32(NegativeInfinityValue);
+        public static Decimal32 NaN => new Decimal32(QuietNaNValue);
+        public static Decimal32 NegativeZero => new Decimal32(NegativeZeroValue);
 
         private static ReadOnlySpan<uint> UInt32Powers10 =>
             [
@@ -293,6 +299,8 @@ namespace System.Numerics
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.Zero => ZeroValue;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NegativeZero => NegativeZeroValue;
+
+        static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.NaN => QuietNaNValue;
 
         static uint IDecimalIeee754ParseAndFormatInfo<Decimal32, uint>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 

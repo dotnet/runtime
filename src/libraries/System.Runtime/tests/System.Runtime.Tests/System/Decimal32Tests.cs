@@ -67,6 +67,12 @@ namespace System.Tests
             yield return new object[] { "$1000", NumberStyles.Currency, customFormat1, new Decimal32(1, 3) };
             yield return new object[] { "123.123", NumberStyles.Float, customFormat2, new Decimal32(123123, -3) };
             yield return new object[] { "(123)", NumberStyles.AllowParentheses, customFormat2, new Decimal32(-123, 0) };
+
+            yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, Decimal32.NaN };
+            yield return new object[] { "+NaN", NumberStyles.Any, invariantFormat, Decimal32.NaN };
+            yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, Decimal32.PositiveInfinity };
+            yield return new object[] { "+Infinity", NumberStyles.Any, invariantFormat, Decimal32.PositiveInfinity };
+            yield return new object[] { "-Infinity", NumberStyles.Any, invariantFormat, Decimal32.NegativeInfinity };
         }
 
 

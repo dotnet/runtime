@@ -11235,6 +11235,11 @@ namespace System.Numerics
         public static Decimal32 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Number, IFormatProvider? provider = null) { throw null; }
         public static Decimal32 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
 
+        public static Decimal32 NaN { get { throw null; } }
+        public static Decimal32 NegativeInfinity { get { throw null; } }
+        public static Decimal32 PositiveInfinity { get { throw null; } }
+        public static Decimal32 NegativeZero { get { throw null; } }
+
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.NumericFormat)] string? format) { throw null; }
@@ -11266,6 +11271,11 @@ namespace System.Numerics
         public static Decimal64 Parse(string s, IFormatProvider? provider) { throw null; }
         public static Decimal64 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Number, IFormatProvider? provider = null) { throw null; }
         public static Decimal64 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
+
+        public static Decimal64 NaN { get { throw null; } }
+        public static Decimal64 NegativeInfinity { get { throw null; } }
+        public static Decimal64 PositiveInfinity { get { throw null; } }
+        public static Decimal64 NegativeZero { get { throw null; } }
 
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
@@ -11299,6 +11309,11 @@ namespace System.Numerics
         public static Decimal128 Parse(string s, IFormatProvider? provider) { throw null; }
         public static Decimal128 Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Number, IFormatProvider? provider = null) { throw null; }
         public static Decimal128 Parse(string s, System.Globalization.NumberStyles style, IFormatProvider? provider) { throw null; }
+
+        public static Decimal128 NaN { get { throw null; } }
+        public static Decimal128 NegativeInfinity { get { throw null; } }
+        public static Decimal128 PositiveInfinity { get { throw null; } }
+        public static Decimal128 NegativeZero { get { throw null; } }
 
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
