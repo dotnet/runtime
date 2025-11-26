@@ -349,12 +349,6 @@ async function run() {
             return;
         }
 
-        // waste memory
-        for (let i = 1; i <= 25; i++) {
-            const offset = App.runtime.Module._malloc(1024 * 1024 * 100); // 100 MB
-            console.log(`Allocated ${i * 100} MB at offset ${offset}, total linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
-        }
-
         if (runArgs.applicationArguments[0] == "--run") {
             // Run an exe
             if (runArgs.applicationArguments.length == 1) {
