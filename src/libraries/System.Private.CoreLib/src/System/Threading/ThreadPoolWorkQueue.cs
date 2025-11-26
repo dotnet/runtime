@@ -431,28 +431,23 @@ namespace System.Threading
         private readonly int[] _assignedWorkItemQueueThreadCounts =
             s_assignableWorkItemQueueCount > 0 ? new int[s_assignableWorkItemQueueCount] : Array.Empty<int>();
 
-        private enum QueueProcessingStage
-        {
-            // NotScheduled: has no guarantees
-            NotScheduled,
-
-            // Scheduled: means a worker will check work queues and ensure that
-            // any work items inserted in work queue before setting the flag
-            // are picked up.
-            // Note: The state must be cleared by the worker thread _before_
-            //       checking. Otherwise there is a window between finding no work
-            //       and resetting the flag, when the flag is in a wrong state.
-            //       A new work item may be added right before the flag is reset
-            //       without asking for a worker, while the last worker is quitting.
-            Scheduled
-        }
-
         [StructLayout(LayoutKind.Sequential)]
         private struct CacheLineSeparated
         {
             private readonly Internal.PaddingFor32 pad1;
 
-            public QueueProcessingStage queueProcessingStage;
+            // This flag is used for communication between item enqueuing and workers that process the items.
+            // There are two states of this flag:
+            // 0: has no guarantees
+            // 1: means a worker will check work queues and ensure that
+            //    any work items inserted in work queue before setting the flag
+            //    are picked up.
+            //    Note: The state must be cleared by the worker thread _before_
+            //       checking. Otherwise there is a window between finding no work
+            //       and resetting the flag, when the flag is in a wrong state.
+            //       A new work item may be added right before the flag is reset
+            //       without asking for a worker, while the last worker is quitting.
+            public int _hasOutstandingThreadRequest;
 
             private readonly Internal.PaddingFor32 pad2;
         }
@@ -616,12 +611,8 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void EnsureThreadRequested()
         {
-            // Only one thread is requested at a time to mitigate Thundering Herd problem.
-            // That is the minimum - we have inserted a workitem and NotScheduled
-            // state requires asking for a worker.
-            if (Interlocked.Exchange(
-                ref _separated.queueProcessingStage,
-                QueueProcessingStage.Scheduled) == QueueProcessingStage.NotScheduled)
+            // Only one worker is requested at a time to mitigate Thundering Herd problem.
+            if (Interlocked.Exchange(ref _separated._hasOutstandingThreadRequest, 1) == 0)
             {
                 ThreadPool.RequestWorkerThread();
             }
@@ -924,7 +915,7 @@ namespace System.Threading
             }
 
             // Before dequeuing the first work item, acknowledge that the thread request has been satisfied
-            workQueue._separated.queueProcessingStage = QueueProcessingStage.NotScheduled;
+            workQueue._separated._hasOutstandingThreadRequest = 0;
 
             // The state change must happen before sweeping queues for items.
             Interlocked.MemoryBarrier();
@@ -1192,23 +1183,18 @@ namespace System.Threading
 
     internal sealed class ThreadPoolTypedWorkItemQueue : IThreadPoolWorkItem
     {
-        private enum QueueProcessingStage
-        {
-            // NotScheduled: has no guarantees
-            NotScheduled,
-
-            // Scheduled: means a worker will check work queues and ensure that
-            // any work items inserted in work queue before setting the flag
-            // are picked up.
-            // Note: The state must be cleared by the worker thread _before_
-            //       checking. Otherwise there is a window between finding no work
-            //       and resetting the flag, when the flag is in a wrong state.
-            //       A new work item may be added right before the flag is reset
-            //       without asking for a worker, while the last worker is quitting.
-            Scheduled
-        }
-
-        private QueueProcessingStage _queueProcessingStage;
+        // This flag is used for communication between item enqueuing and workers that process the items.
+        // There are two states of this flag:
+        // 0: has no guarantees
+        // 1: means a worker will check work queues and ensure that
+        //    any work items inserted in work queue before setting the flag
+        //    are picked up.
+        //    Note: The state must be cleared by the worker thread _before_
+        //       checking. Otherwise there is a window between finding no work
+        //       and resetting the flag, when the flag is in a wrong state.
+        //       A new work item may be added right before the flag is reset
+        //       without asking for a worker, while the last worker is quitting.
+        private int _hasOutstandingThreadRequest;
         private readonly ConcurrentQueue<IOCompletionPollerEvent> _workItems = new();
 
         public int Count => _workItems.Count;
@@ -1224,12 +1210,8 @@ namespace System.Threading
 
         private void EnsureWorkerScheduled()
         {
-            // Only one thread is requested at a time to mitigate Thundering Herd problem.
-            // That is the minimum - we have inserted a workitem and NotScheduled
-            // state requires asking for a worker.
-            if (Interlocked.Exchange(
-                ref _queueProcessingStage,
-                QueueProcessingStage.Scheduled) == QueueProcessingStage.NotScheduled)
+            // Only one worker is requested at a time to mitigate Thundering Herd problem.
+            if (Interlocked.Exchange(ref _hasOutstandingThreadRequest, 1) == 0)
             {
                 // Currently where this type is used, queued work is expected to be processed
                 // at high priority. The implementation could be modified to support different
@@ -1240,9 +1222,9 @@ namespace System.Threading
 
         void IThreadPoolWorkItem.Execute()
         {
-            // We are asking for one worker at a time, thus the state should be Scheduled.
-            Debug.Assert(_queueProcessingStage == QueueProcessingStage.Scheduled);
-            _queueProcessingStage = QueueProcessingStage.NotScheduled;
+            // We are asking for one worker at a time, thus the state should be 1.
+            Debug.Assert(_hasOutstandingThreadRequest == 1);
+            _hasOutstandingThreadRequest = 0;
 
             // Checking for items must happen after resetting the processing state.
             Interlocked.MemoryBarrier();
