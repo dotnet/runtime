@@ -514,7 +514,7 @@
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
 
-      <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
+      <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)$(MobileAppBundleDirName)', %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
       <_MergedWrapperRunScriptRelative Condition="'$(TestWrapperTargetsWindows)' != 'true'">./$(_MergedWrapperRunScriptRelative)</_MergedWrapperRunScriptRelative>
       <_MergedWrapperRunScriptDirectoryRelative Condition="'$(_MergedWrapperRunScriptRelative)' != ''">$([System.IO.Path]::GetDirectoryName($(_MergedWrapperRunScriptRelative)))</_MergedWrapperRunScriptDirectoryRelative>
     </PropertyGroup>
