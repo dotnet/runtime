@@ -136,5 +136,18 @@ namespace System.PrivateUri.Tests
             Assert.True(uri.IsUnc);
             Assert.Equal("file://host/share", uri.AbsoluteUri);
         }
+
+        [Theory]
+        [InlineData("/\\\u200E//")]
+        [InlineData("\\\\/\u200e")]
+        [InlineData("\\\\\\\\\\\u200E")]
+        [InlineData("\\\\\\\\\\\u200E/")]
+        [InlineData("\\\\\\\\\\\u200E/ab")]
+        public static void UncWithBidiControlCharacters_CanBeParsed(string uriString)
+        {
+            Uri uri = new Uri(uriString, UriKind.Absolute);
+            Assert.True(uri.IsUnc);
+            Assert.Empty(uri.Host);
+        }
     }
 }

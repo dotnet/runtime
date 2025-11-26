@@ -1088,6 +1088,11 @@ HijackFunc* PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 
 void PalHijack(Thread* pThreadToHijack)
 {
+    if (pThreadToHijack->IsActivationPending())
+    {
+        return;
+    }
+
     pThreadToHijack->SetActivationPending(true);
 
     int status = pthread_kill(pThreadToHijack->GetOSThreadHandle(), INJECT_ACTIVATION_SIGNAL);
@@ -1232,21 +1237,6 @@ int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBa
     *pModuleNameOut = dl.dli_fname;
     return strlen(dl.dli_fname);
 #endif // defined(HOST_WASM)
-}
-
-static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
-static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */
-
-void PalGetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
-{
-    struct timeval time = { 0 };
-    gettimeofday(&time, NULL);
-
-    int64_t result = ((int64_t)time.tv_sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS +
-        (time.tv_usec * 10);
-
-    lpSystemTimeAsFileTime->dwLowDateTime = (uint32_t)result;
-    lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
 uint64_t PalGetCurrentOSThreadId()

@@ -48,17 +48,6 @@ namespace Internal.JitInterface
         //
         // Global initialization and state
         //
-        private enum ImageFileMachine
-        {
-            I386 = 0x014c,
-            IA64 = 0x0200,
-            AMD64 = 0x8664,
-            ARM = 0x01c4,
-            ARM64 = 0xaa64,
-            LoongArch64 = 0x6264,
-            RiscV64 = 0x5064,
-        }
-
         internal const string JitLibrary = "clrjitilc";
 
 #if SUPPORT_JIT
@@ -685,6 +674,7 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
             _debugInfo = null;
+            _asyncResumptionStub = null;
 #endif
 
             _debugLocInfos = null;
@@ -806,6 +796,16 @@ namespace Internal.JitInterface
             {
                 methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
             }
+
+            // Indicate this is an async method that requires save and restore
+            // of async contexts. Regular user implemented runtime async methods
+            // require this behavior, but thunks should be transparent and should not
+            // come with this behavior.
+            if (method.IsAsyncVariant() && method.IsAsync)
+            {
+                methodInfo->options |= CorInfoOptions.CORINFO_ASYNC_SAVE_CONTEXTS;
+            }
+
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, sig: &methodInfo->args, methodIL);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
@@ -832,6 +832,9 @@ namespace Internal.JitInterface
         private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, MethodILScope scope, bool suppressHiddenArgument = false)
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig, scope);
+
+            if (method.IsAsyncCall())
+                sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
 
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
@@ -877,6 +880,8 @@ namespace Internal.JitInterface
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
             if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
+
+            if (signature.GenericParameterCount != 0) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_GENERIC;
 
             TypeDesc returnType = signature.ReturnType;
 
@@ -1756,6 +1761,9 @@ namespace Internal.JitInterface
             if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Newarr)
                 result = ((TypeDesc)result).MakeArrayType();
 
+            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await)
+                result = _compilation.TypeSystemContext.GetAsyncVariantMethod((MethodDesc)result);
+
             return result;
         }
 
@@ -1827,11 +1835,6 @@ namespace Internal.JitInterface
 
             if (result is MethodDesc method)
             {
-                pResolvedToken.hMethod = ObjectToHandle(method);
-
-                TypeDesc owningClass = method.OwningType;
-                pResolvedToken.hClass = ObjectToHandle(owningClass);
-
 #if !SUPPORT_JIT
                 _compilation.TypeSystemContext.EnsureLoadableMethod(method);
 #endif
@@ -1847,6 +1850,27 @@ namespace Internal.JitInterface
 #else
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
 #endif
+
+                if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_Await)
+                {
+                    // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+                    // we cannot resolve to an Async variant in such case.
+                    // return NULL, so that caller would re-resolve as a regular method call
+                    method = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask()
+                        ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
+                        : null;
+                }
+
+                if (method != null)
+                {
+                    pResolvedToken.hMethod = ObjectToHandle(method);
+                    pResolvedToken.hClass = ObjectToHandle(method.OwningType);
+                }
+                else
+                {
+                    pResolvedToken.hMethod = null;
+                    pResolvedToken.hClass = null;
+                }
             }
             else
             if (result is FieldDesc)
@@ -2151,22 +2175,22 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void* LongLifetimeMalloc(UIntPtr sz)
+        private void* LongLifetimeMalloc(nuint sz)
 #pragma warning restore CA1822 // Mark members as static
         {
-            return (void*)Marshal.AllocCoTaskMem((int)sz);
+            return NativeMemory.Alloc(sz);
         }
 
 #pragma warning disable CA1822 // Mark members as static
         private void LongLifetimeFree(void* obj)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Marshal.FreeCoTaskMem((IntPtr)obj);
+            NativeMemory.Free(obj);
         }
 
-        private UIntPtr getClassStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        private void* getClassStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getClassStaticDynamicInfo"); }
-        private UIntPtr getClassThreadStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        private void* getClassThreadStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
         { throw new NotImplementedException("getClassThreadStaticDynamicInfo"); }
 
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
@@ -2334,7 +2358,7 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
-            if (type.MetadataBaseType is { ContainsGCPointers: true } baseType)
+            if (type.BaseType is { ContainsGCPointers: true } baseType)
                 result += GatherClassGCLayout(baseType, gcPtrs);
 
             bool isInlineArray = type.IsInlineArray;
@@ -2616,7 +2640,7 @@ namespace Internal.JitInterface
             return GetTypeLayoutResult.Success;
         }
 
-        private GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_STRUCT_* typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, UIntPtr* numTreeNodes)
+        private GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_STRUCT_* typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, nuint* numTreeNodes)
         {
             TypeDesc type = HandleToObject(typeHnd);
 
@@ -3211,8 +3235,16 @@ namespace Internal.JitInterface
         private void reportRichMappings(InlineTreeNode* inlineTree, uint numInlineTree, RichOffsetMapping* mappings, uint numMappings)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Marshal.FreeHGlobal((IntPtr)inlineTree);
-            Marshal.FreeHGlobal((IntPtr)mappings);
+            NativeMemory.Free(inlineTree);
+            NativeMemory.Free(mappings);
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void reportAsyncDebugInfo(AsyncInfo* asyncInfo, AsyncSuspensionPoint* suspensionPoints, AsyncContinuationVarInfo* vars, uint numVars)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            NativeMemory.Free(suspensionPoints);
+            NativeMemory.Free(vars);
         }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -3222,17 +3254,17 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void* allocateArray(UIntPtr cBytes)
+        private void* allocateArray(nuint cBytes)
 #pragma warning restore CA1822 // Mark members as static
         {
-            return (void*)Marshal.AllocHGlobal((IntPtr)(void*)cBytes);
+            return NativeMemory.Alloc(cBytes);
         }
 
 #pragma warning disable CA1822 // Mark members as static
         private void freeArray(void* array)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Marshal.FreeHGlobal((IntPtr)array);
+            NativeMemory.Free(array);
         }
 
 #pragma warning disable CA1822 // Mark members as static
@@ -3347,10 +3379,10 @@ namespace Internal.JitInterface
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
 
-            pEEInfoOut.osPageSize = new UIntPtr(0x1000);
+            pEEInfoOut.osPageSize = 0x1000;
 
             pEEInfoOut.maxUncheckedOffsetForNullObject = (_compilation.NodeFactory.Target.IsWindows) ?
-                new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
+                (32 * 1024 - 1) : (pEEInfoOut.osPageSize / 2 - 1);
 
             pEEInfoOut.targetAbi = TargetABI;
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
@@ -3358,7 +3390,37 @@ namespace Internal.JitInterface
 
         private void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
         {
-            throw new NotImplementedException();
+            DefType continuation = _compilation.TypeSystemContext.ContinuationType;
+            pAsyncInfoOut.continuationClsHnd = ObjectToHandle(continuation);
+            pAsyncInfoOut.continuationNextFldHnd = ObjectToHandle(continuation.GetKnownField("Next"u8));
+            pAsyncInfoOut.continuationResumeInfoFldHnd = ObjectToHandle(continuation.GetKnownField("ResumeInfo"u8));
+            pAsyncInfoOut.continuationStateFldHnd = ObjectToHandle(continuation.GetKnownField("State"u8));
+            pAsyncInfoOut.continuationFlagsFldHnd = ObjectToHandle(continuation.GetKnownField("Flags"u8));
+            DefType asyncHelpers = _compilation.TypeSystemContext.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            pAsyncInfoOut.captureExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureExecutionContext"u8, null));
+            pAsyncInfoOut.restoreExecutionContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreExecutionContext"u8, null));
+            pAsyncInfoOut.captureContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureContinuationContext"u8, null));
+            pAsyncInfoOut.captureContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureContexts"u8, null));
+            pAsyncInfoOut.restoreContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreContexts"u8, null));
+            pAsyncInfoOut.restoreContextsOnSuspensionMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null));
+        }
+
+        private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
+        {
+            Debug.Assert(objRefsSize == (dataSize + (nuint)(PointerSize - 1)) / (nuint)PointerSize);
+#if READYTORUN
+            throw new NotImplementedException("getContinuationType");
+#else
+            GCPointerMapBuilder gcMapBuilder = new GCPointerMapBuilder((int)dataSize, PointerSize);
+            ReadOnlySpan<bool> bools = MemoryMarshal.CreateReadOnlySpan(ref objRefs, (int)objRefsSize);
+            for (int i = 0; i < bools.Length; i++)
+            {
+                if (bools[i])
+                    gcMapBuilder.MarkGCPointer(i * PointerSize);
+            }
+
+            return ObjectToHandle(_compilation.TypeSystemContext.GetContinuationType(gcMapBuilder.ToGCMap()));
+#endif
         }
 
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
@@ -3443,7 +3505,7 @@ namespace Internal.JitInterface
 
             if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
             {
-                EcmaType owningType = (EcmaType)ecmaMethod.OwningType;
+                EcmaType owningType = ecmaMethod.OwningType;
                 var reader = owningType.MetadataReader;
 
                 if (className != null)
@@ -3456,7 +3518,7 @@ namespace Internal.JitInterface
                 EcmaType containingType = owningType;
                 for (nuint i = 0; i < maxEnclosingClassNames; i++)
                 {
-                    containingType = containingType.ContainingType as EcmaType;
+                    containingType = containingType.ContainingType;
                     if (containingType == null)
                         break;
 
@@ -3710,10 +3772,17 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub(ref void* entryPoint)
 #pragma warning restore CA1822 // Mark members as static
         {
-            return null;
+#if READYTORUN
+            throw new NotImplementedException("Crossgen2 does not support runtime-async yet");
+#else
+            _asyncResumptionStub ??= new AsyncResumptionStub(MethodBeingCompiled, _compilation.TypeSystemContext.GeneratedAssembly.GetGlobalModuleType());
+
+            entryPoint = (void*)ObjectToHandle(_compilation.NodeFactory.MethodEntrypoint(_asyncResumptionStub));
+            return ObjectToHandle(_asyncResumptionStub);
+#endif
         }
 
         private byte[] _code;
@@ -3867,9 +3936,9 @@ namespace Internal.JitInterface
 #endif
         }
 
-        private void* allocGCInfo(UIntPtr size)
+        private void* allocGCInfo(nuint size)
         {
-            _gcInfo = new byte[(int)size];
+            _gcInfo = new byte[size];
             return (void*)GetPin(_gcInfo);
         }
 
@@ -4161,17 +4230,19 @@ namespace Internal.JitInterface
             switch (arch)
             {
                 case TargetArchitecture.X86:
-                    return (uint)ImageFileMachine.I386;
+                    return (uint)CorInfoArch.CORINFO_ARCH_X86;
                 case TargetArchitecture.X64:
-                    return (uint)ImageFileMachine.AMD64;
+                    return (uint)CorInfoArch.CORINFO_ARCH_X64;
                 case TargetArchitecture.ARM:
-                    return (uint)ImageFileMachine.ARM;
+                    return (uint)CorInfoArch.CORINFO_ARCH_ARM;
                 case TargetArchitecture.ARM64:
-                    return (uint)ImageFileMachine.ARM64;
+                    return (uint)CorInfoArch.CORINFO_ARCH_ARM64;
                 case TargetArchitecture.LoongArch64:
-                    return (uint)ImageFileMachine.LoongArch64;
+                    return (uint)CorInfoArch.CORINFO_ARCH_LOONGARCH64;
                 case TargetArchitecture.RiscV64:
-                    return (uint)ImageFileMachine.RiscV64;
+                    return (uint)CorInfoArch.CORINFO_ARCH_RISCV64;
+                case TargetArchitecture.Wasm32:
+                    return (uint)CorInfoArch.CORINFO_ARCH_WASM32;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }
@@ -4295,6 +4366,11 @@ namespace Internal.JitInterface
             if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.NativeAotArmel)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
+            }
+
+            if (this.MethodBeingCompiled.IsAsyncCall())
+            {
+                flags.Set(CorJitFlag.CORJIT_FLAG_ASYNC);
             }
 
             return (uint)sizeof(CORJIT_FLAGS);

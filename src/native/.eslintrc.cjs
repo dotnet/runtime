@@ -20,8 +20,6 @@ module.exports = {
         "node_modules/**/*.*",
         "bin/**/*.*",
         "obj/**/*.*",
-        "**/*.js",
-        "**/*.mjs",
         "dotnet.d.ts",
     ],
     "rules": {

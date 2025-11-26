@@ -1512,24 +1512,6 @@ private:
             }
         }
 
-        if ((callUser != nullptr) && callUser->IsAsync() && m_compiler->IsValidLclAddr(lclNum, val.Offset()))
-        {
-            CallArg* suspendedArg = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSuspendedIndicator);
-            if ((suspendedArg != nullptr) && (val.Node() == suspendedArg->GetNode()))
-            {
-                INDEBUG(varDsc->SetDefinedViaAddress(true));
-                escapeAddr = false;
-                defFlag    = GTF_VAR_DEF;
-
-                if ((val.Offset() != 0) || (varDsc->lvExactSize() != 1))
-                {
-                    defFlag |= GTF_VAR_USEASG;
-                }
-
-                callUser->asyncInfo->HasSuspensionIndicatorDef = true;
-            }
-        }
-
         if (escapeAddr)
         {
             unsigned exposedLclNum = varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum;
@@ -2020,7 +2002,7 @@ private:
                 }
 
                 if ((genTypeSize(indir) == genTypeSize(varDsc)) && (genTypeSize(indir) <= TARGET_POINTER_SIZE) &&
-                    (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
+                    (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)) && !varDsc->lvPromoted)
                 {
                     return IndirTransform::BitCast;
                 }
@@ -2356,8 +2338,9 @@ private:
 };
 
 //------------------------------------------------------------------------
-// fgMarkAddressExposedLocals: Traverses the entire method and marks address
-//    exposed locals.
+// fgLocalMorph:
+//   Traverses the entire method and simplifies local accesses.
+//   Also marks locals that are address exposed.
 //
 // Returns:
 //    Suitable phase status
@@ -2367,7 +2350,7 @@ private:
 //    to just LCL_VAR, do not result in the involved local being marked
 //    address exposed.
 //
-PhaseStatus Compiler::fgMarkAddressExposedLocals()
+PhaseStatus Compiler::fgLocalMorph()
 {
     bool madeChanges = false;
 

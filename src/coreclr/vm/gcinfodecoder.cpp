@@ -2243,8 +2243,10 @@ template <typename GcInfoEncoding> void TGcInfoDecoder<GcInfoEncoding>::ReportSt
     pCallBack(hCallBack, pObjRef, gcFlags DAC_ARG(DacSlotLocation(GetStackReg(spBase), spOffset, true)));
 }
 
+#ifndef TARGET_WASM
 // Instantiate the decoder so other files can use it
 template class TGcInfoDecoder<TargetGcInfoEncoding>;
+#endif // !TARGET_WASM
 
 #ifdef FEATURE_INTERPRETER
 template class TGcInfoDecoder<InterpreterGcInfoEncoding>;

@@ -3486,6 +3486,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
 
     LOG((LF_CORDB, LL_INFO1000, "D::SIP: In SetIP ==> fCanSetIPOnly:0x%x <==!\n", fCanSetIPOnly));
 
+#ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager *pCodeVersionManager = module->GetCodeVersionManager();
     {
         CodeVersionManager::LockHolder codeVersioningLockHolder;
@@ -3495,6 +3496,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
             return CORDBG_E_SET_IP_IMPOSSIBLE;
         }
     }
+#endif // FEATURE_CODE_VERSIONING
 
     pCtx = GetManagedStoppedCtx(thread);
 
@@ -7818,7 +7820,7 @@ void Debugger::FirstChanceManagedExceptionCatcherFound(Thread *pThread,
 
     if (pMD != NULL)
     {
-        _ASSERTE(!pMD->IsILStub());
+        _ASSERTE(!pMD->IsDiagnosticsHidden());
 
         pDebugJitInfo = GetJitInfo(pMD, (const BYTE *) pMethodAddr, &pDebugMethodInfo);
         if (pDebugMethodInfo != NULL)
@@ -8643,12 +8645,16 @@ int Debugger::NotifyUserOfFault(bool userBreakpoint, DebuggerLaunchSetting dls)
         if (userBreakpoint)
         {
             msg = "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint.";
+#ifdef HOST_WINDOWS
             flags |= MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION;
+#endif
         }
         else
         {
             msg = "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application.";
+#ifdef HOST_WINDOWS
             flags |= MB_OKCANCEL | MB_ICONEXCLAMATION;
+#endif
         }
 
         // Format message string using optional parameters
@@ -10271,6 +10277,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
         }
 
     case DB_IPCE_DISABLE_OPTS:
+#ifdef FEATURE_CODE_VERSIONING
         {
             Module *pModule = pEvent->DisableOptData.pModule.GetRawPtr();
             mdToken methodDef = pEvent->DisableOptData.funcMetadataToken;
@@ -10293,6 +10300,19 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             m_pRCThread->SendIPCReply();
         }
+#else
+        {
+            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
+
+            InitIPCEvent(pIPCResult,
+                         DB_IPCE_DISABLE_OPTS_RESULT,
+                         g_pEEInterface->GetThread());
+
+            pIPCResult->hr = E_NOTIMPL;
+
+            m_pRCThread->SendIPCReply();
+        }
+#endif // FEATURE_CODE_VERSIONING
         break;
 
     case DB_IPCE_FORCE_CATCH_HANDLER_FOUND:
@@ -11631,6 +11651,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
         res->vmTypeHandle = WrapTypeHandle(th);
         res->metadataToken = mdTokenNil;
         res->vmDomainAssembly.SetRawPtr(NULL);
+        res->vmModule.SetRawPtr(NULL);
         break;
 
     case ELEMENT_TYPE_CLASS:
@@ -11641,6 +11662,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
             res->metadataToken = th.GetCl();
             DebuggerModule * pDModule = LookupOrCreateModule(th.GetModule());
             res->vmDomainAssembly.SetRawPtr((pDModule ? pDModule->GetDomainAssembly() : NULL));
+            res->vmModule.SetRawPtr(NULL);
             break;
         }
 
@@ -11648,6 +11670,7 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
         res->vmTypeHandle = VMPTR_TypeHandle::NullPtr();
         res->metadataToken = mdTokenNil;
         res->vmDomainAssembly.SetRawPtr(NULL);
+        res->vmModule.SetRawPtr(NULL);
         break;
     }
     return;
@@ -12096,7 +12119,7 @@ HRESULT Debugger::ReleaseRemoteBuffer(void *pBuffer, bool removeFromBlobList)
     return S_OK;
 }
 
-#ifndef DACCESS_COMPILE
+#if defined(FEATURE_CODE_VERSIONING) && !defined(DACCESS_COMPILE)
 HRESULT Debugger::DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef)
 {
     CONTRACTL
@@ -12214,7 +12237,12 @@ HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
 
     return hr;
 }
-#endif //DACCESS_COMPILE
+#else
+HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
+{
+    return E_NOTIMPL;
+}
+#endif //FEATURE_CODE_VERSIONING && !DACCESS_COMPILE
 
 HRESULT Debugger::IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult)
 {
@@ -12231,12 +12259,16 @@ HRESULT Debugger::IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BO
         return E_INVALIDARG;
     }
 
+#ifdef FEATURE_CODE_VERSIONING
     {
         CodeVersionManager::LockHolder codeVersioningLockHolder;
         CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
         ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodDef);
         *pResult = activeILVersion.IsDeoptimized();
     }
+#else
+    *pResult = FALSE;
+#endif // FEATURE_CODE_VERSIONING
 
     return S_OK;
 }

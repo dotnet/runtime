@@ -197,17 +197,15 @@ struct Agnostic_CORINFO_ASYNC_INFO
 {
     DWORDLONG continuationClsHnd;
     DWORDLONG continuationNextFldHnd;
-    DWORDLONG continuationResumeFldHnd;
+    DWORDLONG continuationResumeInfoFldHnd;
     DWORDLONG continuationStateFldHnd;
     DWORDLONG continuationFlagsFldHnd;
-    DWORDLONG continuationDataFldHnd;
-    DWORDLONG continuationGCDataFldHnd;
-    DWORD continuationsNeedMethodHandle;
     DWORDLONG captureExecutionContextMethHnd;
     DWORDLONG restoreExecutionContextMethHnd;
     DWORDLONG captureContinuationContextMethHnd;
     DWORDLONG captureContextsMethHnd;
     DWORDLONG restoreContextsMethHnd;
+    DWORDLONG restoreContextsOnSuspensionMethHnd;
 };
 
 struct Agnostic_GetOSRInfo
@@ -660,6 +658,13 @@ struct Agnostic_GetFpStructLowering
     DWORD loweredElements[MAX_FPSTRUCT_LOWERED_ELEMENTS];
     DWORD offsets[MAX_FPSTRUCT_LOWERED_ELEMENTS];
     DWORD numLoweredElements;
+};
+
+struct Agnostic_GetContinuationTypeIn
+{
+    DWORDLONG dataSize;
+    DWORD     objRefs;
+    DWORD     objRefsSize;
 };
 
 struct Agnostic_ResolveVirtualMethodKey
