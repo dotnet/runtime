@@ -62,7 +62,7 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 
 enum class AsyncMethodFlags
 {
-    // Method uses CORINFO_CALLCONV_ASYNCCALL call convention and its body is emitted as a state machine.
+    // Method uses CORINFO_CALLCONV_ASYNCCALL call convention.
     AsyncCall                  = 1,
     // Ordinary, not an AsyncCall method that returns a promise type [Task|Task<T>|ValueTask|ValueTask<T>]
     ReturnsTaskOrValueTask     = 2,
