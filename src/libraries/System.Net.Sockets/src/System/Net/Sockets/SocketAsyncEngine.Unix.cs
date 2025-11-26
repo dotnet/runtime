@@ -91,23 +91,18 @@ namespace System.Net.Sockets
         //
         private readonly ConcurrentQueue<SocketIOEvent> _eventQueue = new ConcurrentQueue<SocketIOEvent>();
 
-        private enum EventQueueProcessingStage
-        {
-            // NotScheduled: has no guarantees
-            NotScheduled,
-
-            // Scheduled: means a worker will check work queues and ensure that
-            // any work items inserted in work queue before setting the flag
-            // are picked up.
-            // Note: The state must be cleared by the worker thread _before_
-            //       checking. Otherwise there is a window between finding no work
-            //       and resetting the flag, when the flag is in a wrong state.
-            //       A new work item may be added right before the flag is reset
-            //       without asking for a worker, while the last worker is quitting.
-            Scheduled
-        }
-
-        private EventQueueProcessingStage _eventQueueProcessingStage;
+        // This flag is used for communication between item enqueuing and workers that process the items.
+        // There are two states of this flag:
+        // 0: has no guarantees
+        // 1: means a worker will check work queues and ensure that
+        //    any work items inserted in work queue before setting the flag
+        //    are picked up.
+        //    Note: The state must be cleared by the worker thread _before_
+        //       checking. Otherwise there is a window between finding no work
+        //       and resetting the flag, when the flag is in a wrong state.
+        //       A new work item may be added right before the flag is reset
+        //       without asking for a worker, while the last worker is quitting.
+        private int _hasOutstandingThreadRequest;
 
         //
         // Registers the Socket with a SocketAsyncEngine, and returns the associated engine.
@@ -246,12 +241,8 @@ namespace System.Net.Sockets
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnsureWorkerScheduled()
         {
-            // Only one thread is requested at a time to mitigate Thundering Herd problem.
-            // That is the minimum - we have inserted a workitem and NotScheduled
-            // state requires asking for a worker.
-            if (Interlocked.Exchange(
-                ref _eventQueueProcessingStage,
-                EventQueueProcessingStage.Scheduled) == EventQueueProcessingStage.NotScheduled)
+            // Only one worker is requested at a time to mitigate Thundering Herd problem.
+            if (Interlocked.Exchange(ref _hasOutstandingThreadRequest, 1) == 0)
             {
                 ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
             }
@@ -259,7 +250,9 @@ namespace System.Net.Sockets
 
         void IThreadPoolWorkItem.Execute()
         {
-            _eventQueueProcessingStage = EventQueueProcessingStage.NotScheduled;
+            // We are asking for one worker at a time, thus the state should be 1.
+            Debug.Assert(_hasOutstandingThreadRequest == 1);
+            _hasOutstandingThreadRequest = 0;
 
             // Checking for items must happen after resetting the processing state.
             Interlocked.MemoryBarrier();
