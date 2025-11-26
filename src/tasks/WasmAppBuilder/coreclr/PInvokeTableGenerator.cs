@@ -81,7 +81,7 @@ internal sealed class PInvokeTableGenerator
             }
             else if (pinvoke.Module == "*" || pinvoke.Module == "__Internal")
             {
-                // Special case for __Internal and * modules to indicate static linking wihtout specifying the module
+                // Special case for __Internal and * modules to indicate static linking without specifying the module
                 modules.Add(pinvoke.Module, pinvoke.Module);
                 Log.LogMessage(MessageImportance.Low, $"Adding module {pinvoke.Module} for static linking");
             }
