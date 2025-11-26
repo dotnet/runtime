@@ -417,5 +417,109 @@ namespace System.Linq.Tests
             var en = iterator as IEnumerator<int>;
             Assert.False(en is not null && en.MoveNext());
         }
+
+        [Fact]
+        public void TupleJoin_Basic()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Prakash", custID = 98022 },
+                new CustomerRec{ name = "Tim", custID = 99021 },
+                new CustomerRec{ name = "Robert", custID = 99022 }
+            ];
+            OrderRec[] inner =
+            [
+                new OrderRec{ orderID = 45321, custID = 99022, total = 50 },
+                new OrderRec{ orderID = 43421, custID = 29022, total = 20 },
+                new OrderRec{ orderID = 95421, custID = 98022, total = 9 }
+            ];
+
+            var result = outer.Join(inner, o => o.custID, i => i.custID);
+
+            Assert.Equal(2, result.Count());
+            Assert.Contains(result, r => r.Outer.name == "Prakash" && r.Inner.orderID == 95421);
+            Assert.Contains(result, r => r.Outer.name == "Robert" && r.Inner.orderID == 45321);
+        }
+
+        [Fact]
+        public void TupleJoin_EmptyOuter()
+        {
+            CustomerRec[] outer = [];
+            OrderRec[] inner =
+            [
+                new OrderRec{ orderID = 45321, custID = 98022, total = 50 }
+            ];
+
+            Assert.Empty(outer.Join(inner, o => o.custID, i => i.custID));
+        }
+
+        [Fact]
+        public void TupleJoin_EmptyInner()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Prakash", custID = 98022 }
+            ];
+            OrderRec[] inner = [];
+
+            Assert.Empty(outer.Join(inner, o => o.custID, i => i.custID));
+        }
+
+        [Fact]
+        public void TupleJoin_WithComparer()
+        {
+            CustomerRec[] outer =
+            [
+                new CustomerRec{ name = "Prakash", custID = 98022 },
+                new CustomerRec{ name = "Tim", custID = 99021 }
+            ];
+            AnagramRec[] inner =
+            [
+                new AnagramRec{ name = "miT", orderID = 43455, total = 10 },
+                new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
+            ];
+
+            var result = outer.Join(inner, o => o.name, i => i.name, new AnagramEqualityComparer());
+
+            Assert.Equal(2, result.Count());
+            Assert.Contains(result, r => r.Outer.name == "Prakash" && r.Inner.name == "Prakash");
+            Assert.Contains(result, r => r.Outer.name == "Tim" && r.Inner.name == "miT");
+        }
+
+        [Fact]
+        public void TupleJoin_OuterNull()
+        {
+            CustomerRec[] outer = null;
+            OrderRec[] inner = [new OrderRec{ orderID = 45321, custID = 98022, total = 50 }];
+
+            AssertExtensions.Throws<ArgumentNullException>("outer", () => outer.Join(inner, o => o.custID, i => i.custID));
+        }
+
+        [Fact]
+        public void TupleJoin_InnerNull()
+        {
+            CustomerRec[] outer = [new CustomerRec{ name = "Prakash", custID = 98022 }];
+            OrderRec[] inner = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("inner", () => outer.Join(inner, o => o.custID, i => i.custID));
+        }
+
+        [Fact]
+        public void TupleJoin_OuterKeySelectorNull()
+        {
+            CustomerRec[] outer = [new CustomerRec{ name = "Prakash", custID = 98022 }];
+            OrderRec[] inner = [new OrderRec{ orderID = 45321, custID = 98022, total = 50 }];
+
+            AssertExtensions.Throws<ArgumentNullException>("outerKeySelector", () => outer.Join(inner, (Func<CustomerRec, int>)null, i => i.custID));
+        }
+
+        [Fact]
+        public void TupleJoin_InnerKeySelectorNull()
+        {
+            CustomerRec[] outer = [new CustomerRec{ name = "Prakash", custID = 98022 }];
+            OrderRec[] inner = [new OrderRec{ orderID = 45321, custID = 98022, total = 50 }];
+
+            AssertExtensions.Throws<ArgumentNullException>("innerKeySelector", () => outer.Join(inner, o => o.custID, (Func<OrderRec, int>)null));
+        }
     }
 }
