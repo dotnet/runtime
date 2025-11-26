@@ -2530,6 +2530,19 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memcmp(GenTreeCall* call)
     GenTree* result = nullptr;
     gtExtractSideEffList(call, &result, GTF_ALL_EFFECT, true);
 
+    uint8_t* buffer1 = new (this, CMK_AssertionProp) uint8_t[len];
+    uint8_t* buffer2 = new (this, CMK_AssertionProp) uint8_t[len];
+    if (GetImmutableDataFromAddress(arg1->GetNode(), (int)len, buffer1) &&
+        GetImmutableDataFromAddress(arg2->GetNode(), (int)len, buffer2))
+    {
+        // If both memory regions are known at compile time, we can fold to a constant.
+        bool areEqual = (memcmp(buffer1, buffer2, len) == 0);
+        JITDUMP("...both memory regions are known at compile time -> optimize to constant %s.\n",
+                areEqual ? "true" : "false");
+        GenTree* const foldedConst = gtNewIconNode(areEqual ? 1 : 0);
+        return (result == nullptr) ? foldedConst : gtNewOperNode(GT_COMMA, TYP_INT, result, foldedConst);
+    }
+
     GenTree* diffAccum    = nullptr;
     unsigned lenRemaining = (unsigned)len;
     while (lenRemaining > 0)
