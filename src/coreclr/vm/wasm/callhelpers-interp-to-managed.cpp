@@ -638,7 +638,6 @@ const StringToWasmSigThunk g_wasmThunks[] = {
     { "viiinni", (void*)&CallFunc_I32_I32_I32_IND_IND_I32_RetVoid },
     { "viin", (void*)&CallFunc_I32_I32_IND_RetVoid },
     { "viinni", (void*)&CallFunc_I32_I32_IND_IND_I32_RetVoid },
-    { "viin", (void*)&CallFunc_I32_I32_IND_RetVoid },
     { "viinnii", (void*)&CallFunc_I32_I32_IND_IND_I32_I32_RetVoid },
     { "vin", (void*)&CallFunc_I32_IND_RetVoid },
     { "vini", (void*)&CallFunc_I32_IND_I32_RetVoid },

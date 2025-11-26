@@ -321,6 +321,18 @@ internal sealed class PInvokeTableGenerator
         return sb.ToString();
     }
 
+    // this is eqivalent to `ULONG HashString(LPCWSTR szStr)` in CoreCLR runtime
+    private static uint HashString(string str)
+    {
+        uint hash = 5381;
+        foreach (char c in str)
+        {
+            hash = ((hash << 5) + hash) ^ (uint)c;
+        }
+
+        return hash;
+    }
+
     private void EmitNativeToInterp(StreamWriter w, List<PInvokeCallback> callbacks)
     {
         // Generate native->interp entry functions
@@ -441,7 +453,7 @@ internal sealed class PInvokeTableGenerator
     {
         var fsName = FixedSymbolName(cb, Log);
 
-        return $"    {{ {cb.Token}, {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol} }} }}";
+        return $"    {{ {cb.Token ^ HashString(cb.AssemblyFQName)}, {HashString(cb.Key)}, {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol} }} }} /* alternate key source: {cb.Key} */";
     }
 
     private bool HasAssemblyDisableRuntimeMarshallingAttribute(Assembly assembly)
