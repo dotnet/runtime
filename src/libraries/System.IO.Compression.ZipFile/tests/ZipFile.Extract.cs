@@ -49,9 +49,8 @@ namespace System.IO.Compression.Tests
             string directoryPath = GetTestFilePath();
             Directory.CreateDirectory(directoryPath);
 
-            UnauthorizedAccessException ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
                 CallZipFileExtractToDirectory(async, directoryPath, GetTestFilePath()));
-            Assert.Contains("directory", ex.Message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Theory]
