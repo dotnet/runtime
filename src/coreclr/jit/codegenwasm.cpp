@@ -106,14 +106,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// PackOperAndType: Pack a genTreeOps and var_types into a uint64_t
+// PackOperAndType: Pack a genTreeOps and var_types into a uint32_t
 //
 // Arguments:
 //    oper - a genTreeOps to pack
 //    type - a var_types to pack
 //
 // Return Value:
-//    oper and type packed into a uint64_t that can be used as a switch value/case
+//    oper and type packed into an integer that can be used as a switch value/case
 //
 static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types type)
 {
@@ -125,13 +125,13 @@ static constexpr uint32_t PackOperAndType(genTreeOps oper, var_types type)
 }
 
 //------------------------------------------------------------------------
-// PackOperAndType: Pack a GenTreeOp* into a uint64_t
+// PackOperAndType: Pack a GenTreeOp* into a uint32_t
 //
 // Arguments:
 //    treeNode - a GenTreeOp to extract oper and type from
 //
 // Return Value:
-//    the node's oper and type packed into a uint64_t that can be used as a switch value
+//    the node's oper and type packed into an integer that can be used as a switch value
 //
 static uint32_t PackOperAndType(GenTreeOp* treeNode)
 {
