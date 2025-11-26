@@ -912,7 +912,8 @@ export class WasmBuilder {
 
     appendMemarg (offset: number, alignPower: number) {
         this.appendULeb(alignPower);
-        this.appendLeb(offset | 0);
+        // u64
+        this.appendULeb(offset >>> 0);
     }
 
     /*
