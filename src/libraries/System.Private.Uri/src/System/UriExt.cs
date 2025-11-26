@@ -61,32 +61,27 @@ namespace System
             {
                 if (IsImplicitFile)
                 {
+                    if (uriKind == UriKind.Relative)
+                    {
+                        _syntax = null!; // make it be relative Uri
+                        _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
+                        e = null;
+                        return;
+                    }
+
                     // V1 compat
                     // A relative Uri wins over implicit UNC path unless the UNC path is of the form "\\something" and
                     // uriKind != Absolute
                     // A relative Uri wins over implicit Unix path unless uriKind == Absolute
-                    if (NotAny(Flags.DosPath) &&
-                        uriKind != UriKind.Absolute &&
-                       ((uriKind == UriKind.Relative || (_string.Length >= 2 && (_string[0] != '\\' || _string[1] != '\\')))
-                    || (!OperatingSystem.IsWindows() && InFact(Flags.UnixPath))))
+                    if (NotAny(Flags.DosPath) && uriKind == UriKind.RelativeOrAbsolute &&
+                       ((_string.Length >= 2 && (_string[0] != '\\' || _string[1] != '\\'))
+                        || (!OperatingSystem.IsWindows() && InFact(Flags.UnixPath))))
                     {
                         _syntax = null!; //make it be relative Uri
                         _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
                         e = null;
                         return;
                         // Otherwise an absolute file Uri wins when it's of the form "\\something"
-                    }
-                    //
-                    // V1 compat issue
-                    // We should support relative Uris of the form c:\bla or c:/bla
-                    //
-                    else if (uriKind == UriKind.Relative && InFact(Flags.DosPath))
-                    {
-                        _syntax = null!; //make it be relative Uri
-                        _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                        e = null;
-                        return;
-                        // Otherwise an absolute file Uri wins when it's of the form "c:\something"
                     }
                 }
             }
