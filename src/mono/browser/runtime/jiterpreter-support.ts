@@ -321,8 +321,6 @@ export class WasmBuilder {
     }
 
     ptr_const (pointer: number | ManagedPointer | NativePointer) {
-        pointer = pointer as any >>> 0;
-
         // mono_log_info(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
         this.appendU8(WasmOpcode.i32_const);
         // i32_const is always signed
