@@ -91,9 +91,14 @@ namespace Tracing.Tests.UserEvents
             traceeStartInfo.RedirectStandardOutput = true;
             traceeStartInfo.RedirectStandardError = true;
 
+            // record-trace currently only searches /tmp/ for diagnostic ports https://github.com/microsoft/one-collect/issues/183
+            string diagnosticPortDir = "/tmp/";
+            traceeStartInfo.Environment["TMPDIR"] = diagnosticPortDir;
+
             Console.WriteLine($"Starting tracee process: {traceeStartInfo.FileName} {traceeStartInfo.Arguments}");
             using Process traceeProcess = Process.Start(traceeStartInfo);
-            Console.WriteLine($"Tracee process started with PID: {traceeProcess.Id}");
+            int traceePid = traceeProcess.Id;
+            Console.WriteLine($"Tracee process started with PID: {traceePid}");
             traceeProcess.OutputDataReceived += (_, args) =>
             {
                 if (!string.IsNullOrEmpty(args.Data))
@@ -118,6 +123,12 @@ namespace Tracing.Tests.UserEvents
                 traceeProcess.Kill();
             }
             traceeProcess.WaitForExit(); // flush async output
+
+            // Since TMPDIR was configured, the diagnostic port was created outside of helix's default temp datadisk path.
+            // The diagnostic port should be automatically cleaned up when the tracee shutsdown, but just in case of an
+            // abrupt exit, ensure cleanup to avoid leaving artifacts on helix machines.
+            // When https://github.com/microsoft/one-collect/issues/183 is fixed, this and the above TMPDIR should be removed.
+            CleanupTraceeDiagnosticPorts(diagnosticPortDir, traceePid);
 
             if (!recordTraceProcess.HasExited)
             {
@@ -152,6 +163,23 @@ namespace Tracing.Tests.UserEvents
             }
 
             return 100;
+        }
+
+        private static void CleanupTraceeDiagnosticPorts(string diagnosticPortDir, int traceePid)
+        {
+            try
+            {
+                string[] udsFiles = Directory.GetFiles(diagnosticPortDir, $"dotnet-diagnostic-{traceePid}-*-socket");
+                foreach (string udsFile in udsFiles)
+                {
+                    Console.WriteLine($"Deleting tracee diagnostic port UDS file: {udsFile}");
+                    File.Delete(udsFile);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to cleanup tracee diagnostic ports: {ex}");
+            }
         }
 
         private static bool ValidateTraceeEvents(string traceFilePath)
