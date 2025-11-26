@@ -74,25 +74,25 @@ namespace System.IO.Compression
         public void Train_ArgumentChecks()
         {
             // empty samples
-            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train(Span<byte>.Empty, new long[] { }, 50));
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train(Span<byte>.Empty, new int[] { }, 50));
 
             // Sum of lengths does not match the length of the samples buffer
-            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new long[] { 1, 1, 3, 4, 5 }, 50));
-            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new long[] { 2, 2, 3, 4, 5 }, 50));
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new int[] { 1, 1, 3, 4, 5 }, 50));
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new int[] { 2, 2, 3, 4, 5 }, 50));
 
             // too few samples
-            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train("AbbCCCdddd"u8.ToArray(), new long[] { 1, 2, 3, 4 }, 0));
+            Assert.Throws<ArgumentException>(() => ZstandardDictionary.Train("AbbCCCdddd"u8.ToArray(), new int[] { 1, 2, 3, 4 }, 0));
 
             // Invalid max dictionary size
-            Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new long[] { 1, 2, 3, 4, 5 }, -50));
-            Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new long[] { 1, 2, 3, 4, 5 }, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new int[] { 1, 2, 3, 4, 5 }, -50));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ZstandardDictionary.Train("AbbCCCddddEEEEE"u8.ToArray(), new int[] { 1, 2, 3, 4, 5 }, 0));
         }
 
         [Fact]
         public void Train_TooFewTooSmallSamples()
         {
             byte[] samples = "AABBAABBAABBAABBAABB"u8.ToArray();
-            long[] sampleLengths = new long[] { 4, 4, 4, 4, 4 }; // 5 samples of 4 bytes each
+            int[] sampleLengths = [4, 4, 4, 4, 4]; // 5 samples of 4 bytes each
             int maxDictionarySize = 256;
 
             Assert.Throws<IOException>(() => ZstandardDictionary.Train(samples, sampleLengths, maxDictionarySize));
@@ -110,7 +110,7 @@ namespace System.IO.Compression
                 samples[i] = (byte)(i % 256);
             }
 
-            long[] sampleLengths = Enumerable.Repeat((long)sampleSize, sampleCount).ToArray();
+            int[] sampleLengths = Enumerable.Repeat(sampleSize, sampleCount).ToArray();
             int maxDictionarySize = 256;
 
             // Act

@@ -81,7 +81,7 @@ namespace System.IO.Compression
         /// Recommended maximum dictionary size is 100KB, and that the size of the training data
         /// should be approximately 100 times the size of the resulting dictionary.
         /// </remarks>
-        public static ZstandardDictionary Train(ReadOnlySpan<byte> samples, ReadOnlySpan<long> sampleLengths, int maxDictionarySize)
+        public static ZstandardDictionary Train(ReadOnlySpan<byte> samples, ReadOnlySpan<int> sampleLengths, int maxDictionarySize)
         {
             if (samples.IsEmpty)
             {
@@ -95,14 +95,8 @@ namespace System.IO.Compression
             }
 
             long totalLength = 0;
-            foreach (long length in sampleLengths)
+            foreach (int length in sampleLengths)
             {
-                // since array sizes must fit into int, we can safely assume that sample lengths larger than int.MaxValue are invalid
-                if (length >= int.MaxValue)
-                {
-                    throw new ArgumentException(SR.ZstandardDictionary_SampleLengthsMismatch, nameof(sampleLengths));
-                }
-
                 totalLength += length;
             }
             if (totalLength != samples.Length)
@@ -118,9 +112,9 @@ namespace System.IO.Compression
 
             unsafe
             {
-                if (sizeof(nuint) == sizeof(long))
+                if (sizeof(nuint) == sizeof(int))
                 {
-                    ReadOnlySpan<nuint> lengthsAsNuint = MemoryMarshal.Cast<long, nuint>(sampleLengths);
+                    ReadOnlySpan<nuint> lengthsAsNuint = MemoryMarshal.Cast<int, nuint>(sampleLengths);
 
                     fixed (byte* samplesPtr = &MemoryMarshal.GetReference(samples))
                     fixed (byte* dictPtr = dictionaryBuffer)
@@ -133,15 +127,12 @@ namespace System.IO.Compression
                 }
                 else
                 {
-                    // on 32-bit platforms, we need to convert longs to nuints
-                    const int maxStackAlloc = 1024; // 4 kB
+                    // on 64-bit platforms, we need to convert ints to nuints
+                    const int maxStackAlloc = 1024; // 8 kB
                     Span<nuint> lengthsAsNuint = sampleLengths.Length <= maxStackAlloc ? stackalloc nuint[maxStackAlloc] : new nuint[sampleLengths.Length];
 
                     for (int i = 0; i < sampleLengths.Length; i++)
                     {
-                        // can't fail as this would've failed earlier when checking total length
-                        Debug.Assert((ulong)sampleLengths[i] <= (ulong)nuint.MaxValue);
-
                         lengthsAsNuint[i] = (nuint)sampleLengths[i];
                     }
 

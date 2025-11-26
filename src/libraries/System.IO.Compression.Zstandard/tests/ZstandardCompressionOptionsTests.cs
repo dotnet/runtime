@@ -12,7 +12,7 @@ namespace System.IO.Compression
         {
             ZstandardCompressionOptions options = new();
             options.Quality = 0;
-            options.Window = 0;
+            options.WindowLog = 0;
             options.TargetBlockSize = 0;
         }
 
@@ -40,20 +40,20 @@ namespace System.IO.Compression
         [InlineData(10)]
         [InlineData(23)]
         [InlineData(31)]
-        public void Window_SetToValidRange_Succeeds(int window)
+        public void WindowLog_SetToValidRange_Succeeds(int windowLog)
         {
             ZstandardCompressionOptions options = new();
-            options.Window = window; // Should not throw
-            Assert.Equal(window, options.Window);
+            options.WindowLog = windowLog; // Should not throw
+            Assert.Equal(windowLog, options.WindowLog);
         }
 
         [Theory]
         [InlineData(9)]
         [InlineData(32)]
-        public void Window_SetOutOfRange_ThrowsArgumentOutOfRangeException(int window)
+        public void WindowLog_SetOutOfRange_ThrowsArgumentOutOfRangeException(int windowLog)
         {
             ZstandardCompressionOptions options = new();
-            Assert.Throws<ArgumentOutOfRangeException>(() => options.Window = window);
+            Assert.Throws<ArgumentOutOfRangeException>(() => options.WindowLog = windowLog);
         }
 
         [Theory]

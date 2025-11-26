@@ -27,10 +27,10 @@ namespace System.IO.Compression
         }
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified maximum window size.</summary>
-        /// <param name="maxWindow">The maximum window size to use for decompression.</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindow"/> is not between the minimum and maximum allowed values.</exception>
+        /// <param name="maxWindowLog">The maximum window size to use for decompression, expressed as base 2 logarithm.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindowLog"/> is not between the minimum and maximum allowed values.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
-        public ZstandardDecoder(int maxWindow)
+        public ZstandardDecoder(int maxWindowLog)
         {
             _disposed = false;
 
@@ -38,9 +38,9 @@ namespace System.IO.Compression
 
             try
             {
-                if (maxWindow != 0)
+                if (maxWindowLog != 0)
                 {
-                    SetWindow(maxWindow);
+                    SetWindowLog(maxWindowLog);
                 }
             }
             catch
@@ -74,11 +74,11 @@ namespace System.IO.Compression
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardDecoder"/> struct with the specified dictionary and maximum window size.</summary>
         /// <param name="dictionary">The decompression dictionary to use.</param>
-        /// <param name="maxWindow">The maximum window size to use for decompression.</param>
+        /// <param name="maxWindowLog">The maximum window size to use for decompression, expressed as base 2 logarithm.</param>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindow"/> is not between the minimum and maximum allowed values.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxWindowLog"/> is not between the minimum and maximum allowed values.</exception>
         /// <exception cref="IOException">Failed to create the <see cref="ZstandardDecoder"/> instance.</exception>
-        public ZstandardDecoder(ZstandardDictionary dictionary, int maxWindow)
+        public ZstandardDecoder(ZstandardDictionary dictionary, int maxWindowLog)
         {
             ArgumentNullException.ThrowIfNull(dictionary);
 
@@ -88,9 +88,9 @@ namespace System.IO.Compression
 
             try
             {
-                if (maxWindow != 0)
+                if (maxWindowLog != 0)
                 {
-                    SetWindow(maxWindow);
+                    SetWindowLog(maxWindowLog);
                 }
 
                 SetDictionary(dictionary);
@@ -257,7 +257,7 @@ namespace System.IO.Compression
         /// <returns><see langword="true" /> on success; <see langword="false" /> otherwise.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="dictionary"/> is null.</exception>
         /// <remarks>If this method returns <see langword="false" />, <paramref name="destination" /> may be empty or contain partially decompressed data, with <paramref name="bytesWritten" /> being zero or greater than zero but less than the expected total.</remarks>
-        public static bool TryDecompress(ReadOnlySpan<byte> source, ZstandardDictionary dictionary, Span<byte> destination, out int bytesWritten)
+        public static bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, ZstandardDictionary dictionary)
         {
             // TODO: the of parameters here is not consistent with ZstandardEncoder.TryCompress
             ArgumentNullException.ThrowIfNull(dictionary);
@@ -355,17 +355,17 @@ namespace System.IO.Compression
             }
         }
 
-        internal void SetWindow(int maxWindow)
+        internal void SetWindowLog(int maxWindowLog)
         {
             Debug.Assert(_context != null);
 
-            if (maxWindow != 0)
+            if (maxWindowLog != 0)
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(maxWindow, ZstandardUtils.WindowBits_Min, nameof(maxWindow));
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(maxWindow, ZstandardUtils.WindowBits_Max, nameof(maxWindow));
+                ArgumentOutOfRangeException.ThrowIfLessThan(maxWindowLog, ZstandardUtils.WindowLog_Min, nameof(maxWindowLog));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(maxWindowLog, ZstandardUtils.WindowLog_Max, nameof(maxWindowLog));
             }
 
-            nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context!, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindow);
+            nuint result = Interop.Zstd.ZSTD_DCtx_setParameter(_context!, Interop.Zstd.ZstdDParameter.ZSTD_d_windowLogMax, maxWindowLog);
             ZstandardUtils.ThrowIfError(result);
         }
 
