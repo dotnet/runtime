@@ -35,6 +35,15 @@ public class ZipFile_Open : ZipFileTestBase
     }
 
     [Fact]
+    public void Open_PassDirectory_CreateMode_ThrowsIOException()
+    {
+        string directoryPath = GetTestFilePath();
+        Directory.CreateDirectory(directoryPath);
+
+        Assert.Throws<IOException>(() => ZipFile.Open(directoryPath, ZipArchiveMode.Create));
+    }
+
+    [Fact]
     public async Task OpenAsync_PassDirectory_ThrowsUnauthorizedAccessException()
     {
         string directoryPath = GetTestFilePath();
@@ -48,6 +57,15 @@ public class ZipFile_Open : ZipFileTestBase
 
         ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ZipFile.OpenAsync(directoryPath, ZipArchiveMode.Update, default));
         Assert.Contains("directory", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task OpenAsync_PassDirectory_CreateMode_ThrowsIOException()
+    {
+        string directoryPath = GetTestFilePath();
+        Directory.CreateDirectory(directoryPath);
+
+        await Assert.ThrowsAsync<IOException>(() => ZipFile.OpenAsync(directoryPath, ZipArchiveMode.Create, default));
     }
 
     [Fact]
