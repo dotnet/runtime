@@ -123,23 +123,11 @@ namespace System
                         return GetException(err);
                     }
                 }
-                else if (uriKind == UriKind.Relative)
+
+                if (uriKind == UriKind.Relative)
                 {
                     // Here we know that we can create an absolute Uri, but the user has requested only a relative one
                     return GetException(ParsingError.CannotCreateRelative);
-                }
-
-                if (hasUnicode)
-                {
-                    // In this scenario we need to parse the whole string
-                    try
-                    {
-                        EnsureParseRemaining();
-                    }
-                    catch (UriFormatException ex)
-                    {
-                        return ex;
-                    }
                 }
             }
             else
@@ -170,18 +158,18 @@ namespace System
                     // relative one
                     return GetException(ParsingError.CannotCreateRelative);
                 }
+            }
 
-                if (hasUnicode)
+            if (hasUnicode)
+            {
+                // In this scenario we need to parse the whole string
+                try
                 {
-                    // In this scenario we need to parse the whole string
-                    try
-                    {
-                        EnsureParseRemaining();
-                    }
-                    catch (UriFormatException ex)
-                    {
-                        return ex;
-                    }
+                    EnsureParseRemaining();
+                }
+                catch (UriFormatException ex)
+                {
+                    return ex;
                 }
             }
 
