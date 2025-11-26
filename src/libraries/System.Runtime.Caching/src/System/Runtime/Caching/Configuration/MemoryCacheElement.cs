@@ -54,7 +54,7 @@ namespace System.Runtime.Caching.Configuration
             new ConfigurationProperty("physicalMemoryMode",
                 typeof(string),
                 "Legacy",
-                null,
+                new GenericEnumConverter(typeof(PhysicalMemoryMode)),
                 null,
                 ConfigurationPropertyOptions.None);
         private static readonly ConfigurationProperty s_propCacheMemoryLimitMegabytes =
@@ -136,50 +136,13 @@ namespace System.Runtime.Caching.Configuration
         /// - "Legacy": Platform-specific memory detection (default)
         /// - "Standard": Use GC.GetGCMemoryInfo().TotalAvailableMemoryBytes without inducing GC
         /// - "GCThresholds": Follow GC's high memory load threshold
-        /// - "Standard:1234567890": Use Standard mode - specified against a static amount of available RAM (in bytes)
         /// </summary>
         [ConfigurationProperty("physicalMemoryMode", DefaultValue = "Legacy")]
-        internal string PhysicalMemoryModeRaw
+        internal PhysicalMemoryMode PhysicalMemoryMode
         {
             get
             {
-                return (string)base["physicalMemoryMode"];
-            }
-        }
-
-        private bool _modeIsParsed;
-        private PhysicalMemoryMode _parsedMode;
-        private long? _parsedMemoryBytes;
-
-        /// <summary>
-        /// Gets the parsed physical memory mode enum value.
-        /// </summary>
-        public PhysicalMemoryMode PhysicalMemoryMode
-        {
-            get
-            {
-                if (!_modeIsParsed)
-                {
-                    ConfigUtil.ParsePhysicalMemoryMode(PhysicalMemoryModeRaw, out _parsedMode, out _parsedMemoryBytes);
-                    _modeIsParsed = true;
-                }
-                return _parsedMode;
-            }
-        }
-
-        /// <summary>
-        /// Gets the parsed memory bytes value if specified in the format "Mode:bytes", otherwise null.
-        /// </summary>
-        public long? PhysicalMemoryBytes
-        {
-            get
-            {
-                if (!_modeIsParsed)
-                {
-                    ConfigUtil.ParsePhysicalMemoryMode(PhysicalMemoryModeRaw, out _parsedMode, out _parsedMemoryBytes);
-                    _modeIsParsed = true;
-                }
-                return _parsedMemoryBytes;
+                return (PhysicalMemoryMode)base["physicalMemoryMode"];
             }
         }
 

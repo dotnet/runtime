@@ -22,7 +22,6 @@ namespace System.Runtime.Caching
         private int _configCacheMemoryLimitMegabytes;
         private int _configPhysicalMemoryLimitPercentage;
         private PhysicalMemoryMode _configPhysicalMemoryMode;
-        private long? _configPhysicalMemoryBytes;
         private int _configPollingInterval;
         private int _inCacheManagerThread;
         private int _disposed;
@@ -140,7 +139,6 @@ namespace System.Runtime.Caching
                 _configCacheMemoryLimitMegabytes = element.CacheMemoryLimitMegabytes;
                 _configPhysicalMemoryLimitPercentage = element.PhysicalMemoryLimitPercentage;
                 _configPhysicalMemoryMode = element.PhysicalMemoryMode;
-                _configPhysicalMemoryBytes = element.PhysicalMemoryBytes;
                 double milliseconds = element.PollingInterval.TotalMilliseconds;
                 _configPollingInterval = (milliseconds < (double)int.MaxValue) ? (int)milliseconds : int.MaxValue;
             }
@@ -150,7 +148,6 @@ namespace System.Runtime.Caching
                 _configCacheMemoryLimitMegabytes = 0;
                 _configPhysicalMemoryLimitPercentage = 0;
                 _configPhysicalMemoryMode = PhysicalMemoryMode.Legacy;
-                _configPhysicalMemoryBytes = null;
             }
 
             if (config != null)
@@ -163,7 +160,7 @@ namespace System.Runtime.Caching
                 string physicalMemoryModeRaw = ConfigUtil.GetStringValue(config, ConfigUtil.PhysicalMemoryMode, "Legacy");
                 if (!string.IsNullOrWhiteSpace(physicalMemoryModeRaw))
                 {
-                    ConfigUtil.ParsePhysicalMemoryMode(physicalMemoryModeRaw, out _configPhysicalMemoryMode, out _configPhysicalMemoryBytes);
+                    _configPhysicalMemoryMode = ConfigUtil.ParsePhysicalMemoryMode(physicalMemoryModeRaw);
                 }
             }
 #if !NETCOREAPP
@@ -274,7 +271,7 @@ namespace System.Runtime.Caching
             _timerLock = new object();
             InitializeConfiguration(config);
             _pollingInterval = _configPollingInterval;
-            _physicalMemoryMonitor = new PhysicalMemoryMonitor(_configPhysicalMemoryLimitPercentage, _configPhysicalMemoryMode, _configPhysicalMemoryBytes);
+            _physicalMemoryMonitor = new PhysicalMemoryMonitor(_configPhysicalMemoryLimitPercentage, _configPhysicalMemoryMode);
             InitDisposableMembers();
         }
 
@@ -374,11 +371,10 @@ namespace System.Runtime.Caching
 
             // Parse physicalMemoryMode from config
             PhysicalMemoryMode physicalMemoryMode = _configPhysicalMemoryMode;
-            long? physicalMemoryBytes = _configPhysicalMemoryBytes;
             string physicalMemoryModeRaw = ConfigUtil.GetStringValue(config, ConfigUtil.PhysicalMemoryMode, "Legacy");
             if (!string.IsNullOrWhiteSpace(physicalMemoryModeRaw))
             {
-                ConfigUtil.ParsePhysicalMemoryMode(physicalMemoryModeRaw, out physicalMemoryMode, out physicalMemoryBytes);
+                physicalMemoryMode = ConfigUtil.ParsePhysicalMemoryMode(physicalMemoryModeRaw);
             }
 
             if (pollingInterval != _configPollingInterval)
@@ -391,8 +387,7 @@ namespace System.Runtime.Caching
 
             if (cacheMemoryLimitMegabytes == _configCacheMemoryLimitMegabytes
                 && physicalMemoryLimitPercentage == _configPhysicalMemoryLimitPercentage
-                && physicalMemoryMode == _configPhysicalMemoryMode
-                && physicalMemoryBytes == _configPhysicalMemoryBytes)
+                && physicalMemoryMode == _configPhysicalMemoryMode)
             {
                 return;
             }
@@ -418,13 +413,11 @@ namespace System.Runtime.Caching
                         _configCacheMemoryLimitMegabytes = cacheMemoryLimitMegabytes;
                     }
                     if (physicalMemoryLimitPercentage != _configPhysicalMemoryLimitPercentage
-                        || physicalMemoryMode != _configPhysicalMemoryMode
-                        || physicalMemoryBytes != _configPhysicalMemoryBytes)
+                        || physicalMemoryMode != _configPhysicalMemoryMode)
                     {
-                        _physicalMemoryMonitor.SetLimit(physicalMemoryLimitPercentage, physicalMemoryMode, physicalMemoryBytes);
+                        _physicalMemoryMonitor.SetLimit(physicalMemoryLimitPercentage, physicalMemoryMode);
                         _configPhysicalMemoryLimitPercentage = physicalMemoryLimitPercentage;
                         _configPhysicalMemoryMode = physicalMemoryMode;
-                        _configPhysicalMemoryBytes = physicalMemoryBytes;
                     }
                 }
             }

@@ -19,7 +19,6 @@ namespace System.Runtime.Caching
 
         // Controls memory monitoring behavior based on the PhysicalMemoryMode enum
         private PhysicalMemoryMode _physicalMemoryMode;
-        private long? _physicalMemoryBytes;
 
 #if NETCOREAPP
         // Track heap size before trimming to measure effectiveness
@@ -27,7 +26,7 @@ namespace System.Runtime.Caching
         private int _cumulativeTrimPercent;
         private float _targetBelowLimit = 0.95f;
 
-        private long GetGCThresholdsLimit(GCMemoryInfo memInfo) => Math.Min(_physicalMemoryBytes ?? memInfo.TotalAvailableMemoryBytes, memInfo.HighMemoryLoadThresholdBytes);
+        private static long GetGCThresholdsLimit(GCMemoryInfo memInfo) => Math.Min(memInfo.TotalAvailableMemoryBytes, memInfo.HighMemoryLoadThresholdBytes);
 #endif
 
         // Returns the percentage of physical machine memory that can be consumed by an
@@ -42,25 +41,19 @@ namespace System.Runtime.Caching
             // hide default ctor
         }
 
-        internal PhysicalMemoryMonitor(int physicalMemoryLimitPercentage, PhysicalMemoryMode physicalMemoryMode, long? physicalMemoryBytes)
+        internal PhysicalMemoryMonitor(int physicalMemoryLimitPercentage, PhysicalMemoryMode physicalMemoryMode)
         {
-            SetLimit(physicalMemoryLimitPercentage, physicalMemoryMode, physicalMemoryBytes);
+            SetLimit(physicalMemoryLimitPercentage, physicalMemoryMode);
             InitHistory();
         }
 
-        internal void SetLimit(int physicalMemoryLimitPercentage, PhysicalMemoryMode physicalMemoryMode, long? physicalMemoryBytes)
+        internal void SetLimit(int physicalMemoryLimitPercentage, PhysicalMemoryMode physicalMemoryMode)
         {
 #if NETCOREAPP
             _physicalMemoryMode = physicalMemoryMode;
-#if SRC_ALLOW_CUSTOM_PHYSICAL_BYTES
-            _physicalMemoryBytes = (physicalMemoryMode == PhysicalMemoryMode.Standard) ? physicalMemoryBytes : null;
-#else
-            _physicalMemoryBytes = null;
-#endif // SRC_ALLOW_CUSTOM_PHYSICAL_BYTES
 #else
             // For non-netcoreapp, we only support Legacy mode because the GC.GetGCMemoryInfo API is not available.
             _physicalMemoryMode = PhysicalMemoryMode.Legacy;
-            _physicalMemoryBytes = null;
             if (physicalMemoryMode != PhysicalMemoryMode.Legacy)
             {
                 throw new PlatformNotSupportedException("PhysicalMemoryMonitor only supports Legacy mode on non-netcoreapp platforms.");
@@ -83,7 +76,7 @@ namespace System.Runtime.Caching
             // greater than 48GB and we should set at .99f.
             // less than 12GB should bet .95f
             // linear scale in between.
-            long memory = _physicalMemoryBytes ?? TotalPhysical;
+            long memory = TotalPhysical;
             float scale = (float)(memory - 0x300000000) / (float)(0xC00000000 - 0x300000000);
             _targetBelowLimit = Math.Min(0.95f, Math.Max(0.99f, scale * (0.99f - 0.95f)));
 #endif
@@ -120,9 +113,9 @@ namespace System.Runtime.Caching
             }
 #endif
 
-            // _physicalMemoryBytes should always be null in non-Core apps and in Legacy mode.
-            long memory = _physicalMemoryBytes ?? TotalPhysical;
-            if (memory >= 0x100000000)
+// _physicalMemoryBytes is not supported, always use TotalPhysical
+long memory = TotalPhysical;
+if (memory >= 0x100000000)
             {
                 _pressureHigh = 99;
             }
@@ -172,7 +165,7 @@ namespace System.Runtime.Caching
                 // Get stats from GC without inducing collection
                 GCMemoryInfo memInfo = GC.GetGCMemoryInfo();
 
-                long limit = _physicalMemoryBytes ?? memInfo.TotalAvailableMemoryBytes;
+                long limit = memInfo.TotalAvailableMemoryBytes;
                 if (_physicalMemoryMode == PhysicalMemoryMode.GCThresholds)
                 {
                     // GCThresholds mode: Use GC's high memory load threshold

@@ -101,34 +101,14 @@ namespace System.Runtime.Caching.Configuration
             return sValue ?? defaultValue;
         }
 
-        internal static void ParsePhysicalMemoryMode(string rawValue, out PhysicalMemoryMode parsedMode, out long? parsedMemoryBytes)
+        internal static PhysicalMemoryMode ParsePhysicalMemoryMode(string rawValue)
         {
-            string[] parts = rawValue.Split(':');
-
-            // Parse the mode part - This part is required
-            if (!Enum.TryParse<PhysicalMemoryMode>(parts[0], true, out PhysicalMemoryMode mode))
+            if (!Enum.TryParse<PhysicalMemoryMode>(rawValue, true, out PhysicalMemoryMode mode))
             {
                 throw new ArgumentException(null, ConfigUtil.PhysicalMemoryMode);
             }
 
-            parsedMode = mode;
-            parsedMemoryBytes = null;
-
-            // Parse the optional memory bytes part
-            if (parts.Length > 1)
-            {
-                if (parts.Length > 2)
-                {
-                    throw new ArgumentException(null, ConfigUtil.PhysicalMemoryMode);
-                }
-
-                if (!long.TryParse(parts[1], out long memoryBytes) || memoryBytes < 0)
-                {
-                    throw new ArgumentException(RH.Format(SR.Argument_out_of_range, ConfigUtil.PhysicalMemoryMode, 0, long.MaxValue));
-                }
-
-                parsedMemoryBytes = memoryBytes;
-            }
+            return mode;
         }
     }
 }
