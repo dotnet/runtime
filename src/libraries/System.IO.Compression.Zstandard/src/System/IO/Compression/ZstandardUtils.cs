@@ -14,9 +14,9 @@ namespace System.IO.Compression
         internal static int Quality_Default => Interop.Zstd.ZSTD_defaultCLevel();
 
         // Window size constraints based on Zstandard specification
-        internal const int WindowBits_Min = 10;    // 1KB window
-        internal const int WindowBits_Max = 31;    // 2GB window
-        internal const int WindowBits_Default = 23; // 8MB window
+        internal const int WindowLog_Min = 10;    // 1KB window
+        internal const int WindowLog_Max = 31;    // 2GB window
+        internal const int WindowLog_Default = 23; // 8MB window
 
         internal const int TargetBlockSize_Min = 1340;
         internal const int TargetBlockSize_Max = 131072;   // (2^17)

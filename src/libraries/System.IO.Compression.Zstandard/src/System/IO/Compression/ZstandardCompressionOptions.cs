@@ -16,13 +16,13 @@ namespace System.IO.Compression
         public static int MaxQuality => ZstandardUtils.Quality_Max;
 
         /// <summary>The default window size to use for Zstandard compression.</summary>
-        public static int DefaultWindow => ZstandardUtils.WindowBits_Default;
+        public static int DefaultWindowLog => ZstandardUtils.WindowLog_Default;
 
         /// <summary>The minimum window size to use for Zstandard compression.</summary>
-        public static int MinWindow => ZstandardUtils.WindowBits_Min;
+        public static int MinWindowLog => ZstandardUtils.WindowLog_Min;
 
         /// <summary>The maximum window size to use for Zstandard compression.</summary>
-        public static int MaxWindow => ZstandardUtils.WindowBits_Max;
+        public static int MaxWindowLog => ZstandardUtils.WindowLog_Max;
 
         /// <summary>Initializes a new instance of the <see cref="ZstandardCompressionOptions"/> class.</summary>
         public ZstandardCompressionOptions()
@@ -55,23 +55,23 @@ namespace System.IO.Compression
         }
 
         /// <summary>Gets or sets the window size to use for Zstandard compression.</summary>
-        /// <value>The window size for compression.</value>
+        /// <value>The window size for compression, expressed as base 2 logarithm.</value>
         /// <remarks>
         /// The window size determines how much data the compressor can reference for finding matches.
         /// Larger window sizes can improve compression ratios for large files but require more memory.
-        /// The valid range is from <see cref="MinWindow"/> to <see cref="MaxWindow"/>.
+        /// The valid range is from <see cref="MinWindowLog"/> to <see cref="MaxWindowLog"/>.
         /// Value 0 indicates the implementation-defined default window size.
         /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException">The value is not 0 and is not between <see cref="MinWindow"/> and <see cref="MaxWindow"/>.</exception>
-        public int Window
+        /// <exception cref="ArgumentOutOfRangeException">The value is not 0 and is not between <see cref="MinWindowLog"/> and <see cref="MaxWindowLog"/>.</exception>
+        public int WindowLog
         {
             get;
             set
             {
                 if (value != 0)
                 {
-                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZstandardUtils.WindowBits_Min, nameof(value));
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZstandardUtils.WindowBits_Max, nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, ZstandardUtils.WindowLog_Min, nameof(value));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ZstandardUtils.WindowLog_Max, nameof(value));
                 }
                 field = value;
             }

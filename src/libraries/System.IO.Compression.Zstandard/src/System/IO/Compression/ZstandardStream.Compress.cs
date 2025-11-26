@@ -50,16 +50,16 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Sets the size of the source data to be compressed.
+        /// Sets the length of the source (uncompressed) to be compressed.
         /// </summary>
-        /// <param name="size">The size of the source data in bytes.</param>
+        /// <param name="length">The length of the source data in bytes.</param>
         /// <remarks>
-        /// Setting the source size is optional. If set, the information will be stored in the header of the compressed data. This method must be called before writing any data to the stream. The set size is validated during compression, and not respecting the value causes an <see cref="InvalidDataException"/> to be thrown.
+        /// Setting the source length is optional. If set, the information will be stored in the header of the compressed data. This method must be called before writing any data to the stream. The set length is validated during compression, and not respecting the value causes an <see cref="InvalidDataException"/> to be thrown.
         /// </remarks>
         /// <exception cref="InvalidOperationException">Attempting to set the source size on a decompression stream, or compression has already started.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is negative.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
         /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
-        public void SetSourceSize(long size)
+        public void SetSourceLength(long length)
         {
             if (_mode != CompressionMode.Compress)
             {
@@ -68,7 +68,7 @@ namespace System.IO.Compression
             EnsureNotDisposed();
             Debug.Assert(_encoder != null);
 
-            _encoder.SetSourceSize(size);
+            _encoder.SetSourceLength(length);
         }
 
         private void WriteCore(ReadOnlySpan<byte> buffer, bool isFinalBlock = false, bool flush = false, bool checkActiveRWOps = true)

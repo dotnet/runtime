@@ -16,18 +16,20 @@ namespace System.IO.Compression
         protected virtual bool SupportsDictionaries => false;
         protected virtual bool SupportsReset => false;
 
+        protected virtual string WindowLogParamName => "windowLog";
+
         protected abstract int ValidQuality { get; }
-        protected abstract int ValidWindow { get; }
+        protected abstract int ValidWindowLog { get; }
         protected abstract int InvalidQualityTooLow { get; }
         protected abstract int InvalidQualityTooHigh { get; }
-        protected abstract int InvalidWindowTooLow { get; }
-        protected abstract int InvalidWindowTooHigh { get; }
+        protected abstract int InvalidWindowLogTooLow { get; }
+        protected abstract int InvalidWindowLogTooHigh { get; }
 
-        public IEnumerable<int> InvalidWindowsTestData =>
+        public IEnumerable<int> InvalidWindowLogsTestData =>
             [
                 int.MinValue,
-                InvalidWindowTooLow,
-                InvalidWindowTooHigh,
+                InvalidWindowLogTooLow,
+                InvalidWindowLogTooHigh,
                 int.MaxValue
             ];
 
@@ -83,17 +85,17 @@ namespace System.IO.Compression
         }
 
         protected abstract EncoderAdapter CreateEncoder();
-        protected abstract EncoderAdapter CreateEncoder(int quality, int window);
-        protected abstract EncoderAdapter CreateEncoder(DictionaryAdapter dictionary, int window);
+        protected abstract EncoderAdapter CreateEncoder(int quality, int windowLog);
+        protected abstract EncoderAdapter CreateEncoder(DictionaryAdapter dictionary, int windowLog);
         protected abstract DecoderAdapter CreateDecoder();
         protected abstract DecoderAdapter CreateDecoder(DictionaryAdapter dictionary);
         protected abstract DictionaryAdapter CreateDictionary(ReadOnlySpan<byte> data, int quality);
 
         protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten);
-        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int window);
-        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int window);
+        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog);
+        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int windowLog);
         protected abstract bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten);
-        protected abstract bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, DictionaryAdapter dictionary, out int bytesWritten);
+        protected abstract bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary);
 
         protected abstract long GetMaxCompressedLength(long inputSize);
 
@@ -106,21 +108,21 @@ namespace System.IO.Compression
 
             foreach (int quality in InvalidQualitiesTestData)
             {
-                Assert.Throws<ArgumentOutOfRangeException>("quality", () => CreateEncoder(quality, ValidWindow));
-                Assert.Throws<ArgumentOutOfRangeException>("quality", () => TryCompress(input, output, out _, quality: quality, window: ValidWindow));
+                Assert.Throws<ArgumentOutOfRangeException>("quality", () => CreateEncoder(quality, ValidWindowLog));
+                Assert.Throws<ArgumentOutOfRangeException>("quality", () => TryCompress(input, output, out _, quality: quality, windowLog: ValidWindowLog));
             }
         }
 
         [Fact]
-        public void InvalidWindow_ThrowsArgumentOutOfRangeException()
+        public void InvalidWindowLog_ThrowsArgumentOutOfRangeException()
         {
             byte[] input = CreateTestData();
             byte[] output = new byte[GetMaxCompressedLength(input.Length)];
 
-            foreach (int window in InvalidWindowsTestData)
+            foreach (int windowLog in InvalidWindowLogsTestData)
             {
-                Assert.Throws<ArgumentOutOfRangeException>("window", () => CreateEncoder(ValidQuality, window));
-                Assert.Throws<ArgumentOutOfRangeException>("window", () => TryCompress(input, output, out _, quality: ValidQuality, window: window));
+                Assert.Throws<ArgumentOutOfRangeException>(WindowLogParamName, () => CreateEncoder(ValidQuality, windowLog));
+                Assert.Throws<ArgumentOutOfRangeException>(WindowLogParamName, () => TryCompress(input, output, out _, quality: ValidQuality, windowLog: windowLog));
             }
         }
 
@@ -151,12 +153,12 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void TryCompress_WithQualityAndWindow_CompressesData()
+        public void TryCompress_WithQualityAndWindowLog_CompressesData()
         {
             byte[] input = CreateTestData();
             byte[] output = new byte[GetMaxCompressedLength(input.Length)];
 
-            bool result = TryCompress(input, output, out int bytesWritten, quality: ValidQuality, window: ValidWindow);
+            bool result = TryCompress(input, output, out int bytesWritten, quality: ValidQuality, windowLog: ValidWindowLog);
 
             Assert.True(result);
             Assert.True(bytesWritten > 0);
@@ -172,7 +174,7 @@ namespace System.IO.Compression
             byte[] output = new byte[GetMaxCompressedLength(input.Length)];
             using DictionaryAdapter dictionary = CreateDictionary(CreateSampleDictionary(), ValidQuality);
 
-            bool result = TryCompress(input, output, out int bytesWritten, dictionary: dictionary, window: ValidWindow);
+            bool result = TryCompress(input, output, out int bytesWritten, dictionary: dictionary, windowLog: ValidWindowLog);
 
             Assert.True(result);
             Assert.True(bytesWritten > 0);
@@ -192,7 +194,7 @@ namespace System.IO.Compression
             try
             {
                 bool result = useDictionary
-                    ? TryCompress(source, destination, out int bytesWritten, dictionary, ValidWindow)
+                    ? TryCompress(source, destination, out int bytesWritten, dictionary, ValidWindowLog)
                     : TryCompress(source, destination, out bytesWritten);
 
                 Assert.False(result);
@@ -218,7 +220,7 @@ namespace System.IO.Compression
             try
             {
                 bool result = useDictionary
-                    ? TryDecompress(emptySource, destination, dictionary, out int bytesWritten)
+                    ? TryDecompress(emptySource, destination, out int bytesWritten, dictionary)
                     : TryDecompress(emptySource, destination, out bytesWritten);
 
                 Assert.False(result);
@@ -240,7 +242,7 @@ namespace System.IO.Compression
             byte[] destination = new byte[100];
 
             Assert.Throws<ArgumentNullException>("dictionary", () =>
-                TryDecompress(source, destination, null!, out _));
+                TryDecompress(source, destination, out _, null!));
         }
 
         [Fact]
@@ -278,7 +280,7 @@ namespace System.IO.Compression
         [MemberData(nameof(BooleanTestData))]
         public void Compress_WithValidInput_CompressesData(bool explicitInit)
         {
-            using var encoder = explicitInit ? CreateEncoder(ValidQuality, ValidWindow) : CreateEncoder();
+            using var encoder = explicitInit ? CreateEncoder(ValidQuality, ValidWindowLog) : CreateEncoder();
             byte[] input = CreateTestData(100000);
             byte[] output = new byte[GetMaxCompressedLength(input.Length * 2)];
 
@@ -304,7 +306,7 @@ namespace System.IO.Compression
         [Fact]
         public void Compress_WithEmptyDestination_ReturnsDestinationTooSmall()
         {
-            using EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindow);
+            using EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindowLog);
             byte[] input = CreateTestData(100000);
             byte[] output = Array.Empty<byte>();
 
@@ -325,7 +327,7 @@ namespace System.IO.Compression
         public void Encoder_Finalize()
         {
             {
-                EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindow);
+                EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindowLog);
                 byte[] input = CreateTestData();
                 byte[] output = new byte[GetMaxCompressedLength(input.Length)];
 
@@ -340,7 +342,7 @@ namespace System.IO.Compression
         [Fact]
         public void Compress_AfterDispose_ThrowsObjectDisposedException()
         {
-            EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindow);
+            EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindowLog);
             encoder.Dispose();
             byte[] input = CreateTestData();
             byte[] output = new byte[100];
@@ -351,7 +353,7 @@ namespace System.IO.Compression
         [Fact]
         public void Flush_WithValidEncoder_Succeeds()
         {
-            using EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindow);
+            using EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindowLog);
             byte[] output = new byte[1000];
 
             OperationStatus result = encoder.Flush(output, out int bytesWritten);
@@ -412,7 +414,7 @@ namespace System.IO.Compression
         [Fact]
         public void Dispose_CanBeCalledMultipleTimes()
         {
-            EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindow);
+            EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindowLog);
 
             encoder.Dispose();
             encoder.Dispose();
@@ -452,8 +454,8 @@ namespace System.IO.Compression
             try
             {
                 using var encoder = useDictionary
-                    ? CreateEncoder(dictionary, ValidWindow)
-                    : CreateEncoder(ValidQuality, ValidWindow);
+                    ? CreateEncoder(dictionary, ValidWindowLog)
+                    : CreateEncoder(ValidQuality, ValidWindowLog);
 
                 byte[] input = CreateTestData();
                 byte[] output1 = new byte[GetMaxCompressedLength(input.Length)];
@@ -494,7 +496,7 @@ namespace System.IO.Compression
                 byte[] input = CreateTestData();
                 byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
                 bool compressResult = useDictionary
-                    ? TryCompress(input, compressed, out int compressedLength, dictionary, ValidWindow)
+                    ? TryCompress(input, compressed, out int compressedLength, dictionary, ValidWindowLog)
                     : TryCompress(input, compressed, out compressedLength);
                 Assert.True(compressResult);
 
@@ -541,7 +543,7 @@ namespace System.IO.Compression
             DictionaryAdapter? dictionary = useDictionary ? CreateDictionary(CreateSampleDictionary(), quality) : null;
             try
             {
-                int window = 10;
+                int windowLog = 10;
 
                 int bytesWritten;
                 int bytesConsumed;
@@ -551,15 +553,15 @@ namespace System.IO.Compression
                 {
                     bool result =
                         useDictionary
-                        ? TryCompress(originalData, compressedBuffer, out bytesWritten, dictionary, window)
-                        : TryCompress(originalData, compressedBuffer, out bytesWritten, quality, window);
+                        ? TryCompress(originalData, compressedBuffer, out bytesWritten, dictionary, windowLog)
+                        : TryCompress(originalData, compressedBuffer, out bytesWritten, quality, windowLog);
                     bytesConsumed = originalData.Length;
 
                     Assert.True(result);
                 }
                 else
                 {
-                    using var encoder = useDictionary ? CreateEncoder(dictionary, window) : CreateEncoder(quality, window);
+                    using var encoder = useDictionary ? CreateEncoder(dictionary, windowLog) : CreateEncoder(quality, windowLog);
 
                     OperationStatus compressResult = encoder.Compress(originalData, compressedBuffer, out bytesConsumed, out bytesWritten, true);
                     Assert.Equal(OperationStatus.Done, compressResult);
@@ -578,7 +580,7 @@ namespace System.IO.Compression
                 {
                     bool result =
                         useDictionary
-                        ? TryDecompress(compressedData, decompressedBuffer, dictionary, out bytesWritten)
+                        ? TryDecompress(compressedData, decompressedBuffer, out bytesWritten, dictionary)
                         : TryDecompress(compressedData, decompressedBuffer, out bytesWritten);
                     bytesConsumed = compressedLength;
 

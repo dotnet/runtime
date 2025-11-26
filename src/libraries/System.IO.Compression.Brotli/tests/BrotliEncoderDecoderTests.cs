@@ -13,13 +13,15 @@ namespace System.IO.Compression
         protected override bool SupportsDictionaries => false;
         protected override bool SupportsReset => false;
 
+        protected override string WindowLogParamName => "window";
+
         protected override int ValidQuality => 3;
-        protected override int ValidWindow => 10;
+        protected override int ValidWindowLog => 10;
 
         protected override int InvalidQualityTooLow => -1;
         protected override int InvalidQualityTooHigh => 12;
-        protected override int InvalidWindowTooLow => 9;
-        protected override int InvalidWindowTooHigh => 25;
+        protected override int InvalidWindowLogTooLow => 9;
+        protected override int InvalidWindowLogTooHigh => 25;
 
         public class BrotliEncoderAdapter : EncoderAdapter
         {
@@ -59,10 +61,10 @@ namespace System.IO.Compression
         protected override EncoderAdapter CreateEncoder() =>
             new BrotliEncoderAdapter(new BrotliEncoder());
 
-        protected override EncoderAdapter CreateEncoder(int quality, int windowBits) =>
-            new BrotliEncoderAdapter(new BrotliEncoder(quality, windowBits));
+        protected override EncoderAdapter CreateEncoder(int quality, int windowLog) =>
+            new BrotliEncoderAdapter(new BrotliEncoder(quality, windowLog));
 
-        protected override EncoderAdapter CreateEncoder(DictionaryAdapter dictionary, int windowBits) =>
+        protected override EncoderAdapter CreateEncoder(DictionaryAdapter dictionary, int windowLog) =>
             throw new NotSupportedException();
 
         protected override DecoderAdapter CreateDecoder() =>
@@ -76,12 +78,12 @@ namespace System.IO.Compression
         protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
             BrotliEncoder.TryCompress(source, destination, out bytesWritten);
 
-        protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int windowBits) => throw new NotSupportedException();
+        protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int windowLog) => throw new NotSupportedException();
 
-        protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowBits) =>
-            BrotliEncoder.TryCompress(source, destination, out bytesWritten, quality, windowBits);
+        protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog) =>
+            BrotliEncoder.TryCompress(source, destination, out bytesWritten, quality, windowLog);
 
-        protected override bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, DictionaryAdapter dictionary, out int bytesWritten) => throw new NotSupportedException();
+        protected override bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary) => throw new NotSupportedException();
 
         protected override bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
             BrotliDecoder.TryDecompress(source, destination, out bytesWritten);

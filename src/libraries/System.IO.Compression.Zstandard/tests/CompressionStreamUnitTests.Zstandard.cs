@@ -115,13 +115,13 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(-1)]
         [InlineData(2)]
-        public void ZstandardStream_SetSourceSize_SizeDiffers_InvalidDataException(long delta)
+        public void ZstandardStream_SetSourceLength_SizeDiffers_InvalidDataException(long delta)
         {
             byte[] testData = ZstandardTestUtils.CreateTestData();
             using MemoryStream output = new();
             ZstandardStream compressionStream = new(output, CompressionLevel.Optimal);
 
-            compressionStream.SetSourceSize(testData.Length + delta);
+            compressionStream.SetSourceLength(testData.Length + delta);
             Assert.Throws<InvalidDataException>(() =>
             {
                 compressionStream.Write(testData, 0, testData.Length);

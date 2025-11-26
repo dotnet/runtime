@@ -14,12 +14,12 @@ namespace System.IO.Compression
         protected override bool SupportsReset => true;
 
         protected override int ValidQuality => 3;
-        protected override int ValidWindow => 10;
+        protected override int ValidWindowLog => 10;
 
         protected override int InvalidQualityTooLow => -(1 << 17) - 1;
         protected override int InvalidQualityTooHigh => 23;
-        protected override int InvalidWindowTooLow => 9;
-        protected override int InvalidWindowTooHigh => 32;
+        protected override int InvalidWindowLogTooLow => 9;
+        protected override int InvalidWindowLogTooHigh => 32;
 
         public class ZstandardEncoderAdapter : EncoderAdapter
         {
@@ -98,14 +98,14 @@ namespace System.IO.Compression
         protected override bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowBits) =>
             ZstandardEncoder.TryCompress(source, destination, out bytesWritten, quality, windowBits);
 
-        protected override bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, DictionaryAdapter dictionary, out int bytesWritten) =>
-            ZstandardDecoder.TryDecompress(source, FromAdapter(dictionary), destination, out bytesWritten);
+        protected override bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary) =>
+            ZstandardDecoder.TryDecompress(source, destination, out bytesWritten, FromAdapter(dictionary));
 
         protected override bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
             ZstandardDecoder.TryDecompress(source, destination, out bytesWritten);
 
-        protected override long GetMaxCompressedLength(long inputSize) =>
-            ZstandardEncoder.GetMaxCompressedLength(inputSize);
+        protected override long GetMaxCompressedLength(long inputLength) =>
+            ZstandardEncoder.GetMaxCompressedLength(inputLength);
 
 
         [Fact]
@@ -122,31 +122,31 @@ namespace System.IO.Compression
         [InlineData(-1)]
         [InlineData(-100)]
         [InlineData(long.MinValue)]
-        public void SetSourceSize_WithNegativeSize_ThrowsArgumentOutOfRangeException(long size)
+        public void SetSourceLength_WithNegativeLength_ThrowsArgumentOutOfRangeException(long length)
         {
             using ZstandardEncoder encoder = new();
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => encoder.SetSourceSize(size));
+            Assert.Throws<ArgumentOutOfRangeException>(() => encoder.SetSourceLength(length));
         }
 
         [Fact]
-        public void SetSourceSize_AfterDispose_ThrowsObjectDisposedException()
+        public void SetSourceLength_AfterDispose_ThrowsObjectDisposedException()
         {
             ZstandardEncoder encoder = new();
             encoder.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => encoder.SetSourceSize(100));
+            Assert.Throws<ObjectDisposedException>(() => encoder.SetSourceLength(100));
         }
 
         [Fact]
-        public void SetSourceSize_BeforeCompression_AllowsCorrectSizeCompression()
+        public void SetSourceLength_BeforeCompression_AllowsCorrectLengthCompression()
         {
             using ZstandardEncoder encoder = new();
             byte[] input = ZstandardTestUtils.CreateTestData();
             byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
 
-            // Set the correct source size
-            encoder.SetSourceSize(input.Length);
+            // Set the correct source length
+            encoder.SetSourceLength(input.Length);
 
             OperationStatus result = encoder.Compress(input, output, out int consumed, out int written, isFinalBlock: true);
 
@@ -158,42 +158,42 @@ namespace System.IO.Compression
         [Theory]
         [InlineData(-1)]
         [InlineData(2)]
-        public void SetSourceSize_SizeDiffers_ReturnsInvalidData(long delta)
+        public void SetSourceLength_LengthDiffers_ReturnsInvalidData(long delta)
         {
             using ZstandardEncoder encoder = new();
             byte[] input = ZstandardTestUtils.CreateTestData();
             byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
 
-            // Set incorrect source size
-            encoder.SetSourceSize(input.Length + delta);
+            // Set incorrect source length
+            encoder.SetSourceLength(input.Length + delta);
 
-            // Don't specify isFinalBlock, as otherwise automatic size detection would kick in
-            // and overwrite our pledged size with actual size
+            // Don't specify isFinalBlock, as otherwise automatic length detection would kick in
+            // and overwrite our pledged length with actual length
             OperationStatus result = encoder.Compress(input.AsSpan(0, 10), output, out int consumed, out int written, isFinalBlock: false);
             Assert.Equal(OperationStatus.Done, result);
 
-            // push the rest of the data, which does not match the pledged size
+            // push the rest of the data, which does not match the pledged length
             result = encoder.Compress(input.AsSpan(10), output, out _, out written, isFinalBlock: true);
 
             // The behavior depends on implementation - it may succeed or fail
-            // This test just verifies that SetSourceSize doesn't crash and produces some result
+            // This test just verifies that SetSourceLength doesn't crash and produces some result
             Assert.Equal(OperationStatus.InvalidData, result);
         }
 
         [Fact]
-        public void SetSourceSize_AfterReset_ClearsSize()
+        public void SetSourceLength_AfterReset_ClearsLength()
         {
             using ZstandardEncoder encoder = new();
             byte[] input = ZstandardTestUtils.CreateTestData();
             byte[] output = new byte[ZstandardEncoder.GetMaxCompressedLength(input.Length)];
 
-            // Set source size
-            encoder.SetSourceSize(input.Length / 2);
+            // Set source length
+            encoder.SetSourceLength(input.Length / 2);
 
-            // Reset should clear the size
+            // Reset should clear the length
             encoder.Reset();
 
-            // Now compression should work without size validation
+            // Now compression should work without length validation
             OperationStatus result = encoder.Compress(input, output, out int consumed, out int written, isFinalBlock: true);
 
             Assert.Equal(OperationStatus.Done, result);
@@ -202,7 +202,7 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void SetSourceSize_InvalidState_Throws()
+        public void SetSourceLength_InvalidState_Throws()
         {
             using ZstandardEncoder encoder = new();
             byte[] input = ZstandardTestUtils.CreateTestData();
@@ -212,13 +212,13 @@ namespace System.IO.Compression
             OperationStatus status = encoder.Compress(input.AsSpan(0, input.Length / 2), Span<byte>.Empty, out _, out _, isFinalBlock: true);
 
             Assert.NotEqual(OperationStatus.Done, status);
-            Assert.Throws<InvalidOperationException>(() => encoder.SetSourceSize(input.Length));
+            Assert.Throws<InvalidOperationException>(() => encoder.SetSourceLength(input.Length));
 
             status = encoder.Flush(output, out _);
             Assert.Equal(OperationStatus.Done, status);
 
             // should throw also after everything is compressed
-            Assert.Throws<InvalidOperationException>(() => encoder.SetSourceSize(input.Length));
+            Assert.Throws<InvalidOperationException>(() => encoder.SetSourceLength(input.Length));
         }
 
         [Fact]
