@@ -8014,15 +8014,15 @@ namespace JIT.HardwareIntrinsics.Arm
             where T : IBinaryInteger<T>
             where U : IBinaryInteger<U>, IMinMaxValue<U>
         {
-            long v = long.CreateChecked(value);
-            long shifted;
+            BigInteger v = BigInteger.CreateChecked(value);
+            BigInteger shifted = new BigInteger();
             if (count > 0)
             {
                 if (rounding)
                 {
                     long bias = 1L << (count - 1);
                     shifted = v >= 0 ? (v + bias) >> count
-                                     : (v - bias) >> count;
+                                        : (v - bias) >> count;
                 }
                 else
                 {
@@ -8040,8 +8040,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
             if (saturate)
             {
-                long min = long.CreateChecked(U.MinValue);
-                long max = long.CreateChecked(U.MaxValue);
+                BigInteger min = BigInteger.CreateChecked(U.MinValue);
+                BigInteger max = BigInteger.CreateChecked(U.MaxValue);
                 if (shifted < min) shifted = min;
                 if (shifted > max) shifted = max;
             }

@@ -935,11 +935,14 @@ RaiseException(IN DWORD dwExceptionCode,
 
     // Capture the context of RaiseException.
     ZeroMemory(contextRecord, sizeof(CONTEXT));
+    // WASM-TODO: reconsider this
+#ifndef TARGET_WASM
     contextRecord->ContextFlags = CONTEXT_FULL;
     CONTEXT_CaptureContext(contextRecord);
 
     // We have to unwind one level to get the actual context user code could be resumed at.
     PAL_VirtualUnwind(contextRecord, NULL);
+#endif // !TARGET_WASM
 
     exceptionRecord->ExceptionAddress = (void *)CONTEXTGetPC(contextRecord);
 

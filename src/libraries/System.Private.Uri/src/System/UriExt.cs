@@ -124,7 +124,7 @@ namespace System
                         e = null;
                     // will return from here
 
-                    if (hasUnicode)
+                    if (e is null && hasUnicode)
                     {
                         // In this scenario we need to parse the whole string
                         try
@@ -134,7 +134,6 @@ namespace System
                         catch (UriFormatException ex)
                         {
                             e = ex;
-                            return;
                         }
                     }
                 }
@@ -175,7 +174,7 @@ namespace System
                             e = GetException(ParsingError.CannotCreateRelative);
                         }
 
-                        if (hasUnicode)
+                        if (e is null && hasUnicode)
                         {
                             // In this scenario we need to parse the whole string
                             try
@@ -185,7 +184,6 @@ namespace System
                             catch (UriFormatException ex)
                             {
                                 e = ex;
-                                return;
                             }
                         }
                     }
@@ -423,147 +421,122 @@ namespace System
             return result.IsWellFormedOriginalString();
         }
 
-        //
-        // Internal stuff
-        //
-
         // Returns false if OriginalString value
         // (1) is not correctly escaped as per URI spec excluding intl UNC name case
         // (2) or is an absolute Uri that represents implicit file Uri "c:\dir\file"
         // (3) or is an absolute Uri that misses a slash before path "file://c:/dir/file"
         // (4) or contains unescaped backslashes even if they will be treated
         //     as forward slashes like http:\\host/path\file or file:\\\c:\path
-        //
-        internal unsafe bool InternalIsWellFormedOriginalString()
+        internal bool InternalIsWellFormedOriginalString()
         {
             if (UserDrivenParsing)
                 throw new InvalidOperationException(SR.Format(SR.net_uri_UserDrivenParsing, this.GetType()));
 
-            fixed (char* str = _string)
+            string str = _string;
+
+            // For a relative Uri we only care about escaping and backslashes
+            if (!IsAbsoluteUri)
             {
-                int idx = 0;
-                //
-                // For a relative Uri we only care about escaping and backslashes
-                //
-                if (!IsAbsoluteUri)
-                {
-                    // my:scheme/path?query is not well formed because the colon is ambiguous
-                    if (CheckForColonInFirstPathSegment(_string))
-                    {
-                        return false;
-                    }
-                    return (CheckCanonical(str, ref idx, _string.Length, c_EOL)
-                            & (Check.BackslashInPath | Check.EscapedCanonical)) == Check.EscapedCanonical;
-                }
-
-                //
-                // (2) or is an absolute Uri that represents implicit file Uri "c:\dir\file"
-                //
-                if (IsImplicitFile)
-                    return false;
-
-                //This will get all the offsets, a Host name will be checked separately below
-                EnsureParseRemaining();
-
-                Flags nonCanonical = (_flags & (Flags.E_CannotDisplayCanonical | Flags.IriCanonical));
-
-                // Cleanup canonical IRI from nonCanonical
-                if ((nonCanonical & (Flags.UserIriCanonical | Flags.PathIriCanonical | Flags.QueryIriCanonical | Flags.FragmentIriCanonical)) != 0)
-                {
-                    if ((nonCanonical & (Flags.E_UserNotCanonical | Flags.UserIriCanonical)) == (Flags.E_UserNotCanonical | Flags.UserIriCanonical))
-                    {
-                        nonCanonical &= ~(Flags.E_UserNotCanonical | Flags.UserIriCanonical);
-                    }
-
-                    if ((nonCanonical & (Flags.E_PathNotCanonical | Flags.PathIriCanonical)) == (Flags.E_PathNotCanonical | Flags.PathIriCanonical))
-                    {
-                        nonCanonical &= ~(Flags.E_PathNotCanonical | Flags.PathIriCanonical);
-                    }
-
-                    if ((nonCanonical & (Flags.E_QueryNotCanonical | Flags.QueryIriCanonical)) == (Flags.E_QueryNotCanonical | Flags.QueryIriCanonical))
-                    {
-                        nonCanonical &= ~(Flags.E_QueryNotCanonical | Flags.QueryIriCanonical);
-                    }
-
-                    if ((nonCanonical & (Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical)) == (Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical))
-                    {
-                        nonCanonical &= ~(Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical);
-                    }
-                }
-
-                // User, Path, Query or Fragment may have some non escaped characters
-                if (((nonCanonical & Flags.E_CannotDisplayCanonical & (Flags.E_UserNotCanonical | Flags.E_PathNotCanonical |
-                                        Flags.E_QueryNotCanonical | Flags.E_FragmentNotCanonical)) != Flags.Zero))
+                // my:scheme/path?query is not well formed because the colon is ambiguous
+                if (CheckForColonInFirstPathSegment(str))
                 {
                     return false;
                 }
 
-                // checking on scheme:\\ or file:////
-                if (InFact(Flags.AuthorityFound))
-                {
-                    idx = _info.Offset.Scheme + _syntax.SchemeName.Length + 2;
-                    if (idx >= _info.Offset.User || _string[idx - 1] == '\\' || _string[idx] == '\\')
-                        return false;
+                return (CheckCanonical(str, c_EOL, out _) & (Check.BackslashInPath | Check.EscapedCanonical)) == Check.EscapedCanonical;
+            }
 
-                    if (InFact(Flags.UncPath | Flags.DosPath))
-                    {
-                        while (++idx < _info.Offset.User && (_string[idx] == '/' || _string[idx] == '\\'))
-                            return false;
-                    }
+            // (2) or is an absolute Uri that represents implicit file Uri "c:\dir\file"
+            if (IsImplicitFile)
+                return false;
+
+            // This will get all the offsets, a Host name will be checked separately below
+            EnsureParseRemaining();
+
+            Flags nonCanonical = (_flags & (Flags.E_CannotDisplayCanonical | Flags.IriCanonical));
+
+            // Cleanup canonical IRI from nonCanonical
+            if ((nonCanonical & (Flags.UserIriCanonical | Flags.PathIriCanonical | Flags.QueryIriCanonical | Flags.FragmentIriCanonical)) != 0)
+            {
+                if ((nonCanonical & (Flags.E_UserNotCanonical | Flags.UserIriCanonical)) == (Flags.E_UserNotCanonical | Flags.UserIriCanonical))
+                {
+                    nonCanonical &= ~(Flags.E_UserNotCanonical | Flags.UserIriCanonical);
                 }
 
-
-                // (3) or is an absolute Uri that misses a slash before path "file://c:/dir/file"
-                // Note that for this check to be more general we assert that if Path is non empty and if it requires a first slash
-                // (which looks absent) then the method has to fail.
-                // Today it's only possible for a Dos like path, i.e. file://c:/bla would fail below check.
-                if (InFact(Flags.FirstSlashAbsent) && _info.Offset.Query > _info.Offset.Path)
-                    return false;
-
-                // (4) or contains unescaped backslashes even if they will be treated
-                //     as forward slashes like http:\\host/path\file or file:\\\c:\path
-                // Note we do not check for Flags.ShouldBeCompressed i.e. allow // /./ and alike as valid
-                if (InFact(Flags.BackslashInPath))
-                    return false;
-
-                // Capturing a rare case like file:///c|/dir
-                if (IsDosPath && _string[_info.Offset.Path + SecuredPathIndex - 1] == '|')
-                    return false;
-
-                //
-                // May need some real CPU processing to answer the request
-                //
-                //
-                // Check escaping for authority
-                //
-                // IPv6 hosts cannot be properly validated by CheckCanonical
-                if ((_flags & Flags.CanonicalDnsHost) == 0 && HostType != Flags.IPv6HostType)
+                if ((nonCanonical & (Flags.E_PathNotCanonical | Flags.PathIriCanonical)) == (Flags.E_PathNotCanonical | Flags.PathIriCanonical))
                 {
-                    idx = _info.Offset.User;
-                    Check result = CheckCanonical(str, ref idx, _info.Offset.Path, '/');
-                    if (((result & (Check.ReservedFound | Check.BackslashInPath | Check.EscapedCanonical))
-                        != Check.EscapedCanonical)
-                        && (!IriParsing || (result & (Check.DisplayCanonical | Check.FoundNonAscii | Check.NotIriCanonical))
-                                != (Check.DisplayCanonical | Check.FoundNonAscii)))
-                    {
-                        return false;
-                    }
+                    nonCanonical &= ~(Flags.E_PathNotCanonical | Flags.PathIriCanonical);
                 }
 
-                // Want to ensure there are slashes after the scheme
-                if ((_flags & (Flags.SchemeNotCanonical | Flags.AuthorityFound))
-                    == (Flags.SchemeNotCanonical | Flags.AuthorityFound))
+                if ((nonCanonical & (Flags.E_QueryNotCanonical | Flags.QueryIriCanonical)) == (Flags.E_QueryNotCanonical | Flags.QueryIriCanonical))
                 {
-                    idx = _syntax.SchemeName.Length;
-                    while (str[idx++] != ':');
-                    if (idx + 1 >= _string.Length || str[idx] != '/' || str[idx + 1] != '/')
-                        return false;
+                    nonCanonical &= ~(Flags.E_QueryNotCanonical | Flags.QueryIriCanonical);
+                }
+
+                if ((nonCanonical & (Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical)) == (Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical))
+                {
+                    nonCanonical &= ~(Flags.E_FragmentNotCanonical | Flags.FragmentIriCanonical);
                 }
             }
-            //
-            // May be scheme, host, port or path need some canonicalization but still the uri string is found to be a
-            // "well formed" one
-            //
+
+            // User, Path, Query or Fragment may have some non escaped characters
+            if (((nonCanonical & Flags.E_CannotDisplayCanonical & (Flags.E_UserNotCanonical | Flags.E_PathNotCanonical |
+                                    Flags.E_QueryNotCanonical | Flags.E_FragmentNotCanonical)) != Flags.Zero))
+            {
+                return false;
+            }
+
+            // checking on scheme:\\ or file:////
+            if (InFact(Flags.AuthorityFound))
+            {
+                if (InFact(Flags.SchemeNotCanonical_NoTrailingSlashes))
+                {
+                    return false;
+                }
+
+                if (InFact(Flags.UncPath | Flags.DosPath))
+                {
+                    int idx = _info.Offset.Scheme + _syntax.SchemeName.Length + 3;
+
+                    if (idx < _info.Offset.User && str[idx] is '/' or '\\')
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            // (3) or is an absolute Uri that misses a slash before path "file://c:/dir/file"
+            // Note that for this check to be more general we assert that if Path is non empty and if it requires a first slash
+            // (which looks absent) then the method has to fail.
+            // Today it's only possible for a Dos like path, i.e. file://c:/bla would fail below check.
+            if (InFact(Flags.FirstSlashAbsent) && _info.Offset.Query > _info.Offset.Path)
+                return false;
+
+            // (4) or contains unescaped backslashes even if they will be treated
+            //     as forward slashes like http:\\host/path\file or file:\\\c:\path
+            // Note we do not check for Flags.ShouldBeCompressed i.e. allow // /./ and alike as valid
+            if (InFact(Flags.BackslashInPath))
+                return false;
+
+            // Capturing a rare case like file:///c|/dir
+            if (IsDosPath && str[_info.Offset.Path + SecuredPathIndex - 1] == '|')
+                return false;
+
+            // Check escaping for authority
+            // IPv6 hosts cannot be properly validated by CheckCanonical
+            if ((_flags & Flags.CanonicalDnsHost) == 0 && HostType != Flags.IPv6HostType)
+            {
+                int idx = _info.Offset.User;
+                Check result = CheckCanonical(str.AsSpan(idx, _info.Offset.Path - idx), '/', out _);
+
+                if ((result & (Check.ReservedFound | Check.BackslashInPath | Check.EscapedCanonical)) != Check.EscapedCanonical
+                    && (!IriParsing || (result & (Check.DisplayCanonical | Check.FoundNonAscii | Check.NotIriCanonical)) != (Check.DisplayCanonical | Check.FoundNonAscii)))
+                {
+                    return false;
+                }
+            }
+
+            // The scheme, host, port or path may need some canonicalization, but the uri string is found to be a "well formed" one.
             return true;
         }
 
@@ -712,12 +685,9 @@ namespace System
         // b) Bidi chars are stripped
         //
         // should be called only if IRI parsing is switched on
-        internal unsafe string EscapeUnescapeIri(string input, int start, int end, bool isQuery)
+        internal static string EscapeUnescapeIri(string input, int start, int end, bool isQuery)
         {
-            fixed (char* pInput = input)
-            {
-                return IriHelper.EscapeUnescapeIri(pInput, start, end, isQuery);
-            }
+            return IriHelper.EscapeUnescapeIri(input.AsSpan(start, end - start), isQuery);
         }
 
         // Should never be used except by the below method

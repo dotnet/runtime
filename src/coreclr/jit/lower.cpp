@@ -4566,11 +4566,26 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         else if (cond->OperIs(GT_LT, GT_GE) && !cond->IsUnsigned() && relopOp2->IsIntegralConst(0))
         {
             // Codegen will use tbnz or tbz in codegen which do not affect the flag register
+            var_types op1Type = genActualType(relopOp1);
+
+            // Remove cast to sbyte or short and instead check negative bit for those types.
+            if (relopOp1->OperIs(GT_CAST))
+            {
+                GenTreeCast* cast = relopOp1->AsCast();
+                if ((cast->CastToType() == TYP_BYTE || cast->CastToType() == TYP_SHORT) && !cast->gtOverflow())
+                {
+                    op1Type             = cast->CastToType();
+                    GenTree* castOp     = cast->CastOp();
+                    cond->AsOp()->gtOp1 = castOp;
+                    castOp->ClearContained();
+                    BlockRange().Remove(cast);
+                    relopOp1 = castOp;
+                }
+            }
             newOper = GT_JTEST;
             cc      = cond->OperIs(GT_LT) ? GenCondition(GenCondition::NE) : GenCondition(GenCondition::EQ);
             // x < 0 => (x & signBit) != 0. Update the constant to be the sign bit.
-            relopOp2->AsIntConCommon()->SetIntegralValue(
-                (static_cast<INT64>(1) << (8 * genTypeSize(genActualType(relopOp1)) - 1)));
+            relopOp2->AsIntConCommon()->SetIntegralValue((static_cast<INT64>(1) << (8 * genTypeSize(op1Type) - 1)));
         }
         else if (cond->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
         {
@@ -5846,19 +5861,14 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
     //
     // ASYNC_CONTINUATION is created from two sources:
     //
-    // 1. The async resumption stubs are IL stubs created by the VM. These call
-    // runtime async functions via "calli", passing the continuation manually.
-    // They use the AsyncHelpers.AsyncCallContinuation intrinsic after the
-    // calli, which turns into the ASYNC_CONTINUATION node during import.
+    // 1. The async resumption stubs created by the VM or NativeAOT. These call
+    // runtime async functions via calli or a call to a fake target method,
+    // passing the continuation manually. They use the
+    // AsyncHelpers.AsyncCallContinuation intrinsic after the calli, which
+    // turns into the ASYNC_CONTINUATION node during import.
     //
     // 2. In the async transformation, ASYNC_CONTINUATION nodes are inserted
     // after calls to async calls.
-    //
-    // In the former case nothing has marked the previous call as an "async"
-    // method. We need to do that here to ensure that the backend knows that
-    // the call has a non-standard calling convention that returns an
-    // additional GC ref. This requires additional GC tracking that we would
-    // otherwise not get.
     //
     GenTree* node = asyncCont;
     while (true)
@@ -5868,13 +5878,7 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
 
         if (node->IsCall())
         {
-            if (!node->AsCall()->IsAsync())
-            {
-                JITDUMP("Marking the call [%06u] before async continuation [%06u] as an async call\n",
-                        Compiler::dspTreeID(node), Compiler::dspTreeID(asyncCont));
-                node->AsCall()->SetIsAsync(new (comp, CMK_Async) AsyncCallInfo);
-            }
-
+            assert(node->AsCall()->IsAsync());
             BlockRange().Remove(asyncCont);
             BlockRange().InsertAfter(node, asyncCont);
             break;
