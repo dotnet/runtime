@@ -288,11 +288,11 @@ namespace MonoTests.System.Runtime.Caching
             config.Add("PhysicalMemoryMode", "Standard");
             mc = new MemoryCache("MyCache", config);
             // Full .Net Framework uses the in-box SRC. So none of this 'PhysicalMemoryMode' setting matters. Just make sure it doesn't get in the way.
-            Assert.Equal(IsFullFramework ? autoCalculatedPhysicalMemoryLimit : autoCalculatedPhysicalMemoryLimit, mc.PhysicalMemoryLimit);
+            Assert.Equal(autoCalculatedPhysicalMemoryLimit, mc.PhysicalMemoryLimit);
 
             config.Set("PhysicalMemoryMode", "Legacy");
             mc = new MemoryCache("MyCache", config);
-            Assert.Equal(IsFullFramework ? autoCalculatedPhysicalMemoryLimit : autoCalculatedPhysicalMemoryLimit, mc.PhysicalMemoryLimit);
+            Assert.Equal(autoCalculatedPhysicalMemoryLimit, mc.PhysicalMemoryLimit);
 
             config.Set("PhysicalMemoryMode", "GCThresholds");
             mc = new MemoryCache("MyCache", config);

@@ -73,12 +73,16 @@ namespace System.Runtime.Caching
 
 #if NETCOREAPP
             // This is only used in GCThresholds mode, but setting it here is harmless for other modes.
-            // greater than 48GB and we should set at .99f.
-            // less than 12GB should bet .95f
-            // linear scale in between.
+            // We want to target being below the GC's high memory load threshold after trimming, but how
+            // far below depends on total physical memory - large memory machines can handle being closer
+            // to the threshold, while smaller machines need to be further away.
+            // For RAM greater than 48GB, we target .99f
+            // For RAM less than 12GB, we target .95f
+            // In between, we scale linearly.
+            // This is just a made up empirical heuristic to help avoid excessive trimming on large memory machines.
             long memory = TotalPhysical;
             float scale = (float)(memory - 0x300000000) / (float)(0xC00000000 - 0x300000000);
-            _targetBelowLimit = Math.Min(0.95f, Math.Max(0.99f, scale * (0.99f - 0.95f)));
+            _targetBelowLimit = Math.Max(0.95f, Math.Min(0.99f, scale * (0.99f - 0.95f)));
 #endif
 
             Dbg.Trace("MemoryCacheStats", $"PhysicalMemoryMonitor.SetLimit: _pressureHigh={_pressureHigh}, _pressureLow={_pressureLow}, mode={_physicalMemoryMode}");
@@ -113,9 +117,8 @@ namespace System.Runtime.Caching
             }
 #endif
 
-// _physicalMemoryBytes is not supported, always use TotalPhysical
-long memory = TotalPhysical;
-if (memory >= 0x100000000)
+            long memory = TotalPhysical;
+            if (memory >= 0x100000000)
             {
                 _pressureHigh = 99;
             }
@@ -202,7 +205,9 @@ if (memory >= 0x100000000)
 
                     if (_initialMemInfo is GCMemoryInfo initialInfo)
                     {
-                        // First update the cumulative trim percent
+                        // Update cumulative trim percent: if this is the first trim, use lastTrimPercent directly.
+                        // Otherwise, apply the new trim percent to the remaining untrimmed portion (100 - cumulative).
+                        // This prevents over-counting when multiple trims happen in succession without a Gen2 GC.
                         _cumulativeTrimPercent += (_cumulativeTrimPercent == 0) ? lastTrimPercent : (int)((100 - _cumulativeTrimPercent) * (lastTrimPercent/100.0));
                         _cumulativeTrimPercent = Math.Min(100, _cumulativeTrimPercent);
 
@@ -217,6 +222,13 @@ if (memory >= 0x100000000)
                             // It looks like we've probably dropped below our target load after previous trims,
                             // but let's return a token 1% until we finally do see MemoryLoadBytes drop below target.
                             percent = 1;
+                        }
+
+                        // We haven't seen any reduction in HeapSizeBytes after trimming - throw our hands up and ajust
+                        // trimming the old fashioned way
+                        else if (heapReduction <= 0)
+                        {
+                            percent = GetPercentToTrimStandard(ticksSinceTrim, lastTrimPercent);
                         }
 
                         // We haven't seen enough reduction in HeapSizeBytes to be confident we've dropped below target load yet
