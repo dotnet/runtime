@@ -161,7 +161,7 @@ namespace System.Net
                 if (parsedCharacter < IPv4AddressHelper.Decimal)
                 {
                     if (!haveNumber && parsedCharacter == 0 &&
-                        (uint)(start + 1) < (uint)name.Length && char.IsBetween((char)ToUShort(name[start + 1]), '0', '9'))
+                        (uint)(start + 1) < (uint)name.Length && char.IsAsciiDigit((char)ToUShort(name[start + 1])))
                     {
                         // Octal is not allowed in canonical format.
                         return false;
