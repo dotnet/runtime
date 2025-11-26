@@ -21,7 +21,7 @@ namespace System
         {
             DebugAssertInCtor();
 
-            if ((int)uriKind < (int)UriKind.RelativeOrAbsolute || (int)uriKind > (int)UriKind.Relative)
+            if (uriKind is < UriKind.RelativeOrAbsolute or > UriKind.Relative)
             {
                 throw new ArgumentException(SR.Format(SR.net_uri_InvalidUriKind, uriKind));
             }
@@ -57,37 +57,11 @@ namespace System
                 _originalUnicodeString = _string; // original string location changed
             }
 
-            if (err == ParsingError.None)
-            {
-                if (IsImplicitFile)
-                {
-                    if (uriKind == UriKind.Relative)
-                    {
-                        _syntax = null!; // make it be relative Uri
-                        _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                        return null;
-                    }
-
-                    // V1 compat
-                    // A relative Uri wins over implicit UNC path unless the UNC path is of the form "\\something" and
-                    // uriKind != Absolute
-                    // A relative Uri wins over implicit Unix path unless uriKind == Absolute
-                    if (NotAny(Flags.DosPath) && uriKind == UriKind.RelativeOrAbsolute &&
-                       ((_string.Length >= 2 && (_string[0] != '\\' || _string[1] != '\\'))
-                        || (!OperatingSystem.IsWindows() && InFact(Flags.UnixPath))))
-                    {
-                        _syntax = null!; //make it be relative Uri
-                        _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
-                        return null;
-                        // Otherwise an absolute file Uri wins when it's of the form "\\something"
-                    }
-                }
-            }
-            else
+            if (err != ParsingError.None)
             {
                 // If we encountered any parsing errors that indicate this may be a relative Uri,
                 // and we'll allow relative Uri's, then create one.
-                if (err <= ParsingError.LastErrorOkayForRelativeUris)
+                if (uriKind != UriKind.Absolute && err <= ParsingError.LastErrorOkayForRelativeUris)
                 {
                     _flags &= Flags.UserEscaped | Flags.HasUnicode; // the only flags that makes sense for a relative uri
                     if (hasUnicode)
@@ -105,7 +79,31 @@ namespace System
                 }
             }
 
-            Debug.Assert(err == ParsingError.None && _syntax is not null);
+            Debug.Assert(_syntax is not null);
+
+            if (IsImplicitFile)
+            {
+                if (uriKind == UriKind.Relative)
+                {
+                    _syntax = null!; // make it be relative Uri
+                    _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
+                    return null;
+                }
+
+                // V1 compat
+                // A relative Uri wins over implicit UNC path unless the UNC path is of the form "\\something" and
+                // uriKind != Absolute
+                // A relative Uri wins over implicit Unix path unless uriKind == Absolute
+                if (NotAny(Flags.DosPath) && uriKind == UriKind.RelativeOrAbsolute &&
+                   ((_string.Length >= 2 && (_string[0] != '\\' || _string[1] != '\\'))
+                    || (!OperatingSystem.IsWindows() && InFact(Flags.UnixPath))))
+                {
+                    _syntax = null!; //make it be relative Uri
+                    _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
+                    return null;
+                    // Otherwise an absolute file Uri wins when it's of the form "\\something"
+                }
+            }
 
             if (_syntax.IsSimple)
             {
