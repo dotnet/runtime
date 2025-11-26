@@ -6372,7 +6372,14 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
         {
             // This node is in the dataflow. See if we can move it ahead of the
             // range we are moving.
-            bool interferes = m_scratchSideEffects.InterferesWith(comp, cur, /* strict */ true);
+            bool interferes = false;
+            if (m_scratchSideEffects.InterferesWith(comp, cur, /* strict */ true))
+            {
+                JITDUMP("  Stopping at [%06u]; it interferes with the current range we are moving\n",
+                        Compiler::dspTreeID(cur));
+                interferes = true;
+            }
+
             if (!interferes)
             {
                 // No problem so far. However the side effect set does not
@@ -6400,7 +6407,7 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
             {
                 // Stop moving the range, but keep going through the rest
                 // of the nodes to unmark them
-                movingRange = LIR::Range();
+                movingRange = LIR::ReadOnlyRange();
             }
             else
             {
