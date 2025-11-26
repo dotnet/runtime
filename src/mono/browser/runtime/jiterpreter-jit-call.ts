@@ -306,7 +306,7 @@ export function mono_interp_flush_jitcall_queue (): void {
 
     let builder = trampBuilder;
     if (!builder) {
-        trampBuilder = builder = new WasmBuilder(0);
+        trampBuilder = builder = new WasmBuilder();
         // Function type for compiled trampolines
         builder.defineType(
             "trampoline",
@@ -326,7 +326,7 @@ export function mono_interp_flush_jitcall_queue (): void {
         builder.defineImportedFunction("i", "begin_catch", "begin_catch", true, getRawCwrap("mono_jiterp_begin_catch"));
         builder.defineImportedFunction("i", "end_catch", "end_catch", true, getRawCwrap("mono_jiterp_end_catch"));
     } else
-        builder.clear(0);
+        builder.clear();
 
     if (builder.options.wasmBytesLimit <= getCounter(JiterpCounter.BytesGenerated)) {
         cwraps.mono_jiterp_tlqueue_clear(JitQueue.JitCall);
