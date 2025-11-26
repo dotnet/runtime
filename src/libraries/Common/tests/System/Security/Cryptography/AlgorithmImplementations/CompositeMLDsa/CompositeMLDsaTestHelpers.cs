@@ -468,7 +468,26 @@ namespace System.Security.Cryptography.Tests
                 ExecuteComponentFunc(
                     algorithm,
                     rsa => rsa.KeySizeInBits / 8,
-                    ecdsa => ((ecdsa.KeySizeInBits + 7) / 8) + 7, // Overhead for ECPrivateKey
+                    ecdsa =>
+                        // ECPrivateKey size with parameters and without public key.
+                        // These are derived using the size table in the spec (Table 4).
+                        algorithm.Name switch
+                        {
+                            "MLDSA44-ECDSA-P256-SHA256" or
+                            "MLDSA65-ECDSA-P256-SHA512" =>
+                                51,
+                            "MLDSA65-ECDSA-P384-SHA512" or
+                            "MLDSA87-ECDSA-P384-SHA512" =>
+                                64,
+                            "MLDSA87-ECDSA-P521-SHA512" =>
+                                82,
+                            "MLDSA65-ECDSA-brainpoolP256r1-SHA512" =>
+                                52,
+                            "MLDSA87-ECDSA-brainpoolP384r1-SHA512" =>
+                                68,
+                            _ =>
+                                throw new XunitException($"Unknown algorithm {algorithm.Name}."),
+                        },
                     eddsa => eddsa.KeySizeInBits / 8);
         }
 
@@ -478,7 +497,26 @@ namespace System.Security.Cryptography.Tests
                 ExecuteComponentFunc(
                     algorithm,
                     rsa => (rsa.KeySizeInBits / 8) * 9 / 2 + 101, // Add max ASN.1 overhead
-                    ecdsa => ((ecdsa.KeySizeInBits + 7) / 8) + 7, // Overhead for ECPrivateKey
+                    ecdsa =>
+                        // ECPrivateKey size with parameters and without public key.
+                        // These are derived using the size table in the spec (Table 4).
+                        algorithm.Name switch
+                        {
+                            "MLDSA44-ECDSA-P256-SHA256" or
+                            "MLDSA65-ECDSA-P256-SHA512" =>
+                                51,
+                            "MLDSA65-ECDSA-P384-SHA512" or
+                            "MLDSA87-ECDSA-P384-SHA512" =>
+                                64,
+                            "MLDSA87-ECDSA-P521-SHA512" =>
+                                82,
+                            "MLDSA65-ECDSA-brainpoolP256r1-SHA512" =>
+                                52,
+                            "MLDSA87-ECDSA-brainpoolP384r1-SHA512" =>
+                                68,
+                            _ =>
+                                throw new XunitException($"Unknown algorithm {algorithm.Name}."),
+                        },
                     eddsa => eddsa.KeySizeInBits / 8);
         }
 
@@ -636,24 +674,24 @@ namespace System.Security.Cryptography.Tests
         {
             return algorithm?.Name switch
             {
-                "MLDSA44-RSA2048-PSS-SHA256" => "2.16.840.1.114027.80.9.1.20",
-                "MLDSA44-RSA2048-PKCS15-SHA256" => "2.16.840.1.114027.80.9.1.21",
-                "MLDSA44-Ed25519-SHA512" => "2.16.840.1.114027.80.9.1.22",
-                "MLDSA44-ECDSA-P256-SHA256" => "2.16.840.1.114027.80.9.1.23",
-                "MLDSA65-RSA3072-PSS-SHA512" => "2.16.840.1.114027.80.9.1.24",
-                "MLDSA65-RSA3072-PKCS15-SHA512" => "2.16.840.1.114027.80.9.1.25",
-                "MLDSA65-RSA4096-PSS-SHA512" => "2.16.840.1.114027.80.9.1.26",
-                "MLDSA65-RSA4096-PKCS15-SHA512" => "2.16.840.1.114027.80.9.1.27",
-                "MLDSA65-ECDSA-P256-SHA512" => "2.16.840.1.114027.80.9.1.28",
-                "MLDSA65-ECDSA-P384-SHA512" => "2.16.840.1.114027.80.9.1.29",
-                "MLDSA65-ECDSA-brainpoolP256r1-SHA512" => "2.16.840.1.114027.80.9.1.30",
-                "MLDSA65-Ed25519-SHA512" => "2.16.840.1.114027.80.9.1.31",
-                "MLDSA87-ECDSA-P384-SHA512" => "2.16.840.1.114027.80.9.1.32",
-                "MLDSA87-ECDSA-brainpoolP384r1-SHA512" => "2.16.840.1.114027.80.9.1.33",
-                "MLDSA87-Ed448-SHAKE256" => "2.16.840.1.114027.80.9.1.34",
-                "MLDSA87-RSA3072-PSS-SHA512" => "2.16.840.1.114027.80.9.1.35",
-                "MLDSA87-RSA4096-PSS-SHA512" => "2.16.840.1.114027.80.9.1.36",
-                "MLDSA87-ECDSA-P521-SHA512" => "2.16.840.1.114027.80.9.1.37",
+                "MLDSA44-RSA2048-PSS-SHA256"            => "1.3.6.1.5.5.7.6.37",
+                "MLDSA44-RSA2048-PKCS15-SHA256"         => "1.3.6.1.5.5.7.6.38",
+                "MLDSA44-Ed25519-SHA512"                => "1.3.6.1.5.5.7.6.39",
+                "MLDSA44-ECDSA-P256-SHA256"             => "1.3.6.1.5.5.7.6.40",
+                "MLDSA65-RSA3072-PSS-SHA512"            => "1.3.6.1.5.5.7.6.41",
+                "MLDSA65-RSA3072-PKCS15-SHA512"         => "1.3.6.1.5.5.7.6.42",
+                "MLDSA65-RSA4096-PSS-SHA512"            => "1.3.6.1.5.5.7.6.43",
+                "MLDSA65-RSA4096-PKCS15-SHA512"         => "1.3.6.1.5.5.7.6.44",
+                "MLDSA65-ECDSA-P256-SHA512"             => "1.3.6.1.5.5.7.6.45",
+                "MLDSA65-ECDSA-P384-SHA512"             => "1.3.6.1.5.5.7.6.46",
+                "MLDSA65-ECDSA-brainpoolP256r1-SHA512"  => "1.3.6.1.5.5.7.6.47",
+                "MLDSA65-Ed25519-SHA512"                => "1.3.6.1.5.5.7.6.48",
+                "MLDSA87-ECDSA-P384-SHA512"             => "1.3.6.1.5.5.7.6.49",
+                "MLDSA87-ECDSA-brainpoolP384r1-SHA512"  => "1.3.6.1.5.5.7.6.50",
+                "MLDSA87-Ed448-SHAKE256"                => "1.3.6.1.5.5.7.6.51",
+                "MLDSA87-RSA3072-PSS-SHA512"            => "1.3.6.1.5.5.7.6.52",
+                "MLDSA87-RSA4096-PSS-SHA512"            => "1.3.6.1.5.5.7.6.53",
+                "MLDSA87-ECDSA-P521-SHA512"             => "1.3.6.1.5.5.7.6.54",
 
                 _ => throw new XunitException("Unknown algorithm."),
             };

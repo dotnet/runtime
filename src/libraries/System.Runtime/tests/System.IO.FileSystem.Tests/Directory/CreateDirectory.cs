@@ -152,7 +152,7 @@ namespace System.IO.Tests
             Assert.True(result.Exists);
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
+        [Theory,
             MemberData(nameof(ValidPathComponentNames))]
         [PlatformSpecific(TestPlatforms.Windows)]  // trailing slash
         public void ValidExtendedPathWithTrailingSlash(string component)
@@ -239,7 +239,7 @@ namespace System.IO.Tests
             Assert.ThrowsAny<IOException>(() => Create(invalidPath));
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
         public void DirectoryLongerThanMaxPath_Succeeds()
         {
@@ -262,7 +262,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void DirectoryLongerThanMaxLongPathWithExtendedSyntax_ThrowsException()
         {
@@ -274,7 +274,7 @@ namespace System.IO.Tests
                 AssertExtensions.ThrowsAny<PathTooLongException, DirectoryNotFoundException, IOException>(() => Create(path)));
         }
 
-        [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path with extended syntax succeeds
         public void ExtendedDirectoryLongerThanLegacyMaxPath_Succeeds()
         {
@@ -285,7 +285,7 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // long directory path succeeds
         public void DirectoryLongerThanMaxDirectoryAsPath_Succeeds()
         {
@@ -374,7 +374,7 @@ namespace System.IO.Tests
             Assert.Equal(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
+        [Theory,
             MemberData(nameof(SimpleWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]  // extended syntax with whitespace
         public void WindowsExtendedSyntaxWhiteSpace(string path)
@@ -423,7 +423,7 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => Create(path));
         }
 
-        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked), nameof(UsingNewNormalization))] // device name prefixes
+        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device name prefixes
         [MemberData(nameof(ReservedDeviceNames))]
         public void PathWithReservedDeviceNameAsExtendedPath(string path)
         {

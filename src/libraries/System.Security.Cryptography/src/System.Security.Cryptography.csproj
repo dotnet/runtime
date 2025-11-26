@@ -1066,8 +1066,8 @@
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationManaged.cs" />
     <Compile Include="$(CommonPath)System\Text\UrlBase64Encoding.cs"
              Link="Common\System\Text\UrlBase64Encoding.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
-             Link="Common\System\Text\ValueUtf8Converter.cs" />
+    <Compile Include="$(CommonPath)System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs"
+             Link="Common\System\Runtime\InteropServices\SpanOfCharAsUtf8StringMarshaller.cs" />
     <Compile Include="System\Security\Cryptography\AesCcm.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\AesGcm.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\AesImplementation.OpenSsl.cs" />
