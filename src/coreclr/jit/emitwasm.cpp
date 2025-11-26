@@ -151,6 +151,13 @@ unsigned emitter::instrDesc::idCodeSize() const
     {
         case IF_OPCODE:
             break;
+        case IF_TYPE:
+            size += 1;
+            break;
+        case IF_LABEL:
+            assert(!idIsCnsReloc());
+            size = SizeOfULEB128(static_cast<target_size_t>(emitGetInsSC(this)));
+            break;
         case IF_ULEB128:
             size += idIsCnsReloc() ? PADDED_RELOC_SIZE : SizeOfULEB128(static_cast<target_size_t>(emitGetInsSC(this)));
             break;
@@ -198,6 +205,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     {
         case IF_OPCODE:
             dst += emitOutputByte(dst, code);
+            break;
+        case IF_TYPE:
+            dst += emitOutputByte(dst, code);
+            dst += emitOutputByte(dst, 0x40);
             break;
         case IF_ULEB128:
             dst += emitOutputByte(dst, code);
@@ -288,8 +299,10 @@ void emitter::emitDispIns(
     switch (fmt)
     {
         case IF_OPCODE:
+        case IF_TYPE:
             break;
 
+        case IF_LABEL:
         case IF_ULEB128:
         {
             target_size_t imm = emitGetInsSC(id);

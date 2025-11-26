@@ -28,11 +28,11 @@
 //
 INST(invalid,     "INVALID",     0, IF_NONE,    BAD_CODE)
 INST(unreachable, "unreachable", 0, IF_OPCODE,  0x00)
-INST(label,       "label",       0, IF_ULEB128, 0x00) // sort of
+INST(label,       "label",       0, IF_LABEL,   0x00)
 INST(nop,         "nop",         0, IF_OPCODE,  0x01)
-INST(block,       "block",       0, IF_OPCODE,  0x02)
-INST(loop,        "loop",        0, IF_OPCODE,  0x03)
-INST(if,          "if",          0, IF_OPCODE,  0x04)
+INST(block,       "block",       0, IF_TYPE,    0x02)
+INST(loop,        "loop",        0, IF_TYPE,    0x03)
+INST(if,          "if",          0, IF_TYPE,    0x04)
 INST(else,        "else",        0, IF_OPCODE,  0x05)
 INST(end,         "end",         0, IF_OPCODE,  0x0B)
 INST(br,          "br",          0, IF_ULEB128, 0x0C)
@@ -42,10 +42,10 @@ INST(return,      "return",      0, IF_OPCODE,  0x0F)
 
 // constants
 //
-INST(i32_const,   "i32.const",   0, IF_ULEB128, 0x42)
-INST(i64_const,   "i64.const",   0, IF_ULEB128, 0x43)
-INST(f32_const,   "f32.const",   0, IF_ULEB128, 0x44)
-INST(f64_const,   "f64.const",   0, IF_ULEB128, 0x45)
+INST(i32_const,   "i32.const",   0, IF_ULEB128, 0x41)
+INST(i64_const,   "i64.const",   0, IF_ULEB128, 0x42)
+INST(f32_const,   "f32.const",   0, IF_ULEB128, 0x43)
+INST(f64_const,   "f64.const",   0, IF_ULEB128, 0x44)
 
 // relops
 //
