@@ -2834,7 +2834,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
 
     call->ClearOtherRegs();
 
-    if (call->gtCallType == CT_INDIRECT)
+    if ((call->gtCallType == CT_INDIRECT) && comp->opts.Tier0OptimizationEnabled())
     {
         OptimizeCallIndirectTargetEvaluation(call);
     }
@@ -6316,8 +6316,16 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
 
     m_scratchSideEffects.Clear();
 
-    // Now move nodes ahead of the target range until we interfere or until we
-    // run out of nodes in the call's data flow.
+    // We start at the call and move backwards from it. When we see a node that
+    // is part of the call's data flow we leave it in place. For nodes that are
+    // not part of the data flow, or that are part of the target's data flow,
+    // we move them before the call's data flow if legal. We stop when we run
+    // out of the call's data flow.
+    //
+    // The end result is that all nodes outside the call's data flow or inside
+    // the target's data flow are computed before call arguments, allowing LSRA
+    // to resolve the ABI constraints without interfering with the target
+    // computation.
     unsigned numMarked = 1;
     call->gtLIRFlags |= LIR::Flags::Mark;
 
@@ -6376,8 +6384,7 @@ void Lowering::OptimizeCallIndirectTargetEvaluation(GenTreeCall* call)
                     JITDUMP("  Stopping at [%06u]; it has persistent side effects\n", Compiler::dspTreeID(cur));
                     interferes = true;
                 }
-
-                if ((flags & GTF_EXCEPT) != 0)
+                else if ((flags & GTF_EXCEPT) != 0)
                 {
                     ExceptionSetFlags preciseExceptions = cur->OperExceptions(comp);
                     if (preciseExceptions != ExceptionSetFlags::NullReferenceException)
