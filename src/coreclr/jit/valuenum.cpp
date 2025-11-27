@@ -13776,6 +13776,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_ReadyToRunIsInstanceOf:
         case VNF_ReadyToRunCastClass:
         case VNF_ReadyToRunGenericHandle:
+        case VNF_ReadyToRunVirtualFuncPtr:
         {
             useEntryPointAddrAsArg0 = true;
         }
