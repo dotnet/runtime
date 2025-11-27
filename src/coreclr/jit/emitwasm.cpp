@@ -194,9 +194,8 @@ inline emitter::code_t insOpcode(instruction ins)
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-
     BYTE*       dst    = *dp;
-    size_t      sz     = sizeof(instrDesc);
+    size_t      sz     = emitGetInstrDescSize(id);
     instruction ins    = id->idIns();
     insFormat   insFmt = id->idInsFmt();
     code_t      code   = insOpcode(ins);
@@ -217,6 +216,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         default:
             NYI_WASM("emitOutputInstr");
     }
+
+#ifdef DEBUG
+    bool dspOffs = emitComp->opts.dspGCtbls;
+    if (emitComp->opts.disAsm || emitComp->verbose)
+    {
+        emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
+    }
+#else
+    if (emitComp->opts.disAsm)
+    {
+        size_t expected = emitSizeOfInsDsc(id);
+        assert(sz == expected);
+        emitDispIns(id, false, 0, true, emitCurCodeOffs(*dp), *dp, (dst - *dp), ig);
+    }
+#endif
 
     *dp = dst;
     return sz;

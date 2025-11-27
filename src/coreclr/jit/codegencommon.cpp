@@ -2213,6 +2213,12 @@ void CodeGen::genEmitMachineCode()
 //
 void CodeGen::genEmitUnwindDebugGCandEH()
 {
+
+#if defined(TARGET_WASM)
+    JITDUMP("genEmitUnwindDebugGCandEH -- NYI");
+    return;
+#endif
+
     /* Now that the code is issued, we can finalize and emit the unwind data */
 
     compiler->unwindEmit(*codePtr, coldCodePtr);

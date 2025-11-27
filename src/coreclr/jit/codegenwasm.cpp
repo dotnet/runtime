@@ -57,6 +57,8 @@ void CodeGen::genFnProlog()
     }
 
     // Todo: prolog zeroing, shadow stack maintenance
+
+    GetEmitter()->emitMarkPrologEnd();
 }
 
 void CodeGen::genFnEpilog(BasicBlock* block)
