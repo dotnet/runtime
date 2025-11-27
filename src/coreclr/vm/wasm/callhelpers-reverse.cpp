@@ -24,7 +24,7 @@ static void Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g_
     {
         LookupMethodByName("System.GC, System.Private.CoreLib", "<RegisterNoGCRegionCallback>g__Callback|72_0", &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
     }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid = nullptr;
@@ -35,7 +35,7 @@ static void Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJo
     {
         LookupMethodByName("System.Threading.ThreadPool, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
     }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
 }
 
 extern "C" void SystemJS_ExecuteBackgroundJobCallback()
@@ -53,7 +53,7 @@ static void Call_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32
     {
         LookupMethodByName("System.GC, System.Private.CoreLib", "ConfigCallback", &MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
     }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid, (int8_t*)args, sizeof(args), nullptr);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid = nullptr;
@@ -66,7 +66,7 @@ static void Call_System_Private_CoreLib_System_Globalization_CalendarData_EnumCa
     {
         LookupMethodByName("System.Globalization.CalendarData, System.Private.CoreLib", "EnumCalendarInfoCallback", &MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
     }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_GetClassFactoryForTypeInternal_I32_RetI32 = nullptr;
@@ -81,7 +81,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComA
     }
 
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_GetClassFactoryForTypeInternal_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_GetClassFactoryForTypeInternal_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_GetClassFactoryForTypeInternal_I32_RetI32);
     return result;
 }
 
@@ -97,7 +97,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     }
 
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
     return result;
 }
 
@@ -113,7 +113,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     }
 
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32);
     return result;
 }
 
@@ -129,7 +129,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     }
 
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
     return result;
 }
 
@@ -145,7 +145,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     }
 
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32);
     return result;
 }
 
@@ -161,7 +161,7 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
     }
 
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32);
     return result;
 }
 
@@ -177,7 +177,7 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
     }
 
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32);
     return result;
 }
 
@@ -193,7 +193,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComA
     }
 
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_RegisterClassForTypeInternal_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_RegisterClassForTypeInternal_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_RegisterClassForTypeInternal_I32_RetI32);
     return result;
 }
 
@@ -205,7 +205,7 @@ static void Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler
     {
         LookupMethodByName("System.Threading.TimerQueue, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
     }
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
 }
 
 extern "C" void SystemJS_ExecuteTimerCallback()
@@ -225,7 +225,7 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComA
     }
 
     int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_UnregisterClassForTypeInternal_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result);
+    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_UnregisterClassForTypeInternal_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComActivator_UnregisterClassForTypeInternal_I32_RetI32);
     return result;
 }
 
