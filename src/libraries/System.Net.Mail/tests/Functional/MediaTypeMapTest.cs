@@ -64,7 +64,7 @@ namespace System.Net.Mime.Tests
         [InlineData(".ttf", "font/ttf")]
         [InlineData(".woff2", "font/woff2")]
         [InlineData(".woff", "font/woff")]
-        [InlineData(".rar", "application/x-rar-compressed")]
+        [InlineData(".rar", "application/vnd.rar")]
         public void GetMediaType_WithExtension_ReturnsCorrectMediaType(string extension, string expectedMediaType)
         {
             Assert.Equal(expectedMediaType, MediaTypeMap.GetMediaType(extension));
