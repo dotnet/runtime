@@ -9702,7 +9702,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
     param.result                = inlineResult;
     param.ppInlineCandidateInfo = ppInlineCandidateInfo;
 
-    bool success = eeRunWithErrorTrap<Param>([](Param* pParam) {
+    bool success = eeRunWithErrorTrap<Param>(
+        [](Param* pParam) {
         // Cache some frequently accessed state.
         //
         Compiler* const       compiler     = pParam->pThis;
@@ -9855,7 +9856,8 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         // over in impMarkInlineCandidate.
         //
         *(pParam->ppInlineCandidateInfo) = pInfo;
-    }, &param);
+    },
+        &param);
 
     if (!success)
     {
