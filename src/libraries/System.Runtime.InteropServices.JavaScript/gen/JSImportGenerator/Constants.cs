@@ -24,11 +24,13 @@ namespace Microsoft.Interop.JavaScript
         public const string SpanGlobal = "global::System.Span";
         public const string ArraySegmentGlobal = "global::System.ArraySegment";
         public const string FuncGlobal = "global::System.Func";
+        public const string IntPtrGlobal = "global::System.IntPtr";
         public const string ActionGlobal = "global::System.Action";
         public const string ExceptionGlobal = "global::System.Exception";
         public const string OSArchitectureGlobal = "global::System.Runtime.InteropServices.RuntimeInformation.OSArchitecture";
         public const string ArchitectureWasmGlobal = "global::System.Runtime.InteropServices.Architecture.Wasm";
         public const string ArgumentsBuffer = "__arguments_buffer";
+        public const string ArgumentsPtr = "__arguments_ptr";
         public const string ArgumentException = "__arg_exception";
         public const string ArgumentReturn = "__arg_return";
         public const string ToJSMethod = "ToJS";

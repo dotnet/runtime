@@ -72,7 +72,7 @@ namespace Microsoft.Interop.JavaScript
                 return ImmutableArray.Create(DiagnosticInfo.Create(GeneratorDiagnostics.JSExportRequiresAllowUnsafeBlocks, null));
             }));
 
-            IncrementalValuesProvider<(MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
+            IncrementalValuesProvider<(MemberDeclarationSyntax, StatementSyntax, ImmutableArray<DiagnosticInfo>)> generateSingleStub = methodsToGenerate
                 .Combine(stubEnvironment)
                 .Select(static (data, ct) => new
                 {
@@ -87,14 +87,14 @@ namespace Microsoft.Interop.JavaScript
                 .Select(
                     static (data, ct) => GenerateSource(data)
                 )
-                .WithComparer(Comparers.GeneratedSyntax4)
+                .WithComparer(Comparers.GeneratedSyntax3)
                 .WithTrackingName(StepNames.GenerateSingleStub);
 
-            context.RegisterDiagnostics(generateSingleStub.SelectMany((stubInfo, ct) => stubInfo.Item4));
+            context.RegisterDiagnostics(generateSingleStub.SelectMany((stubInfo, ct) => stubInfo.Item3));
 
-            IncrementalValueProvider<ImmutableArray<(StatementSyntax, AttributeListSyntax)>> regSyntax = generateSingleStub
+            IncrementalValueProvider<ImmutableArray<StatementSyntax>> regSyntax = generateSingleStub
                 .Select(
-                    static (data, ct) => (data.Item2, data.Item3))
+                    static (data, ct) => (data.Item2))
                 .Collect();
 
             IncrementalValueProvider<string> registration = regSyntax
@@ -142,11 +142,11 @@ namespace Microsoft.Interop.JavaScript
         {
 
             MemberDeclarationSyntax wrappperMethod = MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier(wrapperName))
-                .WithModifiers(TokenList(new[] { Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.UnsafeKeyword) }))
+                .WithModifiers(TokenList(new[] { Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.UnsafeKeyword) }))
                 .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
                     Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))))
                 .WithParameterList(ParameterList(SingletonSeparatedList(
-                    Parameter(Identifier(Constants.ArgumentsBuffer)).WithType(PointerType(ParseTypeName(Constants.JSMarshalerArgumentGlobal))))))
+                    Parameter(Identifier(Constants.ArgumentsPtr)).WithType(ParseTypeName(Constants.IntPtrGlobal)))))
                 .WithBody(wrapperStatements);
 
             MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntaxWithUnsafeModifier(wrappperMethod);
@@ -215,7 +215,7 @@ namespace Microsoft.Interop.JavaScript
         }
 
         private static NamespaceDeclarationSyntax GenerateRegSource(
-            ImmutableArray<(StatementSyntax Registration, AttributeListSyntax Attribute)> methods, string assemblyName)
+            ImmutableArray<StatementSyntax> methods, string assemblyName)
         {
             const string generatedNamespace = "System.Runtime.InteropServices.JavaScript";
             const string initializerClass = "__GeneratedInitializer";
@@ -230,8 +230,7 @@ namespace Microsoft.Interop.JavaScript
             var attributes = new List<AttributeListSyntax>();
             foreach (var m in methods)
             {
-                registerStatements.Add(m.Registration);
-                attributes.Add(m.Attribute);
+                registerStatements.Add(m);
             }
 
             FieldDeclarationSyntax field = FieldDeclaration(VariableDeclaration(PredefinedType(Token(SyntaxKind.BoolKeyword)))
@@ -319,7 +318,7 @@ namespace Microsoft.Interop.JavaScript
             ];
         }
 
-        private static (MemberDeclarationSyntax, StatementSyntax, AttributeListSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
+        private static (MemberDeclarationSyntax, StatementSyntax, ImmutableArray<DiagnosticInfo>) GenerateSource(
             IncrementalStubGenerationContext incrementalContext)
         {
             var diagnostics = new GeneratorDiagnosticsBag(new DescriptorProvider(), incrementalContext.DiagnosticLocation, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.JavaScript.JSImportGenerator.SR));
@@ -368,21 +367,33 @@ namespace Microsoft.Interop.JavaScript
             const string innerWrapperName = "__Stub";
 
             BlockSyntax wrapperToInnerStubBlock = Block(
+                CreateArgsConversion(),
                 CreateWrapperToInnerStubCall(signatureElements, innerWrapperName),
                 GenerateInnerLocalFunction(incrementalContext, innerWrapperName, stubGenerator));
 
-            StatementSyntax registration = GenerateJSExportRegistration(incrementalContext.SignatureContext);
-            AttributeListSyntax registrationAttribute = AttributeList(SingletonSeparatedList(Attribute(IdentifierName(Constants.DynamicDependencyAttributeGlobal))
-                    .WithArgumentList(AttributeArgumentList(SeparatedList(new[]{
-                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(wrapperName))),
-                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(incrementalContext.SignatureContext.StubTypeFullName))),
-                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(incrementalContext.SignatureContext.AssemblyName))),
-                    }
-                    )))));
+            StatementSyntax registration = GenerateJSExportRegistration(incrementalContext.SignatureContext, wrapperName);
 
             return (PrintGeneratedSource(incrementalContext.ContainingSyntaxContext, wrapperToInnerStubBlock, wrapperName),
-                registration, registrationAttribute,
+                registration,
                 incrementalContext.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
+        }
+
+        private static LocalDeclarationStatementSyntax CreateArgsConversion()
+        {
+            // var __arguments_buffer = (global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument*) __arguments_ptr;
+            return LocalDeclarationStatement(
+                VariableDeclaration(
+                    PointerType(
+                        IdentifierName(Constants.JSMarshalerArgumentGlobal)))
+                .WithVariables(
+                    SingletonSeparatedList(
+                        VariableDeclarator(Identifier(Constants.ArgumentsBuffer))
+                        .WithInitializer(
+                            EqualsValueClause(
+                                CastExpression(
+                                    PointerType(
+                                        IdentifierName(Constants.JSMarshalerArgumentGlobal)),
+                                    IdentifierName(Constants.ArgumentsPtr)))))));
         }
 
         private static ExpressionStatementSyntax CreateWrapperToInnerStubCall(ImmutableArray<TypePositionInfo> signatureElements, string innerWrapperName)
@@ -436,11 +447,12 @@ namespace Microsoft.Interop.JavaScript
                     Attribute(IdentifierName(Constants.DebuggerNonUserCodeAttribute))))));
         }
 
-        private static ExpressionStatementSyntax GenerateJSExportRegistration(JSSignatureContext context)
+        private static ExpressionStatementSyntax GenerateJSExportRegistration(JSSignatureContext context, string wrapperName)
         {
             var signatureArgs = new List<ArgumentSyntax>
             {
-                Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(context.QualifiedMethodName))),
+                Argument(IdentifierName(context.StubTypeFullName + "." + wrapperName)),
+                Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(context.MethodShortName))),
                 Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(context.TypesHash))),
                 SignatureBindingHelpers.CreateSignaturesArgument(context.SignatureContext.ElementTypeInformation, StubCodeContext.DefaultNativeToManagedStub)
             };
