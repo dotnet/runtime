@@ -213,7 +213,6 @@
       <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dmeta'))" />
       <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dil'))" />
       <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
-      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
       <_WasmFilesForVfs Include="@(_WasmBuildAssetCandidates)" Condition="'%(_WasmBuildAssetCandidates.BuildReference)' == 'true' and $([System.String]::new('%(_WasmBuildAssetCandidates.Identity)').EndsWith('.dll')) and !$([System.String]::new('%(_WasmBuildAssetCandidates.Identity)').EndsWith('.resources.dll'))" />
     </ItemGroup>
 
