@@ -3030,7 +3030,7 @@ void CodeGen::genLclHeap(GenTree* tree)
 
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
-    if (size->IsCnsIntOrI() && size->isContained())
+    if (size->isContainedIntOrIImmed())
     {
         // The size node being a contained constant means that Lower has taken care of
         // zeroing the memory if compInitMem is true.
@@ -3095,7 +3095,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         stackAdjustment += compiler->lvaOutgoingArgSpaceSize;
     }
 
-    if (size->IsCnsIntOrI() && size->isContained())
+    if (size->isContainedIntOrIImmed())
     {
         // We should reach here only for non-zero, constant size allocations.
         assert(amount > 0);
