@@ -2685,6 +2685,8 @@ GenTree* Compiler::optVNBasedFoldExpr_Call_Memmove(GenTreeCall* call)
         return nullptr;
     }
 
+    assert(buffer != nullptr);
+
     // if dstArg is not simple, we replace the arg directly with a temp assignment and
     // continue using that temp - it allows us reliably extract all side effects.
     GenTree* dst = fgMakeMultiUse(&dstArg->NodeRef());
